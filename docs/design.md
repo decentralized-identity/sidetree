@@ -1,4 +1,4 @@
-**Sidetree Node.js Implementation Design Document**
+**Sidetree.JS Document**
 ===================================================
 
 # Overview
@@ -22,18 +22,44 @@
 # Sidetree REST API
 This section defines the `v1.0` version of the Sidetree DID REST API.
 
->TODO: Discuss if to not use header and URL, and specify all arguments in the request body. Applies to CAS and blockchain REST API interface also.
+> TODO: Discuss if to not use header and URL, and specify all arguments in the request body. Applies to CAS and blockchain REST API interface also.
+
+## Response HTTP status codes
+
+| HTTP status code | Description                              |
+| ---------------- | ---------------------------------------- |
+| 200              | Everything went well.                    |
+| 401              | Unauthenticated or unauthorized request. |
+| 400              | Bad request from the client.             |
+| 500              | Unexpected service side error.           |
+
+## Proof-of-work
+> TODO: Complete proof-of-work description and move to protocol specification document.
+
+Every Sidetree write request must have a proof-of-work for it to be considered valid. As a result, every write request (e.g. DID create, update, delete, and recover) has an `proofOfWork` optional property with the following schema:
+
+```json
+"proofOfWork": {
+  "algorithm": "Proof-of-work algorithm used.",
+  "lastBlockHash": "The hash of the latest known blockchain block.",
+  "proof": "The proof depending on the algorithm used."
+}
+```
+
+When `proofOfWork` is not given in a write request, the the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
+
+> TODO: need to review the idea of out sourcing the proof-of-work and its implecations.
 
 ## Create a DID
 Creates a Sidetree DID using the given DID Document.
 
 ### Request path
 ```
-POST /<api_version>/
+POST /<api-version>/
 ```
 
 ### Request headers
-|                       |                        |
+| Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
@@ -41,7 +67,8 @@ POST /<api_version>/
 ```json
 {
   "didDocument": "The initial DID Document of the DID in JSON",
-  "signature": "The signature of the DID Document signed by the private-key corresponding to a public-key specified in the DID Document."
+  "signature": "The signature of the DID Document signed by the private-key corresponding to a public-key specified in the DID Document.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
 }
 ```
 The request body will be the initial DID Document of the DID in JSON.
@@ -71,7 +98,8 @@ POST /v1.0/
       "serviceEndpoint": "https://example.com/endpoint/8377464"
     }]
   },
-  "signature": "..."
+  "signature": "...",
+  "proofOfWork": { ... }
 }
 
 ```
@@ -103,7 +131,7 @@ Fetches the latest DID Document of the given DID.
 
 ### Request path
 ```
-GET /<api_version>/<did>
+GET /<api-version>/<did>
 ```
 
 ### Request headers
@@ -144,24 +172,25 @@ Updates the DID Document of a DID to the given DID Document.
 
 ### Request path
 ```
-PUT /<api_version>/
+PUT /<api-version>/
 ```
 
 ### Request headers
-|                       |                        |
+| Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
 ### Request body schema
 ```json
 {
-  "did": "The DID to be deleted",
-  "changeVersionNumber": "The number incremented from the last change version number.",
-  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
-  "patch": "A RFC 6902 JSON patch to the current DID Document",
-  "signature": "The signature of the JSON patch signed by the private-key corresponding to a public-key specified in the current DID Document.",
-  "latestBlockchainBlockHash": "The hash of the latest known blockchain block.",
-  "proofOfWork": "..."
+  "payload": {
+    "did": "The DID to be updated",
+    "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+    "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
+    "patch": "A RFC 6902 JSON patch to the current DID Document",
+  },
+  "signature": "The signature of the payload signed by the private-key corresponding to a public-key specified in the current DID Document.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
 }
 ```
 
@@ -178,7 +207,8 @@ PUT /v1.0/
     "op": "remove",
     "path": "/publicKey/0"
   },
-  "signature": "..."
+  "signature": "...",
+  "proofOfWork": { ... }
 }
 ```
 
@@ -191,21 +221,24 @@ Deletes the given DID.
 
 ### Request path
 ```
-DELETE /<api_version>/
+DELETE /<api-version>/
 ```
 
 ### Request headers
-|                       |                        |
+| Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
 ### Request body schema
 ```json
 {
-  "did": "The DID to be deleted",
-  "changeVersionNumber": "The number incremented from the last change version number.",
-  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
-  "signature": "The signature of the JSON patch signed by the private-key corresponding to a public-key specified in the current DID Document."
+  "payload": {
+    "did": "The DID to be deleted",
+    "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+    "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch."
+  },
+  "signature": "The signature of the JSON patch signed by the private-key corresponding to a public-key specified in the current DID Document.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
 }
 ```
 
@@ -218,7 +251,8 @@ DELETE /v1.0/
   "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
   "changeVersionNumber": 13,
   "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
-  "signature": "..."
+  "signature": "...",
+  "proofOfWork": { ... }
 }
 ```
 
@@ -259,11 +293,11 @@ Fetches Sidetree file hashes in chronological order.
 
 ### Request path
 ```
-GET /<api_version>/
+GET /<api-version>/
 ```
 
 ### Request headers
-|                       |                        |
+| Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
@@ -287,10 +321,10 @@ GET /v1.0/
 ### Response body schema
 ```json
 {
-  "moreHashes": "True if there are more hashes beyond the returned batch of hashes. False otherwise.",
+  "hasMoreHashes": "True if there are more hashes beyond the returned batch of hashes. False otherwise.",
   "sidetreeFileHashes": [
     {
-      "timestamp": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when this hash was anchored to the blockchain.",
+      "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when this hash was anchored to the blockchain.",
       "hash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI"
     }
   ]
@@ -300,14 +334,14 @@ GET /v1.0/
 ### Response body example
 ```json
 {
-  "moreHashes": false,  
+  "hasMoreHashes": false,  
   "sidetreeFileHashes": [
     {
-      "timestamp": "2018-09-13T19:20:30Z",
+      "confirmationTime": "2018-09-13T19:20:30Z",
       "hash": "b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA"
     },
     {
-      "timestamp": "2018-09-13T20:00:00Z",
+      "confirmationTime": "2018-09-13T20:00:00Z",
       "hash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI"
     }
   ]
@@ -324,11 +358,11 @@ Writes a Sidetree file hash to the underlying blockchain.
 
 ### Request path
 ```
-POST /<api_version>/
+POST /<api-version>/
 ```
 
 ### Request headers
-|                       |                        |
+| Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
@@ -348,6 +382,81 @@ POST /v1.0/
   "sidetreeFileHash": "exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A"
 }
 ```
+
+### Response body schema
+None.
+
+
+## Get block confirmation time
+Gets the block confirmation time in UTC of the block identified by the given block hash.
+
+|                     |      |
+| ------------------- | ---- |
+| Minimum API version | v1.0 |
+
+### Request path
+```
+GET /<api-version>/confirmation-time/<block-hash>
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+Get /v1.0/confirmation-time/9vdoaofs7Cau0tYbOeSmF_8WY7O1i2Wf-alw-yFJRN8
+```
+
+### Response body schema
+```json
+{
+  "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when the block was confirmed on blockchain."
+}
+```
+
+### Response body example
+```json
+{
+  "confirmationTime": "2018-09-13T19:20:30Z",
+}
+```
+
+
+## Get last block hash
+Gets the hash of the last confirmed block.
+
+> TODO: Discuss and consider returning a list of block hash instead.
+
+|                     |      |
+| ------------------- | ---- |
+| Minimum API version | v1.0 |
+
+### Request path
+```
+GET /<api-version>/block-hash/last
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+Get /v1.0/block-hash/last
+```
+
+### Response body schema
+```json
+{
+  "blockHash": "The hash of the last confirmed block."
+}
+```
+
 
 
 # CAS REST API Interface
@@ -372,7 +481,7 @@ Fetches the batch of Sidetree operations identified by the hash.
 
 ### Request path
 ```
-GET /<api_version>/<base64url_hash>
+GET /<api-version>/<base64url-hash>
 ```
 
 ### Request example
@@ -392,12 +501,12 @@ GET /v1.0/b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA
 {
   "operations": [
     {
-      "sigature": "kno67RidYQsuFRxCCJE7PtDLOPa-YTdWgZsVE8iSTX8",
+      "signature": "kno67RidYQsuFRxCCJE7PtDLOPa-YTdWgZsVE8iSTX8",
       "delta": { "RFC_6902_JSON_PATCH" },
       "previousVersionHash": "_n7Df09kKDx8dTulec_dOBQrHGWObqO1eFWDCed5QsY"
     },
     {
-      "sigature": "AgLqetfyB0pSrXZ34xyxSglfS599_gEOu6iX0xhAoRA",
+      "signature": "AgLqetfyB0pSrXZ34xyxSglfS599_gEOu6iX0xhAoRA",
       "delta": { "RFC_6902_JSON_PATCH" },
       "previousVersionHash": "Kmedd1O_7_yej-2h12prNRq0f_jfFAbcaA3JynrjadU"
     }
@@ -414,11 +523,11 @@ Store a batch of Sidetree operations identified by the hash.
 
 ### Request path
 ```
-POST /<api_version>/
+POST /<api-version>/
 ```
 
 ### Request headers
-|                       |                        |
+| Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
@@ -430,12 +539,12 @@ POST /v1.0/
 {
   "operations": [
     {
-      "sigature": "kno67RidYQsuFRxCCJE7PtDLOPa-YTdWgZsVE8iSTX8",
+      "signature": "kno67RidYQsuFRxCCJE7PtDLOPa-YTdWgZsVE8iSTX8",
       "delta": { "RFC_6902_JSON_PATCH" },
       "previousVersionHash": "_n7Df09kKDx8dTulec_dOBQrHGWObqO1eFWDCed5QsY"
     },
     {
-      "sigature": "AgLqetfyB0pSrXZ34xyxSglfS599_gEOu6iX0xhAoRA",
+      "signature": "AgLqetfyB0pSrXZ34xyxSglfS599_gEOu6iX0xhAoRA",
       "delta": { "RFC_6902_JSON_PATCH" },
       "previousVersionHash": "Kmedd1O_7_yej-2h12prNRq0f_jfFAbcaA3JynrjadU"
     }
