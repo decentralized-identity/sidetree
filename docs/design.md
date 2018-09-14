@@ -1,6 +1,12 @@
 **Sidetree Node.js Implementation Design Document**
 ===================================================
 
+# Overview
+
+## Terminology
+* DID document
+* Sidetree file
+
 # Architecture
 ![Sidetree Entity Trail diagram](./diagrams/architecture.png)
 
@@ -14,6 +20,212 @@
 
 
 # Sidetree REST API
+This section defines the `v1.0` version of the Sidetree DID REST API.
+
+>TODO: Discuss if to not use header and URL, and specify all arguments in the request body. Applies to CAS and blockchain REST API interface also.
+
+## Create a DID
+Creates a Sidetree DID using the given DID Document.
+
+### Request path
+```
+POST /<api_version>/
+```
+
+### Request headers
+|                       |                        |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+### Request body schema
+```json
+{
+  "didDocument": "The initial DID Document of the DID in JSON",
+  "signature": "The signature of the DID Document signed by the private-key corresponding to a public-key specified in the DID Document."
+}
+```
+The request body will be the initial DID Document of the DID in JSON.
+
+In Sidetree implementation, certain properties or portion of which will be ignored:
+* `id` - Ignored.
+* `publicKey\*\id` - DID portion is ignored.
+* `publicKey\*\owner` - Ignored unless resolvable.
+
+### Request example
+```
+POST /v1.0/
+```
+```json
+{
+  "didDocument": {
+    "@context": "https://w3id.org/did/v1",
+    "id": "did:sidetree:ignored",
+    "publicKey": [{
+      "id": "did:sidetree:didPortionIgnored#keys-1",
+      "type": "RsaVerificationKey2018",
+      "owner": "did:sidetree:ignoredUnlessResolvable",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+    }],
+    "service": [{
+      "type": "DidHub",
+      "serviceEndpoint": "https://example.com/endpoint/8377464"
+    }]
+  },
+  "signature": "..."
+}
+
+```
+
+### Response body schema
+The response body is the DID Document of the DID created.
+
+### Response body example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:realDid",
+  "publicKey": [{
+    "id": "did:sidetree:realDid#keys-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:realDid",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "DidHub",
+    "serviceEndpoint": "https://example.com/endpoint/8377464"
+  }]
+}
+```
+
+
+## Resolve a DID
+Fetches the latest DID Document of the given DID.
+
+### Request path
+```
+GET /<api_version>/<did>
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+GET /v1.0/did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A
+```
+
+### Response body schema
+The response body is the latest DID Document.
+
+### Response body example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:123456789abcdefghi",
+  "publicKey": [{
+    "id": "did:sidetree:123456789abcdefghi#keys-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:123456789abcdefghi",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "DidHub",
+    "serviceEndpoint": "https://example.com/endpoint/8377464"
+  }]
+}
+```
+
+
+## Update a DID
+Updates the DID Document of a DID to the given DID Document.
+
+### Request path
+```
+PUT /<api_version>/
+```
+
+### Request headers
+|                       |                        |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+### Request body schema
+```json
+{
+  "did": "The DID to be deleted",
+  "changeVersionNumber": "The number incremented from the last change version number.",
+  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
+  "patch": "A RFC 6902 JSON patch to the current DID Document",
+  "signature": "The signature of the JSON patch signed by the private-key corresponding to a public-key specified in the current DID Document.",
+  "latestBlockchainBlockHash": "The hash of the latest known blockchain block.",
+  "proofOfWork": "..."
+}
+```
+
+### Request example
+```
+PUT /v1.0/
+```
+```json
+{
+  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "changeVersionNumber": 12,
+  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "patch": {
+    "op": "remove",
+    "path": "/publicKey/0"
+  },
+  "signature": "..."
+}
+```
+
+### Response body schema
+The response body is the DID Document of the DID after the update.
+
+
+## Delete a DID
+Deletes the given DID.
+
+### Request path
+```
+DELETE /<api_version>/
+```
+
+### Request headers
+|                       |                        |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+### Request body schema
+```json
+{
+  "did": "The DID to be deleted",
+  "changeVersionNumber": "The number incremented from the last change version number.",
+  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
+  "signature": "The signature of the JSON patch signed by the private-key corresponding to a public-key specified in the current DID Document."
+}
+```
+
+### Request example
+```
+DELETE /v1.0/
+```
+```json
+{
+  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "changeVersionNumber": 13,
+  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "signature": "..."
+}
+```
+
+
+## Recover a DID
+To be specified.
+
 
 
 # Blockchain REST API
@@ -25,6 +237,7 @@ All hashes used in the API are Base64URL encoded SHA256 hash.
 >TODO: Decide on signature format.
 >TODO: Decide on compression.
 
+
 ## Response HTTP status codes
 
 | HTTP status code | Description                              |
@@ -33,6 +246,7 @@ All hashes used in the API are Base64URL encoded SHA256 hash.
 | 401              | Unauthenticated or unauthorized request. |
 | 400              | Bad request from the client.             |
 | 500              | Unexpected service side error.           |
+
 
 ## Fetch Sidetree file hashes
 Fetches Sidetree file hashes in chronological order.
@@ -89,16 +303,17 @@ GET /v1.0/
   "moreHashes": false,  
   "sidetreeFileHashes": [
     {
-      "timestamp": "2018-09-13T19:20:30",
+      "timestamp": "2018-09-13T19:20:30Z",
       "hash": "b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA"
     },
     {
-      "timestamp": "2018-09-13T20:00:00",
+      "timestamp": "2018-09-13T20:00:00Z",
       "hash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI"
     }
   ]
 }
 ```
+
 
 ## Write a Sidetree file hash
 Writes a Sidetree file hash to the underlying blockchain.
