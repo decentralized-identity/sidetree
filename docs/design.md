@@ -48,7 +48,7 @@ Every Sidetree write request must have a proof-of-work for it to be considered v
 
 When `proofOfWork` is not given in a write request, the the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
 
-> TODO: need to review the idea of out sourcing the proof-of-work and its implecations.
+> TODO: need to review the idea of out sourcing the proof-of-work and its implications.
 
 ## Create a DID
 Creates a Sidetree DID using the given DID Document.
@@ -66,17 +66,34 @@ POST /<api-version>/
 ### Request body schema
 ```json
 {
-  "didDocument": "The initial DID Document of the DID in JSON",
-  "signature": "The signature of the DID Document signed by the private-key corresponding to a public-key specified in the DID Document.",
+  "didDocument": "Base64URL encoded initial DID Document of the DID.",
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
 }
 ```
-The request body will be the initial DID Document of the DID in JSON.
 
-In Sidetree implementation, certain properties or portion of which will be ignored:
+In Sidetree implementation, certain properties or portion of which in teh initial DID Document will be ignored:
 * `id` - Ignored.
 * `publicKey\*\id` - DID portion is ignored.
 * `publicKey\*\owner` - Ignored unless resolvable.
+
+### Initial DID document example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:ignored",
+  "publicKey": [{
+    "id": "did:sidetree:didPortionIgnored#key-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:ignoredUnlessResolvable",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "DidHub",
+    "serviceEndpoint": "https://example.com/endpoint/8377464"
+  }]
+}
+```
 
 ### Request example
 ```
@@ -84,20 +101,7 @@ POST /v1.0/
 ```
 ```json
 {
-  "didDocument": {
-    "@context": "https://w3id.org/did/v1",
-    "id": "did:sidetree:ignored",
-    "publicKey": [{
-      "id": "did:sidetree:didPortionIgnored#keys-1",
-      "type": "RsaVerificationKey2018",
-      "owner": "did:sidetree:ignoredUnlessResolvable",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
-    }],
-    "service": [{
-      "type": "DidHub",
-      "serviceEndpoint": "https://example.com/endpoint/8377464"
-    }]
-  },
+  "didDocument": "...",
   "signature": "...",
   "proofOfWork": { ... }
 }
@@ -113,7 +117,7 @@ The response body is the DID Document of the DID created.
   "@context": "https://w3id.org/did/v1",
   "id": "did:sidetree:realDid",
   "publicKey": [{
-    "id": "did:sidetree:realDid#keys-1",
+    "id": "did:sidetree:realDid#key-1",
     "type": "RsaVerificationKey2018",
     "owner": "did:sidetree:realDid",
     "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
@@ -154,7 +158,7 @@ The response body is the latest DID Document.
   "@context": "https://w3id.org/did/v1",
   "id": "did:sidetree:123456789abcdefghi",
   "publicKey": [{
-    "id": "did:sidetree:123456789abcdefghi#keys-1",
+    "id": "did:sidetree:123456789abcdefghi#key-1",
     "type": "RsaVerificationKey2018",
     "owner": "did:sidetree:123456789abcdefghi",
     "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
@@ -183,14 +187,33 @@ PUT /<api-version>/
 ### Request body schema
 ```json
 {
-  "payload": {
-    "did": "The DID to be updated",
-    "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
-    "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
-    "patch": "A RFC 6902 JSON patch to the current DID Document",
-  },
-  "signature": "The signature of the payload signed by the private-key corresponding to a public-key specified in the current DID Document.",
+  "signingKeyId": "ID of the key used to sign the update payload",
+  "updatePayload": "Base64URL codeded update payload JSON object define by the schema below.",
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
+}
+```
+
+### Update payload schema
+```json
+{
+  "did": "The DID to be updated",
+  "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
+  "patch": "An RFC 6902 JSON patch to the current DID Document",
+}
+```
+
+### Update payload schema example
+```json
+{
+  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "changeVersionNumber": 12,
+  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "patch": {
+    "op": "remove",
+    "path": "/publicKey/0"
+  }
 }
 ```
 
@@ -200,13 +223,8 @@ PUT /v1.0/
 ```
 ```json
 {
-  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
-  "changeVersionNumber": 12,
-  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
-  "patch": {
-    "op": "remove",
-    "path": "/publicKey/0"
-  },
+  "signingKeyId": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A#key-1",
+  "updatePayload": "...",
   "signature": "...",
   "proofOfWork": { ... }
 }
@@ -232,13 +250,28 @@ DELETE /<api-version>/
 ### Request body schema
 ```json
 {
-  "payload": {
-    "did": "The DID to be deleted",
-    "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
-    "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch."
-  },
-  "signature": "The signature of the JSON patch signed by the private-key corresponding to a public-key specified in the current DID Document.",
+  "signingKeyId": "ID of the key used to sign the update payload",
+  "deletePayload": "Base64URL codeded delete payload JSON object define by the schema below.",
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
+}
+```
+
+### Delete payload schema
+```json
+{
+  "did": "The DID to be deleted",
+  "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch."
+}
+```
+
+### Delete payload example
+```json
+{
+  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "changeVersionNumber": 13,
+  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
 }
 ```
 
@@ -248,9 +281,8 @@ DELETE /v1.0/
 ```
 ```json
 {
-  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
-  "changeVersionNumber": 13,
-  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "signingKeyId": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A#key-1",
+  "updatePayload": "...",
   "signature": "...",
   "proofOfWork": { ... }
 }
