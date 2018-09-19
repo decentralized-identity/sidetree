@@ -49,7 +49,7 @@ System diagram showing op sig links that form a Sidetree Entity Trail:
 
 ### DIDs and Document Version URLs
 
-All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:SHA256Hash** where *SHA256Hash* represents a hex encoded SHA256 hash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#Creation-of-a-Sidetree-Entity).
+All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:SHA256Hash** where *SHA256Hash* represents a hex encoded SHA256 hash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#creation-of-a-sidetree-entity).
 
 The version URL output by the Create operation defines the newly created decentralized id (DID). In other words, a DID is simply the URL of the first version of its document.
 
@@ -275,7 +275,7 @@ In order to update an Entity's state with that of an incoming Entity entry, vari
 
 **1**. Create and hold an object in memory that will be retained to store the current state of the Entity.
 
-**2**. Store the [DID Version URL](##DIDs-and-Document-Version-URLs) in the cache object.
+**2**. Store the [DID Version URL](#dids-and-document-version-urls) in the cache object.
 
 **3**. Use the `delta` value of the Entity to create the initial state of the DID Document via the procedure described in [RFC 6902](http://tools.ietf.org/html/rfc6902). Store the compiled DID Document in the cache object. If the delta is not present, abort the process and discard as an invalid DID.
 
