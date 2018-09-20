@@ -1,14 +1,26 @@
-import * as crypto from 'crypto';
+import Cryptography from './Cryptography';
 
 /**
  * Class containing a Merkle tree structure and its related operations.
  */
 export default class MerkleTree {
 
+  /**
+   * Stores the Merkle tree root node once finalize() is called.
+   */
   private merkleTreeRootNode?: MerkleNode;
-  private hash: (value: Buffer) => Buffer = sha256hash;
+
+  /**
+   * Hashing function usinged by this Merkle tree.
+   */
+  private hash: (value: Buffer) => Buffer = Cryptography.sha256hash;
+
+  /**
+   * Intermediate structure for storing different sizes of balanced Merkle trees that will eventually form one final tree.
+   * [0] stores tree of 1 leaf, [1] stores tree of 2 leaves, [2] -> 4 leaves, [3] -> 8 leaves and so on.
+   */
   private subtrees: (MerkleNode | undefined) [] = [];
-  private valueToMerkleNodeMap = new Map();
+  private valueToMerkleNodeMap = new Map<Buffer, MerkleNode>();
 
   /**
    * Initializes a MerkleTree that is not finalized.
@@ -39,6 +51,7 @@ export default class MerkleTree {
   /**
    * Adds a value to the Merkle tree.
    * TODO: add multi-thread support: allow only 1 add to be invoked at a time.
+   * @throws Error if the MerkleTree is finalized.
    */
   public add (value: Buffer) {
     if (this.merkleTreeRootNode) {
@@ -64,8 +77,14 @@ export default class MerkleTree {
         const existingSubtree = this.subtrees[newSubtreeHeight];
         this.subtrees[newSubtreeHeight] = undefined;
 
+        // Calculate hash(existing subtree hash + new subtree hash)
+        // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
+        const combinedHashes = Buffer.concat([existingSubtree!.hash, newSubtree.hash]);
+        const newHash = Cryptography.sha256hash(combinedHashes);
+
+        // Construct parent node.
         const parent: MerkleNode = {
-          hash: Buffer.concat([existingSubtree!.hash, newSubtree.hash]), // Used non-null assertion operator because type-checker cannot conclude the fact.
+          hash: newHash,
           firstChild: existingSubtree,
           secondChild: newSubtree,
           parent: undefined
@@ -92,10 +111,16 @@ export default class MerkleTree {
 
   /**
    * Finalizes the Merkle tree by computing the final root hash. No new values can be added.
+   * Can be called multiple times to retrieve the same Merkle tree root hash.
    * TODO: add multi-thread support: disallow finalize() be called after immediately after finalized check is performed in add()?
    * @returns Merkle tree root hash.
    */
   public finalize (): Buffer {
+    // If root hash is already calculated (MerkleTree is finalized), no need to do calculation again.
+    if (this.merkleTreeRootNode) {
+      return this.merkleTreeRootNode.hash;
+    }
+
     // Merge all the subtrees of different sizes into one single Merkle tree.
     let smallestSubtree: MerkleNode | undefined = undefined;
     let i;
@@ -105,8 +130,14 @@ export default class MerkleTree {
       if (subtree) {
         // If there is already a smaller subtree, merge them.
         if (smallestSubtree) {
+          // Calculate hash(bigger subtree hash + smaller subtree hash)
+          // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
+          const combinedHashes = Buffer.concat([subtree!.hash, smallestSubtree.hash]);
+          const newHash = Cryptography.sha256hash(combinedHashes);
+
+          // Construct parent node.
           const parent: MerkleNode = {
-            hash: Buffer.concat([subtree.hash, smallestSubtree.hash]),
+            hash: newHash,
             firstChild: subtree,
             secondChild: smallestSubtree,
             parent: undefined
@@ -172,8 +203,6 @@ export default class MerkleTree {
     }
 
     const merkleTree = MerkleTree.initialize(values);
-    merkleTree.finalize();
-
     return merkleTree;
   }
 
@@ -204,16 +233,9 @@ interface MerkleNode {
 }
 
 /**
- * Class containing a Merkle receipt structure and its related operations.
+ * TODO: Class containing a Merkle receipt structure and its related operations.
  */
 class MerkleReceipt {
-}
-
-/**
- * SHA256 hash function.
- */
-function sha256hash (value: Buffer): Buffer {
-  return crypto.createHash('sha256').update(value).digest();
 }
 
 export { MerkleReceipt };
