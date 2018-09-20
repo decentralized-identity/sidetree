@@ -58,6 +58,9 @@ export default class MerkleTree {
       throw new Error('Cannot add more values once the Merkle tree is finalized.');
     }
 
+    // This function maintains a list of balanced Merkle trees of different sizes in 'this.subtrees'.
+    // The list of balanced Merkle subtrees will be combined to form the final Merkle tree when finalize() is called.
+
     // Create a new node and add it to the value -> node lookup map.
     const newNode = { hash: this.hash(value) };
     this.valueToMerkleNodeMap.set(value, newNode);
@@ -121,6 +124,8 @@ export default class MerkleTree {
       return this.merkleTreeRootNode.hash;
     }
 
+    // This function combines the list of balanced Merkle subtrees to form the final Merkle tree.
+
     // Merge all the subtrees of different sizes into one single Merkle tree.
     let smallestSubtree: MerkleNode | undefined = undefined;
     let i;
@@ -132,7 +137,7 @@ export default class MerkleTree {
         if (smallestSubtree) {
           // Calculate hash(bigger subtree hash + smaller subtree hash)
           // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
-          const combinedHashes = Buffer.concat([subtree!.hash, smallestSubtree.hash]);
+          const combinedHashes = Buffer.concat([subtree.hash, smallestSubtree.hash]);
           const newHash = Cryptography.sha256hash(combinedHashes);
 
           // Construct parent node.
