@@ -128,8 +128,13 @@ The response body is the DID Document of the DID created.
     "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
   }],
   "service": [{
-    "type": "DidHub",
-    "serviceEndpoint": "https://example.com/endpoint/8377464"
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:realDid#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
   }]
 }
 ```
@@ -169,8 +174,13 @@ The response body is the latest DID Document.
     "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
   }],
   "service": [{
-    "type": "DidHub",
-    "serviceEndpoint": "https://example.com/endpoint/8377464"
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:123456789abcdefghi#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
   }]
 }
 ```
