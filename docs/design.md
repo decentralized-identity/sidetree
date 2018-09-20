@@ -89,8 +89,13 @@ In Sidetree implementation, certain properties or portion of which in teh initia
     "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
   }],
   "service": [{
-    "type": "DidHub",
-    "serviceEndpoint": "https://example.com/endpoint/8377464"
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:ignored#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
   }]
 }
 ```
