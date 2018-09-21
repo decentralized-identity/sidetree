@@ -41,6 +41,7 @@ export default class MerkleTree {
    * Gets the Merkle tree root hash.
    */
   get rootHash (): Buffer {
+    // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
     return this.merkleTreeRootNode!.hash;
   }
 
@@ -161,7 +162,6 @@ export default class MerkleTree {
    */
   private createParent (left: MerkleNode, right: MerkleNode): MerkleNode {
     // Calculate hash(bigger subtree hash + smaller subtree hash)
-    // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
     const combinedHashes = Buffer.concat([left.hash, right.hash]);
     const newHash = this.hash(combinedHashes);
 
