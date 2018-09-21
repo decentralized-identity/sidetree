@@ -42,69 +42,31 @@ describe('MerkleTree', () => {
   
   const value12345678Hash = Cryptography.sha256hash(Buffer.concat([value1234Hash, value5678Hash]));
 
-  it('should throw error if attemping to create a Merkle tree with no leaf node.', () => {
-    const merkleTree = MerkleTree.initialize();
-    expect(function () { merkleTree.finalize(); }).toThrowError('No value(s) given to construct a Merkle tree.');
-  });
-
   it('should produce the correct root hash for a tree of just 1 value.', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 1));
-    const actualHash = merkleTree.finalize().toString('hex');
+    const merkleTree = MerkleTree.create(testValues.slice(0, 1));
+    const actualHash = merkleTree.rootHash.toString('hex');
     const expectedHash = valueToHashMap['1'];
     expect(actualHash).toEqual(expectedHash);
   });
 
   it('should produce the correct root hash for a tree of 2 values.', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 2));
-    const actualHash = merkleTree.finalize().toString();
+    const merkleTree = MerkleTree.create(testValues.slice(0, 2));
+    const actualHash = merkleTree.rootHash.toString();
     const expectedHash = value12Hash.toString();
     expect(actualHash).toEqual(expectedHash);
   });
 
   it('should produce the correct root hash for a balanced tree (8 values).', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 8));
-    const actualHashHex = merkleTree.finalize().toString();
+    const merkleTree = MerkleTree.create(testValues.slice(0, 8));
+    const actualHashHex = merkleTree.rootHash.toString();
     const expectedHash = value12345678Hash.toString();
     expect(actualHashHex).toEqual(expectedHash);
   });
 
   it('should produce the correct root hash for an unbalanced tree (10 values).', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 10));
-    const actualHashHex = merkleTree.finalize().toString();
+    const merkleTree = MerkleTree.create(testValues.slice(0, 10));
+    const actualHashHex = merkleTree.rootHash.toString();
     const expectedRootHash = Cryptography.sha256hash(Buffer.concat([value12345678Hash, value910Hash])).toString();
-    expect(actualHashHex).toEqual(expectedRootHash);
-  });
-
-  it('should linearize correctly to allow reinitialization using the same values.', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 10));
-    const rootHash = merkleTree.finalize().toString();
-    const values = merkleTree.linearize();
-    
-    const newMerkleTree = MerkleTree.initialize(values);
-    const newRootHash = newMerkleTree.finalize().toString();
-
-    expect(newRootHash).toEqual(rootHash);
-  });
-
-  it('should serialize and deserialize correctly.', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 10));
-    const rootHash = merkleTree.finalize().toString();
-    const valuesBuffer = merkleTree.serialize();
-    
-    const newMerkleTree = MerkleTree.deserialize(valuesBuffer);
-    const newRootHash = newMerkleTree.finalize().toString();
-
-    expect(newRootHash).toEqual(rootHash);
-  });
-
-  it('should allow finalize() to be called multiple times.', () => {
-    const merkleTree = MerkleTree.initialize(testValues.slice(0, 3));
-    merkleTree.finalize();
-    merkleTree.finalize();
-    const actualHashHex = merkleTree.finalize().toString();
-    
-    const value3Hash = Buffer.from(valueToHashMap['3'], 'hex');
-    const expectedRootHash = Cryptography.sha256hash(Buffer.concat([value12Hash, value3Hash])).toString();
     expect(actualHashHex).toEqual(expectedRootHash);
   });
 });

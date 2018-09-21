@@ -4,7 +4,6 @@ import Cryptography from './Cryptography';
  * Class containing a Merkle tree structure and its related operations.
  */
 export default class MerkleTree {
-
   /**
    * Stores the Merkle tree root node once finalize() is called.
    */
@@ -20,47 +19,75 @@ export default class MerkleTree {
    * [0] stores tree of 1 leaf, [1] stores tree of 2 leaves, [2] -> 4 leaves, [3] -> 8 leaves and so on.
    */
   private subtrees: (MerkleNode | undefined) [] = [];
+
+  /**
+   * A map such that given a value, the corresponding leaf hash node is located.
+   */
   private valueToMerkleNodeMap = new Map<Buffer, MerkleNode>();
 
   /**
-   * Initializes a MerkleTree that is not finalized.
-   * ie. More values can be added to the MerkleTree.
-   * @param values Optional values to be added to the Merkle tree.
+   * Creates a MerkleTree.
+   * @param values values to be added to the Merkle tree.
    * @param customHashFunction Optional custom hash function. SHA256 is used if not specified.
    */
-  public static initialize (
-    values?: Buffer[],
-    customHashFunction?: (value?: Buffer) => Buffer
-  ): MerkleTree {
-
-    const merkleTree = new MerkleTree();
-
-    if (customHashFunction) {
-      merkleTree.hash = customHashFunction;
-    }
-
-    if (values) {
-      values.forEach(value => {
-        merkleTree.add(value);
-      });
-    }
-
-    return merkleTree;
+  public static create (
+    values: Buffer[],
+    customHashFunction?: (value?: Buffer) => Buffer)
+    : MerkleTree {
+    return new MerkleTree(values, customHashFunction);
   }
 
   /**
-   * Adds a value to the Merkle tree.
-   * TODO: add multi-thread support: allow only 1 add to be invoked at a time.
-   * @throws Error if the MerkleTree is finalized.
+   * Gets the Merkle tree root hash.
    */
-  public add (value: Buffer) {
-    if (this.merkleTreeRootNode) {
-      throw new Error('Cannot add more values once the Merkle tree is finalized.');
+  get rootHash (): Buffer {
+    return this.merkleTreeRootNode!.hash;
+  }
+
+  /**
+   * Create a Merkle receipt for the given value.
+   */
+  public receipt (_value: Buffer): MerkleReceipt {
+    throw new Error('Not implemented.');
+  }
+
+  /**
+   * Proves that the given receipt is valid for the value given.
+   */
+  public static prove (_value: Buffer, _receipt: MerkleReceipt): boolean {
+    throw new Error('Not implemented.');
+  }
+
+  /**
+   * Creates a MerkleTree.
+   * @param values values to be added to the Merkle tree.
+   * @param customHashFunction Optional custom hash function. SHA256 is used if not specified.
+   */
+  private constructor (
+    values: Buffer[],
+    customHashFunction?: (value?: Buffer) => Buffer) {
+    if (!values) {
+      throw new Error('No value(s) given to construct a Merkle tree.');
     }
 
-    // This function maintains a list of balanced Merkle trees of different sizes in 'this.subtrees'.
-    // The list of balanced Merkle subtrees will be combined to form the final Merkle tree when finalize() is called.
+    if (customHashFunction) {
+      this.hash = customHashFunction;
+    }
 
+    values.forEach(value => {
+      this.add(value);
+    });
+
+    this.finalize();
+  }
+
+  /**
+   * Adds a value to the current list of balanced Merkles subtrees in 'this.subtrees
+   * such that it always maintains the smallest number of balanced trees.
+   * The list of balanced Merkle subtrees will be combined to form the final Merkle tree when finalize() is called.
+   * Also adds the value to valueToMerkleNodeMap such that the corresponding leaf hash node can be located quickly.
+   */
+  private add (value: Buffer) {
     // Create a new node and add it to the value -> node lookup map.
     const newNode = { hash: this.hash(value) };
     this.valueToMerkleNodeMap.set(value, newNode);
@@ -80,21 +107,9 @@ export default class MerkleTree {
         const existingSubtree = this.subtrees[newSubtreeHeight];
         this.subtrees[newSubtreeHeight] = undefined;
 
-        // Calculate hash(existing subtree hash + new subtree hash)
-        // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
-        const combinedHashes = Buffer.concat([existingSubtree!.hash, newSubtree.hash]);
-        const newHash = Cryptography.sha256hash(combinedHashes);
-
         // Construct parent node.
-        const parent: MerkleNode = {
-          hash: newHash,
-          firstChild: existingSubtree,
-          secondChild: newSubtree,
-          parent: undefined
-        };
-
-        existingSubtree!.parent = parent; // Used non-null assertion operator because type-checker cannot conclude the fact.
-        newSubtree.parent = parent;
+        // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
+        const parent = this.createParent(existingSubtree!, newSubtree);
 
         // Set the parent as a taller new subtree to be inserted into the array of subtrees .
         newSubtree = parent;
@@ -113,19 +128,9 @@ export default class MerkleTree {
   }
 
   /**
-   * Finalizes the Merkle tree by computing the final root hash. No new values can be added.
-   * Can be called multiple times to retrieve the same Merkle tree root hash.
-   * TODO: add multi-thread support: disallow finalize() be called after immediately after finalized check is performed in add()?
-   * @returns Merkle tree root hash.
+   * Combines the list of balanced Merkle subtrees to form the final Merkle tree.
    */
-  public finalize (): Buffer {
-    // If root hash is already calculated (MerkleTree is finalized), no need to do calculation again.
-    if (this.merkleTreeRootNode) {
-      return this.merkleTreeRootNode.hash;
-    }
-
-    // This function combines the list of balanced Merkle subtrees to form the final Merkle tree.
-
+  private finalize () {
     // Merge all the subtrees of different sizes into one single Merkle tree.
     let smallestSubtree: MerkleNode | undefined = undefined;
     let i;
@@ -135,21 +140,8 @@ export default class MerkleTree {
       if (subtree) {
         // If there is already a smaller subtree, merge them.
         if (smallestSubtree) {
-          // Calculate hash(bigger subtree hash + smaller subtree hash)
-          // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
-          const combinedHashes = Buffer.concat([subtree.hash, smallestSubtree.hash]);
-          const newHash = Cryptography.sha256hash(combinedHashes);
-
           // Construct parent node.
-          const parent: MerkleNode = {
-            hash: newHash,
-            firstChild: subtree,
-            secondChild: smallestSubtree,
-            parent: undefined
-          };
-
-          subtree.parent = parent;
-          smallestSubtree.parent = parent;
+          const parent = this.createParent(subtree, smallestSubtree);
 
           // The parent becomes the new smallest subtree.
           smallestSubtree = parent;
@@ -162,69 +154,30 @@ export default class MerkleTree {
     }
 
     this.merkleTreeRootNode = smallestSubtree;
-
-    if (!this.merkleTreeRootNode) {
-      throw new Error('No value(s) given to construct a Merkle tree.');
-    }
-
-    return this.merkleTreeRootNode.hash;
   }
 
   /**
-   * Linearize the Merkle tree as a list of values.
-   * The output can be fed into initialize(...) to reconstruct the same Merkle tree.
-   * This method can also be used to perform custom serialization.
+   * Creates a parent Merkle tree node given two child nodes.
    */
-  public linearize (): Buffer[] {
-    const values = Array.from(this.valueToMerkleNodeMap.keys());
-    return values;
+  private createParent (left: MerkleNode, right: MerkleNode): MerkleNode {
+    // Calculate hash(bigger subtree hash + smaller subtree hash)
+    // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
+    const combinedHashes = Buffer.concat([left.hash, right.hash]);
+    const newHash = this.hash(combinedHashes);
+
+    // Construct parent node.
+    const parent: MerkleNode = {
+      hash: newHash,
+      firstChild: left,
+      secondChild: right,
+      parent: undefined
+    };
+
+    left.parent = parent;
+    right.parent = parent;
+
+    return parent;
   }
-
-  /**
-   * Serailizes the Merkle tree.
-   */
-  public serialize (): Buffer {
-    const values: string[] = [];
-
-    for (let value of this.linearize()) {
-      // TODO: revisit choice of encoding.
-      const base64Value = value.toString('base64');
-      values.push(base64Value);
-    }
-
-    const buffer = Buffer.from(JSON.stringify(values));
-    return buffer;
-  }
-
-  /**
-   * Deserailizes the Merkle tree that was serialized using the serialize() function.
-   */
-  public static deserialize (valuesBuffer: Buffer): MerkleTree {
-    const valuesBase64: string[] = JSON.parse(valuesBuffer.toString());
-    const values: Buffer[] = [];
-
-    for (let valueBase64 of valuesBase64) {
-      values.push(Buffer.from(valueBase64, 'base64'));
-    }
-
-    const merkleTree = MerkleTree.initialize(values);
-    return merkleTree;
-  }
-
-  /**
-   * Create a Merkle receipt for the given value.
-   */
-  public receipt (_value: Buffer): MerkleReceipt {
-    throw new Error('Not implemented.');
-  }
-
-  /**
-   * Proves that the given receipt is valid for the value given.
-   */
-  public static prove (_value: Buffer, _receipt: MerkleReceipt): boolean {
-    throw new Error('Not implemented.');
-  }
-
 }
 
 /**
