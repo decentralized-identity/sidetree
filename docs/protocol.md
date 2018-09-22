@@ -16,7 +16,7 @@ Architecturally, a Sidetree network is an _overlay_ network over a blockchain wi
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most often) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of smaller balanced Merkle trees is formed, and the smallest balanced subtree on the right is merged with the adjacent balanced subtree on the left to recursively form the final Merkle tree.
 
-The following illustrates the calculation of the Merkle root hash with an array of 6 operations. The a smallest balance subtree J of 2 leaves [4, 5] is merged with the adjacent balanced tree K of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+The following illustrates the calculation of the Merkle root hash with an array of 6 operations. The a smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
 ```
 Where: [1] -> Denotes the binary buffer of the 1st element in the array of operation data.
         |  -> Denotes the logical relationship between an operation data and its hash, it need not be part of the tree structure.
@@ -24,13 +24,13 @@ Where: [1] -> Denotes the binary buffer of the 1st element in the array of opera
        A+B -> Denotes the concatenation of two binary buffers A and B.
 ```
 ```
-                          ROOT=H(K+L)
+                          ROOT=H(K+J)
                           /          \
                         /              \
-                K=H(H+I)                 \
+                J=H(H+I)                 \
               /        \                   \
             /            \                   \
-      H=H(A+B)             I=H(C+D)          J=H(E+F)
+      G=H(A+B)             H=H(C+D)          I=H(E+F)
       /      \             /     \           /      \
     /        \           /        \         /        \
   A=H([0])  B=H([1])  C=H([2])  D=H([3])  E=H([4])  F=H([5])
