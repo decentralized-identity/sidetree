@@ -50,16 +50,16 @@ export default class MerkleTree {
    * @returns Merkle receipt in the format specified by the Sidetree protocol.
    */
   public receipt (value: Buffer): MerkleReceiptEntry[] {
-    const receipt:  MerkleReceiptEntry[] = [];
+    const receipt: MerkleReceiptEntry[] = [];
     let node = this.valueToMerkleNodeMap.get(value);
 
     while (node && node.parent) {
       const parent = node.parent;
 
       if (node.hash.equals(parent.leftChild!.hash)) {
-        receipt.push({side: "right", hash: parent.rightChild!.hash});
+        receipt.push({ side: 'right', hash: parent.rightChild!.hash });
       } else {
-        receipt.push({side: "left", hash: parent.leftChild!.hash});
+        receipt.push({ side: 'left', hash: parent.leftChild!.hash });
       }
       node = parent;
     }
@@ -95,15 +95,15 @@ export default class MerkleTree {
     do {
       let combinedBuffer;
       const entry = receipt[i];
-      if (entry.side === "left") {
+      if (entry.side === 'left') {
         combinedBuffer = Buffer.concat([entry.hash, hash]);
       } else {
         combinedBuffer = Buffer.concat([hash, entry.hash]);
       }
 
       hash = hashFunction(combinedBuffer);
-      i++
-    } while (i < receipt.length)
+      i++;
+    } while (i < receipt.length);
 
     return hash.equals(merkleRoot);
   }
@@ -247,4 +247,4 @@ interface MerkleReceiptEntry {
   hash: Buffer;
 }
 
-export { MerkleReceiptEntry }
+export { MerkleReceiptEntry };
