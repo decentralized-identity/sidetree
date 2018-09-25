@@ -12,9 +12,70 @@
 
 # DID Cache
 
+The DID cache holds most of the state of a Sidetree node. It is a singleton class with the following methods for state update and retrieval.
+
+## Record
+
+This is the core method to update state with the following signature.
+
+```javascript
+public record(stateModifyOp: any, blockId: BlockId): URL
+```
+The `stateModifyOp` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the SHA256 hash of this object is the *versionURL* of the document version produced as the result of this operation. The `blockId` parameter identifies the blockchain block that this operation is anchored to.
+
+Under normal processing, the observer (cache updater) would process blockchain blocks in the *blockId* order, so the `blockId` parameter instantiation in `record` method calls would be non-decreasing. However the implementation accepts `record` calls with out-of-order *blockIds*. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
+
+It is useful to view the set of state modifying operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
+
+When two update operations reference the same (prior) version of a DID document, the cache removes from consideration the older of the two operations and all prior operations referencing the deleted operation. This ensures that the document versions of a particular DID form a chain without any forks. For illustration, assume we have recorded four operations for a particular DID producing the following chain:
+```
+v0 -> v1 -> v2 -> v3
+```
+If we record a new update operation `v0 -> v4`, the new chain for the DID would be:
+```
+v0 -> v4
+```
+The above semantics of two updates referencing the same version is used to handle recovery. In the above example, a DID was compromised after version `v0` which resulted in unauthorized updates `v1, v2, v3`. A recovery operation was performed which invalidated `v1, v2, v3` and added version `v4`.
+
+In the above description, *older* refers to the logical time of the operation derived from the position of the operation in the blockchain.
+> TODO: Currently, blockId is used as the timestamp of an operation, but perhaps we need something with finer granularity (blockId, position within block). The following sequence of unlikely events would leave the DID cache without enough information to figure out the correct resolution in the current api - an update operation and a subsequent recovery operation are anchored in the same block and the CAS (IPFS) delivers these operations in reverse order.
+
+## Rollback
+
+This method is used to handle rollbacks (orphaning of blocks) in the blockchain.
+
+```javascript
+public rollback(blockId: BlockId)
+```
+
+The effect of this method is to delete the effects of any operation added with a *blockId* greater than the one provided.
+
+## Lookup
+
+This method looks up the DID document given a version URL.
+
+```javascript
+public lookup(versionURL: URL): DIDDoc
+```
+
+If there is a missing update in the chain leading up to the provided `versionURL`, the method returns `null`.
+
+## Version chain navigation methods
+
+These methods navigate the version chain.
+
+```javascript
+public first(versionURL: URL): URL
+public last(versionURL: URL): URL
+public next(versionURL: URL): URL
+public prev(versionURL: URL): URL
+```
+
+## Resolve
+
+The resolve method returns the latest document for a given DID. It is implemented as `last(lookup(did))`.
 
 # Merkle Rooter
-
 
 # Observer
 
@@ -381,7 +442,7 @@ GET /v1.0/
 ### Response body example
 ```json
 {
-  "hasMoreHashes": false,  
+  "hasMoreHashes": false,
   "sidetreeFileHashes": [
     {
       "confirmationTime": "2018-09-13T19:20:30Z",
