@@ -47,16 +47,65 @@ export default class MerkleTree {
 
   /**
    * Create a Merkle receipt for the given value.
+   * @returns Merkle receipt in the format specified by the Sidetree protocol.
    */
-  public receipt (_value: Buffer): MerkleReceipt {
-    throw new Error('Not implemented.');
+  public receipt (value: Buffer): MerkleReceiptEntry[] {
+    const receipt: MerkleReceiptEntry[] = [];
+    let node = this.valueToMerkleNodeMap.get(value);
+
+    while (node && node.parent) {
+      const parent = node.parent;
+
+      if (node.hash.equals(parent.leftChild!.hash)) {
+        receipt.push({ side: 'right', hash: parent.rightChild!.hash });
+      } else {
+        receipt.push({ side: 'left', hash: parent.leftChild!.hash });
+      }
+      node = parent;
+    }
+
+    return receipt;
   }
 
   /**
-   * Proves that the given receipt is valid for the value given.
+   * Proves that the given receipt is valid for the given value and Merkle root.
+   * If receipt is not given, the the hash of the valude must directly equal to the given Merkle root.
+   * @param receipt Merkle receipt in the format specified by the Sidetree protocol.
+   * @param customHashFunction Optional custom hash function. SHA256 is used if not specified.
    */
-  public static prove (_value: Buffer, _receipt: MerkleReceipt): boolean {
-    throw new Error('Not implemented.');
+  public static prove (
+    value: Buffer,
+    merkleRoot: Buffer,
+    receipt: MerkleReceiptEntry[],
+    customHashFunction?: (value?: Buffer) => Buffer
+  ): boolean {
+    let hashFunction: (value: Buffer) => Buffer = Cryptography.sha256hash;
+    if (customHashFunction) {
+      hashFunction = customHashFunction;
+    }
+
+    let hash = hashFunction(value);
+
+    // If receipt is not given, the the hash of the valude must directly equal to the given Merkle root.
+    if (!receipt || receipt.length === 0) {
+      return hash.equals(merkleRoot);
+    }
+
+    let i = 0;
+    do {
+      let combinedBuffer;
+      const entry = receipt[i];
+      if (entry.side === 'left') {
+        combinedBuffer = Buffer.concat([entry.hash, hash]);
+      } else {
+        combinedBuffer = Buffer.concat([hash, entry.hash]);
+      }
+
+      hash = hashFunction(combinedBuffer);
+      i++;
+    } while (i < receipt.length);
+
+    return hash.equals(merkleRoot);
   }
 
   /**
@@ -168,8 +217,8 @@ export default class MerkleTree {
     // Construct parent node.
     const parent: MerkleNode = {
       hash: newHash,
-      firstChild: left,
-      secondChild: right,
+      leftChild: left,
+      rightChild: right,
       parent: undefined
     };
 
@@ -186,14 +235,16 @@ export default class MerkleTree {
 interface MerkleNode {
   hash: Buffer;
   parent?: MerkleNode;
-  firstChild?: MerkleNode;
-  secondChild?: MerkleNode;
+  leftChild?: MerkleNode;
+  rightChild?: MerkleNode;
 }
 
 /**
- * TODO: Class containing a Merkle receipt structure and its related operations.
+ * Represents an entry of many inside a Merkle receipt.
  */
-class MerkleReceipt {
+interface MerkleReceiptEntry {
+  side: string;
+  hash: Buffer;
 }
 
-export { MerkleReceipt };
+export { MerkleReceiptEntry };
