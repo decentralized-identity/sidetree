@@ -6,15 +6,22 @@
   "license": "Apache-2.0",
   "main": "dist/src/index.js",
   "dependencies": {
+    "double-ended-queue": "^2.1.0-0",
+    "http-status": "^1.2.0",
     "koa": "^2.3.0",
     "koa-router": "^7.2.1",
+    "node-fetch": "^2.2.0",
     "raw-body": "^2.3.3"
   },
   "devDependencies": {
+    "@types/double-ended-queue": "^2.1.0",
+    "@types/http-status": "^0.2.30",
     "@types/jasmine": "^2.8.8",
     "@types/koa": "^2.0.46",
     "@types/koa-router": "^7.0.31",
     "@types/node": "^10.3.1",
+    "@types/node-fetch": "^2.1.2",
+    "copyfiles": "^2.1.0",
     "husky": "^0.14.3",
     "jasmine": "^3.1.0",
     "jasmine-reporters": "^2.3.2",
@@ -26,7 +33,7 @@
   },
   "scripts": {
     "precommit": "npm run lint",
-    "build": "tsc",
+    "build": "tsc && copyfiles src/*.json dist",
     "test": "jasmine-ts --config=./tests/jasmine.json",
     "lint": "tslint --fix --project .",
     "start": "node dist/src/index.js"
