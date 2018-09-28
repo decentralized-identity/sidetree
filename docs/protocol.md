@@ -13,6 +13,17 @@ Architecturally, a Sidetree network is an _overlay_ network over a blockchain wi
 
 > TODO: Merkle tree is mentioned all of a sudden in the overview, but yet no mentioning of critical "batching" concept.
 
+## Terminology
+
+| Term        | Description                                      |
+|-------------|--------------------------------------------------|
+| Anchor file | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
+| Batch file  | The file containing all the operation data batched together.          |
+| Operation   | A change to the state of a DID.                                       |
+| Transaction | A blockchain transaction representing a batch of Sidetree operations. |
+
+> TODO: All terms listed in this section must be mentioned and described in Overview section.
+
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
 
@@ -82,6 +93,31 @@ The following illustrates the construction of the Merkle tree with an array of 7
 [   0    ,    1    ,    2    ,    3    ,    4    ,    5    ,    6   ]
 ```
 
+## Sidetree CAS-layer Files
+For every batch of Sidetree operations created, there are two files that are created and stored in the CAS layer: 
+1. Batch file - The file containing the actual change data of all the operations batched together.
+2. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the metadata of the batch of Sidetree operations, this includes the reference to the corresponding _batch file_.
+
+### Batch File Schema
+The _batch file_ is a ZIP compressed JSON document of the following schema:
+```json
+{
+  "operations": [
+    "Base64URL encoded operation",
+    "Base64URL encoded operation",
+    ...
+  ]
+}
+```
+
+### Anchor File Schema
+The _anchor file_ is a JSON document of the following schema:
+```json
+{
+  "batchFile": "The Base64URL encoded SHA256 hash of the batch file."
+  "merkleRoot": "The Base64URL encoded root hash of the Merkle tree contructed using the batch file."
+}
+```
 
 # Sidetree Entity Operations
 
