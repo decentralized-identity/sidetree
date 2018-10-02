@@ -30,8 +30,8 @@ This section defines the `v1.0` version of the Sidetree DID REST API.
 | ---------------- | ---------------------------------------- |
 | 200              | Everything went well.                    |
 | 401              | Unauthenticated or unauthorized request. |
-| 400              | Bad request from the client.             |
-| 500              | Unexpected service side error.           |
+| 400              | Bad client request.                      |
+| 500              | Server error.                            |
 
 ## Proof-of-work
 > TODO: Complete proof-of-work description and move to protocol specification document.
@@ -67,8 +67,10 @@ POST /<api-version>/
 ```json
 {
   "didDocument": "Base64URL encoded initial DID Document of the DID.",
-  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the public-key specified by the signingKeyId.",
-  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+    public-key specified by the signingKeyId.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+    or reject the request."
 }
 ```
 
@@ -204,8 +206,10 @@ PUT /<api-version>/
 {
   "signingKeyId": "ID of the key used to sign the update payload",
   "updatePayload": "Base64URL codeded update payload JSON object define by the schema below.",
-  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the public-key specified by the signingKeyId.",
-  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+    public-key specified by the signingKeyId.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+    or reject the request."
 }
 ```
 
@@ -267,8 +271,10 @@ DELETE /<api-version>/
 {
   "signingKeyId": "ID of the key used to sign the update payload",
   "deletePayload": "Base64URL codeded delete payload JSON object define by the schema below.",
-  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the public-key specified by the signingKeyId.",
-  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf or reject the request."
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+    public-key specified by the signingKeyId.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+    or reject the request."
 }
 ```
 
@@ -325,12 +331,12 @@ All hashes used in the API are Base64URL encoded SHA256 hash.
 | ---------------- | ---------------------------------------- |
 | 200              | Everything went well.                    |
 | 401              | Unauthenticated or unauthorized request. |
-| 400              | Bad request from the client.             |
-| 500              | Unexpected service side error.           |
+| 400              | Bad client request.                      |
+| 500              | Server error.                            |
 
 
-## Fetch Sidetree file hashes
-Fetches Sidetree file hashes in chronological order.
+## Fetch Sidetree anchor file hashes
+Fetches Sidetree anchor file hashes in chronological order.
 
 >Note: The call may not to return all the known hashes in one batch, in which case the caller can use the last hash given in the returned batch of hashes to fetch subsequent hashes.
 
@@ -351,7 +357,9 @@ GET /<api-version>/
 ### Request body schema
 ```json
 {
-  "afterHash": "Optional. A valid Sidetree file hash. When not given, Sidetree file hashes since inception will be returned. When given, only Sidetree file hashes after the given hash will be returned."
+  "afterHash": "Optional. A valid Sidetree anchor file hash. When not given, all Sidetree anchor file hashes since
+                inception will be returned. When given, only anchor file hashes after the given hash will be
+                returned."
 }
 ```
 
@@ -369,9 +377,10 @@ GET /v1.0/
 ```json
 {
   "hasMoreHashes": "True if there are more hashes beyond the returned batch of hashes. False otherwise.",
-  "sidetreeFileHashes": [
+  "anchorFileHashes": [
     {
-      "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when this hash was anchored to the blockchain.",
+      "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when this hash was
+        anchored to the blockchain.",
       "hash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI"
     }
   ]
@@ -382,7 +391,7 @@ GET /v1.0/
 ```json
 {
   "hasMoreHashes": false,  
-  "sidetreeFileHashes": [
+  "anchorFileHashes": [
     {
       "confirmationTime": "2018-09-13T19:20:30Z",
       "hash": "b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA"
@@ -396,8 +405,8 @@ GET /v1.0/
 ```
 
 
-## Write a Sidetree file hash
-Writes a Sidetree file hash to the underlying blockchain.
+## Write a Sidetree anchor file hash
+Writes a Sidetree anchor file hash to the underlying blockchain.
 
 |                     |      |
 | ------------------- | ---- |
@@ -416,7 +425,7 @@ POST /<api-version>/
 ### Request body schema
 ```json
 {
-  "sidetreeFileHash": "A Sidetree file hash."
+  "anchorFileHash": "A Sidetree file hash."
 }
 ```
 
@@ -426,7 +435,7 @@ POST /v1.0/
 ```
 ```json
 {
-  "sidetreeFileHash": "exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A"
+  "anchorFileHash": "exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A"
 }
 ```
 
@@ -460,7 +469,8 @@ Get /v1.0/confirmation-time/9vdoaofs7Cau0tYbOeSmF_8WY7O1i2Wf-alw-yFJRN8
 ### Response body schema
 ```json
 {
-  "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when the block was confirmed on blockchain."
+  "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when the block was
+                       confirmed on blockchain."
 }
 ```
 
@@ -515,12 +525,12 @@ The CAS (content addressable storage) REST API interface aims to abstract the un
 | ---------------- | ---------------------------------------- |
 | 200              | Everything went well.                    |
 | 401              | Unauthenticated or unauthorized request. |
-| 400              | Bad request from the client.             |
-| 500              | Unexpected service side error.           |
+| 400              | Bad client request.                      |
+| 500              | Server error.                            |
 
 
-## Fetch a batch of operations
-Fetches the batch of Sidetree operations identified by the hash.
+## Read content
+Read the content of a given address and return it in the response body as octet-stream.
 
 |                     |      |
 | ------------------- | ---- |
@@ -528,41 +538,21 @@ Fetches the batch of Sidetree operations identified by the hash.
 
 ### Request path
 ```
-GET /<api-version>/<base64url-hash>
+GET /<api-version>/<base64url-sha256-hash>
 ```
 
 ### Request example
 ```
 GET /v1.0/b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA
 ```
+### Response headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/octet-stream``` |
 
-### Response body schema
-```json
-{
-  "operations": "Array of Sidetree operations"
-}
-```
 
-### Response body example
-```json
-{
-  "operations": [
-    {
-      "signature": "kno67RidYQsuFRxCCJE7PtDLOPa-YTdWgZsVE8iSTX8",
-      "delta": { "RFC_6902_JSON_PATCH" },
-      "previousVersionHash": "_n7Df09kKDx8dTulec_dOBQrHGWObqO1eFWDCed5QsY"
-    },
-    {
-      "signature": "AgLqetfyB0pSrXZ34xyxSglfS599_gEOu6iX0xhAoRA",
-      "delta": { "RFC_6902_JSON_PATCH" },
-      "previousVersionHash": "Kmedd1O_7_yej-2h12prNRq0f_jfFAbcaA3JynrjadU"
-    }
-  ]
-}
-```
-
-## Store a batch of operations
-Store a batch of Sidetree operations identified by the hash.
+## Write content
+Write content to CAS.
 
 |                     |      |
 | ------------------- | ---- |
@@ -576,33 +566,17 @@ POST /<api-version>/
 ### Request headers
 | Name                  | Value                  |
 | --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/json``` |
+| ```Content-Type```    | ```application/octet-stream``` |
 
-### Request example
-```
-POST /v1.0/
-```
-```json
-{
-  "operations": [
-    {
-      "signature": "kno67RidYQsuFRxCCJE7PtDLOPa-YTdWgZsVE8iSTX8",
-      "delta": { "RFC_6902_JSON_PATCH" },
-      "previousVersionHash": "_n7Df09kKDx8dTulec_dOBQrHGWObqO1eFWDCed5QsY"
-    },
-    {
-      "signature": "AgLqetfyB0pSrXZ34xyxSglfS599_gEOu6iX0xhAoRA",
-      "delta": { "RFC_6902_JSON_PATCH" },
-      "previousVersionHash": "Kmedd1O_7_yej-2h12prNRq0f_jfFAbcaA3JynrjadU"
-    }
-  ]
-}
-```
+### Response headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
 
 ### Response body schema
 ```json
 {
-  "hash": "Hash of data written to CAS"
+  "hash": "Base64URL encoded SHA256 Hash of data written to CAS"
 }
 ```
 
