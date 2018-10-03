@@ -121,6 +121,8 @@ The _anchor file_ is a JSON document of the following schema:
 
 # Sidetree Entity Operations
 
+> TODO: Entire section pending review and update.
+
 Sidetree Entities are a form of [Decentralized Identifier](https://w3c-ccg.github.io/did-spec/) (DID) that manifest through blockchain-anchoring DID Document objects (and subsequent deltas) that represent the existence and state of entities. A _Sidetree node exposes a REST API using which an external application can create a new DID with an initial DID Document, update the DID Document, lookup (resolve ) the DID Document for a DID, and delete the Document.
 
 ## DID Documents
@@ -143,80 +145,296 @@ The version URL output by the Create operation defines the newly created decentr
 
 A subtlety relating to version URLs and (DIDs in the original proposal) is that they are not _physically_ unique: There could be multiple updates anchored in the blockchain with the same URL. However, this does not affect correctness since the Sidetree protocol ensures that only the first anchored update in the blockchain is valid and invalidates the rest.
 
-## Creation of a Sidetree Entity
+# Sidetree REST API
+This section defines the `v1.0` version of the Sidetree DID REST API.
 
-The input-output signature of the Create operation is the following:
+## Response HTTP status codes
 
-*Create ({InitPatch, RecoveryPatch}, Signature) -> DID URL*
+| HTTP status code | Description                              |
+| ---------------- | ---------------------------------------- |
+| 200              | Everything went well.                    |
+| 401              | Unauthenticated or unauthorized request. |
+| 400              | Bad client request.                      |
+| 500              | Server error.                            |
 
-where,
+## Proof-of-work
+> TODO: Complete proof-of-work description.
 
- - InitPatch: A JSON-encoded array that includes one member: an object
-   with a `delta` property that describes the initial state of a DID
-   Document, in the delta format specified by [RFC
-   6902](http://tools.ietf.org/html/rfc6902).
- - RecoveryPatch: A JSON patch to produce the recovery public key.
- - Signature: A binary blob containing the signature of InitPatch and
-   the signature of RecoveryPatch under the owner’s private key.
+Every Sidetree write request must have a proof-of-work for it to be considered valid. As a result, every write request (e.g. DID create, update, delete, and recover) has an `proofOfWork` optional property with the following schema:
 
-Hash the Sidetree Entity object and embed it in a Merkle Tree with other Sidetree Entity operations. Create a transaction on the blockchain with the Merkle root embedded within it and mark the transaction to indicate it contains a Sidetree. Store the source for the leaves of the Merkle Tree source in IPFS.
+```json
+"proofOfWork": {
+  "algorithm": "Proof-of-work algorithm used.",
+  "lastBlockHash": "The hash of the latest known blockchain block.",
+  "proof": "The proof depending on the algorithm used."
+}
+```
 
-If the operation is successful, it returns a DID URL. In addition, the operation has the side-effect of associating with the DID, the JSON document generated as follows:
+When `proofOfWork` is not given in a write request, the the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
 
- - Generate the JSON document from InitPatch.
- - Embed the emergent DID in the document generated in previous step.
 
- The second step could be optional since the DID specification does not require the DID be embedded in the associated DID document
+## DID and DID Document Creation
+The API to create a Sidetree DID.
 
-  > NOTE: 
-  >  - Because every operation beyond initial creation contains pointers and
-   delta state proofs that link previous operations together, only the
-   latest revision of the object must be retained in the decentralized
-   storage layer.
+### Request path
+```
+POST /<api-version>/
+```
 
-> - An important question is _when does_ the above call returns. A simple
-   implementation waits until the operation data is committed to the
-   blockchain. If Bitcoin is the underlying blockchain, this approach
-   would imply a latency of at least one bitcoin block (around 10
-   minutes), possibly more if want to minimize the probability of a
-   block becoming invalid due to a longer chain elsewhere. Proof of
-   Entity ownership plus a subset of uses should be possible (because
-   regardless of block inclusion, the owner is verifiable via included
-   key references), but the Entity remains in a pending state until it
-   is confirmed in a block.
-   > - The state-modifying operations have an input-output signature of the form:
-Operation: ({Delta Patch and other params}, Signature} -> Version URL
-Where the Signature covers some serialization of params within the parenthesis. This suggests having a single operation and moving the operation (Create, Update, Delete) inside the parenthesis as one of the params, but for this writeup we will keep the operations as distinct for clarity.
+### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
 
-## Updating a Sidetree Entity
+### Request body schema
+```json
+{
+  "didDocument": "Base64URL encoded initial DID Document of the DID.",
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+    public-key specified by the signingKeyId.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+    or reject the request."
+}
+```
 
-The input-output signature of the update operation is the following:
-  
-*Update ({UpdatePatch, VersionURL}, Signature) -> VersionURL*
-where,
-- UpdatePatch: JSON patch specifying the update,  encoded in the format specified by [RFC 6902](http://tools.ietf.org/html/rfc6902)
-- VersionURL: Version of the DID document to apply the patch.
-- Signature: Signature with the owner key covering the above two parameters.
+In Sidetree implementation, certain properties or portion of which in teh initial DID Document will be ignored:
+* `id` - Ignored.
+* `publicKey\*\id` - DID portion is ignored.
+* `publicKey\*\owner` - Ignored unless resolvable.
 
-A proof property to the JSON patch object is also added with the value being the Merkle Proof that validates the last operation and its inclusion in the blockchain.
+### Initial DID document example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:ignored",
+  "publicKey": [{
+    "id": "did:sidetree:didPortionIgnored#key-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:ignoredUnlessResolvable",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:ignored#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
+  }]
+}
+```
 
-If the operation is successful, it applies the provided JSON patch to the version of the DID document identified by the input version URL and returns the version URL of the resulting DID Document. The operation fails if either of the following conditions hold:
+### Request example
+```
+POST /v1.0/
+```
+```json
+{
+  "didDocument": "...",
+  "signature": "...",
+  "proofOfWork": { ... }
+}
 
-1)  the version URL provided as input is not the latest version associated with the DID.
-2)  The UpdatePatch attempts to change the recovery public key of the latest version associated with the DID.
+```
 
-The method signature does not explicitly specify the DID which is updated. But this is not required since the input VersionURL parameter unambiguously identifies the DID: each update identifies the previous version, and therefore indirectly the first version, which is the DID.
-> NOTE:
-> - Updates to a DID Document might be concurrently processed by different Sidetree nodes, but the Sidetree protocol serializes these updates using the underlying blockchain consensus mechanism. Such serialization might possibly invalidate some conflicting updates.
-> - An alternative signature could be passing the DID itself instead of Version URL as a parameter, which explicitly identifies the DID but not the version, with the understanding that the patch will be applied to the latest version. This has two limitations:
-> - It provides lesser control to an application than the proposed one. Consider the following scenario: an application sends an update to a Sidetree node; it times out and sends the same update to a different Sidetree node which applies the update; the first Sidetree node comes back alive and applies the update (again) on the updated document implying that the same update is applied twice. With the proposed signature, the system has information to decline the latter update.
-It allows the system to prove to an external verifier about the existence of a version of a DID document that ultimately relies only on the owner signatures.
+### Response body schema
+The response body is the DID Document of the DID created.
 
-## Resolving a Sidetree Entity
+### Response body example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:realDid",
+  "publicKey": [{
+    "id": "did:sidetree:realDid#key-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:realDid",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:realDid#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
+  }]
+}
+```
 
-The input-output signature of a Resolve operation is *Resolve(DID)->DIDDoc*. The call takes a DID as input and returns the latest version of the associated document as output. Specific error codes distinguish the case where the DID was never created (invalid DID) from the case where the DID was created but subsequently deleted.
 
-## Recover a Sidetree Entity
+## DID Document resolution
+The API to fetch the latest DID Document of the given DID.
+
+### Request path
+```
+GET /<api-version>/<did>
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+GET /v1.0/did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A
+```
+
+### Response body schema
+The response body is the latest DID Document.
+
+### Response body example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:123456789abcdefghi",
+  "publicKey": [{
+    "id": "did:sidetree:123456789abcdefghi#key-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:123456789abcdefghi",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:123456789abcdefghi#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
+  }]
+}
+```
+
+
+## Updating a DID Document
+The API to update a DID Document.
+
+### Request path
+```
+PUT /<api-version>/
+```
+
+### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+### Request body schema
+```json
+{
+  "signingKeyId": "ID of the key used to sign the update payload",
+  "updatePayload": "Base64URL codeded update payload JSON object define by the schema below.",
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+    public-key specified by the signingKeyId.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+    or reject the request."
+}
+```
+
+### Update payload schema
+```json
+{
+  "did": "The DID to be updated",
+  "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
+  "patch": "An RFC 6902 JSON patch to the current DID Document",
+}
+```
+
+### Update payload schema example
+```json
+{
+  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "changeVersionNumber": 12,
+  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "patch": {
+    "op": "remove",
+    "path": "/publicKey/0"
+  }
+}
+```
+
+### Request example
+```
+PUT /v1.0/
+```
+```json
+{
+  "signingKeyId": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A#key-1",
+  "updatePayload": "...",
+  "signature": "...",
+  "proofOfWork": { ... }
+}
+```
+
+### Response body schema
+The response body is the DID Document of the DID after the update.
+
+
+## DID Deletion
+The API to delete a given DID.
+
+### Request path
+```
+DELETE /<api-version>/
+```
+
+### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+### Request body schema
+```json
+{
+  "signingKeyId": "ID of the key used to sign the update payload",
+  "deletePayload": "Base64URL codeded delete payload JSON object define by the schema below.",
+  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+    public-key specified by the signingKeyId.",
+  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+    or reject the request."
+}
+```
+
+### Delete payload schema
+```json
+{
+  "did": "The DID to be deleted",
+  "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch."
+}
+```
+
+### Delete payload example
+```json
+{
+  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "changeVersionNumber": 13,
+  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+}
+```
+
+### Request example
+```
+DELETE /v1.0/
+```
+```json
+{
+  "signingKeyId": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A#key-1",
+  "updatePayload": "...",
+  "signature": "...",
+  "proofOfWork": { ... }
+}
+```
+
+## DID Recovery
+
+> TODO: Content to be revisited and updated.
 
 The signature of the Recover operation is the following:
 
@@ -234,46 +452,7 @@ Note that, the method signature does not explicitly specify the DID which is rec
 > - The cryptographic mechanism here is to prove knowledge of the recovery secret key corresponding to the recovery public key associated with the latest version of the DID, without revealing the secret key. This is achieved by sending Signature on the RecoveryPatch. Note that the recovery patch must contain a fresh recovery public key. It is crucial to not release the recovery secret key, or to sign any predetermined message to prove its knowledge, a i.e., to have a non-replayable recovery mechanism. Otherwise, the system is exposed to man-in-the-middle vulnerability, where a malicious party can replace the new recovery public key in the recovery patch with her his own public key.
 > - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.
 
-## Proofing a Sidetree Node
 
-The signature of the Prove operation is the following:
-
-*Prove (VersionURL) -> ProofObject*
-
-This call generates a proof object for a particular version of a DID document. The proof object contains the following information:
-
- 1. The sequence of all signed (patch, previous version) pairs (the
-    parameters of the update call) followed by the initial patch that
-    provides the signed lineage of version of the DID document
-    referenced by the input version URL. The signature is verifiable by
-    the public key embedded in the initial patch.
-
-2. The sequence of Merkle proofs and relevant bitcoin block (references) that establish that these patches are embedded in the blockchain.
-
-One subtlety relating to the second component of the proof object is that a malicious Sidetree node can install an invalid operation in the underlying blockchain and generate a proof object for that operation. Other Sidetree nodes would reject the operation but the verifier cannot determine the invalidity without scanning the entire range of blocks referenced in the proof object.
-
-## Version Navigation
-
-They all have signatures *(VersionURL->VersionURL)*  and can be used to navigate the sequence of versions of a DID Document. Examples:
-
-- First(verURL) returns the first URL, i.e., the DID of the document identified by verURL.
-- Last(did) returns the version URL of the current (latest) version of the DID Document corresponding to did.
-
-
-## Lookup
-
-The lookup operation has the signature:
-
-*Lookup (VersionURL) -> DIDDoc*
-
-It returns the DID Document identified by a specific (possibly historical) version.  The implementation of Resolve(did) operation is then simply Lookup(Last(did)).
-
-
-# IPFS Interfacing
-
-IPFS is a global peer-to-peer Merkle DAG _content addressable_ file system. The Sidetree Entity protocol discussed so far uses it as a black box to store Sidetree operations. Any stored information can be retrieved from the IPFS network using the hash of the content. IPFS running node exposes HTTP REST API ([https://ipfs.io/docs/api/](https://ipfs.io/docs/api/)) to interact with the underlying IPFS system.
-
-Microsoft will have to run its own IPFS nodes to ensure sufficient replication of Sidetree blocks stored on IPFS. One potential solution is to use the pinning feature provided by IPFS, but how do ensure sufficient replication without requiring Sidetree nodes to interact with other nodes is an open question for investigation.
 
 # Security and Functionality Guarantees
 
