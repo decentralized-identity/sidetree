@@ -24,6 +24,22 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | Sidetree node | A logical server executing Sidetree protocol rules                    |
 | Transaction   | A blockchain transaction representing a batch of Sidetree operations. |
 
+## Format and Encoding
+* JSON is used as the data encapsulation format.
+* Base64URL encoding is use whenever encoding is needed for binary data or cryptographic consistency.
+* [_Multihash_] is used to represent hashes.
+
+# Sidetree Protocol Parameters
+The following lists the parameters of each version of the Sidetree protocol.
+
+## v1.0
+| Parameter              | Value  |
+|------------------------|--------|
+| Hash algorithm         | SHA256 |
+| Maximum batch size     | 10000  |
+| Maximum operation size | 2 KB   |
+
+
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
 
@@ -34,7 +50,7 @@ Since Sidetree batches many operations using a Merkle tree, each operation can b
 {
   "receipt": [
     {
-      "hash": "The base64url encoded value of a Merkle tree node hash.",
+      "hash": "base64url encoded value of a Merkle tree node hash.",
       "side": "Must be 'left' or 'right', denotes the position of this hash."
     },
     ...
@@ -114,8 +130,8 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFile": "The Base64URL encoded SHA256 hash of the batch file."
-  "merkleRoot": "The Base64URL encoded root hash of the Merkle tree contructed using the batch file."
+  "batchFile": "Base64URL encoded SHA256 hash of the batch file."
+  "merkleRoot": "Base64URL encoded root hash of the Merkle tree contructed using the batch file."
 }
 ```
 
@@ -189,8 +205,9 @@ POST /<api-version>/
 ### Request body schema
 ```json
 {
+  "signingKeyId": "ID of the key used to sign the initial didDocument.",
   "didDocument": "Base64URL encoded initial DID Document of the DID.",
-  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+  "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -200,7 +217,6 @@ POST /<api-version>/
 In Sidetree implementation, certain properties or portion of which in teh initial DID Document will be ignored:
 * `id` - Ignored.
 * `publicKey\*\id` - DID portion is ignored.
-* `publicKey\*\owner` - Ignored unless resolvable.
 
 ### Initial DID document example
 ```json
@@ -238,8 +254,13 @@ POST /v1.0/
 
 ```
 
+### Response headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
 ### Response body schema
-The response body is the DID Document of the DID created.
+The response body is the constructed DID Document of the DID created.
 
 ### Response body example
 ```json
@@ -316,7 +337,7 @@ The API to update a DID Document.
 
 ### Request path
 ```
-PUT /<api-version>/
+POST /<api-version>/
 ```
 
 ### Request headers
@@ -328,8 +349,8 @@ PUT /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the update payload",
-  "updatePayload": "Base64URL codeded update payload JSON object define by the schema below.",
-  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+  "updatePayload": "Base64URL encoded update payload JSON object define by the schema below.",
+  "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -341,7 +362,7 @@ PUT /<api-version>/
 {
   "did": "The DID to be updated",
   "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
-  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch.",
+  "perviousOperationHash": "The hash of the previous operation made to the DID document.",
   "patch": "An RFC 6902 JSON patch to the current DID Document",
 }
 ```
@@ -351,7 +372,7 @@ PUT /<api-version>/
 {
   "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
   "changeVersionNumber": 12,
-  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "perviousOperationHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
   "patch": {
     "op": "remove",
     "path": "/publicKey/0"
@@ -361,7 +382,7 @@ PUT /<api-version>/
 
 ### Request example
 ```
-PUT /v1.0/
+POST /v1.0/
 ```
 ```json
 {
@@ -381,7 +402,7 @@ The API to delete a given DID.
 
 ### Request path
 ```
-DELETE /<api-version>/
+POST /<api-version>/
 ```
 
 ### Request headers
@@ -393,8 +414,8 @@ DELETE /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the update payload",
-  "deletePayload": "Base64URL codeded delete payload JSON object define by the schema below.",
-  "signature": "The Base64URL encoded signature of the payload signed by the private-key corresponding to the
+  "deletePayload": "Base64URL encoded delete payload JSON object define by the schema below.",
+  "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -406,7 +427,7 @@ DELETE /<api-version>/
 {
   "did": "The DID to be deleted",
   "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
-  "perviousChangeHash": "The hash of the previous RFC 6902 JSON Patch."
+  "perviousOperationHash": "The hash of the previous operation made to the DID document."
 }
 ```
 
@@ -415,13 +436,13 @@ DELETE /<api-version>/
 {
   "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
   "changeVersionNumber": 13,
-  "perviousChangeHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "perviousOperationHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
 }
 ```
 
 ### Request example
 ```
-DELETE /v1.0/
+POST /v1.0/
 ```
 ```json
 {

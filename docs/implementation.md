@@ -224,7 +224,6 @@ async function processUpdate(entity, leafHash, rootHash){
 The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
 All hashes used in the API are Base64URL encoded SHA256 hash.
->Note: Consider using "multihash" format defined by the "multiformats" initiative.
 
 >TODO: Decide on signature format.
 >TODO: Decide on compression.
