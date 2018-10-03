@@ -121,7 +121,7 @@ The _anchor file_ is a JSON document of the following schema:
 
 # Sidetree Entity Operations
 
-Sidetree Entities are a form of [Decentralized Identifier](https://w3c-ccg.github.io/did-spec/) (DID) that manifest through blockchain-anchoring DID Document objects (and subsequent deltas) that represent the existence and state of entities. A Sidetree compute node exposes a REST API using which an external application can create a new DID with an initial DID Document, update the DID Document, lookup (resolve ) the DID Document for a DID, and delete the Document.
+Sidetree Entities are a form of [Decentralized Identifier](https://w3c-ccg.github.io/did-spec/) (DID) that manifest through blockchain-anchoring DID Document objects (and subsequent deltas) that represent the existence and state of entities. A _Sidetree node exposes a REST API using which an external application can create a new DID with an initial DID Document, update the DID Document, lookup (resolve ) the DID Document for a DID, and delete the Document.
 
 ## DID Documents
 
@@ -268,13 +268,13 @@ The lookup operation has the signature:
 
 It returns the DID Document identified by a specific (possibly historical) version.  The implementation of Resolve(did) operation is then simply Lookup(Last(did)).
 
-# Sidetree Compute Node
+# Sidetree Node
 
-This section focuses on the implementation details of a Sidetree compute node (SCN). We structure the SCN’s implementation with three modular components (with their high-level functionality discussed below: (1) Rooter, (2) Cache-builder, and (3) Resolver. Together they implement the Sidetree Entity protocol with the APIs discussed in the prior section.
+This section focuses on the implementation details of a Sidetree node. We structure the implementation with three modular components (with their high-level functionality discussed below: (1) Rooter, (2) Cache-builder, and (3) Resolver. Together they implement the Sidetree protocol with the APIs discussed in the prior section.
 
 ## Rooter
 
-A rooter is a process run by a SCN that handles Create, Update, and Delete operations and anchors them on a blockchain. The pseudo code below assumes that it can interface with IPFS (via put operation) and a blockchain (via post operation). The pseudocode currently doesn’t track responses to CUD operations. We need to specify a global state of a SCN and then have each component manipulate that state.
+The rooter handles Create, Update, and Delete operations and anchors them on a blockchain. The pseudo code below assumes that it can interface with IPFS (via put operation) and a blockchain (via post operation). The pseudocode currently doesn’t track responses to CRUD operations.
 
 ``` javascript
 while(true){
@@ -482,17 +482,17 @@ A resolver uses the cache built by Cache-Builder to service Resolve and Prove (a
 
 IPFS is a global peer-to-peer Merkle DAG _content addressable_ file system. The Sidetree Entity protocol discussed so far uses it as a black box to store Sidetree operations. Any stored information can be retrieved from the IPFS network using the hash of the content. IPFS running node exposes HTTP REST API ([https://ipfs.io/docs/api/](https://ipfs.io/docs/api/)) to interact with the underlying IPFS system.
 
-Microsoft will have to run its own IPFS nodes to ensure sufficient replication of Sidetree blocks stored on IPFS. One potential solution is to use the pinning feature provided by IPFS, but how do ensure sufficient replication without requiring Sidetree compute nodes to interact with other nodes is an open question for investigation.
+Microsoft will have to run its own IPFS nodes to ensure sufficient replication of Sidetree blocks stored on IPFS. One potential solution is to use the pinning feature provided by IPFS, but how do ensure sufficient replication without requiring Sidetree nodes to interact with other nodes is an open question for investigation.
 
 # Security and Functionality Guarantees
 
 Assuming the underlying blockchain can be trusted, an implementation provides a guarantee that all _honest_ Sidetree nodes that have a consistent "view'' of the world, independent of any malicious nodes in the network. More formally, if the following assumptions hold:
 
-1. The public blockchain used by Sidetree compute nodes is fork-free.
+1. The public blockchain used by Sidetree nodes is fork-free.
 
 2. Cache-Builder is deterministic in terms of computing a cache given an ordered sequence of Sidetree transactions.
 
-We claim that every pair of _honest_ Sidetree compute nodes (i.e., those that follow their prescribed protocol) compute caches that are _consistent_ with each other—regardless of actions of any number of malicious Sidetree compute nodes. By a consistent cache, we mean honest Sidetree nodes know about the same set of DIDs and associate the same DID document and version history for each DID, implying that the output of any *Resolve(did)* operation would be the same when processed by any honest node.
+We claim that every pair of _honest_ Sidetree nodes (i.e., those that follow their prescribed protocol) compute caches that are _consistent_ with each other—regardless of actions of any number of malicious Sidetree nodes. By a consistent cache, we mean honest Sidetree nodes know about the same set of DIDs and associate the same DID document and version history for each DID, implying that the output of any *Resolve(did)* operation would be the same when processed by any honest node.
 
 There are a few subtleties with the above claim (as we discuss below): (a) blockchain tail stability (b) processing lag.
 
