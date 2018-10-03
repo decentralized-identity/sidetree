@@ -13,16 +13,46 @@ Architecturally, a Sidetree network is an _overlay_ network over a blockchain wi
 
 > TODO: Merkle tree is mentioned all of a sudden in the overview, but yet no mentioning of critical "batching" concept.
 
-# Sidetree Operation Batching
-Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most often) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of smaller balanced Merkle trees is formed, and the smallest balanced subtree on the right is merged with the adjacent balanced subtree on the left to recursively form the final Merkle tree.
+## Terminology
 
-The following illustrates the calculation of the Merkle root hash with an array of 6 operations. The a smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+| Term        | Description                                      |
+|-------------|--------------------------------------------------|
+| Anchor file | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
+| Batch file  | The file containing all the operation data batched together.          |
+| Operation   | A change to the state of a DID.                                       |
+| Transaction | A blockchain transaction representing a batch of Sidetree operations. |
+
+> TODO: All terms listed in this section must be mentioned and described in Overview section.
+
+# Sidetree Operation Batching
+Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
+
+## Sidetree Operation Receipts
+Since Sidetree batches many operations using a Merkle tree, each operation can be given a concise receipt such that it can be cryptographically proven to be part of the batch. Sidetree uses the following JSON schema to represent a receipt:
+
+```json
+{
+  "receipt": [
+    {
+      "hash": "The base64url encoded value of a Merkle tree node hash.",
+      "side": "Must be 'left' or 'right', denotes the position of this hash."
+    },
+    ...
+  ]
+}
 ```
-Where: [1] -> Denotes the binary buffer of the 1st element in the array of operation data.
-        |  -> Denotes the logical relationship between an operation data and its hash, it need not be part of the tree structure.
-       H() -> Denotes a hash function that returns a binary buffer representing the hash.
-       A+B -> Denotes the concatenation of two binary buffers A and B.
-```
+
+Where the first entry in ```receipt``` is the sibling of the operation hash in the Merkle tree; followed by the uncle, then the great uncle and so on.
+
+> NOTE: This scheme does __not__ include the root hash as the last entry of the receipt.
+
+> NOTE: Receipt array will be empty thus is optional if no batching occurs (i.e. a tree of one operation).
+
+## Sidetree Operation Batching Examples
+The following illustrates the construction of the Merkle tree with an array of 6 operations:
+* The smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+* Receipt for [0] will be [B, H], and receipt for [5] will be [E, J].
+
 ```
                           ROOT=H(K+J)
                           /          \
@@ -37,10 +67,16 @@ Where: [1] -> Denotes the binary buffer of the 1st element in the array of opera
     |         |         |         |         |         |
     |         |         |         |         |         |
 [   0    ,    1    ,    2    ,    3    ,    4    ,    5   ]
+
+Where: [1] -> Denotes the binary buffer of the 1st element in the array of operation data.
+        |  -> Denotes the logical relationship between an operation data and its hash.
+       H() -> Denotes a hash function that returns a binary buffer representing the hash.
+       A+B -> Denotes the concatenation of two binary buffers A and B.
 ```
 
-
-The following illustrates the calculation of the Merkle root hash with an array of 7 operations. The smallest balanced subtree G of 1 leaf [6] is merged with the adjacent balanced subtree J of 2 leaves [4, 5] to form parent L, which in turn is merged with the adjacent balanced subtree K of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+The following illustrates the construction of the Merkle tree with an array of 7 operations:
+* The smallest balanced subtree G of 1 leaf [6] is merged with the adjacent balanced subtree J of 2 leaves [4, 5] to form parent L, which in turn is merged with the adjacent balanced subtree K of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+* Receipt for [0] will be [B, I, L]; receipt for [4] will be [F, G, K]; receipt for [6] will be [J, K].
 ```
                              ROOT=H(K+L)
                           /               \
@@ -57,6 +93,31 @@ The following illustrates the calculation of the Merkle root hash with an array 
 [   0    ,    1    ,    2    ,    3    ,    4    ,    5    ,    6   ]
 ```
 
+## Sidetree CAS-layer Files
+For every batch of Sidetree operations created, there are two files that are created and stored in the CAS layer: 
+1. Batch file - The file containing the actual change data of all the operations batched together.
+2. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the metadata of the batch of Sidetree operations, this includes the reference to the corresponding _batch file_.
+
+### Batch File Schema
+The _batch file_ is a ZIP compressed JSON document of the following schema:
+```json
+{
+  "operations": [
+    "Base64URL encoded operation",
+    "Base64URL encoded operation",
+    ...
+  ]
+}
+```
+
+### Anchor File Schema
+The _anchor file_ is a JSON document of the following schema:
+```json
+{
+  "batchFile": "The Base64URL encoded SHA256 hash of the batch file."
+  "merkleRoot": "The Base64URL encoded root hash of the Merkle tree contructed using the batch file."
+}
+```
 
 # Sidetree Entity Operations
 
