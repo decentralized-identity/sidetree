@@ -1,28 +1,28 @@
 ﻿**Sidetree Protocol Specification**
 ===================================
 
-Using blockchains for anchoring and tracking unique, non-transferable, digital entities is a useful primitive, but the current strategies for doing so suffer from severely limited transactional performance constraints. Sidetree is a layer-2 protocol for anchoring and tracking _decentralized identities (DIDs)_ across a blockchain. The central design idea involves _batching_ multiple Sidetree DID operations into a single transaction over the blockchain. This allows Sidetree to inherit the immutability and verifiability guarantees of blockchain without being limited by its transaction rate.
+This document describes the Sidetree protocol, a specification of the a _DID method_ described in the [_DID specification_](https://w3c-ccg.github.io/did-spec/). Briefly, a _DID method_ is a mechanism for creating unique identifiers and managing metadata (called *DID Documents*) associated with these identifiers without the need for a centralized authority.
 
 # Overview
 
-This document provides the protocol specification of the Sidetree *DID method*. A comprehensive introduction to DIDs is beyond the scope of this document; the specification of DIDs can be found [here](https://w3c-ccg.github.io/did-spec/) and a more accessible primer [here](https://github.com/WebOfTrustInfo/rebooting-the-web-of-trust-fall2017/blob/master/topics-and-advance-readings/did-primer.md). Briefly, a DID infrastructure is a mechanism for creating unique identifiers and managing metadata (called *DID Documents*) with these identifiers without the need for a centralized authority. The DID specification delegates to *DID methods* (such as Sidetree), the details how DIDs are created and how the associated DID documents are managed.
+Using blockchains for anchoring and tracking unique, non-transferable, digital entities is a useful primitive, but the current strategies for doing so suffer from severely limited transactional performance constraints. Sidetree is a layer-2 protocol for anchoring and tracking _[DID documents](https://w3c-ccg.github.io/did-spec/)_ across a blockchain. The central design idea involves batching multiple _DID document_ operations into a single blockchain transaction. This allows Sidetree to inherit the immutability and verifiability guarantees of blockchain without being limited by its transaction rate.
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is an _overlay_ network over a blockchain with one or more _Sidetree nodes_ as illustrated by the above figure. Each Sidetree node provides service endpoints to perform DID CRUD (Create, Resolve, Update, and Delete) operations. A Sidetree node embeds (anchors) information about the operations that it processes in the underlying blockchain. The blockchain consensus mechanism helps serialize Sidetree operations processed by different nodes and provide a consistent view of the state of all DIDs to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol embeds only a concise cryptographic hash of the operations in the blockchain. The details of the operations are stored in a _distributed content-addressable storage (DCAS or CAS)_. Both the Sidetree's full Merkle Tree and source data for its leaves are stored in IPFS that anyone can run to provide redundancy of Sidetree Entity source data. Different Sidetree nodes therefore communicate with one another through the blockchain and IPFS.
-
-> TODO: Merkle tree is mentioned all of a sudden in the overview, but yet no mentioning of critical "batching" concept.
+Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations using an unbalanced Merkle tree and embeds the hash of a file (_anchor file_) containing the Merkle root hash in the blockchain. The actual data of all batched operations are stored as one single file (_batch file_) in a _distributed content-addressable storage (DCAS or CAS)_. Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
 ## Terminology
 
-| Term        | Description                                      |
-|-------------|--------------------------------------------------|
-| Anchor file | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file  | The file containing all the operation data batched together.          |
-| Operation   | A change to the state of a DID.                                       |
-| Transaction | A blockchain transaction representing a batch of Sidetree operations. |
-
-> TODO: All terms listed in this section must be mentioned and described in Overview section.
+| Term          | Description                                                           |
+|---------------|-----------------------------------------------------------------------|
+| Anchor file   | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
+| Batch file    | The file containing all the operation data batched together.          |
+| CAS           | Same as DCAS.                                                         |
+| DCAS          | Distributed content-addressable storage.                              |
+| DID document  | A document as described by the [DID specification](https://w3c-ccg.github.io/did-spec/), containing information about a DID such as the public key of the DID owner and service endpoints used.
+| Operation     | A change to a DID document.                                           |
+| Sidetree node | A logical server executing Sidetree protocol rules                    |
+| Transaction   | A blockchain transaction representing a batch of Sidetree operations. |
 
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
@@ -125,7 +125,9 @@ Sidetree Entities are a form of [Decentralized Identifier](https://w3c-ccg.githu
 
 ## DID Documents
 
-A DID Document contains information (metadata) about a DID that includes the public key of the DID owner and other attributes and claims. As per the [DID specification](https://w3c-ccg.github.io/did-spec/), a DID document is a JSON object with format specified in [JSON-LD](https://www.w3.org/TR/json-ld/). An update to a DID document is specified as a [JSON patch](https://tools.ietf.org/html/rfc6902) and is authenticated with a signature using the DID owner's private key. The sequence of updates to a DID document produces a sequence of _versions_ of the document. Each update to an entity references the previous update (creation, update, recovery, etc.) forming a chain of change history. Ownership of an Entity is linked to possession of keys specified within the Entity object itself.
+> TODO: to be updated.
+
+ An update to a DID document is specified as a [JSON patch](https://tools.ietf.org/html/rfc6902) and is authenticated with a signature using the DID owner's private key. The sequence of updates to a DID document produces a sequence of _versions_ of the document. Each update to an entity references the previous update (creation, update, recovery, etc.) forming a chain of change history. Ownership of an Entity is linked to possession of keys specified within the Entity object itself.
 
 System diagram showing op sig links that form a Sidetree Entity Trail:
 > TODO: Need to update this outdated diagram: 1. each operation only references the previous. 2. Only file hash is anchored on blockchain.
