@@ -21,7 +21,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | DCAS          | Distributed content-addressable storage.                              |
 | DID document  | A document as described by the [DID specification](https://w3c-ccg.github.io/did-spec/), containing information about a DID such as the public key of the DID owner and service endpoints used.
 | Operation     | A change to a DID document.                                           |
-| Sidetree node | A logical server executing Sidetree protocol rules                    |
+| Sidetree node | A logical server executing Sidetree protocol rules.                   |
 | Transaction   | A blockchain transaction representing a batch of Sidetree operations. |
 
 ## Format and Encoding
@@ -130,7 +130,7 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFile": "Base64URL encoded SHA256 hash of the batch file."
+  "batchFile": "Base64URL encoded hash of the batch file.",
   "merkleRoot": "Base64URL encoded root hash of the Merkle tree contructed using the batch file."
 }
 ```
@@ -155,7 +155,7 @@ System diagram showing op sig links that form a Sidetree Entity Trail:
 
 ## DIDs and Document Version URLs
 
-All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:SHA256Hash** where *SHA256Hash* represents a hex encoded SHA256 hash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#creation-of-a-sidetree-entity).
+All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:Hash** where *Hash* represents a Base64URL encoded multihash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#creation-of-a-sidetree-entity).
 
 The version URL output by the Create operation defines the newly created decentralized id (DID). In other words, a DID is simply the URL of the first version of its document.
 
@@ -190,7 +190,7 @@ When `proofOfWork` is not given in a write request, the the Sidetree node must p
 
 
 ## DID and DID Document Creation
-The API to create a Sidetree DID.
+The API to create a Sidetree DID and its initial DID Document.
 
 ### Request path
 ```
@@ -206,7 +206,7 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the initial didDocument.",
-  "didDocument": "Base64URL encoded initial DID Document of the DID.",
+  "createPayload": "Base64URL encoded initial DID Document of the DID.",
   "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
