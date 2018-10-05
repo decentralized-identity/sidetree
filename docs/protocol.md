@@ -361,7 +361,7 @@ POST /<api-version>/
 ```json
 {
   "did": "The DID to be updated",
-  "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+  "operationNumber": "The number incremented from the last change version number. 1 if first change.",
   "perviousOperationHash": "The hash of the previous operation made to the DID document.",
   "patch": "An RFC 6902 JSON patch to the current DID Document",
 }
@@ -371,7 +371,7 @@ POST /<api-version>/
 ```json
 {
   "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
-  "changeVersionNumber": 12,
+  "operationNumber": 12,
   "perviousOperationHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
   "patch": {
     "op": "remove",
@@ -426,7 +426,7 @@ POST /<api-version>/
 ```json
 {
   "did": "The DID to be deleted",
-  "changeVersionNumber": "The number incremented from the last change version number. 1 if first change.",
+  "operationNumber": "The number incremented from the last change version number. 1 if first change.",
   "perviousOperationHash": "The hash of the previous operation made to the DID document."
 }
 ```
@@ -435,7 +435,7 @@ POST /<api-version>/
 ```json
 {
   "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
-  "changeVersionNumber": 13,
+  "operationNumber": 13,
   "perviousOperationHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
 }
 ```
@@ -518,3 +518,9 @@ A very basic idea is to simply limit the depth of a protocol-adherent sidetree. 
 Another strategy could be enforcing a protocol requirement that hashes in each transaction and/or leaves be required to show a protocol-specified or algorithmically established proof-of-work for nodes to recognize the Sidetree as a valid submission.
 
 By requiring these elements in a Sidetree transaction to have N level of leading 0s, it may be possible to degrade the ability of bad actors to effectively spam the system with useless Sidetrees that contain a massive numbers of ops. The user-level outcome would be that someone using the system to do an update of their human identity's DID would hash the update object with an included nonce on their local device until it satisfied the requisite work requirement, then have it included in a Sidetree. Nodes would discard any Sidetrees that do not meet the require work level.
+
+# Q&A
+* Why have different payload name for each type of write operations?
+
+  Each write operation type have different payload schema.
+
