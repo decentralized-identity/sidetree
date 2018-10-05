@@ -3,5 +3,5 @@
   "casNodeUri": "https://127.0.0.1:3001",
   "blockchainNodeUri": "https://127.0.0.1:3002",
 
-  "batchingIntervalInSeconds": 5
+  "batchIntervalInSeconds": 5
 }
