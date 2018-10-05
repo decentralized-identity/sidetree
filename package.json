@@ -6,6 +6,7 @@
   "license": "Apache-2.0",
   "main": "dist/src/index.js",
   "dependencies": {
+    "@decentralized-identity/did-common-typescript": "^0.1.1",
     "double-ended-queue": "^2.1.0-0",
     "http-status": "^1.2.0",
     "koa": "^2.3.0",
