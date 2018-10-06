@@ -28,6 +28,7 @@
     "jasmine-reporters": "^2.3.2",
     "jasmine-spec-reporter": "^4.2.1",
     "jasmine-ts": "^0.2.1",
+    "nyc": "^13.0.1",
     "tslint": "^5.10.0",
     "tslint-config-standard": "^8.0.1",
     "typescript": "^2.9.1"
@@ -35,8 +36,22 @@
   "scripts": {
     "precommit": "npm run lint",
     "build": "tsc && copyfiles src/*.json dist",
-    "test": "jasmine-ts --config=./tests/jasmine.json",
+    "test": "nyc jasmine-ts --config=./tests/jasmine.json",
     "lint": "tslint --fix --project .",
     "start": "node dist/src/index.js"
+  },
+  "nyc": {
+    "all": true,
+    "extension": [
+      ".ts"
+    ],
+    "include": [
+      "src/**"
+    ],
+    "reporter": [
+      "text",
+      "cobertura",
+      "html"
+    ]
   }
 }
