@@ -36,17 +36,18 @@
   "scripts": {
     "precommit": "npm run lint",
     "build": "tsc && copyfiles src/*.json dist",
-    "test": "nyc jasmine-ts --config=./tests/jasmine.json",
+    "tests": "jasmine-ts --config=./tests/jasmine.json",
+    "cc": "npm run build && nyc jasmine --config=./tests/jasmine-cc.json",
     "lint": "tslint --fix --project .",
     "start": "node dist/src/index.js"
   },
   "nyc": {
     "all": true,
     "extension": [
-      ".ts"
+      ".js"
     ],
     "include": [
-      "src/**"
+      "dist/src/**"
     ],
     "reporter": [
       "text",
