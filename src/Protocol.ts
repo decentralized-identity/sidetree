@@ -5,8 +5,8 @@
  * TODO: Implement versioning support.
  */
 export default class Protocol {
-  /** Hash algorithm */
-  public static hashAlgorithm: number = protocol['1.0']['hashAlgorithm'];
+  /** Hash algorithm in Multihash code in DEC (not in HEX). */
+  public static hashAlgorithmInMultihashCode: number = protocol['1.0']['hashAlgorithmInMultihashCode'];
   /** Maximum operations per batch. */
   public static maxOperationsPerBatch: number = protocol['1.0']['maxOperationsPerBatch'];
   /** Maximum size of an operation in bytes. */
