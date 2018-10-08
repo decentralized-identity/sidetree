@@ -1,6 +1,6 @@
 {
   "1.0": {
-    "hashAlgorithm": "SHA256",
+    "hashAlgorithmInMultihashCode": 18,
     "maxOperationByteSize": 2000,
     "maxOperationsPerBatch": 10000
   }
