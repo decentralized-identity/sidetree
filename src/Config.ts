@@ -20,10 +20,10 @@ export enum ConfigKey {
 
 /**
  * A map to look up the environment variable name given a config key.
- * Only required to add a new key-value mapping if the config value is a secret.
+ * Only add a new key-value mapping if the config value is a secret.
  */
-const configKeyToEnvironmentVariableNameMap: { [configKey: string]: string } = {};
-configKeyToEnvironmentVariableNameMap[ConfigKey.Port] = 'PORT';
+const secretConfigKeyToEnvironmentVariableNameMap: { [configKey: string]: string } = {};
+secretConfigKeyToEnvironmentVariableNameMap['secretConfigKey'] = 'SECRET_CONFIG_KEY'; // TODO: Remove this example once maps is used.
 
 /**
  * Gets the value of the given config key.
@@ -34,7 +34,7 @@ configKeyToEnvironmentVariableNameMap[ConfigKey.Port] = 'PORT';
  * the secret value will be read from the config file.
  */
 function getValue (configKey: ConfigKey): string {
-  const environmentVariableName = configKeyToEnvironmentVariableNameMap[configKey];
+  const environmentVariableName = secretConfigKeyToEnvironmentVariableNameMap[configKey];
 
   if (environmentVariableName) {
     const configValue = process.env[environmentVariableName];
@@ -45,7 +45,7 @@ function getValue (configKey: ConfigKey): string {
       if (process.env.DEV_MODE) {
         return configFile[configKey];
       } else {
-        throw new Error(`No config value set for environment variable: ${environmentVariableName}.`);
+        throw new Error(`Environment variable: ${environmentVariableName} not found. Set DEV_MODE environement variable to 1 if this is a dev machine.`);
       }
     }
   } else {
