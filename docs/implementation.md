@@ -17,61 +17,61 @@ The DID cache holds most of the state of a Sidetree node. It is a singleton clas
 This is the core method to update state with the following signature.
 
 ```javascript
-public record(stateModifyOp: any, blockId: BlockId): URL
+public apply (operation: WriteOperation, blockId: string)
 ```
-The `stateModifyOp` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the SHA256 hash of this object is the *versionURL* of the document version produced as the result of this operation. The `blockId` parameter identifies the blockchain block that this operation is anchored to.
+The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation. The `blockId` parameter identifies the blockchain block that this operation is anchored to.
 
-Under normal processing, the observer (cache updater) would process blockchain blocks in the *blockId* order, so the `blockId` parameter instantiation in `record` method calls would be non-decreasing. However the implementation accepts `record` calls with out-of-order *blockIds*. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
+Under normal processing, the _observer_ would process blockchain blocks in the *blockId* order, so the `blockId` parameter instantiation in `apply` method calls would be non-decreasing. However the implementation accepts `apply` calls with out-of-order *blockIds*. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
 
-It is useful to view the set of state modifying operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
+It is useful to view the operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
 
-When two update operations reference the same (prior) version of a DID document, the cache removes from consideration the older of the two operations and all prior operations referencing the deleted operation. This ensures that the document versions of a particular DID form a chain without any forks. For illustration, assume we have recorded four operations for a particular DID producing the following chain:
+When two update operations reference the same (prior) version of a DID document, the cache removes from consideration the later of the two operations and all operations directly and indirectly referencing the removed operation. This ensures that the document versions of a particular DID form a chain without any forks. For illustration, assume we have recorded four operations for a particular DID producing the following chain:
 ```
 v0 -> v1 -> v2 -> v3
 ```
-If we record a new update operation `v0 -> v4`, the new chain for the DID would be:
+If we find an earlier update operation `v0 -> v4`, the new chain for the DID would be:
 ```
 v0 -> v4
 ```
-The above semantics of two updates referencing the same version is used to handle recovery. In the above example, a DID was compromised after version `v0` which resulted in unauthorized updates `v1, v2, v3`. A recovery operation was performed which invalidated `v1, v2, v3` and added version `v4`.
 
-In the above description, *older* refers to the logical time of the operation derived from the position of the operation in the blockchain.
-> TODO: Currently, blockId is used as the timestamp of an operation, but perhaps we need something with finer granularity (blockId, position within block). The following sequence of unlikely events would leave the DID cache without enough information to figure out the correct resolution in the current api - an update operation and a subsequent recovery operation are anchored in the same block and the CAS (IPFS) delivers these operations in reverse order.
+In the above description, *earlier* and *later* refer to the logical time of the operation derived from the position of the operation in the blockchain.
+> TODO: Currently, blockId is used as the timestamp of an operation, but perhaps we need something with finer granularity (blockId, anchorOrderNumber, operationOrderNumber). The following sequence of unlikely events would leave the DID cache without enough information to figure out the correct resolution in the current api - an update operation and a subsequent recovery operation are anchored in the same block and the CAS (IPFS) delivers these operations in reverse order.
 
 ## Rollback
 
 This method is used to handle rollbacks (orphaning of blocks) in the blockchain.
 
 ```javascript
-public rollback(blockId: BlockId)
+public rollback(blockId: string)
 ```
 
 The effect of this method is to delete the effects of any operation added with a *blockId* greater than the one provided.
 
 ## Lookup
 
-This method looks up the DID document given a version URL.
+This method looks up the DID document given an _operation hash_.
 
 ```javascript
-public lookup(versionURL: URL): DIDDoc
+public lookup(operationHash: Buffer): DidDocument
 ```
 
-If there is a missing update in the chain leading up to the provided `versionURL`, the method returns `null`.
+If there is a missing update in the chain leading up to the provided `operationHash`, the method returns `null`.
 
 ## Version chain navigation methods
 
 These methods navigate the version chain.
 
 ```javascript
-public first(versionURL: URL): URL
-public last(versionURL: URL): URL
-public next(versionURL: URL): URL
-public prev(versionURL: URL): URL
+public first(operationHash: Buffer): Buffer
+public last(operationHash: Buffer): Buffer
+public next(operationHash: Buffer): Buffer
+public prev(operationHash: Buffer): Buffer
 ```
 
 ## Resolve
 
-The resolve method returns the latest document for a given DID. It is implemented as `last(lookup(did))`.
+The resolve method returns the latest document for a given DID. It is implemented as `lookup(last(did))`.
+
 
 # Merkle Rooter
 > TODO: to be reviewed and updated.
@@ -167,7 +167,7 @@ In order to update an Entity's state with that of an incoming Entity entry, vari
 
 **1**. Create and hold an object in memory that will be retained to store the current state of the Entity.
 
-**2**. Store the [DID Version URL](#dids-and-document-version-urls) in the cache object.
+**2**. Store the operation hash in the cache object.
 
 **3**. Use the `delta` value of the Entity to create the initial state of the DID Document via the procedure described in [RFC 6902](http://tools.ietf.org/html/rfc6902). Store the compiled DID Document in the cache object. If the delta is not present, abort the process and discard as an invalid DID.
 
