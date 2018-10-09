@@ -1,9 +1,16 @@
+import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import * as RequestHandler from 'RequestHandler';
 import { toHttpStatus, Response } from 'Response';
 
 const app = new Koa();
+
+// Raw body parser.
+app.use(async (ctx, next) => {
+  ctx.body = await getRawBody(ctx.req);
+  await next();
+});
 
 const router = new Router();
 
