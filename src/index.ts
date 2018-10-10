@@ -1,9 +1,20 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
-import * as RequestHandler from './RequestHandler';
 import * as Router from 'koa-router';
-import { config, ConfigKey } from './Config';
+import RequestHandler from './RequestHandler';
+import Rooter from './Rooter';
+import { BlockchainClient } from './Blockchain';
+import { CasClient } from './Cas';
+import { Config, ConfigKey } from './Config';
 import { toHttpStatus, Response } from './Response';
+
+// Component dependency initialization & injection.
+const configFile = require('../json/config.json');
+const config = new Config(configFile);
+const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
+const cas = new CasClient(config[ConfigKey.CasNodeUri]);
+const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
 
 const app = new Koa();
 
@@ -15,12 +26,12 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 router.post('/', (ctx, _next) => {
-  const response = RequestHandler.handleWriteRequest(ctx.body);
+  const response = requestHandler.handleWriteRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 
 router.get('/:did', (ctx, _next) => {
-  const response = RequestHandler.handleResolveRequest(ctx.params.did);
+  const response = requestHandler.handleResolveRequest(ctx.params.did);
   setKoaResponse(response, ctx.response);
 });
 

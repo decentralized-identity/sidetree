@@ -1,6 +1,5 @@
 import * as HttpStatus from 'http-status';
 import nodeFetch from 'node-fetch';
-import { config, ConfigKey } from './Config';
 
 /**
  * Interface for accessing the underlying CAS.
@@ -23,7 +22,7 @@ export interface Cas {
 /**
  * Class that communicates with the underlying CAS using REST API defined by the protocol document.
  */
-export class RestCas implements Cas {
+export class CasClient implements Cas {
 
   public constructor (public uri: string) { }
 
@@ -58,6 +57,3 @@ export class RestCas implements Cas {
     return content;
   }
 }
-
-const cas = new RestCas(config[ConfigKey.CasNodeUri]);
-export default cas ;

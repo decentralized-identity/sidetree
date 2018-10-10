@@ -1,4 +1,4 @@
-﻿const protocol = require('./protocol.json');
+﻿const protocol = require('../json/protocol.json');
 
 /**
  * The class that provides protocol parameter values.
