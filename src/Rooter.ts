@@ -1,9 +1,8 @@
 import * as Deque from 'double-ended-queue';
-import { config, ConfigKey } from './Config';
-import blockchain from './Blockchain';
-import cas from './Cas';
 import MerkleTree from './lib/MerkleTree';
 import Protocol from './Protocol';
+import { Blockchain } from './Blockchain';
+import { Cas } from './Cas';
 
 /**
  * Class that performs periodic rooting of batches of Sidetree operations.
@@ -16,7 +15,7 @@ export default class Rooter {
    */
   private processing: boolean = false;
 
-  public constructor (batchIntervalInSeconds: number) {
+  public constructor (blockchain: Blockchain, cas: Cas, batchIntervalInSeconds: number) {
     // The function that periodically performs rooting to blockchain.
     setInterval(async () => {
       // Wait until the next interval if the rooter is still processing a batch.
@@ -95,6 +94,3 @@ export default class Rooter {
     return batch;
   }
 }
-
-const rooter = new Rooter(+config[ConfigKey.BatchIntervalInSeconds]);
-export { rooter };

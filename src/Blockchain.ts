@@ -1,6 +1,5 @@
 import * as HttpStatus from 'http-status';
 import nodeFetch from 'node-fetch';
-import { config, ConfigKey } from './Config';
 
 /**
  * Interface to access the underlying blockchain.
@@ -16,7 +15,7 @@ export interface Blockchain {
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
  */
-export class RestBlockchain implements Blockchain {
+export class BlockchainClient implements Blockchain {
 
   public constructor (public uri: string) { }
 
@@ -37,6 +36,3 @@ export class RestBlockchain implements Blockchain {
     }
   }
 }
-
-const blockchain = new RestBlockchain(config[ConfigKey.BlockchainNodeUri]);
-export default blockchain ;

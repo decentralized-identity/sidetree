@@ -1,7 +1,8 @@
 ﻿{
+  "devMode": true,
   "port": 3000,
+  "didMethodName": "did:sidetree:",
   "casNodeUri": "https://127.0.0.1:3001",
   "blockchainNodeUri": "https://127.0.0.1:3002",
-
   "batchIntervalInSeconds": 5
 }
