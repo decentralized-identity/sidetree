@@ -1,3 +1,4 @@
+import * as Base58 from 'bs58';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 
 /**
@@ -44,12 +45,12 @@ class WriteOperation {
   /** The original request buffer sent by the requester. */
   public readonly request: Buffer;
   /** The DID of the DID document to be updated. */
-  public readonly did: string;
+  public readonly did: string | undefined;
   /** The incrementing number of this operation. */
   public readonly operationNumber: number;
   /** The type of operation. */
   public readonly type: OperationType;
-  /** The hash of the previous opeartion. */
+  /** The hash of the previous operation. */
   public readonly perviousOperationHash: Buffer | undefined;
   /** ID of the key used to sign this operation. */
   public readonly signingKeyId: string;
@@ -58,7 +59,7 @@ class WriteOperation {
   /** Proof-of-work of this operation. */
   public proofOfWork: any; // TODO: to be implemented.
 
-  /** DID document of the opeartion, only applicable to create and recovery operations, undefined otherwise. */
+  /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument: DidDocument | undefined;
 
   /**
@@ -72,23 +73,23 @@ class WriteOperation {
     const operation = JSON.parse(request.toString());
 
     // Ensure all properties given are specified in Sidetree protocol.
-    const allowedProperties = [
+    const allowedProperties = new Set([
       OperationProperty.signingKeyId,
       OperationProperty.createPayload,
       OperationProperty.updatePayload,
       OperationProperty.deletePayload,
       OperationProperty.recoverPayload,
       OperationProperty.signature,
-      OperationProperty.proofOfWork];
+      OperationProperty.proofOfWork]);
     for (let property in operation) {
-      if (!(property in allowedProperties)) {
+      if (!allowedProperties.has(property)) {
         throw new Error(`Unexpected property ${property} in operation.`);
       }
     }
 
     // Verify required properties.
     const requiredProperties = [OperationProperty.signature, OperationProperty.proofOfWork];
-    for (let requiredProperty in requiredProperties) {
+    for (let requiredProperty of requiredProperties) {
       if (!(requiredProperty in operation)) {
         throw new Error(`Required property ${requiredProperty} not found in operation.`);
       }
@@ -101,7 +102,7 @@ class WriteOperation {
       OperationProperty.deletePayload,
       OperationProperty.recoverPayload];
     let mutuallyExclusivePropertyFound = false;
-    for (let property in mutuallyExclusiveProperties) {
+    for (let property of mutuallyExclusiveProperties) {
       if (property in operation) {
         if (mutuallyExclusivePropertyFound) {
           throw new Error('More than one mutually exclusive property found in operation.');
@@ -118,17 +119,14 @@ class WriteOperation {
     this.signature = operation.signature;
     this.proofOfWork = operation.proofOfWork;
 
-    const operationTypeAndPayload = WriteOperation.getOperationTypeAndPayload(operation);
-    this.type = operationTypeAndPayload[0];
-
-    const payload = operationTypeAndPayload[1];
+    const operationTypeAndDecodedPayload = WriteOperation.getOperationTypeAndDecodedPayload(operation);
+    this.type = operationTypeAndDecodedPayload[0];
+    const payload = operationTypeAndDecodedPayload[1];
 
     switch (this.type) {
       case OperationType.Create:
         this.didDocument = WriteOperation.parseCreatePayload(payload);
-        this.did = this.didDocument.id;
         this.operationNumber = 0;
-        this.perviousOperationHash = undefined;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -147,18 +145,30 @@ class WriteOperation {
   /**
    * Given an operation object, returns a tuple of operation type and the the operation payload.
    */
-  private static getOperationTypeAndPayload (operation: any): [OperationType, object] {
+  private static getOperationTypeAndDecodedPayload (operation: any): [OperationType, object] {
+    let operationType;
+    let encodedPayload;
     if (operation.hasOwnProperty(OperationProperty.createPayload)) {
-      return [OperationType.Create, operation.createPayload];
+      operationType = OperationType.Create;
+      encodedPayload = operation.createPayload;
     } else if (operation.hasOwnProperty(OperationProperty.updatePayload)) {
-      return [OperationType.Update, operation.updatePayload];
+      operationType = OperationType.Update;
+      encodedPayload = operation.updatePayload;
     } else if (operation.hasOwnProperty(OperationProperty.deletePayload)) {
-      return [OperationType.Delete, operation.deletePayload];
+      operationType = OperationType.Delete;
+      encodedPayload = operation.deletePayload;
     } else if (operation.hasOwnProperty(OperationProperty.recoverPayload)) {
-      return [OperationType.Recover, operation.recoverPayload];
+      operationType = OperationType.Recover;
+      encodedPayload = operation.recoverPayload;
     } else {
       throw new Error('Unknown operation.');
     }
+
+    const decodedPayloadBuffer = Base58.decode(encodedPayload);
+    const decodedPayloadJson = decodedPayloadBuffer.toString();
+    const decodedPayload = JSON.parse(decodedPayloadJson);
+
+    return [operationType, decodedPayload];
   }
 
   /**
