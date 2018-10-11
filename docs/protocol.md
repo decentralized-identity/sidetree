@@ -11,20 +11,21 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations using an unbalanced Merkle tree and embeds the hash of a file (_anchor file_) containing the Merkle root hash in the blockchain. The actual data of all batched operations are stored as one single file (_batch file_) in a _distributed content-addressable storage (DCAS or CAS)_. Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
-## Terminology
+# Terminology
 
-| Term          | Description                                                           |
-|---------------|-----------------------------------------------------------------------|
-| Anchor file   | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file    | The file containing all the operation data batched together.          |
-| CAS           | Same as DCAS.                                                         |
-| DCAS          | Distributed content-addressable storage.                              |
-| DID document  | A document as described by the [DID specification](https://w3c-ccg.github.io/did-spec/), containing information about a DID such as the public key of the DID owner and service endpoints used.
-| Operation     | A change to a DID document.                                           |
-| Sidetree node | A logical server executing Sidetree protocol rules.                   |
-| Transaction   | A blockchain transaction representing a batch of Sidetree operations. |
+| Term           | Description                                                                    |
+|----------------|--------------------------------------------------------------------------------|
+| Anchor file    | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
+| Batch file     | The file containing all the operation data batched together.                   |
+| CAS            | Same as DCAS.                                                                  |
+| DCAS           | Distributed content-addressable storage.                                       |
+| DID document   | A document as described by the [DID specification](https://w3c-ccg.github.io/did-spec/), containing information about a DID such as the public key of the DID owner and service endpoints used.
+| Operation      | A change to a DID document.                                                    |
+| Operation hash | The hash of the JSON-formated request of a Sidetree operation.                 |
+| Sidetree node  | A logical server executing Sidetree protocol rules.                            |
+| Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
 
-## Format and Encoding
+# Format and Encoding
 * JSON is used as the data encapsulation format.
 * Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
 * [_Multihash_] is used to represent hashes.
@@ -153,13 +154,11 @@ System diagram showing op sig links that form a Sidetree Entity Trail:
 ![Sidetree Entity Trail diagram](./diagrams/sidetree-entity-trail.png)
 
 
-## DIDs and Document Version URLs
+## Operation Hashes and DIDs
 
-All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:Hash** where *Hash* represents a Base58 encoded multihash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#creation-of-a-sidetree-entity).
+An _operation hash_ is the hash of the JSON-formated request of a state-modifying Sidetree operation defined in [Sidetree REST API](#sidetree-rest-api) (e.g. Create, Update, and Delete etc). An _operation hash_ serves as a unique identifier of the DID document produced by the corresponding operation.
 
-The version URL output by the Create operation defines the newly created decentralized id (DID). In other words, a DID is simply the URL of the first version of its document.
-
-A subtlety relating to version URLs and (DIDs in the original proposal) is that they are not _physically_ unique: There could be multiple updates anchored in the blockchain with the same URL. However, this does not affect correctness since the Sidetree protocol ensures that only the first anchored update in the blockchain is valid and invalidates the rest.
+A Sidetree DID is simply the DID method name suffixed with the _operation hash_ of a valid create operation request.
 
 # Sidetree REST API
 This section defines the `v1.0` version of the Sidetree DID REST API.
@@ -459,18 +458,14 @@ POST /v1.0/
 
 The signature of the Recover operation is the following:
 
-*Recover ({RecoveryPatch, VersionURL}, Signature) -> VersionURL*
+*Recover (RecoveryPatch, Signature)
 where,
 -  RecoveryPatch: JSON patch specifying a new recovery public key. The patch can optionally identify old primary public key(s) and include new primary public key(s).
--  VersionURL: Version of the DID document to apply the patch.
--  Signature: Signature with the recovery secret key (corresponding to the recovery public key stored in the latest version associated with the DID) covering RecoveryPatch and VersionURL.
+-  Signature: Signature with the recovery secret key (corresponding to the recovery public key stored in the latest version associated with the DID).
 
-If the operation is successful, it applies the provided JSON patch to the version of the DID document identified by the input version URL and returns the version URL of the resulting DID Document. The operation fails if the version URL provided does not exist or if the signature does not verify.
+If the operation is successful, it applies the provided JSON patch to the version of the DID document identified.
 
-Note that, the method signature does not explicitly specify the DID which is recovered. But this is not required since the input VersionURL parameter unambiguously identifies the DID.
-
-> NOTE:
-> - The cryptographic mechanism here is to prove knowledge of the recovery secret key corresponding to the recovery public key associated with the latest version of the DID, without revealing the secret key. This is achieved by sending Signature on the RecoveryPatch. Note that the recovery patch must contain a fresh recovery public key. It is crucial to not release the recovery secret key, or to sign any predetermined message to prove its knowledge, a i.e., to have a non-replayable recovery mechanism. Otherwise, the system is exposed to man-in-the-middle vulnerability, where a malicious party can replace the new recovery public key in the recovery patch with her his own public key.
+> NOTE: The recovery patch must contain a fresh recovery public key. It is crucial to not release the recovery secret key, or to sign any predetermined message to prove its knowledge, a i.e., to have a non-replayable recovery mechanism. Otherwise, the system is exposed to man-in-the-middle vulnerability, where a malicious party can replace the new recovery public key in the recovery patch with her his own public key.
 > - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.
 
 
