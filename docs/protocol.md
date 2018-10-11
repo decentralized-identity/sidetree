@@ -136,22 +136,21 @@ The _anchor file_ is a JSON document of the following schema:
 }
 ```
 
-# Sidetree Entity Operations
+# Sidetree Operations
 
-> TODO: Entire section pending review and update.
+> TODO: Entire section pending update.
 
-Sidetree Entities are a form of [Decentralized Identifier](https://w3c-ccg.github.io/did-spec/) (DID) that manifest through blockchain-anchoring DID Document objects (and subsequent deltas) that represent the existence and state of entities. A _Sidetree node exposes a REST API using which an external application can create a new DID with an initial DID Document, update the DID Document, lookup (resolve ) the DID Document for a DID, and delete the Document.
 
 ## DID Documents
 
 > TODO: to be updated.
 
- An update to a DID document is specified as a [JSON patch](https://tools.ietf.org/html/rfc6902) and is authenticated with a signature using the DID owner's private key. The sequence of updates to a DID document produces a sequence of _versions_ of the document. Each update to an entity references the previous update (creation, update, recovery, etc.) forming a chain of change history. Ownership of an Entity is linked to possession of keys specified within the Entity object itself.
+ An update to a DID document is specified as a [JSON patch](https://tools.ietf.org/html/rfc6902) and is authenticated with a signature using the DID owner's private key. The sequence of updates to a DID document produces a sequence of _versions_ of the document. Each update to a DID document references the previous update (creation, update, recovery, etc.) forming a chain of change history. Ownership of a DID is linked to possession of keys specified within the DID document itself.
 
-System diagram showing op sig links that form a Sidetree Entity Trail:
+System diagram showing operation chain of a DID:
 > TODO: Need to update this outdated diagram: 1. each operation only references the previous. 2. Only file hash is anchored on blockchain.
 
-![Sidetree Entity Trail diagram](./diagrams/sidetree-entity-trail.png)
+![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
 
 
 ## Operation Hashes and DIDs
@@ -161,7 +160,7 @@ An _operation hash_ is the hash of the JSON-formated request of a state-modifyin
 A Sidetree DID is simply the DID method name suffixed with the _operation hash_ of a valid create operation request.
 
 # Sidetree REST API
-This section defines the `v1.0` version of the Sidetree DID REST API.
+A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID document, subsequent DID document updates, and DID document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
 
 ## Response HTTP status codes
 
@@ -492,11 +491,11 @@ As an early WIP, this protocol may require further additions and modifications a
 
 ## DDoS Mitigation
 
-Given the protocol was designed to enable unique Entity rooting and DPKI operations to be performed at 'unfair' volumes with unit costs that are 'unfairly' cheap, the single most credible issue for the system would be DDoS vectors.
+Given the protocol was designed to enable unique DID rooting and DPKI operations to be performed at 'unfair' volumes with unit costs that are 'unfairly' cheap, the single most credible issue for the system would be DDoS vectors.
 
-What does DDoS mean in this context? Because Entity IDs and subsequent operations in the system are represented via embedded tree structures where the trees can be arbitrarily large, it is possible for protocol adherent nodes to create and broadcast transactions to the underlying blockchain that embed massive sidetrees composed of leaves that are not intended for any other purpose than to force other observing nodes to process their Entity operations in accordance with the protocol.
+What does DDoS mean in this context? Because DIDs and subsequent operations in the system are represented via embedded tree structures where the trees can be arbitrarily large, it is possible for protocol adherent nodes to create and broadcast transactions to the underlying blockchain that embed massive sidetrees composed of leaves that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
 
-The critical questions are: can observing nodes 'outrun' bad actors who may seek to clog the system with transactions bearing spurious Sidetrees meant to degraded system-wide performance? Can an attacker generate spurious Sidetrees of Entity ops faster than observing nodes can fetch the Sidetree data and process the operations? Without actually running a simulation yet, it's important to consider what mitigations can be put in place to assure that, assuming an issue exists, it can be overcome.
+The critical questions are: can observing nodes 'outrun' bad actors who may seek to clog the system with transactions bearing spurious Sidetrees meant to degraded system-wide performance? Can an attacker generate spurious Sidetrees of operations faster than observing nodes can fetch the Sidetree data and process the operations? Without actually running a simulation yet, it's important to consider what mitigations can be put in place to assure that, assuming an issue exists, it can be overcome.
 
 At a certain point, the attacker would be required to overwhelm the underlying chain itself, which has its own in-built organic price-defense, but it's possible that the Layer 2 nodes can be overcome before that begins to impact the attacker.
 
@@ -506,7 +505,7 @@ At a certain point, the attacker would be required to overwhelm the underlying c
 
 A very basic idea is to simply limit the depth of a protocol-adherent sidetree. The protocol could specify that Sidetrees that exceed a maximum depth are discarded, which would limit the ability of all participants to drop massive trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost.
 
-> NOTE: large block expansion of the underlying chain generally creates a Tragedy of the Commons spam condition on the chain itself, which negatively impacts this entire class of DDoS protection for all L2 systems. Large block expansion may exclude networks from being a viable substrate for Sidetree Entities, if this mitigation strategy was selected for use.
+> NOTE: large block expansion of the underlying chain generally creates a Tragedy of the Commons spam condition on the chain itself, which negatively impacts this entire class of DDoS protection for all L2 systems. Large block expansion may exclude networks from being a viable substrate for Sidetree, if this mitigation strategy was selected for use.
 
 #### Transaction & Leaf-level Proof-of-Work
 
