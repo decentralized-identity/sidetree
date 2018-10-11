@@ -17,11 +17,15 @@ The DID cache holds most of the state of a Sidetree node. It is a singleton clas
 This is the core method to update state with the following signature.
 
 ```javascript
-public apply (operation: WriteOperation, blockId: string)
+public apply (operation: WriteOperation, blockNumber: number: transactionIndex: number, operationIndex: number)
 ```
-The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation. The `blockId` parameter identifies the blockchain block that this operation is anchored to.
+The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation.
 
-Under normal processing, the _observer_ would process blockchain blocks in the *blockId* order, so the `blockId` parameter instantiation in `apply` method calls would be non-decreasing. However the implementation accepts `apply` calls with out-of-order *blockIds*. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
+The `blockNumber`, `transactionIndex`, and `operationIndex` parameters together provides a deterministic ordering of all operations. The `blockNumber` identifies the blockchain block that this operation is anchored to; `transactionIndex` is the index of the blockchain transaction that this operation is batched within, among all the transactions in the same block. The `operationIndex` is the index of this operation amongst all the operations within the same batch.
+
+> Note: `blockNumber`, `transactionIndex`, and `operationIndex` are explicitly called out as parameters for the `apply` method for clarity. They may be embedded within the `operation` parameter in actual implementation.
+
+Under normal processing, the _observer_ would process operations in chronological order. However the implementation accepts `apply` calls with out-of-ordered operations. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
 
 It is useful to view the operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
 
@@ -35,7 +39,7 @@ v0 -> v4
 ```
 
 In the above description, *earlier* and *later* refer to the logical time of the operation derived from the position of the operation in the blockchain.
-> TODO: Currently, blockId is used as the timestamp of an operation, but perhaps we need something with finer granularity (blockId, anchorOrderNumber, operationOrderNumber). The following sequence of unlikely events would leave the DID cache without enough information to figure out the correct resolution in the current api - an update operation and a subsequent recovery operation are anchored in the same block and the CAS (IPFS) delivers these operations in reverse order.
+
 
 ## Rollback
 
