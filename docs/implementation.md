@@ -344,8 +344,10 @@ GET /v1.0/
   "hasMoreHashes": "True if there are more hashes beyond the returned batch of hashes. False otherwise.",
   "anchorFileHashes": [
     {
-      "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when this hash was
-        anchored to the blockchain.",
+      "blockNumber": "The block number of the block that contains the anchor file hash. Used for ordering.",
+      "blockHash": "A hash of the block that contains the anchor file hash.",
+      "transactionIndex": "The index to this transaction among all the transactions in the block.
+                           Used to order multiple Sidetree transactions in the same block.",
       "hash": "Hash of the anchor file."
     }
   ]
@@ -358,11 +360,15 @@ GET /v1.0/
   "hasMoreHashes": false,  
   "anchorFileHashes": [
     {
-      "confirmationTime": "2018-09-13T19:20:30Z",
+      "blockNumber": 545236,
+      "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051",
+      "transactionIndex": 23,
       "hash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
-      "confirmationTime": "2018-09-13T20:00:00Z",
+      "blockNumber": 545237,
+      "blockHash": "0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5",
+      "transactionIndex": 333,
       "hash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
   ]
@@ -408,8 +414,8 @@ POST /v1.0/
 None.
 
 
-## Get block confirmation time
-Gets the block confirmation time in UTC of the block identified by the given block hash.
+## Get block
+Gets the data of a block identified by the block hash.
 
 |                     |      |
 | ------------------- | ---- |
@@ -417,7 +423,7 @@ Gets the block confirmation time in UTC of the block identified by the given blo
 
 ### Request path
 ```
-GET /<api-version>/confirmation-time/<block-hash>
+GET /<api-version>/block/<block-hash>
 ```
 
 ### Request headers
@@ -428,21 +434,22 @@ None.
 
 ### Request example
 ```
-Get /v1.0/confirmation-time/QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d
+Get /v1.0/block/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
 ```
 
 ### Response body schema
 ```json
 {
-  "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when the block was
-                       confirmed on blockchain."
+  "blockNumber": "The block number.",
+  "blockHash": "The block hash, should be the same as the value given in query path."
 }
 ```
 
 ### Response body example
 ```json
 {
-  "confirmationTime": "2018-09-13T19:20:30Z",
+  "blockNumber": 545236,
+  "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
 }
 ```
 
@@ -458,7 +465,7 @@ Gets the hash of the last confirmed block.
 
 ### Request path
 ```
-GET /<api-version>/block-hash/last
+GET /<api-version>/block/last
 ```
 
 ### Request headers
@@ -469,13 +476,22 @@ None.
 
 ### Request example
 ```
-Get /v1.0/block-hash/last
+Get /v1.0/block/last
 ```
 
 ### Response body schema
 ```json
 {
-  "blockHash": "The hash of the last confirmed block."
+  "blockNumber": "The block number of the last known block.",
+  "blockHash": "The block hash of the last known block."
+}
+```
+
+### Response body example
+```json
+{
+  "blockNumber": 545236,
+  "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
 }
 ```
 
