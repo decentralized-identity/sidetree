@@ -284,7 +284,7 @@ async function processUpdate(entity, leafHash, rootHash){
 # Blockchain REST API
 The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
-All hashes used in the API are Base64URL encoded SHA256 hash.
+All hashes used in the API are Base58 encoded multihash.
 
 >TODO: Decide on signature format.
 >TODO: Decide on compression.
@@ -334,7 +334,7 @@ GET /v1.0/
 ```
 ```json
 {
-  "afterHash": "exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A"
+  "afterHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
 }
 ```
 
@@ -346,7 +346,7 @@ GET /v1.0/
     {
       "confirmationTime": "The timestamp in ISO 8601 format 'YYYY-MM-DDThh:mm:ssZ' indicating when this hash was
         anchored to the blockchain.",
-      "hash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI"
+      "hash": "Hash of the anchor file."
     }
   ]
 }
@@ -359,11 +359,11 @@ GET /v1.0/
   "anchorFileHashes": [
     {
       "confirmationTime": "2018-09-13T19:20:30Z",
-      "hash": "b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA"
+      "hash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
       "confirmationTime": "2018-09-13T20:00:00Z",
-      "hash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI"
+      "hash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
   ]
 }
@@ -400,7 +400,7 @@ POST /v1.0/
 ```
 ```json
 {
-  "anchorFileHash": "exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A"
+  "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
 }
 ```
 
@@ -428,7 +428,7 @@ None.
 
 ### Request example
 ```
-Get /v1.0/confirmation-time/9vdoaofs7Cau0tYbOeSmF_8WY7O1i2Wf-alw-yFJRN8
+Get /v1.0/confirmation-time/QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d
 ```
 
 ### Response body schema
@@ -484,6 +484,8 @@ Get /v1.0/block-hash/last
 # CAS REST API Interface
 The CAS (content addressable storage) REST API interface aims to abstract the underlying Sidetree storage away from the main protocol logic. This allows the CAS to be updated or even replaced if needed without affecting the core protocol logic. Conversely, the interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same CAS.
 
+All hashes used in the API are Base58 encoded multihash.
+
 ## Response HTTP status codes
 
 | HTTP status code | Description                              |
@@ -503,12 +505,12 @@ Read the content of a given address and return it in the response body as octet-
 
 ### Request path
 ```
-GET /<api-version>/<base64url-sha256-hash>
+GET /<api-version>/<hash>
 ```
 
 ### Request example
 ```
-GET /v1.0/b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA
+GET /v1.0/QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
 ```
 ### Response headers
 | Name                  | Value                  |
@@ -541,13 +543,13 @@ POST /<api-version>/
 ### Response body schema
 ```json
 {
-  "hash": "Base64URL encoded SHA256 Hash of data written to CAS"
+  "hash": "Hash of data written to CAS"
 }
 ```
 
 ### Response body example
 ```json
 {
-  "hash": "b-7y19k4vQeYAqJXqphGcTlNoq-aQSGm8JPlE_hLmzA"
+  "hash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
 }
 ```
