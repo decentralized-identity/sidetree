@@ -5,7 +5,7 @@ This document describes the specification of the Sidetree [_DID method_](https:/
 
 # Overview
 
-Using blockchains for anchoring and tracking unique, non-transferable, digital entities is a useful primitive, but the current strategies for doing so suffer from severely limited transactional performance constraints. Sidetree is a layer-2 protocol for anchoring and tracking _[DID documents](https://w3c-ccg.github.io/did-spec/)_ across a blockchain. The central design idea involves batching multiple _DID document_ operations into a single blockchain transaction. This allows Sidetree to inherit the immutability and verifiability guarantees of blockchain without being limited by its transaction rate.
+Using blockchains for anchoring and tracking unique, non-transferable, digital entities is a useful primitive, but the current strategies for doing so suffer from severely limited transactional performance constraints. Sidetree is a layer-2 protocol for anchoring and tracking _[DID Documents](https://w3c-ccg.github.io/did-spec/)_ across a blockchain. The central design idea involves batching multiple _DID Document_ operations into a single blockchain transaction. This allows Sidetree to inherit the immutability and verifiability guarantees of blockchain without being limited by its transaction rate.
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
@@ -20,8 +20,8 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | Batch file     | The file containing all the operation data batched together.                   |
 | CAS            | Same as DCAS.                                                                  |
 | DCAS           | Distributed content-addressable storage.                                       |
-| DID document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
-| Operation      | A change to a DID document.                                                    |
+| DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
+| Operation      | A change to a DID Document.                                                    |
 | Operation hash | The hash of the JSON-formated request of a Sidetree operation.                 |
 | Sidetree node  | A logical server executing Sidetree protocol rules.                            |
 | Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
@@ -181,7 +181,7 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
 
 
 # Sidetree REST API
-A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID document, subsequent DID document updates, and DID document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
+A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID Document, subsequent DID Document updates, and DID Document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
 
 ## Response HTTP status codes
 
@@ -236,7 +236,7 @@ In Sidetree implementation, certain properties or portion of which in teh initia
 * `id` - Ignored.
 * `publicKey\*\id` - DID portion is ignored.
 
-### Initial DID document example
+### Initial DID Document example
 ```json
 {
   "@context": "https://w3id.org/did/v1",
@@ -380,7 +380,7 @@ POST /<api-version>/
 {
   "did": "The DID to be updated",
   "operationNumber": "The number incremented from the last change version number. 1 if first change.",
-  "perviousOperationHash": "The hash of the previous operation made to the DID document.",
+  "perviousOperationHash": "The hash of the previous operation made to the DID Document.",
   "patch": "An RFC 6902 JSON patch to the current DID Document",
 }
 ```
@@ -445,7 +445,7 @@ POST /<api-version>/
 {
   "did": "The DID to be deleted",
   "operationNumber": "The number incremented from the last change version number. 1 if first change.",
-  "perviousOperationHash": "The hash of the previous operation made to the DID document."
+  "perviousOperationHash": "The hash of the previous operation made to the DID Document."
 }
 ```
 
@@ -482,7 +482,7 @@ where,
 -  RecoveryPatch: JSON patch specifying a new recovery public key. The patch can optionally identify old primary public key(s) and include new primary public key(s).
 -  Signature: Signature with the recovery secret key (corresponding to the recovery public key stored in the latest version associated with the DID).
 
-If the operation is successful, it applies the provided JSON patch to the version of the DID document identified.
+If the operation is successful, it applies the provided JSON patch to the version of the DID Document identified.
 
 > NOTE: The recovery patch must contain a fresh recovery public key. It is crucial to not release the recovery secret key, or to sign any predetermined message to prove its knowledge, a i.e., to have a non-replayable recovery mechanism. Otherwise, the system is exposed to man-in-the-middle vulnerability, where a malicious party can replace the new recovery public key in the recovery patch with her his own public key.
 > - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.

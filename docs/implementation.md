@@ -29,7 +29,7 @@ Under normal processing, the _observer_ would process operations in chronologica
 
 It is useful to view the operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
 
-When two update operations reference the same (prior) version of a DID document, the cache removes from consideration the later of the two operations and all operations directly and indirectly referencing the removed operation. This ensures that the document versions of a particular DID form a chain without any forks. For illustration, assume we have recorded four operations for a particular DID producing the following chain:
+When two update operations reference the same (prior) version of a DID Document, the cache removes from consideration the later of the two operations and all operations directly and indirectly referencing the removed operation. This ensures that the document versions of a particular DID form a chain without any forks. For illustration, assume we have recorded four operations for a particular DID producing the following chain:
 ```
 v0 -> v1 -> v2 -> v3
 ```
@@ -53,7 +53,7 @@ The effect of this method is to delete the effects of any operation added with a
 
 ## Lookup
 
-This method looks up the DID document given an _operation hash_.
+This method looks up the DID Document given an _operation hash_.
 
 ```javascript
 public lookup(operationHash: Buffer): DidDocument
