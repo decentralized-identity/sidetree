@@ -164,6 +164,22 @@ The _anchor file_ is a JSON document of the following schema:
 ```
 
 
+# DDoS Mitigation
+Given the protocol was designed to enable operations to be performed at large volumes with cheap unit costs, DDoS is a real threat to the system.
+
+Without any mitigation strategy, each Sidetree batch can be arbitrarily large, allowing malicious, but protocol adherent nodes to create and broadcast 
+massive operation batches that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
+
+Sidetree protocol defines the following two mechanisms to prevent DDoS:
+1. Maximum batch size
+   
+   By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost.
+
+1. Operation-level proof-or-work
+
+   Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
+
+
 # Sidetree REST API
 A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID document, subsequent DID document updates, and DID document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
 
@@ -177,14 +193,13 @@ A _Sidetree node_ expose a set of REST API that enables the creation of a new DI
 | 500              | Server error.                            |
 
 ## Proof-of-work
-> TODO: Complete proof-of-work description.
-
-Every Sidetree write request must have a proof-of-work for it to be considered valid. As a result, every write request (e.g. DID create, update, delete, and recover) has an `proofOfWork` optional property with the following schema:
+Every Sidetree write request must have a proof-of-work for it to be considered valid. As a result, every write request (e.g. DID create, update, delete, and recover) has an optional `proofOfWork` property with the following schema:
 
 ```json
 "proofOfWork": {
   "algorithm": "Proof-of-work algorithm used.",
   "lastBlockHash": "The hash of the latest known blockchain block.",
+  "operationHash": "The hash of the opeartion this proof-of-work is for.",
   "proof": "The proof depending on the algorithm used."
 }
 ```
@@ -472,51 +487,6 @@ If the operation is successful, it applies the provided JSON patch to the versio
 > NOTE: The recovery patch must contain a fresh recovery public key. It is crucial to not release the recovery secret key, or to sign any predetermined message to prove its knowledge, a i.e., to have a non-replayable recovery mechanism. Otherwise, the system is exposed to man-in-the-middle vulnerability, where a malicious party can replace the new recovery public key in the recovery patch with her his own public key.
 > - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.
 
-
-
-# Security and Functionality Guarantees
-
-Assuming the underlying blockchain can be trusted, an implementation provides a guarantee that all _honest_ Sidetree nodes that have a consistent "view'' of the world, independent of any malicious nodes in the network. More formally, if the following assumptions hold:
-
-1. The public blockchain used by Sidetree nodes is fork-free.
-
-2. Cache-Builder is deterministic in terms of computing a cache given an ordered sequence of Sidetree transactions.
-
-We claim that every pair of _honest_ Sidetree nodes (i.e., those that follow their prescribed protocol) compute caches that are _consistent_ with each other—regardless of actions of any number of malicious Sidetree nodes. By a consistent cache, we mean honest Sidetree nodes know about the same set of DIDs and associate the same DID document and version history for each DID, implying that the output of any *Resolve(did)* operation would be the same when processed by any honest node.
-
-There are a few subtleties with the above claim (as we discuss below): (a) blockchain tail stability (b) processing lag.
-
-- Different nodes in the blockchain network might see different tail blocks in the blockchain ledger. (This would happen in bitcoin blockchain if more than one miner solves the PoW challenge concurrently.) If there are Sidetree transactions embedded in such tail blocks, different Sidetree nodes could end up with different states, but this difference is limited to updates in the affected transactions.
-- A Sidetree node lagging behind others in terms of how many blockchain blocks it has processed will have a different DID state than the others.
-
-
-# Open Questions
-
-As an early WIP, this protocol may require further additions and modifications as it is developed and implemented. This is the list of topics, ideas, and discussions that have been considered, but not yet included in the proposed spec.
-
-## DDoS Mitigation
-
-Given the protocol was designed to enable unique DID rooting and DPKI operations to be performed at 'unfair' volumes with unit costs that are 'unfairly' cheap, the single most credible issue for the system would be DDoS vectors.
-
-What does DDoS mean in this context? Because DIDs and subsequent operations in the system are represented via embedded tree structures where the trees can be arbitrarily large, it is possible for protocol adherent nodes to create and broadcast transactions to the underlying blockchain that embed massive sidetrees composed of leaves that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
-
-The critical questions are: can observing nodes 'outrun' bad actors who may seek to clog the system with transactions bearing spurious Sidetrees meant to degraded system-wide performance? Can an attacker generate spurious Sidetrees of operations faster than observing nodes can fetch the Sidetree data and process the operations? Without actually running a simulation yet, it's important to consider what mitigations can be put in place to assure that, assuming an issue exists, it can be overcome.
-
-At a certain point, the attacker would be required to overwhelm the underlying chain itself, which has its own in-built organic price-defense, but it's possible that the Layer 2 nodes can be overcome before that begins to impact the attacker.
-
-## Mitigation ideas
-
-#### Max Tree Depth
-
-A very basic idea is to simply limit the depth of a protocol-adherent sidetree. The protocol could specify that Sidetrees that exceed a maximum depth are discarded, which would limit the ability of all participants to drop massive trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost.
-
-> NOTE: large block expansion of the underlying chain generally creates a Tragedy of the Commons spam condition on the chain itself, which negatively impacts this entire class of DDoS protection for all L2 systems. Large block expansion may exclude networks from being a viable substrate for Sidetree, if this mitigation strategy was selected for use.
-
-#### Transaction & Leaf-level Proof-of-Work
-
-Another strategy could be enforcing a protocol requirement that hashes in each transaction and/or leaves be required to show a protocol-specified or algorithmically established proof-of-work for nodes to recognize the Sidetree as a valid submission.
-
-By requiring these elements in a Sidetree transaction to have N level of leading 0s, it may be possible to degrade the ability of bad actors to effectively spam the system with useless Sidetrees that contain a massive numbers of ops. The user-level outcome would be that someone using the system to do an update of their human identity's DID would hash the update object with an included nonce on their local device until it satisfied the requisite work requirement, then have it included in a Sidetree. Nodes would discard any Sidetrees that do not meet the require work level.
 
 # Q&A
 * Why have different payload name for each type of write operations?
