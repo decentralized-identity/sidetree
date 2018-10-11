@@ -300,10 +300,10 @@ All hashes used in the API are Base58 encoded multihash.
 | 500              | Server error.                            |
 
 
-## Fetch Sidetree anchor file hashes
-Fetches Sidetree anchor file hashes in chronological order.
+## Fetch Sidetree transactions
+Fetches Sidetree transactions in chronological order.
 
->Note: The call may not to return all the known hashes in one batch, in which case the caller can use the last hash given in the returned batch of hashes to fetch subsequent hashes.
+> Note: The call may not to return all Sidetree transactions in one batch, in which case the caller can use the block number of the last given transaction to fetch subsequent transactions.
 
 |                     |      |
 | ------------------- | ---- |
@@ -311,7 +311,7 @@ Fetches Sidetree anchor file hashes in chronological order.
 
 ### Request path
 ```
-GET /<api-version>/
+GET /<api-version>/transactions/
 ```
 
 ### Request headers
@@ -322,33 +322,32 @@ GET /<api-version>/
 ### Request body schema
 ```json
 {
-  "afterHash": "Optional. A valid Sidetree anchor file hash. When not given, all Sidetree anchor file hashes since
-                inception will be returned. When given, only anchor file hashes after the given hash will be
-                returned."
+  "afterBlockNumber": "Optional. A valid block number. When not given, all Sidetree transactions since
+    inception will be returned. When given, only anchor file hashes after the given hash will be returned.
 }
 ```
 
 ### Request example
 ```
-GET /v1.0/
+GET /v1.0/transactions/
 ```
 ```json
 {
-  "afterHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
+  "afterBlockNumber": 535236
 }
 ```
 
 ### Response body schema
 ```json
 {
-  "hasMoreHashes": "True if there are more hashes beyond the returned batch of hashes. False otherwise.",
-  "anchorFileHashes": [
+  "moreTransactions": "True if there are more transactions beyond the returned batch. False otherwise.",
+  "transactions": [
     {
-      "blockNumber": "The block number of the block that contains the anchor file hash. Used for ordering.",
-      "blockHash": "A hash of the block that contains the anchor file hash.",
+      "blockNumber": "The block number of the block that contains this transaction. Used for ordering.",
+      "blockHash": "A hash of the block that contains this transaction.",
       "transactionIndex": "The index to this transaction among all the transactions in the block.
                            Used to order multiple Sidetree transactions in the same block.",
-      "hash": "Hash of the anchor file."
+      "anchorFileHash": "Hash of the anchor file of this transaction."
     }
   ]
 }
@@ -357,27 +356,27 @@ GET /v1.0/
 ### Response body example
 ```json
 {
-  "hasMoreHashes": false,  
-  "anchorFileHashes": [
+  "moreTransactions": false,  
+  "transactions": [
     {
       "blockNumber": 545236,
       "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051",
       "transactionIndex": 23,
-      "hash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
+      "anchorFileHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
       "blockNumber": 545237,
       "blockHash": "0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5",
       "transactionIndex": 333,
-      "hash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+      "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
   ]
 }
 ```
 
 
-## Write a Sidetree anchor file hash
-Writes a Sidetree anchor file hash to the underlying blockchain.
+## Write a Sidetree transaction
+Writes a Sidetree transaction to the underlying blockchain.
 
 |                     |      |
 | ------------------- | ---- |
@@ -385,7 +384,7 @@ Writes a Sidetree anchor file hash to the underlying blockchain.
 
 ### Request path
 ```
-POST /<api-version>/
+POST /<api-version>/transaction/
 ```
 
 ### Request headers
@@ -402,7 +401,7 @@ POST /<api-version>/
 
 ### Request example
 ```
-POST /v1.0/
+POST /v1.0/transaction/
 ```
 ```json
 {
