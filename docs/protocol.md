@@ -1,7 +1,7 @@
 ﻿**Sidetree Protocol Specification**
 ===================================
 
-This document describes the Sidetree protocol, a specification of the a _DID method_ described in the [_DID specification_](https://w3c-ccg.github.io/did-spec/). Briefly, a _DID method_ is a mechanism for creating unique identifiers and managing metadata (called *DID Documents*) associated with these identifiers without the need for a centralized authority.
+This document describes the specification of the Sidetree [_DID method_](https://w3c-ccg.github.io/did-spec/). Briefly, a _DID method_ is a mechanism for creating unique identifiers and managing metadata (called *DID Documents*) associated with these identifiers without the need for a centralized authority.
 
 # Overview
 
@@ -9,7 +9,8 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations using an unbalanced Merkle tree and embeds the hash of a file (_anchor file_) containing the Merkle root hash in the blockchain. The actual data of all batched operations are stored as one single file (_batch file_) in a _distributed content-addressable storage (DCAS or CAS)_. Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations using an unbalanced Merkle tree and embeds the hash of a file (_anchor file_) containing the Merkle root hash in the blockchain. The actual data of all batched operations are stored as one single file (_batch file_) in a _distributed content-addressable storage (DCAS or CAS)_. Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+
 
 # Terminology
 
@@ -19,16 +20,18 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | Batch file     | The file containing all the operation data batched together.                   |
 | CAS            | Same as DCAS.                                                                  |
 | DCAS           | Distributed content-addressable storage.                                       |
-| DID document   | A document as described by the [DID specification](https://w3c-ccg.github.io/did-spec/), containing information about a DID such as the public key of the DID owner and service endpoints used.
+| DID document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | Operation      | A change to a DID document.                                                    |
 | Operation hash | The hash of the JSON-formated request of a Sidetree operation.                 |
 | Sidetree node  | A logical server executing Sidetree protocol rules.                            |
 | Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
 
+
 # Format and Encoding
 * JSON is used as the data encapsulation format.
 * Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
 * [_Multihash_] is used to represent hashes.
+
 
 # Sidetree Protocol Parameters
 The following lists the parameters of each version of the Sidetree protocol.
@@ -39,6 +42,30 @@ The following lists the parameters of each version of the Sidetree protocol.
 | Hash algorithm         | SHA256 |
 | Maximum batch size     | 10000  |
 | Maximum operation size | 2 KB   |
+
+
+# Sidetree Operations and DIDs
+
+## Sidetree Operations
+
+A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
+) is a document containing information about a DID, such as the public key of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_. All write operations are authenticated with a signature using a key specified in the corresponding DID Document.
+
+An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.org/html/rfc6902) so that only differences from the previous version of the DID Document is stored in each write operation.
+
+> NOTE: Create and recover operations require complete a DID Document as input as opposed to a _JSON patch_.
+
+## Sidetree Operation Hashes and DIDs
+
+An _operation hash_ is the hash of the JSON-formatted request of a state-modifying Sidetree operation. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. An _operation hash_ serves as a globally unique identifier of the operation, each write operation must reference the previous operation using the _operation hash_, forming a chain of change history.
+
+A Sidetree DID is simply the _operation hash_ of a valid create operation request prefixed by the Sidetree DID method name.
+
+System diagram showing operation chain of a DID:
+> TODO: Need to update this outdated diagram: 1. each operation should only reference the previous. 2. Only anchor file hash should be anchored on blockchain.
+
+![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
+
 
 
 # Sidetree Operation Batching
@@ -136,28 +163,6 @@ The _anchor file_ is a JSON document of the following schema:
 }
 ```
 
-# Sidetree Operations
-
-> TODO: Entire section pending update.
-
-
-## DID Documents
-
-> TODO: to be updated.
-
- An update to a DID document is specified as a [JSON patch](https://tools.ietf.org/html/rfc6902) and is authenticated with a signature using the DID owner's private key. The sequence of updates to a DID document produces a sequence of _versions_ of the document. Each update to a DID document references the previous update (creation, update, recovery, etc.) forming a chain of change history. Ownership of a DID is linked to possession of keys specified within the DID document itself.
-
-System diagram showing operation chain of a DID:
-> TODO: Need to update this outdated diagram: 1. each operation only references the previous. 2. Only file hash is anchored on blockchain.
-
-![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
-
-
-## Operation Hashes and DIDs
-
-An _operation hash_ is the hash of the JSON-formated request of a state-modifying Sidetree operation defined in [Sidetree REST API](#sidetree-rest-api) (e.g. Create, Update, and Delete etc). An _operation hash_ serves as a unique identifier of the DID document produced by the corresponding operation.
-
-A Sidetree DID is simply the DID method name suffixed with the _operation hash_ of a valid create operation request.
 
 # Sidetree REST API
 A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID document, subsequent DID document updates, and DID document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
