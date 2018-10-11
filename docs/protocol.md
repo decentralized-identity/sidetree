@@ -26,7 +26,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 ## Format and Encoding
 * JSON is used as the data encapsulation format.
-* Base64URL encoding is use whenever encoding is needed for binary data or cryptographic consistency.
+* Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
 * [_Multihash_] is used to represent hashes.
 
 # Sidetree Protocol Parameters
@@ -50,7 +50,7 @@ Since Sidetree batches many operations using a Merkle tree, each operation can b
 {
   "receipt": [
     {
-      "hash": "base64url encoded value of a Merkle tree node hash.",
+      "hash": "A Merkle tree node hash.",
       "side": "Must be 'left' or 'right', denotes the position of this hash."
     },
     ...
@@ -119,8 +119,8 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 ```json
 {
   "operations": [
-    "Base64URL encoded operation",
-    "Base64URL encoded operation",
+    "Base58 encoded operation",
+    "Base58 encoded operation",
     ...
   ]
 }
@@ -130,8 +130,8 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFile": "Base64URL encoded hash of the batch file.",
-  "merkleRoot": "Base64URL encoded root hash of the Merkle tree contructed using the batch file."
+  "batchFile": "Base58 encoded hash of the batch file.",
+  "merkleRoot": "Base58 encoded root hash of the Merkle tree contructed using the batch file."
 }
 ```
 
@@ -155,7 +155,7 @@ System diagram showing op sig links that form a Sidetree Entity Trail:
 
 ## DIDs and Document Version URLs
 
-All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:Hash** where *Hash* represents a Base64URL encoded multihash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#creation-of-a-sidetree-entity).
+All state-modifying Sidetree operations (Create, Update, and Delete), upon successful completion, return as output a _version URL_ that serves as a unique handle identifying the version of the DID document produced by the operation; the handle is used as input parameters of future operations as discussed below. A version URL is of the form **did:stree:Hash** where *Hash* represents a Base58 encoded multihash value. The version URL is an emergent value derived from anchoring the update operation in the blockchain as described in [Section](#creation-of-a-sidetree-entity).
 
 The version URL output by the Create operation defines the newly created decentralized id (DID). In other words, a DID is simply the URL of the first version of its document.
 
@@ -206,8 +206,8 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the initial didDocument.",
-  "createPayload": "Base64URL encoded initial DID Document of the DID.",
-  "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
+  "createPayload": "Base58 encoded initial DID Document of the DID.",
+  "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -349,8 +349,8 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the update payload",
-  "updatePayload": "Base64URL encoded update payload JSON object define by the schema below.",
-  "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
+  "updatePayload": "Base58 encoded update payload JSON object define by the schema below.",
+  "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -370,9 +370,9 @@ POST /<api-version>/
 ### Update payload schema example
 ```json
 {
-  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
   "operationNumber": 12,
-  "perviousOperationHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "perviousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
   "patch": {
     "op": "remove",
     "path": "/publicKey/0"
@@ -386,7 +386,7 @@ POST /v1.0/
 ```
 ```json
 {
-  "signingKeyId": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A#key-1",
+  "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
   "updatePayload": "...",
   "signature": "...",
   "proofOfWork": { ... }
@@ -414,8 +414,8 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the update payload",
-  "deletePayload": "Base64URL encoded delete payload JSON object define by the schema below.",
-  "signature": "Base64URL encoded signature of the payload signed by the private-key corresponding to the
+  "deletePayload": "Base58 encoded delete payload JSON object define by the schema below.",
+  "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -434,9 +434,9 @@ POST /<api-version>/
 ### Delete payload example
 ```json
 {
-  "did": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A",
+  "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
   "operationNumber": 13,
-  "perviousOperationHash": "N-JQZifsEIzwZDVVrFnLRXKREIVTFhSFMC1pt08WFzI",
+  "perviousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
 }
 ```
 
@@ -446,7 +446,7 @@ POST /v1.0/
 ```
 ```json
 {
-  "signingKeyId": "did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A#key-1",
+  "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
   "updatePayload": "...",
   "signature": "...",
   "proofOfWork": { ... }
