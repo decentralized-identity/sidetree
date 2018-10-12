@@ -15,53 +15,15 @@ export default class Rooter {
    */
   private processing: boolean = false;
 
-  public constructor (blockchain: Blockchain, cas: Cas, batchIntervalInSeconds: number) {
-    // The function that periodically performs rooting to blockchain.
-    setInterval(async () => {
-      // Wait until the next interval if the rooter is still processing a batch.
-      if (this.processing) {
-        return;
-      }
+  public constructor (
+    private blockchain: Blockchain,
+    private cas: Cas,
+    private batchIntervalInSeconds: number,
+    startPeriodicRooting: boolean = true) {
 
-      try {
-        console.info(Date.now() + ' Start batch processing...');
-        this.processing = true;
-
-        // Get the batch of operations to be anchored on the blockchain.
-        const batch = this.getBatch();
-        console.info(Date.now() + ' Batch size = ' + batch.length);
-
-        // Combine all operations into one JSON buffer.
-        const batchBuffer = Buffer.from(JSON.stringify(batch));
-
-        // TODO: Compress the batch buffer.
-
-        // Make the 'batch file' available in CAS.
-        const batchFileAddress = await cas.write(batchBuffer);
-
-        // Compute the Merkle root hash.
-        const merkleRoot = MerkleTree.create(batch).rootHash;
-
-        // Construct the 'anchor file'.
-        const anchorFile = {
-          batchFile: batchFileAddress,
-          merkleRoot: merkleRoot
-        };
-
-        // Make the 'anchor file' available in CAS.
-        const anchorFileJsonBuffer = Buffer.from(JSON.stringify(anchorFile));
-        const anchorFileAddress = await cas.write(anchorFileJsonBuffer);
-
-        // Anchor the 'anchor file hash' on blockchain.
-        await blockchain.write(anchorFileAddress);
-      } catch (e) {
-        console.info('TODO: batch rooting error handling not implemented.');
-        console.info(e);
-      } finally {
-        this.processing = false;
-        console.info(Date.now() + ' End batch processing.');
-      }
-    }, batchIntervalInSeconds * 1000);
+    if (startPeriodicRooting) {
+      this.startPeriodicRooting();
+    }
   }
 
   /**
@@ -69,6 +31,69 @@ export default class Rooter {
    */
   public add (operation: Buffer) {
     this.operations.push(operation);
+  }
+
+  /**
+   * Returns the current operation queue length.
+   */
+  public getOperationQueueLength (): number {
+    return this.operations.length;
+  }
+
+  /**
+   * The function that starts periodically anchoring operation batches to blockchain.
+   */
+  public startPeriodicRooting () {
+    setInterval(async () => this.rootOperations(), this.batchIntervalInSeconds * 1000);
+  }
+
+  /**
+   * Processes the operations in the queue.
+   */
+  public async rootOperations () {
+    // Wait until the next interval if the rooter is still processing a batch.
+    if (this.processing) {
+      return;
+    }
+
+    try {
+      console.info(Date.now() + ' Start batch processing...');
+      this.processing = true;
+
+      // Get the batch of operations to be anchored on the blockchain.
+      const batch = this.getBatch();
+      console.info(Date.now() + ' Batch size = ' + batch.length);
+
+      // Combine all operations into one JSON buffer.
+      const batchBuffer = Buffer.from(JSON.stringify(batch));
+
+      // TODO: Compress the batch buffer.
+
+      // Make the 'batch file' available in CAS.
+      const batchFileAddress = await this.cas.write(batchBuffer);
+
+      // Compute the Merkle root hash.
+      const merkleRoot = MerkleTree.create(batch).rootHash;
+
+      // Construct the 'anchor file'.
+      const anchorFile = {
+        batchFile: batchFileAddress,
+        merkleRoot: merkleRoot
+      };
+
+      // Make the 'anchor file' available in CAS.
+      const anchorFileJsonBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
+
+      // Anchor the 'anchor file hash' on blockchain.
+      await this.blockchain.write(anchorFileAddress);
+    } catch (e) {
+      console.info('TODO: batch rooting error handling not implemented.');
+      console.info(e);
+    } finally {
+      this.processing = false;
+      console.info(Date.now() + ' End batch processing.');
+    }
   }
 
   /**

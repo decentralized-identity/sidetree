@@ -7,15 +7,17 @@ export enum ConfigKey {
   CasNodeUri = 'casNodeUri',
   DevMode = 'devMode', // Used to enable test hooks that are disabled in production.
   DidMethodName = 'didMethodName',
+  ExampleSecret = 'exampleSecret', // TODO: used only for testing. Remove/replace once there is a real secret.
   Port = 'port'
 }
 
 /**
  * A map to look up the environment variable name given a config key.
- * Only add a new key-value mapping if the config value is a secret.
+ * Add a new key-value mapping ONLY IF the config value is a secret.
  */
 const secretConfigKeyToEnvironmentVariableNameMap: { [configKey: string]: string } = {};
-secretConfigKeyToEnvironmentVariableNameMap['secretConfigKey'] = 'SECRET_CONFIG_KEY'; // TODO: Remove this example once maps is used.
+// TODO: mapping below used only for testing. Remove/replace once there is a real secret.
+secretConfigKeyToEnvironmentVariableNameMap[ConfigKey.ExampleSecret] = 'EXAMPLE_SECRET';
 
 /**
  * The list of configuration settings used by the Sidetree server.
@@ -44,10 +46,10 @@ export class Config {
    *    the secret value will be read from the config file.
    */
   private static getValue (configFile: any, configKey: ConfigKey): string {
-    const environmentVariableName = secretConfigKeyToEnvironmentVariableNameMap[configKey];
+    const secretEnvironmentVariableName = secretConfigKeyToEnvironmentVariableNameMap[configKey];
 
-    if (environmentVariableName) {
-      const configValue = process.env[environmentVariableName];
+    if (secretEnvironmentVariableName) {
+      const configValue = process.env[secretEnvironmentVariableName];
 
       if (configValue) {
         return configValue;
@@ -55,7 +57,7 @@ export class Config {
         if (configFile[ConfigKey.DevMode]) {
           return configFile[configKey];
         } else {
-          throw new Error(`Environment variable: ${environmentVariableName} not found. Set devMode config to 'true' if this is a dev machine.`);
+          throw new Error(`Environment variable: ${secretEnvironmentVariableName} not found. Set devMode config to 'true' if this is a dev machine.`);
         }
       }
     } else {

@@ -5,7 +5,7 @@ import Rooter from '../src/Rooter';
 import { Config, ConfigKey } from '../src/Config';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { readFileSync } from 'fs';
-import { ResponseStatus } from '../src/Response';
+import { toHttpStatus } from '../src/Response';
 
 describe('RequestHandler', () => {
   // Component dependency initialization & injection.
@@ -13,16 +13,24 @@ describe('RequestHandler', () => {
   const config = new Config(configFile);
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
-  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds], false);
   const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
 
-  it('should handle create operation request.', () => {
+  it('should handle create operation request.', async () => {
     const createRequest = readFileSync('./tests/requests/create.json');
     const response = requestHandler.handleWriteRequest(createRequest);
+    const httpStatus = toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
+    expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect(response.status).toEqual(ResponseStatus.Succeeded);
     expect((response.body as DidDocument).id).toEqual('did:sidetree:QmcVuf9R2Ma8PfsBGrJDcvbNGybi7h22c9nM98fBSaLXkF');
+
+
+    const blockchainWriteSpy = spyOn(blockchain, 'write');
+    expect(rooter.getOperationQueueLength()).toEqual(1);
+    await rooter.rootOperations();
+    expect(rooter.getOperationQueueLength()).toEqual(0);
+    expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
   });
 });
