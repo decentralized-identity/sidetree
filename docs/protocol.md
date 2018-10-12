@@ -61,11 +61,6 @@ An _operation hash_ is the hash of the JSON-formatted request of a state-modifyi
 
 A Sidetree DID is simply the _operation hash_ of a valid create operation request prefixed by the Sidetree DID method name.
 
-System diagram showing operation chain of a DID:
-> TODO: Need to update this outdated diagram: 1. each operation should only reference the previous. 2. Only anchor file hash should be anchored on blockchain.
-
-![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
-
 
 
 # Sidetree Operation Batching
@@ -163,6 +158,12 @@ The _anchor file_ is a JSON document of the following schema:
 }
 ```
 
+System diagram showing operation chain of a DID:
+> TODO: Need to update this outdated diagram: 1. each operation should only reference the previous. 2. Only anchor file hash should be anchored on blockchain.
+
+![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
+
+
 
 # DDoS Mitigation
 Given the protocol was designed to enable operations to be performed at large volumes with cheap unit costs, DDoS is a real threat to the system.
@@ -178,6 +179,7 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
 1. Operation-level proof-or-work
 
    Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
+
 
 
 # Sidetree REST API
