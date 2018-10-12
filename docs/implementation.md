@@ -12,9 +12,9 @@ This document focuses on the Node.js implementation of the Sidetree protocol.
 
 The DID cache holds most of the state of a Sidetree node. It is a singleton class with the following methods for state update and retrieval.
 
-## Record
+## Apply
 
-This is the core method to update state with the following signature.
+This is the core method to update the state of a DID Document:
 
 ```javascript
 public apply (operation: WriteOperation, blockNumber: number: transactionIndex: number, operationIndex: number)
