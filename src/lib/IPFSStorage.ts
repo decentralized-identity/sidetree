@@ -34,7 +34,7 @@ export class IPFSStorage implements Storage {
   public async read (hash: string): Promise<Buffer> {
     let fileContent: Buffer | undefined | NodeJS.ReadableStream = Buffer.from('');
 
-    await this.node!.files.get(hash).then((files) => {
+    await this.node!.files.get(hash).then((files: IPFS.Files[]) => {
       files.forEach((file) => {
         console.log(file.path);
         fileContent = file.content;
@@ -42,5 +42,18 @@ export class IPFSStorage implements Storage {
     });
 
     return fileContent;
+  }
+
+  public async write (content: Buffer): Promise<string> {
+    let fileHash: string = '';
+
+    await this.node!.files.add(content).then((files: IPFS.IPFSFile[]) => {
+      files.forEach((file: IPFS.IPFSFile) => {
+        console.log(file.path, file.size);
+        fileHash = file.hash;
+      });
+    });
+
+    return fileHash;
   }
 }

@@ -21,8 +21,19 @@ describe('IPFSStorage', () => {
     }
   ];
 
-  let testContent = async function() {
+  let sidetreeContent: IPFS.IPFSFile[] = [
+    {
+      path: '/tmp/myfile.txt',
+      hash: 'QM12345abc',
+      size: 123,
+    }
+  ]
+  let testContent = async () => {
     return ipfsContent;
+  }
+
+  let testSidetreeContent = async () => {
+    return sidetreeContent;
   }
 
   it('should return the pinned content for the given hash.', ()=> {
@@ -32,6 +43,17 @@ describe('IPFSStorage', () => {
     
     ipfsStorage.read('abc123').then(function (value) {
       expect(expectedContent).toEqual(value);
+    });
+  });
+
+  it('should write the content to IPFS and return the multihash.', ()=> {
+    spyOn(ipfsStorage.node!.files, 'add').and.callFake(testSidetreeContent);
+    
+    let expectedHash = 'QM12345abc';
+    let bufferContent = Buffer.from('ipfs');
+    
+    ipfsStorage.write(bufferContent).then(function (value) {
+      expect(expectedHash).toEqual(value);
     });
   });
 });
