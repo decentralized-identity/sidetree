@@ -5,8 +5,11 @@ import { Storage } from './Storage';
  * Class that implements the IPFS Storage functionality.
  */
 export class IPFSStorage implements Storage {
+  /**  IPFS node instance  */
   public node?: IPFS;
+  /**  IPFS Storage class object  */
   static ipfsStorageInstance?: IPFSStorage;
+  /**  IPFS options to create an IPFS node */
   static ipfsOptions?: IPFS.Options;
   /**
    * Static method to have a single instance of class and mock in unit tests
