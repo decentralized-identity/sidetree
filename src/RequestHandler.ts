@@ -42,4 +42,26 @@ export default class RequestHandler {
     }
     return response;
   }
+
+  /**
+   * Handles sidetree content write request
+   * @param content Sidetree content to write into CAS storage
+   */
+  public async handleWriteRequest (content: Buffer): Promise<Response> {
+    let response!: Response;
+    try {
+      await this.ipfsStorage!.write(content).then((value) => {
+        response = {
+          status: ResponseStatus.Succeeded,
+          body: { hash: value }
+        };
+      });
+    } catch (err) {
+      response = {
+        status: ResponseStatus.ServerError,
+        body: err.message
+      };
+    }
+    return response;
+  }
 }

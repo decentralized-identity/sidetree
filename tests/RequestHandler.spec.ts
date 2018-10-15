@@ -3,7 +3,7 @@ import { Response, ResponseStatus } from '../src/Response';
 
 describe('RequestHandler', () => {
 
-  it('should return the correct response object for fetch request.', async () => {
+  it('should return the correct response object for invalid multihash.', async () => {
     const expectedResponse: Response = {
       status: ResponseStatus.BadRequest,
       body: { error: 'Invalid content Hash' }

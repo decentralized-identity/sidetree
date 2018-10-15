@@ -20,6 +20,11 @@ router.get('/:hash', async (ctx, _next) => {
   setKoaResponse(response, ctx.response, 'application/octet-stream');
 });
 
+router.post('/', async (ctx, _next) => {
+  const response = await requestHandler.handleWriteRequest(ctx.body);
+  setKoaResponse(response, ctx.response);
+});
+
 app.use(router.routes())
    .use(router.allowedMethods());
 
