@@ -1,15 +1,16 @@
-import * as RequestHandler from '../src/RequestHandler';
+import RequestHandler from '../src/RequestHandler';
 import { Response, ResponseStatus } from '../src/Response';
 
 describe('RequestHandler', () => {
 
-  it('should return the correct response object for fetch request.', () => {
+  it('should return the correct response object for fetch request.', async () => {
     const expectedResponse: Response = {
-      status: ResponseStatus.ServerError,
-      body: { error: 'Not implemented' }
+      status: ResponseStatus.BadRequest,
+      body: { error: 'Invalid content Hash' }
     };
+    const requestHandler = new RequestHandler();
     let testHash: string = '123abc';
-    let fetchedResponse = RequestHandler.handleFetchRequest(testHash);
+    let fetchedResponse = await requestHandler.handleFetchRequest(testHash);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });

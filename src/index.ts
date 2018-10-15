@@ -1,9 +1,10 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import * as RequestHandler from 'RequestHandler';
+import RequestHandler from 'RequestHandler';
 import { toHttpStatus, Response } from 'Response';
 
+const requestHandler = new RequestHandler();
 const app = new Koa();
 
 // Raw body parser.
@@ -14,9 +15,9 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
-router.get('/:hash', (ctx, _next) => {
-  const response = RequestHandler.handleFetchRequest(ctx.params.hash);
-  setKoaResponse(response, ctx.response);
+router.get('/:hash', async (ctx, _next) => {
+  const response = await requestHandler.handleFetchRequest(ctx.params.hash);
+  setKoaResponse(response, ctx.response, 'application/octet-stream');
 });
 
 app.use(router.routes())
@@ -35,8 +36,12 @@ app.listen(port, () => {
 /**
  * Sets the koa response according to the Sidetree response object given.
  */
-const setKoaResponse = (response: Response, koaResponse: Koa.Response) => {
+const setKoaResponse = (response: Response, koaResponse: Koa.Response, contentType?: string) => {
   koaResponse.status = toHttpStatus(response.status);
-  koaResponse.set('Content-Type', 'application/json');
+  if (contentType) {
+    koaResponse.set('Content-Type', contentType);
+  } else {
+    koaResponse.set('Content-Type', 'application/json');
+  }
   koaResponse.body = response.body;
 };
