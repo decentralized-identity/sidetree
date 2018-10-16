@@ -1,30 +1,30 @@
-import * as IPFS from 'ipfs';
-import { IPFSStorage } from '../../src/lib/IPFSStorage';
+import * as Ipfs from 'ipfs';
+import { IpfsStorage } from '../../src/lib/IPFSStorage';
 
 describe('IPFSStorage', () => {
-  let ipfsStorage: IPFSStorage;
+  let ipfsStorage: IpfsStorage;
 
   beforeEach(() => {
-    let ipfsOptions: IPFS.Options = {
+    let ipfsOptions: Ipfs.Options = {
       repo: 'sidetree-ipfs',
       init: false,
       start: false
     };
 
-    ipfsStorage = IPFSStorage.createIPFSNode(ipfsOptions);
+    ipfsStorage = IpfsStorage.createIPFSNode(ipfsOptions);
   });
 
-  let ipfsContent: IPFS.Files[] = [
+  let ipfsContent: Ipfs.Files[] = [
     {
       path: '/tmp/myfile.txt',
       content: Buffer.from('ipfs')
     }
   ];
 
-  let sidetreeContent: IPFS.IPFSFile[] = [
+  let sidetreeContent: Ipfs.IPFSFile[] = [
     {
       path: '/tmp/myfile.txt',
-      hash: 'QM12345abc',
+      hash: 'Qm12345abc',
       size: 123,
     }
   ]
@@ -49,7 +49,7 @@ describe('IPFSStorage', () => {
   it('should write the content to IPFS and return the multihash.', ()=> {
     spyOn(ipfsStorage.node!.files, 'add').and.callFake(testSidetreeContent);
     
-    let expectedHash = 'QM12345abc';
+    let expectedHash = 'Qm12345abc';
     let bufferContent = Buffer.from('ipfs');
     
     ipfsStorage.write(bufferContent).then(function (value) {

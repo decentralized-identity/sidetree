@@ -1,5 +1,5 @@
 import { Response, ResponseStatus } from './Response';
-import { IPFSStorage } from './lib/IPFSStorage';
+import { IpfsStorage } from './lib/IPFSStorage';
 const multihashes = require('multihashes');
 
 /**
@@ -7,10 +7,10 @@ const multihashes = require('multihashes');
  */
 export default class RequestHandler {
 
-  private ipfsStorage?: IPFSStorage;
+  private ipfsStorage: IpfsStorage;
 
   public constructor () {
-    this.ipfsStorage = IPFSStorage.createIPFSNode();
+    this.ipfsStorage = IpfsStorage.createIPFSNode();
   }
   /**
    * Handles read request
@@ -28,7 +28,7 @@ export default class RequestHandler {
       };
     }
     try {
-      await this.ipfsStorage!.read(_hash).then((value) => {
+      await this.ipfsStorage.read(_hash).then((value) => {
         response = {
           status: ResponseStatus.Succeeded,
           body: value
@@ -50,7 +50,7 @@ export default class RequestHandler {
   public async handleWriteRequest (content: Buffer): Promise<Response> {
     let response!: Response;
     try {
-      await this.ipfsStorage!.write(content).then((value) => {
+      await this.ipfsStorage.write(content).then((value) => {
         response = {
           status: ResponseStatus.Succeeded,
           body: { hash: value }
