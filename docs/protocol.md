@@ -30,7 +30,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 # Format and Encoding
 * JSON is used as the data encapsulation format.
 * Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
-* [_Multihash_] is used to represent hashes.
+* [_Multihash_](https://multiformats.io/multihash/https://multiformats.io/multihash/d) is used to represent hashes.
 
 
 # Sidetree Protocol Parameters
@@ -153,7 +153,7 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFile": "Base58 encoded hash of the batch file.",
+  "batchFileHash": "Base58 encoded hash of the batch file.",
   "merkleRoot": "Base58 encoded root hash of the Merkle tree contructed using the batch file."
 }
 ```
@@ -176,7 +176,7 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
    
    By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost.
 
-1. Operation-level proof-or-work
+1. Operation-level proof-of-work
 
    Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
 
