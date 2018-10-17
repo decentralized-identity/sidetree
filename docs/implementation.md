@@ -17,13 +17,13 @@ The DID cache holds most of the state of a Sidetree node. It is a singleton clas
 This is the core method to update the state of a DID Document:
 
 ```javascript
-public apply (operation: WriteOperation, blockNumber: number: transactionIndex: number, operationIndex: number)
+public apply (transactionNumber: number, operationIndex: number, operation: WriteOperation)
 ```
 The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation.
 
-The `blockNumber`, `transactionIndex`, and `operationIndex` parameters together provides a deterministic ordering of all operations. The `blockNumber` identifies the blockchain block that this operation is anchored to; `transactionIndex` is the index of the blockchain transaction that this operation is batched within, among all the transactions in the same block. The `operationIndex` is the index of this operation amongst all the operations within the same batch.
+The `transactionNumber` and `operationIndex` parameters together provides a deterministic ordering of all operations. The `transactionNumber` is an incrementing number starting from 1 that uniquely identifies the transaction. The `operationIndex` is the index of this operation amongst all the operations within the same batch.
 
-> Note: `blockNumber`, `transactionIndex`, and `operationIndex` are explicitly called out as parameters for the `apply` method for clarity. They may be embedded within the `operation` parameter in actual implementation.
+> Note: `transactionNumber` and `operationIndex` are explicitly called out as parameters for the `apply` method for clarity. They may be embedded within the `operation` parameter in actual implementation.
 
 Under normal processing, the _observer_ would process operations in chronological order. However the implementation accepts `apply` calls with out-of-ordered operations. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
 
@@ -43,10 +43,10 @@ In the above description, *earlier* and *later* refer to the logical time of the
 
 ## Rollback
 
-This method is used to handle rollbacks (orphaning of blocks) in the blockchain.
+This method is used to handle rollbacks (forks) in the blockchain.
 
 ```javascript
-public rollback(blockId: string)
+public rollback(transactionNumber: number)
 ```
 
 The effect of this method is to delete the effects of any operation added with a *blockId* greater than the one provided.
@@ -323,11 +323,13 @@ GET /<api-version>/transactions/
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
+
 ### Request body schema
 ```json
 {
-  "afterBlockNumber": "Optional. A valid block number. When not given, all Sidetree transactions since
-    inception will be returned. When given, only anchor file hashes after the given hash will be returned.
+  "afterTransactoin": "Optional. A valid transaction number. When not given, all Sidetree transactions since
+                       inception will be returned. When given, only Sidetree transaction after the transaction
+                       of the given number will be returned.
 }
 ```
 
@@ -337,7 +339,7 @@ GET /v1.0/transactions/
 ```
 ```json
 {
-  "afterBlockNumber": 535236
+  "afterTransactoin": 89
 }
 ```
 
@@ -347,12 +349,10 @@ GET /v1.0/transactions/
   "moreTransactions": "True if there are more transactions beyond the returned batch. False otherwise.",
   "transactions": [
     {
-      "blockNumber": "The block number of the block that contains this transaction. Used for ordering.",
-      "blockHash": "A hash of the block that contains this transaction.",
-      "transactionIndex": "The index to this transaction among all the transactions in the block.
-                           Used to order multiple Sidetree transactions in the same block.",
+      "transactionNumber": "An incrementing number starting from 1 that globally uniquely identifies a Sidtree transaction.",
       "anchorFileHash": "Hash of the anchor file of this transaction."
-    }
+    },
+    ...
   ]
 }
 ```
@@ -363,15 +363,11 @@ GET /v1.0/transactions/
   "moreTransactions": false,  
   "transactions": [
     {
-      "blockNumber": 545236,
-      "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051",
-      "transactionIndex": 23,
+      "transactionNumber": 89,
       "anchorFileHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
-      "blockNumber": 545237,
-      "blockHash": "0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5",
-      "transactionIndex": 333,
+      "transactionNumber": 90,
       "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
   ]
@@ -458,7 +454,7 @@ Get /v1.0/block/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
 
 
 ## Get last block hash
-Gets the hash of the last confirmed block.
+Gets the last confirmed block.
 
 > TODO: Discuss and consider returning a list of block hash instead.
 
