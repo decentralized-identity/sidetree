@@ -1,4 +1,5 @@
 import * as Base58 from 'bs58';
+import Protocol from './Protocol';
 import Transaction from './Transaction';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
@@ -74,6 +75,7 @@ export default class Observer {
         let batchFileBuffer;
         try {
           batchFileBuffer = await this.cas.read(anchorFile.batchFileHash);
+          // TODO: Consider short-circuit optimization: check file size before downloading.
         } catch {
           // If unable to fetch the batch file, place the transaction for future retries.
           this.addUnresolvableTransaction(transaction);
@@ -101,9 +103,22 @@ export default class Observer {
     try {
       const batchFile = JSON.parse(batchFileBuffer.toString());
 
+      // TODO: validate batch file JSON schema.
+
+      // Verify the number of operations does not exceed the maximum allowed limit.
+      if (batchFile.operations.length > Protocol.maxOperationsPerBatch) {
+        throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${Protocol.maxOperationsPerBatch}.`);
+      }
+
       let operationIndex = 0;
       for (const operationBase58 of batchFile.operations) {
         const operationBuffer = Buffer.from(Base58.decode(operationBase58));
+
+        // Verify size of each operation does not exceed the maximum allowed limit.
+        if (operationBuffer.length > Protocol.maxOperationByteSize) {
+          throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${Protocol.maxOperationByteSize} bytes.`);
+        }
+
         const operation = WriteOperation.create(operationBuffer, transaction.transactionNumber, operationIndex);
 
         operations.push(operation);
