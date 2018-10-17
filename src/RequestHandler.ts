@@ -26,7 +26,7 @@ export default class RequestHandler {
       }
 
       // Parse request into a WriteOperation.
-      operation = WriteOperation.parse(request);
+      operation = WriteOperation.create(request);
 
       // TODO: Validate or perform proof-of-work.
 
@@ -81,7 +81,7 @@ export default class RequestHandler {
    */
   public handleCreateOperation (operation: WriteOperation): Response {
     // Compute the hash as the DID
-    const multihash = Multihash.hash(operation.request);
+    const multihash = Multihash.hash(operation.operationBuffer);
     const multihashBase58 = Base58.encode(multihash);
     const did = this.didMethodName + multihashBase58;
 
