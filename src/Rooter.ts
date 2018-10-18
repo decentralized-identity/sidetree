@@ -18,12 +18,7 @@ export default class Rooter {
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
-    private batchIntervalInSeconds: number,
-    startPeriodicRooting: boolean = true) {
-
-    if (startPeriodicRooting) {
-      this.startPeriodicRooting();
-    }
+    private batchIntervalInSeconds: number) {
   }
 
   /**

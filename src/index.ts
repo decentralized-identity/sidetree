@@ -19,6 +19,8 @@ const didCache = new MockDidCache();
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
 const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
+
+rooter.startPeriodicRooting();
 observer.startPeriodicPolling();
 
 const app = new Koa();
