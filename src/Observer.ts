@@ -14,12 +14,7 @@ export default class Observer {
     private blockchain: Blockchain,
     private cas: Cas,
     private didCache: DidCache,
-    private pollingIntervalInSeconds: number,
-    startPeriodicPolling: boolean = true) {
-
-    if (startPeriodicPolling) {
-      this.startPeriodicPolling();
-    }
+    private pollingIntervalInSeconds: number) {
   }
 
   /**

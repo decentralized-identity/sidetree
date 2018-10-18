@@ -8,6 +8,7 @@ export enum ConfigKey {
   DevMode = 'devMode', // Used to enable test hooks that are disabled in production.
   DidMethodName = 'didMethodName',
   ExampleSecret = 'exampleSecret', // TODO: used only for testing. Remove/replace once there is a real secret.
+  PollingIntervalInSeconds = 'pollingIntervalInSeconds',
   Port = 'port'
 }
 
