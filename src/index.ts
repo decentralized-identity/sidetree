@@ -1,6 +1,8 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
+import MockDidCache from '../tests/mocks/MockDidCache'; // TODO: Replace once real implementation comes in.
+import Observer from './Observer';
 import RequestHandler from './RequestHandler';
 import Rooter from './Rooter';
 import { BlockchainClient } from './Blockchain';
@@ -13,8 +15,11 @@ const configFile = require('../json/config.json');
 const config = new Config(configFile);
 const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
+const didCache = new MockDidCache();
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
+observer.startPeriodicPolling();
 
 const app = new Koa();
 
