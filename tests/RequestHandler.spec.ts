@@ -13,7 +13,7 @@ describe('RequestHandler', () => {
   const config = new Config(configFile);
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
-  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds], false);
+  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
   const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
