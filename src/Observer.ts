@@ -10,6 +10,14 @@ import { WriteOperation } from './Operation';
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
  */
 export default class Observer {
+
+  /**
+   * The number of seconds to wait before retry.
+   * This value doubles for every consecutive processing failure.
+   * The value is reset to 1 if batch processing is successful.
+   */
+  private errorRetryIntervalInSeconds = 1;
+
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
@@ -20,12 +28,15 @@ export default class Observer {
   /**
    * The function that starts the periodic polling and processing of Sidetree operations.
    */
-  public startPeriodicPolling () {
-    setInterval(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
+  public startPeriodicProcessing () {
+    setImmediate(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
   }
 
   /**
-   * Processes all new operations anchored on blockchain.
+   * Processes new transactions, then scehdules the next processing:
+   * If there are more transactions, schedules processing immediately.
+   * If encountered error, then wait twice longer than the previous error retry interval before retry.
+   * If everything is processed, will for the configured polling interval before processing again.
    */
   public async processTransactions () {
     let unhandledErrorOccurred = false;
@@ -78,13 +89,18 @@ export default class Observer {
         }
 
         await this.processOperationBatch(transaction, batchFileBuffer);
+
+        this.errorRetryIntervalInSeconds = 1;
       }
     } catch (e) {
       unhandledErrorOccurred = true;
+      this.errorRetryIntervalInSeconds *= 2;
       console.info(e);
-      console.info('Encountered Observer error, will attempt to process unprocessed operations again.');
+      console.info(`Encountered Observer error, will attempt to process unprocessed operations again in ${this.errorRetryIntervalInSeconds} seconds.`);
     } finally {
-      if (unhandledErrorOccurred || moreTransactions) {
+      if (unhandledErrorOccurred) {
+        setTimeout(async () => this.processTransactions(), this.errorRetryIntervalInSeconds * 1000);
+      } else if (moreTransactions) {
         setImmediate(async () => this.processTransactions());
       } else {
         setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);

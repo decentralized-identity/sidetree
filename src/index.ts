@@ -21,7 +21,7 @@ const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.Polli
 const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
 
 rooter.startPeriodicRooting();
-observer.startPeriodicPolling();
+observer.startPeriodicProcessing();
 
 const app = new Koa();
 
