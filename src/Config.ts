@@ -3,7 +3,7 @@
  */
 export enum ConfigKey {
   BatchIntervalInSeconds = 'batchIntervalInSeconds',
-  BlockchainNodeUri = 'BlockchainNodeUri',
+  BlockchainNodeUri = 'blockchainNodeUri',
   CasNodeUri = 'casNodeUri',
   DevMode = 'devMode', // Used to enable test hooks that are disabled in production.
   DidMethodName = 'didMethodName',

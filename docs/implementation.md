@@ -315,7 +315,7 @@ Fetches Sidetree transactions in chronological order.
 
 ### Request path
 ```
-GET /<api-version>/transactions/
+GET /<api-version>/transactions?after=<transaction-number>
 ```
 
 ### Request headers
@@ -324,23 +324,15 @@ GET /<api-version>/transactions/
 | ```Content-Type```    | ```application/json``` |
 
 
-### Request body schema
-```json
-{
-  "afterTransactoin": "Optional. A valid transaction number. When not given, all Sidetree transactions since
-                       inception will be returned. When given, only Sidetree transaction after the transaction
-                       of the given number will be returned.
-}
-```
+### Request query parameters
+- `after`
+
+  Optional. A valid transaction number. When not given, all Sidetree transactions since inception will be returned.
+  When given, only Sidetree transactions after the specified transaction will be returned.
 
 ### Request example
 ```
-GET /v1.0/transactions/
-```
-```json
-{
-  "afterTransactoin": 89
-}
+GET /v1.0/transactions?after=88
 ```
 
 ### Response body schema
@@ -384,7 +376,7 @@ Writes a Sidetree transaction to the underlying blockchain.
 
 ### Request path
 ```
-POST /<api-version>/transaction/
+POST /<api-version>/transactions
 ```
 
 ### Request headers
@@ -401,7 +393,7 @@ POST /<api-version>/transaction/
 
 ### Request example
 ```
-POST /v1.0/transaction/
+POST /v1.0/transactions
 ```
 ```json
 {
