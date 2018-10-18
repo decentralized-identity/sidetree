@@ -1,7 +1,7 @@
 ﻿const protocolVersions = require('../json/protocol.json');
 
 // Reverse sorted protocol versions. ie. latest version first.
-const protocolVersionsSorted = Object.values<Protocol>(protocolVersions).sort((a, b) => a.startingBlockNumber - b.startingBlockNumber);
+const protocolVersionsSorted = Object.values<Protocol>(protocolVersions).sort((a, b) => b.startingBlockNumber - a.startingBlockNumber);
 
 /**
  * Defines protocol parameter values.
