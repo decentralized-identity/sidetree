@@ -341,6 +341,7 @@ GET /v1.0/transactions?after=88
   "moreTransactions": "True if there are more transactions beyond the returned batch. False otherwise.",
   "transactions": [
     {
+      "blockNumber": "The block number of the block that contains this transaction. Used for protocol version selection",
       "transactionNumber": "An incrementing number starting from 1 that globally uniquely identifies a Sidtree transaction.",
       "anchorFileHash": "Hash of the anchor file of this transaction."
     },
@@ -355,10 +356,12 @@ GET /v1.0/transactions?after=88
   "moreTransactions": false,  
   "transactions": [
     {
+      "blockNumber": 545236,
       "transactionNumber": 89,
       "anchorFileHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
+      "blockNumber": 545236,
       "transactionNumber": 90,
       "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
@@ -414,7 +417,7 @@ Gets the data of a block identified by the block hash.
 
 ### Request path
 ```
-GET /<api-version>/block/<block-hash>
+GET /<api-version>/blocks/<block-hash>
 ```
 
 ### Request headers
@@ -425,7 +428,7 @@ None.
 
 ### Request example
 ```
-Get /v1.0/block/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
+Get /v1.0/blocks/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
 ```
 
 ### Response body schema
@@ -446,9 +449,9 @@ Get /v1.0/block/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
 
 
 ## Get last block hash
-Gets the last confirmed block.
-
-> TODO: Discuss and consider returning a list of block hash instead.
+Gets the last confirmed block. This API serves two purposes:
+1. Allows the Rooter to determine protocol version to be used.
+2. Provides the block hash to be used for generating proof-of-work.
 
 |                     |      |
 | ------------------- | ---- |
@@ -456,7 +459,7 @@ Gets the last confirmed block.
 
 ### Request path
 ```
-GET /<api-version>/block/last
+GET /<api-version>/blocks/last
 ```
 
 ### Request headers
@@ -467,7 +470,7 @@ None.
 
 ### Request example
 ```
-Get /v1.0/block/last
+Get /v1.0/blocks/last
 ```
 
 ### Response body schema

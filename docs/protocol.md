@@ -33,12 +33,15 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 * [_Multihash_](https://multiformats.io/multihash/https://multiformats.io/multihash/d) is used to represent hashes.
 
 
-# Sidetree Protocol Parameters
+# Sidetree Protocol Versioning & Parameters
+Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define the _block number_ in which the new rules and parameter values will take effect. All subsequent blocks will adhere to the same rules and parameter values until a newer protocol version is defined.
+
 The following lists the parameters of each version of the Sidetree protocol.
 
 ## v1.0
 | Parameter              | Value  |
 |------------------------|--------|
+| Starting block number  | 500000 |
 | Hash algorithm         | SHA256 |
 | Maximum batch size     | 10000  |
 | Maximum operation size | 2 KB   |
@@ -495,3 +498,6 @@ If the operation is successful, it applies the provided JSON patch to the versio
 
   Each write operation type have different payload schema.
 
+* Why use _block nubmer_ as the marker for protocol versioning change instead of the Sidetree _transaction number_?
+
+  Because _block nubmer_ increments irrespective of whether there are Sidetree activity or not, it makes protocol version upgrade planning and scheduling easier for Sidetree node that do not want to risk creating invalid transaction with obsolete version.
