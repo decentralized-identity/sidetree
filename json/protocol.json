@@ -1,4 +1,10 @@
 {
+  "0.1": {
+    "startingBlockNumber": 0,
+    "hashAlgorithmInMultihashCode": 18,
+    "maxOperationByteSize": 2000,
+    "maxOperationsPerBatch": 100
+  },
   "1.0": {
     "startingBlockNumber": 500000,
     "hashAlgorithmInMultihashCode": 18,

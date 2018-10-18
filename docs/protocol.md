@@ -39,12 +39,12 @@ Sidetree protocol and parameters are expected to evolve overtime. Each version o
 The following lists the parameters of each version of the Sidetree protocol.
 
 ## v1.0
-| Parameter              | Value  |
-|------------------------|--------|
-| Starting block number  | 500000 |
-| Hash algorithm         | SHA256 |
-| Maximum batch size     | 10000  |
-| Maximum operation size | 2 KB   |
+| Parameter              | Value            |
+|------------------------|------------------|
+| Starting block number  | 500000 (bitcoin) |
+| Hash algorithm         | SHA256           |
+| Maximum batch size     | 10000            |
+| Maximum operation size | 2 KB             |
 
 
 # Sidetree Operations and DIDs
