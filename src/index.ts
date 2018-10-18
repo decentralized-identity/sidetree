@@ -18,7 +18,7 @@ const cas = new CasClient(config[ConfigKey.CasNodeUri]);
 const didCache = new MockDidCache();
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
 const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
-const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
+const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
 
 rooter.startPeriodicRooting();
 observer.startPeriodicProcessing();
@@ -32,8 +32,8 @@ app.use(async (ctx, next) => {
 });
 
 const router = new Router();
-router.post('/', (ctx, _next) => {
-  const response = requestHandler.handleWriteRequest(ctx.body);
+router.post('/', async (ctx, _next) => {
+  const response = await requestHandler.handleWriteRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 
