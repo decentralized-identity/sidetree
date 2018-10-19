@@ -65,14 +65,14 @@ export default class Rooter {
       // TODO: Compress the batch buffer.
 
       // Make the 'batch file' available in CAS.
-      const batchFileAddress = await this.cas.write(batchBuffer);
+      const batchFileHash = await this.cas.write(batchBuffer);
 
       // Compute the Merkle root hash.
       const merkleRoot = MerkleTree.create(batch).rootHash;
 
       // Construct the 'anchor file'.
       const anchorFile = {
-        batchFile: batchFileAddress,
+        batchFileHash: batchFileHash,
         merkleRoot: merkleRoot
       };
 
