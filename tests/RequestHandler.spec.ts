@@ -40,4 +40,20 @@ describe('RequestHandler', () => {
     expect(rooter.getOperationQueueLength()).toEqual(0);
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('should return bad request if operation given is larger than protocol limit.', async () => {
+    // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
+    const mockLastBlock ={
+      blockNumber: 1,
+      blockHash: "dummyHash"
+    }
+    blockchain.setLaskBlock(mockLastBlock);
+
+    const createRequest = readFileSync('./tests/requests/create.json');
+    const response = await requestHandler.handleWriteRequest(createRequest);
+    const httpStatus = toHttpStatus(response.status);
+
+    // TODO: more validations needed as implementation becomes more complete.
+    expect(httpStatus).toEqual(400);
+  });
 });
