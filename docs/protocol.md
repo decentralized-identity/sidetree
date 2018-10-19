@@ -183,6 +183,22 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
 
    Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
 
+# Sidetree Transaction Processing
+A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. A Sidetree transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
+
+1. The corresponding _anchor file_ must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
+1. The corresponding _batch file_ must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
+1. The operation batch size must not exceed the maximum size specified by the protocol.
+1. The transaction must meet the proof-of-work requirements defined by the protocol.
+1. Every operation batched in the same transaction must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch renders the entire transaction invalid:
+
+   1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
+
+   1. Must not exceed the operation size specified by the protocol.
+
+   1. Must use the hashing algorithm specified by the protocol.
+
+> NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the its _anchor file_ and _batch file_ become available.
 
 
 # Sidetree REST API
