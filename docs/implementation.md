@@ -103,8 +103,9 @@ All hashes used in the API are Base58 encoded multihash.
 | HTTP status code | Description                              |
 | ---------------- | ---------------------------------------- |
 | 200              | Everything went well.                    |
-| 401              | Unauthenticated or unauthorized request. |
 | 400              | Bad client request.                      |
+| 401              | Unauthenticated or unauthorized request. |
+| 404              | Resource not found.                      |
 | 500              | Server error.                            |
 
 
@@ -305,8 +306,9 @@ All hashes used in the API are Base58 encoded multihash.
 | HTTP status code | Description                              |
 | ---------------- | ---------------------------------------- |
 | 200              | Everything went well.                    |
-| 401              | Unauthenticated or unauthorized request. |
 | 400              | Bad client request.                      |
+| 401              | Unauthenticated or unauthorized request. |
+| 404              | Resource not found.                      |
 | 500              | Server error.                            |
 
 
