@@ -184,13 +184,13 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
    Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
 
 # Sidetree Transaction Processing
-A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. A Sidetree transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
+A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a logical incrementing number starting from 1, this _transaction number_ deterministically defines the order of transactions, and thus the order of operations. The _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
 
 1. The corresponding _anchor file_ must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
 1. The corresponding _batch file_ must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
 1. The operation batch size must not exceed the maximum size specified by the protocol.
 1. The transaction must meet the proof-of-work requirements defined by the protocol.
-1. Every operation batched in the same transaction must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch renders the entire transaction invalid:
+1. Every operation batched in the same transaction must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
 
    1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
 
@@ -517,3 +517,7 @@ If the operation is successful, it applies the provided JSON patch to the versio
 * Why use _block nubmer_ as the marker for protocol versioning change instead of the Sidetree _transaction number_?
 
   Because _block nubmer_ increments irrespective of whether there are Sidetree activity or not, it makes protocol version upgrade planning and scheduling easier for Sidetree node that do not want to risk creating invalid transaction with obsolete version.
+
+* Why assign a _transaction number_ for invalid transactions?
+
+  In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of existing valid transactions remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
