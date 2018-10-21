@@ -42,16 +42,12 @@ enum OperationType {
  * 3. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
 class WriteOperation {
-  /** The original request buffer sent by the requester. */
-  public readonly request: Buffer;
   /** The DID of the DID document to be updated. */
   public readonly did: string | undefined;
-  /** The incrementing number of this operation. */
-  public readonly operationNumber: number;
   /** The type of operation. */
   public readonly type: OperationType;
-  /** The hash of the previous operation. */
-  public readonly perviousOperationHash: Buffer | undefined;
+  /** The hash of the previous operation - undefined for DID create operation */
+  public readonly previousOperationHash?: string;
   /** ID of the key used to sign this operation. */
   public readonly signingKeyId: string;
   /** Signature of this operation. */
@@ -66,11 +62,20 @@ class WriteOperation {
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
    */
-  private constructor (request: Buffer) {
-    this.request = request;
-
+  private constructor (
+    /** The original request buffer sent by the requester. */
+    public readonly operationBuffer: Buffer,
+    /** Information to access the write operation */
+    public readonly accessInfo: OperationCasAccessInfo,
+    /** The transaction number of the transaction this operation was batched within. */
+    public readonly transactionNumber: number,
+    /** The index this operation was assigned to in the batch. */
+    public readonly operationIndex: number,
+    /** Hash of the batch file that contains this operation */
+    public readonly batchFileHash: string
+    ) {
     // Parse request buffer into a JS object.
-    const operation = JSON.parse(request.toString());
+    const operation = JSON.parse(operationBuffer.toString());
 
     // Ensure all properties given are specified in Sidetree protocol.
     const allowedProperties = new Set([
