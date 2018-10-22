@@ -9,30 +9,31 @@ function didDocumentUpdate (didDoc: DidDocument, _operation: WriteOperation): Di
   return didDoc;
 }
 
+const didDocJson = {
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:ignored",
+  "publicKey": [{
+    "id": "did:sidetree:didPortionIgnored#key-1",
+    "type": "RsaVerificationKey2018",
+    "owner": "did:sidetree:ignoredUnlessResolvable",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  }],
+  "service": [{
+    "type": "IdentityHub",
+    "publicKey": "did:sidetree:ignored#key-1",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instances": ["did:bar:456", "did:zaz:789"]
+    }
+  }]
+};
+
 // Implementation of Did document create - return a dummy did document
 function didDocumentCreate (_operation: WriteOperation): DidDocument {
-  const didDocJson = {
-    "@context": "https://w3id.org/did/v1",
-    "id": "did:sidetree:ignored",
-    "publicKey": [{
-      "id": "did:sidetree:didPortionIgnored#key-1",
-      "type": "RsaVerificationKey2018",
-      "owner": "did:sidetree:ignoredUnlessResolvable",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
-    }],
-    "service": [{
-      "type": "IdentityHub",
-      "publicKey": "did:sidetree:ignored#key-1",
-      "serviceEndpoint": {
-        "@context": "schema.identity.foundation/hub",
-        "@type": "UserServiceEndpoint",
-        "instances": ["did:bar:456", "did:zaz:789"]
-      }
-    }]
-  };
-
   return new DidDocument(didDocJson);
 }
+
 
 // Implementation of a dummy cas class for testing - a simple hash map
 class DummyCas implements Cas {
@@ -48,7 +49,7 @@ class DummyCas implements Cas {
 
 describe('DidCache', () => {
   it('should return non-null url for create op', async () => {
-    const createPayload = Base58.encode(Buffer.from('create payload'));
+    const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocJson)));
     const createOpRequest = {
       createPayload,
       signature: 'signature',

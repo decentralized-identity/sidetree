@@ -92,7 +92,9 @@ export class DidCache {
 
     // Ignore operations without the required metadata - any operation anchored
     // in a blockchain should have this metadata.
-    if (!operation.transactionNumber || !operation.operationIndex || !operation.batchFileHash) {
+    if (operation.transactionNumber === undefined ||
+        operation.operationIndex === undefined ||
+        operation.batchFileHash === undefined) {
       return null;
     }
 
