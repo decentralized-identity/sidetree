@@ -1,0 +1,10 @@
+{
+  "name": "SidetreeBlockchainService",
+  "version": "1.0.0",
+  "description": "A bitcored module to interface with Bitcoin network to anchor and observe Sidetree transactions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "Apache-2.0"
+}
