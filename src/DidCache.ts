@@ -1,3 +1,4 @@
+import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import * as Base58 from 'bs58';
 import { Cas } from './Cas';
 import Multihash from './Multihash';
@@ -15,8 +16,25 @@ import { WriteOperation, OperationType } from './Operation';
  * we always use VersionId in places where we mean (2) and an OperationHash defined below
  * when we mean (1).
  */
-type VersionId = string;
-type OperationHash = string;
+export type VersionId = string;
+export type OperationHash = string;
+
+/**
+ * Function type that updates a Did document given an operation. This would be instantiated
+ * with a function that implements json patch application. Using the interface instead of
+ * the actual function hides details of json patching from Did cache.
+ */
+export interface DidDocumentGenerator {
+  /**
+   * Update a DID document given an operation over it.
+   */
+  (didDoc: DidDocument, operation: WriteOperation): DidDocument;
+
+  /**
+   * For a create operation, return the initial DID document.
+   */
+  (createOp: WriteOperation): DidDocument;
+}
 
 /**
  * The timestamp of an operation. We define a linear ordering of
@@ -91,14 +109,70 @@ export class DidCache {
     return opHash;
   }
 
-  public constructor (private cas: Cas) {
+  public constructor (private readonly cas: Cas, private readonly didDocGen: DidDocumentGenerator) {
 
   }
 
+  /**
+   * Rollback the state of the DidCache by removing all operations
+   * with transactionNumber greater than the provided parameter value.
+   * The intended use case for this method is to handle rollbacks
+   * in the blockchain.
+   *
+   * The current implementation is inefficient: It simply scans the two
+   * hashmaps storing the core Did state and removes all entries with
+   * a greater transaction number.  In future, the implementation should be optimized
+   * for the common case by keeping a sliding window of recent operations.
+   */
   public rollback (transactionNumber: number) {
-    this.nextVersion.forEach((_, opHash, map) => {
-      if (this.opHashToInfo.get(opHash))
+
+    // Iterate over all nextVersion entries and remove all versions
+    // with "next" operation with transactionNumber greater than the provided
+    // parameter.
+    this.nextVersion.forEach((opHash, version, map) => {
+      const opInfo = this.opHashToInfo.get(opHash) as OperationInfo;
+      if (opInfo.transactionNumber > transactionNumber) {
+        map.delete(version);
+      }
     });
+
+    // Iterate over all operations and remove those with with
+    // transactionNumber greater than the provided parameter.
+    this.opHashToInfo.forEach((opInfo, opHash, map) => {
+      if (opInfo.transactionNumber > transactionNumber) {
+        map.delete(opHash);
+      }
+    });
+  }
+
+  /**
+   * Returns the Did document for a given version identifier.
+   */
+  public async lookup (versionId: VersionId): Promise<DidDocument | null> {
+    // Version id is also the operation hash that produces the document
+    const opHash = versionId;
+
+    const opInfo = this.opHashToInfo.get(opHash);
+
+    // We don't know anything about this operation
+    if (opInfo === undefined) {
+      return null;
+    }
+
+    // Construct the operation using a CAS lookup
+    const op = await this.getOperation(opInfo);
+
+    if (this.isInitialVersion(opInfo)) {
+      return this.didDocGen(op);
+    } else {
+      const prevVersion = op.previousOperationHash as VersionId;
+      const prevDidDoc = await this.lookup(prevVersion);
+      if (prevDidDoc === null) {
+        return null;
+      } else {
+        return this.didDocGen(prevDidDoc, op);
+      }
+    }
   }
 
   /**
@@ -130,5 +204,23 @@ export class DidCache {
     }
 
     this.nextVersion.set(versionUpdated, opHash);
+  }
+
+  /**
+   * Return true if the provided operation is an initial version i.e.,
+   * produced by a create operation.
+   */
+  private isInitialVersion (opInfo: OperationInfo): boolean {
+    return opInfo !== undefined && opInfo.type === OperationType.Create;
+  }
+
+  /**
+   * Return the operation given its (access) info.
+   */
+  private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
+    const batchBuffer = await this.cas.read(opInfo.batchFileHash);
+    const batch = batchBuffer.toJSON().data as Buffer[];
+    const opBuffer = batch[opInfo.operationIndex];
+    return new WriteOperation(opBuffer, opInfo.transactionNumber, opInfo.operationIndex, opInfo.batchFileHash);
   }
 }

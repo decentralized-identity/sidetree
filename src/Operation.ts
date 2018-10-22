@@ -62,11 +62,9 @@ class WriteOperation {
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
    */
-  private constructor (
+  public constructor (
     /** The original request buffer sent by the requester. */
     public readonly operationBuffer: Buffer,
-    /** Information to access the write operation */
-    public readonly accessInfo: OperationCasAccessInfo,
     /** The transaction number of the transaction this operation was batched within. */
     public readonly transactionNumber: number,
     /** The index this operation was assigned to in the batch. */
