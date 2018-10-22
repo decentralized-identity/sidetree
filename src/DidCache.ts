@@ -17,6 +17,10 @@ import { WriteOperation, OperationType } from './Operation';
  * when we mean (1).
  */
 export type VersionId = string;
+
+/**
+ * Alias OperationHash to string - see comment above
+ */
 export type OperationHash = string;
 
 /**
@@ -222,7 +226,7 @@ export class DidCache {
    * produced by a create operation.
    */
   private isInitialVersion (opInfo: OperationInfo): boolean {
-    return opInfo !== undefined && opInfo.type === OperationType.Create;
+    return opInfo.type === OperationType.Create;
   }
 
   /**
