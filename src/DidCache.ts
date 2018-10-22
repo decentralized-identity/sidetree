@@ -28,15 +28,14 @@ export type OperationHash = string;
  * with a function that implements json patch application. Using the interface instead of
  * the actual function hides details of json patching from Did cache.
  */
-export interface DidDocumentGenerator {
-  /**
-   * Update a DID document given an operation over it.
-   */
+export interface DidDocumentUpdater {
   (didDoc: DidDocument, operation: WriteOperation): DidDocument;
+}
 
-  /**
-   * For a create operation, return the initial DID document.
-   */
+/**
+ * Function type that creates a Did document given a create/recover operation.
+ */
+export interface DidDocumentCreator {
   (createOp: WriteOperation): DidDocument;
 }
 
@@ -127,7 +126,10 @@ export class DidCache {
     return opHash;
   }
 
-  public constructor (private readonly cas: Cas, private readonly didDocGen: DidDocumentGenerator) {
+  public constructor (
+    private readonly cas: Cas,
+    private readonly didDocUpdate: DidDocumentUpdater,
+    private readonly didDocCreate: DidDocumentCreator) {
 
   }
 
@@ -181,14 +183,14 @@ export class DidCache {
     const op = await this.getOperation(opInfo);
 
     if (this.isInitialVersion(opInfo)) {
-      return this.didDocGen(op);
+      return this.didDocCreate(op);
     } else {
       const prevVersion = op.previousOperationHash as VersionId;
       const prevDidDoc = await this.lookup(prevVersion);
       if (prevDidDoc === null) {
         return null;
       } else {
-        return this.didDocGen(prevDidDoc, op);
+        return this.didDocUpdate(prevDidDoc, op);
       }
     }
   }
