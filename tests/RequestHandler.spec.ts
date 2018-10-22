@@ -14,11 +14,11 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
   const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds], false);
-  const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
+  const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
     const createRequest = readFileSync('./tests/requests/create.json');
-    const response = requestHandler.handleWriteRequest(createRequest);
+    const response = await requestHandler.handleWriteRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.

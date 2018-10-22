@@ -66,11 +66,11 @@ class WriteOperation {
     /** The original request buffer sent by the requester. */
     public readonly operationBuffer: Buffer,
     /** The transaction number of the transaction this operation was batched within. */
-    public readonly transactionNumber: number,
+    public readonly transactionNumber?: number,
     /** The index this operation was assigned to in the batch. */
-    public readonly operationIndex: number,
+    public readonly operationIndex?: number,
     /** Hash of the batch file that contains this operation */
-    public readonly batchFileHash: string
+    public readonly batchFileHash?: string
     ) {
     // Parse request buffer into a JS object.
     const operation = JSON.parse(operationBuffer.toString());
@@ -129,7 +129,6 @@ class WriteOperation {
     switch (this.type) {
       case OperationType.Create:
         this.didDocument = WriteOperation.parseCreatePayload(payload);
-        this.operationNumber = 0;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -137,12 +136,17 @@ class WriteOperation {
   }
 
   /**
-   * Parses the given request.
    * Creates a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
+   * @param transactionNumber The transaction number this operation was batched within. If given, operationIndex must be given else error will be thrown.
+   * @param operationIndex The operation index this operation was assigned to in the batch. If given, transactionNumber must be given else error will be thrown.
    */
-  public static parse (request: Buffer): WriteOperation {
-    return new WriteOperation(request);
+  public static create (
+    operationBuffer: Buffer,
+    transactionNumber?: number,
+    operationIndex?: number,
+    batchFileHash?: string): WriteOperation {
+    return new WriteOperation(operationBuffer, transactionNumber, operationIndex, batchFileHash);
   }
 
   /**

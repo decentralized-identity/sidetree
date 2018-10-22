@@ -87,23 +87,37 @@ export class DidCache {
   public apply (operation: WriteOperation): string | null {
     const opHash = DidCache.getHash(operation);
 
+    // Ignore operations without the required metadata - any operation anchored
+    // in a blockchain should have this metadata.
+    if (!operation.transactionNumber || !operation.operationIndex || !operation.batchFileHash) {
+      return null;
+    }
+
+    // opInfo is operation with derivable properties projected out
+    const opInfo: OperationInfo = {
+      transactionNumber: operation.transactionNumber,
+      operationIndex: operation.operationIndex,
+      batchFileHash: operation.batchFileHash,
+      type: operation.type
+    };
+
     // If this is a duplicate of an earlier operation, we can
     // ignore this operation. Note that we might have a previous
     // operation with the same hash, but that previous operation
     // need not be earlier in timestamp order - hence the check
     // with lesser().
     const prevOperation = this.opHashToInfo.get(opHash);
-    if (prevOperation !== undefined && lesser(prevOperation, operation)) {
+    if (prevOperation !== undefined && lesser(prevOperation, opInfo)) {
       return null;
     }
     // Update our mapping of operation hash to operation info overwriting
     // previous info if it exists
-    this.opHashToInfo.set(opHash, operation);
+    this.opHashToInfo.set(opHash, opInfo);
 
     // For operations that have a previous version, we need additional
     // bookkeeping
     if (operation.previousOperationHash) {
-      this.applyOpWithPrev(opHash, operation);
+      this.applyOpWithPrev(opHash, opInfo, operation.previousOperationHash);
     }
 
     return opHash;
@@ -189,21 +203,18 @@ export class DidCache {
   /**
    * Apply state changes for operations that have a previous version (update, delete, recover)
    */
-  private applyOpWithPrev (opHash: OperationHash, operation: WriteOperation): void {
-    // VersionId being updated;
-    const versionUpdated: VersionId = operation.previousOperationHash as VersionId;
-
+  private applyOpWithPrev (opHash: OperationHash, opInfo: OperationInfo, version: VersionId): void {
     // We might already know of an update to this version. If so, we retain
     // the older of previously known update and the current one
-    const prevUpdateHash = this.nextVersion.get(versionUpdated);
+    const prevUpdateHash = this.nextVersion.get(version);
     if (prevUpdateHash !== undefined) {
       const prevUpdateInfo = this.opHashToInfo.get(prevUpdateHash) as OperationInfo;
-      if (lesser(prevUpdateInfo, operation)) {
+      if (lesser(prevUpdateInfo, opInfo)) {
         return;
       }
     }
 
-    this.nextVersion.set(versionUpdated, opHash);
+    this.nextVersion.set(version, opHash);
   }
 
   /**

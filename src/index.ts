@@ -1,6 +1,8 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
+// import MockDidCache from '../tests/mocks/MockDidCache'; // TODO: Replace once real implementation comes in.
+// import Observer from './Observer';
 import RequestHandler from './RequestHandler';
 import Rooter from './Rooter';
 import { BlockchainClient } from './Blockchain';
@@ -13,8 +15,13 @@ const configFile = require('../json/config.json');
 const config = new Config(configFile);
 const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
+// const didCache = new MockDidCache();
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
+// const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
+const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
+
+rooter.startPeriodicRooting();
+// observer.startPeriodicProcessing();
 
 const app = new Koa();
 
@@ -25,8 +32,8 @@ app.use(async (ctx, next) => {
 });
 
 const router = new Router();
-router.post('/', (ctx, _next) => {
-  const response = requestHandler.handleWriteRequest(ctx.body);
+router.post('/', async (ctx, _next) => {
+  const response = await requestHandler.handleWriteRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 
