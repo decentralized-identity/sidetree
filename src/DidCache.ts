@@ -168,6 +168,20 @@ export class DidCache {
   }
 
   /**
+   * Resolve a did.
+   */
+  public async resolve (did: VersionId): Promise<DidDocument | null> {
+    const latestVersion = this.last(did);
+
+    // lastVersion === null implies we do not know about the did
+    if (latestVersion === null) {
+      return null;
+    }
+
+    return this.lookup(latestVersion);
+  }
+
+  /**
    * Returns the Did document for a given version identifier.
    */
   public async lookup (versionId: VersionId): Promise<DidDocument | null> {
@@ -194,6 +208,76 @@ export class DidCache {
       } else {
         return this.didDocUpdate(prevDidDoc, op);
       }
+    }
+  }
+
+  /**
+   * Return the previous version id of a given DID version. The implementation
+   * is inefficient and involves an async cas read. This should not be a problem
+   * since this method is not hit for any of the externally exposed DID operations.
+   */
+  public async prev (versionId: VersionId): Promise<VersionId | null> {
+    const opInfo = this.opHashToInfo.get(versionId);
+    if (opInfo) {
+      const op = await this.getOperation(opInfo);
+      if (op.previousOperationHash) {
+        return op.previousOperationHash;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Return the first version of a DID document given a possibly later version.
+   * A simple recursive implementation using prev; not very efficient but should
+   * not matter since this method is not hit for any externally exposed DID
+   * operations.
+   */
+  public async first (versionId: VersionId): Promise<VersionId | null> {
+    const opInfo = this.opHashToInfo.get(versionId);
+    if (opInfo === undefined) {
+      return null;
+    }
+
+    if (this.isInitialVersion(opInfo)) {
+      return versionId;
+    }
+
+    const prevVersionId = await this.prev(versionId);
+    if (prevVersionId === null) {
+      return null;
+    }
+
+    return this.first(prevVersionId);
+  }
+
+  /**
+   * Return the next version of a DID document if it exists or null, otherwise.
+   */
+  public next (versionId: VersionId): VersionId | null {
+    const nextVersionId = this.nextVersion.get(versionId);
+    if (nextVersionId === undefined) {
+      return null;
+    } else {
+      return nextVersionId;
+    }
+  }
+
+  /**
+   * Return the latest (most recent) version of a DID document. Return null if
+   * the version is unknown.
+   */
+  public last (versionId: VersionId): VersionId | null {
+    const opInfo = this.opHashToInfo.get(versionId);
+    if (opInfo === undefined) {
+      return null;
+    }
+
+    const nextVersionId = this.next(versionId);
+    if (nextVersionId === null) {
+      return versionId;
+    } else {
+      return this.last(nextVersionId);
     }
   }
 
