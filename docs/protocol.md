@@ -56,7 +56,7 @@ A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed
 
 An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.org/html/rfc6902) so that only differences from the previous version of the DID Document is stored in each write operation.
 
-> NOTE: Create and recover operations require complete a DID Document as input as opposed to a _JSON patch_.
+> NOTE: Create and recover operations require a complete DID Document as input as opposed to a _JSON patch_.
 
 ## Sidetree Operation Hashes and DIDs
 
@@ -161,11 +161,8 @@ The _anchor file_ is a JSON document of the following schema:
 }
 ```
 
-System diagram showing operation chain of a DID:
-> TODO: Need to update this outdated diagram: 1. each operation should only reference the previous. 2. Only anchor file hash should be anchored on blockchain.
-
-![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
-
+Operation chaining of a DID:
+![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
 # DDoS Mitigation
