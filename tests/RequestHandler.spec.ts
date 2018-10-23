@@ -25,9 +25,8 @@ describe('RequestHandler', () => {
     blockchain.setLaskBlock(mockLastBlock);
 
     // Read create operation request from file.
-    const requestString = readFileSync('./tests/requests/create.json', 'utf8');
-    const requestStringWithoutCarriageReturn = requestString.replace(/[\r]+/g, ''); // Remove all Carriage Returns in case of file on Windows.
-    const createRequest = Buffer.from(requestStringWithoutCarriageReturn);
+    const requestString = readFileSync('./tests/requests/create.json');
+    const createRequest = Buffer.from(requestString);
 
     // Handle request.
     const response = await requestHandler.handleWriteRequest(createRequest);
