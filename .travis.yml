@@ -10,5 +10,5 @@ install:
   - npm i
 
 script:
-  - npm run tests
+  - npm run test
 
