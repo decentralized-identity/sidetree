@@ -1,5 +1,6 @@
 import { Response, ResponseStatus } from './Response';
 import { IpfsStorage } from './lib/IPFSStorage';
+import * as Ipfs from 'ipfs';
 const multihashes = require('multihashes');
 
 /**
@@ -7,20 +8,23 @@ const multihashes = require('multihashes');
  */
 export default class RequestHandler {
 
-  private ipfsStorage: IpfsStorage;
+  /**
+   * Instance of ipfsstorage
+   */
+  public ipfsStorage: IpfsStorage;
 
-  public constructor () {
-    this.ipfsStorage = IpfsStorage.createIPFSNode();
+  public constructor (ipfsOptions: Ipfs.Options) {
+    this.ipfsStorage = IpfsStorage.createIPFSNode(ipfsOptions);
   }
   /**
    * Handles read request
-   * @param _hash Content Identifier Hash.
+   * @param hash Content Identifier Hash.
    */
-  public async handleFetchRequest (_hash: string): Promise<Response> {
-    const multihash = Buffer.from(_hash);
+  public async handleFetchRequest (hash: string): Promise<Response> {
+    const decodedHash = multihashes.fromB58String(hash);
     let response!: Response;
     try {
-      multihashes.validate(multihash);
+      multihashes.validate(decodedHash);
     } catch {
       return {
         status: ResponseStatus.BadRequest,
@@ -28,12 +32,11 @@ export default class RequestHandler {
       };
     }
     try {
-      await this.ipfsStorage.read(_hash).then((value) => {
-        response = {
-          status: ResponseStatus.Succeeded,
-          body: value
-        };
-      });
+      let content = await this.ipfsStorage.read(hash);
+      response = {
+        status: ResponseStatus.Succeeded,
+        body: content
+      };
     } catch (err) {
       response = {
         status: ResponseStatus.ServerError,
@@ -50,12 +53,11 @@ export default class RequestHandler {
   public async handleWriteRequest (content: Buffer): Promise<Response> {
     let response!: Response;
     try {
-      await this.ipfsStorage.write(content).then((value) => {
-        response = {
-          status: ResponseStatus.Succeeded,
-          body: { hash: value }
-        };
-      });
+      let contentHash = await this.ipfsStorage.write(content);
+      response = {
+        status: ResponseStatus.Succeeded,
+        body: { hash: contentHash }
+      };
     } catch (err) {
       response = {
         status: ResponseStatus.ServerError,

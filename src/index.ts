@@ -4,7 +4,11 @@ import * as Router from 'koa-router';
 import RequestHandler from 'RequestHandler';
 import { toHttpStatus, Response } from 'Response';
 
-const requestHandler = new RequestHandler();
+// TODO: Move the ipfs configuration to a config file.
+let ipfsOptions = {
+  repo: 'sidetree-ipfs'
+};
+const requestHandler = new RequestHandler(ipfsOptions);
 const app = new Koa();
 
 // Raw body parser.
@@ -35,7 +39,7 @@ app.use((ctx, _next) => {
 const port = 3001;
 
 app.listen(port, () => {
-  console.log(`Sidetree node running on port: ${port}`);
+  console.log(`Sidetree-IPFS node running on port: ${port}`);
 });
 
 /**
