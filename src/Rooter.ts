@@ -1,6 +1,6 @@
 import * as Deque from 'double-ended-queue';
 import MerkleTree from './lib/MerkleTree';
-import Protocol from './Protocol';
+import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 
@@ -18,12 +18,7 @@ export default class Rooter {
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
-    private batchIntervalInSeconds: number,
-    startPeriodicRooting: boolean = true) {
-
-    if (startPeriodicRooting) {
-      this.startPeriodicRooting();
-    }
+    private batchIntervalInSeconds: number) {
   }
 
   /**
@@ -61,7 +56,7 @@ export default class Rooter {
       this.processing = true;
 
       // Get the batch of operations to be anchored on the blockchain.
-      const batch = this.getBatch();
+      const batch = await this.getBatch();
       console.info(Date.now() + ' Batch size = ' + batch.length);
 
       // Combine all operations into one JSON buffer.
@@ -70,14 +65,14 @@ export default class Rooter {
       // TODO: Compress the batch buffer.
 
       // Make the 'batch file' available in CAS.
-      const batchFileAddress = await this.cas.write(batchBuffer);
+      const batchFileHash = await this.cas.write(batchBuffer);
 
       // Compute the Merkle root hash.
       const merkleRoot = MerkleTree.create(batch).rootHash;
 
       // Construct the 'anchor file'.
       const anchorFile = {
-        batchFile: batchFileAddress,
+        batchFileHash: batchFileHash,
         merkleRoot: merkleRoot
       };
 
@@ -101,12 +96,16 @@ export default class Rooter {
    * If number of pending operations is greater than the Sidetree protocol's maximum allowed number per batch,
    * then the maximum allowed number of operation is returned.
    */
-  private getBatch (): Buffer[] {
+  private async getBatch (): Promise<Buffer[]> {
+    // Get the protocol version according to current block number to decide on the batch size limit to enforce.
+    const latestBlock = await this.blockchain.getLastBlock();
+    const protocol = getProtocol(latestBlock.blockNumber + 1);
+
     let queueSize = this.operations.length;
     let batchSize = queueSize;
 
-    if (queueSize > Protocol.maxOperationsPerBatch) {
-      batchSize = Protocol.maxOperationsPerBatch;
+    if (queueSize > protocol.maxOperationsPerBatch) {
+      batchSize = protocol.maxOperationsPerBatch;
     }
 
     const batch = new Array<Buffer>(batchSize);

@@ -13,12 +13,23 @@ describe('RequestHandler', () => {
   const config = new Config(configFile);
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
-  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds], false);
-  const requestHandler = new RequestHandler(rooter, config[ConfigKey.DidMethodName]);
+  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+  const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
-    const createRequest = readFileSync('./tests/requests/create.json');
-    const response = requestHandler.handleWriteRequest(createRequest);
+    // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
+    const mockLastBlock ={
+      blockNumber: 1000000,
+      blockHash: "dummyHash"
+    }
+    blockchain.setLaskBlock(mockLastBlock);
+
+    // Read create operation request from file.
+    const requestString = readFileSync('./tests/requests/create.json');
+    const createRequest = Buffer.from(requestString);
+
+    // Handle request.
+    const response = await requestHandler.handleWriteRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
@@ -32,5 +43,21 @@ describe('RequestHandler', () => {
     await rooter.rootOperations();
     expect(rooter.getOperationQueueLength()).toEqual(0);
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return bad request if operation given is larger than protocol limit.', async () => {
+    // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
+    const mockLastBlock ={
+      blockNumber: 1,
+      blockHash: "dummyHash"
+    }
+    blockchain.setLaskBlock(mockLastBlock);
+
+    const createRequest = readFileSync('./tests/requests/create.json');
+    const response = await requestHandler.handleWriteRequest(createRequest);
+    const httpStatus = toHttpStatus(response.status);
+
+    // TODO: more validations needed as implementation becomes more complete.
+    expect(httpStatus).toEqual(400);
   });
 });

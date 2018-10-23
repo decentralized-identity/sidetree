@@ -1,5 +1,4 @@
 import * as crypto from 'crypto';
-import Protocol from './Protocol';
 const multihashes = require('multihashes');
 
 /**
@@ -9,8 +8,8 @@ export default class Multihash {
   /**
    * Hashes the content using the hashing algorithm specified by the latest protocol version.
    */
-  public static hash (content: Buffer): Buffer {
-    const hashAlgorithm = Protocol.hashAlgorithmInMultihashCode;
+  public static hash (content: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
+    const hashAlgorithm = hashAlgorithmInMultihashCode;
 
     let hash;
     switch (hashAlgorithm) {
@@ -18,7 +17,7 @@ export default class Multihash {
         hash = crypto.createHash('sha256').update(content).digest();
         break;
       default:
-        throw new Error(`Hashing algorithm '${hashAlgorithm}' not supported in protocol.`);
+        throw new Error(`Hashing algorithm '${hashAlgorithm}' not implemented.`);
     }
 
     const hashAlgorithmName = multihashes.codes[hashAlgorithm];

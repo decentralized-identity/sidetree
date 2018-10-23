@@ -1,32 +1,37 @@
 import * as Base58 from 'bs58';
 import Multihash from './Multihash';
-import Protocol from './Protocol';
+import Rooter from './Rooter';
+import { Blockchain } from './Blockchain';
+import { getProtocol } from './Protocol';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
-import Rooter from './Rooter';
 
 /**
  * Sidetree operation request handler.
  */
 export default class RequestHandler {
 
-  public constructor (private rooter: Rooter, private didMethodName: string) {
+  public constructor (private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
   }
 
   /**
    * Handles write operations.
    */
-  public handleWriteRequest (request: Buffer): Response {
+  public async handleWriteRequest (request: Buffer): Promise<Response> {
     // Perform common validation for any write request and parse it into a write operation.
     let operation: WriteOperation;
     try {
-      // Validate request size.
-      if (request.length > Protocol.maxOperationsPerBatch) {
-        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${Protocol.maxOperationsPerBatch}`);
+      // Get the protocol version according to current block number to validate the operation request.
+      const latestBlock = await this.blockchain.getLastBlock();
+      const protocol = getProtocol(latestBlock.blockNumber + 1);
+
+      // Validate operation request size.
+      if (request.length > protocol.maxOperationByteSize) {
+        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocol.maxOperationByteSize}`);
       }
 
       // Parse request into a WriteOperation.
-      operation = WriteOperation.parse(request);
+      operation = WriteOperation.create(request);
 
       // TODO: Validate or perform proof-of-work.
 
@@ -43,7 +48,7 @@ export default class RequestHandler {
       let response: Response;
       switch (operation.type) {
         case OperationType.Create:
-          response = this.handleCreateOperation(operation);
+          response = await this.handleCreateOperation(operation);
           break;
         default:
           response = {
@@ -79,9 +84,13 @@ export default class RequestHandler {
   /**
    * Handles create operation.
    */
-  public handleCreateOperation (operation: WriteOperation): Response {
+  public async handleCreateOperation (operation: WriteOperation): Promise<Response> {
+    // Get the protocol version according to current block number to decide on the hashing algorithm used for the DID.
+    const latestBlock = await this.blockchain.getLastBlock();
+    const protocol = getProtocol(latestBlock.blockNumber + 1);
+
     // Compute the hash as the DID
-    const multihash = Multihash.hash(operation.request);
+    const multihash = Multihash.hash(operation.operationBuffer, protocol.hashAlgorithmInMultihashCode);
     const multihashBase58 = Base58.encode(multihash);
     const did = this.didMethodName + multihashBase58;
 

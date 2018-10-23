@@ -30,18 +30,21 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 # Format and Encoding
 * JSON is used as the data encapsulation format.
 * Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
-* [_Multihash_] is used to represent hashes.
+* [_Multihash_](https://multiformats.io/multihash/https://multiformats.io/multihash/d) is used to represent hashes.
 
 
-# Sidetree Protocol Parameters
+# Sidetree Protocol Versioning & Parameters
+Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define the _block number_ in which the new rules and parameter values will take effect. All subsequent blocks will adhere to the same rules and parameter values until a newer protocol version is defined.
+
 The following lists the parameters of each version of the Sidetree protocol.
 
 ## v1.0
-| Parameter              | Value  |
-|------------------------|--------|
-| Hash algorithm         | SHA256 |
-| Maximum batch size     | 10000  |
-| Maximum operation size | 2 KB   |
+| Parameter              | Value            |
+|------------------------|------------------|
+| Starting block number  | 500000 (bitcoin) |
+| Hash algorithm         | SHA256           |
+| Maximum batch size     | 10000            |
+| Maximum operation size | 2 KB             |
 
 
 # Sidetree Operations and DIDs
@@ -53,7 +56,7 @@ A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed
 
 An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.org/html/rfc6902) so that only differences from the previous version of the DID Document is stored in each write operation.
 
-> NOTE: Create and recover operations require complete a DID Document as input as opposed to a _JSON patch_.
+> NOTE: Create and recover operations require a complete DID Document as input as opposed to a _JSON patch_.
 
 ## Sidetree Operation Hashes and DIDs
 
@@ -153,16 +156,13 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFile": "Base58 encoded hash of the batch file.",
+  "batchFileHash": "Base58 encoded hash of the batch file.",
   "merkleRoot": "Base58 encoded root hash of the Merkle tree contructed using the batch file."
 }
 ```
 
-System diagram showing operation chain of a DID:
-> TODO: Need to update this outdated diagram: 1. each operation should only reference the previous. 2. Only anchor file hash should be anchored on blockchain.
-
-![Sidetree operation trail diagram](./diagrams/sidetree-entity-trail.png)
-
+Operation chaining of a DID:
+![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
 # DDoS Mitigation
@@ -176,10 +176,26 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
    
    By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost.
 
-1. Operation-level proof-or-work
+1. Operation-level proof-of-work
 
    Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
 
+# Sidetree Transaction Processing
+A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a logical incrementing number starting from 1, this _transaction number_ deterministically defines the order of transactions, and thus the order of operations. The _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
+
+1. The corresponding _anchor file_ must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
+1. The corresponding _batch file_ must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
+1. The operation batch size must not exceed the maximum size specified by the protocol.
+1. The transaction must meet the proof-of-work requirements defined by the protocol.
+1. Every operation batched in the same transaction must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
+
+   1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
+
+   1. Must not exceed the operation size specified by the protocol.
+
+   1. Must use the hashing algorithm specified by the protocol.
+
+> NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the its _anchor file_ and _batch file_ become available.
 
 
 # Sidetree REST API
@@ -495,3 +511,10 @@ If the operation is successful, it applies the provided JSON patch to the versio
 
   Each write operation type have different payload schema.
 
+* Why use _block nubmer_ as the marker for protocol versioning change instead of the Sidetree _transaction number_?
+
+  Because _block nubmer_ increments irrespective of whether there are Sidetree activity or not, it makes protocol version upgrade planning and scheduling easier for Sidetree node that do not want to risk creating invalid transaction with obsolete version.
+
+* Why assign a _transaction number_ for invalid transactions?
+
+  In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of existing valid transactions remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.

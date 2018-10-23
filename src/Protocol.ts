@@ -1,14 +1,32 @@
-﻿const protocol = require('../json/protocol.json');
+﻿const protocolVersions = require('../json/protocol.json');
+
+// Reverse sorted protocol versions. ie. latest version first.
+const protocolVersionsSorted = Object.values<Protocol>(protocolVersions).sort((a, b) => b.startingBlockNumber - a.startingBlockNumber);
 
 /**
- * The class that provides protocol parameter values.
- * TODO: Implement versioning support.
+ * Defines protocol parameter values.
  */
-export default class Protocol {
+export default interface Protocol {
+  /** The inclusive starting block number that this protocol applies to. */
+  startingBlockNumber: number;
   /** Hash algorithm in Multihash code in DEC (not in HEX). */
-  public static hashAlgorithmInMultihashCode: number = protocol['1.0']['hashAlgorithmInMultihashCode'];
+  hashAlgorithmInMultihashCode: number;
   /** Maximum operations per batch. */
-  public static maxOperationsPerBatch: number = protocol['1.0']['maxOperationsPerBatch'];
+  maxOperationsPerBatch: number;
   /** Maximum size of an operation in bytes. */
-  public static maxOperationByteSize: number = protocol['1.0']['maxOperationByteSize'];
+  maxOperationByteSize: number;
+}
+
+/**
+ * Gets the corresponding protocol parameters as a Protocol object given the block number.
+ */
+export function getProtocol (blockNumber: number): Protocol {
+  // Iterate through each version to find the right version.
+  for (const protocol of protocolVersionsSorted) {
+    if (blockNumber >= protocol.startingBlockNumber) {
+      return protocol;
+    }
+  }
+
+  throw new Error(`Unabled to find protocol parameters for the given block number ${blockNumber}`);
 }
