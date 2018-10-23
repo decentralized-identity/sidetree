@@ -24,14 +24,19 @@ describe('RequestHandler', () => {
     }
     blockchain.setLaskBlock(mockLastBlock);
 
-    const createRequest = readFileSync('./tests/requests/create.json');
+    // Read create operation request from file.
+    const requestString = readFileSync('./tests/requests/create.json', 'utf8');
+    const requestStringWithoutCarriageReturn = requestString.replace(/[\r]+/g, ''); // Remove all Carriage Returns in case of file on Windows.
+    const createRequest = Buffer.from(requestStringWithoutCarriageReturn);
+
+    // Handle request.
     const response = await requestHandler.handleWriteRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DidDocument).id).toEqual('did:sidetree:QmcVuf9R2Ma8PfsBGrJDcvbNGybi7h22c9nM98fBSaLXkF');
+    expect((response.body as DidDocument).id).toEqual('did:sidetree:QmWMVoQMPH1v6a5GaxHU8ah9dqjiX8S6JvJSh7onQ21Mq4');
 
 
     const blockchainWriteSpy = spyOn(blockchain, 'write');
