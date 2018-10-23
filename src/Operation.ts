@@ -42,6 +42,14 @@ enum OperationType {
  * 3. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
 class WriteOperation {
+  /** The transaction number of the transaction this operation was batched within. */
+  public readonly transactionNumber?: number;
+  /** The index this operation was assigned to in the batch. */
+  public readonly operationIndex?: number;
+  /** The hash of the batch file this operation belongs to */
+  public readonly batchFileHash?: string;
+  /** The original request buffer sent by the requester. */
+  public readonly operationBuffer: Buffer;
   /** The DID of the DID document to be updated. */
   public readonly did: string | undefined;
   /** The type of operation. */
@@ -61,17 +69,26 @@ class WriteOperation {
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
+   * @param transactionNumber The transaction number this operation was batched within. If given, operationIndex must be given else error will be thrown.
+   * @param operationIndex The operation index this operation was assigned to in the batch. If given, transactionNumber must be given else error will be thrown.
    */
-  public constructor (
-    /** The original request buffer sent by the requester. */
-    public readonly operationBuffer: Buffer,
-    /** The transaction number of the transaction this operation was batched within. */
-    public readonly transactionNumber?: number,
-    /** The index this operation was assigned to in the batch. */
-    public readonly operationIndex?: number,
-    /** Hash of the batch file that contains this operation */
-    public readonly batchFileHash?: string
-    ) {
+  private constructor (
+    operationBuffer: Buffer,
+    transactionNumber?: number,
+    operationIndex?: number,
+    batchFileHash?: string) {
+    // Either all three (transactionNumber, operationIndex, batchFileHash) should be defined
+    // or all three should be undefined.
+    if (!((transactionNumber === undefined && operationIndex === undefined && batchFileHash === undefined) ||
+          (transactionNumber !== undefined && operationIndex !== undefined && batchFileHash !== undefined))) {
+      throw new Error('Param transactionNumber and operationIndex must both be defined or undefined.');
+    }
+
+    this.transactionNumber = transactionNumber;
+    this.operationIndex = operationIndex;
+    this.batchFileHash = batchFileHash;
+    this.operationBuffer = operationBuffer;
+
     // Parse request buffer into a JS object.
     const operation = JSON.parse(operationBuffer.toString());
 

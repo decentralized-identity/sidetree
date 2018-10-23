@@ -1,27 +1,28 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-// import MockDidCache from '../tests/mocks/MockDidCache'; // TODO: Replace once real implementation comes in.
-// import Observer from './Observer';
+import { DidCache } from './DidCache';
+import Observer from './Observer';
 import RequestHandler from './RequestHandler';
 import Rooter from './Rooter';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
 import { Config, ConfigKey } from './Config';
 import { toHttpStatus, Response } from './Response';
+import { didDocumentUpdate, didDocumentCreate } from '../tests/mocks/MockDidDocGen';
 
 // Component dependency initialization & injection.
 const configFile = require('../json/config.json');
 const config = new Config(configFile);
 const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-// const didCache = new MockDidCache();
+const didCache = new DidCache(cas, didDocumentUpdate, didDocumentCreate);
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-// const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
+const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
 
 rooter.startPeriodicRooting();
-// observer.startPeriodicProcessing();
+observer.startPeriodicProcessing();
 
 const app = new Koa();
 

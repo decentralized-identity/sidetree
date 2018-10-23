@@ -1,0 +1,3 @@
+# Test request files must use the same line ending format between Windows and Linux/Unix,
+# because the computed hash is dependent on the buffer created from these files.
+tests/requests/*.json eol=lf

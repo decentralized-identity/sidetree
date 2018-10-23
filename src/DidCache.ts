@@ -3,6 +3,7 @@ import * as Base58 from 'bs58';
 import { Cas } from './Cas';
 import Multihash from './Multihash';
 import { WriteOperation, OperationType } from './Operation';
+import Transaction from './Transaction';
 
 /**
  * VersionId identifies the version of a DID document. We use the hash of the
@@ -282,6 +283,14 @@ export class DidCache {
   }
 
   /**
+   * Get the last processed transaction.
+   * TODO: fix this after discussing the intended semantics.
+   */
+  public get lastProcessedTransaction (): Transaction | undefined {
+    return undefined;
+  }
+
+  /**
    * Get a cryptographic hash of the write operation. Currently, uses
    * SHA256 to get hashes (TODO: Fix it to be consistent DID generation)
    */
@@ -324,6 +333,6 @@ export class DidCache {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
     const batch = batchBuffer.toJSON().data as Buffer[];
     const opBuffer = batch[opInfo.operationIndex];
-    return new WriteOperation(opBuffer, opInfo.transactionNumber, opInfo.operationIndex, opInfo.batchFileHash);
+    return WriteOperation.create(opBuffer, opInfo.transactionNumber, opInfo.operationIndex, opInfo.batchFileHash);
   }
 }

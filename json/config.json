@@ -4,5 +4,6 @@
   "didMethodName": "did:sidetree:",
   "casNodeUri": "https://127.0.0.1:3001",
   "blockchainNodeUri": "https://127.0.0.1:3002",
-  "batchIntervalInSeconds": 5
+  "batchIntervalInSeconds": 5,
+  "pollingIntervalInSeconds": 10
 }
