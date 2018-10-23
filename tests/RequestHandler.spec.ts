@@ -5,7 +5,7 @@ describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
 
   beforeEach(() => {
-    let ipfsOptions = {
+    const ipfsOptions = {
       repo: 'sidetree-ipfs',
       init: false,
       start: false
@@ -19,8 +19,8 @@ describe('RequestHandler', () => {
       body: { error: 'Invalid content Hash' }
     };
     
-    let testSidetreeHash: string = '123abc';
-    let fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
+    const testSidetreeHash: string = '123abc';
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -30,10 +30,10 @@ describe('RequestHandler', () => {
       status: ResponseStatus.Succeeded,
       body: Buffer.from('dummyContent')
     };
-    let testSidetreeHash: string = 'QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk';
+    const testSidetreeHash: string = 'QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk';
     spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Buffer.from('dummyContent'));
 
-    let fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -45,9 +45,9 @@ describe('RequestHandler', () => {
     };
 
     spyOn(requestHandler.ipfsStorage, 'write').and.returnValue('QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk');
-    let mockSidetreeContent: Buffer = Buffer.from('dummyContent');
+    const mockSidetreeContent: Buffer = Buffer.from('dummyContent');
     
-    let fetchedResponse = await requestHandler.handleWriteRequest(mockSidetreeContent);
+    const fetchedResponse = await requestHandler.handleWriteRequest(mockSidetreeContent);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });

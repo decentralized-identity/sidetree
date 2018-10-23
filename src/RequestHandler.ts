@@ -22,7 +22,7 @@ export default class RequestHandler {
    */
   public async handleFetchRequest (hash: string): Promise<Response> {
     const decodedHash = multihashes.fromB58String(hash);
-    let response!: Response;
+    let response: Response;
     try {
       multihashes.validate(decodedHash);
     } catch {
@@ -32,7 +32,7 @@ export default class RequestHandler {
       };
     }
     try {
-      let content = await this.ipfsStorage.read(hash);
+      const content = await this.ipfsStorage.read(hash);
       response = {
         status: ResponseStatus.Succeeded,
         body: content
@@ -51,9 +51,9 @@ export default class RequestHandler {
    * @param content Sidetree content to write into CAS storage
    */
   public async handleWriteRequest (content: Buffer): Promise<Response> {
-    let response!: Response;
+    let response: Response;
     try {
-      let contentHash = await this.ipfsStorage.write(content);
+      const contentHash = await this.ipfsStorage.write(content);
       response = {
         status: ResponseStatus.Succeeded,
         body: { hash: contentHash }
