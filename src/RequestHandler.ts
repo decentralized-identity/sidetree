@@ -1,5 +1,5 @@
 import { Response, ResponseStatus } from './Response';
-import { IpfsStorage } from './lib/IPFSStorage';
+import { IpfsStorage } from './lib/IpfsStorage';
 import * as Ipfs from 'ipfs';
 const multihashes = require('multihashes');
 
@@ -9,12 +9,12 @@ const multihashes = require('multihashes');
 export default class RequestHandler {
 
   /**
-   * Instance of ipfsstorage
+   * Instance of IpfsStorage.
    */
   public ipfsStorage: IpfsStorage;
 
   public constructor (ipfsOptions: Ipfs.Options) {
-    this.ipfsStorage = IpfsStorage.createIPFSNode(ipfsOptions);
+    this.ipfsStorage = IpfsStorage.create(ipfsOptions);
   }
   /**
    * Handles read request

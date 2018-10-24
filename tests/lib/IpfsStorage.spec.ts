@@ -1,7 +1,7 @@
 import * as Ipfs from 'ipfs';
-import { IpfsStorage } from '../../src/lib/IPFSStorage';
+import { IpfsStorage } from '../../src/lib/IpfsStorage';
 
-describe('IPFSStorage', () => {
+describe('IpfsStorage', () => {
   let ipfsStorage: IpfsStorage;
 
   beforeEach(() => {
@@ -11,7 +11,7 @@ describe('IPFSStorage', () => {
       start: false
     };
 
-    ipfsStorage = IpfsStorage.createIPFSNode(ipfsOptions);
+    ipfsStorage = IpfsStorage.create(ipfsOptions);
   });
 
   it('should return the pinned content for the given hash.', async ()=> {
