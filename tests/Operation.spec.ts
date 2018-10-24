@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { WriteOperation } from '../src/Operation';
 
-describe('WriteOperation', () => {
+describe('WriteOperation', () => {  
 
   it('should throw error if unknown property is found when parsing request.', async () => {
     const createRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());

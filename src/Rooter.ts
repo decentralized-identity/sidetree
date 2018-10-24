@@ -117,5 +117,4 @@ export default class Rooter {
 
     return batch;
   }
-
 }

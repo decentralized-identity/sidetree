@@ -32,6 +32,7 @@ export interface Blockchain {
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
  */
 export class BlockchainClient implements Blockchain {
+
   /** URI that handles transaction operations. */
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private blocksUri: string; // e.g. https://127.0.0.1/blocks
