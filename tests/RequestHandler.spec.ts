@@ -18,10 +18,11 @@ describe('RequestHandler', () => {
 
   it('should handle create operation request.', async () => {
     // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
-    const mockLastBlock ={
+    const mockLastBlock = {
       blockNumber: 1000000,
-      blockHash: "dummyHash"
-    }
+      blockHash: 'dummyHash'
+    };
+
     blockchain.setLaskBlock(mockLastBlock);
 
     // Read create operation request from file.
@@ -37,7 +38,6 @@ describe('RequestHandler', () => {
     expect(response).toBeDefined();
     expect((response.body as DidDocument).id).toEqual('did:sidetree:QmWMVoQMPH1v6a5GaxHU8ah9dqjiX8S6JvJSh7onQ21Mq4');
 
-
     const blockchainWriteSpy = spyOn(blockchain, 'write');
     expect(rooter.getOperationQueueLength()).toEqual(1);
     await rooter.rootOperations();
@@ -47,10 +47,11 @@ describe('RequestHandler', () => {
 
   it('should return bad request if operation given is larger than protocol limit.', async () => {
     // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
-    const mockLastBlock ={
+    const mockLastBlock = {
       blockNumber: 1,
-      blockHash: "dummyHash"
-    }
+      blockHash: 'dummyHash'
+    };
+
     blockchain.setLaskBlock(mockLastBlock);
 
     const createRequest = readFileSync('./tests/requests/create.json');

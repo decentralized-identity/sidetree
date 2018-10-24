@@ -18,6 +18,9 @@ describe('Conifg', () => {
     configFile.devMode = false;
     delete process.env.EXAMPLE_SECRET;
 
-    expect(() => { new Config(configFile) }).toThrowError();
+    expect(() => {
+      const config = new Config(configFile);
+      console.log(config); // Added to suppress no-unused-expression rule. Code should never reach here unless test fails.
+    }).toThrowError();
   });
 });
