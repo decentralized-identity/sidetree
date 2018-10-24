@@ -28,7 +28,7 @@ describe('MerkleTree', () => {
     ['6']: 'e7f6c011776e8db7cd330b54174fd76f7d0216b612387a5ffcfb81e6f0919683',
     ['7']: '7902699be42c8a8e46fbbb4501726517e86b22c56a189f7625a6da49081b2451',
     ['8']: '2c624232cdd221771294dfbb310aca000a0df6ac8b66b696d90ef06fdefb64a3',
-    ['9']: '19581e27de7ced00ff1ce50b2047e7a567c76b1cbaebabe5ef03f7c3017bb5b7',
+    ['9']: '19581e27de7ced00ff1ce50b2047e7a567c76b1cbaebabe5ef03f7c3017bb5b7'
   };
 
   const value01Hash = Cryptography.sha256hash(Buffer.from(valueToHashMap['0'] + valueToHashMap['1'], 'hex'));
@@ -36,10 +36,10 @@ describe('MerkleTree', () => {
   const value45Hash = Cryptography.sha256hash(Buffer.from(valueToHashMap['4'] + valueToHashMap['5'], 'hex'));
   const value67Hash = Cryptography.sha256hash(Buffer.from(valueToHashMap['6'] + valueToHashMap['7'], 'hex'));
   const value89Hash = Cryptography.sha256hash(Buffer.from(valueToHashMap['8'] + valueToHashMap['9'], 'hex'));
-  
+
   const value0123Hash = Cryptography.sha256hash(Buffer.concat([value01Hash, value23Hash]));
   const value4567Hash = Cryptography.sha256hash(Buffer.concat([value45Hash, value67Hash]));
-  
+
   const value01234567Hash = Cryptography.sha256hash(Buffer.concat([value0123Hash, value4567Hash]));
 
   it('should produce the correct root hash and receipts for a tree of just 1 value.', () => {
