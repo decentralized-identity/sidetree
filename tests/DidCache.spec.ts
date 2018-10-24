@@ -61,7 +61,7 @@ function createCreateOpBuf(): Buffer {
 }
 
 async function createRootedOp(opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
-  const batch = [ opBuf ];
+  const batch: Buffer[] = [ opBuf ];
   const batchBuffer = Buffer.from(JSON.stringify(batch));
   const batchFileAddress = await cas.write(batchBuffer);
   const op = WriteOperation.create(opBuf, 0, 0, batchFileAddress);
@@ -119,10 +119,8 @@ describe('DidCache', () => {
     const did = didCache.apply(createOp);
     expect(did).not.toBeNull();
 
-    /*
     const resolvedDid = await didCache.resolve(did as string);
     // TODO: can we get the raw json from did? if so, we can write a better test.
     expect(resolvedDid).not.toBeNull();
-    */
   });
 });

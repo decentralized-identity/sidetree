@@ -331,8 +331,8 @@ export class DidCache {
    */
   private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
-    const batch = batchBuffer.toJSON().data as Buffer[];
-    const opBuffer = batch[opInfo.operationIndex];
+    const batch = JSON.parse(batchBuffer.toString());
+    const opBuffer = Buffer.from(batch[opInfo.operationIndex].data);
     return WriteOperation.create(opBuffer, opInfo.transactionNumber, opInfo.operationIndex, opInfo.batchFileHash);
   }
 }
