@@ -131,7 +131,7 @@ export default class Observer {
           throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${protocol.maxOperationByteSize} bytes.`);
         }
 
-        const operation = WriteOperation.create(operationBuffer, transaction.transactionNumber, operationIndex);
+        const operation = WriteOperation.create(operationBuffer, undefined, transaction.transactionNumber, operationIndex);
 
         operations.push(operation);
       }

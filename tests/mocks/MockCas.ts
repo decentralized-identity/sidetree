@@ -1,14 +1,22 @@
 import { Cas } from '../../src/Cas';
 
 /**
- * Mock CAS class for testing.
+ * Implementation of a CAS class for testing. Inserting
+ * a buffer simply pushes the buffer to an array and
+ * returns the position of the array as address.
  */
 export default class MockCas implements Cas {
-  public async write (_content: Buffer): Promise<string> {
-    return 'dummyString';
+  bufs: Buffer[] = [];
+
+  public async write (content: Buffer): Promise<string> {
+    this.bufs.push(content);
+    return (this.bufs.length - 1).toString();
   }
 
-  public async read (_address: string): Promise<Buffer> {
-    return Buffer.from('dummyString');
+  public async read (address: string): Promise<Buffer> {
+    // See write above. Address is simply the (stringified)
+    // index of the bufs array where corresponding buffer is stored.
+    const intAddress = +address;
+    return this.bufs[intAddress];
   }
 }

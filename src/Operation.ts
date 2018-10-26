@@ -46,16 +46,16 @@ class WriteOperation {
   public readonly transactionNumber?: number;
   /** The index this operation was assigned to in the batch. */
   public readonly operationIndex?: number;
+  /** The hash of the batch file this operation belongs to */
+  public readonly batchFileHash?: string;
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
   /** The DID of the DID document to be updated. */
   public readonly did: string | undefined;
-  /** The incrementing number of this operation. */
-  public readonly operationNumber: number;
   /** The type of operation. */
   public readonly type: OperationType;
-  /** The hash of the previous operation. */
-  public readonly perviousOperationHash: Buffer | undefined;
+  /** The hash of the previous operation - undefined for DID create operation */
+  public readonly previousOperationHash?: string;
   /** ID of the key used to sign this operation. */
   public readonly signingKeyId: string;
   /** Signature of this operation. */
@@ -72,15 +72,21 @@ class WriteOperation {
    * @param transactionNumber The transaction number this operation was batched within. If given, operationIndex must be given else error will be thrown.
    * @param operationIndex The operation index this operation was assigned to in the batch. If given, transactionNumber must be given else error will be thrown.
    */
-  private constructor (operationBuffer: Buffer, transactionNumber?: number, operationIndex?: number) {
-    if ((transactionNumber && !operationIndex) ||
-        (!transactionNumber && operationIndex)) {
+  private constructor (
+    operationBuffer: Buffer,
+    batchFileHash?: string,
+    transactionNumber?: number,
+    operationIndex?: number) {
+    // Either all three (transactionNumber, operationIndex, batchFileHash) should be defined
+    // or all three should be undefined.
+    if (!((transactionNumber === undefined && operationIndex === undefined && batchFileHash === undefined) ||
+          (transactionNumber !== undefined && operationIndex !== undefined && batchFileHash !== undefined))) {
       throw new Error('Param transactionNumber and operationIndex must both be defined or undefined.');
     }
 
     this.transactionNumber = transactionNumber;
-    this.operationIndex = operationIndex!;
-
+    this.operationIndex = operationIndex;
+    this.batchFileHash = batchFileHash;
     this.operationBuffer = operationBuffer;
 
     // Parse request buffer into a JS object.
@@ -140,7 +146,6 @@ class WriteOperation {
     switch (this.type) {
       case OperationType.Create:
         this.didDocument = WriteOperation.parseCreatePayload(payload);
-        this.operationNumber = 0;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -153,8 +158,12 @@ class WriteOperation {
    * @param transactionNumber The transaction number this operation was batched within. If given, operationIndex must be given else error will be thrown.
    * @param operationIndex The operation index this operation was assigned to in the batch. If given, transactionNumber must be given else error will be thrown.
    */
-  public static create (operationBuffer: Buffer, transactionNumber?: number, operationIndex?: number): WriteOperation {
-    return new WriteOperation(operationBuffer, transactionNumber, operationIndex);
+  public static create (
+    operationBuffer: Buffer,
+    batchFileHash?: string,
+    transactionNumber?: number,
+    operationIndex?: number): WriteOperation {
+    return new WriteOperation(operationBuffer, batchFileHash, transactionNumber, operationIndex);
   }
 
   /**
