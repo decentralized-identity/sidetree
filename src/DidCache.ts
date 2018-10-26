@@ -153,7 +153,7 @@ class DidCacheImpl implements DidCache {
       throw Error('Invalid operation: operationIndex undefined');
     }
 
-    if(operation.batchFileHash === undefined) {
+    if (operation.batchFileHash === undefined) {
       throw Error('Invalid operation: batchFileHash undefined');
     }
 
