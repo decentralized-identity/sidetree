@@ -2,29 +2,29 @@ import * as Base58 from 'bs58';
 import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
 import { createDidCache } from '../src/DidCache';
-import { WriteOperation } from '../src/Operation'
+import { WriteOperation } from '../src/Operation';
 
 const didDocJson = {
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:ignored",
-  "publicKey": [{
-    "id": "did:sidetree:didPortionIgnored#key-1",
-    "type": "RsaVerificationKey2018",
-    "owner": "did:sidetree:ignoredUnlessResolvable",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+  '@context': 'https://w3id.org/did/v1',
+  'id': 'did:sidetree:ignored',
+  'publicKey': [{
+    'id': 'did:sidetree:didPortionIgnored#key-1',
+    'type': 'RsaVerificationKey2018',
+    'owner': 'did:sidetree:ignoredUnlessResolvable',
+    'publicKeyPem': '-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n'
   }],
-  "service": [{
-    "type": "IdentityHub",
-    "publicKey": "did:sidetree:ignored#key-1",
-    "serviceEndpoint": {
-      "@context": "schema.identity.foundation/hub",
-      "@type": "UserServiceEndpoint",
-      "instances": ["did:bar:456", "did:zaz:789"]
+  'service': [{
+    'type': 'IdentityHub',
+    'publicKey': 'did:sidetree:ignored#key-1',
+    'serviceEndpoint': {
+      '@context': 'schema.identity.foundation/hub',
+      '@type': 'UserServiceEndpoint',
+      'instances': ['did:bar:456', 'did:zaz:789']
     }
   }]
 };
 
-function createCreateOperationBuffer(): Buffer {
+function createCreateOperationBuffer (): Buffer {
   const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocJson)));
   const createOpRequest = {
     createPayload,
@@ -34,7 +34,7 @@ function createCreateOperationBuffer(): Buffer {
   return Buffer.from(JSON.stringify(createOpRequest));
 }
 
-async function createOperationWithSingletonBatch(opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
+async function createOperationWithSingletonBatch (opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
   const batch: Buffer[] = [ opBuf ];
   const batchBuffer = Buffer.from(JSON.stringify(batch));
   const batchFileAddress = await cas.write(batchBuffer);
@@ -60,7 +60,7 @@ describe('DidCache', () => {
     expect(firstOfFirstVersion).toBe(firstVersion);
   });
 
-  it('should return firstVersion for last(firstVersion)', async() => {
+  it('should return firstVersion for last(firstVersion)', async () => {
     const cas = new MockCas();
     const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
@@ -68,7 +68,7 @@ describe('DidCache', () => {
     expect(await didCache.last(firstVersion)).toBe(firstVersion);
   });
 
-  it('should return undefined for prev(firstVersion)', async() => {
+  it('should return undefined for prev(firstVersion)', async () => {
     const cas = new MockCas();
     const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
@@ -82,7 +82,7 @@ describe('DidCache', () => {
     const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
-    const resolvedDid = await didCache.resolve(firstVersion as string);
+    const resolvedDid = await didCache.resolve(firstVersion);
     // TODO: can we get the raw json from did? if so, we can write a better test.
     expect(resolvedDid).not.toBeUndefined();
   });
