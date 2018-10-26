@@ -158,6 +158,8 @@ class DidCacheImpl implements DidCache {
       throw Error('Invalid operation: batchFileHash undefined');
     }
 
+    // TODO: lookup operation.previousOperationHash and do signature verification.
+
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
       transactionNumber: operation.transactionNumber,
@@ -291,21 +293,25 @@ class DidCacheImpl implements DidCache {
    * operations.
    */
   public async first (versionId: VersionId): Promise<VersionId | undefined> {
-    const opInfo = this.opHashToInfo.get(versionId);
-    if (opInfo === undefined) {
-      return undefined;
-    }
 
-    if (this.isInitialVersion(opInfo)) {
-      return versionId;
-    }
+    while (true) {
 
-    const prevVersionId = await this.prev(versionId);
-    if (prevVersionId === undefined) {
-      return undefined;
-    }
+      const opInfo = this.opHashToInfo.get(versionId);
+      if (opInfo === undefined) {
+        return undefined;
+      }
 
-    return this.first(prevVersionId);
+      if (this.isInitialVersion(opInfo)) {
+        return versionId;
+      }
+
+      const prevVersionId = await this.prev(versionId);
+      if (prevVersionId === undefined) {
+        return undefined;
+      }
+
+      versionId = prevVersionId;
+    }
   }
 
   /**
@@ -325,16 +331,18 @@ class DidCacheImpl implements DidCache {
    * the version is unknown.
    */
   public async last (versionId: VersionId): Promise<VersionId | undefined> {
-    const opInfo = this.opHashToInfo.get(versionId);
-    if (opInfo === undefined) {
-      return undefined;
-    }
+    while (true) {
+      const opInfo = this.opHashToInfo.get(versionId);
+      if (opInfo === undefined) {
+        return undefined;
+      }
 
-    const nextVersionId = await this.next(versionId);
-    if (nextVersionId === undefined) {
-      return versionId;
-    } else {
-      return this.last(nextVersionId);
+      const nextVersionId = await this.next(versionId);
+      if (nextVersionId === undefined) {
+        return versionId;
+      } else {
+        versionId = nextVersionId;
+      }
     }
   }
 
