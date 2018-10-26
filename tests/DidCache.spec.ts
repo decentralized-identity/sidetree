@@ -1,13 +1,9 @@
 import * as Base58 from 'bs58';
+import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
-import { DidCache } from '../src/DidCache';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { createDidCache } from '../src/DidCache';
+import { didDocumentCreate, didDocumentUpdate } from './mocks/MockDidDocumentGenerator';
 import { WriteOperation } from '../src/Operation'
-
-// Implementation of Did document update - no-op for testing purposes
-function didDocumentUpdate (didDoc: DidDocument, _operation: WriteOperation): DidDocument {
-  return didDoc;
-}
 
 const didDocJson = {
   "@context": "https://w3id.org/did/v1",
@@ -29,28 +25,7 @@ const didDocJson = {
   }]
 };
 
-// Implementation of Did document create - return a dummy did document
-function didDocumentCreate (_operation: WriteOperation): DidDocument {
-  return new DidDocument(didDocJson);
-}
-
-
-// Implementation of a dummy cas class for testing - a simple hash map
-class DummyCas implements Cas {
-  bufs: Buffer[] = [];
-
-  public async write (content: Buffer): Promise<string> {
-    this.bufs.push(content);
-    return (this.bufs.length - 1).toString();
-  }
-
-  public async read (address: string): Promise<Buffer> {
-    const idx = +address;
-    return this.bufs[idx];
-  }
-}
-
-function createCreateOpBuf(): Buffer {
+function createCreateOperationBuffer(): Buffer {
   const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocJson)));
   const createOpRequest = {
     createPayload,
@@ -60,7 +35,7 @@ function createCreateOpBuf(): Buffer {
   return Buffer.from(JSON.stringify(createOpRequest));
 }
 
-async function createRootedOp(opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
+async function createOperationWithSingletonBatch(opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
   const batch: Buffer[] = [ opBuf ];
   const batchBuffer = Buffer.from(JSON.stringify(batch));
   const batchFileAddress = await cas.write(batchBuffer);
@@ -71,16 +46,16 @@ async function createRootedOp(opBuf: Buffer, cas: Cas): Promise<WriteOperation> 
 describe('DidCache', () => {
 
   it('should return non-null url for create op', async () => {
-    const dummyCas = new DummyCas();
-    const didCache = new DidCache(dummyCas, didDocumentUpdate, didDocumentCreate);
-    const createOp = await createRootedOp(createCreateOpBuf(), dummyCas);
+    const cas = new MockCas();
+    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     expect(didCache.apply(createOp)).not.toBeNull();
   });
 
   it('first(did) should be did', async () => {
-    const dummyCas = new DummyCas();
-    const didCache = new DidCache(dummyCas, didDocumentUpdate, didDocumentCreate);
-    const createOp = await createRootedOp(createCreateOpBuf(), dummyCas);
+    const cas = new MockCas();
+    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const createRet = didCache.apply(createOp);
     expect(createRet).not.toBeNull();
 
@@ -90,20 +65,20 @@ describe('DidCache', () => {
   });
 
   it('last(did) should be did', async() => {
-    const dummyCas = new DummyCas();
-    const didCache = new DidCache(dummyCas, didDocumentUpdate, didDocumentCreate);
-    const createOp = await createRootedOp(createCreateOpBuf(), dummyCas);
+    const cas = new MockCas();
+    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const createRet = didCache.apply(createOp);
     expect(createRet).not.toBeNull();
 
     const did = createRet as string;
-    expect(didCache.last(did)).toBe(did);
+    expect(await didCache.last(did)).toBe(did);
   });
 
   it('prev(did) should be null', async() => {
-    const dummyCas = new DummyCas();
-    const didCache = new DidCache(dummyCas, didDocumentUpdate, didDocumentCreate);
-    const createOp = await createRootedOp(createCreateOpBuf(), dummyCas);
+    const cas = new MockCas();
+    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const createRet = didCache.apply(createOp);
     expect(createRet).not.toBeNull();
 
@@ -113,9 +88,9 @@ describe('DidCache', () => {
   });
 
   it('should resolve created did', async () => {
-    const dummyCas = new DummyCas();
-    const didCache = new DidCache(dummyCas, didDocumentUpdate, didDocumentCreate);
-    const createOp = await createRootedOp(createCreateOpBuf(), dummyCas);
+    const cas = new MockCas();
+    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const did = didCache.apply(createOp);
     expect(did).not.toBeNull();
 

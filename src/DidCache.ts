@@ -25,6 +25,73 @@ export type VersionId = string;
 export type OperationHash = string;
 
 /**
+ * Represents the interface used by other components to update and retrieve the
+ * current state of a Sidetree node. The interface exposes methods to record
+ * sidetree DID state changes (create, update, delete, recover)
+ * and methods to retrieve current and historical states of a DID document.
+ */
+export interface DidCache {
+  /** The transaction that was COMPLETELY processed. */
+  readonly lastProcessedTransaction?: Transaction;
+
+  /**
+   * Applies the given DID operation to the DID Cache.
+   * Return an identifier that can be used to retrieve
+   * the DID document version produced by the operation
+   * and to traverse the version chain using the
+   * first/last/prev/next methods below. If the write
+   * operation is not legitimate return undefined.
+   */
+  apply (operation: WriteOperation): string | undefined;
+
+  /**
+   * Rollback the state of the DidCache by removing all operations
+   * with transactionNumber greater than the provided parameter value.
+   * The intended use case for this method is to handle rollbacks
+   * in the blockchain.
+   */
+  rollback (transactionNumber: number): void;
+
+  /**
+   * Resolve a did.
+   */
+  resolve (did: VersionId): Promise<DidDocument | undefined>;
+
+  /**
+   * Returns the Did document for a given version identifier.
+   */
+  lookup (versionId: VersionId): Promise<DidDocument | undefined>;
+
+  /**
+   * Return the first (initial) version identifier given
+   * version identifier, which is also the DID for the
+   * document corresponding to the versions. Return undefined
+   * if the version id or some previous version in the chain
+   * is unknown.
+   */
+  first (versionId: VersionId): Promise<VersionId | undefined>;
+
+  /**
+   * Return the last (latest/most recent) version identifier of
+   * a given version identifier. Return undefined if the version
+   * identifier is unknown or some successor identifier is unknown.
+   */
+  last (versionId: VersionId): Promise<VersionId | undefined>;
+
+  /**
+   * Return the previous version identifier of a given DID version
+   * identifier. Return undefined if no such identifier is known.
+   */
+  prev (versionId: VersionId): Promise<VersionId | undefined>;
+
+  /**
+   * Return the next version identifier of a given DID version
+   * identifier. Return undefined if no such identifier is known.
+   */
+  next (versionId: VersionId): Promise<VersionId | undefined>;
+}
+
+/**
  * Function type that updates a Did document given an operation. This would be instantiated
  * with a function that implements json patch application. Using the interface instead of
  * the actual function hides details of json patching from Did cache.
@@ -73,7 +140,7 @@ interface OperationInfo extends OperationTimestamp {
  * from the beginning of time. This implementation will be extended in the future to support
  * persistence.
  */
-export class DidCache {
+class DidCacheImpl implements DidCache {
   /**
    * Map a versionId to the next versionId whenever one exists.
    */
@@ -88,15 +155,15 @@ export class DidCache {
   /**
    * Apply (perform) a specified DID state changing operation.
    */
-  public apply (operation: WriteOperation): string | null {
-    const opHash = DidCache.getHash(operation);
+  public apply (operation: WriteOperation): string | undefined {
+    const opHash = DidCacheImpl.getHash(operation);
 
     // Ignore operations without the required metadata - any operation anchored
     // in a blockchain should have this metadata.
     if (operation.transactionNumber === undefined ||
         operation.operationIndex === undefined ||
         operation.batchFileHash === undefined) {
-      return null;
+      return undefined;
     }
 
     // opInfo is operation with derivable properties projected out
@@ -114,7 +181,7 @@ export class DidCache {
     // with lesser().
     const prevOperation = this.opHashToInfo.get(opHash);
     if (prevOperation !== undefined && lesser(prevOperation, opInfo)) {
-      return null;
+      return undefined;
     }
     // Update our mapping of operation hash to operation info overwriting
     // previous info if it exists
@@ -171,12 +238,12 @@ export class DidCache {
   /**
    * Resolve a did.
    */
-  public async resolve (did: VersionId): Promise<DidDocument | null> {
-    const latestVersion = this.last(did);
+  public async resolve (did: VersionId): Promise<DidDocument | undefined> {
+    const latestVersion = await this.last(did);
 
     // lastVersion === null implies we do not know about the did
-    if (latestVersion === null) {
-      return null;
+    if (latestVersion === undefined) {
+      return undefined;
     }
 
     return this.lookup(latestVersion);
@@ -185,7 +252,7 @@ export class DidCache {
   /**
    * Returns the Did document for a given version identifier.
    */
-  public async lookup (versionId: VersionId): Promise<DidDocument | null> {
+  public async lookup (versionId: VersionId): Promise<DidDocument | undefined> {
     // Version id is also the operation hash that produces the document
     const opHash = versionId;
 
@@ -193,7 +260,7 @@ export class DidCache {
 
     // We don't know anything about this operation
     if (opInfo === undefined) {
-      return null;
+      return undefined;
     }
 
     // Construct the operation using a CAS lookup
@@ -204,8 +271,8 @@ export class DidCache {
     } else {
       const prevVersion = op.previousOperationHash as VersionId;
       const prevDidDoc = await this.lookup(prevVersion);
-      if (prevDidDoc === null) {
-        return null;
+      if (prevDidDoc === undefined) {
+        return undefined;
       } else {
         return this.didDocUpdate(prevDidDoc, op);
       }
@@ -217,7 +284,7 @@ export class DidCache {
    * is inefficient and involves an async cas read. This should not be a problem
    * since this method is not hit for any of the externally exposed DID operations.
    */
-  public async prev (versionId: VersionId): Promise<VersionId | null> {
+  public async prev (versionId: VersionId): Promise<VersionId | undefined> {
     const opInfo = this.opHashToInfo.get(versionId);
     if (opInfo) {
       const op = await this.getOperation(opInfo);
@@ -225,7 +292,7 @@ export class DidCache {
         return op.previousOperationHash;
       }
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -234,10 +301,10 @@ export class DidCache {
    * not matter since this method is not hit for any externally exposed DID
    * operations.
    */
-  public async first (versionId: VersionId): Promise<VersionId | null> {
+  public async first (versionId: VersionId): Promise<VersionId | undefined> {
     const opInfo = this.opHashToInfo.get(versionId);
     if (opInfo === undefined) {
-      return null;
+      return undefined;
     }
 
     if (this.isInitialVersion(opInfo)) {
@@ -245,8 +312,8 @@ export class DidCache {
     }
 
     const prevVersionId = await this.prev(versionId);
-    if (prevVersionId === null) {
-      return null;
+    if (prevVersionId === undefined) {
+      return undefined;
     }
 
     return this.first(prevVersionId);
@@ -255,10 +322,10 @@ export class DidCache {
   /**
    * Return the next version of a DID document if it exists or null, otherwise.
    */
-  public next (versionId: VersionId): VersionId | null {
+  public async next (versionId: VersionId): Promise<VersionId | undefined> {
     const nextVersionId = this.nextVersion.get(versionId);
     if (nextVersionId === undefined) {
-      return null;
+      return undefined;
     } else {
       return nextVersionId;
     }
@@ -268,14 +335,14 @@ export class DidCache {
    * Return the latest (most recent) version of a DID document. Return null if
    * the version is unknown.
    */
-  public last (versionId: VersionId): VersionId | null {
+  public async last (versionId: VersionId): Promise<VersionId | undefined> {
     const opInfo = this.opHashToInfo.get(versionId);
     if (opInfo === undefined) {
-      return null;
+      return undefined;
     }
 
-    const nextVersionId = this.next(versionId);
-    if (nextVersionId === null) {
+    const nextVersionId = await this.next(versionId);
+    if (nextVersionId === undefined) {
       return versionId;
     } else {
       return this.last(nextVersionId);
@@ -335,4 +402,11 @@ export class DidCache {
     const opBuffer = Buffer.from(batch[opInfo.operationIndex].data);
     return WriteOperation.create(opBuffer, opInfo.transactionNumber, opInfo.operationIndex, opInfo.batchFileHash);
   }
+}
+
+/**
+ * Factory function for creating a Did cache
+ */
+export function createDidCache (cas: Cas, didDocUpdate: DidDocumentUpdater, didDocCreate: DidDocumentCreator): DidCache {
+  return new DidCacheImpl(cas, didDocUpdate, didDocCreate);
 }
