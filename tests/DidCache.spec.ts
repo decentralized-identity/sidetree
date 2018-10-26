@@ -52,49 +52,38 @@ describe('DidCache', () => {
     expect(didCache.apply(createOp)).not.toBeNull();
   });
 
-  it('first(did) should be did', async () => {
+  it('should return firstVersion for first(firstVersion)', async () => {
     const cas = new MockCas();
     const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const createRet = didCache.apply(createOp);
-    expect(createRet).not.toBeNull();
-
-    const did = createRet as string;
-    const firstVersion = await didCache.first(did);
-    expect(firstVersion).toBe(did);
+    const firstVersion = didCache.apply(createOp) as string;
+    const firstOfFirstVersion = await didCache.first(firstVersion);
+    expect(firstOfFirstVersion).toBe(firstVersion);
   });
 
-  it('last(did) should be did', async() => {
+  it('should return firstVersion for last(firstVersion)', async() => {
     const cas = new MockCas();
     const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const createRet = didCache.apply(createOp);
-    expect(createRet).not.toBeNull();
-
-    const did = createRet as string;
-    expect(await didCache.last(did)).toBe(did);
+    const firstVersion = didCache.apply(createOp) as string;
+    expect(await didCache.last(firstVersion)).toBe(firstVersion);
   });
 
-  it('prev(did) should be null', async() => {
+  it('should return null for prev(firstVersion)', async() => {
     const cas = new MockCas();
     const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const createRet = didCache.apply(createOp);
-    expect(createRet).not.toBeNull();
-
-    const did = createRet as string;
-    const prev = await didCache.prev(did);
+    const firstVersion = didCache.apply(createOp) as string;
+    const prev = await didCache.prev(firstVersion);
     expect(prev).toBeNull();
   });
 
-  it('should resolve created did', async () => {
+  it('should return provided document for resolve(firstVersion)', async () => {
     const cas = new MockCas();
     const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const did = didCache.apply(createOp);
-    expect(did).not.toBeNull();
-
-    const resolvedDid = await didCache.resolve(did as string);
+    const firstVersion = didCache.apply(createOp) as string;
+    const resolvedDid = await didCache.resolve(firstVersion as string);
     // TODO: can we get the raw json from did? if so, we can write a better test.
     expect(resolvedDid).not.toBeNull();
   });
