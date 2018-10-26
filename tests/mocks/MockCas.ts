@@ -1,8 +1,10 @@
 import { Cas } from '../../src/Cas';
 
-// Implementation of a cas class for testing. Inserting
-// a buffer simply pushes the buffer to an array and
-// returns the position of the array as address.
+/**
+ * Implementation of a CAS class for testing. Inserting
+ * a buffer simply pushes the buffer to an array and
+ * returns the position of the array as address.
+ */
 export default class MockCas implements Cas {
   bufs: Buffer[] = [];
 

@@ -3,8 +3,11 @@ import { DidCache } from '../../src/DidCache';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { WriteOperation } from '../../src/Operation';
 
+/**
+ * Mock DID cache class for testing.
+ */
 export default class MockDidCache implements DidCache {
-  public get lastProcessedTransaction(): Transaction | undefined {
+  public get lastProcessedTransaction (): Transaction | undefined {
     return undefined;
   }
 
