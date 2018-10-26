@@ -232,7 +232,7 @@ class DidCacheImpl implements DidCache {
   public async resolve (did: VersionId): Promise<DidDocument | undefined> {
     const latestVersion = await this.last(did);
 
-    // lastVersion === null implies we do not know about the did
+    // lastVersion === undefined implies we do not know about the did
     if (latestVersion === undefined) {
       return undefined;
     }
@@ -315,7 +315,7 @@ class DidCacheImpl implements DidCache {
   }
 
   /**
-   * Return the next version of a DID document if it exists or null, otherwise.
+   * Return the next version of a DID document if it exists or undefined otherwise.
    */
   public async next (versionId: VersionId): Promise<VersionId | undefined> {
     const nextVersionId = this.nextVersion.get(versionId);
@@ -327,7 +327,7 @@ class DidCacheImpl implements DidCache {
   }
 
   /**
-   * Return the latest (most recent) version of a DID document. Return null if
+   * Return the latest (most recent) version of a DID document. Return undefined if
    * the version is unknown.
    */
   public async last (versionId: VersionId): Promise<VersionId | undefined> {
