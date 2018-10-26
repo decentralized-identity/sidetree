@@ -68,13 +68,13 @@ describe('DidCache', () => {
     expect(await didCache.last(firstVersion)).toBe(firstVersion);
   });
 
-  it('should return null for prev(firstVersion)', async() => {
+  it('should return undefined for prev(firstVersion)', async() => {
     const cas = new MockCas();
     const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
     const prev = await didCache.prev(firstVersion);
-    expect(prev).toBeNull();
+    expect(prev).toBeUndefined();
   });
 
   it('should return provided document for resolve(firstVersion)', async () => {

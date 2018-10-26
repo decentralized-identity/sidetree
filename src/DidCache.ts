@@ -101,7 +101,7 @@ interface OperationTimestamp {
   readonly operationIndex: number;
 }
 
-function lesser (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
+function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
   return ((ts1.transactionNumber < ts2.transactionNumber) ||
           (ts1.transactionNumber === ts2.transactionNumber) && (ts1.operationIndex < ts2.operationIndex));
 }
@@ -116,10 +116,6 @@ interface OperationInfo extends OperationTimestamp {
 }
 
 /**
- * DIDCache is a singleton class whose instance holds most of the state in Sidetree node.
- * It exposes methods to record sidetree DID state changes (create, update, delete, recover)
- * and methods to retrieve current and historical states of a DID document.
- *
  * The current implementation is a main-memory implementation without any persistence. This
  * means that when a node is powered down and restarted DID operations need to be applied
  * from the beginning of time. This implementation will be extended in the future to support
@@ -137,6 +133,10 @@ class DidCacheImpl implements DidCache {
    */
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
 
+  public constructor (private readonly cas: Cas) {
+
+  }
+
   /**
    * Apply (perform) a specified DID state changing operation.
    */
@@ -145,10 +145,16 @@ class DidCacheImpl implements DidCache {
 
     // Ignore operations without the required metadata - any operation anchored
     // in a blockchain should have this metadata.
-    if (operation.transactionNumber === undefined ||
-        operation.operationIndex === undefined ||
-        operation.batchFileHash === undefined) {
-      return undefined;
+    if (operation.transactionNumber === undefined) {
+      throw Error('Invalid operation: transactionNumber undefined');
+    }
+
+    if (operation.operationIndex === undefined) {
+      throw Error('Invalid operation: operationIndex undefined');
+    }
+
+    if(operation.batchFileHash === undefined) {
+      throw Error('Invalid operation: batchFileHash undefined');
     }
 
     // opInfo is operation with derivable properties projected out
@@ -165,7 +171,7 @@ class DidCacheImpl implements DidCache {
     // need not be earlier in timestamp order - hence the check
     // with lesser().
     const prevOperation = this.opHashToInfo.get(opHash);
-    if (prevOperation !== undefined && lesser(prevOperation, opInfo)) {
+    if (prevOperation !== undefined && earlier(prevOperation, opInfo)) {
       return undefined;
     }
     // Update our mapping of operation hash to operation info overwriting
@@ -179,10 +185,6 @@ class DidCacheImpl implements DidCache {
     }
 
     return opHash;
-  }
-
-  public constructor (private readonly cas: Cas) {
-
   }
 
   /**
@@ -359,7 +361,7 @@ class DidCacheImpl implements DidCache {
     const prevUpdateHash = this.nextVersion.get(version);
     if (prevUpdateHash !== undefined) {
       const prevUpdateInfo = this.opHashToInfo.get(prevUpdateHash) as OperationInfo;
-      if (lesser(prevUpdateInfo, opInfo)) {
+      if (earlier(prevUpdateInfo, opInfo)) {
         return;
       }
     }
