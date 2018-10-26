@@ -46,7 +46,7 @@ In the above description, *earlier* and *later* refer to the logical time of the
 This method is used to handle rollbacks (forks) in the blockchain.
 
 ```javascript
-public rollback(transactionNumber: number)
+public rollback (transactionNumber: number)
 ```
 
 The effect of this method is to delete the effects of any operation added with a *blockId* greater than the one provided.
@@ -56,7 +56,7 @@ The effect of this method is to delete the effects of any operation added with a
 This method looks up the DID Document given an _operation hash_.
 
 ```javascript
-public lookup(operationHash: Buffer): DidDocument
+public lookup (operationHash: Buffer): DidDocument
 ```
 
 If there is a missing update in the chain leading up to the provided `operationHash`, the method returns `null`.
@@ -66,10 +66,10 @@ If there is a missing update in the chain leading up to the provided `operationH
 These methods navigate the version chain.
 
 ```javascript
-public first(operationHash: Buffer): Buffer
-public last(operationHash: Buffer): Buffer
-public next(operationHash: Buffer): Buffer
-public prev(operationHash: Buffer): Buffer
+public first (operationHash: Buffer): Buffer
+public last (operationHash: Buffer): Buffer
+public next (operationHash: Buffer): Buffer
+public previous (operationHash: Buffer): Buffer
 ```
 
 ## Resolve

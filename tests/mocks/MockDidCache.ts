@@ -35,7 +35,7 @@ export default class MockDidCache implements DidCache {
     return undefined;
   }
 
-  public async prev (_versionId: string): Promise<string | undefined> {
+  public async previous (_versionId: string): Promise<string | undefined> {
     return undefined;
   }
 
