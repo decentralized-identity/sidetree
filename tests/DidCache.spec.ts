@@ -39,7 +39,7 @@ async function createOperationWithSingletonBatch(opBuf: Buffer, cas: Cas): Promi
   const batch: Buffer[] = [ opBuf ];
   const batchBuffer = Buffer.from(JSON.stringify(batch));
   const batchFileAddress = await cas.write(batchBuffer);
-  const op = WriteOperation.create(opBuf, 0, 0, batchFileAddress);
+  const op = WriteOperation.create(opBuf, batchFileAddress, 0, 0);
   return op;
 }
 

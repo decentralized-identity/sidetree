@@ -36,7 +36,7 @@ export interface DidCache {
 
   /**
    * Applies the given DID operation to the DID Cache.
-   * Return an identifier that can be used to retrieve
+   * @returns An identifier that can be used to retrieve
    * the DID document version produced by the operation
    * and to traverse the version chain using the
    * first/last/prev/next methods below. If the write
@@ -400,7 +400,7 @@ class DidCacheImpl implements DidCache {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
     const batch = JSON.parse(batchBuffer.toString());
     const opBuffer = Buffer.from(batch[opInfo.operationIndex].data);
-    return WriteOperation.create(opBuffer, opInfo.transactionNumber, opInfo.operationIndex, opInfo.batchFileHash);
+    return WriteOperation.create(opBuffer, opInfo.batchFileHash, opInfo.transactionNumber, opInfo.operationIndex);
   }
 }
 

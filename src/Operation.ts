@@ -74,9 +74,9 @@ class WriteOperation {
    */
   private constructor (
     operationBuffer: Buffer,
+    batchFileHash?: string,
     transactionNumber?: number,
-    operationIndex?: number,
-    batchFileHash?: string) {
+    operationIndex?: number) {
     // Either all three (transactionNumber, operationIndex, batchFileHash) should be defined
     // or all three should be undefined.
     if (!((transactionNumber === undefined && operationIndex === undefined && batchFileHash === undefined) ||
@@ -160,10 +160,10 @@ class WriteOperation {
    */
   public static create (
     operationBuffer: Buffer,
+    batchFileHash?: string,
     transactionNumber?: number,
-    operationIndex?: number,
-    batchFileHash?: string): WriteOperation {
-    return new WriteOperation(operationBuffer, transactionNumber, operationIndex, batchFileHash);
+    operationIndex?: number): WriteOperation {
+    return new WriteOperation(operationBuffer, batchFileHash, transactionNumber, operationIndex);
   }
 
   /**
