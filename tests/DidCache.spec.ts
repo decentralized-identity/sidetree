@@ -44,11 +44,11 @@ async function createOperationWithSingletonBatch(opBuf: Buffer, cas: Cas): Promi
 
 describe('DidCache', () => {
 
-  it('should return non-null url for create op', async () => {
+  it('should return operation hash for create op', async () => {
     const cas = new MockCas();
     const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    expect(didCache.apply(createOp)).not.toBeNull();
+    expect(didCache.apply(createOp)).not.toBeUndefined();
   });
 
   it('should return firstVersion for first(firstVersion)', async () => {
@@ -84,6 +84,6 @@ describe('DidCache', () => {
     const firstVersion = didCache.apply(createOp) as string;
     const resolvedDid = await didCache.resolve(firstVersion as string);
     // TODO: can we get the raw json from did? if so, we can write a better test.
-    expect(resolvedDid).not.toBeNull();
+    expect(resolvedDid).not.toBeUndefined();
   });
 });
