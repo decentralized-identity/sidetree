@@ -208,9 +208,9 @@ class DidCacheImpl implements DidCache {
     // Iterate over all nextVersion entries and remove all versions
     // with "next" operation with transactionNumber greater than the provided
     // parameter.
-    this.nextVersion.forEach((opHash, version, map) => {
-      const opInfo = this.opHashToInfo.get(opHash) as OperationInfo;
-      if (opInfo.timestamp.transactionNumber > transactionNumber) {
+    this.nextVersion.forEach((version, nextVersion, map) => {
+      const opInfo = this.opHashToInfo.get(nextVersion) as OperationInfo; // version and opHash as identical concepts
+      if (opInfo.timestamp.transactionNumber >= transactionNumber) {
         map.delete(version);
       }
     });
@@ -218,14 +218,14 @@ class DidCacheImpl implements DidCache {
     // Iterate over all operations and remove those with with
     // transactionNumber greater than the provided parameter.
     this.opHashToInfo.forEach((opInfo, opHash, map) => {
-      if (opInfo.timestamp.transactionNumber > transactionNumber) {
+      if (opInfo.timestamp.transactionNumber >= transactionNumber) {
         map.delete(opHash);
       }
     });
   }
 
   /**
-   * Resolve a did.
+   * Resolve a DID.
    */
   public async resolve (did: VersionId): Promise<DidDocument | undefined> {
     const latestVersion = await this.last(did);
