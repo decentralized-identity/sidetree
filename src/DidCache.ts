@@ -110,9 +110,10 @@ function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
  * Information about a write operation relevant for the DID cache, a subset of the properties exposed by
  * WriteOperation.
  */
-interface OperationInfo extends OperationTimestamp {
+interface OperationInfo {
   readonly batchFileHash: string;
   readonly type: OperationType;
+  readonly timestamp: OperationTimestamp;
 }
 
 /**
@@ -158,11 +159,15 @@ class DidCacheImpl implements DidCache {
     }
 
     // opInfo is operation with derivable properties projected out
-    const opInfo: OperationInfo = {
+    const opTimestamp: OperationTimestamp = {
       transactionNumber: operation.transactionNumber,
-      operationIndex: operation.operationIndex,
+      operationIndex: operation.operationIndex
+    };
+
+    const opInfo: OperationInfo = {
       batchFileHash: operation.batchFileHash,
-      type: operation.type
+      type: operation.type,
+      timestamp: opTimestamp
     };
 
     // If this is a duplicate of an earlier operation, we can
@@ -170,8 +175,8 @@ class DidCacheImpl implements DidCache {
     // operation with the same hash, but that previous operation
     // need not be earlier in timestamp order - hence the check
     // with lesser().
-    const prevOperation = this.opHashToInfo.get(opHash);
-    if (prevOperation !== undefined && earlier(prevOperation, opInfo)) {
+    const prevOperationInfo = this.opHashToInfo.get(opHash);
+    if (prevOperationInfo !== undefined && earlier(prevOperationInfo.timestamp, opInfo.timestamp)) {
       return undefined;
     }
     // Update our mapping of operation hash to operation info overwriting
@@ -181,7 +186,7 @@ class DidCacheImpl implements DidCache {
     // For operations that have a previous version, we need additional
     // bookkeeping
     if (operation.previousOperationHash) {
-      this.applyOpWithPrev(opHash, opInfo, operation.previousOperationHash);
+      this.applyVersionChainUpdates(opHash, opInfo, operation.previousOperationHash);
     }
 
     return opHash;
@@ -205,7 +210,7 @@ class DidCacheImpl implements DidCache {
     // parameter.
     this.nextVersion.forEach((opHash, version, map) => {
       const opInfo = this.opHashToInfo.get(opHash) as OperationInfo;
-      if (opInfo.transactionNumber > transactionNumber) {
+      if (opInfo.timestamp.transactionNumber > transactionNumber) {
         map.delete(version);
       }
     });
@@ -213,7 +218,7 @@ class DidCacheImpl implements DidCache {
     // Iterate over all operations and remove those with with
     // transactionNumber greater than the provided parameter.
     this.opHashToInfo.forEach((opInfo, opHash, map) => {
-      if (opInfo.transactionNumber > transactionNumber) {
+      if (opInfo.timestamp.transactionNumber > transactionNumber) {
         map.delete(opHash);
       }
     });
@@ -353,20 +358,20 @@ class DidCacheImpl implements DidCache {
   }
 
   /**
-   * Apply state changes for operations that have a previous version (update, delete, recover)
+   * Apply version chain updates for operations that have a previous version (update, delete, recover)
    */
-  private applyOpWithPrev (opHash: OperationHash, opInfo: OperationInfo, version: VersionId): void {
-    // We might already know of an update to this version. If so, we retain
+  private applyVersionChainUpdates (opHash: OperationHash, opInfo: OperationInfo, prevVersionId: VersionId): void {
+    // We might already know of an update to prevVersionId. If so, we retain
     // the older of previously known update and the current one
-    const prevUpdateHash = this.nextVersion.get(version);
-    if (prevUpdateHash !== undefined) {
-      const prevUpdateInfo = this.opHashToInfo.get(prevUpdateHash) as OperationInfo;
-      if (earlier(prevUpdateInfo, opInfo)) {
+    const curUpdateToPrevVersionId = this.nextVersion.get(prevVersionId);
+    if (curUpdateToPrevVersionId !== undefined) {
+      const curUpdateToPrevVersionIdInfo = this.opHashToInfo.get(curUpdateToPrevVersionId) as OperationInfo;
+      if (earlier(curUpdateToPrevVersionIdInfo.timestamp, opInfo.timestamp)) {
         return;
       }
     }
 
-    this.nextVersion.set(version, opHash);
+    this.nextVersion.set(prevVersionId, opHash);
   }
 
   /**
@@ -383,8 +388,12 @@ class DidCacheImpl implements DidCache {
   private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
     const batch = JSON.parse(batchBuffer.toString());
-    const opBuffer = Buffer.from(batch[opInfo.operationIndex].data);
-    return WriteOperation.create(opBuffer, opInfo.batchFileHash, opInfo.transactionNumber, opInfo.operationIndex);
+    const opBuffer = Buffer.from(batch[opInfo.timestamp.operationIndex].data);
+    return WriteOperation.create(
+      opBuffer,
+      opInfo.batchFileHash,
+      opInfo.timestamp.transactionNumber,
+      opInfo.timestamp.operationIndex);
   }
 }
 
