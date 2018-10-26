@@ -54,7 +54,7 @@ describe('DidCache', () => {
     const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
-    const prev = await didCache.prev(firstVersion);
+    const prev = await didCache.previous(firstVersion);
     expect(prev).toBeUndefined();
   });
 

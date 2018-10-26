@@ -83,7 +83,7 @@ export interface DidCache {
    * Return the previous version identifier of a given DID version
    * identifier. Return undefined if no such identifier is known.
    */
-  prev (versionId: VersionId): Promise<VersionId | undefined>;
+  previous (versionId: VersionId): Promise<VersionId | undefined>;
 
   /**
    * Return the next version identifier of a given DID version
@@ -275,7 +275,7 @@ class DidCacheImpl implements DidCache {
    * is inefficient and involves an async cas read. This should not be a problem
    * since this method is not hit for any of the externally exposed DID operations.
    */
-  public async prev (versionId: VersionId): Promise<VersionId | undefined> {
+  public async previous (versionId: VersionId): Promise<VersionId | undefined> {
     const opInfo = this.opHashToInfo.get(versionId);
     if (opInfo) {
       const op = await this.getOperation(opInfo);
@@ -305,7 +305,7 @@ class DidCacheImpl implements DidCache {
         return versionId;
       }
 
-      const prevVersionId = await this.prev(versionId);
+      const prevVersionId = await this.previous(versionId);
       if (prevVersionId === undefined) {
         return undefined;
       }
