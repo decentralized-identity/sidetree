@@ -9,14 +9,13 @@ import { CasClient } from './Cas';
 import { Config, ConfigKey } from './Config';
 import { createDidCache } from './DidCache';
 import { toHttpStatus, Response } from './Response';
-import { didDocumentUpdate, didDocumentCreate } from '../tests/mocks/MockDidDocumentGenerator';
 
 // Component dependency initialization & injection.
 const configFile = require('../json/config.json');
 const config = new Config(configFile);
 const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+const didCache = createDidCache(cas);
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
 const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);

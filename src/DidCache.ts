@@ -1,9 +1,10 @@
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import * as Base58 from 'bs58';
-import { Cas } from './Cas';
 import Multihash from './Multihash';
-import { WriteOperation, OperationType } from './Operation';
 import Transaction from './Transaction';
+import { Cas } from './Cas';
+import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { didDocumentCreate, didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
+import { WriteOperation, OperationType } from './Operation';
 
 /**
  * VersionId identifies the version of a DID document. We use the hash of the
@@ -89,22 +90,6 @@ export interface DidCache {
    * identifier. Return undefined if no such identifier is known.
    */
   next (versionId: VersionId): Promise<VersionId | undefined>;
-}
-
-/**
- * Function type that updates a Did document given an operation. This would be instantiated
- * with a function that implements json patch application. Using the interface instead of
- * the actual function hides details of json patching from Did cache.
- */
-export interface DidDocumentUpdater {
-  (didDoc: DidDocument, operation: WriteOperation): DidDocument;
-}
-
-/**
- * Function type that creates a Did document given a create/recover operation.
- */
-export interface DidDocumentCreator {
-  (createOp: WriteOperation): DidDocument;
 }
 
 /**
@@ -196,10 +181,7 @@ class DidCacheImpl implements DidCache {
     return opHash;
   }
 
-  public constructor (
-    private readonly cas: Cas,
-    private readonly didDocUpdate: DidDocumentUpdater,
-    private readonly didDocCreate: DidDocumentCreator) {
+  public constructor (private readonly cas: Cas) {
 
   }
 
@@ -267,14 +249,14 @@ class DidCacheImpl implements DidCache {
     const op = await this.getOperation(opInfo);
 
     if (this.isInitialVersion(opInfo)) {
-      return this.didDocCreate(op);
+      return didDocumentCreate(op);
     } else {
       const prevVersion = op.previousOperationHash as VersionId;
       const prevDidDoc = await this.lookup(prevVersion);
       if (prevDidDoc === undefined) {
         return undefined;
       } else {
-        return this.didDocUpdate(prevDidDoc, op);
+        return didDocumentUpdate(prevDidDoc, op);
       }
     }
   }
@@ -407,6 +389,6 @@ class DidCacheImpl implements DidCache {
 /**
  * Factory function for creating a Did cache
  */
-export function createDidCache (cas: Cas, didDocUpdate: DidDocumentUpdater, didDocCreate: DidDocumentCreator): DidCache {
-  return new DidCacheImpl(cas, didDocUpdate, didDocCreate);
+export function createDidCache (cas: Cas): DidCache {
+  return new DidCacheImpl(cas);
 }

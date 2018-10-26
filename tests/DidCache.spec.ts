@@ -2,7 +2,6 @@ import * as Base58 from 'bs58';
 import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
 import { createDidCache } from '../src/DidCache';
-import { didDocumentCreate, didDocumentUpdate } from './mocks/MockDidDocumentGenerator';
 import { WriteOperation } from '../src/Operation'
 
 const didDocJson = {
@@ -47,14 +46,14 @@ describe('DidCache', () => {
 
   it('should return non-null url for create op', async () => {
     const cas = new MockCas();
-    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     expect(didCache.apply(createOp)).not.toBeNull();
   });
 
   it('should return firstVersion for first(firstVersion)', async () => {
     const cas = new MockCas();
-    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
     const firstOfFirstVersion = await didCache.first(firstVersion);
@@ -63,7 +62,7 @@ describe('DidCache', () => {
 
   it('should return firstVersion for last(firstVersion)', async() => {
     const cas = new MockCas();
-    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
     expect(await didCache.last(firstVersion)).toBe(firstVersion);
@@ -71,7 +70,7 @@ describe('DidCache', () => {
 
   it('should return null for prev(firstVersion)', async() => {
     const cas = new MockCas();
-    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
     const prev = await didCache.prev(firstVersion);
@@ -80,7 +79,7 @@ describe('DidCache', () => {
 
   it('should return provided document for resolve(firstVersion)', async () => {
     const cas = new MockCas();
-    const didCache = createDidCache(cas, didDocumentUpdate, didDocumentCreate);
+    const didCache = createDidCache(cas);
     const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
     const firstVersion = didCache.apply(createOp) as string;
     const resolvedDid = await didCache.resolve(firstVersion as string);
