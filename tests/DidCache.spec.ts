@@ -8,6 +8,7 @@ import { WriteOperation } from '../src/Operation';
 
 function createCreateOperationBuffer (): Buffer {
   const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocumentJson)));
+
   const createOpRequest = {
     createPayload,
     signature: 'signature',
