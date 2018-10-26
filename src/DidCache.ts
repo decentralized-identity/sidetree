@@ -141,7 +141,6 @@ class DidCacheImpl implements DidCache {
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
 
   public constructor (private readonly cas: Cas, private didMethodName: string) {
-
   }
 
   /**
