@@ -8,7 +8,7 @@ export function didDocumentUpdate (didDoc: DidDocument, _operation: WriteOperati
   return didDoc;
 }
 
-const didDocJson = {
+export const didDocumentJson = {
   '@context': 'https://w3id.org/did/v1',
   'id': 'did:sidetree:ignored',
   'publicKey': [{
@@ -32,5 +32,5 @@ const didDocJson = {
  * Implementation of Did document create - return a dummy did document.
  */
 export function didDocumentCreate (_operation: WriteOperation): DidDocument {
-  return new DidDocument(didDocJson);
+  return new DidDocument(didDocumentJson);
 }
