@@ -18,7 +18,7 @@ describe('RequestHandler', () => {
       status: ResponseStatus.BadRequest,
       body: { error: 'Invalid content Hash' }
     };
-    
+
     const testSidetreeHash: string = '123abc';
     const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
 
@@ -46,7 +46,7 @@ describe('RequestHandler', () => {
 
     spyOn(requestHandler.ipfsStorage, 'write').and.returnValue('QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk');
     const mockSidetreeContent: Buffer = Buffer.from('dummyContent');
-    
+
     const fetchedResponse = await requestHandler.handleWriteRequest(mockSidetreeContent);
 
     expect(expectedResponse).toEqual(fetchedResponse);
