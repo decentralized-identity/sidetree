@@ -1,8 +1,8 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import RequestHandler from 'RequestHandler';
-import { toHttpStatus, Response } from 'Response';
+import RequestHandler from './RequestHandler';
+import { toHttpStatus, Response } from './Response';
 
 // TODO: Move the ipfs configuration to a config file.
 let ipfsOptions = {
