@@ -120,7 +120,7 @@ Fetches Sidetree transactions in chronological order.
 
 ### Request path
 ```
-GET /<api-version>/transactions?after=<transaction-number>
+GET /<api-version>/fetchTransactions?after=<transaction-number>
 ```
 
 ### Request headers
@@ -137,7 +137,7 @@ GET /<api-version>/transactions?after=<transaction-number>
 
 ### Request example
 ```
-GET /v1.0/transactions?after=88
+GET /v1.0/fetchTransactions?after=88
 ```
 
 ### Response body schema
@@ -184,7 +184,7 @@ Writes a Sidetree transaction to the underlying blockchain.
 
 ### Request path
 ```
-POST /<api-version>/transactions
+POST /<api-version>/anchorTransaction
 ```
 
 ### Request headers
@@ -201,7 +201,7 @@ POST /<api-version>/transactions
 
 ### Request example
 ```
-POST /v1.0/transactions
+POST /v1.0/anchorTransaction
 ```
 ```json
 {
