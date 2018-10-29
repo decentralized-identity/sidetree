@@ -198,7 +198,7 @@ class DidCacheImpl implements DidCache {
 
   /**
    * Rollback the state of the DidCache by removing all operations
-   * with transactionNumber greater than the provided parameter value.
+   * with transactionNumber greater than or equal to the provided transaction number.
    * The intended use case for this method is to handle rollbacks
    * in the blockchain.
    *

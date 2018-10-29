@@ -49,7 +49,7 @@ This method is used to handle rollbacks (forks) in the blockchain.
 public rollback (transactionNumber: number)
 ```
 
-The effect of this method is to delete the effects of any operation added with a *blockId* greater than the one provided.
+The effect of this method is to delete the effects of any operation included in a transaction with a transaction number greater than or equal to the _transactionNumber_ provided.
 
 ## Lookup
 
