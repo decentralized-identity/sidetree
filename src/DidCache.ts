@@ -1,4 +1,5 @@
 import * as Base58 from 'bs58';
+import BatchFile from './BatchFile';
 import Multihash from './Multihash';
 import Transaction from './Transaction';
 import { Cas } from './Cas';
@@ -395,10 +396,10 @@ class DidCacheImpl implements DidCache {
    */
   private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
-    const batch = JSON.parse(batchBuffer.toString());
-    const opBuffer = Buffer.from(batch[opInfo.timestamp.operationIndex].data);
+    const batchFile = BatchFile.fromBuffer(batchBuffer);
+    const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
     return WriteOperation.create(
-      opBuffer,
+      operationBuffer,
       opInfo.batchFileHash,
       opInfo.timestamp.transactionNumber,
       opInfo.timestamp.operationIndex);

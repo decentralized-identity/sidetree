@@ -16,7 +16,16 @@ export default class BatchFile {
     this.operations = operations;
   }
 
-  /** Converts this BatchFile into a JSON serialized buffer. */
+  /**
+   * Gets the decoded raw buffer representing the operation specified by the operationIndex.
+   */
+  public getOperationBuffer (operationIndex: number): Buffer {
+    return Buffer.from(Base58.decode(this.operations[operationIndex]));
+  }
+
+  /**
+   * Converts this BatchFile into a JSON serialized buffer.
+   */
   public toBuffer (): Buffer {
     return Buffer.from(JSON.stringify(this));
   }
