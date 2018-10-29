@@ -17,7 +17,9 @@ app.use(async (ctx, next) => {
   await next();
 });
 
-const router = new Router();
+const router = new Router({
+  prefix: '/v1.0'
+});
 
 router.get('/:hash', async (ctx, _next) => {
   const response = await requestHandler.handleFetchRequest(ctx.params.hash);
