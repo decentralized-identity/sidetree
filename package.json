@@ -34,11 +34,15 @@
     "typescript": "^3.0.3"
   },
   "dependencies": {
+    "@types/bitcore-lib": "^0.15.1",
+    "@types/raw-body": "^2.3.0",
+    "@types/request-promise-native": "^1.0.15",
     "http-status": "^1.2.0",
     "koa": "^2.3.0",
     "koa-router": "^7.2.1",
-    "multihashes": "^0.4.14",
-    "raw-body": "^2.3.3"
+    "raw-body": "^2.3.3",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
   },
   "scripts": {
     "test": "jasmine-ts --config=./tests/jasmine.json",
