@@ -9,6 +9,37 @@ import * as request from 'request-promise-native';
 export default class RequestHandler {
 
   /**
+   * Handles the fetch request
+   * @param after specifies the minimum Sidetree transaction number that the caller is interested in
+   */
+  public async handleFetchRequest (after: number): Promise<Response> {
+    let response: Response;
+
+    if (after < 0) {
+      return {
+        status: ResponseStatus.BadRequest,
+        body: { error: 'Invalid parameter' }
+      };
+    }
+
+    try {
+      response = {
+        status: ResponseStatus.Succeeded,
+        body: {
+          'moreTransactions': false,
+          'transactions': []
+        }
+      };
+    } catch (err) {
+      response = {
+        status: ResponseStatus.ServerError,
+        body: err.message
+      };
+    }
+    return response;
+  }
+
+  /**
    * Handles sidetree transaction anchor request
    * @param tx Sidetree transaction to write into the underlying
    */
@@ -33,6 +64,50 @@ export default class RequestHandler {
       response = {
         status: ResponseStatus.Succeeded,
         body: { txId: result, metadata: tx }
+      };
+    } catch (err) {
+      response = {
+        status: ResponseStatus.ServerError,
+        body: err.message
+      };
+    }
+    return response;
+  }
+
+  /**
+   * Returns a block associated with the requested hash
+   * @param hash Specifies the hash of the block the caller is interested in
+   */
+  public async handleBlockByHashRequest (hash: string): Promise<Response> {
+    let response: Response;
+
+    try {
+      response = {
+        status: ResponseStatus.Succeeded,
+        body: { 'blockHash': hash }
+      };
+    } catch (err) {
+      response = {
+        status: ResponseStatus.ServerError,
+        body: err.message
+      };
+    }
+    return response;
+  }
+
+  /**
+   * Returns the blockhash of the last block in the blockchain
+   */
+  public async handleLastBlockRequest (): Promise<Response> {
+    let response: Response;
+
+    try {
+      response = {
+        status: ResponseStatus.Succeeded,
+        body: {
+          'blockNumber': 0,
+          'blockHash': '0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051'
+        }
       };
     } catch (err) {
       response = {

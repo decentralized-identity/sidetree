@@ -15,8 +15,23 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
-router.post('/anchor', async (ctx, _next) => {
-  const response = await requestHandler.handleAnchorRequest(ctx.body);
+router.get('/fetchTransactions/:after', async (ctx, _next) => {
+  const response = await requestHandler.handleFetchRequest(ctx.params.after);
+  setKoaResponse(response, ctx.response);
+});
+
+router.post('/anchorTransaction', async (ctx, _next) => {
+  const response = await requestHandler.handleAnchorRequest(ctx.body.anchorFileHash);
+  setKoaResponse(response, ctx.response);
+});
+
+router.get('/getBlockByHash/:hash', async (ctx, _next) => {
+  const response = await requestHandler.handleBlockByHashRequest(ctx.params.hash);
+  setKoaResponse(response, ctx.response);
+});
+
+router.get('/getLastBlock', async (ctx, _next) => {
+  const response = await requestHandler.handleLastBlockRequest();
   setKoaResponse(response, ctx.response);
 });
 
