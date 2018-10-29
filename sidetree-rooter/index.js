@@ -2,6 +2,7 @@
 // Sidetree compute node to interface with Bitcoin's blockchain for
 // anchoring Sidetree transactions. Credits: bitcore tutorial
 
+delete global._bitcore;
 var inherits = require('util').inherits;
 var EventEmitter = require('events').EventEmitter;
 var bitcore = require('bitcore-lib');
@@ -10,7 +11,7 @@ var Networks = bitcore.Networks;
 var Block = bitcore.Block;
 var $ = bitcore.util.preconditions;
 
-function SidetreeBlockchainService(options) {
+function SidetreeRooterService(options) {
   EventEmitter.call(this);
   this.node = options.node;
 
@@ -18,33 +19,33 @@ function SidetreeBlockchainService(options) {
   this.network = this.node.network;
   this.log = this.node.log;
 }
-inherits(SidetreeBlockchainService, EventEmitter);
+inherits(SidetreeRooterService, EventEmitter);
 
-SidetreeBlockchainService.dependencies = ['bitcoind'];
+SidetreeRooterService.dependencies = ['bitcoind'];
 
-SidetreeBlockchainService.prototype.start = function(callback) {
+SidetreeRooterService.prototype.start = function(callback) {
   setImmediate(callback);
   var self = this;
-  self.log.info('SidetreeBlockchainService anchorer ready');
+  self.log.info('SidetreeRooterService anchorer ready');
 };
 
-SidetreeBlockchainService.prototype.stop = function(callback) {
+SidetreeRooterService.prototype.stop = function(callback) {
   setImmediate(callback);
 };
 
-SidetreeBlockchainService.prototype.getAPIMethods = function() {
+SidetreeRooterService.prototype.getAPIMethods = function() {
   return [];
 };
 
-SidetreeBlockchainService.prototype.getPublishEvents = function() {
+SidetreeRooterService.prototype.getPublishEvents = function() {
   return [];
 };
 
-SidetreeBlockchainService.prototype.getRoutePrefix = function() {
-  return 'SidetreeBlockchainService';
+SidetreeRooterService.prototype.getRoutePrefix = function() {
+  return 'SidetreeRooterService';
 };
 
-SidetreeBlockchainService.prototype.getAddrInfo = function(request, response, next) {
+SidetreeRooterService.prototype.getAddrInfo = function(request, response, next) {
   response.set('Access-Control-Allow-Origin','*');
   response.set('Access-Control-Allow-Methods','POST, GET, OPTIONS, PUT');
   response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -62,7 +63,7 @@ SidetreeBlockchainService.prototype.getAddrInfo = function(request, response, ne
 };
 
 
-SidetreeBlockchainService.prototype.anchorBitcoin = function(request, response, next) {
+SidetreeRooterService.prototype.anchorBitcoin = function(request, response, next) {
   response.set('Access-Control-Allow-Origin','*');
   response.set('Access-Control-Allow-Methods','POST, GET, OPTIONS, PUT');
   response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -79,9 +80,9 @@ SidetreeBlockchainService.prototype.anchorBitcoin = function(request, response, 
   });
 };
 
-SidetreeBlockchainService.prototype.setupRoutes = function(app) {
+SidetreeRooterService.prototype.setupRoutes = function(app) {
     app.get('/anchor/:transaction', this.anchorBitcoin.bind(this));
     app.get('/address/:address', this.getAddrInfo.bind(this));
 };
 
-module.exports = SidetreeBlockchainService;
+module.exports = SidetreeRooterService;
