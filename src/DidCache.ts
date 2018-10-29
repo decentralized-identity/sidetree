@@ -141,6 +141,7 @@ class DidCacheImpl implements DidCache {
 
   /**
    * Apply (perform) a specified DID state changing operation.
+   * @returns Hash of the operation if the operation is applied successfully, undefined if the same operation was applied previously.
    */
   public apply (operation: WriteOperation): string | undefined {
     const opHash = DidCacheImpl.getHash(operation);
