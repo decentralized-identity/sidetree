@@ -12,7 +12,7 @@ export default class RequestHandler {
    * Handles sidetree transaction anchor request
    * @param tx Sidetree transaction to write into the underlying
    */
-  public async handleAnchorRequest(tx: string): Promise<Response> {
+  public async handleAnchorRequest (tx: string): Promise<Response> {
     const baseUrl = 'http://http://104.40.11.171:3001/SidetreeRooterService';
 
     // TODO: construct the transaction dynamically; the ts version of bitcore-lib has issues
