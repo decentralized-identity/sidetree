@@ -95,7 +95,7 @@ export interface DidCache {
 
 /**
  * The timestamp of an operation. We define a linear ordering of
- * timestamps using the function lesser below.
+ * timestamps using the function earlier() below.
  */
 interface OperationTimestamp {
   readonly transactionNumber: number;
@@ -145,8 +145,8 @@ class DidCacheImpl implements DidCache {
   public apply (operation: WriteOperation): string | undefined {
     const opHash = DidCacheImpl.getHash(operation);
 
-    // Ignore operations without the required metadata - any operation anchored
-    // in a blockchain should have this metadata.
+    // Throw errors if missing any required metadata:
+    // any operation anchored in a blockchain must have this metadata.
     if (operation.transactionNumber === undefined) {
       throw Error('Invalid operation: transactionNumber undefined');
     }
@@ -177,7 +177,7 @@ class DidCacheImpl implements DidCache {
     // ignore this operation. Note that we might have a previous
     // operation with the same hash, but that previous operation
     // need not be earlier in timestamp order - hence the check
-    // with lesser().
+    // with earlier().
     const prevOperationInfo = this.opHashToInfo.get(opHash);
     if (prevOperationInfo !== undefined && earlier(prevOperationInfo.timestamp, opInfo.timestamp)) {
       return undefined;
