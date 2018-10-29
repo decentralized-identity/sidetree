@@ -1,3 +1,4 @@
+import BatchFile from '../src/BatchFile';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
 import RequestHandler from '../src/RequestHandler';
@@ -43,6 +44,11 @@ describe('RequestHandler', () => {
     await rooter.rootOperations();
     expect(rooter.getOperationQueueLength()).toEqual(0);
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
+
+    // Verfiy that CAS was invoked to store the batch file.
+    const batchFileBuffer = await cas.read('0');
+    const batchFile = BatchFile.fromBuffer(batchFileBuffer);
+    expect(batchFile.operations.length).toEqual(1);
   });
 
   it('should return bad request if operation given is larger than protocol limit.', async () => {
