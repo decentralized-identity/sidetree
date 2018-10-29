@@ -29,47 +29,40 @@ async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas): Promise<WriteOp
   return op;
 }
 
-describe('DidCache', () => {
+describe('DidCache', async () => {
+
+  let cas = new MockCas();
+  let didCache = createDidCache(cas);
+  let createOp;
+  let firstVersion: string | undefined;
+
+  beforeEach(async () => {
+    cas = new MockCas();
+    didCache = createDidCache(cas);
+    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
+    firstVersion = didCache.apply(createOp);
+  });
 
   it('should return operation hash for create op', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
-    expect(didCache.apply(createOp)).not.toBeUndefined();
+    expect(firstVersion).not.toBeUndefined();
   });
 
   it('should return firstVersion for first(firstVersion)', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
-    const firstOfFirstVersion = await didCache.first(firstVersion);
+    const firstOfFirstVersion = await didCache.first(firstVersion as string);
     expect(firstOfFirstVersion).toBe(firstVersion);
   });
 
-  it('should return onlyVersion for last(onlyVersion)', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
-    const onlyVersion = didCache.apply(createOp) as string;
-    expect(await didCache.last(onlyVersion)).toBe(onlyVersion);
+  it('should return firstVersion for last(firstVersion) if firstVersion is the only version', async () => {
+    expect(await didCache.last(firstVersion as string)).toBe(firstVersion as string);
   });
 
   it('should return undefined for prev(firstVersion)', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
-    const prev = await didCache.previous(firstVersion);
+    const prev = await didCache.previous(firstVersion as string);
     expect(prev).toBeUndefined();
   });
 
   it('should return provided document for resolve(firstVersion)', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
-    const resolvedDid = await didCache.resolve(firstVersion);
+    const resolvedDid = await didCache.resolve(firstVersion as string);
     // TODO: can we get the raw json from did? if so, we can write a better test.
     expect(resolvedDid).not.toBeUndefined();
   });
