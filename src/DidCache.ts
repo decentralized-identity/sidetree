@@ -295,21 +295,15 @@ class DidCacheImpl implements DidCache {
    * operations.
    */
   public async first (versionId: VersionId): Promise<VersionId | undefined> {
+    const opInfo = this.opHashToInfo.get(versionId);
+    if (opInfo === undefined) {
+      return undefined;
+    }
 
     while (true) {
-
-      const opInfo = this.opHashToInfo.get(versionId);
-      if (opInfo === undefined) {
-        return undefined;
-      }
-
-      if (this.isInitialVersion(opInfo)) {
-        return versionId;
-      }
-
       const prevVersionId = await this.previous(versionId);
       if (prevVersionId === undefined) {
-        return undefined;
+        return versionId;
       }
 
       versionId = prevVersionId;
@@ -329,16 +323,17 @@ class DidCacheImpl implements DidCache {
   }
 
   /**
-   * Return the latest (most recent) version of a DID document. Return undefined if
-   * the version is unknown.
+   * Returns the latest (most recent) version of a DID Document.
+   * Returns undefined if the version is unknown.
    */
   public async last (versionId: VersionId): Promise<VersionId | undefined> {
-    while (true) {
-      const opInfo = this.opHashToInfo.get(versionId);
-      if (opInfo === undefined) {
-        return undefined;
-      }
 
+    const opInfo = this.opHashToInfo.get(versionId);
+    if (opInfo === undefined) {
+      return undefined;
+    }
+
+    while (true) {
       const nextVersionId = await this.next(versionId);
       if (nextVersionId === undefined) {
         return versionId;
