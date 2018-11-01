@@ -4,3 +4,4 @@ nunitresults.xml
 
 # Istanbul code coverage folders
 .nyc_output/
+coverage/
