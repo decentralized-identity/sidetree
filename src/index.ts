@@ -25,13 +25,13 @@ router.post('/transactions', async (ctx, _next) => {
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/blocks/:hash', async (ctx, _next) => {
-  const response = await requestHandler.handleBlockByHashRequest(ctx.params.hash);
+router.get('/blocks/last', async (ctx, _next) => {
+  const response = await requestHandler.handleLastBlockRequest();
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/blocks/last', async (ctx, _next) => {
-  const response = await requestHandler.handleLastBlockRequest();
+router.get('/blocks/:hash', async (ctx, _next) => {
+  const response = await requestHandler.handleBlockByHashRequest(ctx.params.hash);
   setKoaResponse(response, ctx.response);
 });
 

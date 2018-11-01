@@ -63,7 +63,7 @@ SidetreeRooterService.prototype.getAddrInfo = function(request, response, next) 
 };
 
 
-SidetreeRooterService.prototype.anchorBitcoin = function(request, response, next) {
+SidetreeRooterService.prototype.anchorBitcoinTransaction = function(request, response, next) {
   response.set('Access-Control-Allow-Origin','*');
   response.set('Access-Control-Allow-Methods','POST, GET, OPTIONS, PUT');
   response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -81,7 +81,7 @@ SidetreeRooterService.prototype.anchorBitcoin = function(request, response, next
 };
 
 SidetreeRooterService.prototype.setupRoutes = function(app) {
-    app.get('/anchor/:transaction', this.anchorBitcoin.bind(this));
+    app.get('/anchor/:transaction', this.anchorBitcoinTransaction.bind(this));
     app.get('/address/:address', this.getAddrInfo.bind(this));
 };
 

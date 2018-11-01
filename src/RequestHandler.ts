@@ -1,8 +1,6 @@
 import { Response, ResponseStatus } from './Response';
 import * as request from 'request-promise-native';
 
-// import * as bitcore from 'bitcore-lib';
-
 /**
  * Sidetree Bitcoin request handler class
  */
@@ -41,7 +39,7 @@ export default class RequestHandler {
 
   /**
    * Handles sidetree transaction anchor request
-   * @param tx Sidetree transaction to write into the underlying
+   * @param tx Sidetree transaction to write into the underlying blockchain.
    */
   public async handleAnchorRequest (tx: string): Promise<Response> {
     const baseUrl = 'http://http://104.40.11.171:3001/SidetreeRooterService';
@@ -53,7 +51,7 @@ export default class RequestHandler {
       'df9f20ac6e7ec6ad5ca41e6a35d0415b3fffffffff020000000000000000196a1773696465747265653a68656c6c6f5f7' +
       '76f726c645f7473b829b90a000000001976a914fc7054837bfb4c3a6fbc2d543567bdb0158b0d5188ac00000000';
 
-    let options = {
+    const options = {
       uri: baseUrl + queryString
     };
 
