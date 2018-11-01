@@ -15,7 +15,7 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
-router.get('/transactions/:after', async (ctx, _next) => {
+router.get('/transactions/:after*', async (ctx, _next) => {
   const response = await requestHandler.handleFetchRequest(ctx.params.after);
   setKoaResponse(response, ctx.response);
 });
