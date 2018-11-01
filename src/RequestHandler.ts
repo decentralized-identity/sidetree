@@ -82,7 +82,10 @@ export default class RequestHandler {
     try {
       response = {
         status: ResponseStatus.Succeeded,
-        body: { 'blockHash': hash }
+        body: {
+          'blockNumber': 0,
+          'blockHash': hash
+        }
       };
     } catch (err) {
       response = {

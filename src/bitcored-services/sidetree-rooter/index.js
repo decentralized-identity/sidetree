@@ -45,7 +45,7 @@ SidetreeRooterService.prototype.getRoutePrefix = function() {
   return 'SidetreeRooterService';
 };
 
-SidetreeRooterService.prototype.getAddrInfo = function(request, response, next) {
+SidetreeRooterService.prototype.getAddressInfo = function(request, response, next) {
   response.set('Access-Control-Allow-Origin','*');
   response.set('Access-Control-Allow-Methods','POST, GET, OPTIONS, PUT');
   response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -82,7 +82,7 @@ SidetreeRooterService.prototype.anchorBitcoinTransaction = function(request, res
 
 SidetreeRooterService.prototype.setupRoutes = function(app) {
     app.get('/anchor/:transaction', this.anchorBitcoinTransaction.bind(this));
-    app.get('/address/:address', this.getAddrInfo.bind(this));
+    app.get('/address/:address', this.getAddressInfo.bind(this));
 };
 
 module.exports = SidetreeRooterService;
