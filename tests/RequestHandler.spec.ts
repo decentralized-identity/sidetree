@@ -12,7 +12,7 @@ describe('RequestHandler', () => {
   it('should return the correct response body with content for anchor request', async () => {
     const expectedResponse: Response = {
       status: ResponseStatus.Succeeded,
-      body: { hash: 'QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk' }
+      body: {}
     };
 
     const fetchedResponse = await requestHandler.handleAnchorRequest("sidetree");
