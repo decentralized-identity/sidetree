@@ -15,22 +15,22 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
-router.get('/fetchTransactions/:after', async (ctx, _next) => {
+router.get('/transactions/:after', async (ctx, _next) => {
   const response = await requestHandler.handleFetchRequest(ctx.params.after);
   setKoaResponse(response, ctx.response);
 });
 
-router.post('/anchorTransaction', async (ctx, _next) => {
+router.post('/transactions', async (ctx, _next) => {
   const response = await requestHandler.handleAnchorRequest(ctx.body.anchorFileHash);
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/getBlockByHash/:hash', async (ctx, _next) => {
+router.get('/blocks/:hash', async (ctx, _next) => {
   const response = await requestHandler.handleBlockByHashRequest(ctx.params.hash);
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/getLastBlock', async (ctx, _next) => {
+router.get('/blocks/last', async (ctx, _next) => {
   const response = await requestHandler.handleLastBlockRequest();
   setKoaResponse(response, ctx.response);
 });
