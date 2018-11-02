@@ -1,6 +1,7 @@
-import { getProtocol } from '../src/Protocol';
+import { getProtocol, initializeProtocol } from '../src/Protocol';
 
 describe('Protocol', () => {
+  initializeProtocol('protocol-test.json');
 
   it('should fetch right protocol given the block number.', async () => {
     const protocol01 = getProtocol(1);

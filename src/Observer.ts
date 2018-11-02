@@ -1,5 +1,5 @@
 import * as Base58 from 'bs58';
-import Transaction from './Transaction';
+import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 import { getProtocol } from './Protocol';
@@ -45,7 +45,7 @@ export default class Observer {
     try {
       // First check if there are resolved transactions that are previously unresolvable.
       // If there are, then process those first, then mark moreTransactions to true to process new transactions.
-      let transactions = this.getResolvedTransactions();
+      let transactions = this.getNewlyResolvedTransactions();
       if (transactions) {
         moreTransactions = true;
       } else {
@@ -88,7 +88,14 @@ export default class Observer {
           continue; // Process next transaction.
         }
 
-        await this.processOperationBatch(transaction, batchFileBuffer);
+        const resolvedTransaction: ResolvedTransaction = {
+          blockNumber: transaction.blockNumber,
+          transactionNumber: transaction.transactionNumber,
+          anchorFileHash: transaction.anchorFileHash,
+          batchFileHash: anchorFile.batchFileHash
+        };
+
+        await this.processResolvedTransaction(resolvedTransaction, batchFileBuffer);
 
         this.errorRetryIntervalInSeconds = 1;
       }
@@ -108,7 +115,7 @@ export default class Observer {
     }
   }
 
-  private async processOperationBatch (transaction: Transaction, batchFileBuffer: Buffer) {
+  private async processResolvedTransaction (resolvedTransaction: ResolvedTransaction, batchFileBuffer: Buffer) {
     // Validate the batch file.
     const operations: WriteOperation[] = [];
     try {
@@ -117,7 +124,7 @@ export default class Observer {
       // TODO: validate batch file JSON schema.
 
       // Verify the number of operations does not exceed the maximum allowed limit.
-      const protocol = getProtocol(transaction.blockNumber);
+      const protocol = getProtocol(resolvedTransaction.blockNumber);
       if (batchFile.operations.length > protocol.maxOperationsPerBatch) {
         throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
       }
@@ -131,7 +138,7 @@ export default class Observer {
           throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${protocol.maxOperationByteSize} bytes.`);
         }
 
-        const operation = WriteOperation.create(operationBuffer, undefined, transaction.transactionNumber, operationIndex);
+        const operation = WriteOperation.create(operationBuffer, resolvedTransaction, operationIndex);
 
         operations.push(operation);
       }
@@ -158,7 +165,7 @@ export default class Observer {
   /**
    * Gets resolved transations that are previously not resolvable (i.e. unable to download anchor or batch file).
    */
-  private getResolvedTransactions (): Transaction[] | undefined {
+  private getNewlyResolvedTransactions (): Transaction[] | undefined {
     // TODO
     return;
   }

@@ -60,6 +60,11 @@ export default class Rooter {
       const batch = await this.getBatch();
       console.info(Date.now() + ' Batch size = ' + batch.length);
 
+      // Do nothing if there is nothing to batch together.
+      if (batch.length === 0) {
+        return;
+      }
+
       // Combine all operations into a Batch File buffer.
       const batchBuffer = BatchFile.fromOperations(batch).toBuffer();
 

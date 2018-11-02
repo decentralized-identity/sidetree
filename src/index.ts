@@ -1,24 +1,26 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
+import MockBlockchain from '../tests/mocks/MockBlockchain';
 import Observer from './Observer';
 import RequestHandler from './RequestHandler';
 import Rooter from './Rooter';
-import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
 import { Config, ConfigKey } from './Config';
 import { createDidCache } from './DidCache';
+import { initializeProtocol } from './Protocol';
 import { toHttpStatus, Response } from './Response';
 
 // Component dependency initialization & injection.
+initializeProtocol('protocol.json');
 const configFile = require('../json/config.json');
 const config = new Config(configFile);
-const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
+const blockchain = new MockBlockchain();
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-const didCache = createDidCache(cas);
+const didCache = createDidCache(cas, config[ConfigKey.DidMethodName]);
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
 const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
-const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
+const requestHandler = new RequestHandler(didCache, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
 rooter.startPeriodicRooting();
 observer.startPeriodicProcessing();
@@ -37,8 +39,8 @@ router.post('/', async (ctx, _next) => {
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/:did', (ctx, _next) => {
-  const response = requestHandler.handleResolveRequest(ctx.params.did);
+router.get('/:did', async (ctx, _next) => {
+  const response = await requestHandler.handleResolveRequest(ctx.params.did);
   setKoaResponse(response, ctx.response);
 });
 
@@ -60,6 +62,9 @@ app.listen(port, () => {
  */
 const setKoaResponse = (response: Response, koaResponse: Koa.Response) => {
   koaResponse.status = toHttpStatus(response.status);
-  koaResponse.set('Content-Type', 'application/json');
-  koaResponse.body = response.body;
+
+  if (response.body) {
+    koaResponse.set('Content-Type', 'application/json');
+    koaResponse.body = response.body;
+  }
 };

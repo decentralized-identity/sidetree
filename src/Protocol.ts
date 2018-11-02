@@ -1,9 +1,4 @@
-﻿const protocolVersions = require('../json/protocol.json');
-
-// Reverse sorted protocol versions. ie. latest version first.
-const protocolVersionsSorted = Object.values<Protocol>(protocolVersions).sort((a, b) => b.startingBlockNumber - a.startingBlockNumber);
-
-/**
+﻿/**
  * Defines protocol parameter values.
  */
 export default interface Protocol {
@@ -15,6 +10,17 @@ export default interface Protocol {
   maxOperationsPerBatch: number;
   /** Maximum size of an operation in bytes. */
   maxOperationByteSize: number;
+}
+
+// Reverse sorted protocol versions. ie. latest version first.
+let protocolVersionsSorted: Protocol[];
+
+/**
+ * Initializes the protocol parameters. Must be invoked frist before other calls.
+ */
+export function initializeProtocol (protocolFileName: string) {
+  const protocolParameterFile = require(`../json/${protocolFileName}`);
+  protocolVersionsSorted = Object.values<Protocol>(protocolParameterFile).sort((a, b) => b.startingBlockNumber - a.startingBlockNumber);
 }
 
 /**

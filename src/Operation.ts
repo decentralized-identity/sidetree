@@ -1,5 +1,8 @@
 import * as Base58 from 'bs58';
+import Multihash from './Multihash';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { getProtocol } from './Protocol';
+import { ResolvedTransaction } from './Transaction';
 
 /**
  * Class that contains property names used in the operation requests specified in Sidetree REST API.
@@ -42,12 +45,15 @@ enum OperationType {
  * 3. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
 class WriteOperation {
+  /** The blockchain block number that contains the transaction that contains this operation. */
+  public readonly blockNumber?: number;
   /** The transaction number of the transaction this operation was batched within. */
   public readonly transactionNumber?: number;
   /** The index this operation was assigned to in the batch. */
   public readonly operationIndex?: number;
   /** The hash of the batch file this operation belongs to */
   public readonly batchFileHash?: string;
+
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
   /** The DID of the DID document to be updated. */
@@ -69,24 +75,26 @@ class WriteOperation {
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
-   * @param transactionNumber The transaction number this operation was batched within. If given, operationIndex must be given else error will be thrown.
-   * @param operationIndex The operation index this operation was assigned to in the batch. If given, transactionNumber must be given else error will be thrown.
+   * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
+   * @param operationIndex The operation index this operation was assigned to in the batch.
+   *                       If given, resolvedTransaction must be given else error will be thrown.
    */
   private constructor (
     operationBuffer: Buffer,
-    batchFileHash?: string,
-    transactionNumber?: number,
+    resolvedTransaction?: ResolvedTransaction,
     operationIndex?: number) {
-    // Either all three (transactionNumber, operationIndex, batchFileHash) should be defined
-    // or all three should be undefined.
-    if (!((transactionNumber === undefined && operationIndex === undefined && batchFileHash === undefined) ||
-          (transactionNumber !== undefined && operationIndex !== undefined && batchFileHash !== undefined))) {
+    // resolvedTransaction and operationIndex must both be defined or undefined at the same time.
+    if (!((resolvedTransaction === undefined && operationIndex === undefined) ||
+          (resolvedTransaction !== undefined && operationIndex !== undefined))) {
       throw new Error('Param transactionNumber and operationIndex must both be defined or undefined.');
     }
 
-    this.transactionNumber = transactionNumber;
+    // Properties if the operation comes from a resolved transaction.
+    this.blockNumber = resolvedTransaction ? resolvedTransaction.blockNumber : undefined;
+    this.transactionNumber = resolvedTransaction ? resolvedTransaction.transactionNumber : undefined;
+    this.batchFileHash = resolvedTransaction ? resolvedTransaction.batchFileHash : undefined;
     this.operationIndex = operationIndex;
-    this.batchFileHash = batchFileHash;
+
     this.operationBuffer = operationBuffer;
 
     // Parse request buffer into a JS object.
@@ -155,15 +163,48 @@ class WriteOperation {
   /**
    * Creates a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
-   * @param transactionNumber The transaction number this operation was batched within. If given, operationIndex must be given else error will be thrown.
-   * @param operationIndex The operation index this operation was assigned to in the batch. If given, transactionNumber must be given else error will be thrown.
+   * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
+   * @param operationIndex The operation index this operation was assigned to in the batch.
+   *                       If given, resolvedTransaction must be given else error will be thrown.
    */
   public static create (
     operationBuffer: Buffer,
-    batchFileHash?: string,
-    transactionNumber?: number,
+    resolvedTransaction?: ResolvedTransaction,
     operationIndex?: number): WriteOperation {
-    return new WriteOperation(operationBuffer, batchFileHash, transactionNumber, operationIndex);
+    return new WriteOperation(operationBuffer, resolvedTransaction, operationIndex);
+  }
+
+  /**
+   * Retuns the constructed DID Document from the given create operation.
+   * Throws error if the given operation is not a create operation or if unable to locate a block number to be used for DID generation.
+   * @param blockNumber Optional. Will be used to decide protocol version to use for DID generation.
+   *                    If not given operation.blockNumber must be given and will be used instead.
+   */
+  public static toDidDocument (operation: WriteOperation, didMethodName: string, blockNumber?: number): DidDocument {
+    if (operation.type !== OperationType.Create) {
+      throw new Error(`Unable to construct a DID Document from a '${operation.type}' operation.`);
+    }
+
+    if (blockNumber === undefined) {
+      blockNumber = operation.blockNumber;
+    }
+
+    if (blockNumber === undefined) {
+      throw new Error(`Block number not found but needed for DID generation.`);
+    }
+
+    // Get the protocol version according to current block number to decide on the hashing algorithm used for the DID.
+    const protocol = getProtocol(blockNumber);
+
+    // Compute the hash as the DID
+    const multihash = Multihash.hash(operation.operationBuffer, protocol.hashAlgorithmInMultihashCode);
+    const multihashBase58 = Base58.encode(multihash);
+    const did = didMethodName + multihashBase58;
+
+    // Construct real DID document and return it.
+    const didDocument = operation.didDocument!;
+    didDocument.id = did;
+    return didDocument;
   }
 
   /**

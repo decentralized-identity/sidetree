@@ -27,10 +27,3 @@ export const didDocumentJson = {
     }
   }]
 };
-
-/**
- * Implementation of Did document create - return a dummy did document.
- */
-export function didDocumentCreate (_operation: WriteOperation): DidDocument {
-  return new DidDocument(didDocumentJson);
-}
