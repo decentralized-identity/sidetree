@@ -4,7 +4,7 @@ import Multihash from './Multihash';
 import Transaction from './Transaction';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { didDocumentCreate, didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
+import { didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
 import { WriteOperation, OperationType } from './Operation';
 
 /**
@@ -33,7 +33,10 @@ export type OperationHash = string;
  * and methods to retrieve current and historical states of a DID document.
  */
 export interface DidCache {
-  /** The transaction that was COMPLETELY processed. */
+  /**
+   * The transaction that was COMPLETELY processed.
+   * This is mainly used by the Observer as an offset marker to fetch new set of transactions.
+   */
   readonly lastProcessedTransaction?: Transaction;
 
   /**
@@ -57,7 +60,7 @@ export interface DidCache {
   /**
    * Resolve a did.
    */
-  resolve (did: VersionId): Promise<DidDocument | undefined>;
+  resolve (didUniquePortion: string): Promise<DidDocument | undefined>;
 
   /**
    * Returns the Did document for a given version identifier.
@@ -96,8 +99,10 @@ export interface DidCache {
 /**
  * The timestamp of an operation. We define a linear ordering of
  * timestamps using the function earlier() below.
+ * TODO: Consider consolidating this modal interface with ResolvedTransaction.
  */
 interface OperationTimestamp {
+  readonly blockNumber: number;
   readonly transactionNumber: number;
   readonly operationIndex: number;
 }
@@ -135,7 +140,7 @@ class DidCacheImpl implements DidCache {
    */
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
 
-  public constructor (private readonly cas: Cas) {
+  public constructor (private readonly cas: Cas, private didMethodName: string) {
 
   }
 
@@ -148,6 +153,10 @@ class DidCacheImpl implements DidCache {
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
+    if (operation.blockNumber === undefined) {
+      throw Error('Invalid operation: blockNumber undefined');
+    }
+
     if (operation.transactionNumber === undefined) {
       throw Error('Invalid operation: transactionNumber undefined');
     }
@@ -164,6 +173,7 @@ class DidCacheImpl implements DidCache {
 
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
+      blockNumber: operation.blockNumber,
       transactionNumber: operation.transactionNumber,
       operationIndex: operation.operationIndex
     };
@@ -230,9 +240,10 @@ class DidCacheImpl implements DidCache {
 
   /**
    * Resolve a DID.
+   * @param didUniquePortion The unique portion of the DID. e.g. did:sidetree:abc123 -> abc123.
    */
-  public async resolve (did: VersionId): Promise<DidDocument | undefined> {
-    const latestVersion = await this.last(did);
+  public async resolve (didUniquePortion: string): Promise<DidDocument | undefined> {
+    const latestVersion = await this.last(didUniquePortion);
 
     // lastVersion === undefined implies we do not know about the did
     if (latestVersion === undefined) {
@@ -260,7 +271,7 @@ class DidCacheImpl implements DidCache {
     const op = await this.getOperation(opInfo);
 
     if (this.isInitialVersion(opInfo)) {
-      return didDocumentCreate(op);
+      return WriteOperation.toDidDocument(op, this.didMethodName);
     } else {
       const prevVersion = op.previousOperationHash as VersionId;
       const prevDidDoc = await this.lookup(prevVersion);
@@ -394,10 +405,16 @@ class DidCacheImpl implements DidCache {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
     const batchFile = BatchFile.fromBuffer(batchBuffer);
     const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
+    const resolvedTransaction = {
+      blockNumber: opInfo.timestamp.blockNumber,
+      transactionNumber: opInfo.timestamp.transactionNumber,
+      anchorFileHash: 'TODO', // TODO: Will be used for detecting blockchain forks.
+      batchFileHash: opInfo.batchFileHash
+    };
+
     return WriteOperation.create(
       operationBuffer,
-      opInfo.batchFileHash,
-      opInfo.timestamp.transactionNumber,
+      resolvedTransaction,
       opInfo.timestamp.operationIndex);
   }
 }
@@ -405,6 +422,6 @@ class DidCacheImpl implements DidCache {
 /**
  * Factory function for creating a Did cache
  */
-export function createDidCache (cas: Cas): DidCache {
-  return new DidCacheImpl(cas);
+export function createDidCache (cas: Cas, didMethodName: string): DidCache {
+  return new DidCacheImpl(cas, didMethodName);
 }

@@ -1,7 +1,6 @@
-import * as Base58 from 'bs58';
-import Multihash from './Multihash';
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
+import { DidCache } from './DidCache';
 import { getProtocol } from './Protocol';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
@@ -11,20 +10,27 @@ import { Response, ResponseStatus } from './Response';
  */
 export default class RequestHandler {
 
-  public constructor (private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
+  public constructor (private didCache: DidCache, private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
   }
 
   /**
    * Handles write operations.
    */
   public async handleWriteRequest (request: Buffer): Promise<Response> {
-    // Perform common validation for any write request and parse it into a write operation.
-    let operation: WriteOperation;
+    let protocol;
     try {
       // Get the protocol version according to current block number to validate the operation request.
       const latestBlock = await this.blockchain.getLastBlock();
-      const protocol = getProtocol(latestBlock.blockNumber + 1);
+      protocol = getProtocol(latestBlock.blockNumber + 1);
+    } catch {
+      return {
+        status: ResponseStatus.ServerError
+      };
+    }
 
+    // Perform common validation for any write request and parse it into a write operation.
+    let operation: WriteOperation;
+    try {
       // Validate operation request size.
       if (request.length > protocol.maxOperationByteSize) {
         throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocol.maxOperationByteSize}`);
@@ -38,8 +44,7 @@ export default class RequestHandler {
       // TODO: Validate signature.
     } catch {
       return {
-        status: ResponseStatus.BadRequest,
-        body: { error: 'Bad request.' }
+        status: ResponseStatus.BadRequest
       };
     }
 
@@ -65,8 +70,7 @@ export default class RequestHandler {
       return response;
     } catch {
       return {
-        status: ResponseStatus.ServerError,
-        body: { error: 'Server error.' }
+        status: ResponseStatus.ServerError
       };
     }
   }
@@ -74,10 +78,19 @@ export default class RequestHandler {
   /**
    * Handles resolve operation.
    */
-  public handleResolveRequest (_did: string): Response {
+  public async handleResolveRequest (did: string): Promise<Response> {
+    const didUniquePortion = did.substring(this.didMethodName.length);
+    const didDocument = await this.didCache.resolve(didUniquePortion);
+
+    if (!didDocument) {
+      return {
+        status: ResponseStatus.NotFound
+      };
+    }
+
     return {
-      status: ResponseStatus.ServerError,
-      body: { error: 'Not implemented' }
+      status: ResponseStatus.Succeeded,
+      body: didDocument
     };
   }
 
@@ -85,22 +98,11 @@ export default class RequestHandler {
    * Handles create operation.
    */
   public async handleCreateOperation (operation: WriteOperation): Promise<Response> {
-    // Get the protocol version according to current block number to decide on the hashing algorithm used for the DID.
+    // Get the current block number so the correct protocol version can be used for generating the DID.
     const latestBlock = await this.blockchain.getLastBlock();
-    const protocol = getProtocol(latestBlock.blockNumber + 1);
-
-    // Compute the hash as the DID
-    const multihash = Multihash.hash(operation.operationBuffer, protocol.hashAlgorithmInMultihashCode);
-    const multihashBase58 = Base58.encode(multihash);
-    const did = this.didMethodName + multihashBase58;
-
-    // TODO: Ensure there is not an existing DID.
-
-    // TODO: Validate that there is not already a pending operation for the same DID in the queue.
 
     // Construct real DID document and return it.
-    const didDocument = operation.didDocument!;
-    didDocument.id = did;
+    const didDocument = WriteOperation.toDidDocument(operation, this.didMethodName, latestBlock.blockNumber + 1);
 
     return {
       status: ResponseStatus.Succeeded,

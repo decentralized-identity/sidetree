@@ -1,6 +1,7 @@
 import BatchFile from '../src/BatchFile';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
+import MockDidCache from './mocks/MockDidCache';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
 import { Config, ConfigKey } from '../src/Config';
@@ -15,7 +16,8 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
   const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-  const requestHandler = new RequestHandler(blockchain, rooter, config[ConfigKey.DidMethodName]);
+  const didCache = new MockDidCache();
+  const requestHandler = new RequestHandler(didCache, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
     // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
@@ -66,5 +68,32 @@ describe('RequestHandler', () => {
 
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(400);
+  });
+
+  it('should return a DID Document for a known DID given.', async () => {
+    const didDocumentString = `{
+      "@context": "https://w3id.org/did/v1",
+      "id": "did:sidetree:abc123"
+    }`;
+    const didDocumentJson = JSON.parse(didDocumentString);
+    const didDocument = new DidDocument(didDocumentJson);
+    didCache.setResolveReturnValue(didDocument);
+
+    const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+    expect(response.body).toBeDefined();
+    expect((response.body as any).id).toEqual('did:sidetree:abc123');
+  });
+
+  it('should return NotFound for an unknown DID given.', async () => {
+    didCache.setResolveReturnValue(undefined);
+
+    const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(404);
+    expect(response.body).toBeUndefined();
   });
 });

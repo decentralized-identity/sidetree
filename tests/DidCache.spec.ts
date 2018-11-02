@@ -25,20 +25,27 @@ async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas): Promise<WriteOp
   const operations: Buffer[] = [ opBuf ];
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
-  const op = WriteOperation.create(opBuf, batchFileAddress, 0, 0);
+  const resolvedTransaction = {
+    blockNumber: 0,
+    transactionNumber: 0,
+    anchorFileHash: 'unused',
+    batchFileHash: batchFileAddress
+  };
+
+  const op = WriteOperation.create(opBuf, resolvedTransaction, 0);
   return op;
 }
 
 describe('DidCache', async () => {
 
   let cas = new MockCas();
-  let didCache = createDidCache(cas);
+  let didCache = createDidCache(cas, 'did:sidetree:');
   let createOp;
   let firstVersion: string | undefined;
 
   beforeEach(async () => {
     cas = new MockCas();
-    didCache = createDidCache(cas);
+    didCache = createDidCache(cas, 'did:sidetree:'); // TODO: add a clear method to avoid double initialization.
     createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
     firstVersion = didCache.apply(createOp);
   });
