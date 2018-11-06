@@ -363,12 +363,22 @@ class DidCacheImpl implements DidCache {
   }
 
   /**
-   * Get a cryptographic hash of the write operation. Currently, uses
-   * SHA256 to get hashes (TODO: Fix it to be consistent DID generation)
+   * Get a cryptographic hash of the write operation.
+   * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
+   * for all other cases, the hash is calculated against the entire opeartion buffer.
    */
   private static getHash (operation: WriteOperation): OperationHash {
+    // TODO: Can't hardcode hashing algorithm. Need to depend on protocol version.
     const sha256HashCode = 18;
-    const multihash = Multihash.hash(operation.operationBuffer, sha256HashCode);
+
+    let contentBuffer;
+    if (operation.type === OperationType.Create) {
+      contentBuffer = Buffer.from(operation.encodedPayload);
+    } else {
+      contentBuffer = operation.operationBuffer;
+    }
+
+    const multihash = Multihash.hash(contentBuffer, sha256HashCode);
     const multihashBase58 = Base58.encode(multihash);
     return multihashBase58;
   }
