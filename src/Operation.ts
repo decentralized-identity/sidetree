@@ -56,6 +56,8 @@ class WriteOperation {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
+  /** The Base58 encoded operation payload. */
+  public readonly encodedPayload: string;
   /** The DID of the DID document to be updated. */
   public readonly did: string | undefined;
   /** The type of operation. */
@@ -147,13 +149,19 @@ class WriteOperation {
     this.signature = operation.signature;
     this.proofOfWork = operation.proofOfWork;
 
-    const operationTypeAndDecodedPayload = WriteOperation.getOperationTypeAndDecodedPayload(operation);
-    this.type = operationTypeAndDecodedPayload[0];
-    const payload = operationTypeAndDecodedPayload[1];
+    // Get the operation type and encoded operation string.
+    const [operationType, encodedPayload] = WriteOperation.getOperationTypeAndEncodedPayload(operation);
+    this.type = operationType;
+    this.encodedPayload = encodedPayload;
+
+    // Decode the encoded operation string.
+    const decodedPayloadBuffer = Base58.decode(encodedPayload);
+    const decodedPayloadJson = decodedPayloadBuffer.toString();
+    const decodedPayload = JSON.parse(decodedPayloadJson);
 
     switch (this.type) {
       case OperationType.Create:
-        this.didDocument = WriteOperation.parseCreatePayload(payload);
+        this.didDocument = WriteOperation.parseCreatePayload(decodedPayload);
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -196,8 +204,9 @@ class WriteOperation {
     // Get the protocol version according to current block number to decide on the hashing algorithm used for the DID.
     const protocol = getProtocol(blockNumber);
 
-    // Compute the hash as the DID
-    const multihash = Multihash.hash(operation.operationBuffer, protocol.hashAlgorithmInMultihashCode);
+    // Compute the hash of the DID Document in the create payload as the DID
+    const didDocumentBuffer = Buffer.from(operation.encodedPayload);
+    const multihash = Multihash.hash(didDocumentBuffer, protocol.hashAlgorithmInMultihashCode);
     const multihashBase58 = Base58.encode(multihash);
     const did = didMethodName + multihashBase58;
 
@@ -208,9 +217,9 @@ class WriteOperation {
   }
 
   /**
-   * Given an operation object, returns a tuple of operation type and the the operation payload.
+   * Given an operation object, returns a tuple of operation type and the Base58 encoded operation payload.
    */
-  private static getOperationTypeAndDecodedPayload (operation: any): [OperationType, object] {
+  private static getOperationTypeAndEncodedPayload (operation: any): [OperationType, string] {
     let operationType;
     let encodedPayload;
     if (operation.hasOwnProperty(OperationProperty.createPayload)) {
@@ -229,11 +238,7 @@ class WriteOperation {
       throw new Error('Unknown operation.');
     }
 
-    const decodedPayloadBuffer = Base58.decode(encodedPayload);
-    const decodedPayloadJson = decodedPayloadBuffer.toString();
-    const decodedPayload = JSON.parse(decodedPayloadJson);
-
-    return [operationType, decodedPayload];
+    return [operationType, encodedPayload];
   }
 
   /**
