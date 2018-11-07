@@ -41,7 +41,7 @@
     "koa-router": "^7.2.1",
     "http-status": "^1.2.0",
     "raw-body": "^2.3.3",
-    "ipfs": "^0.32.2",
+    "ipfs": "^0.33",
     "multihashes": "^0.4.14"
   },
   "scripts": {
