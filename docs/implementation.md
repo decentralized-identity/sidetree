@@ -120,24 +120,30 @@ Fetches Sidetree transactions in chronological order.
 
 ### Request path
 ```
-GET /<api-version>/transactions?after=<transaction-number>
+GET /<api-version>/transactions?since=<transaction-number>&transaction-hash=<transaction-hash>
 ```
 
 ### Request headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/json``` |
+None.
 
 
 ### Request query parameters
-- `after`
+- `since`
 
-  Optional. A valid transaction number. When not given, all Sidetree transactions since inception will be returned.
+  Optional. A transaction number. When not given, all Sidetree transactions since inception will be returned.
   When given, only Sidetree transactions after the specified transaction will be returned.
+
+- `transaction-hash`
+
+  Optional, but MUST BE given if `since` parameter is specified.
+
+  This is the hash of the transaction specified by the `since` parameter. The hash of the previous transaction is used as one of the inputs for the calculation of this hash.
+
+  This transaction hash helps the blockchain layer detect block reorganizations (temporary forks) and inform the requester on such events. `HTTP 404` will be the response status code in such events.
 
 ### Request example
 ```
-GET /v1.0/transactions?after=88
+GET /v1.0/transactions?since=170&transaction-hash=123abc
 ```
 
 ### Response body schema
@@ -148,6 +154,7 @@ GET /v1.0/transactions?after=88
     {
       "blockNumber": "The block number of the block that contains this transaction. Used for protocol version selection",
       "transactionNumber": "An incrementing number starting from 1 that globally uniquely identifies a Sidtree transaction.",
+      "transactionHash": "A unique hash that represents this transaction.",
       "anchorFileHash": "Hash of the anchor file of this transaction."
     },
     ...
@@ -158,17 +165,97 @@ GET /v1.0/transactions?after=88
 ### Response body example
 ```json
 {
-  "moreTransactions": false,  
+  "moreTransactions": false,
   "transactions": [
     {
       "blockNumber": 545236,
       "transactionNumber": 89,
+      "transactionHash": "QmVmrYVBVR2Smnq7VxdY6e8Qtp2gXV5KSBEph3iGhUeBqD",
       "anchorFileHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
       "blockNumber": 545236,
       "transactionNumber": 90,
+      "transactionHash": "QmLPvGhMzKHiUV4aPAMwDKVhFhhHLiVHH1xQggdbUViPB7",
       "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+    }
+  ]
+}
+```
+
+
+## Trace Sidetree transaction chain
+Returns Sidetree transactions that are "_2 to the power of N_" prior to the specified transaction until the first transaction is reached, where _N_ is integer incremented from 0. This API is primarily used by the Sidetree core library to determine a transaction that can be used as a marker in time to reprocess transactions in the event of a block reorganization (temporary fork).
+
+The returned list of transactions is in reverse chronological order.
+
+
+|                     |      |
+| ------------------- | ---- |
+| Minimum API version | v1.0 |
+
+### Request path
+```
+GET /<api-version>/transactions/trace/<transaction-number>
+```
+
+### Request headers
+None.
+
+### Request example
+```
+GET /v1.0/transactions/trace/20
+```
+
+### Response body schema
+```json
+{
+  "transactions": [
+    {
+      "transactionNumber": "The transaction 'two to the power of N' prior to the transaction specified. N is the array index.",
+      "transactionHash": "A unique hash that represents this transaction.",
+      "blockNumber": "The block number of the block that contains this transaction. Used for protocol version selection",
+      "anchorFileHash": "Hash of the anchor file of this transaction."
+    },
+    ...
+  ]
+}
+```
+
+### Success Response body example
+```json
+{
+  "moreTransactions": false,
+  "transactions": [
+    {
+      "transactionNumber": 19,
+      "transactionHash": "QmJ4uxbMhJ9qbfpKhmWGHPygEJxXMXRvAadVuLWcWPx2Uj",
+      "blockNumber": 545236,
+      "anchorFileHash": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg"
+    },
+    {
+      "transactionNumber": 18,
+      "transactionHash": "QmECFGMfd32hJpDS6kuzD4CDXMsV8TWtAs97Wmf9SubnBw",
+      "blockNumber": 545236,
+      "anchorFileHash": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb"
+    },
+    {
+      "transactionNumber": 16,
+      "transactionHash": "QmMptzc83E3u1mttPr8jPRTTmD9GXA7ddPPNiwmReb6Mcra",
+      "blockNumber": 545200,
+      "anchorFileHash": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
+    },
+    {
+      "transactionNumber": 12,
+      "transactionHash": "QmFkTie9huFza3NJeM56sD2jZUMoVq9ywEQbF8YWyjrYA8",
+      "blockNumber": 545003,
+      "anchorFileHash": "Qmss3gKdm9uU9YLx3MPRHQTcUq1CR1Xv9Zpdu7EBG9Pk9Y"
+    },
+    {
+      "transactionNumber": 4,
+      "transactionHash": "Qmn7uJyJYboQiDxPrCZU9vdFeRy2vdr5DVj3Uw8ftdrCo7",
+      "blockNumber": 544939,
+      "anchorFileHash": "QmdcDrVPWy3ZXoZcuvFq7fDVqatks22MMqPAxDqXsZzGhy"
     }
   ]
 }
