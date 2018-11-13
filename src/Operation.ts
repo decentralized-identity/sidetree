@@ -53,6 +53,7 @@ class WriteOperation {
   public readonly operationIndex?: number;
   /** The hash of the batch file this operation belongs to */
   public readonly batchFileHash?: string;
+
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
   /** The Base58 encoded operation payload. */
