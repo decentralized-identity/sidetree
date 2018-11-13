@@ -1,4 +1,5 @@
 import * as Deque from 'double-ended-queue';
+import BatchFile from './BatchFile';
 import MerkleTree from './lib/MerkleTree';
 import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
@@ -59,8 +60,13 @@ export default class Rooter {
       const batch = await this.getBatch();
       console.info(Date.now() + ' Batch size = ' + batch.length);
 
-      // Combine all operations into one JSON buffer.
-      const batchBuffer = Buffer.from(JSON.stringify(batch));
+      // Do nothing if there is nothing to batch together.
+      if (batch.length === 0) {
+        return;
+      }
+
+      // Combine all operations into a Batch File buffer.
+      const batchBuffer = BatchFile.fromOperations(batch).toBuffer();
 
       // TODO: Compress the batch buffer.
 

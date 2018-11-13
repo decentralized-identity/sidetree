@@ -1,31 +1,13 @@
 import * as Base58 from 'bs58';
+import BatchFile from '../src/BatchFile';
 import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
 import { createDidCache } from '../src/DidCache';
-import { WriteOperation } from '../src/Operation'
+import { didDocumentJson } from './mocks/MockDidDocumentGenerator';
+import { WriteOperation } from '../src/Operation';
 
-const didDocJson = {
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:ignored",
-  "publicKey": [{
-    "id": "did:sidetree:didPortionIgnored#key-1",
-    "type": "RsaVerificationKey2018",
-    "owner": "did:sidetree:ignoredUnlessResolvable",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
-  }],
-  "service": [{
-    "type": "IdentityHub",
-    "publicKey": "did:sidetree:ignored#key-1",
-    "serviceEndpoint": {
-      "@context": "schema.identity.foundation/hub",
-      "@type": "UserServiceEndpoint",
-      "instances": ["did:bar:456", "did:zaz:789"]
-    }
-  }]
-};
-
-function createCreateOperationBuffer(): Buffer {
-  const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocJson)));
+function createCreateOperationBuffer (): Buffer {
+  const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocumentJson)));
   const createOpRequest = {
     createPayload,
     signature: 'signature',
@@ -34,56 +16,61 @@ function createCreateOperationBuffer(): Buffer {
   return Buffer.from(JSON.stringify(createOpRequest));
 }
 
-async function createOperationWithSingletonBatch(opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
-  const batch: Buffer[] = [ opBuf ];
-  const batchBuffer = Buffer.from(JSON.stringify(batch));
+/**
+ * Creates a batch file with single operation given operation buffer,
+ * then adds the batch file to the given CAS.
+ * @returns The operation in the batch file added in the form of a WriteOperation.
+ */
+async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
+  const operations: Buffer[] = [ opBuf ];
+  const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
-  const op = WriteOperation.create(opBuf, batchFileAddress, 0, 0);
+  const resolvedTransaction = {
+    blockNumber: 0,
+    transactionNumber: 0,
+    anchorFileHash: 'unused',
+    batchFileHash: batchFileAddress
+  };
+
+  const op = WriteOperation.create(opBuf, resolvedTransaction, 0);
   return op;
 }
 
-describe('DidCache', () => {
+describe('DidCache', async () => {
 
-  it('should return non-null url for create op', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    expect(didCache.apply(createOp)).not.toBeNull();
+  let cas = new MockCas();
+  let didCache = createDidCache(cas, 'did:sidetree:');
+  let createOp;
+  let firstVersion: string | undefined;
+
+  beforeEach(async () => {
+    cas = new MockCas();
+    didCache = createDidCache(cas, 'did:sidetree:'); // TODO: add a clear method to avoid double initialization.
+    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
+    firstVersion = didCache.apply(createOp);
+  });
+
+  it('should return operation hash for create op', async () => {
+    expect(firstVersion).not.toBeUndefined();
   });
 
   it('should return firstVersion for first(firstVersion)', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
-    const firstOfFirstVersion = await didCache.first(firstVersion);
+    const firstOfFirstVersion = await didCache.first(firstVersion as string);
     expect(firstOfFirstVersion).toBe(firstVersion);
   });
 
-  it('should return firstVersion for last(firstVersion)', async() => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
-    expect(await didCache.last(firstVersion)).toBe(firstVersion);
+  it('should return firstVersion for last(firstVersion) if firstVersion is the only version', async () => {
+    expect(await didCache.last(firstVersion as string)).toBe(firstVersion as string);
   });
 
-  it('should return undefined for prev(firstVersion)', async() => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
-    const prev = await didCache.prev(firstVersion);
+  it('should return undefined for prev(firstVersion)', async () => {
+    const prev = await didCache.previous(firstVersion as string);
     expect(prev).toBeUndefined();
   });
 
   it('should return provided document for resolve(firstVersion)', async () => {
-    const cas = new MockCas();
-    const didCache = createDidCache(cas);
-    const createOp = await createOperationWithSingletonBatch(createCreateOperationBuffer(), cas);
-    const firstVersion = didCache.apply(createOp) as string;
     const resolvedDid = await didCache.resolve(firstVersion as string);
     // TODO: can we get the raw json from did? if so, we can write a better test.
-    expect(resolvedDid).not.toBeNull();
+    expect(resolvedDid).not.toBeUndefined();
   });
 });

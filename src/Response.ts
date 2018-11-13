@@ -3,16 +3,17 @@
  */
 interface Response {
   status: ResponseStatus;
-  body: object;
+  body?: object;
 }
 
 /**
  * Possible Sidetree response status.
  */
 enum ResponseStatus {
-  Succeeded,
   BadRequest,
-  ServerError
+  NotFound,
+  ServerError,
+  Succeeded
 }
 
 /**
@@ -24,6 +25,8 @@ function toHttpStatus (status: ResponseStatus): number {
       return 200;
     case ResponseStatus.BadRequest:
       return 400;
+    case ResponseStatus.NotFound:
+      return 404;
     default:
       return 500;
   }

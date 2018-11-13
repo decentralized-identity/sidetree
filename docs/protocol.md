@@ -58,13 +58,15 @@ An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.
 
 > NOTE: Create and recover operations require a complete DID Document as input as opposed to a _JSON patch_.
 
-## Sidetree Operation Hashes and DIDs
+## Sidetree Operation Hashes
 
 An _operation hash_ is the hash of the JSON-formatted request of a state-modifying Sidetree operation. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. An _operation hash_ serves as a globally unique identifier of the operation, each write operation must reference the previous operation using the _operation hash_, forming a chain of change history.
 
-A Sidetree DID is simply the _operation hash_ of a valid create operation request prefixed by the Sidetree DID method name.
+## Sidetree Operation DIDs
 
+A Sidetree DID is the hash of the DID Document given in the initial create operation as the create payload, prefixed by the Sidetree DID method name.
 
+Since the requester is in control of the initial DID Document, the requester can deterministically know the DID assigned before the create operation is anchored on the blockchain. This allows newly created DIDs to be immediately consumed by services who optionally and temporarily accepts DIDs not yet anchored on the blockchain.
 
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
