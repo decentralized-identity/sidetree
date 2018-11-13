@@ -3,7 +3,7 @@ import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 import { getProtocol } from './Protocol';
-import { DidCache } from './DidCache';
+import { OperationProcessor } from './OperationProcessor';
 import { WriteOperation } from './Operation';
 
 /**
@@ -21,7 +21,7 @@ export default class Observer {
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
-    private didCache: DidCache,
+    private operationProcessor: OperationProcessor,
     private pollingIntervalInSeconds: number) {
   }
 
@@ -50,7 +50,8 @@ export default class Observer {
         moreTransactions = true;
       } else {
         // Get all the new transactions.
-        const lastProcessedTransactionNumber = this.didCache.lastProcessedTransaction ? this.didCache.lastProcessedTransaction.transactionNumber : undefined;
+        const lastProcessedTransactionNumber = this.operationProcessor.lastProcessedTransaction ?
+          this.operationProcessor.lastProcessedTransaction.transactionNumber : undefined;
         const readResult = await this.blockchain.read(lastProcessedTransactionNumber);
         transactions = readResult.transactions;
         moreTransactions = readResult.moreTransactions;
@@ -149,9 +150,9 @@ export default class Observer {
       return; // Invalid batch file, nothing to process.
     }
 
-    // If the code reaches here, it means that the batch of operations is valid, apply each operations.
+    // If the code reaches here, it means that the batch of operations is valid, process each operations.
     for (const operation of operations) {
-      this.didCache.apply(operation);
+      this.operationProcessor.process(operation);
     }
   }
 

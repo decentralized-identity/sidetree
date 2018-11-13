@@ -1,6 +1,6 @@
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
-import { DidCache } from './DidCache';
+import { OperationProcessor } from './OperationProcessor';
 import { getProtocol } from './Protocol';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
@@ -10,7 +10,7 @@ import { Response, ResponseStatus } from './Response';
  */
 export default class RequestHandler {
 
-  public constructor (private didCache: DidCache, private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
+  public constructor (private operationProcessor: OperationProcessor, private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
   }
 
   /**
@@ -80,7 +80,7 @@ export default class RequestHandler {
    */
   public async handleResolveRequest (did: string): Promise<Response> {
     const didUniquePortion = did.substring(this.didMethodName.length);
-    const didDocument = await this.didCache.resolve(didUniquePortion);
+    const didDocument = await this.operationProcessor.resolve(didUniquePortion);
 
     if (!didDocument) {
       return {

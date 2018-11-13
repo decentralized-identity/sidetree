@@ -27,12 +27,11 @@ export type VersionId = string;
 export type OperationHash = string;
 
 /**
- * Represents the interface used by other components to update and retrieve the
- * current state of a Sidetree node. The interface exposes methods to record
- * sidetree DID state changes (create, update, delete, recover)
- * and methods to retrieve current and historical states of a DID document.
+ * Represents the interface used by other components to process DID operations
+ * (create, update, delete, recover) and to retrieve the current version of a
+ * DID document.
  */
-export interface DidCache {
+export interface OperationProcessor {
   /**
    * The transaction that was COMPLETELY processed.
    * This is mainly used by the Observer as an offset marker to fetch new set of transactions.
@@ -40,18 +39,18 @@ export interface DidCache {
   readonly lastProcessedTransaction?: Transaction;
 
   /**
-   * Applies the given DID operation to the DID Cache.
+   * Process a DID write (state changing) operation.
    * @returns An identifier that can be used to retrieve
    * the DID document version produced by the operation
    * and to traverse the version chain using the
    * first/last/prev/next methods below. If the write
    * operation is not legitimate return undefined.
    */
-  apply (operation: WriteOperation): string | undefined;
+  process (operation: WriteOperation): string | undefined;
 
   /**
-   * Rollback the state of the DidCache by removing all operations
-   * with transactionNumber greater than the provided parameter value.
+   * Remove all previously processed operations with transactionNumber
+   * greater than the provided parameter value.
    * The intended use case for this method is to handle rollbacks
    * in the blockchain.
    */
@@ -113,7 +112,7 @@ function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
 }
 
 /**
- * Information about a write operation relevant for the DID cache, a subset of the properties exposed by
+ * Information about a write operation relevant for the OperationProcessor, a subset of the properties exposed by
  * WriteOperation.
  */
 interface OperationInfo {
@@ -128,7 +127,7 @@ interface OperationInfo {
  * from the beginning of time. This implementation will be extended in the future to support
  * persistence.
  */
-class DidCacheImpl implements DidCache {
+class OperationProcessorImpl implements OperationProcessor {
   /**
    * Map a versionId to the next versionId whenever one exists.
    */
@@ -148,8 +147,8 @@ class DidCacheImpl implements DidCache {
    * Apply (perform) a specified DID state changing operation.
    * @returns Hash of the operation if the operation is applied successfully, undefined if the same operation was applied previously.
    */
-  public apply (operation: WriteOperation): string | undefined {
-    const opHash = DidCacheImpl.getHash(operation);
+  public process (operation: WriteOperation): string | undefined {
+    const opHash = OperationProcessorImpl.getHash(operation);
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
@@ -168,8 +167,6 @@ class DidCacheImpl implements DidCache {
     if (operation.batchFileHash === undefined) {
       throw Error('Invalid operation: batchFileHash undefined');
     }
-
-    // TODO: lookup operation.previousOperationHash and do signature verification.
 
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
@@ -207,7 +204,7 @@ class DidCacheImpl implements DidCache {
   }
 
   /**
-   * Rollback the state of the DidCache by removing all operations
+   * Remove all previously processed operations
    * with transactionNumber greater than or equal to the provided transaction number.
    * The intended use case for this method is to handle rollbacks
    * in the blockchain.
@@ -430,8 +427,8 @@ class DidCacheImpl implements DidCache {
 }
 
 /**
- * Factory function for creating a Did cache
+ * Factory function for creating a operation processor
  */
-export function createDidCache (cas: Cas, didMethodName: string): DidCache {
-  return new DidCacheImpl(cas, didMethodName);
+export function createOperationProcessor (cas: Cas, didMethodName: string): OperationProcessor {
+  return new OperationProcessorImpl(cas, didMethodName);
 }
