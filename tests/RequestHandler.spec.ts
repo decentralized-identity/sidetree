@@ -1,7 +1,7 @@
 import BatchFile from '../src/BatchFile';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
-import MockDidCache from './mocks/MockDidCache';
+import MockDidCache from './mocks/MockOperationProcessor';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
 import { Config, ConfigKey } from '../src/Config';
@@ -16,8 +16,8 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
   const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-  const didCache = new MockDidCache();
-  const requestHandler = new RequestHandler(didCache, blockchain, rooter, config[ConfigKey.DidMethodName]);
+  const operationProcessor = new MockDidCache();
+  const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
@@ -77,7 +77,7 @@ describe('RequestHandler', () => {
     }`;
     const didDocumentJson = JSON.parse(didDocumentString);
     const didDocument = new DidDocument(didDocumentJson);
-    didCache.setResolveReturnValue(didDocument);
+    operationProcessor.setResolveReturnValue(didDocument);
 
     const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
     const httpStatus = toHttpStatus(response.status);
@@ -88,7 +88,7 @@ describe('RequestHandler', () => {
   });
 
   it('should return NotFound for an unknown DID given.', async () => {
-    didCache.setResolveReturnValue(undefined);
+    operationProcessor.setResolveReturnValue(undefined);
 
     const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
     const httpStatus = toHttpStatus(response.status);
