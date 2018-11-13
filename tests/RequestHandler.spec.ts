@@ -1,7 +1,7 @@
 import BatchFile from '../src/BatchFile';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
-import MockDidCache from './mocks/MockOperationProcessor';
+import MockOperationProcessor from './mocks/MockOperationProcessor';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
 import { Config, ConfigKey } from '../src/Config';
@@ -16,7 +16,7 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
   const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-  const operationProcessor = new MockDidCache();
+  const operationProcessor = new MockOperationProcessor();
   const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
