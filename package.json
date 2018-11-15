@@ -12,6 +12,7 @@
     "http-status": "^1.2.0",
     "koa": "^2.3.0",
     "koa-router": "^7.2.1",
+    "linked-list-typescript": "^1.0.15",
     "multihashes": "^0.4.14",
     "node-fetch": "^2.2.0",
     "raw-body": "^2.3.3"
