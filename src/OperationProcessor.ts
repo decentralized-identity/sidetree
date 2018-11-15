@@ -5,7 +5,43 @@ import Transaction from './Transaction';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
+import { LinkedList } from 'linked-list-typescript';
 import { WriteOperation, OperationType } from './Operation';
+
+/**
+ * Each operation that is submitted to OperationProcessor for processing
+ * has one of the following status at any given point.
+ *
+ * Terminology useful for various comments below:
+ *
+ * Parent/Prev: For a non-create operation o this refers to the previous operation (version)
+ * specified by o.
+ * Ancestor: Transitive closure of the Parent relation.
+ * Descendant: Inverse of Ancestor
+ * Known Ancestry/Complete Ancestry: A predicate/property of an operation that indicates whether all the
+ * ancestors of the operation are known (by the OperationProcessor).
+ * Siblings: Two or more operations that point to the same parent.
+ */
+enum OperationStatus {
+  /**
+   * An operation is in Unvalidated state if its ancestry is complete.
+   */
+  Unvalidated,
+
+  /**
+   * An operation is in Valid state if all the following conditions hold:
+   * (1) It's ancestry is complete
+   * (2) Validation checks such as signature verification pass
+   * (3) It is the earliest sibling in terms of its timestamp (see earliest interface below).
+   */
+  Valid,
+
+  /**
+   * An operation is in Invalid state if its ancestry is complete but at least one of the three conditions
+   * above is false.
+   */
+  Invalid
+}
 
 /**
  * VersionId identifies the version of a DID document. We use the hash of the
@@ -18,6 +54,9 @@ import { WriteOperation, OperationType } from './Operation';
  * (2) an identifier for the DID document produced by the operation. In the code below,
  * we always use VersionId in places where we mean (2) and an OperationHash defined below
  * when we mean (1).
+ *
+ * Since we identify versions using the operation it is meaningful to apply OperationStatus
+ * to versions.
  */
 export type VersionId = string;
 
@@ -112,32 +151,55 @@ function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
 }
 
 /**
- * Information about a write operation relevant for the OperationProcessor, a subset of the properties exposed by
- * WriteOperation.
+ * Information about a write operation relevant for maintaining OperationProcessor state.
  */
 interface OperationInfo {
   readonly batchFileHash: string;
   readonly type: OperationType;
   readonly timestamp: OperationTimestamp;
+  readonly parent?: OperationHash;
+
+  status: OperationStatus;
+
+  // Most recent missing ancestor if one of the ancestors is missing. Defined only if status
+  // is Unvalidated.
+  missingAncestor?: VersionId;
 }
 
 /**
- * The current implementation is a main-memory implementation without any persistence. This
+ * The current implementation of OperationProcessor is a main-memory implementation without any persistence. This
  * means that when a node is powered down and restarted DID operations need to be applied
  * from the beginning of time. This implementation will be extended in the future to support
  * persistence.
  */
 class OperationProcessorImpl implements OperationProcessor {
-  /**
-   * Map a versionId to the next versionId whenever one exists.
-   */
-  private nextVersion: Map<VersionId, VersionId> = new Map();
 
   /**
    * Map a operation hash to the OperationInfo which contains sufficient
    * information to reconstruct the operation.
    */
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
+
+  /**
+   * Map a valid versionId to the next valid versionId whenever one exists. Due to validity checks,
+   * (condition 3 in comment above Valid), the next valid version is uniquely defined if it exists.
+   */
+  private nextVersion: Map<VersionId, VersionId> = new Map();
+
+  /**
+   * Map a "missing" operation (hash) to the list of descendant operations. The
+   * missing operation is the nearest ancestor of each of the descendants. The
+   * descendants are listed in topological sort order. For example, given these operations
+   *
+   *               m <- o1 <- o2 <- o3
+   *                      \
+   *                       \<- o4 <- o5.
+   *
+   * the linked list for missing operation m might be o1 - o4 - o5 - o2 - o3, but not
+   * o1 - o3 - o2 - o4 - o5.
+   *
+   */
+  private waitingDescendants: Map<OperationHash, LinkedList<OperationHash>> = new Map();
 
   public constructor (private readonly cas: Cas, private didMethodName: string) {
   }
@@ -177,7 +239,9 @@ class OperationProcessorImpl implements OperationProcessor {
     const opInfo: OperationInfo = {
       batchFileHash: operation.batchFileHash,
       type: operation.type,
-      timestamp: opTimestamp
+      timestamp: opTimestamp,
+      parent: operation.previousOperationHash,
+      status: OperationStatus.Unvalidated
     };
 
     // If this is a duplicate of an earlier operation, we can
@@ -189,15 +253,12 @@ class OperationProcessorImpl implements OperationProcessor {
     if (prevOperationInfo !== undefined && earlier(prevOperationInfo.timestamp, opInfo.timestamp)) {
       return undefined;
     }
+
     // Update our mapping of operation hash to operation info overwriting
     // previous info if it exists
     this.opHashToInfo.set(opHash, opInfo);
 
-    // For operations that have a previous version, we need additional
-    // bookkeeping
-    if (operation.previousOperationHash) {
-      this.applyVersionChainUpdates(opHash, opInfo, operation.previousOperationHash);
-    }
+    this.processInternal(opHash, opInfo);
 
     return opHash;
   }
@@ -380,23 +441,6 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Apply version chain updates for operations that have a previous version (update, delete, recover)
-   */
-  private applyVersionChainUpdates (opHash: OperationHash, opInfo: OperationInfo, prevVersionId: VersionId): void {
-    // We might already know of an update to prevVersionId. If so, we retain
-    // the older of previously known update and the current one
-    const curUpdateToPrevVersionId = this.nextVersion.get(prevVersionId);
-    if (curUpdateToPrevVersionId !== undefined) {
-      const curUpdateToPrevVersionIdInfo = this.opHashToInfo.get(curUpdateToPrevVersionId) as OperationInfo;
-      if (earlier(curUpdateToPrevVersionIdInfo.timestamp, opInfo.timestamp)) {
-        return;
-      }
-    }
-
-    this.nextVersion.set(prevVersionId, opHash);
-  }
-
-  /**
    * Return true if the provided operation is an initial version i.e.,
    * produced by a create operation.
    */
@@ -423,6 +467,109 @@ class OperationProcessorImpl implements OperationProcessor {
       operationBuffer,
       resolvedTransaction,
       opInfo.timestamp.operationIndex);
+  }
+
+  private processInternal (opHash: OperationHash, opInfo: OperationInfo): void {
+    // Create operation (which has no parents) is handled differently from the other
+    // operations which do have parents.
+    if (opInfo.type === OperationType.Create) {
+      this.processCreateOperation(opHash, opInfo);
+    } else {
+      this.processOperationWithParent(opHash, opInfo);
+    }
+
+    // Process operations waiting on this operation
+    this.processDescendantsWaitingOn(opHash);
+  }
+
+  private processCreateOperation (_opHash: OperationHash, opInfo: OperationInfo): void {
+    // TODO: Validate create operation (verify signature)
+    opInfo.status = OperationStatus.Valid;
+  }
+
+  private processOperationWithParent (opHash: OperationHash, opInfo: OperationInfo): void {
+    const parentOpHash = opInfo.parent as OperationHash;
+    const parentOpInfo = this.opHashToInfo.get(parentOpHash);
+
+    // If we do not know about the parent, then the ancestry of this operation is
+    // incomplete. We leave the status to be Unvalidated and update the waitingDescendants
+    // of the parent operation (hash).
+    if (parentOpInfo === undefined) {
+      // assert: opInfo.statue === OperationStatus.Unvalidated
+      opInfo.missingAncestor = parentOpHash;
+      this.updateWaitingDescendants(opInfo.missingAncestor, opHash);
+      return;
+    }
+
+    // The parent has an Unvalidated status. This implies an incomplete ancestry of the
+    // parent and therefore of this operation. We leave the status to be Unvalidated and
+    // update the waitingDescendants of the closest missing ancestor.
+    if (parentOpInfo.status === OperationStatus.Unvalidated) {
+      opInfo.missingAncestor = parentOpInfo.missingAncestor as OperationHash;
+      this.updateWaitingDescendants(opInfo.missingAncestor, opHash);
+      return;
+    }
+
+    // If the parent is invalid, then this operation is invalid as well.
+    if (parentOpInfo.status === OperationStatus.Invalid) {
+      opInfo.status = OperationStatus.Invalid;
+      return;
+    }
+
+    // Assert: parentOpInfo.status === OperationStatus.Valid. Validate the operation
+    if (!this.validate(opHash)) {
+      opInfo.status = OperationStatus.Invalid;
+      return;
+    }
+
+    // The operation is intrinsically valid. Before we set it to valid, we need
+    // to ensure that it is the earliest sibling among child nodes of its parent.
+    const curEarliestSiblingHash = this.nextVersion.get(parentOpHash);
+
+    if (curEarliestSiblingHash !== undefined) {
+      const curEarliestSiblingInfo = this.opHashToInfo.get(curEarliestSiblingHash) as OperationInfo;
+      if (earlier(curEarliestSiblingInfo.timestamp, opInfo.timestamp)) {
+        opInfo.status = OperationStatus.Invalid;
+        return;
+      } else {
+        this.invalidatePreviouslyValidOperation(curEarliestSiblingHash, curEarliestSiblingInfo);
+        // fall through ...
+      }
+    }
+
+    opInfo.status = OperationStatus.Valid;
+    this.nextVersion.set(parentOpHash, opHash);
+    return;
+  }
+
+  private updateWaitingDescendants (missingAncestor: OperationHash, opHash: OperationHash) {
+    const curWaitingDescendants = this.waitingDescendants.get(missingAncestor);
+    if (curWaitingDescendants === undefined) {
+      this.waitingDescendants.set(missingAncestor, new LinkedList<OperationHash>(opHash));
+    } else {
+      curWaitingDescendants.append(opHash);
+    }
+  }
+
+  private validate (_opHash: OperationHash): boolean {
+    throw Error('Not implemented');
+  }
+
+  private invalidatePreviouslyValidOperation (_opHash: OperationHash, _opInfo: OperationInfo) {
+    throw Error('Not implemented');
+  }
+
+  private processDescendantsWaitingOn (opHash: OperationHash) {
+    const waitingDescendants = this.waitingDescendants.get(opHash);
+    if (waitingDescendants === undefined) {
+      return;
+    }
+
+    for (const descHash in waitingDescendants) {
+      const descInfo = this.opHashToInfo.get(descHash) as OperationInfo;
+      // assert: descInfo.status === Unvalidated and descInfo.missingAncestor === opHash
+      this.processInternal(descHash, descInfo);
+    }
   }
 }
 
