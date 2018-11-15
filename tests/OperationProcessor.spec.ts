@@ -17,18 +17,30 @@ function createCreateOperationBuffer (): Buffer {
   return Buffer.from(JSON.stringify(createOpRequest));
 }
 
+function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
+  const updateOpJson = { 'add': 'some path' };
+  const updatePayload = Base58.encode(Buffer.from(JSON.stringify(updateOpJson)));
+  const updateOpRequest = {
+    updatePayload,
+    signature: 'signature',
+    proofOfWork: 'proof of work',
+    previousOperationHash
+  };
+  return Buffer.from(JSON.stringify(updateOpRequest));
+}
+
 /**
  * Creates a batch file with single operation given operation buffer,
  * then adds the batch file to the given CAS.
  * @returns The operation in the batch file added in the form of a WriteOperation.
  */
-async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas): Promise<WriteOperation> {
+async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas, transactionTime: number, transactionNumber: number): Promise<WriteOperation> {
   const operations: Buffer[] = [ opBuf ];
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
   const resolvedTransaction = {
-    transactionNumber: 0,
-    transactionTime: 0,
+    transactionNumber,
+    transactionTime,
     transactionTimeHash: 'unused',
     anchorFileHash: 'unused',
     batchFileHash: batchFileAddress
@@ -48,7 +60,7 @@ describe('OperationProessor', async () => {
   beforeEach(async () => {
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // TODO: add a clear method to avoid double initialization.
-    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas);
+    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas, 0, 0);
     firstVersion = operationProcessor.process(createOp);
   });
 
@@ -74,5 +86,13 @@ describe('OperationProessor', async () => {
     const resolvedDid = await operationProcessor.resolve(firstVersion as string);
     // TODO: can we get the raw json from did? if so, we can write a better test.
     expect(resolvedDid).not.toBeUndefined();
+  });
+
+  it('should process updates correctly', async () => {
+    const updateOp1 = await addBatchOfOneOperation(createUpdateOperationBuffer(firstVersion as string), cas, 1, 0);
+    const secondVersion = operationProcessor.process(updateOp1);
+    expect(secondVersion).not.toBeUndefined();
+    // TODO: Add previousOperationHash initialization in WriteOperation
+    // expect(await operationProcessor.first(secondVersion as string) as string).toBe(firstVersion as string);
   });
 });

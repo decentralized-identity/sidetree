@@ -22,6 +22,8 @@ class OperationProperty {
   static signature = 'signature';
   /** proofOfWork */
   static proofOfWork = 'proofOfWork';
+  /** previous operation hash */
+  static previousOperationHash = 'previousOperationHash';
 }
 
 /**
@@ -112,7 +114,8 @@ class WriteOperation {
       OperationProperty.deletePayload,
       OperationProperty.recoverPayload,
       OperationProperty.signature,
-      OperationProperty.proofOfWork]);
+      OperationProperty.proofOfWork,
+      OperationProperty.previousOperationHash]);
     for (let property in operation) {
       if (!allowedProperties.has(property)) {
         throw new Error(`Unexpected property ${property} in operation.`);
@@ -164,6 +167,8 @@ class WriteOperation {
     switch (this.type) {
       case OperationType.Create:
         this.didDocument = WriteOperation.parseCreatePayload(decodedPayload);
+        break;
+      case OperationType.Update:
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
