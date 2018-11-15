@@ -277,20 +277,19 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   public rollback (transactionNumber: number) {
 
-    // Iterate over all nextVersion entries and remove all versions
-    // with "next" operation with transactionNumber greater than the provided
-    // parameter.
-    this.nextVersion.forEach((version, nextVersion, map) => {
-      const opInfo = this.opHashToInfo.get(nextVersion) as OperationInfo; // version and opHash as identical concepts
-      if (opInfo.timestamp.transactionNumber >= transactionNumber) {
-        map.delete(version);
-      }
-    });
-
     // Iterate over all operations and remove those with with
-    // transactionNumber greater than the provided parameter.
+    // transactionNumber greater or equal to the provided parameter.
     this.opHashToInfo.forEach((opInfo, opHash, map) => {
       if (opInfo.timestamp.transactionNumber >= transactionNumber) {
+
+        if (opInfo.status === OperationStatus.Valid) {
+          this.invalidatePreviouslyValidOperation(opHash);
+        } else if (opInfo.status === OperationStatus.Unvalidated) {
+          const missingAncestor = opInfo.missingAncestor as OperationHash;
+          const waitingDescendantsOfAncestor = this.waitingDescendants.get(missingAncestor) as LinkedList<OperationHash>;
+          waitingDescendantsOfAncestor.remove(opHash);
+        }
+
         map.delete(opHash);
       }
     });
@@ -348,11 +347,8 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   public async previous (versionId: VersionId): Promise<VersionId | undefined> {
     const opInfo = this.opHashToInfo.get(versionId);
-    if (opInfo) {
-      const op = await this.getOperation(opInfo);
-      if (op.previousOperationHash) {
-        return op.previousOperationHash;
-      }
+    if (opInfo !== undefined) {
+      return opInfo.parent;
     }
     return undefined;
   }
@@ -517,7 +513,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     // Assert: parentOpInfo.status === OperationStatus.Valid. Validate the operation
-    if (!this.validate(opHash)) {
+    if (!this.validate(opHash, opInfo)) {
       opInfo.status = OperationStatus.Invalid;
       return;
     }
@@ -532,7 +528,7 @@ class OperationProcessorImpl implements OperationProcessor {
         opInfo.status = OperationStatus.Invalid;
         return;
       } else {
-        this.invalidatePreviouslyValidOperation(curEarliestSiblingHash, curEarliestSiblingInfo);
+        this.invalidatePreviouslyValidOperation(curEarliestSiblingHash);
         // fall through ...
       }
     }
@@ -551,12 +547,32 @@ class OperationProcessorImpl implements OperationProcessor {
     }
   }
 
-  private validate (_opHash: OperationHash): boolean {
-    throw Error('Not implemented');
+  private validate (_opHash: OperationHash, opInfo: OperationInfo): boolean {
+    const parentOpHash = opInfo.parent as OperationHash;
+    const parentOpInfo = this.opHashToInfo.get(parentOpHash) as OperationInfo;
+
+    if (!earlier(parentOpInfo.timestamp, opInfo.timestamp)) {
+      return false;
+    }
+
+    // TODO Perform signature verification
+
+    return true;
   }
 
-  private invalidatePreviouslyValidOperation (_opHash: OperationHash, _opInfo: OperationInfo) {
-    throw Error('Not implemented');
+  private invalidatePreviouslyValidOperation (opHash: OperationHash) {
+    const opInfo = this.opHashToInfo.get(opHash) as OperationInfo;
+    const nextOperation = this.nextVersion.get(opHash);
+
+    if (nextOperation !== undefined) {
+      this.invalidatePreviouslyValidOperation(nextOperation);
+    }
+
+    if (opInfo.parent) {
+      this.nextVersion.delete(opInfo.parent);
+    }
+
+    opInfo.status = OperationStatus.Invalid;
   }
 
   private processDescendantsWaitingOn (opHash: OperationHash) {
