@@ -282,6 +282,9 @@ class OperationProcessorImpl implements OperationProcessor {
     this.opHashToInfo.forEach((opInfo, opHash, map) => {
       if (opInfo.timestamp.transactionNumber >= transactionNumber) {
 
+        // In addition to removing the obsolete operation from the opHashToInfo map (after this if-block),
+        // If the obsolete operation was considered valid, then the parent's next link is invalid, need to remove the next link also.
+        // Else if the operation has a missing ancestor, then need to remove the operation from the list of waiting descendants of the missing ancestor.
         if (opInfo.status === OperationStatus.Valid) {
           this.invalidatePreviouslyValidOperation(opHash);
         } else if (opInfo.status === OperationStatus.Unvalidated) {
