@@ -340,10 +340,12 @@ Get /v1.0/blocks/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb
 ```
 
 
-## Get last block hash
-Gets the last confirmed block. This API serves two purposes:
+## Get latest blockchain time
+Gets the latest logical blockchain time. This API serves two purposes:
 1. Allows the Rooter to determine protocol version to be used.
-2. Provides the block hash to be used for generating proof-of-work.
+2. Provides the hash associated with the blockchain time to be used for generating proof-of-work.
+
+A time hash _must not_ be predictable, a canonical implementation would be to use the _block number_ as the time and the _block hash_ as the hash associated with a given blockchain time. It is intentional that the concepts related to _blockchain blocks_ are  hidden from the layers above.
 
 |                     |      |
 | ------------------- | ---- |
@@ -351,7 +353,7 @@ Gets the last confirmed block. This API serves two purposes:
 
 ### Request path
 ```
-GET /<api-version>/blocks/last
+GET /<api-version>/time
 ```
 
 ### Request headers
@@ -362,22 +364,22 @@ None.
 
 ### Request example
 ```
-Get /v1.0/blocks/last
+Get /v1.0/time
 ```
 
 ### Response body schema
 ```json
 {
-  "blockNumber": "The block number of the last known block.",
-  "blockHash": "The block hash of the last known block."
+  "time": "The logical blockchain time.",
+  "hash": "The hash associated with the blockchain time."
 }
 ```
 
 ### Response body example
 ```json
 {
-  "blockNumber": 545236,
-  "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
+  "time": 545236,
+  "hash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
 }
 ```
 

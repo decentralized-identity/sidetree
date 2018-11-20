@@ -1,4 +1,4 @@
-import Block from '../../src/Block';
+import BlockchainTime from '../../src/BlockchainTime';
 import Transaction from '../../src/Transaction';
 import { Blockchain } from '../../src/Blockchain';
 
@@ -42,15 +42,15 @@ export default class MockBlockchain implements Blockchain {
     };
   }
 
-  private lastBlock?: Block = { blockNumber: 500000, blockHash: 'dummyHash' };
-  public async getLastBlock (): Promise<Block> {
-    return this.lastBlock!;
+  private latestTime?: BlockchainTime = { time: 500000, hash: 'dummyHash' };
+  public async getLatestTime (): Promise<BlockchainTime> {
+    return this.latestTime!;
   }
 
   /**
-   * Sets the last block to be returned by the getLastBlock() call.
+   * Hardcodes the latest time to be returned.
    */
-  public setLaskBlock (block: Block) {
-    this.lastBlock = block;
+  public setLatestTime (time: BlockchainTime) {
+    this.latestTime = time;
   }
 }

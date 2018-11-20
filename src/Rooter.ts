@@ -103,9 +103,9 @@ export default class Rooter {
    * then the maximum allowed number of operation is returned.
    */
   private async getBatch (): Promise<Buffer[]> {
-    // Get the protocol version according to current block number to decide on the batch size limit to enforce.
-    const latestBlock = await this.blockchain.getLastBlock();
-    const protocol = getProtocol(latestBlock.blockNumber + 1);
+    // Get the protocol version according to current blockchain time to decide on the batch size limit to enforce.
+    const currentTime = await this.blockchain.getLatestTime();
+    const protocol = getProtocol(currentTime.time + 1);
 
     let queueSize = this.operations.length;
     let batchSize = queueSize;
