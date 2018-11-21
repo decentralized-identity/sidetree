@@ -29,8 +29,9 @@ export default class MockBlockchain implements Blockchain {
       afterTransaction < this.hashes.length - 1) {
       const hashIndex = afterTransaction + 1;
       const transaction = {
-        blockNumber: hashIndex,
         transactionNumber: hashIndex,
+        transactionTime: hashIndex,
+        transactionTimeHash: this.hashes[hashIndex],
         anchorFileHash: this.hashes[hashIndex]
       };
       transactions.push(transaction);

@@ -26,8 +26,9 @@ async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas): Promise<WriteOp
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
   const resolvedTransaction = {
-    blockNumber: 0,
     transactionNumber: 0,
+    transactionTime: 0,
+    transactionTimeHash: 'unused',
     anchorFileHash: 'unused',
     batchFileHash: batchFileAddress
   };
