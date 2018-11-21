@@ -157,7 +157,7 @@ interface OperationInfo {
   readonly batchFileHash: string;
   readonly type: OperationType;
   readonly timestamp: OperationTimestamp;
-  readonly parent?: OperationHash;
+  readonly parent?: VersionId;
 
   status: OperationStatus;
 
@@ -181,8 +181,9 @@ class OperationProcessorImpl implements OperationProcessor {
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
 
   /**
-   * Map a valid versionId to the next valid versionId whenever one exists. Due to validity checks,
-   * (condition 3 in comment above Valid), the next valid version is uniquely defined if it exists.
+   * Map a valid versionId to the next valid versionId whenever one exists. The next
+   * version of a valid node is a valid child node. There is at most one valid child node
+   * (it could have zero) due to our validity checks (condition 3 in comment above Valid).
    */
   private nextVersion: Map<VersionId, VersionId> = new Map();
 
@@ -287,8 +288,8 @@ class OperationProcessorImpl implements OperationProcessor {
         if (opInfo.status === OperationStatus.Valid) {
           this.invalidatePreviouslyValidOperation(opHash);
         } else if (opInfo.status === OperationStatus.Unvalidated) {
-          const missingAncestor = opInfo.missingAncestor as OperationHash;
-          const waitingDescendantsOfAncestor = this.waitingDescendants.get(missingAncestor) as LinkedList<OperationHash>;
+          const missingAncestor = opInfo.missingAncestor!;
+          const waitingDescendantsOfAncestor = this.waitingDescendants.get(missingAncestor)!;
           waitingDescendantsOfAncestor.remove(opHash);
         }
 
@@ -332,7 +333,7 @@ class OperationProcessorImpl implements OperationProcessor {
     if (this.isInitialVersion(opInfo)) {
       return WriteOperation.toDidDocument(op, this.didMethodName);
     } else {
-      const prevVersion = op.previousOperationHash as VersionId;
+      const prevVersion = op.previousOperationHash!;
       const prevDidDoc = await this.lookup(prevVersion);
       if (prevDidDoc === undefined) {
         return undefined;
@@ -487,16 +488,16 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   private processOperationWithParent (opHash: OperationHash, opInfo: OperationInfo): void {
-    const parentOpHash = opInfo.parent as OperationHash;
+    const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash);
 
     // If we do not know about the parent, then the ancestry of this operation is
     // incomplete. We leave the status to be Unvalidated and update the waitingDescendants
     // of the parent operation (hash).
     if (parentOpInfo === undefined) {
-      // assert: opInfo.statue === OperationStatus.Unvalidated
+      // assert: opInfo.state === OperationStatus.Unvalidated
       opInfo.missingAncestor = parentOpHash;
-      this.updateWaitingDescendants(opInfo.missingAncestor, opHash);
+      this.addWaitingDescendants(opInfo.missingAncestor, opHash);
       return;
     }
 
@@ -504,8 +505,8 @@ class OperationProcessorImpl implements OperationProcessor {
     // parent and therefore of this operation. We leave the status to be Unvalidated and
     // update the waitingDescendants of the closest missing ancestor.
     if (parentOpInfo.status === OperationStatus.Unvalidated) {
-      opInfo.missingAncestor = parentOpInfo.missingAncestor as OperationHash;
-      this.updateWaitingDescendants(opInfo.missingAncestor, opHash);
+      opInfo.missingAncestor = parentOpInfo.missingAncestor!;
+      this.addWaitingDescendants(opInfo.missingAncestor, opHash);
       return;
     }
 
@@ -523,15 +524,19 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // The operation is intrinsically valid. Before we set it to valid, we need
     // to ensure that it is the earliest sibling among child nodes of its parent.
-    const curEarliestSiblingHash = this.nextVersion.get(parentOpHash);
+    const earliestSiblingHash = this.nextVersion.get(parentOpHash);
 
-    if (curEarliestSiblingHash !== undefined) {
-      const curEarliestSiblingInfo = this.opHashToInfo.get(curEarliestSiblingHash) as OperationInfo;
-      if (earlier(curEarliestSiblingInfo.timestamp, opInfo.timestamp)) {
+    if (earliestSiblingHash !== undefined) {
+      const earliestSiblingInfo = this.opHashToInfo.get(earliestSiblingHash)!;
+      if (earlier(earliestSiblingInfo.timestamp, opInfo.timestamp)) {
         opInfo.status = OperationStatus.Invalid;
         return;
       } else {
-        this.invalidatePreviouslyValidOperation(curEarliestSiblingHash);
+        let opToInvalidate: string | undefined = earliestSiblingHash;
+        do {
+          this.invalidatePreviouslyValidOperation(opToInvalidate!);
+          opToInvalidate = this.nextVersion.get(opToInvalidate!);
+        } while (opToInvalidate !== undefined);
         // fall through ...
       }
     }
@@ -541,18 +546,18 @@ class OperationProcessorImpl implements OperationProcessor {
     return;
   }
 
-  private updateWaitingDescendants (missingAncestor: OperationHash, opHash: OperationHash) {
-    const curWaitingDescendants = this.waitingDescendants.get(missingAncestor);
-    if (curWaitingDescendants === undefined) {
+  private addWaitingDescendants (missingAncestor: OperationHash, opHash: OperationHash) {
+    const waitingDescendants = this.waitingDescendants.get(missingAncestor);
+    if (waitingDescendants === undefined) {
       this.waitingDescendants.set(missingAncestor, new LinkedList<OperationHash>(opHash));
     } else {
-      curWaitingDescendants.append(opHash);
+      waitingDescendants.append(opHash);
     }
   }
 
   private validate (_opHash: OperationHash, opInfo: OperationInfo): boolean {
-    const parentOpHash = opInfo.parent as OperationHash;
-    const parentOpInfo = this.opHashToInfo.get(parentOpHash) as OperationInfo;
+    const parentOpHash = opInfo.parent!;
+    const parentOpInfo = this.opHashToInfo.get(parentOpHash)!;
 
     if (!earlier(parentOpInfo.timestamp, opInfo.timestamp)) {
       return false;
@@ -564,12 +569,7 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   private invalidatePreviouslyValidOperation (opHash: OperationHash) {
-    const opInfo = this.opHashToInfo.get(opHash) as OperationInfo;
-    const nextOperation = this.nextVersion.get(opHash);
-
-    if (nextOperation !== undefined) {
-      this.invalidatePreviouslyValidOperation(nextOperation);
-    }
+    const opInfo = this.opHashToInfo.get(opHash)!;
 
     if (opInfo.parent) {
       this.nextVersion.delete(opInfo.parent);
@@ -584,10 +584,10 @@ class OperationProcessorImpl implements OperationProcessor {
       return;
     }
 
-    for (const descHash in waitingDescendants) {
-      const descInfo = this.opHashToInfo.get(descHash) as OperationInfo;
+    for (const descendantHash in waitingDescendants) {
+      const descendantInfo = this.opHashToInfo.get(descendantHash)!;
       // assert: descInfo.status === Unvalidated and descInfo.missingAncestor === opHash
-      this.processInternal(descHash, descInfo);
+      this.processInternal(descendantHash, descendantInfo);
     }
   }
 }
