@@ -586,7 +586,7 @@ class OperationProcessorImpl implements OperationProcessor {
 
     for (const descendantHash in waitingDescendants) {
       const descendantInfo = this.opHashToInfo.get(descendantHash)!;
-      // assert: descInfo.status === Unvalidated and descInfo.missingAncestor === opHash
+      // assert: descendantInfo.status === Unvalidated and descendantInfo.missingAncestor === opHash
       this.processInternal(descendantHash, descendantInfo);
     }
   }
