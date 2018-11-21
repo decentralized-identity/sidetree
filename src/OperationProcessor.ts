@@ -491,11 +491,11 @@ class OperationProcessorImpl implements OperationProcessor {
     const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash);
 
-    // If we do not know about the parent, then the ancestry of this operation is
-    // incomplete. We leave the status to be Unvalidated and update the waitingDescendants
+    // If we do not know about the parent, then the ancestry of this operation is incomplete.
+    // The operation status is Unvalidated so we add this operation to the list of waiting descendants
     // of the parent operation (hash).
     if (parentOpInfo === undefined) {
-      // assert: opInfo.state === OperationStatus.Unvalidated
+      opInfo.status = OperationStatus.Unvalidated;
       opInfo.missingAncestor = parentOpHash;
       this.addWaitingDescendants(opInfo.missingAncestor, opHash);
       return;
@@ -528,6 +528,11 @@ class OperationProcessorImpl implements OperationProcessor {
 
     if (earliestSiblingHash !== undefined) {
       const earliestSiblingInfo = this.opHashToInfo.get(earliestSiblingHash)!;
+
+      // If the existing earliest sibling operation is earlier than the operation to be added,
+      //   then the operation to be added is invalid.
+      // Else current operation is the earliest sibling operation and thus is valid,
+      //   the existing sibling's entire descendant chain in the next version map need to be removed.
       if (earlier(earliestSiblingInfo.timestamp, opInfo.timestamp)) {
         opInfo.status = OperationStatus.Invalid;
         return;
@@ -568,6 +573,12 @@ class OperationProcessorImpl implements OperationProcessor {
     return true;
   }
 
+  /**
+   * Invalidates the given operation by:
+   * 1. Removing its parent's reference to it in the next version map.
+   * 2. Sets the operation status to be 'Invalid'.
+   * @param opHash The hash of the operation to be invalidated.
+   */
   private invalidatePreviouslyValidOperation (opHash: OperationHash) {
     const opInfo = this.opHashToInfo.get(opHash)!;
 
