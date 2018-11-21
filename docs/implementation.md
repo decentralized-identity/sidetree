@@ -300,46 +300,6 @@ POST /v1.0/transactions
 None.
 
 
-## Get block
-Gets the data of a block identified by the block hash.
-
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
-### Request path
-```
-GET /<api-version>/blocks/<block-hash>
-```
-
-### Request headers
-None.
-
-### Request body schema
-None.
-
-### Request example
-```
-Get /v1.0/blocks/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
-```
-
-### Response body schema
-```json
-{
-  "blockNumber": "The block number.",
-  "blockHash": "The block hash, should be the same as the value given in query path."
-}
-```
-
-### Response body example
-```json
-{
-  "blockNumber": 545236,
-  "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
-}
-```
-
-
 ## Get latest blockchain time
 Gets the latest logical blockchain time. This API serves two purposes:
 1. Allows the Rooter to determine protocol version to be used.
@@ -372,6 +332,47 @@ Get /v1.0/time
 {
   "time": "The logical blockchain time.",
   "hash": "The hash associated with the blockchain time."
+}
+```
+
+### Response body example
+```json
+{
+  "time": 545236,
+  "hash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
+}
+```
+
+
+
+## Get blockchain time by hash
+Gets the time identified by the time hash.
+
+|                     |      |
+| ------------------- | ---- |
+| Minimum API version | v1.0 |
+
+### Request path
+```
+GET /<api-version>/time/<time-hash>
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+Get /v1.0/time/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
+```
+
+### Response body schema
+```json
+{
+  "time": "The logical blockchain time.",
+  "hash": "The hash associated with the blockchain time, must be the same as the value given in query path."
 }
 ```
 
