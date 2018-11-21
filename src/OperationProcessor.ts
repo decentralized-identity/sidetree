@@ -534,8 +534,8 @@ class OperationProcessorImpl implements OperationProcessor {
       } else {
         let opToInvalidate: string | undefined = earliestSiblingHash;
         do {
-          this.invalidatePreviouslyValidOperation(opToInvalidate!);
-          opToInvalidate = this.nextVersion.get(opToInvalidate!);
+          this.invalidatePreviouslyValidOperation(opToInvalidate);
+          opToInvalidate = this.nextVersion.get(opToInvalidate);
         } while (opToInvalidate !== undefined);
         // fall through ...
       }
