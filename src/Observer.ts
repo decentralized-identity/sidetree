@@ -88,9 +88,11 @@ export default class Observer {
           continue; // Process next transaction.
         }
 
+        // Construct a resolved transaction from the original transaction object now that batch file is fetched.
         const resolvedTransaction: ResolvedTransaction = {
-          blockNumber: transaction.blockNumber,
           transactionNumber: transaction.transactionNumber,
+          transactionTime: transaction.transactionTime,
+          transactionTimeHash: transaction.transactionTimeHash,
           anchorFileHash: transaction.anchorFileHash,
           batchFileHash: anchorFile.batchFileHash
         };
@@ -124,7 +126,7 @@ export default class Observer {
       // TODO: validate batch file JSON schema.
 
       // Verify the number of operations does not exceed the maximum allowed limit.
-      const protocol = getProtocol(resolvedTransaction.blockNumber);
+      const protocol = getProtocol(resolvedTransaction.transactionTime);
       if (batchFile.operations.length > protocol.maxOperationsPerBatch) {
         throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
       }

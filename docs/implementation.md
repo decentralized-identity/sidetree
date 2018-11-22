@@ -109,10 +109,13 @@ All hashes used in the API are Base58 encoded multihash.
 | 500              | Server error.                            |
 
 
-## Fetch Sidetree transactions
-Fetches Sidetree transactions in chronological order.
 
-> Note: The call may not to return all Sidetree transactions in one batch, in which case the caller can use the block number of the last given transaction to fetch subsequent transactions.
+## Get latest blockchain time
+Gets the latest logical blockchain time. This API serves two purposes:
+1. Allows the Rooter to determine protocol version to be used.
+2. Provides the hash associated with the blockchain time to be used for generating proof-of-work.
+
+A _blockchain time hash_ **must not** be predictable/pre-computable, a canonical implementation would be to use the _block number_ as the time and the _block hash_ as the _time hash_. It is intentional that the concepts related to _blockchain blocks_ are  hidden from the layers above.
 
 |                     |      |
 | ------------------- | ---- |
@@ -120,7 +123,91 @@ Fetches Sidetree transactions in chronological order.
 
 ### Request path
 ```
-GET /<api-version>/transactions?since=<transaction-number>&transaction-hash=<transaction-hash>
+GET /<api-version>/time
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+Get /v1.0/time
+```
+
+### Response body schema
+```json
+{
+  "time": "The logical blockchain time.",
+  "hash": "The hash associated with the blockchain time."
+}
+```
+
+### Response body example
+```json
+{
+  "time": 545236,
+  "hash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
+}
+```
+
+
+
+## Get blockchain time by hash
+Gets the time identified by the time hash.
+
+|                     |      |
+| ------------------- | ---- |
+| Minimum API version | v1.0 |
+
+### Request path
+```
+GET /<api-version>/time/<time-hash>
+```
+
+### Request headers
+None.
+
+### Request body schema
+None.
+
+### Request example
+```
+Get /v1.0/time/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
+```
+
+### Response body schema
+```json
+{
+  "time": "The logical blockchain time.",
+  "hash": "The hash associated with the blockchain time, must be the same as the value given in query path."
+}
+```
+
+### Response body example
+```json
+{
+  "time": 545236,
+  "hash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
+}
+```
+
+
+
+## Fetch Sidetree transactions
+Fetches Sidetree transactions in chronological order.
+
+> Note: The call may not to return all Sidetree transactions in one batch, in which case the caller can use the transaction number of the last transaction in the returned batch to fetch subsequent transactions.
+
+|                     |      |
+| ------------------- | ---- |
+| Minimum API version | v1.0 |
+
+### Request path
+```
+GET /<api-version>/transactions?since=<transaction-number>&transaction-time-hash=<transaction-time-hash>
 ```
 
 ### Request headers
@@ -133,17 +220,18 @@ None.
   Optional. A transaction number. When not given, all Sidetree transactions since inception will be returned.
   When given, only Sidetree transactions after the specified transaction will be returned.
 
-- `transaction-hash`
+- `transaction-time-hash`
 
   Optional, but MUST BE given if `since` parameter is specified.
 
-  This is the hash of the transaction specified by the `since` parameter. The hash of the previous transaction is used as one of the inputs for the calculation of this hash.
+  This is the hash associated with the time the transaction specified by the `since` parameter is anchored on blockchain.
+  Multiple transactions can have the same _transaction time_ and thus the same _transaction time hash_.
 
-  This transaction hash helps the blockchain layer detect block reorganizations (temporary forks) and inform the requester on such events. `HTTP 404` will be the response status code in such events.
+  The _transaction time hash_ helps the blockchain layer detect block reorganizations (temporary forks) and inform the requester using `HTTP 404` on such events.
 
 ### Request example
 ```
-GET /v1.0/transactions?since=170&transaction-hash=123abc
+GET /v1.0/transactions?since=170&transaction-time-hash=00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253
 ```
 
 ### Response body schema
@@ -152,9 +240,9 @@ GET /v1.0/transactions?since=170&transaction-hash=123abc
   "moreTransactions": "True if there are more transactions beyond the returned batch. False otherwise.",
   "transactions": [
     {
-      "blockNumber": "The block number of the block that contains this transaction. Used for protocol version selection",
-      "transactionNumber": "An incrementing number starting from 1 that globally uniquely identifies a Sidtree transaction.",
-      "transactionHash": "A unique hash that represents this transaction.",
+      "transactionNumber": "A monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction.",
+      "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
+      "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorFileHash": "Hash of the anchor file of this transaction."
     },
     ...
@@ -168,15 +256,15 @@ GET /v1.0/transactions?since=170&transaction-hash=123abc
   "moreTransactions": false,
   "transactions": [
     {
-      "blockNumber": 545236,
       "transactionNumber": 89,
-      "transactionHash": "QmVmrYVBVR2Smnq7VxdY6e8Qtp2gXV5KSBEph3iGhUeBqD",
+      "transactionTime": 545236,
+      "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
       "anchorFileHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
-      "blockNumber": 545236,
-      "transactionNumber": 90,
-      "transactionHash": "QmLPvGhMzKHiUV4aPAMwDKVhFhhHLiVHH1xQggdbUViPB7",
+      "transactionNumber": 100,
+      "transactionTime": 545236,
+      "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
       "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
   ]
@@ -213,8 +301,8 @@ GET /v1.0/transactions/trace/20
   "transactions": [
     {
       "transactionNumber": "The transaction 'two to the power of N' prior to the transaction specified. N is the array index.",
-      "transactionHash": "A unique hash that represents this transaction.",
-      "blockNumber": "The block number of the block that contains this transaction. Used for protocol version selection",
+      "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
+      "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorFileHash": "Hash of the anchor file of this transaction."
     },
     ...
@@ -229,32 +317,32 @@ GET /v1.0/transactions/trace/20
   "transactions": [
     {
       "transactionNumber": 19,
-      "transactionHash": "QmJ4uxbMhJ9qbfpKhmWGHPygEJxXMXRvAadVuLWcWPx2Uj",
-      "blockNumber": 545236,
+      "transactionTime": 545236,
+      "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
       "anchorFileHash": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg"
     },
     {
       "transactionNumber": 18,
-      "transactionHash": "QmECFGMfd32hJpDS6kuzD4CDXMsV8TWtAs97Wmf9SubnBw",
-      "blockNumber": 545236,
+      "transactionTime": 545236,
+      "transactionTimeHash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
       "anchorFileHash": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb"
     },
     {
       "transactionNumber": 16,
-      "transactionHash": "QmMptzc83E3u1mttPr8jPRTTmD9GXA7ddPPNiwmReb6Mcra",
-      "blockNumber": 545200,
+      "transactionTime": 545200,
+      "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
       "anchorFileHash": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
     },
     {
       "transactionNumber": 12,
-      "transactionHash": "QmFkTie9huFza3NJeM56sD2jZUMoVq9ywEQbF8YWyjrYA8",
-      "blockNumber": 545003,
+      "transactionTime": 545003,
+      "transactionTimeHash": "0000000000000000001e002080595267fe034d370897b7b506d119ad29da1541",
       "anchorFileHash": "Qmss3gKdm9uU9YLx3MPRHQTcUq1CR1Xv9Zpdu7EBG9Pk9Y"
     },
     {
       "transactionNumber": 4,
-      "transactionHash": "Qmn7uJyJYboQiDxPrCZU9vdFeRy2vdr5DVj3Uw8ftdrCo7",
-      "blockNumber": 544939,
+      "transactionTime": 544939,
+      "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
       "anchorFileHash": "QmdcDrVPWy3ZXoZcuvFq7fDVqatks22MMqPAxDqXsZzGhy"
     }
   ]
@@ -299,87 +387,6 @@ POST /v1.0/transactions
 ### Response body schema
 None.
 
-
-## Get block
-Gets the data of a block identified by the block hash.
-
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
-### Request path
-```
-GET /<api-version>/blocks/<block-hash>
-```
-
-### Request headers
-None.
-
-### Request body schema
-None.
-
-### Request example
-```
-Get /v1.0/blocks/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
-```
-
-### Response body schema
-```json
-{
-  "blockNumber": "The block number.",
-  "blockHash": "The block hash, should be the same as the value given in query path."
-}
-```
-
-### Response body example
-```json
-{
-  "blockNumber": 545236,
-  "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
-}
-```
-
-
-## Get last block hash
-Gets the last confirmed block. This API serves two purposes:
-1. Allows the Rooter to determine protocol version to be used.
-2. Provides the block hash to be used for generating proof-of-work.
-
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
-### Request path
-```
-GET /<api-version>/blocks/last
-```
-
-### Request headers
-None.
-
-### Request body schema
-None.
-
-### Request example
-```
-Get /v1.0/blocks/last
-```
-
-### Response body schema
-```json
-{
-  "blockNumber": "The block number of the last known block.",
-  "blockHash": "The block hash of the last known block."
-}
-```
-
-### Response body example
-```json
-{
-  "blockNumber": 545236,
-  "blockHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
-}
-```
 
 
 

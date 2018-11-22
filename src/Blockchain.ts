@@ -1,5 +1,5 @@
 import * as HttpStatus from 'http-status';
-import Block from './Block';
+import BlockchainTime from './BlockchainTime';
 import nodeFetch from 'node-fetch';
 import Transaction from './Transaction';
 
@@ -23,9 +23,9 @@ export interface Blockchain {
   read (afterTransaction?: number): Promise<{ moreTransactions: boolean, transactions: Transaction[] }>;
 
   /**
-   * Gets the last block on the blockchain.
+   * Gets the latest blockchain time.
    */
-  getLastBlock (): Promise<Block>;
+  getLatestTime (): Promise<BlockchainTime>;
 }
 
 /**
@@ -35,11 +35,11 @@ export class BlockchainClient implements Blockchain {
 
   /** URI that handles transaction operations. */
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
-  private blocksUri: string; // e.g. https://127.0.0.1/blocks
+  private timeUri: string; // e.g. https://127.0.0.1/time
 
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
-    this.blocksUri = `${uri}/blocks`;
+    this.timeUri = `${uri}/time`;
   }
 
   public async write (anchorFileHash: string): Promise<void> {
@@ -84,13 +84,11 @@ export class BlockchainClient implements Blockchain {
   }
 
   // TODO: Consider caching strategy since this will be invoked very frequently, especially by the Rooter.
-  public async getLastBlock (): Promise<Block> {
-    const uri = `${this.blocksUri}/last`; // e.g. https://127.0.0.1/blocks/last
-
-    const response = await nodeFetch(uri);
+  public async getLatestTime (): Promise<BlockchainTime> {
+    const response = await nodeFetch(this.timeUri);
 
     if (response.status !== HttpStatus.OK) {
-      throw new Error('Encountered an error fetching last block data from blockchain.');
+      throw new Error('Encountered an error fetching latest time from blockchain.');
     }
 
     const responseBodyString = (response.body.read() as Buffer).toString();

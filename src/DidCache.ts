@@ -102,7 +102,7 @@ export interface DidCache {
  * TODO: Consider consolidating this modal interface with ResolvedTransaction.
  */
 interface OperationTimestamp {
-  readonly blockNumber: number;
+  readonly transactionTime: number;
   readonly transactionNumber: number;
   readonly operationIndex: number;
 }
@@ -153,8 +153,8 @@ class DidCacheImpl implements DidCache {
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
-    if (operation.blockNumber === undefined) {
-      throw Error('Invalid operation: blockNumber undefined');
+    if (operation.transactionTime === undefined) {
+      throw Error('Invalid operation: transactionTime undefined');
     }
 
     if (operation.transactionNumber === undefined) {
@@ -173,7 +173,7 @@ class DidCacheImpl implements DidCache {
 
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
-      blockNumber: operation.blockNumber,
+      transactionTime: operation.transactionTime,
       transactionNumber: operation.transactionNumber,
       operationIndex: operation.operationIndex
     };
@@ -416,8 +416,9 @@ class DidCacheImpl implements DidCache {
     const batchFile = BatchFile.fromBuffer(batchBuffer);
     const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
     const resolvedTransaction = {
-      blockNumber: opInfo.timestamp.blockNumber,
       transactionNumber: opInfo.timestamp.transactionNumber,
+      transactionTime: opInfo.timestamp.transactionTime,
+      transactionTimeHash: 'NOT_NEEDED',
       anchorFileHash: 'TODO', // TODO: Will be used for detecting blockchain forks.
       batchFileHash: opInfo.batchFileHash
     };
