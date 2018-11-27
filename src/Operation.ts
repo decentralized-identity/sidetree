@@ -169,6 +169,10 @@ class WriteOperation {
         this.didDocument = WriteOperation.parseCreatePayload(decodedPayload);
         break;
       case OperationType.Update:
+        if (!(OperationProperty.previousOperationHash in operation)) {
+          throw new Error('Update operation must contain a previous operation hash');
+        }
+        this.previousOperationHash = operation.previousOperationHash;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);

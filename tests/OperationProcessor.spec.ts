@@ -34,7 +34,12 @@ function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
  * then adds the batch file to the given CAS.
  * @returns The operation in the batch file added in the form of a WriteOperation.
  */
-async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas, transactionTime: number, transactionNumber: number): Promise<WriteOperation> {
+async function addBatchOfOneOperation (
+  opBuf: Buffer,
+  cas: Cas,
+  transactionNumber: number,
+  transactionTime: number,
+  operationIndex: number): Promise<WriteOperation> {
   const operations: Buffer[] = [ opBuf ];
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
@@ -46,7 +51,7 @@ async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas, transactionTime:
     batchFileHash: batchFileAddress
   };
 
-  const op = WriteOperation.create(opBuf, resolvedTransaction, 0);
+  const op = WriteOperation.create(opBuf, resolvedTransaction, operationIndex);
   return op;
 }
 
@@ -60,7 +65,7 @@ describe('OperationProessor', async () => {
   beforeEach(async () => {
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // TODO: add a clear method to avoid double initialization.
-    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas, 0, 0);
+    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas, 0, 0, 0);
     firstVersion = operationProcessor.process(createOp);
   });
 
@@ -89,10 +94,40 @@ describe('OperationProessor', async () => {
   });
 
   it('should process updates correctly', async () => {
-    const updateOp1 = await addBatchOfOneOperation(createUpdateOperationBuffer(firstVersion as string), cas, 1, 0);
-    const secondVersion = operationProcessor.process(updateOp1);
-    expect(secondVersion).not.toBeUndefined();
-    // TODO: Add previousOperationHash initialization in WriteOperation
-    // expect(await operationProcessor.first(secondVersion as string) as string).toBe(firstVersion as string);
+    // Update firstVersion several times, store the resulting versions in an array
+    const versions = new Array(firstVersion!);
+    const numberOfUpdates = 1;
+    for (let i = 0; i < numberOfUpdates; ++i) {
+      const mostRecentVersion = versions[i];
+      const updateOp = await addBatchOfOneOperation(createUpdateOperationBuffer(
+        mostRecentVersion),
+        cas,
+        i + 1,   /* transaction Number */
+        i + 1,   /* transactionTime */
+        0        /* operation index */
+        );
+      const newVersion = operationProcessor.process(updateOp);
+      expect(newVersion).not.toBeUndefined();
+      versions.push(newVersion!);
+    }
+
+    // Check first(), last(), prev(), next() return expected outputs
+    for (let i = 0; i < versions.length; ++i) {
+      expect(await operationProcessor.first(versions[i])).toBe(versions[0]);
+      expect(await operationProcessor.last(versions[i])).toBe(versions[versions.length - 1]);
+
+      if (i === 0) {
+        expect(await operationProcessor.previous(versions[i])).toBeUndefined();
+      } else {
+        expect(await operationProcessor.previous(versions[i])).toBe(versions[i - 1]);
+      }
+
+      console.log('next');
+      if (i === versions.length - 1) {
+        expect(await operationProcessor.next(versions[i])).toBeUndefined();
+      } else {
+        expect(await operationProcessor.next(versions[i])).toBe(versions[i + 1]);
+      }
+    }
   });
 });
