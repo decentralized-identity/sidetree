@@ -58,6 +58,8 @@ class WriteOperation {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
+  /** The incremental number of each operation made to the DID Document of the same DID starting from 0. */
+  public readonly operationNumber: Number;
   /** The Base58 encoded operation payload. */
   public readonly encodedPayload: string;
   /** The DID of the DID document to be updated. */
@@ -75,6 +77,9 @@ class WriteOperation {
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument: DidDocument | undefined;
+
+  /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
+  public readonly patch: string | undefined;
 
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
@@ -166,9 +171,14 @@ class WriteOperation {
 
     switch (this.type) {
       case OperationType.Create:
+        this.operationNumber = 0;
         this.didDocument = WriteOperation.parseCreatePayload(decodedPayload);
         break;
       case OperationType.Update:
+        this.operationNumber = decodedPayload.operationNumber;
+        this.did = decodedPayload.did;
+        this.previousOperationHash = decodedPayload.previousOperationHash;
+        this.patch = decodedPayload.patch;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -223,6 +233,15 @@ class WriteOperation {
     // Construct real DID document and return it.
     const didDocument = operation.didDocument!;
     didDocument.id = did;
+    return didDocument;
+  }
+
+  /**
+   * Applies the given update operation to the specified DID Document.
+   * @returns The resultant DID Document.
+   */
+  public static applyOperationToDidDocument (didDocument: DidDocument, _operation: WriteOperation): DidDocument {
+    // TODO: implement JSON patch, for now return the same document.
     return didDocument;
   }
 
