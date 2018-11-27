@@ -3,7 +3,6 @@ import BatchFile from './BatchFile';
 import Multihash from './Multihash';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
 import { LinkedList } from 'linked-list-typescript';
 import { WriteOperation, OperationType } from './Operation';
 
@@ -292,7 +291,7 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Resolve a DID.
+   * Resolve the given DID to its DID Doducment.
    * @param didUniquePortion The unique portion of the DID. e.g. did:sidetree:abc123 -> abc123.
    */
   public async resolve (didUniquePortion: string): Promise<DidDocument | undefined> {
@@ -307,7 +306,7 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Returns the Did document for a given version identifier.
+   * Returns the DID Document for a given version identifier.
    */
   public async lookup (versionId: VersionId): Promise<DidDocument | undefined> {
     // Version id is also the operation hash that produces the document
@@ -331,7 +330,7 @@ class OperationProcessorImpl implements OperationProcessor {
       if (prevDidDoc === undefined) {
         return undefined;
       } else {
-        return didDocumentUpdate(prevDidDoc, op);
+        return WriteOperation.applyOperationToDidDocument(prevDidDoc, op);
       }
     }
   }
@@ -444,7 +443,7 @@ class OperationProcessorImpl implements OperationProcessor {
       transactionNumber: opInfo.timestamp.transactionNumber,
       transactionTime: opInfo.timestamp.transactionTime,
       transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'TODO', // TODO: Will be used for detecting blockchain forks.
+      anchorFileHash: 'NOT_NEEDED',
       batchFileHash: opInfo.batchFileHash
     };
 
@@ -553,7 +552,9 @@ class OperationProcessorImpl implements OperationProcessor {
       return false;
     }
 
-    // TODO Perform signature verification
+    // TODO Perform:
+    // - operation number validation
+    // - signature verification
 
     return true;
   }

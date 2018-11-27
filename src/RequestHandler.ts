@@ -1,7 +1,8 @@
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
-import { OperationProcessor } from './OperationProcessor';
+import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { getProtocol } from './Protocol';
+import { OperationProcessor } from './OperationProcessor';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
 
@@ -54,6 +55,9 @@ export default class RequestHandler {
       switch (operation.type) {
         case OperationType.Create:
           response = await this.handleCreateOperation(operation);
+          break;
+        case OperationType.Update:
+          response = await this.handleUpdateOperation(operation);
           break;
         default:
           response = {
@@ -108,5 +112,42 @@ export default class RequestHandler {
       status: ResponseStatus.Succeeded,
       body: didDocument
     };
+  }
+
+  /**
+   * Handles update operation.
+   */
+  public async handleUpdateOperation (operation: WriteOperation): Promise<Response> {
+
+    const updatedDidDocument = this.simulateUpdateOperation(operation);
+
+    return {
+      status: ResponseStatus.Succeeded,
+      body: updatedDidDocument
+    };
+  }
+
+  /**
+   * Simulates an Update operation without actually commiting the state change.
+   * This method is used to sanity validate an write-operation request before it is batched for rooting.
+   * NOTE: This method is intentionally not placed within Operation Processor because:
+   * 1. This avoids to create yet another interface method.
+   * 2. It is more appropriate to think of this method a higher-layer logic that uses the building blocks exposed by the Operation Processor.
+   * @param operation The Update opeartion to be applied.
+   * @returns The resultant DID Document.
+   * @throws Error if operation given is invalid.
+   */
+  private async simulateUpdateOperation (operation: WriteOperation): Promise<DidDocument> {
+    // TODO: add and refactor code such that same validation code is used by this method and anchored opeartion processing.
+
+    // Get the current DID Document of the specified DID.
+    const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
+    if (!currentDidDcoument) {
+      throw Error(`DID '${operation.did}' not found.`);
+    }
+
+    // Apply the patch on top of the current DID Document.
+    const updatedDidDocument = WriteOperation.applyOperationToDidDocument(currentDidDcoument, operation);
+    return updatedDidDocument;
   }
 }

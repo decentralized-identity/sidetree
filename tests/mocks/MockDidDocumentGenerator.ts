@@ -1,13 +1,3 @@
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { WriteOperation } from '../../src/Operation';
-
-/**
- * Implementation of Did document update - no-op for testing purposes.
- */
-export function didDocumentUpdate (didDoc: DidDocument, _operation: WriteOperation): DidDocument {
-  return didDoc;
-}
-
 export const didDocumentJson = {
   '@context': 'https://w3id.org/did/v1',
   'id': 'did:sidetree:ignored',
