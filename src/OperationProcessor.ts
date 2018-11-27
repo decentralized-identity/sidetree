@@ -1,7 +1,6 @@
 import * as Base58 from 'bs58';
 import BatchFile from './BatchFile';
 import Multihash from './Multihash';
-import Transaction from './Transaction';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
@@ -71,12 +70,6 @@ export type OperationHash = string;
  * DID document.
  */
 export interface OperationProcessor {
-  /**
-   * The transaction that was COMPLETELY processed.
-   * This is mainly used by the Observer as an offset marker to fetch new set of transactions.
-   */
-  readonly lastProcessedTransaction?: Transaction;
-
   /**
    * Process a DID write (state changing) operation.
    * @returns An identifier that can be used to retrieve
@@ -409,14 +402,6 @@ class OperationProcessorImpl implements OperationProcessor {
         versionId = nextVersionId;
       }
     }
-  }
-
-  /**
-   * Get the last processed transaction.
-   * TODO: fix this after discussing the intended semantics.
-   */
-  public get lastProcessedTransaction (): Transaction | undefined {
-    return undefined;
   }
 
   /**

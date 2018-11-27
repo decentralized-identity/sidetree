@@ -18,6 +18,12 @@ export default class Observer {
    */
   private errorRetryIntervalInSeconds = 1;
 
+  /**
+   * The last transaction that was completely processed.
+   * This is mainly used as an offset marker to fetch new set of transactions.
+   */
+  private lastProcessedTransaction?: Transaction;
+
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
@@ -50,8 +56,8 @@ export default class Observer {
         moreTransactions = true;
       } else {
         // Get all the new transactions.
-        const lastProcessedTransactionNumber = this.operationProcessor.lastProcessedTransaction ?
-          this.operationProcessor.lastProcessedTransaction.transactionNumber : undefined;
+        const lastProcessedTransactionNumber = this.lastProcessedTransaction ?
+          this.lastProcessedTransaction.transactionNumber : undefined;
         const readResult = await this.blockchain.read(lastProcessedTransactionNumber);
         transactions = readResult.transactions;
         moreTransactions = readResult.moreTransactions;
@@ -59,47 +65,10 @@ export default class Observer {
 
       // Process each transaction sequentially.
       for (const transaction of transactions) {
-        // Try fetching the anchor file.
-        let anchorFileBuffer;
-        try {
-          anchorFileBuffer = await this.cas.read(transaction.anchorFileHash);
-        } catch {
-          // If unable to fetch the anchor file, place the transaction for future retries.
-          this.addUnresolvableTransaction(transaction);
-          continue; // Process next transaction.
-        }
+        await this.processTransaction(transaction);
 
-        let anchorFile;
-        try {
-          anchorFile = JSON.parse(anchorFileBuffer.toString());
-
-          // TODO: validate anchor file schema.
-        } catch {
-          continue; // Invalid transaction, process next transaction.
-        }
-
-        // Try fetching the batch file.
-        let batchFileBuffer;
-        try {
-          batchFileBuffer = await this.cas.read(anchorFile.batchFileHash);
-          // TODO: Consider short-circuit optimization: check file size before downloading.
-        } catch {
-          // If unable to fetch the batch file, place the transaction for future retries.
-          this.addUnresolvableTransaction(transaction);
-          continue; // Process next transaction.
-        }
-
-        // Construct a resolved transaction from the original transaction object now that batch file is fetched.
-        const resolvedTransaction: ResolvedTransaction = {
-          transactionNumber: transaction.transactionNumber,
-          transactionTime: transaction.transactionTime,
-          transactionTimeHash: transaction.transactionTimeHash,
-          anchorFileHash: transaction.anchorFileHash,
-          batchFileHash: anchorFile.batchFileHash
-        };
-
-        await this.processResolvedTransaction(resolvedTransaction, batchFileBuffer);
-
+        // Resetting error retry back to 1 seconds if everytime we are able to process a transaction.
+        // i.e. Transaction processing is not stalling.
         this.errorRetryIntervalInSeconds = 1;
       }
     } catch (e) {
@@ -114,6 +83,67 @@ export default class Observer {
         setImmediate(async () => this.processTransactions());
       } else {
         setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
+      }
+    }
+  }
+
+  /**
+   * Processes the given transaction.
+   * If the given transaction is unresolvable (anchor/batch file not found), save the transaction for retry.
+   * If no error encountered (unresolvable transaction is NOT an error), advance the 'last processed transaction' marker.
+   */
+  private async processTransaction (transaction: Transaction) {
+    let errorOccurred = false;
+
+    try {
+      // Try fetching the anchor file.
+      let anchorFileBuffer;
+      try {
+        anchorFileBuffer = await this.cas.read(transaction.anchorFileHash);
+      } catch {
+        // If unable to fetch the anchor file, place the transaction for future retries.
+        this.addUnresolvableTransaction(transaction);
+        return;
+      }
+
+      let anchorFile;
+      try {
+        anchorFile = JSON.parse(anchorFileBuffer.toString());
+
+        // TODO: validate anchor file schema.
+      } catch {
+        return; // Invalid transaction, no further processing necessary.
+      }
+
+      // Try fetching the batch file.
+      let batchFileBuffer;
+      try {
+        batchFileBuffer = await this.cas.read(anchorFile.batchFileHash);
+        // TODO: Consider short-circuit optimization: check file size before downloading.
+      } catch {
+        // If unable to fetch the batch file, place the transaction for future retries.
+        this.addUnresolvableTransaction(transaction);
+        return;
+      }
+
+      // Construct a resolved transaction from the original transaction object now that batch file is fetched.
+      const resolvedTransaction: ResolvedTransaction = {
+        transactionNumber: transaction.transactionNumber,
+        transactionTime: transaction.transactionTime,
+        transactionTimeHash: transaction.transactionTimeHash,
+        anchorFileHash: transaction.anchorFileHash,
+        batchFileHash: anchorFile.batchFileHash
+      };
+
+      await this.processResolvedTransaction(resolvedTransaction, batchFileBuffer);
+    } catch (e) {
+      errorOccurred = true;
+      throw e;
+    } finally {
+      // If no error occurred, we increment the last proccessed transaction marker.
+      // NOTE: unresolvable transaction is considered a processed transaction.
+      if (!errorOccurred) {
+        this.lastProcessedTransaction = transaction;
       }
     }
   }
