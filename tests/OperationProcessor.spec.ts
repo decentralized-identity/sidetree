@@ -3,17 +3,11 @@ import BatchFile from '../src/BatchFile';
 import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
 import { createOperationProcessor } from '../src/OperationProcessor';
-import { didDocumentJson } from './mocks/MockDidDocumentGenerator';
+import { readFileSync } from 'fs';
 import { WriteOperation } from '../src/Operation';
 
 function createCreateOperationBuffer (): Buffer {
-  const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocumentJson)));
-
-  const createOpRequest = {
-    createPayload,
-    signature: 'signature',
-    proofOfWork: 'proof of work'
-  };
+  const createOpRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
   return Buffer.from(JSON.stringify(createOpRequest));
 }
 
