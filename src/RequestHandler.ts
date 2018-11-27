@@ -19,9 +19,9 @@ export default class RequestHandler {
   public async handleWriteRequest (request: Buffer): Promise<Response> {
     let protocol;
     try {
-      // Get the protocol version according to current block number to validate the operation request.
-      const latestBlock = await this.blockchain.getLastBlock();
-      protocol = getProtocol(latestBlock.blockNumber + 1);
+      // Get the protocol version according to current blockchain time to validate the operation request.
+      const currentTime = await this.blockchain.getLatestTime();
+      protocol = getProtocol(currentTime.time + 1);
     } catch {
       return {
         status: ResponseStatus.ServerError
@@ -98,11 +98,11 @@ export default class RequestHandler {
    * Handles create operation.
    */
   public async handleCreateOperation (operation: WriteOperation): Promise<Response> {
-    // Get the current block number so the correct protocol version can be used for generating the DID.
-    const latestBlock = await this.blockchain.getLastBlock();
+    // Get the current blockchain time so the correct protocol version can be used for generating the DID.
+    const currentTime = await this.blockchain.getLatestTime();
 
     // Construct real DID document and return it.
-    const didDocument = WriteOperation.toDidDocument(operation, this.didMethodName, latestBlock.blockNumber + 1);
+    const didDocument = WriteOperation.toDidDocument(operation, this.didMethodName, currentTime.time + 1);
 
     return {
       status: ResponseStatus.Succeeded,

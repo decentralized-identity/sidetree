@@ -8,6 +8,7 @@ import { WriteOperation } from '../src/Operation';
 
 function createCreateOperationBuffer (): Buffer {
   const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocumentJson)));
+
   const createOpRequest = {
     createPayload,
     signature: 'signature',
@@ -33,13 +34,14 @@ function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
  * then adds the batch file to the given CAS.
  * @returns The operation in the batch file added in the form of a WriteOperation.
  */
-async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas, blockNumber: number, transactionNumber: number): Promise<WriteOperation> {
+async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas, transactionTime: number, transactionNumber: number): Promise<WriteOperation> {
   const operations: Buffer[] = [ opBuf ];
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
   const resolvedTransaction = {
-    blockNumber,
     transactionNumber,
+    transactionTime,
+    transactionTimeHash: 'unused',
     anchorFileHash: 'unused',
     batchFileHash: batchFileAddress
   };

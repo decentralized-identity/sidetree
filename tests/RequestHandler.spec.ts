@@ -20,13 +20,13 @@ describe('RequestHandler', () => {
   const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
-    // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
-    const mockLastBlock = {
-      blockNumber: 1000000,
-      blockHash: 'dummyHash'
+    // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
+    const mockLatestTime = {
+      time: 1000000,
+      hash: 'dummyHash'
     };
 
-    blockchain.setLaskBlock(mockLastBlock);
+    blockchain.setLatestTime(mockLatestTime);
 
     // Read create operation request from file.
     const requestString = readFileSync('./tests/requests/create.json');
@@ -54,13 +54,13 @@ describe('RequestHandler', () => {
   });
 
   it('should return bad request if operation given is larger than protocol limit.', async () => {
-    // Set a last block that must be able to resolve to a protocol version in the protocol config file used.
-    const mockLastBlock = {
-      blockNumber: 1,
-      blockHash: 'dummyHash'
+    // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
+    const mockLatestTime = {
+      time: 1,
+      hash: 'dummyHash'
     };
 
-    blockchain.setLaskBlock(mockLastBlock);
+    blockchain.setLatestTime(mockLatestTime);
 
     const createRequest = readFileSync('./tests/requests/create.json');
     const response = await requestHandler.handleWriteRequest(createRequest);

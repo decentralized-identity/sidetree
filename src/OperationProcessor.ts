@@ -140,7 +140,7 @@ export interface OperationProcessor {
  * TODO: Consider consolidating this modal interface with ResolvedTransaction.
  */
 interface OperationTimestamp {
-  readonly blockNumber: number;
+  readonly transactionTime: number;
   readonly transactionNumber: number;
   readonly operationIndex: number;
 }
@@ -157,7 +157,7 @@ interface OperationInfo {
   readonly batchFileHash: string;
   readonly type: OperationType;
   readonly timestamp: OperationTimestamp;
-  readonly parent?: OperationHash;
+  readonly parent?: VersionId;
 
   status: OperationStatus;
 
@@ -181,8 +181,9 @@ class OperationProcessorImpl implements OperationProcessor {
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
 
   /**
-   * Map a valid versionId to the next valid versionId whenever one exists. Due to validity checks,
-   * (condition 3 in comment above Valid), the next valid version is uniquely defined if it exists.
+   * Map a valid versionId to the next valid versionId whenever one exists. The next
+   * version of a valid node is a valid child node. There is at most one valid child node
+   * (it could have zero) due to our validity checks (condition 3 in comment above Valid).
    */
   private nextVersion: Map<VersionId, VersionId> = new Map();
 
@@ -202,7 +203,6 @@ class OperationProcessorImpl implements OperationProcessor {
   private waitingDescendants: Map<OperationHash, LinkedList<OperationHash>> = new Map();
 
   public constructor (private readonly cas: Cas, private didMethodName: string) {
-
   }
 
   /**
@@ -214,8 +214,8 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
-    if (operation.blockNumber === undefined) {
-      throw Error('Invalid operation: blockNumber undefined');
+    if (operation.transactionTime === undefined) {
+      throw Error('Invalid operation: transactionTime undefined');
     }
 
     if (operation.transactionNumber === undefined) {
@@ -232,7 +232,7 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
-      blockNumber: operation.blockNumber,
+      transactionTime: operation.transactionTime,
       transactionNumber: operation.transactionNumber,
       operationIndex: operation.operationIndex
     };
@@ -282,11 +282,14 @@ class OperationProcessorImpl implements OperationProcessor {
     this.opHashToInfo.forEach((opInfo, opHash, map) => {
       if (opInfo.timestamp.transactionNumber >= transactionNumber) {
 
+        // In addition to removing the obsolete operation from the opHashToInfo map (after this if-block),
+        // If the obsolete operation was considered valid, then the parent's next link is invalid, need to remove the next link also.
+        // Else if the operation has a missing ancestor, then need to remove the operation from the list of waiting descendants of the missing ancestor.
         if (opInfo.status === OperationStatus.Valid) {
           this.invalidatePreviouslyValidOperation(opHash);
         } else if (opInfo.status === OperationStatus.Unvalidated) {
-          const missingAncestor = opInfo.missingAncestor as OperationHash;
-          const waitingDescendantsOfAncestor = this.waitingDescendants.get(missingAncestor) as LinkedList<OperationHash>;
+          const missingAncestor = opInfo.missingAncestor!;
+          const waitingDescendantsOfAncestor = this.waitingDescendants.get(missingAncestor)!;
           waitingDescendantsOfAncestor.remove(opHash);
         }
 
@@ -330,7 +333,7 @@ class OperationProcessorImpl implements OperationProcessor {
     if (this.isInitialVersion(opInfo)) {
       return WriteOperation.toDidDocument(op, this.didMethodName);
     } else {
-      const prevVersion = op.previousOperationHash as VersionId;
+      const prevVersion = op.previousOperationHash!;
       const prevDidDoc = await this.lookup(prevVersion);
       if (prevDidDoc === undefined) {
         return undefined;
@@ -453,8 +456,9 @@ class OperationProcessorImpl implements OperationProcessor {
     const batchFile = BatchFile.fromBuffer(batchBuffer);
     const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
     const resolvedTransaction = {
-      blockNumber: opInfo.timestamp.blockNumber,
       transactionNumber: opInfo.timestamp.transactionNumber,
+      transactionTime: opInfo.timestamp.transactionTime,
+      transactionTimeHash: 'NOT_NEEDED',
       anchorFileHash: 'TODO', // TODO: Will be used for detecting blockchain forks.
       batchFileHash: opInfo.batchFileHash
     };
@@ -484,16 +488,16 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   private processOperationWithParent (opHash: OperationHash, opInfo: OperationInfo): void {
-    const parentOpHash = opInfo.parent as OperationHash;
+    const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash);
 
-    // If we do not know about the parent, then the ancestry of this operation is
-    // incomplete. We leave the status to be Unvalidated and update the waitingDescendants
+    // If we do not know about the parent, then the ancestry of this operation is incomplete.
+    // The operation status is Unvalidated so we add this operation to the list of waiting descendants
     // of the parent operation (hash).
     if (parentOpInfo === undefined) {
-      // assert: opInfo.statue === OperationStatus.Unvalidated
+      opInfo.status = OperationStatus.Unvalidated;
       opInfo.missingAncestor = parentOpHash;
-      this.updateWaitingDescendants(opInfo.missingAncestor, opHash);
+      this.addWaitingDescendants(opInfo.missingAncestor, opHash);
       return;
     }
 
@@ -501,8 +505,8 @@ class OperationProcessorImpl implements OperationProcessor {
     // parent and therefore of this operation. We leave the status to be Unvalidated and
     // update the waitingDescendants of the closest missing ancestor.
     if (parentOpInfo.status === OperationStatus.Unvalidated) {
-      opInfo.missingAncestor = parentOpInfo.missingAncestor as OperationHash;
-      this.updateWaitingDescendants(opInfo.missingAncestor, opHash);
+      opInfo.missingAncestor = parentOpInfo.missingAncestor!;
+      this.addWaitingDescendants(opInfo.missingAncestor, opHash);
       return;
     }
 
@@ -520,15 +524,24 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // The operation is intrinsically valid. Before we set it to valid, we need
     // to ensure that it is the earliest sibling among child nodes of its parent.
-    const curEarliestSiblingHash = this.nextVersion.get(parentOpHash);
+    const earliestSiblingHash = this.nextVersion.get(parentOpHash);
 
-    if (curEarliestSiblingHash !== undefined) {
-      const curEarliestSiblingInfo = this.opHashToInfo.get(curEarliestSiblingHash) as OperationInfo;
-      if (earlier(curEarliestSiblingInfo.timestamp, opInfo.timestamp)) {
+    if (earliestSiblingHash !== undefined) {
+      const earliestSiblingInfo = this.opHashToInfo.get(earliestSiblingHash)!;
+
+      // If the existing earliest sibling operation is earlier than the operation to be added,
+      //   then the operation to be added is invalid.
+      // Else current operation is the earliest sibling operation and thus is valid,
+      //   the existing sibling's entire descendant chain in the next version map need to be removed.
+      if (earlier(earliestSiblingInfo.timestamp, opInfo.timestamp)) {
         opInfo.status = OperationStatus.Invalid;
         return;
       } else {
-        this.invalidatePreviouslyValidOperation(curEarliestSiblingHash);
+        let opToInvalidate: string | undefined = earliestSiblingHash;
+        do {
+          this.invalidatePreviouslyValidOperation(opToInvalidate);
+          opToInvalidate = this.nextVersion.get(opToInvalidate);
+        } while (opToInvalidate !== undefined);
         // fall through ...
       }
     }
@@ -538,18 +551,18 @@ class OperationProcessorImpl implements OperationProcessor {
     return;
   }
 
-  private updateWaitingDescendants (missingAncestor: OperationHash, opHash: OperationHash) {
-    const curWaitingDescendants = this.waitingDescendants.get(missingAncestor);
-    if (curWaitingDescendants === undefined) {
+  private addWaitingDescendants (missingAncestor: OperationHash, opHash: OperationHash) {
+    const waitingDescendants = this.waitingDescendants.get(missingAncestor);
+    if (waitingDescendants === undefined) {
       this.waitingDescendants.set(missingAncestor, new LinkedList<OperationHash>(opHash));
     } else {
-      curWaitingDescendants.append(opHash);
+      waitingDescendants.append(opHash);
     }
   }
 
   private validate (_opHash: OperationHash, opInfo: OperationInfo): boolean {
-    const parentOpHash = opInfo.parent as OperationHash;
-    const parentOpInfo = this.opHashToInfo.get(parentOpHash) as OperationInfo;
+    const parentOpHash = opInfo.parent!;
+    const parentOpInfo = this.opHashToInfo.get(parentOpHash)!;
 
     if (!earlier(parentOpInfo.timestamp, opInfo.timestamp)) {
       return false;
@@ -560,13 +573,14 @@ class OperationProcessorImpl implements OperationProcessor {
     return true;
   }
 
+  /**
+   * Invalidates the given operation by:
+   * 1. Removing its parent's reference to it in the next version map.
+   * 2. Sets the operation status to be 'Invalid'.
+   * @param opHash The hash of the operation to be invalidated.
+   */
   private invalidatePreviouslyValidOperation (opHash: OperationHash) {
-    const opInfo = this.opHashToInfo.get(opHash) as OperationInfo;
-    const nextOperation = this.nextVersion.get(opHash);
-
-    if (nextOperation !== undefined) {
-      this.invalidatePreviouslyValidOperation(nextOperation);
-    }
+    const opInfo = this.opHashToInfo.get(opHash)!;
 
     if (opInfo.parent) {
       this.nextVersion.delete(opInfo.parent);
@@ -581,10 +595,10 @@ class OperationProcessorImpl implements OperationProcessor {
       return;
     }
 
-    for (const descHash in waitingDescendants) {
-      const descInfo = this.opHashToInfo.get(descHash) as OperationInfo;
-      // assert: descInfo.status === Unvalidated and descInfo.missingAncestor === opHash
-      this.processInternal(descHash, descInfo);
+    for (const descendantHash in waitingDescendants) {
+      const descendantInfo = this.opHashToInfo.get(descendantHash)!;
+      // assert: descendantInfo.status === Unvalidated and descendantInfo.missingAncestor === opHash
+      this.processInternal(descendantHash, descendantInfo);
     }
   }
 }

@@ -47,8 +47,8 @@ enum OperationType {
  * 3. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
 class WriteOperation {
-  /** The blockchain block number that contains the transaction that contains this operation. */
-  public readonly blockNumber?: number;
+  /** The logical blockchain time that this opeartion was anchored on the blockchain */
+  public readonly transactionTime?: number;
   /** The transaction number of the transaction this operation was batched within. */
   public readonly transactionNumber?: number;
   /** The index this operation was assigned to in the batch. */
@@ -79,7 +79,9 @@ class WriteOperation {
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
    * throws error otherwise.
-   * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
+   * @param resolvedTransaction The transaction operation this opeartion was batched within.
+   *                            If given, operationIndex must be given else error will be thrown.
+   *                            The transactoinTimeHash is ignored by the constructor.
    * @param operationIndex The operation index this operation was assigned to in the batch.
    *                       If given, resolvedTransaction must be given else error will be thrown.
    */
@@ -93,12 +95,12 @@ class WriteOperation {
       throw new Error('Param transactionNumber and operationIndex must both be defined or undefined.');
     }
 
-    // Properties if the operation comes from a resolved transaction.
-    this.blockNumber = resolvedTransaction ? resolvedTransaction.blockNumber : undefined;
+    // Properties of an operation in a resolved transaction.
+    this.transactionTime = resolvedTransaction ? resolvedTransaction.transactionTime : undefined;
     this.transactionNumber = resolvedTransaction ? resolvedTransaction.transactionNumber : undefined;
     this.batchFileHash = resolvedTransaction ? resolvedTransaction.batchFileHash : undefined;
-    this.operationIndex = operationIndex;
 
+    this.operationIndex = operationIndex;
     this.operationBuffer = operationBuffer;
 
     // Parse request buffer into a JS object.
@@ -189,25 +191,28 @@ class WriteOperation {
 
   /**
    * Retuns the constructed DID Document from the given create operation.
-   * Throws error if the given operation is not a create operation or if unable to locate a block number to be used for DID generation.
-   * @param blockNumber Optional. Will be used to decide protocol version to use for DID generation.
-   *                    If not given operation.blockNumber must be given and will be used instead.
+   * Throws error if:
+   *  1. the given operation is not a create operation; or
+   *  2. if unable to locate the transaction time to be used for DID generation.
+   * @param transactionTime Optional. Logical blockchain time that the given operation was anchored on blockchain.
+   *                        Used to decide protocol version to use for DID generation.
+   *                        If not given operation.transactionTime must be given and will be used instead.
    */
-  public static toDidDocument (operation: WriteOperation, didMethodName: string, blockNumber?: number): DidDocument {
+  public static toDidDocument (operation: WriteOperation, didMethodName: string, transactionTime?: number): DidDocument {
     if (operation.type !== OperationType.Create) {
       throw new Error(`Unable to construct a DID Document from a '${operation.type}' operation.`);
     }
 
-    if (blockNumber === undefined) {
-      blockNumber = operation.blockNumber;
+    if (transactionTime === undefined) {
+      transactionTime = operation.transactionTime;
     }
 
-    if (blockNumber === undefined) {
-      throw new Error(`Block number not found but needed for DID generation.`);
+    if (transactionTime === undefined) {
+      throw new Error(`Transaction time not given but needed for DID generation.`);
     }
 
-    // Get the protocol version according to current block number to decide on the hashing algorithm used for the DID.
-    const protocol = getProtocol(blockNumber);
+    // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
+    const protocol = getProtocol(transactionTime);
 
     // Compute the hash of the DID Document in the create payload as the DID
     const didDocumentBuffer = Buffer.from(operation.encodedPayload);

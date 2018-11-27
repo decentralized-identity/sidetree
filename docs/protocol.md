@@ -1,7 +1,7 @@
 ﻿**Sidetree Protocol Specification**
 ===================================
 
-This document describes the specification of the Sidetree [_DID method_](https://w3c-ccg.github.io/did-spec/). Briefly, a _DID method_ is a mechanism for creating unique identifiers and managing metadata (called *DID Documents*) associated with these identifiers without the need for a centralized authority.
+This specification document describes the Sidetree protocol, which can be applied to any decentralized ledger system (e.g. Bitcoin) to create a 'Layer 2' PKI network. Identifiers and PKI metadata in the protocol are expressed via the emerging [_Decentralized Identifiers_](https://w3c-ccg.github.io/did-spec/) standard, and implementations of the protocol can be codified as their own distinct DID Methods. Briefly, a _DID Method_ is a deterministic mechanism for creating unique identifiers and managing metadata (_DID Documents_) associated with these identifiers, without the need for a centralized authority, denoted by unqique prefixes that distinguish one DID Method's identifiers from another (`did:foo`, `did:bar`, etc.).
 
 # Overview
 
@@ -34,17 +34,17 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 
 # Sidetree Protocol Versioning & Parameters
-Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define the _block number_ in which the new rules and parameter values will take effect. All subsequent blocks will adhere to the same rules and parameter values until a newer protocol version is defined.
+Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define the logical _blockchain time_ in which the new rules and parameter values will take effect. All subsequent transactions will adhere to the same rules and parameter values until a newer protocol version is defined.
 
 The following lists the parameters of each version of the Sidetree protocol.
 
 ## v1.0
-| Parameter              | Value            |
-|------------------------|------------------|
-| Starting block number  | 500000 (bitcoin) |
-| Hash algorithm         | SHA256           |
-| Maximum batch size     | 10000            |
-| Maximum operation size | 2 KB             |
+| Parameter                | Value            |
+|--------------------------|------------------|
+| Starting blockchain time | 500000 (bitcoin) |
+| Hash algorithm           | SHA256           |
+| Maximum batch size       | 10000            |
+| Maximum operation size   | 2 KB             |
 
 
 # Sidetree Operations and DIDs
@@ -400,7 +400,7 @@ POST /<api-version>/
 {
   "did": "The DID to be updated",
   "operationNumber": "The number incremented from the last change version number. 1 if first change.",
-  "perviousOperationHash": "The hash of the previous operation made to the DID Document.",
+  "previousOperationHash": "The hash of the previous operation made to the DID Document.",
   "patch": "An RFC 6902 JSON patch to the current DID Document",
 }
 ```
@@ -410,7 +410,7 @@ POST /<api-version>/
 {
   "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
   "operationNumber": 12,
-  "perviousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
+  "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
   "patch": {
     "op": "remove",
     "path": "/publicKey/0"
@@ -465,7 +465,7 @@ POST /<api-version>/
 {
   "did": "The DID to be deleted",
   "operationNumber": "The number incremented from the last change version number. 1 if first change.",
-  "perviousOperationHash": "The hash of the previous operation made to the DID Document."
+  "previousOperationHash": "The hash of the previous operation made to the DID Document."
 }
 ```
 
@@ -474,7 +474,7 @@ POST /<api-version>/
 {
   "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
   "operationNumber": 13,
-  "perviousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
+  "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
 }
 ```
 
