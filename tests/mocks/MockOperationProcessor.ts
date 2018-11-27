@@ -1,19 +1,19 @@
 import Transaction from '../../src/Transaction';
-import { DidCache } from '../../src/DidCache';
+import { OperationProcessor } from '../../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { WriteOperation } from '../../src/Operation';
 
 /**
- * Mock DID cache class for testing.
+ * Mock OperationProcessor class for testing.
  */
-export default class MockDidCache implements DidCache {
+export default class MockOperationProcessor implements OperationProcessor {
   private didDocument?: DidDocument;
 
   public get lastProcessedTransaction (): Transaction | undefined {
     return undefined;
   }
 
-  public apply (_operation: WriteOperation): string | undefined {
+  public process (_operation: WriteOperation): string | undefined {
     return undefined;
   }
 

@@ -6,7 +6,7 @@ import { Cas } from '../../src/Cas';
  * returns the position of the array as address.
  */
 export default class MockCas implements Cas {
-  /** Anarray that stores the given content. */
+  /** An array that stores the given content. */
   bufs: Buffer[] = [];
 
   public async write (content: Buffer): Promise<string> {

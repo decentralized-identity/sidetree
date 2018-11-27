@@ -7,7 +7,7 @@ import RequestHandler from './RequestHandler';
 import Rooter from './Rooter';
 import { CasClient } from './Cas';
 import { Config, ConfigKey } from './Config';
-import { createDidCache } from './DidCache';
+import { createOperationProcessor } from './OperationProcessor';
 import { initializeProtocol } from './Protocol';
 import { toHttpStatus, Response } from './Response';
 
@@ -17,10 +17,10 @@ const configFile = require('../json/config.json');
 const config = new Config(configFile);
 const blockchain = new MockBlockchain();
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-const didCache = createDidCache(cas, config[ConfigKey.DidMethodName]);
+const operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-const observer = new Observer(blockchain, cas, didCache, +config[ConfigKey.PollingIntervalInSeconds]);
-const requestHandler = new RequestHandler(didCache, blockchain, rooter, config[ConfigKey.DidMethodName]);
+const observer = new Observer(blockchain, cas, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
+const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
 rooter.startPeriodicRooting();
 observer.startPeriodicProcessing();
