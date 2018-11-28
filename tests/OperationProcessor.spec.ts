@@ -31,7 +31,7 @@ function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
  * then adds the batch file to the given CAS.
  * @returns The operation in the batch file added in the form of a WriteOperation.
  */
-async function addBatchOfOneOperation (
+async function addBatchFileOfOneOperationToCas (
   opBuf: Buffer,
   cas: Cas,
   transactionNumber: number,
@@ -108,7 +108,7 @@ describe('OperationProessor', async () => {
   beforeEach(async () => {
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // TODO: add a clear method to avoid double initialization.
-    createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas, 0, 0, 0);
+    createOp = await addBatchFileOfOneOperationToCas(createCreateOperationBuffer(), cas, 0, 0, 0);
     firstVersion = operationProcessor.process(createOp);
   });
 
@@ -144,7 +144,7 @@ describe('OperationProessor', async () => {
     const numberOfUpdates = 10;
     for (let i = 0; i < numberOfUpdates; ++i) {
       const mostRecentVersion = versions[i];
-      const updateOp = await addBatchOfOneOperation(createUpdateOperationBuffer(
+      const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
         mostRecentVersion),
         cas,
         i + 1,   // transaction Number
@@ -179,21 +179,25 @@ describe('OperationProessor', async () => {
     const ops = new Array(createOp!);
     const opHashes = new Array(getHash(createOp!));
 
+    // Add batch files that makes up a logical update operation chain to CAS
+    // and store each operation and its operation hash in an arary for later access.
     const numberOfUpdates = 10;
     for (let i = 0; i < numberOfUpdates; ++i) {
       const mostRecentVersion = opHashes[i];
-      const updateOp = await addBatchOfOneOperation(createUpdateOperationBuffer(
+      const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
         mostRecentVersion),
         cas,
         i + 1,   // transaction Number
         i + 1,   // transactionTime
         0        // operation index
         );
-      const updateOpHash = getHash(updateOp);
       ops.push(updateOp);
+
+      const updateOpHash = getHash(updateOp);
       opHashes.push(updateOpHash);
     }
 
+    // Process the operations in reverse order.
     for (let i = numberOfUpdates ; i > 0 ; --i) {
       const newVersion = operationProcessor.process(ops[i]);
       expect(newVersion).toBeDefined();
@@ -228,15 +232,16 @@ describe('OperationProessor', async () => {
     const numberOfUpdates = 4;
     for (let i = 0; i < numberOfUpdates; ++i) {
       const mostRecentVersion = opHashes[i];
-      const updateOp = await addBatchOfOneOperation(createUpdateOperationBuffer(
+      const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
         mostRecentVersion),
         cas,
         i + 1,   // transaction Number
         i + 1,   // transactionTime
         0        // operation index
         );
-      const updateOpHash = getHash(updateOp);
       ops.push(updateOp);
+
+      const updateOpHash = getHash(updateOp);
       opHashes.push(updateOpHash);
     }
 
