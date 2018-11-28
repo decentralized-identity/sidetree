@@ -330,7 +330,7 @@ class OperationProcessorImpl implements OperationProcessor {
       if (prevDidDoc === undefined) {
         return undefined;
       } else {
-        return WriteOperation.applyOperationToDidDocument(prevDidDoc, op);
+        return WriteOperation.applyJsonPatchToDidDocument(prevDidDoc, op.patch!);
       }
     }
   }

@@ -118,6 +118,8 @@ export default class RequestHandler {
    * Handles update operation.
    */
   public async handleUpdateOperation (operation: WriteOperation): Promise<Response> {
+    // TODO: Assert that operation is for sure a well-formed once the code reached here.
+    // ie. Need to make sure invalid patch, missing operation number, patch etc will cause WriteOperation creation failure.
 
     const updatedDidDocument = this.simulateUpdateOperation(operation);
 
@@ -147,7 +149,7 @@ export default class RequestHandler {
     }
 
     // Apply the patch on top of the current DID Document.
-    const updatedDidDocument = WriteOperation.applyOperationToDidDocument(currentDidDcoument, operation);
+    const updatedDidDocument = WriteOperation.applyJsonPatchToDidDocument(currentDidDcoument, operation.patch!);
     return updatedDidDocument;
   }
 }

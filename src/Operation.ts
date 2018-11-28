@@ -1,5 +1,6 @@
 import * as Base58 from 'bs58';
 import Multihash from './Multihash';
+import { applyPatch } from 'fast-json-patch';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { getProtocol } from './Protocol';
 import { ResolvedTransaction } from './Transaction';
@@ -79,7 +80,7 @@ class WriteOperation {
   public readonly didDocument: DidDocument | undefined;
 
   /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
-  public readonly patch: string | undefined;
+  public readonly patch: any[] | undefined;
 
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
@@ -237,12 +238,17 @@ class WriteOperation {
   }
 
   /**
-   * Applies the given update operation to the specified DID Document.
+   * Applies the given JSON Patch to the specified DID Document.
+   * NOTE: a new instance of the DidDocument is returned, the original instance is not modified.
    * @returns The resultant DID Document.
    */
-  public static applyOperationToDidDocument (didDocument: DidDocument, _operation: WriteOperation): DidDocument {
-    // TODO: implement JSON patch, for now return the same document.
-    return didDocument;
+  public static applyJsonPatchToDidDocument (didDocument: DidDocument, jsonPatch: any[]): DidDocument {
+    const validatePatchOperation = true;
+    const mutateOriginalContent = false;
+    const updatedDidDocument = applyPatch(didDocument, jsonPatch, validatePatchOperation, mutateOriginalContent);
+    // TODO: Need to add extensive tests to make sure validation follows protocol behavior.
+
+    return updatedDidDocument.newDocument;
   }
 
   /**
