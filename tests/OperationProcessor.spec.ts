@@ -4,28 +4,24 @@ import MockCas from './mocks/MockCas';
 import Multihash from '../src/Multihash';
 import { Cas } from '../src/Cas';
 import { createOperationProcessor } from '../src/OperationProcessor';
-import { didDocumentJson } from './mocks/MockDidDocumentGenerator';
+import { readFileSync } from 'fs';
 import { OperationType, WriteOperation } from '../src/Operation';
 
 function createCreateOperationBuffer (): Buffer {
-  const createPayload = Base58.encode(Buffer.from(JSON.stringify(didDocumentJson)));
-
-  const createOpRequest = {
-    createPayload,
-    signature: 'signature',
-    proofOfWork: 'proof of work'
-  };
+  const createOpRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
   return Buffer.from(JSON.stringify(createOpRequest));
 }
 
 function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
-  const updateOpJson = { 'add': 'some path' };
+  const updateOpJson = {
+    'add': 'some path',
+    previousOperationHash
+  };
   const updatePayload = Base58.encode(Buffer.from(JSON.stringify(updateOpJson)));
   const updateOpRequest = {
     updatePayload,
     signature: 'signature',
-    proofOfWork: 'proof of work',
-    previousOperationHash
+    proofOfWork: 'proof of work'
   };
   return Buffer.from(JSON.stringify(updateOpRequest));
 }

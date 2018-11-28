@@ -8,24 +8,24 @@ This document focuses on the Node.js implementation of the Sidetree protocol.
 
 # Terminology
 
-# DID Cache
+# Operation Processor
 
-The DID cache holds most of the state of a Sidetree node. It is a singleton class with the following methods for state update and retrieval.
+The Operation Processor holds most of the state of a Sidetree node. It is a singleton class with the following methods for DID Document state update and retrieval.
 
-## Apply
+## Process
 
 This is the core method to update the state of a DID Document:
 
 ```javascript
-public apply (transactionNumber: number, operationIndex: number, operation: WriteOperation)
+public process (transactionNumber: number, operationIndex: number, operation: WriteOperation)
 ```
 The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation.
 
-The `transactionNumber` and `operationIndex` parameters together provides a deterministic ordering of all operations. The `transactionNumber` is an incrementing number starting from 1 that uniquely identifies the transaction. The `operationIndex` is the index of this operation amongst all the operations within the same batch.
+The `transactionNumber` and `operationIndex` parameters together provides a deterministic ordering of all operations. The `transactionNumber` is a monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction. The `operationIndex` is the index of this operation amongst all the operations batched within the same Sidetree transaction.
 
-> Note: `transactionNumber` and `operationIndex` are explicitly called out as parameters for the `apply` method for clarity. They may be embedded within the `operation` parameter in actual implementation.
+> Note: `transactionNumber` and `operationIndex` are explicitly called out as parameters for the `process` method for clarity. They may be embedded within the `operation` parameter in actual implementation.
 
-Under normal processing, the _observer_ would process operations in chronological order. However the implementation accepts `apply` calls with out-of-ordered operations. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
+Under normal processing, the _observer_ would process operations in chronological order. However the implementation accepts `process` calls with out-of-ordered operations. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
 
 It is useful to view the operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
 

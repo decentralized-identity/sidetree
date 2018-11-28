@@ -1,4 +1,3 @@
-import Transaction from '../../src/Transaction';
 import { OperationProcessor } from '../../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { WriteOperation } from '../../src/Operation';
@@ -8,10 +7,6 @@ import { WriteOperation } from '../../src/Operation';
  */
 export default class MockOperationProcessor implements OperationProcessor {
   private didDocument?: DidDocument;
-
-  public get lastProcessedTransaction (): Transaction | undefined {
-    return undefined;
-  }
 
   public process (_operation: WriteOperation): string | undefined {
     return undefined;

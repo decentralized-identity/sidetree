@@ -1,5 +1,6 @@
 import * as Base58 from 'bs58';
 import Multihash from './Multihash';
+import { applyPatch } from 'fast-json-patch';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { getProtocol } from './Protocol';
 import { ResolvedTransaction } from './Transaction';
@@ -58,6 +59,8 @@ class WriteOperation {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
+  /** The incremental number of each operation made to the DID Document of the same DID starting from 0. */
+  public readonly operationNumber: Number;
   /** The Base58 encoded operation payload. */
   public readonly encodedPayload: string;
   /** The DID of the DID document to be updated. */
@@ -75,6 +78,9 @@ class WriteOperation {
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument: DidDocument | undefined;
+
+  /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
+  public readonly patch: any[] | undefined;
 
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
@@ -166,13 +172,14 @@ class WriteOperation {
 
     switch (this.type) {
       case OperationType.Create:
+        this.operationNumber = 0;
         this.didDocument = WriteOperation.parseCreatePayload(decodedPayload);
         break;
       case OperationType.Update:
-        if (!(OperationProperty.previousOperationHash in operation)) {
-          throw new Error('Update operation must contain a previous operation hash');
-        }
-        this.previousOperationHash = operation.previousOperationHash;
+        this.operationNumber = decodedPayload.operationNumber;
+        this.did = decodedPayload.did;
+        this.previousOperationHash = decodedPayload.previousOperationHash;
+        this.patch = decodedPayload.patch;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -228,6 +235,20 @@ class WriteOperation {
     const didDocument = operation.didDocument!;
     didDocument.id = did;
     return didDocument;
+  }
+
+  /**
+   * Applies the given JSON Patch to the specified DID Document.
+   * NOTE: a new instance of the DidDocument is returned, the original instance is not modified.
+   * @returns The resultant DID Document.
+   */
+  public static applyJsonPatchToDidDocument (didDocument: DidDocument, jsonPatch: any[]): DidDocument {
+    const validatePatchOperation = true;
+    const mutateOriginalContent = false;
+    const updatedDidDocument = applyPatch(didDocument, jsonPatch, validatePatchOperation, mutateOriginalContent);
+    // TODO: Need to add extensive tests to make sure validation follows protocol behavior.
+
+    return updatedDidDocument.newDocument;
   }
 
   /**

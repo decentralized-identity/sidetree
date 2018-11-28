@@ -39,7 +39,7 @@ describe('RequestHandler', () => {
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DidDocument).id).toEqual('did:sidetree:QmS68zcuDEcKMXJrH7vyvmkmK5dBc9y8kXLfZKNBJKYvMY');
+    expect((response.body as DidDocument).id).toEqual('did:sidetree:QmU1EDCnXdeEWvZpBWkhvavZMeWKHYACuQNAihbccAkEQy');
 
     const blockchainWriteSpy = spyOn(blockchain, 'write');
     expect(rooter.getOperationQueueLength()).toEqual(1);

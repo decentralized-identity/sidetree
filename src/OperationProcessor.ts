@@ -1,10 +1,8 @@
 import * as Base58 from 'bs58';
 import BatchFile from './BatchFile';
 import Multihash from './Multihash';
-import Transaction from './Transaction';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { didDocumentUpdate } from '../tests/mocks/MockDidDocumentGenerator';
 import { LinkedList } from 'linked-list-typescript';
 import { WriteOperation, OperationType } from './Operation';
 
@@ -71,12 +69,6 @@ export type OperationHash = string;
  * DID document.
  */
 export interface OperationProcessor {
-  /**
-   * The transaction that was COMPLETELY processed.
-   * This is mainly used by the Observer as an offset marker to fetch new set of transactions.
-   */
-  readonly lastProcessedTransaction?: Transaction;
-
   /**
    * Process a DID write (state changing) operation.
    * @returns An identifier that can be used to retrieve
@@ -299,7 +291,7 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Resolve a DID.
+   * Resolve the given DID to its DID Doducment.
    * @param didUniquePortion The unique portion of the DID. e.g. did:sidetree:abc123 -> abc123.
    */
   public async resolve (didUniquePortion: string): Promise<DidDocument | undefined> {
@@ -314,7 +306,7 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Returns the Did document for a given version identifier.
+   * Returns the DID Document for a given version identifier.
    */
   public async lookup (versionId: VersionId): Promise<DidDocument | undefined> {
     // Version id is also the operation hash that produces the document
@@ -338,7 +330,7 @@ class OperationProcessorImpl implements OperationProcessor {
       if (prevDidDoc === undefined) {
         return undefined;
       } else {
-        return didDocumentUpdate(prevDidDoc, op);
+        return WriteOperation.applyJsonPatchToDidDocument(prevDidDoc, op.patch!);
       }
     }
   }
@@ -412,14 +404,6 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Get the last processed transaction.
-   * TODO: fix this after discussing the intended semantics.
-   */
-  public get lastProcessedTransaction (): Transaction | undefined {
-    return undefined;
-  }
-
-  /**
    * Get a cryptographic hash of the write operation.
    * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
    * for all other cases, the hash is calculated against the entire opeartion buffer.
@@ -459,7 +443,7 @@ class OperationProcessorImpl implements OperationProcessor {
       transactionNumber: opInfo.timestamp.transactionNumber,
       transactionTime: opInfo.timestamp.transactionTime,
       transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'TODO', // TODO: Will be used for detecting blockchain forks.
+      anchorFileHash: 'NOT_NEEDED',
       batchFileHash: opInfo.batchFileHash
     };
 
@@ -568,7 +552,9 @@ class OperationProcessorImpl implements OperationProcessor {
       return false;
     }
 
-    // TODO Perform signature verification
+    // TODO Perform:
+    // - operation number validation
+    // - signature verification
 
     return true;
   }
