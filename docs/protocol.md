@@ -513,9 +513,9 @@ If the operation is successful, it applies the provided JSON patch to the versio
 
   Each write operation type have different payload schema.
 
-* Why use _block nubmer_ as the marker for protocol versioning change instead of the Sidetree _transaction number_?
+* Why use _block number_ as the marker for protocol versioning change instead of the Sidetree _transaction number_?
 
-  Because _block nubmer_ increments irrespective of whether there are Sidetree activity or not, it makes protocol version upgrade planning and scheduling easier for Sidetree node that do not want to risk creating invalid transaction with obsolete version.
+  Because _block number_ increments irrespective of whether there are Sidetree activity or not, it makes protocol version upgrade planning and scheduling easier for Sidetree node that do not want to risk creating invalid transaction with obsolete version.
 
 * Why assign a _transaction number_ for invalid transactions?
 
