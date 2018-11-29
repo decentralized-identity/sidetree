@@ -198,8 +198,11 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Apply (perform) a specified DID state changing operation.
-   * @returns Hash of the operation if the operation is applied successfully, undefined if the same operation was applied previously.
+   * Processes a specified DID state changing operation.
+   * @returns Hash of the operation if:
+   *            1. The operation (of the same hash) is not process before; or
+   *            2. The operation is processed before but this operation has an earlier timestamp.
+   *          Returns undefined if the same operation with an earlier timestamp was processed previously.
    */
   public process (operation: WriteOperation): string | undefined {
     const opHash = OperationProcessorImpl.getHash(operation);
@@ -237,13 +240,11 @@ class OperationProcessorImpl implements OperationProcessor {
       status: OperationStatus.Unvalidated
     };
 
-    // If this is a duplicate of an earlier operation, we can
-    // ignore this operation. Note that we might have a previous
-    // operation with the same hash, but that previous operation
-    // need not be earlier in timestamp order - hence the check
-    // with earlier().
-    const prevOperationInfo = this.opHashToInfo.get(opHash);
-    if (prevOperationInfo !== undefined && earlier(prevOperationInfo.timestamp, opInfo.timestamp)) {
+    // If there is already a known operation with the same hash
+    // and that operation is timestamped earlier than this incoming one being processed,
+    // we can ignore incoming operation because the earlier operation of the same hash takes precedence.
+    const existingOperationInfo = this.opHashToInfo.get(opHash);
+    if (existingOperationInfo !== undefined && earlier(existingOperationInfo.timestamp, opInfo.timestamp)) {
       return undefined;
     }
 
@@ -292,9 +293,10 @@ class OperationProcessorImpl implements OperationProcessor {
 
   /**
    * Resolve the given DID to its DID Doducment.
-   * @param didUniquePortion The unique portion of the DID. e.g. did:sidetree:abc123 -> abc123.
+   * @param did The DID to resolve. e.g. did:sidetree:abc123.
    */
-  public async resolve (didUniquePortion: string): Promise<DidDocument | undefined> {
+  public async resolve (did: string): Promise<DidDocument | undefined> {
+    const didUniquePortion = did.substring(this.didMethodName.length);
     const latestVersion = await this.last(didUniquePortion);
 
     // lastVersion === undefined implies we do not know about the did

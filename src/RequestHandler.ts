@@ -83,8 +83,7 @@ export default class RequestHandler {
    * Handles resolve operation.
    */
   public async handleResolveRequest (did: string): Promise<Response> {
-    const didUniquePortion = did.substring(this.didMethodName.length);
-    const didDocument = await this.operationProcessor.resolve(didUniquePortion);
+    const didDocument = await this.operationProcessor.resolve(did);
 
     if (!didDocument) {
       return {
@@ -121,7 +120,7 @@ export default class RequestHandler {
     // TODO: Assert that operation is for sure a well-formed once the code reached here.
     // ie. Need to make sure invalid patch, missing operation number, patch etc will cause WriteOperation creation failure.
 
-    const updatedDidDocument = this.simulateUpdateOperation(operation);
+    const updatedDidDocument = await this.simulateUpdateOperation(operation);
 
     return {
       status: ResponseStatus.Succeeded,
