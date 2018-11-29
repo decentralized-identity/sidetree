@@ -46,14 +46,16 @@ async function addBatchOfOneOperation (opBuf: Buffer, cas: Cas, transactionTime:
 
 describe('OperationProessor', async () => {
 
+  const didMethodName = 'did:sidetree:';
+
   let cas = new MockCas();
-  let operationProcessor = createOperationProcessor(cas, 'did:sidetree:');
+  let operationProcessor = createOperationProcessor(cas, didMethodName);
   let createOp;
   let firstVersion: string | undefined;
 
   beforeEach(async () => {
     cas = new MockCas();
-    operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // TODO: add a clear method to avoid double initialization.
+    operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
     createOp = await addBatchOfOneOperation(createCreateOperationBuffer(), cas, 0, 0);
     firstVersion = operationProcessor.process(createOp);
   });
@@ -76,10 +78,11 @@ describe('OperationProessor', async () => {
     expect(prev).toBeUndefined();
   });
 
-  it('should return provided document for resolve(firstVersion)', async () => {
-    const resolvedDid = await operationProcessor.resolve(firstVersion as string);
+  it('should return a DID Document for resolve(did) for a registered DID', async () => {
+    const did = `${didMethodName}${firstVersion!}`;
+    const didDocument = await operationProcessor.resolve(did);
     // TODO: can we get the raw json from did? if so, we can write a better test.
-    expect(resolvedDid).not.toBeUndefined();
+    expect(didDocument).not.toBeUndefined();
   });
 
   it('should process updates correctly', async () => {

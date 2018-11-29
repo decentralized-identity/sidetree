@@ -62,7 +62,7 @@ An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.
 
 An _operation hash_ is the hash of the JSON-formatted request of a state-modifying Sidetree operation. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. An _operation hash_ serves as a globally unique identifier of the operation, each write operation must reference the previous operation using the _operation hash_, forming a chain of change history.
 
-## Sidetree Operation DIDs
+## Sidetree DIDs
 
 A Sidetree DID is the hash of the DID Document given in the initial create operation as the create payload, prefixed by the Sidetree DID method name.
 
@@ -411,10 +411,10 @@ POST /<api-version>/
   "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
   "operationNumber": 12,
   "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
-  "patch": {
+  "patch": [{
     "op": "remove",
     "path": "/publicKey/0"
-  }
+  }]
 }
 ```
 
@@ -485,7 +485,7 @@ POST /v1.0/
 ```json
 {
   "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
-  "updatePayload": "...",
+  "deletePayload": "...",
   "signature": "...",
   "proofOfWork": { ... }
 }
@@ -513,10 +513,10 @@ If the operation is successful, it applies the provided JSON patch to the versio
 
   Each write operation type have different payload schema.
 
-* Why use _block number_ as the marker for protocol versioning change instead of the Sidetree _transaction number_?
-
-  Because _block number_ increments irrespective of whether there are Sidetree activity or not, it makes protocol version upgrade planning and scheduling easier for Sidetree node that do not want to risk creating invalid transaction with obsolete version.
-
 * Why assign a _transaction number_ for invalid transactions?
 
   In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of existing valid transactions remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
+
+* Why is a request payload Base58 encoded?
+
+For the ease of implementation of signature verification code.
