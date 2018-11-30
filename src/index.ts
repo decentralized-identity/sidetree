@@ -66,5 +66,8 @@ const setKoaResponse = (response: Response, koaResponse: Koa.Response) => {
   if (response.body) {
     koaResponse.set('Content-Type', 'application/json');
     koaResponse.body = response.body;
+  } else {
+    // Need to set the body explicitly to empty string, else koa will echo the request as the response.
+    koaResponse.body = '';
   }
 };

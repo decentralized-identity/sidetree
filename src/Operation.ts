@@ -59,12 +59,16 @@ class WriteOperation {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
-  /** The incremental number of each operation made to the DID Document of the same DID starting from 0. */
-  public readonly operationNumber: Number;
+  /**
+   * The incremental number of each update made to the same DID Document.
+   * Delete and Recover operations don't have this number.
+   * TODO: need to revisit: 1. Should this really be called update number? What happens to this number.
+   */
+  public readonly operationNumber?: Number;
   /** The Base58 encoded operation payload. */
   public readonly encodedPayload: string;
   /** The DID of the DID document to be updated. */
-  public readonly did: string | undefined;
+  public readonly did?: string;
   /** The type of operation. */
   public readonly type: OperationType;
   /** The hash of the previous operation - undefined for DID create operation */
@@ -77,10 +81,10 @@ class WriteOperation {
   public proofOfWork: any; // TODO: to be implemented.
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
-  public readonly didDocument: DidDocument | undefined;
+  public readonly didDocument?: DidDocument;
 
   /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
-  public readonly patch: any[] | undefined;
+  public readonly patch?: any[];
 
   /**
    * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
@@ -180,6 +184,9 @@ class WriteOperation {
         this.did = decodedPayload.did;
         this.previousOperationHash = decodedPayload.previousOperationHash;
         this.patch = decodedPayload.patch;
+        break;
+      case OperationType.Delete:
+        this.did = decodedPayload.did;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);

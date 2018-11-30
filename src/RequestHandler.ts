@@ -5,6 +5,7 @@ import { getProtocol } from './Protocol';
 import { OperationProcessor } from './OperationProcessor';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
+import { ErrorCode, SidetreeError } from './Error';
 
 /**
  * Sidetree operation request handler.
@@ -58,6 +59,9 @@ export default class RequestHandler {
           break;
         case OperationType.Update:
           response = await this.handleUpdateOperation(operation);
+          break;
+        case OperationType.Delete:
+          response = await this.handleDeleteOperation(operation);
           break;
         default:
           response = {
@@ -117,14 +121,51 @@ export default class RequestHandler {
    * Handles update operation.
    */
   public async handleUpdateOperation (operation: WriteOperation): Promise<Response> {
-    // TODO: Assert that operation is for sure a well-formed once the code reached here.
-    // ie. Need to make sure invalid patch, missing operation number, patch etc will cause WriteOperation creation failure.
+    // TODO: Assert that operation is well-formed once the code reaches here.
+    // ie. Need to make sure invalid patch, missing operation number, etc will cause WriteOperation creation failure.
 
-    const updatedDidDocument = await this.simulateUpdateOperation(operation);
+    let updatedDidDocument;
+    try {
+      updatedDidDocument = await this.simulateUpdateOperation(operation);
+
+    } catch (error) {
+      if (error instanceof SidetreeError && error.errorCode === ErrorCode.DidNotFound) {
+        return {
+          status: ResponseStatus.BadRequest,
+          body: error
+        };
+      }
+
+      throw error;
+    }
 
     return {
       status: ResponseStatus.Succeeded,
       body: updatedDidDocument
+    };
+  }
+
+  /**
+   * Handles update operation.
+   */
+  public async handleDeleteOperation (operation: WriteOperation): Promise<Response> {
+    // TODO: Assert that operation is well-formed once the code reaches here.
+
+    try {
+      await this.simulateDeleteOperation(operation);
+    } catch (error) {
+      if (error instanceof SidetreeError && error.errorCode === ErrorCode.DidNotFound) {
+        return {
+          status: ResponseStatus.BadRequest,
+          body: error
+        };
+      }
+
+      throw error;
+    }
+
+    return {
+      status: ResponseStatus.Succeeded
     };
   }
 
@@ -134,21 +175,33 @@ export default class RequestHandler {
    * NOTE: This method is intentionally not placed within Operation Processor because:
    * 1. This avoids to create yet another interface method.
    * 2. It is more appropriate to think of this method a higher-layer logic that uses the building blocks exposed by the Operation Processor.
-   * @param operation The Update opeartion to be applied.
+   * @param operation The Update operation to be applied.
    * @returns The resultant DID Document.
    * @throws Error if operation given is invalid.
    */
   private async simulateUpdateOperation (operation: WriteOperation): Promise<DidDocument> {
-    // TODO: add and refactor code such that same validation code is used by this method and anchored opeartion processing.
+    // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
     // Get the current DID Document of the specified DID.
     const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
     if (!currentDidDcoument) {
-      throw Error(`DID '${operation.did}' not found.`);
+      throw new SidetreeError(ErrorCode.DidNotFound);
     }
 
     // Apply the patch on top of the current DID Document.
     const updatedDidDocument = WriteOperation.applyJsonPatchToDidDocument(currentDidDcoument, operation.patch!);
     return updatedDidDocument;
+  }
+
+  private async simulateDeleteOperation (operation: WriteOperation) {
+    // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
+
+    const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
+
+    if (!currentDidDcoument) {
+      throw new SidetreeError(ErrorCode.DidNotFound);
+    }
+
+    return;
   }
 }
