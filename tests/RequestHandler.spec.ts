@@ -1,13 +1,14 @@
 import BatchFile from '../src/BatchFile';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
-import MockOperationProcessor from './mocks/MockOperationProcessor';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
 import { Config, ConfigKey } from '../src/Config';
+import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { readFileSync } from 'fs';
 import { toHttpStatus } from '../src/Response';
+import { WriteOperation } from '../src/Operation';
 
 describe('RequestHandler', () => {
   // Component dependency initialization & injection.
@@ -16,7 +17,7 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   const cas = new MockCas();
   const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-  const operationProcessor = new MockOperationProcessor();
+  const operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
   const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
   it('should handle create operation request.', async () => {
@@ -51,6 +52,17 @@ describe('RequestHandler', () => {
     const batchFileBuffer = await cas.read('0');
     const batchFile = BatchFile.fromBuffer(batchFileBuffer);
     expect(batchFile.operations.length).toEqual(1);
+
+    // Now force Operation Processor to process the create operation.
+    const resolvedTransaction = {
+      transactionNumber: 1,
+      transactionTime: 1,
+      transactionTimeHash: 'NOT_NEEDED',
+      anchorFileHash: 'NOT_NEEDED',
+      batchFileHash: '0'
+    };
+    const createOperation = WriteOperation.create(createRequest, resolvedTransaction, 0);
+    operationProcessor.process(createOperation);
   });
 
   it('should return bad request if operation given is larger than protocol limit.', async () => {
@@ -71,24 +83,16 @@ describe('RequestHandler', () => {
   });
 
   it('should return a DID Document for a known DID given.', async () => {
-    const didDocumentString = `{
-      "@context": "https://w3id.org/did/v1",
-      "id": "did:sidetree:abc123"
-    }`;
-    const didDocumentJson = JSON.parse(didDocumentString);
-    const didDocument = new DidDocument(didDocumentJson);
-    operationProcessor.setResolveReturnValue(didDocument);
-
-    const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
+    const did = 'did:sidetree:QmU1EDCnXdeEWvZpBWkhvavZMeWKHYACuQNAihbccAkEQy';
+    const response = await requestHandler.handleResolveRequest(did);
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body as any).id).toEqual('did:sidetree:abc123');
+    expect((response.body as any).id).toEqual(did);
   });
 
   it('should return NotFound for an unknown DID given.', async () => {
-    operationProcessor.setResolveReturnValue(undefined);
 
     const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
     const httpStatus = toHttpStatus(response.status);
