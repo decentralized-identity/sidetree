@@ -102,7 +102,7 @@ describe('RequestHandler', () => {
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body as any).id).toEqual(did);
+    expect((response.body).id).toEqual(did);
   });
 
   it('should return NotFound for an unknown DID given.', async () => {
@@ -131,6 +131,33 @@ describe('RequestHandler', () => {
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
+    expect(response.body.errorCode).toEqual('did_not_found');
+  });
+
+  it('should respond with HTTP 200 with the update DID Docuemnt when an update operation is successful.', async () => {
+    // Load a request that will delete one of the existing public keys.
+    const requestString = readFileSync('./tests/requests/update.json');
+    const request = Buffer.from(requestString);
+
+    const response = await requestHandler.handleWriteRequest(request);
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+
+    // Verify that only one public key is remaining in the response.
+    expect(response.body!.publicKey.length).toEqual(1);
+  });
+
+  it('should respond with HTTP 400 when DID given in an update operation is unknown.', async () => {
+    // Load a request that will delete one of the existing public keys.
+    const requestString = readFileSync('./tests/requests/update-unknown-did.json');
+    const request = Buffer.from(requestString);
+
+    const response = await requestHandler.handleWriteRequest(request);
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(400);
     expect(response.body!.errorCode).toEqual('did_not_found');
+
   });
 });
