@@ -17,5 +17,6 @@ export class SidetreeError extends Error {
  * Error code convention unless generic: error_category.sub_error_code
  */
 export enum ErrorCode {
-  DidNotFound = 'did_not_found'
+  DidNotFound = 'did_not_found',
+  NoMatchingProtocolVersion = 'no_matching_protocol_version'
 }

@@ -3,7 +3,7 @@
  */
 interface Response {
   status: ResponseStatus;
-  body?: object;
+  body?: any;
 }
 
 /**
