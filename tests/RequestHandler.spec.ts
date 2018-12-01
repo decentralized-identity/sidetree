@@ -1,4 +1,5 @@
 import BatchFile from '../src/BatchFile';
+import Logger from '../src/lib/Logger';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
 import RequestHandler from '../src/RequestHandler';
@@ -12,6 +13,8 @@ import { toHttpStatus } from '../src/Response';
 import { WriteOperation } from '../src/Operation';
 
 describe('RequestHandler', () => {
+  Logger.suppressLogging(true);
+
   // Read create operation request from file.
   const requestString = readFileSync('./tests/requests/create.json');
   const createRequest = Buffer.from(requestString);
@@ -145,7 +148,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(200);
 
     // Verify that only one public key is remaining in the response.
-    expect(response.body!.publicKey.length).toEqual(1);
+    expect(response.body.publicKey.length).toEqual(1);
   });
 
   it('should respond with HTTP 400 when DID given in an update operation is unknown.', async () => {
@@ -157,7 +160,7 @@ describe('RequestHandler', () => {
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body!.errorCode).toEqual('did_not_found');
+    expect(response.body.errorCode).toEqual('did_not_found');
 
   });
 });
