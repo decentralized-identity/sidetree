@@ -26,7 +26,8 @@ export default class RequestHandler {
       protocol = getProtocol(currentTime.time + 1);
     } catch {
       return {
-        status: ResponseStatus.ServerError
+        status: ResponseStatus.ServerError,
+        body: new SidetreeError(ErrorCode.DidNotFound)
       };
     }
 

@@ -3,6 +3,7 @@ import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
+import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
@@ -11,16 +12,26 @@ import { toHttpStatus } from '../src/Response';
 import { WriteOperation } from '../src/Operation';
 
 describe('RequestHandler', () => {
-  // Component dependency initialization & injection.
+  // Read create operation request from file.
+  const requestString = readFileSync('./tests/requests/create.json');
+  const createRequest = Buffer.from(requestString);
+
   const configFile = require('../json/config.json');
   const config = new Config(configFile);
-  const blockchain = new MockBlockchain();
-  const cas = new MockCas();
-  const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-  const operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
-  const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
-  it('should handle create operation request.', async () => {
+  const blockchain = new MockBlockchain();
+  let cas: Cas;
+  let rooter: Rooter;
+  let operationProcessor;
+  let requestHandler: RequestHandler;
+
+  // Start a new instance of Operation Processor, and create a DID before every test.
+  beforeEach(async () => {
+    cas = new MockCas();
+    rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+    operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
+    requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
+
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
     const mockLatestTime = {
       time: 1000000,
@@ -29,11 +40,24 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(mockLatestTime);
 
-    // Read create operation request from file.
-    const requestString = readFileSync('./tests/requests/create.json');
-    const createRequest = Buffer.from(requestString);
+    await requestHandler.handleWriteRequest(createRequest);
+    await rooter.rootOperations();
 
-    // Handle request.
+    // Now force Operation Processor to process the create operation.
+    const resolvedTransaction = {
+      transactionNumber: 1,
+      transactionTime: 1,
+      transactionTimeHash: 'NOT_NEEDED',
+      anchorFileHash: 'NOT_NEEDED',
+      batchFileHash: '0'
+    };
+    const createOperation = WriteOperation.create(createRequest, resolvedTransaction, 0);
+    operationProcessor.process(createOperation);
+  });
+
+  it('should handle create operation request.', async () => {
+    // NOTE: this is a repeated step already done in beforeEach(),
+    // but the same step needed to be in beforeEach() for other tests such as update and delete.
     const response = await requestHandler.handleWriteRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
@@ -52,17 +76,6 @@ describe('RequestHandler', () => {
     const batchFileBuffer = await cas.read('0');
     const batchFile = BatchFile.fromBuffer(batchFileBuffer);
     expect(batchFile.operations.length).toEqual(1);
-
-    // Now force Operation Processor to process the create operation.
-    const resolvedTransaction = {
-      transactionNumber: 1,
-      transactionTime: 1,
-      transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'NOT_NEEDED',
-      batchFileHash: '0'
-    };
-    const createOperation = WriteOperation.create(createRequest, resolvedTransaction, 0);
-    operationProcessor.process(createOperation);
   });
 
   it('should return bad request if operation given is larger than protocol limit.', async () => {
@@ -93,11 +106,31 @@ describe('RequestHandler', () => {
   });
 
   it('should return NotFound for an unknown DID given.', async () => {
-
     const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(404);
     expect(response.body).toBeUndefined();
+  });
+
+  it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
+    const requestString = readFileSync('./tests/requests/delete.json');
+    const request = Buffer.from(requestString);
+
+    const response = await requestHandler.handleWriteRequest(request);
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+  });
+
+  it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
+    const requestString = readFileSync('./tests/requests/delete-unknown-did.json');
+    const request = Buffer.from(requestString);
+
+    const response = await requestHandler.handleWriteRequest(request);
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(400);
+    expect(response.body!.errorCode).toEqual('did_not_found');
   });
 });
