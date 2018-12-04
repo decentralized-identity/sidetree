@@ -1,11 +1,10 @@
 import * as Base58 from 'bs58';
 import BatchFile from '../src/BatchFile';
 import MockCas from './mocks/MockCas';
-import Multihash from '../src/Multihash';
 import { Cas } from '../src/Cas';
-import { createOperationProcessor } from '../src/OperationProcessor';
+import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
 import { readFileSync } from 'fs';
-import { OperationType, WriteOperation } from '../src/Operation';
+import { getOperationHash, WriteOperation } from '../src/Operation';
 
 function createCreateOperationBuffer (): Buffer {
   const createOpRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
@@ -52,19 +51,48 @@ async function addBatchFileOfOneOperationToCas (
   return op;
 }
 
-function getHash (operation: WriteOperation): string {
-  const sha256HashCode = 18;
+async function createUpdateSequence (createOp: WriteOperation, cas: Cas, numberOfUpdates: number): Promise<[WriteOperation[], string[]]> {
+  const ops = new Array(createOp);
+  const opHashes = new Array(getOperationHash(createOp));
 
-  let contentBuffer;
-  if (operation.type === OperationType.Create) {
-    contentBuffer = Buffer.from(operation.encodedPayload);
-  } else {
-    contentBuffer = operation.operationBuffer;
+  for (let i = 0; i < numberOfUpdates; ++i) {
+    const mostRecentVersion = opHashes[i];
+    const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
+      mostRecentVersion),
+      cas,
+      i + 1,   // transaction Number
+      i + 1,   // transactionTime
+      0        // operation index
+      );
+    ops.push(updateOp);
+
+    const updateOpHash = getOperationHash(updateOp);
+    opHashes.push(updateOpHash);
   }
 
-  const multihash = Multihash.hash(contentBuffer, sha256HashCode);
-  const multihashBase58 = Base58.encode(multihash);
-  return multihashBase58;
+  return [ops, opHashes];
+}
+
+async function checkUpdateSequenceVersionChaining (operationProcessor: OperationProcessor, opHashes: string[]): Promise<void> {
+  // Check first(), last(), prev(), next() return expected outputs. Since
+  // if the OperationProcessor did not process the operations correctly
+  // some version defined by these operations would be "invalid" and we would
+  // not get the correct output below.
+  for (let i = 0; i < opHashes.length; ++i) {
+    expect(await operationProcessor.first(opHashes[i])).toBe(opHashes[0]);
+    expect(await operationProcessor.last(opHashes[i])).toBe(opHashes[opHashes.length - 1]);
+
+    if (i === 0) {
+      expect(await operationProcessor.previous(opHashes[i])).toBeUndefined();
+    } else {
+      expect(await operationProcessor.previous(opHashes[i])).toBe(opHashes[i - 1]);
+    }
+    if (i === opHashes.length - 1) {
+      expect(await operationProcessor.next(opHashes[i])).toBeUndefined();
+    } else {
+      expect(await operationProcessor.next(opHashes[i])).toBe(opHashes[i + 1]);
+    }
+  }
 }
 
 function getFactorial (n: number): number {
@@ -80,17 +108,17 @@ function getFactorial (n: number): number {
 // of size 5, so by passing index values 0..119 we can enumerate all
 // permutations
 function getPermutation (size: number, index: number): Array<number> {
-  let permutation: Array<number> = [];
+  const permutation: Array<number> = [];
 
   for (let i = 0 ; i < size ; ++i) {
     permutation.push(i);
   }
 
   for (let i = 0 ; i < size ; ++i) {
-    let j = i + Math.floor(index / getFactorial(size - i - 1));
+    const j = i + Math.floor(index / getFactorial(size - i - 1));
     index = index % getFactorial(size - i - 1);
 
-    let t = permutation[i];
+    const t = permutation[i];
     permutation[i] = permutation[j];
     permutation[j] = t;
   }
@@ -115,7 +143,7 @@ describe('OperationProessor', async () => {
   });
 
   it('should return operation hash for create op', async () => {
-    const expectedHash = getHash(createOp!);
+    const expectedHash = getOperationHash(createOp!);
     expect(firstVersion).not.toBeUndefined();
     expect(firstVersion).toBe(expectedHash);
   });
@@ -142,111 +170,34 @@ describe('OperationProessor', async () => {
   });
 
   it('should process updates correctly', async () => {
-    // Update firstVersion several times, store the resulting versions in an array
-    const versions = new Array(firstVersion!);
     const numberOfUpdates = 10;
-    for (let i = 0; i < numberOfUpdates; ++i) {
-      const mostRecentVersion = versions[i];
-      const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
-        mostRecentVersion),
-        cas,
-        i + 1,   // transaction Number
-        i + 1,   // transactionTime
-        0        // operation index
-        );
-      const newVersion = operationProcessor.process(updateOp);
-      expect(newVersion).not.toBeUndefined();
-      expect(newVersion!).toBe(getHash(updateOp));
-      versions.push(newVersion!);
+    const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
+
+    for (let i = 0 ; i < ops.length ; ++i) {
+      const newVersion = operationProcessor.process(ops[i]);
+      expect(newVersion).toBeDefined();
+      expect(newVersion!).toBe(opHashes[i]);
     }
 
-    // Check first(), last(), prev(), next() return expected outputs
-    for (let i = 0; i < versions.length; ++i) {
-      expect(await operationProcessor.first(versions[i])).toBe(versions[0]);
-      expect(await operationProcessor.last(versions[i])).toBe(versions[versions.length - 1]);
-
-      if (i === 0) {
-        expect(await operationProcessor.previous(versions[i])).toBeUndefined();
-      } else {
-        expect(await operationProcessor.previous(versions[i])).toBe(versions[i - 1]);
-      }
-      if (i === versions.length - 1) {
-        expect(await operationProcessor.next(versions[i])).toBeUndefined();
-      } else {
-        expect(await operationProcessor.next(versions[i])).toBe(versions[i + 1]);
-      }
-    }
+    await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
   });
 
   it('should correctly process updates in reverse order', async () => {
-    const ops = new Array(createOp!);
-    const opHashes = new Array(getHash(createOp!));
-
-    // Add batch files that makes up a logical update operation chain to CAS
-    // and store each operation and its operation hash in an arary for later access.
     const numberOfUpdates = 10;
-    for (let i = 0; i < numberOfUpdates; ++i) {
-      const mostRecentVersion = opHashes[i];
-      const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
-        mostRecentVersion),
-        cas,
-        i + 1,   // transaction Number
-        i + 1,   // transactionTime
-        0        // operation index
-        );
-      ops.push(updateOp);
+    const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
 
-      const updateOpHash = getHash(updateOp);
-      opHashes.push(updateOpHash);
-    }
-
-    // Process the operations in reverse order.
     for (let i = numberOfUpdates ; i > 0 ; --i) {
       const newVersion = operationProcessor.process(ops[i]);
       expect(newVersion).toBeDefined();
       expect(newVersion!).toBe(opHashes[i]);
     }
 
-    // Check first(), last(), prev(), next() return expected outputs. Since
-    // if the OperationProcessor did not process the operations correctly
-    // some version defined by these operations would be "invalid" and we would
-    // not get the correct output below.
-    for (let i = 0; i < opHashes.length; ++i) {
-      expect(await operationProcessor.first(opHashes[i])).toBe(opHashes[0]);
-      expect(await operationProcessor.last(opHashes[i])).toBe(opHashes[opHashes.length - 1]);
-
-      if (i === 0) {
-        expect(await operationProcessor.previous(opHashes[i])).toBeUndefined();
-      } else {
-        expect(await operationProcessor.previous(opHashes[i])).toBe(opHashes[i - 1]);
-      }
-      if (i === opHashes.length - 1) {
-        expect(await operationProcessor.next(opHashes[i])).toBeUndefined();
-      } else {
-        expect(await operationProcessor.next(opHashes[i])).toBe(opHashes[i + 1]);
-      }
-    }
+    await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
   });
 
   it('should correctly process updates in every (5! = 120) order', async () => {
-    const ops = new Array(createOp!);
-    const opHashes = new Array(getHash(createOp!));
-
     const numberOfUpdates = 4;
-    for (let i = 0; i < numberOfUpdates; ++i) {
-      const mostRecentVersion = opHashes[i];
-      const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
-        mostRecentVersion),
-        cas,
-        i + 1,   // transaction Number
-        i + 1,   // transactionTime
-        0        // operation index
-        );
-      ops.push(updateOp);
-
-      const updateOpHash = getHash(updateOp);
-      opHashes.push(updateOpHash);
-    }
+    const [ops, opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
 
     const numberOfOps = ops.length;
     const numberOfPermutations = getFactorial(numberOfOps);
@@ -261,25 +212,7 @@ describe('OperationProessor', async () => {
         expect(newVersion!).toBe(opHashes[opIdx]);
       }
 
-      // Check first(), last(), prev(), next() return expected outputs. Since
-      // if the OperationProcessor did not process the operations correctly
-      // some version defined by these operations would be "invalid" and we would
-      // not get the correct output below.
-      for (let i = 0; i < numberOfOps; ++i) {
-        expect(await operationProcessor.first(opHashes[i])).toBe(opHashes[0]);
-        expect(await operationProcessor.last(opHashes[i])).toBe(opHashes[opHashes.length - 1]);
-
-        if (i === 0) {
-          expect(await operationProcessor.previous(opHashes[i])).toBeUndefined();
-        } else {
-          expect(await operationProcessor.previous(opHashes[i])).toBe(opHashes[i - 1]);
-        }
-        if (i === opHashes.length - 1) {
-          expect(await operationProcessor.next(opHashes[i])).toBeUndefined();
-        } else {
-          expect(await operationProcessor.next(opHashes[i])).toBe(opHashes[i + 1]);
-        }
-      }
+      await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
     }
   });
 });

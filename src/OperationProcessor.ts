@@ -1,10 +1,8 @@
-import * as Base58 from 'bs58';
 import BatchFile from './BatchFile';
-import Multihash from './Multihash';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
-import { WriteOperation, OperationType } from './Operation';
+import { getOperationHash, WriteOperation, OperationType } from './Operation';
 
 /**
  * Each operation that is submitted to OperationProcessor for processing
@@ -205,7 +203,7 @@ class OperationProcessorImpl implements OperationProcessor {
    *          Returns undefined if the same operation with an earlier timestamp was processed previously.
    */
   public process (operation: WriteOperation): string | undefined {
-    const opHash = OperationProcessorImpl.getHash(operation);
+    const opHash = getOperationHash(operation);
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
@@ -403,27 +401,6 @@ class OperationProcessorImpl implements OperationProcessor {
         versionId = nextVersionId;
       }
     }
-  }
-
-  /**
-   * Get a cryptographic hash of the write operation.
-   * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
-   * for all other cases, the hash is calculated against the entire opeartion buffer.
-   */
-  private static getHash (operation: WriteOperation): OperationHash {
-    // TODO: Can't hardcode hashing algorithm. Need to depend on protocol version.
-    const sha256HashCode = 18;
-
-    let contentBuffer;
-    if (operation.type === OperationType.Create) {
-      contentBuffer = Buffer.from(operation.encodedPayload);
-    } else {
-      contentBuffer = operation.operationBuffer;
-    }
-
-    const multihash = Multihash.hash(contentBuffer, sha256HashCode);
-    const multihashBase58 = Base58.encode(multihash);
-    return multihashBase58;
   }
 
   /**
