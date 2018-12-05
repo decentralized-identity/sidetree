@@ -94,7 +94,7 @@ export default class Rooter {
       Logger.info(e);
     } finally {
       this.processing = false;
-      Logger.info(Date.now() + ' End batch processing.');
+      Logger.info('End batch processing.');
     }
   }
 
