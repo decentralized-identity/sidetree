@@ -1,23 +1,24 @@
+import * as Base58 from 'bs58';
+import Multihash from '../../src/Multihash';
 import { Cas } from '../../src/Cas';
 
 /**
- * Implementation of a CAS class for testing. Inserting
- * a buffer simply pushes the buffer to an array and
- * returns the position of the array as address.
+ * Implementation of a CAS class for testing.
+ * Simply using a hash map to store all the content by hash.
  */
 export default class MockCas implements Cas {
-  /** An array that stores the given content. */
-  bufs: Buffer[] = [];
+  /** A Map that stores the given content. */
+  private storage: Map<string, Buffer> = new Map();
 
   public async write (content: Buffer): Promise<string> {
-    this.bufs.push(content);
-    return (this.bufs.length - 1).toString();
+    const hash = Multihash.hash(content, 18); // SHA256
+    const hashBase58 = Base58.encode(hash);
+    this.storage.set(hashBase58, content);
+    return hashBase58;
   }
 
   public async read (address: string): Promise<Buffer> {
-    // See write above. Address is simply the (stringified)
-    // index of the bufs array where corresponding buffer is stored.
-    const intAddress = +address;
-    return this.bufs[intAddress];
+    const content = this.storage.get(address);
+    return content ? content : Buffer.from('');
   }
 }

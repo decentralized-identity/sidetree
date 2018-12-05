@@ -8,11 +8,13 @@ import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { initializeProtocol } from '../src/Protocol';
 import { readFileSync } from 'fs';
 import { toHttpStatus } from '../src/Response';
 import { WriteOperation } from '../src/Operation';
 
 describe('RequestHandler', () => {
+  initializeProtocol('protocol-test.json');
   Logger.suppressLogging(true);
 
   // Read create operation request from file.
@@ -21,6 +23,9 @@ describe('RequestHandler', () => {
 
   const configFile = require('../json/config.json');
   const config = new Config(configFile);
+
+  const batchFileHash = 'QmZxZJryxLeXq1sc511Hub674xeyu8aEeMwJEcNSwZjKie'; // This batch file gets create very time rooter.rootOperations() is invoked.
+  const did = 'did:sidetree:QmU1EDCnXdeEWvZpBWkhvavZMeWKHYACuQNAihbccAkEQy'; // This DID is created every time opeartion processor processes the transaction.
 
   const blockchain = new MockBlockchain();
   let cas: Cas;
@@ -52,7 +57,7 @@ describe('RequestHandler', () => {
       transactionTime: 1,
       transactionTimeHash: 'NOT_NEEDED',
       anchorFileHash: 'NOT_NEEDED',
-      batchFileHash: '0'
+      batchFileHash: batchFileHash
     };
     const createOperation = WriteOperation.create(createRequest, resolvedTransaction, 0);
     operationProcessor.process(createOperation);
@@ -67,7 +72,7 @@ describe('RequestHandler', () => {
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DidDocument).id).toEqual('did:sidetree:QmU1EDCnXdeEWvZpBWkhvavZMeWKHYACuQNAihbccAkEQy');
+    expect((response.body as DidDocument).id).toEqual(did);
 
     const blockchainWriteSpy = spyOn(blockchain, 'write');
     expect(rooter.getOperationQueueLength()).toEqual(1);
@@ -76,19 +81,19 @@ describe('RequestHandler', () => {
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verfiy that CAS was invoked to store the batch file.
-    const batchFileBuffer = await cas.read('0');
+    const batchFileBuffer = await cas.read(batchFileHash);
     const batchFile = BatchFile.fromBuffer(batchFileBuffer);
     expect(batchFile.operations.length).toEqual(1);
   });
 
   it('should return bad request if operation given is larger than protocol limit.', async () => {
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
-    const mockLatestTime = {
+    const blockchainTime = {
       time: 1,
       hash: 'dummyHash'
     };
 
-    blockchain.setLatestTime(mockLatestTime);
+    blockchain.setLatestTime(blockchainTime);
 
     const createRequest = readFileSync('./tests/requests/create.json');
     const response = await requestHandler.handleWriteRequest(createRequest);
@@ -99,7 +104,6 @@ describe('RequestHandler', () => {
   });
 
   it('should return a DID Document for a known DID given.', async () => {
-    const did = 'did:sidetree:QmU1EDCnXdeEWvZpBWkhvavZMeWKHYACuQNAihbccAkEQy';
     const response = await requestHandler.handleResolveRequest(did);
     const httpStatus = toHttpStatus(response.status);
 
