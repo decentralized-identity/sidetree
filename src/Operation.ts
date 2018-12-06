@@ -294,4 +294,30 @@ class WriteOperation {
   }
 }
 
-export { OperationType, WriteOperation };
+/**
+ * Get a cryptographic hash of the write operation.
+ * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
+ * for all other cases, the hash is calculated against the entire opeartion buffer.
+ */
+function getOperationHash (operation: WriteOperation): string {
+
+  if (operation.transactionTime === undefined) {
+    throw new Error(`Transaction time not given but needed for DID generation.`);
+  }
+
+  // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
+  const protocol = getProtocol(operation.transactionTime);
+
+  let contentBuffer;
+  if (operation.type === OperationType.Create) {
+    contentBuffer = Buffer.from(operation.encodedPayload);
+  } else {
+    contentBuffer = operation.operationBuffer;
+  }
+
+  const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
+  const multihashBase58 = Base58.encode(multihash);
+  return multihashBase58;
+}
+
+export { getOperationHash, OperationType, WriteOperation };
