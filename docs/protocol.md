@@ -23,6 +23,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | Operation      | A change to a DID Document.                                                    |
 | Operation hash | The hash of the JSON-formated request of a Sidetree operation.                 |
+| recovery key   | A key that is used to perform recovery or delete operation.                    |
 | Sidetree node  | A logical server executing Sidetree protocol rules.                            |
 | Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
 
@@ -199,6 +200,8 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 
 > NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the its _anchor file_ and _batch file_ become available.
 
+# DID Deletion and Recovery
+Sidetree protocol requires dedicated cryptographic keys called _recovery keys_ for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. The recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
 
 # Sidetree REST API
 A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID Document, subsequent DID Document updates, and DID Document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
@@ -451,7 +454,7 @@ POST /<api-version>/
 ### Request body schema
 ```json
 {
-  "signingKeyId": "ID of the key used to sign the update payload",
+  "signingKeyId": "ID of the recovery key used to sign the delete payload",
   "deletePayload": "Base58 encoded delete payload JSON object define by the schema below.",
   "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
@@ -464,8 +467,6 @@ POST /<api-version>/
 ```json
 {
   "did": "The DID to be deleted",
-  "operationNumber": "The number incremented from the last change version number. 1 if first change.",
-  "previousOperationHash": "The hash of the previous operation made to the DID Document."
 }
 ```
 
@@ -473,8 +474,6 @@ POST /<api-version>/
 ```json
 {
   "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-  "operationNumber": 13,
-  "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
 }
 ```
 
@@ -485,11 +484,14 @@ POST /v1.0/
 ```json
 {
   "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
-  "deletePayload": "...",
+  "deletePayload": "3hAPKZnaKcJkR85UvXhiAH7majrfpZGFFVJj8tgAtK9aSrxnrbygDTN2URoQEghPbWtFgZDMNU6RQjiMD1dpbEaoZwKBSVB3oCq1LR2",
   "signature": "...",
   "proofOfWork": { ... }
 }
 ```
+
+### Response body schema
+None.
 
 ## DID Recovery
 

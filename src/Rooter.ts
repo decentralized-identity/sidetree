@@ -4,6 +4,7 @@ import MerkleTree from './lib/MerkleTree';
 import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
+import Logger from './lib/Logger';
 
 /**
  * Class that performs periodic rooting of batches of Sidetree operations.
@@ -53,12 +54,12 @@ export default class Rooter {
     }
 
     try {
-      console.info(Date.now() + ' Start batch processing...');
+      Logger.info('Start batch processing...');
       this.processing = true;
 
       // Get the batch of operations to be anchored on the blockchain.
       const batch = await this.getBatch();
-      console.info(Date.now() + ' Batch size = ' + batch.length);
+      Logger.info('Batch size = ' + batch.length);
 
       // Do nothing if there is nothing to batch together.
       if (batch.length === 0) {
@@ -89,11 +90,11 @@ export default class Rooter {
       // Anchor the 'anchor file hash' on blockchain.
       await this.blockchain.write(anchorFileAddress);
     } catch (e) {
-      console.info('TODO: batch rooting error handling not implemented.');
-      console.info(e);
+      Logger.info('TODO: batch rooting error handling not implemented.');
+      Logger.info(e);
     } finally {
       this.processing = false;
-      console.info(Date.now() + ' End batch processing.');
+      Logger.info('End batch processing.');
     }
   }
 

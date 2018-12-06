@@ -1,0 +1,6 @@
+{
+  "signingKeyId": "key-1",
+  "updatePayload": "2unfa9T42gmmNhZdVm7aVS39Agrd4BG4BS7jcpTPpkE1mK5yX2SukNiFBkfC91u6cDLHQUkMXjjCptTbcN4EBzdbpmN4DMRsFmfCGWg9QTbESadeRGKMZspUUiwrDzYX9TxkkJurbbXKT4LXdZiw3Wvsd36gP9ggriA4WQBTdt8M3QVeR4CasqgokjzFQ8uFECCdz83PQ7GHwdu2n2CCvFNhzQNXfAqx56AEkgwM4hNAkmGi4Qazj7fgKFvz2NWCuw7Nc1XfUW6iyfXictXzShvXw7P8iA6ANpjETfhYnL5RwTGCorsm5UzncS6K4HjLdduR4k3Wc1Zk2Atu4tAxKVVtYjLrfavct",
+  "signature": "abcde",
+  "proofOfWork": "12345"
+}

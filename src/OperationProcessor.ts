@@ -171,6 +171,11 @@ class OperationProcessorImpl implements OperationProcessor {
   private opHashToInfo: Map<OperationHash, OperationInfo> = new Map();
 
   /**
+   * The set of deleted DIDs.
+   */
+  private deletedDids: Set<string> = new Set();
+
+  /**
    * Map a valid versionId to the next valid versionId whenever one exists. The next
    * version of a valid node is a valid child node. There is at most one valid child node
    * (it could have zero) due to our validity checks (condition 3 in comment above Valid).
@@ -250,6 +255,15 @@ class OperationProcessorImpl implements OperationProcessor {
     // previous info if it exists
     this.opHashToInfo.set(opHash, opInfo);
 
+    if (operation.type === OperationType.Delete ||
+        operation.type === OperationType.Recover) {
+      // NOTE: only assuming and hanldling delete currently.
+      // TODO: validate recovery key.
+
+      this.deletedDids.add(operation.did!);
+    }
+
+    // Else the operation is a create or an update.
     this.processInternal(opHash, opInfo);
 
     return opHash;
@@ -292,9 +306,15 @@ class OperationProcessorImpl implements OperationProcessor {
   /**
    * Resolve the given DID to its DID Doducment.
    * @param did The DID to resolve. e.g. did:sidetree:abc123.
+   * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
    */
   public async resolve (did: string): Promise<DidDocument | undefined> {
     const didUniquePortion = did.substring(this.didMethodName.length);
+
+    if (this.deletedDids.has(did)) {
+      return undefined;
+    }
+
     const latestVersion = await this.last(didUniquePortion);
 
     // lastVersion === undefined implies we do not know about the did
