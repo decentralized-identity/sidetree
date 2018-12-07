@@ -23,7 +23,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | Operation      | A change to a DID Document.                                                    |
 | Operation hash | The hash of the JSON-formated request of a Sidetree operation.                 |
-| recovery key   | A key that is used to perform recovery or delete operation.                    |
+| Recovery key   | A key that is used to perform recovery or delete operation.                    |
 | Sidetree node  | A logical server executing Sidetree protocol rules.                            |
 | Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
 
@@ -53,7 +53,7 @@ The following lists the parameters of each version of the Sidetree protocol.
 ## Sidetree Operations
 
 A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
-) is a document containing information about a DID, such as the public key of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_. All write operations are authenticated with a signature using a key specified in the corresponding DID Document.
+) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_. All write operations are authenticated with a signature using a key specified in the corresponding DID Document.
 
 An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.org/html/rfc6902) so that only differences from the previous version of the DID Document is stored in each write operation.
 
@@ -148,8 +148,8 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 ```json
 {
   "operations": [
-    "Base58 encoded operation",
-    "Base58 encoded operation",
+    "Encoded operation",
+    "Encoded operation",
     ...
   ]
 }
@@ -159,8 +159,8 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFileHash": "Base58 encoded hash of the batch file.",
-  "merkleRoot": "Base58 encoded root hash of the Merkle tree contructed using the batch file."
+  "batchFileHash": "Encoded hash of the batch file.",
+  "merkleRoot": "Encoded root hash of the Merkle tree contructed using the batch file."
 }
 ```
 
@@ -247,8 +247,8 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the initial didDocument.",
-  "createPayload": "Base58 encoded initial DID Document of the DID.",
-  "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
+  "createPayload": "Encoded initial DID Document of the DID.",
+  "signature": "Encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -390,8 +390,8 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the key used to sign the update payload",
-  "updatePayload": "Base58 encoded update payload JSON object define by the schema below.",
-  "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
+  "updatePayload": "Encoded update payload JSON object define by the schema below.",
+  "signature": "Encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -455,8 +455,8 @@ POST /<api-version>/
 ```json
 {
   "signingKeyId": "ID of the recovery key used to sign the delete payload",
-  "deletePayload": "Base58 encoded delete payload JSON object define by the schema below.",
-  "signature": "Base58 encoded signature of the payload signed by the private-key corresponding to the
+  "deletePayload": "Encoded delete payload JSON object define by the schema below.",
+  "signature": "Encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -519,6 +519,6 @@ If the operation is successful, it applies the provided JSON patch to the versio
 
   In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of existing valid transactions remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
 
-* Why is a request payload Base58 encoded?
+* Why is a request payload encoded?
 
 For the ease of implementation of signature verification code.
