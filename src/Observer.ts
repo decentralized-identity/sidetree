@@ -1,4 +1,4 @@
-import * as Base58 from 'bs58';
+import Encoder from './Encoder';
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
@@ -163,8 +163,8 @@ export default class Observer {
       }
 
       let operationIndex = 0;
-      for (const operationBase58 of batchFile.operations) {
-        const operationBuffer = Buffer.from(Base58.decode(operationBase58));
+      for (const encodedOperation of batchFile.operations) {
+        const operationBuffer = Encoder.decodeAsBuffer(encodedOperation);
 
         // Verify size of each operation does not exceed the maximum allowed limit.
         if (operationBuffer.length > protocol.maxOperationByteSize) {

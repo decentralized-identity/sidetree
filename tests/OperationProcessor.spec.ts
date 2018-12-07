@@ -1,5 +1,5 @@
-import * as Base58 from 'bs58';
 import BatchFile from '../src/BatchFile';
+import Encoder from '../src/Encoder';
 import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
 import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
@@ -16,7 +16,7 @@ function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
     'add': 'some path',
     previousOperationHash
   };
-  const updatePayload = Base58.encode(Buffer.from(JSON.stringify(updateOpJson)));
+  const updatePayload = Encoder.encode(JSON.stringify(updateOpJson));
   const updateOpRequest = {
     updatePayload,
     signature: 'signature',

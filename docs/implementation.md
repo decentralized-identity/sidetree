@@ -92,7 +92,7 @@ The observer watches the public blockchain to identify Sidetree operations, veri
 # Blockchain REST API
 The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
-All hashes used in the API are Base58 encoded multihash.
+All hashes used in the API are encoded multihash as specified by the Sidetree protocol.
 
 >TODO: Decide on signature format.
 >TODO: Decide on compression.
@@ -393,7 +393,7 @@ None.
 # CAS REST API Interface
 The CAS (content addressable storage) REST API interface aims to abstract the underlying Sidetree storage away from the main protocol logic. This allows the CAS to be updated or even replaced if needed without affecting the core protocol logic. Conversely, the interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same CAS.
 
-All hashes used in the API are Base58 encoded multihash.
+All hashes used in the API are encoded multihash as specified by the Sidetree protocol.
 
 ## Response HTTP status codes
 

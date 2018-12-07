@@ -1,4 +1,4 @@
-import * as Base58 from 'bs58';
+import Encoder from './Encoder';
 
 /**
  * Defines the schema of a Batch File and its related operations.
@@ -10,7 +10,7 @@ export default class BatchFile {
 
   /**
    * BatchFile constructor.
-   * @param operations List of operations, each of which is a Base58 encoded string as specificied by the Sidetree protocol.
+   * @param operations List of operations, each of which is an encoded string as specificied by the Sidetree protocol.
    */
   private constructor (operations: string[]) {
     this.operations = operations;
@@ -20,7 +20,7 @@ export default class BatchFile {
    * Gets the decoded raw buffer representing the operation specified by the operationIndex.
    */
   public getOperationBuffer (operationIndex: number): Buffer {
-    return Buffer.from(Base58.decode(this.operations[operationIndex]));
+    return Encoder.decodeAsBuffer(this.operations[operationIndex]);
   }
 
   /**
@@ -64,11 +64,11 @@ export default class BatchFile {
    * @param operations Operation buffers in JSON serialized form, NOT encoded in anyway.
    */
   public static fromOperations (operations: Buffer[]): BatchFile {
-    const operationsBase58 = operations.map((operation) => {
-      return Base58.encode(operation);
+    const encodedOperations = operations.map((operation) => {
+      return Encoder.encode(operation);
     });
 
-    return new BatchFile(operationsBase58);
+    return new BatchFile(encodedOperations);
 
   }
 }

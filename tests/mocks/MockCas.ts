@@ -1,4 +1,4 @@
-import * as Base58 from 'bs58';
+import Encoder from '../../src/Encoder';
 import Multihash from '../../src/Multihash';
 import { Cas } from '../../src/Cas';
 
@@ -12,9 +12,9 @@ export default class MockCas implements Cas {
 
   public async write (content: Buffer): Promise<string> {
     const hash = Multihash.hash(content, 18); // SHA256
-    const hashBase58 = Base58.encode(hash);
-    this.storage.set(hashBase58, content);
-    return hashBase58;
+    const encodedHash = Encoder.encode(hash);
+    this.storage.set(encodedHash, content);
+    return encodedHash;
   }
 
   public async read (address: string): Promise<Buffer> {

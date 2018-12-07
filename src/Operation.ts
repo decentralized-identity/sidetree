@@ -1,4 +1,4 @@
-import * as Base58 from 'bs58';
+import Encoder from './Encoder';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
@@ -65,7 +65,7 @@ class WriteOperation {
    * TODO: need to revisit: 1. Should this really be called update number? What happens to this number.
    */
   public readonly operationNumber?: Number;
-  /** The Base58 encoded operation payload. */
+  /** The encoded operation payload. */
   public readonly encodedPayload: string;
   /** The DID of the DID document to be updated. */
   public readonly did?: string;
@@ -170,8 +170,7 @@ class WriteOperation {
     this.encodedPayload = encodedPayload;
 
     // Decode the encoded operation string.
-    const decodedPayloadBuffer = Base58.decode(encodedPayload);
-    const decodedPayloadJson = decodedPayloadBuffer.toString();
+    const decodedPayloadJson = Encoder.decodeAsString(encodedPayload);
     const decodedPayload = JSON.parse(decodedPayloadJson);
 
     switch (this.type) {
@@ -235,8 +234,8 @@ class WriteOperation {
     // Compute the hash of the DID Document in the create payload as the DID
     const didDocumentBuffer = Buffer.from(operation.encodedPayload);
     const multihash = Multihash.hash(didDocumentBuffer, protocol.hashAlgorithmInMultihashCode);
-    const multihashBase58 = Base58.encode(multihash);
-    const did = didMethodName + multihashBase58;
+    const encodedMultihash = Encoder.encode(multihash);
+    const did = didMethodName + encodedMultihash;
 
     // Construct real DID document and return it.
     const didDocument = operation.didDocument!;
@@ -259,7 +258,7 @@ class WriteOperation {
   }
 
   /**
-   * Given an operation object, returns a tuple of operation type and the Base58 encoded operation payload.
+   * Given an operation object, returns a tuple of operation type and the encoded operation payload.
    */
   private static getOperationTypeAndEncodedPayload (operation: any): [OperationType, string] {
     let operationType;
@@ -316,8 +315,8 @@ function getOperationHash (operation: WriteOperation): string {
   }
 
   const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
-  const multihashBase58 = Base58.encode(multihash);
-  return multihashBase58;
+  const encodedMultihash = Encoder.encode(multihash);
+  return encodedMultihash;
 }
 
 export { getOperationHash, OperationType, WriteOperation };
