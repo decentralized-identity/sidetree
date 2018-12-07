@@ -3,8 +3,18 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import RequestHandler from './RequestHandler';
 import { toHttpStatus, Response } from './Response';
+import { Config, ConfigKey } from './Config';
+import TransactionNumber from 'TransactionNumber';
 
-const requestHandler = new RequestHandler();
+const configFile = require('../json/config.json');
+const config = new Config(configFile);
+const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
+const prefix = config[ConfigKey.SidetreeTransactionPrefix];
+
+const genesisTransactionNumber = new TransactionNumber(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
+const genesisTimeHash = config[ConfigKey.BitcoinSidetreeGenesisBlockHash];
+
+const requestHandler = new RequestHandler(uri, prefix, genesisTransactionNumber, genesisTimeHash);
 const app = new Koa();
 
 // Raw body parser.
@@ -15,8 +25,8 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
-router.get('/transactions/:after*', async (ctx, _next) => {
-  const response = await requestHandler.handleFetchRequest(ctx.params.after);
+router.get('/transactions/:since*/:transactionTimeHash*', async (ctx, _next) => {
+  const response = await requestHandler.handleFetchRequest(ctx.params.since, ctx.params.transactionTimeHash);
   setKoaResponse(response, ctx.response);
 });
 
@@ -25,12 +35,17 @@ router.post('/transactions', async (ctx, _next) => {
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/blocks/last', async (ctx, _next) => {
+router.post('/transactions/trace', async (ctx, _next) => {
+  const response = await requestHandler.handleTraceRequest(JSON.stringify(ctx.body.transactions));
+  setKoaResponse(response, ctx.response);
+});
+
+router.get('/time', async (ctx, _next) => {
   const response = await requestHandler.handleLastBlockRequest();
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/blocks/:hash', async (ctx, _next) => {
+router.get('/time/:hash', async (ctx, _next) => {
   const response = await requestHandler.handleBlockByHashRequest(ctx.params.hash);
   setKoaResponse(response, ctx.response);
 });

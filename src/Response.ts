@@ -11,6 +11,7 @@ interface Response {
 enum ResponseStatus {
   Succeeded,
   BadRequest,
+  NotFound,
   ServerError
 }
 /**
@@ -22,6 +23,8 @@ function toHttpStatus (status: ResponseStatus): number {
       return 200;
     case ResponseStatus.BadRequest:
       return 400;
+    case ResponseStatus.NotFound:
+      return 404;
     default:
       return 500;
   }

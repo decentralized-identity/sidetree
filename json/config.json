@@ -1,0 +1,6 @@
+﻿{
+  "bitcoreSidetreeServiceUri": "http://104.42.185.66:3001/SidetreeBlockchainService/",
+  "sidetreeTransactionPrefix": "sidetree:",
+  "bitcoinSidetreeGenesisBlockNumber": 1444323,
+  "bitcoinSidetreeGenesisBlockHash": "000000000000001b88546711d7bf306e7832c6756b24daa1d615d63f9e7b023a"
+}

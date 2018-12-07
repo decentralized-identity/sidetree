@@ -1,74 +1,337 @@
 import { Response, ResponseStatus } from './Response';
-import * as request from 'request-promise-native';
+import nodeFetch from 'node-fetch';
+import * as HttpStatus from 'http-status';
+import TransactionNumber from './TransactionNumber';
 
 /**
  * Sidetree Bitcoin request handler class
  */
 export default class RequestHandler {
 
-  /**
-   * Handles the fetch request
-   * @param after specifies the minimum Sidetree transaction number that the caller is interested in
-   */
-  public async handleFetchRequest (after: number): Promise<Response> {
-    let response: Response;
+  public constructor (public bitcoreSidetreeServiceUri: string,
+    public sidetreeTransactionPrefix: string,
+    public genesisTransactionNumber: TransactionNumber,
+    public genesisTimeHash: string) { }
 
-    if (after < 0) {
-      return {
-        status: ResponseStatus.BadRequest,
-        body: { error: 'Invalid parameter' }
-      };
+  private buildTransactionsList (hashes: string[], blockNumber: number, blockHash: string, prefix: string) {
+    let transactions = [];
+    for (let j = 0; j < hashes.length; j++) {
+      let transactionNumber = new TransactionNumber(blockNumber, j);
+      transactions.push({
+        'transactionNumber': transactionNumber.getTransactionNumber(),
+        'transactionTime': blockNumber,
+        'transactionTimeHash': blockHash,
+        'anchorFileHash': hashes[j].slice(prefix.length)
+      });
     }
+
+    return transactions;
+  }
+
+  private async handleFetchBlock (blockNumber: number, isInternalBlock: boolean) {
+    const prefix = this.sidetreeTransactionPrefix;
+    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const requestParameters = {
+      method: 'get'
+    };
+
+    let errorResponse = {
+      status: ResponseStatus.ServerError,
+      body: {}
+    };
+
+    let queryString = '/transactions/' + blockNumber + '/' + prefix;
+    const uri = baseUrl + queryString;
 
     try {
-      response = {
-        status: ResponseStatus.Succeeded,
-        body: {
-          'moreTransactions': false,
-          'transactions': []
+      const content = await nodeFetch(uri, requestParameters);
+      if (content.status === HttpStatus.OK) {
+        const responseBodyString = (content.body.read() as Buffer).toString();
+        const contentBody = JSON.parse(responseBodyString);
+
+        let blockHash = contentBody['blockHash'];
+        let hashes = contentBody['hashes'];
+
+        // check if there are Sidetree transactions in the given block
+        if (hashes.length > 0) {
+          let transactions = this.buildTransactionsList(hashes, blockNumber, blockHash, prefix);
+          return {
+            status: ResponseStatus.Succeeded,
+            body: {
+              'moreTransactions': isInternalBlock,
+              'transactions': transactions
+            }
+          };
+        } else {
+          // we didn't find any Sidetree transactions in the requested block, so return 404 to the caller
+          return {
+            status: ResponseStatus.NotFound,
+            body: {}
+          };
         }
-      };
-    } catch (err) {
-      response = {
-        status: ResponseStatus.ServerError,
-        body: err.message
-      };
+      } else {
+        return errorResponse;
+      }
+    } catch {
+      return errorResponse;
     }
+  }
+
+  private async handleFetchRequestHelper (transactionNumber: TransactionNumber, blockNumberLast: number): Promise<Response> {
+    let defaultResponse = {
+      status: ResponseStatus.Succeeded,
+      body: {
+        'moreTransactions': false,
+        'transactions': []
+      }
+    };
+
+    // loop from the block corresponding to the requested block number until the tip of the blockchain
+    // return as soon as we find any Sidetree transaction and use "moreTransactions" to ask the caller
+    // to call this API for more
+    for (let blockNumber = transactionNumber.getBlockNumber() + 1; blockNumber <= blockNumberLast; blockNumber++) {
+      let isInternalBlock = false;
+
+      if (blockNumber < blockNumberLast) {
+        isInternalBlock = true;
+      }
+
+      let response = await this.handleFetchBlock(blockNumber, isInternalBlock);
+
+      if (response.status === ResponseStatus.Succeeded) {
+        return response;
+      } else if (response.status === ResponseStatus.NotFound) {
+        continue;
+      } else {
+        return response;
+      }
+    }
+
+    // we didn't find any Sidetree transactions, so send the defaultResponse
+    return defaultResponse;
+  }
+
+  private async verifyTransactionTimeHash (transactionNumber: TransactionNumber, transactionTimeHash: string) {
+    let errorResponse = {
+      status: ResponseStatus.ServerError,
+      body: {}
+    };
+
+    try {
+      let blockResponse = await this.handleBlockByHeightRequest(transactionNumber.getBlockNumber());
+      if (blockResponse.status === ResponseStatus.Succeeded) {
+        const blockResponseBody = JSON.parse(JSON.stringify(blockResponse.body));
+
+        let match = true;
+        if (blockResponseBody['hash'] !== transactionTimeHash) {
+          match = false;
+        }
+
+        return {
+          status: ResponseStatus.Succeeded,
+          body: {
+            'match': match
+          }
+        };
+      } else {
+        return errorResponse;
+      }
+    } catch {
+      return errorResponse;
+    }
+  }
+
+  /**
+   * Handles the trace request
+   * @param transactions an array of (transaction number, transactionTimeHash) tuples to verify the validity
+   */
+
+  public async handleTraceRequest (transactions: string): Promise<Response> {
+    let transactionsObj = JSON.parse(transactions)['transactions'];
+
+    let response = [];
+    for (let i = 0; i < transactionsObj.length; i++) {
+      let transaction = transactionsObj[i];
+      let transactionNumber = transaction['transactionNumber'];
+      let transactionTimeHash = transaction['transactionTimeHash'];
+
+      let transactionNumberObject = new TransactionNumber(0, 0);
+      transactionNumberObject.setTransactionNumber(transactionNumber);
+
+      let verifyResponse = await this.verifyTransactionTimeHash(transactionNumberObject, transactionTimeHash);
+
+      if (verifyResponse.status === ResponseStatus.Succeeded) {
+        let verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
+
+        response.push({
+          'transactionNumber': transactionNumber,
+          'transactionTimeHash': transactionTimeHash,
+          'validity': verifyResponseBody['match']
+        });
+      } else {
+        // an error occured, so return the default response
+        return {
+          status: ResponseStatus.ServerError,
+          body: {}
+        };
+      }
+    }
+
+    return {
+      status: ResponseStatus.Succeeded,
+      body: {
+        'transactions': response
+      }
+    };
+  }
+
+  /**
+   * Handles the fetch request
+   * @param since specifies the minimum Sidetree transaction number that the caller is interested in
+   * @param transactionTimeHash specifies the transactionTimeHash corresponding to the since parameter
+   */
+  public async handleFetchRequest (sinceOptional?: number, transactionTimeHashOptional?: string): Promise<Response> {
+
+    let errorResponse = {
+      status: ResponseStatus.ServerError,
+      body: {}
+    };
+
+    let since;
+    let transactionTimeHash;
+
+    // determine default values for optional parameters
+    if (sinceOptional) {
+      since = sinceOptional;
+
+      if (transactionTimeHashOptional) {
+        transactionTimeHash = transactionTimeHashOptional;
+      } else {
+        // if since was supplied, transactionTimeHash must exist
+        return {
+          status: ResponseStatus.BadRequest,
+          body: {}
+        };
+      }
+    } else {
+      since = this.genesisTransactionNumber.getTransactionNumber();
+      transactionTimeHash = this.genesisTimeHash;
+    }
+
+    let transactionNumber = new TransactionNumber(0, 0);
+    transactionNumber.setTransactionNumber(since);
+
+    // verify the validity of since and transactionTimeHash
+    let verifyResponse = await this.verifyTransactionTimeHash(transactionNumber, transactionTimeHash);
+    if (verifyResponse.status === ResponseStatus.Succeeded) {
+      let verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
+
+      // return HTTP 404 if the requested transactionNumber does not match the transactionTimeHash
+      if (verifyResponseBody['match'] === false) {
+        return {
+          status: ResponseStatus.NotFound,
+          body: {}
+        };
+      }
+    } else {
+      // an error occured, so return the default response
+      return errorResponse;
+    }
+
+    // get the height of the tip of the blockchain
+    let blockNumberTip = 0;
+    let blockResponse = await this.handleLastBlockRequest();
+    if (blockResponse.status === ResponseStatus.Succeeded) {
+      const blockResponseBody = JSON.parse(JSON.stringify(blockResponse.body));
+      blockNumberTip = blockResponseBody['time'];
+    } else {
+      return errorResponse;
+    }
+
+    // produce a list of Sidetree transactions starting from the transactionNumber until blockNumberTip
+    let response = this.handleFetchRequestHelper(transactionNumber, blockNumberTip);
     return response;
   }
 
   /**
    * Handles sidetree transaction anchor request
-   * @param tx Sidetree transaction to write into the underlying blockchain.
+   * @param anchorFileHash  Sidetree transaction to write into the underlying blockchain.
    */
-  public async handleAnchorRequest (tx: string): Promise<Response> {
-    const baseUrl = 'http://http://104.40.11.171:3001/SidetreeRooterService';
+  public async handleAnchorRequest (anchorFileHash: string): Promise<Response> {
+    const prefix = this.sidetreeTransactionPrefix;
+    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const sidetreeTransaction = prefix + anchorFileHash;
+    const queryString = '/anchor/';
 
-    // TODO: construct the transaction dynamically; the ts version of bitcore-lib has issues
-    const queryString = '/anchor/01000000012dec15faf88ec573e6aef24d534cb252a2c1570fc6525350989a15447ec7' +
-      'c92d010000006b483045022100800f8de83c5f7ebfade178b7a013e71f71cc3c972f19c905a3283ba3307ee1cd0220745' +
-      'c83820b6016814e8dd3b5ca416b118fd0ba8c66857bdd3d788b3ef85307d80121023eb8129ab5cae93cb940f74dd06897' +
-      'df9f20ac6e7ec6ad5ca41e6a35d0415b3fffffffff020000000000000000196a1773696465747265653a68656c6c6f5f7' +
-      '76f726c645f7473b829b90a000000001976a914fc7054837bfb4c3a6fbc2d543567bdb0158b0d5188ac00000000';
+    const uri = baseUrl + queryString;
 
-    const options = {
-      uri: baseUrl + queryString
+    const sidetreeTransactionObject = {
+      'transaction': sidetreeTransaction
+    };
+
+    const requestParameters = {
+      method: 'post',
+      body: Buffer.from(JSON.stringify(sidetreeTransactionObject)),
+      headers: { 'Content-Type': 'application/json' }
     };
 
     let response: Response;
-
     try {
-      const result = request.get(options);
-      response = {
-        status: ResponseStatus.Succeeded,
-        body: { txId: result, metadata: tx }
-      };
-    } catch (err) {
+      const content = await nodeFetch(uri, requestParameters);
+
+      if (content.status === HttpStatus.OK) {
+        response = {
+          status: ResponseStatus.Succeeded,
+          body: {}
+        };
+      } else {
+        response = {
+          status: content.status,
+          body: content.body
+        };
+      }
+    } catch {
       response = {
         status: ResponseStatus.ServerError,
-        body: err.message
+        body: {}
       };
     }
+
+    return response;
+  }
+
+  private async handleBlockRequestHelper (uri: string): Promise<Response> {
+    const requestParameters = {
+      method: 'get'
+    };
+
+    let response: Response;
+    try {
+      const content = await nodeFetch(uri, requestParameters);
+
+      if (content.status === HttpStatus.OK) {
+        const responseBodyString = (content.body.read() as Buffer).toString();
+        const contentBody = JSON.parse(responseBodyString);
+        response = {
+          status: ResponseStatus.Succeeded,
+          body: {
+            'time': contentBody['blockNumber'],
+            'hash': contentBody['blockHash']
+          }
+        };
+      } else {
+        response = {
+          status: ResponseStatus.ServerError,
+          body: content.body
+        };
+      }
+    } catch {
+      response = {
+        status: ResponseStatus.ServerError,
+        body: {}
+      };
+    }
+
     return response;
   }
 
@@ -77,45 +340,30 @@ export default class RequestHandler {
    * @param hash Specifies the hash of the block the caller is interested in
    */
   public async handleBlockByHashRequest (hash: string): Promise<Response> {
-    let response: Response;
+    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const queryString = '/blocks/' + hash;
+    const uri = baseUrl + queryString;
+    return this.handleBlockRequestHelper(uri);
+  }
 
-    try {
-      response = {
-        status: ResponseStatus.Succeeded,
-        body: {
-          'blockNumber': 0,
-          'blockHash': hash
-        }
-      };
-    } catch (err) {
-      response = {
-        status: ResponseStatus.ServerError,
-        body: err.message
-      };
-    }
-    return response;
+  /**
+   * Returns a block associated with the requested height
+   * @param height Specifies the height of the block the caller is interested in
+   */
+  public async handleBlockByHeightRequest (height: number): Promise<Response> {
+    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const queryString = '/blocks/' + height;
+    const uri = baseUrl + queryString;
+    return this.handleBlockRequestHelper(uri);
   }
 
   /**
    * Returns the blockhash of the last block in the blockchain
    */
   public async handleLastBlockRequest (): Promise<Response> {
-    let response: Response;
-
-    try {
-      response = {
-        status: ResponseStatus.Succeeded,
-        body: {
-          'blockNumber': 0,
-          'blockHash': '0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051'
-        }
-      };
-    } catch (err) {
-      response = {
-        status: ResponseStatus.ServerError,
-        body: err.message
-      };
-    }
-    return response;
+    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const queryString = '/blocks/last';
+    const uri = baseUrl + queryString;
+    return this.handleBlockRequestHelper(uri);
   }
 }
