@@ -48,6 +48,8 @@ export default class Rooter {
    * Processes the operations in the queue.
    */
   public async rootOperations () {
+    const startTime = process.hrtime(); // For calcuating time taken to root operations.
+
     // Wait until the next interval if the rooter is still processing a batch.
     if (this.processing) {
       return;
@@ -94,7 +96,9 @@ export default class Rooter {
       Logger.info(e);
     } finally {
       this.processing = false;
-      Logger.info('End batch processing.');
+
+      const duration = process.hrtime(startTime);
+      Logger.info(`End batch processing. Duration: ${duration[0]} s ${duration[1] / 1000000} ms.`);
     }
   }
 
