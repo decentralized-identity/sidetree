@@ -7,6 +7,7 @@
   "main": "dist/src/index.js",
   "dependencies": {
     "@decentralized-identity/did-common-typescript": "^0.1.2",
+    "base64url": "^3.0.1",
     "bs58": "^4.0.1",
     "double-ended-queue": "^2.1.0-0",
     "fast-json-patch": "^2.0.7",

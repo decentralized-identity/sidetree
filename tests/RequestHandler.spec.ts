@@ -24,8 +24,8 @@ describe('RequestHandler', () => {
   const configFile = require('../json/config.json');
   const config = new Config(configFile);
 
-  const batchFileHash = 'QmZxZJryxLeXq1sc511Hub674xeyu8aEeMwJEcNSwZjKie'; // This batch file gets create very time rooter.rootOperations() is invoked.
-  const did = 'did:sidetree:QmU1EDCnXdeEWvZpBWkhvavZMeWKHYACuQNAihbccAkEQy'; // This DID is created every time opeartion processor processes the transaction.
+  const batchFileHash = 'EiAfGFFjyyFUUB0rT52sPFB6CDymiSqFhPSERYQOR7uYwQ'; // This batch file gets create very time rooter.rootOperations() is invoked.
+  const did = 'did:sidetree:EiAY3T5CmYdClPgUXp6xpUsH-Pzo-VON8XaJ80nlTh0Jwg'; // This DID is created every time opeartion processor processes the transaction.
 
   const blockchain = new MockBlockchain();
   let cas: Cas;

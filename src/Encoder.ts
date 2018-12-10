@@ -1,35 +1,27 @@
-import * as Base58 from 'bs58';
+import base64url from 'base64url';
 
 /**
  * Class that encodes binary blobs into strings.
  */
 export default class Encoder {
   /**
-   * Encodes given Buffer into a Base58 string.
+   * Encodes given Buffer into a Base64URL string.
    */
   public static encode (content: Buffer | string): string {
-    if (content instanceof Buffer) {
-      return Base58.encode(content);
-    } else {
-      const contentBuffer = Buffer.from(content);
-      return Base58.encode(contentBuffer);
-    }
+    return base64url.encode(content);
   }
 
   /**
-   * Decodes the given Base58 string into a Buffer.
+   * Decodes the given Base64URL string into a Buffer.
    */
   public static decodeAsBuffer (encodedContent: string): Buffer {
-    const decodedContent = Base58.decode(encodedContent);
-    return Buffer.from(decodedContent);
+    return Buffer.from(base64url.decode(encodedContent));
   }
 
   /**
-   * Decodes the given Base58 string into a string.
+   * Decodes the given Base64URL string into a string.
    */
   public static decodeAsString (encodedContent: string): string {
-    const decodedContentBuffer = Base58.decode(encodedContent);
-    const decodedContent = decodedContentBuffer.toString();
-    return decodedContent;
+    return base64url.decode(encodedContent);
   }
 }
