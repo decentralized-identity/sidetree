@@ -1,6 +1,6 @@
 {
   "signingKeyId": "key-1",
-  "deletePayload": "CtGRWwgDXENVARuxnD4u6FeKSsFrRxNHgnb4paixZ9MJ3TduUPGx5v31FvDFLs8oa8Z8nNGeMeoxLQGn2jCaZ6xBiQFMDuRRtLr2kSUt",
+  "deletePayload": "ewogICAgImRpZCI6ICJkaWQ6c2lkZXRyZWU6UW1VMUVEQ25YZGVFV3ZacEJXa2h2YXZaTWVXS0hZQUN1UU5BaWhiY2NBa2FReSIKfQ",
   "signature": "abcde",
   "proofOfWork": "12345"
 }
