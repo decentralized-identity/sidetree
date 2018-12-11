@@ -184,7 +184,7 @@ export default class Observer {
 
     // If the code reaches here, it means that the batch of operations is valid, process each operations.
     for (const operation of operations) {
-      this.operationProcessor.process(operation);
+      await this.operationProcessor.process(operation);
     }
   }
 

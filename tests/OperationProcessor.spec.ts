@@ -139,7 +139,7 @@ describe('OperationProessor', async () => {
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
     createOp = await addBatchFileOfOneOperationToCas(createCreateOperationBuffer(), cas, 0, 0, 0);
-    firstVersion = operationProcessor.process(createOp);
+    firstVersion = await operationProcessor.process(createOp);
   });
 
   it('should return operation hash for create op', async () => {
@@ -174,7 +174,7 @@ describe('OperationProessor', async () => {
     const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
 
     for (let i = 0 ; i < ops.length ; ++i) {
-      const newVersion = operationProcessor.process(ops[i]);
+      const newVersion = await operationProcessor.process(ops[i]);
       expect(newVersion).toBeDefined();
       expect(newVersion!).toBe(opHashes[i]);
     }
@@ -187,7 +187,7 @@ describe('OperationProessor', async () => {
     const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
 
     for (let i = numberOfUpdates ; i > 0 ; --i) {
-      const newVersion = operationProcessor.process(ops[i]);
+      const newVersion = await operationProcessor.process(ops[i]);
       expect(newVersion).toBeDefined();
       expect(newVersion!).toBe(opHashes[i]);
     }
@@ -207,7 +207,7 @@ describe('OperationProessor', async () => {
 
       for (let i = 0 ; i < numberOfOps ; ++i) {
         const opIdx = permutation[i];
-        const newVersion = operationProcessor.process(ops[opIdx]);
+        const newVersion = await operationProcessor.process(ops[opIdx]);
         expect(newVersion).toBeDefined();
         expect(newVersion!).toBe(opHashes[opIdx]);
       }

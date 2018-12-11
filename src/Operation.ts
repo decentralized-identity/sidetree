@@ -76,7 +76,7 @@ class WriteOperation {
   /** ID of the key used to sign this operation. */
   public readonly signingKeyId: string;
   /** Signature of this operation. */
-  public readonly signature: Buffer;
+  public readonly signature: string;
   /** Proof-of-work of this operation. */
   public proofOfWork: any; // TODO: to be implemented.
 

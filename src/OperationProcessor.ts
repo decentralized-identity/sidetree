@@ -1,4 +1,5 @@
 import BatchFile from './BatchFile';
+import Cryptography from './lib/Cryptography';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
@@ -75,7 +76,7 @@ export interface OperationProcessor {
    * first/last/prev/next methods below. If the write
    * operation is not legitimate return undefined.
    */
-  process (operation: WriteOperation): string | undefined;
+  process (operation: WriteOperation): Promise<string | undefined>;
 
   /**
    * Remove all previously processed operations with transactionNumber
@@ -207,7 +208,7 @@ class OperationProcessorImpl implements OperationProcessor {
    *            2. The operation is processed before but this operation has an earlier timestamp.
    *          Returns undefined if the same operation with an earlier timestamp was processed previously.
    */
-  public process (operation: WriteOperation): string | undefined {
+  public async process (operation: WriteOperation): Promise<string | undefined> {
     const opHash = getOperationHash(operation);
 
     // Throw errors if missing any required metadata:
@@ -264,7 +265,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     // Else the operation is a create or an update.
-    this.processInternal(opHash, opInfo);
+    await this.processInternal(opHash, opInfo);
 
     return opHash;
   }
@@ -433,6 +434,7 @@ class OperationProcessorImpl implements OperationProcessor {
 
   /**
    * Return the operation given its (access) info.
+   * TODO: Avoid going to CAS and fetch from batch file every time.
    */
   private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
     const batchBuffer = await this.cas.read(opInfo.batchFileHash);
@@ -452,25 +454,38 @@ class OperationProcessorImpl implements OperationProcessor {
       opInfo.timestamp.operationIndex);
   }
 
-  private processInternal (opHash: OperationHash, opInfo: OperationInfo): void {
+  private async processInternal (opHash: OperationHash, opInfo: OperationInfo): Promise<void> {
     // Create operation (which has no parents) is handled differently from the other
     // operations which do have parents.
     if (opInfo.type === OperationType.Create) {
-      this.processCreateOperation(opHash, opInfo);
+      await this.processCreateOperation(opHash, opInfo);
     } else {
-      this.processOperationWithParent(opHash, opInfo);
+      await this.processOperationWithParent(opHash, opInfo);
     }
 
     // Process operations waiting on this operation
-    this.processDescendantsWaitingOn(opHash);
+    await this.processDescendantsWaitingOn(opHash);
   }
 
-  private processCreateOperation (_opHash: OperationHash, opInfo: OperationInfo): void {
-    // TODO: Validate create operation (verify signature)
-    opInfo.status = OperationStatus.Valid;
+  private async processCreateOperation (operationHash: OperationHash, operationInfo: OperationInfo): Promise<void> {
+    // Get the DID Document formed up until the parent operation.
+    const didDocument = await this.lookup(operationHash);
+
+    // Fetch the public key to be used for signature verification.
+    const operation = await this.getOperation(operationInfo);
+    const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
+
+    // Signature verification.
+    const verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+
+    if (verified) {
+      operationInfo.status = OperationStatus.Valid;
+    } else {
+      operationInfo.status = OperationStatus.Invalid;
+    }
   }
 
-  private processOperationWithParent (opHash: OperationHash, opInfo: OperationInfo): void {
+  private async processOperationWithParent (opHash: OperationHash, opInfo: OperationInfo): Promise<void> {
     const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash);
 
@@ -500,7 +515,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     // Assert: parentOpInfo.status === OperationStatus.Valid. Validate the operation
-    if (!this.validate(opHash, opInfo)) {
+    if (!await this.validate(opHash, opInfo)) {
       opInfo.status = OperationStatus.Invalid;
       return;
     }
@@ -543,9 +558,10 @@ class OperationProcessorImpl implements OperationProcessor {
     }
   }
 
-  private validate (_opHash: OperationHash, opInfo: OperationInfo): boolean {
+  private async validate (_opHash: OperationHash, opInfo: OperationInfo): Promise<boolean> {
     const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash)!;
+    // Assert: parentOpInfo.status === OperationStatus.Valid.
 
     if (!earlier(parentOpInfo.timestamp, opInfo.timestamp)) {
       return false;
@@ -553,7 +569,18 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // TODO Perform:
     // - operation number validation
-    // - signature verification
+
+    // TODO: Need to update Operation Processor tests to create updates with valid signatures before enableing code below.
+    // // Get the DID Document formed up until the parent operation.
+    // const didDocument = await this.lookup(parentOpHash);
+
+    // // Fetch the public key to be used for signature verification.
+    // const operation = await this.getOperation(opInfo);
+    // const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
+
+    // // Signature verification.
+    // const verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+    // return verified;
 
     return true;
   }
@@ -574,7 +601,7 @@ class OperationProcessorImpl implements OperationProcessor {
     opInfo.status = OperationStatus.Invalid;
   }
 
-  private processDescendantsWaitingOn (opHash: OperationHash) {
+  private async processDescendantsWaitingOn (opHash: OperationHash) {
     const waitingDescendants = this.waitingDescendants.get(opHash);
     if (waitingDescendants === undefined) {
       return;
@@ -583,8 +610,27 @@ class OperationProcessorImpl implements OperationProcessor {
     for (const descendantHash of waitingDescendants) {
       const descendantInfo = this.opHashToInfo.get(descendantHash)!;
       // assert: descendantInfo.status === Unvalidated and descendantInfo.missingAncestor === opHash
-      this.processInternal(descendantHash, descendantInfo);
+      await this.processInternal(descendantHash, descendantInfo);
     }
+  }
+
+  /**
+   * Gets the SECP256K1 public-key in JWK format from the given DID Document.
+   * Returns undefined if not found.
+   * @param keyId The ID of the public-key.
+   */
+  private static getPublicKeyJwk (didDocument: DidDocument, keyId: string): any {
+    for (let i = 0; i < didDocument.publicKey.length; i++) {
+      const publicKey = didDocument.publicKey[i];
+
+      if (publicKey.id.endsWith(keyId) &&
+          publicKey.type === 'Secp256k1VerificationKey2018' &&
+          publicKey.hasOwnProperty('publicKeyJwk')) {
+        return (publicKey as any).publicKeyJwk;
+      }
+    }
+
+    return undefined;
   }
 }
 
