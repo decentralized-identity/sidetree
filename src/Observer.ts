@@ -1,4 +1,5 @@
 import Encoder from './Encoder';
+import Logger from './lib/Logger';
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
@@ -74,8 +75,8 @@ export default class Observer {
     } catch (e) {
       unhandledErrorOccurred = true;
       this.errorRetryIntervalInSeconds *= 2;
-      console.info(e);
-      console.info(`Encountered Observer error, will attempt to process unprocessed operations again in ${this.errorRetryIntervalInSeconds} seconds.`);
+      Logger.error(e);
+      Logger.error(`Encountered Observer error, will attempt to process unprocessed operations again in ${this.errorRetryIntervalInSeconds} seconds.`);
     } finally {
       if (unhandledErrorOccurred) {
         setTimeout(async () => this.processTransactions(), this.errorRetryIntervalInSeconds * 1000);
@@ -183,9 +184,12 @@ export default class Observer {
     }
 
     // If the code reaches here, it means that the batch of operations is valid, process each operations.
+    const startTime = process.hrtime(); // For calcuating time taken to process operations.
     for (const operation of operations) {
       await this.operationProcessor.process(operation);
     }
+    const duration = process.hrtime(startTime);
+    Logger.info(`Processed a batch of ${operations.length} operations. Time taken: ${duration[0]} s ${duration[1] / 1000000} ms.`);
   }
 
   /**

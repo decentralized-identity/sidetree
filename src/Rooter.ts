@@ -56,7 +56,7 @@ export default class Rooter {
     }
 
     try {
-      Logger.info('Start batch processing...');
+      Logger.info('Start batch rooting...');
       this.processing = true;
 
       // Get the batch of operations to be anchored on the blockchain.
@@ -98,7 +98,7 @@ export default class Rooter {
       this.processing = false;
 
       const duration = process.hrtime(startTime);
-      Logger.info(`End batch processing. Duration: ${duration[0]} s ${duration[1] / 1000000} ms.`);
+      Logger.info(`End batch rooting. Duration: ${duration[0]} s ${duration[1] / 1000000} ms.`);
     }
   }
 

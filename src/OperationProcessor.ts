@@ -570,7 +570,7 @@ class OperationProcessorImpl implements OperationProcessor {
     // TODO Perform:
     // - operation number validation
 
-    // TODO: Need to update Operation Processor tests to create updates with valid signatures before enableing code below.
+    // TODO: Need to update Operation Processor tests to create updates with valid signatures before enabling code below.
     // // Get the DID Document formed up until the parent operation.
     // const didDocument = await this.lookup(parentOpHash);
 
@@ -623,7 +623,7 @@ class OperationProcessorImpl implements OperationProcessor {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 
-      if (publicKey.id.endsWith(keyId) &&
+      if (publicKey.id && publicKey.id.endsWith(keyId) &&
           publicKey.type === 'Secp256k1VerificationKey2018' &&
           publicKey.hasOwnProperty('publicKeyJwk')) {
         return (publicKey as any).publicKeyJwk;
