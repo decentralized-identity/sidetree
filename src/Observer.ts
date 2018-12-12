@@ -175,6 +175,7 @@ export default class Observer {
         const operation = WriteOperation.create(operationBuffer, resolvedTransaction, operationIndex);
 
         operations.push(operation);
+        operationIndex++;
       }
 
       // Ensure the batch meets proof-of-work requirements.
