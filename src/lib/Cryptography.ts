@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
+import { EcPrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 
 /**
  * Class reusable cryptographic operations.
@@ -10,6 +10,27 @@ export default class Cryptography {
    */
   public static sha256hash (value: Buffer): Buffer {
     return crypto.createHash('sha256').update(value).digest();
+  }
+
+  /**
+   * Generates a random pair of SECP256K1 public-private key-pair in JWK format.
+   * @returns Public key, followed by private key.
+   */
+  public static async generateKeyPair (keyId: string): Promise<[any, any]> {
+    const privateKey = await EcPrivateKey.generatePrivateKey(keyId);
+    const publicKey = privateKey.getPublicKey();
+
+    return [publicKey, privateKey];
+  }
+
+  /**
+   * Sigs the given content using the given private key.
+   * @param content Content to be signed.
+   * @param privateKeyJwk The JWK object representing a SECP256K1 private-key.
+   */
+  public static async sign (content: string, privateKeyJwk: any): Promise<string> {
+    const signature = await Secp256k1CryptoSuite.sign(content, privateKeyJwk);
+    return signature;
   }
 
   /**

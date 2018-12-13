@@ -448,10 +448,12 @@ class OperationProcessorImpl implements OperationProcessor {
       batchFileHash: opInfo.batchFileHash
     };
 
-    return WriteOperation.create(
+    const operation = WriteOperation.create(
       operationBuffer,
       resolvedTransaction,
       opInfo.timestamp.operationIndex);
+
+    return operation;
   }
 
   private async processInternal (opHash: OperationHash, opInfo: OperationInfo): Promise<void> {
@@ -570,17 +572,16 @@ class OperationProcessorImpl implements OperationProcessor {
     // TODO Perform:
     // - operation number validation
 
-    // TODO: Need to update Operation Processor tests to create updates with valid signatures before enabling code below.
-    // // Get the DID Document formed up until the parent operation.
-    // const didDocument = await this.lookup(parentOpHash);
+    // Get the DID Document formed up until the parent operation.
+    const didDocument = await this.lookup(parentOpHash);
 
-    // // Fetch the public key to be used for signature verification.
-    // const operation = await this.getOperation(opInfo);
-    // const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
+    // Fetch the public key to be used for signature verification.
+    const operation = await this.getOperation(opInfo);
+    const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
-    // // Signature verification.
-    // const verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
-    // return verified;
+    // Signature verification.
+    const verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+    return verified;
 
     return true;
   }
