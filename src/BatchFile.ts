@@ -56,7 +56,8 @@ export default class BatchFile {
       }
     });
 
-    return new BatchFile(batchFileObject.operations);
+    const batchFile = new BatchFile(batchFileObject.operations);
+    return batchFile;
   }
 
   /**

@@ -1,25 +1,48 @@
 import BatchFile from '../src/BatchFile';
+import Cryptography from '../src/lib/Cryptography';
 import Encoder from '../src/Encoder';
 import MockCas from './mocks/MockCas';
 import { Cas } from '../src/Cas';
 import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
-import { readFileSync } from 'fs';
 import { getOperationHash, WriteOperation } from '../src/Operation';
+import { initializeProtocol } from '../src/Protocol';
 
-function createCreateOperationBuffer (): Buffer {
-  const createOpRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
-  return Buffer.from(JSON.stringify(createOpRequest));
+async function createCreateOperationBuffer (publicKeyJwk: any, privateKeyJwk: any): Promise<Buffer> {
+  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+  didDocumentTemplate.publicKey[0].publicKeyJwk = publicKeyJwk;
+  const didDocumentJson = JSON.stringify(didDocumentTemplate);
+  const createPayload = Encoder.encode(didDocumentJson);
+  const signature = await Cryptography.sign(createPayload, privateKeyJwk);
+
+  const createRequest = {
+    signingKeyId: 'key1',
+    createPayload,
+    signature,
+    proofOfWork: '12345'
+  };
+  return Buffer.from(JSON.stringify(createRequest));
 }
 
-function createUpdateOperationBuffer (previousOperationHash: string): Buffer {
+async function createUpdateOperationBuffer (previousOperationHash: string, privateKeyJwk: any): Promise<Buffer> {
   const updateOpJson = {
-    'add': 'some path',
-    previousOperationHash
+    previousOperationHash,
+    patch: [{
+      op: 'replace',
+      path: '/publicKey/1',
+      value: {
+        id: 'key2',
+        type: 'RsaVerificationKey2018',
+        owner: 'did:sidetree:dummydid',
+        publicKeyPem: process.hrtime() // Some dummy value that's not used.
+      }
+    }]
   };
   const updatePayload = Encoder.encode(JSON.stringify(updateOpJson));
+  const signature = await Cryptography.sign(updatePayload, privateKeyJwk);
   const updateOpRequest = {
+    signingKeyId: 'key1',
     updatePayload,
-    signature: 'signature',
+    signature,
     proofOfWork: 'proof of work'
   };
   return Buffer.from(JSON.stringify(updateOpRequest));
@@ -51,14 +74,15 @@ async function addBatchFileOfOneOperationToCas (
   return op;
 }
 
-async function createUpdateSequence (createOp: WriteOperation, cas: Cas, numberOfUpdates: number): Promise<[WriteOperation[], string[]]> {
+async function createUpdateSequence (createOp: WriteOperation, cas: Cas, numberOfUpdates: number, privateKeyJwk: any): Promise<[WriteOperation[], string[]]> {
   const ops = new Array(createOp);
   const opHashes = new Array(getOperationHash(createOp));
 
   for (let i = 0; i < numberOfUpdates; ++i) {
     const mostRecentVersion = opHashes[i];
-    const updateOp = await addBatchFileOfOneOperationToCas(createUpdateOperationBuffer(
-      mostRecentVersion),
+    const updateOperationBuffer = await createUpdateOperationBuffer(mostRecentVersion, privateKeyJwk);
+    const updateOp = await addBatchFileOfOneOperationToCas(
+      updateOperationBuffer,
       cas,
       i + 1,   // transaction Number
       i + 1,   // transactionTime
@@ -127,6 +151,7 @@ function getPermutation (size: number, index: number): Array<number> {
 }
 
 describe('OperationProessor', async () => {
+  initializeProtocol('protocol-test.json');
 
   const didMethodName = 'did:sidetree:';
 
@@ -134,12 +159,19 @@ describe('OperationProessor', async () => {
   let operationProcessor = createOperationProcessor(cas, didMethodName);
   let createOp: WriteOperation | undefined;
   let firstVersion: string | undefined;
+  let publicKeyJwk: any;
+  let privateKeyJwk: any;
 
   beforeEach(async () => {
+    [publicKeyJwk, privateKeyJwk] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
+
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
-    createOp = await addBatchFileOfOneOperationToCas(createCreateOperationBuffer(), cas, 0, 0, 0);
+
+    const createOperationBuffer = await createCreateOperationBuffer(publicKeyJwk, privateKeyJwk);
+    createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     firstVersion = await operationProcessor.process(createOp);
+
   });
 
   it('should return operation hash for create op', async () => {
@@ -171,7 +203,7 @@ describe('OperationProessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
+    const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates, privateKeyJwk);
 
     for (let i = 0 ; i < ops.length ; ++i) {
       const newVersion = await operationProcessor.process(ops[i]);
@@ -184,7 +216,7 @@ describe('OperationProessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
+    const [ops,opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates, privateKeyJwk);
 
     for (let i = numberOfUpdates ; i > 0 ; --i) {
       const newVersion = await operationProcessor.process(ops[i]);
@@ -197,7 +229,7 @@ describe('OperationProessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const [ops, opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates);
+    const [ops, opHashes] = await createUpdateSequence(createOp!, cas, numberOfUpdates, privateKeyJwk);
 
     const numberOfOps = ops.length;
     const numberOfPermutations = getFactorial(numberOfOps);

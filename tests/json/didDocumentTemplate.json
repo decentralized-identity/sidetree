@@ -1,0 +1,40 @@
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:ignored",
+  "publicKey": [
+    {
+      "id": "did:sidetree:didPortionIgnored#key1",
+      "type": "Secp256k1VerificationKey2018",
+      "owner": "did:sidetree:ignoredUnlessResolvable",
+      "publicKeyJwk": {
+        "kty": "EC",
+        "kid": "key1",
+        "crv": "P-256K",
+        "x": "PUymIqdtF_qxaAqPABSw-C-owT1KYYQbsMKFM-L9fJA",
+        "y": "nM84jDHCMOTGTh_ZdHq4dBBdo4Z5PkEOW9jA8z8IsGc",
+        "use": "verify",
+        "defaultEncryptionAlgorithm": "none"
+      }
+    },
+    {
+      "id": "did:sidetree:didPortionIgnored#key2",
+      "type": "RsaVerificationKey2018",
+      "owner": "did:sidetree:ignoredUnlessResolvable",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----"
+    }
+  ],
+  "service": [
+    {
+      "type": "IdentityHub",
+      "publicKey": "did:sidetree:ignored#key-1",
+      "serviceEndpoint": {
+        "@context": "schema.identity.foundation/hub",
+        "@type": "UserServiceEndpoint",
+        "instances": [
+          "did:bar:456",
+          "did:zaz:789"
+        ]
+      }
+    }
+  ]
+}
