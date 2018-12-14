@@ -1,6 +1,0 @@
-{
-  "signingKeyId": "key-1",
-  "updatePayload": "ewogICAgImRpZCI6ICJkaWQ6c2lkZXRyZWU6RWlEbnVJZU9ObFN5UmdtUnhWdVVsc3VqMVd4WnFLaGQ5bEdTR21kMmlZdl9QUSIsCiAgICAib3BlcmF0aW9uTnVtYmVyIjogMSwKICAgICJwcmV2aW91c09wZXJhdGlvbkhhc2giOiAiRWlEbnVJZU9ObFN5UmdtUnhWdVVsc3VqMVd4WnFLaGQ5bEdTR21kMmlZdl9QUSIsCiAgICAicGF0Y2giOiBbewogICAgICAib3AiOiAicmVtb3ZlIiwKICAgICAgInBhdGgiOiAiL3B1YmxpY0tleS8wIgogICAgfV0KICB9",
-  "signature": "abcde",
-  "proofOfWork": "12345"
-}

@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { EcPrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 
 /**
- * Class reusable cryptographic operations.
+ * Class containing reusable cryptographic operations.
  */
 export default class Cryptography {
   /**

@@ -1,3 +1,4 @@
+import Did from './lib/Did';
 import Encoder from './Encoder';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
@@ -232,10 +233,7 @@ class WriteOperation {
     const protocol = getProtocol(transactionTime);
 
     // Compute the hash of the DID Document in the create payload as the DID
-    const didDocumentBuffer = Buffer.from(operation.encodedPayload);
-    const multihash = Multihash.hash(didDocumentBuffer, protocol.hashAlgorithmInMultihashCode);
-    const encodedMultihash = Encoder.encode(multihash);
-    const did = didMethodName + encodedMultihash;
+    const did = Did.from(operation.encodedPayload, didMethodName, protocol.hashAlgorithmInMultihashCode);
 
     // Construct real DID document and return it.
     const didDocument = operation.didDocument!;
