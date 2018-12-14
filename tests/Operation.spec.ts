@@ -1,10 +1,17 @@
-import { readFileSync } from 'fs';
+import Cryptography from '../src/lib/Cryptography';
+import OperationGenerator from './generators/OperationGenerator';
 import { WriteOperation } from '../src/Operation';
 
-describe('WriteOperation', () => {
+describe('WriteOperation', async () => {
+  let createRequest: any;
+
+  beforeAll(async () => {
+    const [publicKeyJwk, privateKeyJwk] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
+    const createRequestBuffer = await OperationGenerator.generateCreateOperation(publicKeyJwk, privateKeyJwk);
+    createRequest = JSON.parse(createRequestBuffer.toString());
+  });
 
   it('should throw error if unknown property is found when parsing request.', async () => {
-    const createRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
     createRequest.dummyProperty = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
@@ -12,7 +19,6 @@ describe('WriteOperation', () => {
   });
 
   it('should throw error if more than one type of payload is found when parsing request.', async () => {
-    const createRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
     createRequest.updatePayload = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
@@ -20,7 +26,6 @@ describe('WriteOperation', () => {
   });
 
   it('should throw error if signature is not found when parsing request.', async () => {
-    const createRequest = JSON.parse(readFileSync('./tests/requests/create.json').toString());
     delete createRequest.signature;
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
