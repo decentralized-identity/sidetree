@@ -1,5 +1,6 @@
 import BatchFile from './BatchFile';
 import Cryptography from './lib/Cryptography';
+import { Cache, getCache } from './Cache';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
@@ -158,6 +159,63 @@ interface OperationInfo {
 }
 
 /**
+ * An abstraction of a *complete* store for operations, exposing methods to store and
+ * subsequently retrieve operations using OperationInfo. Internally relies on a
+ * cache to lookup recent and/or heavily accessed operations; on a cache miss relies on
+ * an expensive CAS lookup to reconstruct the operation.
+ */
+class OperationStore {
+
+  private readonly operationCache: Cache<VersionId, WriteOperation>;
+
+  // Size for the operation cache; TODO: set from a config file?
+  private readonly operationCacheSize = 100000;
+
+  public constructor (private readonly cas: Cas) {
+    this.operationCache = getCache(this.operationCacheSize);
+  }
+
+  /**
+   * Store an operation in the store
+   */
+  public store (opHash: OperationHash, operation: WriteOperation) {
+    this.operationCache.store(opHash, operation);
+  }
+
+  /**
+   * Lookup an operation from the store
+   */
+  public async lookup (opHash: OperationHash, opInfo: OperationInfo): Promise<WriteOperation> {
+    const operation = this.operationCache.lookup(opHash);
+
+    if (operation !== undefined) {
+      return operation;
+    }
+    return this.constructOperationFromCas(opInfo);
+  }
+
+  private async constructOperationFromCas (opInfo: OperationInfo): Promise<WriteOperation> {
+    const batchBuffer = await this.cas.read(opInfo.batchFileHash);
+    const batchFile = BatchFile.fromBuffer(batchBuffer);
+    const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
+    const resolvedTransaction = {
+      transactionNumber: opInfo.timestamp.transactionNumber,
+      transactionTime: opInfo.timestamp.transactionTime,
+      transactionTimeHash: 'NOT_NEEDED',
+      anchorFileHash: 'NOT_NEEDED',
+      batchFileHash: opInfo.batchFileHash
+    };
+
+    const operation = WriteOperation.create(
+      operationBuffer,
+      resolvedTransaction,
+      opInfo.timestamp.operationIndex);
+
+    return operation;
+  }
+}
+
+/**
  * The current implementation of OperationProcessor is a main-memory implementation without any persistence. This
  * means that when a node is powered down and restarted DID operations need to be applied
  * from the beginning of time. This implementation will be extended in the future to support
@@ -198,7 +256,10 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   private waitingDescendants: Map<OperationHash, LinkedList<OperationHash>> = new Map();
 
+  private readonly operationStore: OperationStore;
+
   public constructor (private readonly cas: Cas, private didMethodName: string) {
+    this.operationStore = new OperationStore(this.cas);
   }
 
   /**
@@ -210,6 +271,8 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   public async process (operation: WriteOperation): Promise<string | undefined> {
     const opHash = getOperationHash(operation);
+
+    this.operationStore.store(opHash, operation);
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
@@ -341,7 +404,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     // Construct the operation using a CAS lookup
-    const op = await this.getOperation(opInfo);
+    const op = await this.operationStore.lookup(opHash, opInfo);
 
     if (this.isInitialVersion(opInfo)) {
       return WriteOperation.toDidDocument(op, this.didMethodName);
@@ -432,30 +495,6 @@ class OperationProcessorImpl implements OperationProcessor {
     return opInfo.type === OperationType.Create;
   }
 
-  /**
-   * Return the operation given its (access) info.
-   * TODO: Avoid going to CAS and fetch from batch file every time.
-   */
-  private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
-    const batchBuffer = await this.cas.read(opInfo.batchFileHash);
-    const batchFile = BatchFile.fromBuffer(batchBuffer);
-    const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
-    const resolvedTransaction = {
-      transactionNumber: opInfo.timestamp.transactionNumber,
-      transactionTime: opInfo.timestamp.transactionTime,
-      transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'NOT_NEEDED',
-      batchFileHash: opInfo.batchFileHash
-    };
-
-    const operation = WriteOperation.create(
-      operationBuffer,
-      resolvedTransaction,
-      opInfo.timestamp.operationIndex);
-
-    return operation;
-  }
-
   private async processInternal (opHash: OperationHash, opInfo: OperationInfo): Promise<void> {
     // Create operation (which has no parents) is handled differently from the other
     // operations which do have parents.
@@ -474,7 +513,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(operationHash);
 
     // Fetch the public key to be used for signature verification.
-    const operation = await this.getOperation(operationInfo);
+    const operation = await this.operationStore.lookup(operationHash, operationInfo);
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
@@ -560,7 +599,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
   }
 
-  private async validate (_opHash: OperationHash, opInfo: OperationInfo): Promise<boolean> {
+  private async validate (opHash: OperationHash, opInfo: OperationInfo): Promise<boolean> {
     const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash)!;
     // Assert: parentOpInfo.status === OperationStatus.Valid.
@@ -576,7 +615,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(parentOpHash);
 
     // Fetch the public key to be used for signature verification.
-    const operation = await this.getOperation(opInfo);
+    const operation = await this.operationStore.lookup(opHash, opInfo);
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
