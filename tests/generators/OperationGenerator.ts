@@ -8,12 +8,10 @@ import Encoder from '../../src/Encoder';
 export default class OperationGenerator {
 
   /**
-   * Creates a Create Operation with valid signature..
+   * Creates a Create Operation with valid signature.
+   * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
    */
-  public static async generateCreateOperation (publicKeyJwk: any, privateKeyJwk: any): Promise<Buffer> {
-    // Load the DID Document template.
-    const didDocumentTemplate = require('../json/didDocumentTemplate.json');
-
+  public static async generateCreateOperation (didDocumentTemplate: any, publicKeyJwk: any, privateKeyJwk: any): Promise<Buffer> {
     // Replace the placeholder public-key with the public-key given.
     didDocumentTemplate.publicKey[0].publicKeyJwk = publicKeyJwk;
 

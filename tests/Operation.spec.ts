@@ -3,11 +3,14 @@ import OperationGenerator from './generators/OperationGenerator';
 import { WriteOperation } from '../src/Operation';
 
 describe('WriteOperation', async () => {
+  // Load the DID Document template.
+  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+
   let createRequest: any;
 
   beforeAll(async () => {
     const [publicKeyJwk, privateKeyJwk] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
-    const createRequestBuffer = await OperationGenerator.generateCreateOperation(publicKeyJwk, privateKeyJwk);
+    const createRequestBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
     createRequest = JSON.parse(createRequestBuffer.toString());
   });
 
