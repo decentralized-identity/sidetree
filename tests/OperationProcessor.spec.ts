@@ -135,6 +135,8 @@ function getPermutation (size: number, index: number): Array<number> {
 describe('OperationProessor', async () => {
   initializeProtocol('protocol-test.json');
 
+  // Load the DID Document template.
+  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
   const didMethodName = 'did:sidetree:';
 
   let cas = new MockCas();
@@ -151,7 +153,7 @@ describe('OperationProessor', async () => {
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
 
-    const createOperationBuffer = await OperationGenerator.generateCreateOperation(publicKeyJwk, privateKeyJwk);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     firstVersion = await operationProcessor.process(createOp);
     did = didMethodName + firstVersion;
