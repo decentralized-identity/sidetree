@@ -1,0 +1,5 @@
+.vscode
+coverage
+tests
+nunitresults.xml
+.nyc_output

@@ -52,7 +52,8 @@
     "precommit": "npm run validate",
     "build": "tsc -p .",
     "build:live": "nodemon --files src/index",
-    "start": "npm run build:live"
+    "startDebug": "npm run build:live",
+    "start": "node dist/src/index.js"
   },
   "nyc": {
     "all": true,
