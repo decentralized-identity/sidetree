@@ -1,6 +1,7 @@
 import { Response, ResponseStatus } from './Response';
 import { IpfsStorage } from './lib/IpfsStorage';
 import * as Ipfs from 'ipfs';
+import base64url from 'base64url';
 const multihashes = require('multihashes');
 
 /**
@@ -18,13 +19,13 @@ export default class RequestHandler {
   }
   /**
    * Handles read request
-   * @param hash Content Identifier Hash.
+   * @param base64urlEncodedMultihash Content Identifier Hash.
    */
-  public async handleFetchRequest (hash: string): Promise<Response> {
-    const decodedHash = multihashes.fromB58String(hash);
+  public async handleFetchRequest (base64urlEncodedMultihash: string): Promise<Response> {
+    const multihashBuffer = base64url.toBuffer(base64urlEncodedMultihash);
     let response: Response;
     try {
-      multihashes.validate(decodedHash);
+      multihashes.validate(multihashBuffer);
     } catch {
       return {
         status: ResponseStatus.BadRequest,
@@ -32,7 +33,8 @@ export default class RequestHandler {
       };
     }
     try {
-      const content = await this.ipfsStorage.read(hash);
+      const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
+      const content = await this.ipfsStorage.read(base58EncodedMultihashString);
       response = {
         status: ResponseStatus.Succeeded,
         body: content
@@ -53,10 +55,12 @@ export default class RequestHandler {
   public async handleWriteRequest (content: Buffer): Promise<Response> {
     let response: Response;
     try {
-      const contentHash = await this.ipfsStorage.write(content);
+      const base58EncodedMultihashString = await this.ipfsStorage.write(content);
+      const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
+      const base64urlEncodedMultihash = base64url.encode(multihashBuffer);
       response = {
         status: ResponseStatus.Succeeded,
-        body: { hash: contentHash }
+        body: { hash: base64urlEncodedMultihash }
       };
     } catch (err) {
       response = {
