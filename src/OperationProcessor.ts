@@ -1,9 +1,9 @@
-import BatchFile from './BatchFile';
 import Cryptography from './lib/Cryptography';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
 import { getOperationHash, WriteOperation, OperationType } from './Operation';
+import { OperationStore } from './OperationStore';
 
 /**
  * Each operation that is submitted to OperationProcessor for processing
@@ -131,7 +131,6 @@ export interface OperationProcessor {
  * TODO: Consider consolidating this modal interface with ResolvedTransaction.
  */
 interface OperationTimestamp {
-  readonly transactionTime: number;
   readonly transactionNumber: number;
   readonly operationIndex: number;
 }
@@ -145,7 +144,6 @@ function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
  * Information about a write operation relevant for maintaining OperationProcessor state.
  */
 interface OperationInfo {
-  readonly batchFileHash: string;
   readonly type: OperationType;
   readonly timestamp: OperationTimestamp;
   readonly parent?: VersionId;
@@ -198,7 +196,10 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   private waitingDescendants: Map<OperationHash, LinkedList<OperationHash>> = new Map();
 
+  private readonly operationStore: OperationStore;
+
   public constructor (private readonly cas: Cas, private didMethodName: string) {
+    this.operationStore = new OperationStore(this.cas);
   }
 
   /**
@@ -210,6 +211,8 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   public async process (operation: WriteOperation): Promise<string | undefined> {
     const opHash = getOperationHash(operation);
+
+    this.operationStore.store(opHash, operation);
 
     // Throw errors if missing any required metadata:
     // any operation anchored in a blockchain must have this metadata.
@@ -231,13 +234,11 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
-      transactionTime: operation.transactionTime,
       transactionNumber: operation.transactionNumber,
       operationIndex: operation.operationIndex
     };
 
     const opInfo: OperationInfo = {
-      batchFileHash: operation.batchFileHash,
       type: operation.type,
       timestamp: opTimestamp,
       parent: operation.previousOperationHash,
@@ -341,7 +342,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     // Construct the operation using a CAS lookup
-    const op = await this.getOperation(opInfo);
+    const op = await this.operationStore.lookup(opHash);
 
     if (this.isInitialVersion(opInfo)) {
       return WriteOperation.toDidDocument(op, this.didMethodName);
@@ -432,30 +433,6 @@ class OperationProcessorImpl implements OperationProcessor {
     return opInfo.type === OperationType.Create;
   }
 
-  /**
-   * Return the operation given its (access) info.
-   * TODO: Avoid going to CAS and fetch from batch file every time.
-   */
-  private async getOperation (opInfo: OperationInfo): Promise<WriteOperation> {
-    const batchBuffer = await this.cas.read(opInfo.batchFileHash);
-    const batchFile = BatchFile.fromBuffer(batchBuffer);
-    const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
-    const resolvedTransaction = {
-      transactionNumber: opInfo.timestamp.transactionNumber,
-      transactionTime: opInfo.timestamp.transactionTime,
-      transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'NOT_NEEDED',
-      batchFileHash: opInfo.batchFileHash
-    };
-
-    const operation = WriteOperation.create(
-      operationBuffer,
-      resolvedTransaction,
-      opInfo.timestamp.operationIndex);
-
-    return operation;
-  }
-
   private async processInternal (opHash: OperationHash, opInfo: OperationInfo): Promise<void> {
     // Create operation (which has no parents) is handled differently from the other
     // operations which do have parents.
@@ -474,7 +451,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(operationHash);
 
     // Fetch the public key to be used for signature verification.
-    const operation = await this.getOperation(operationInfo);
+    const operation = await this.operationStore.lookup(operationHash);
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
@@ -560,7 +537,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
   }
 
-  private async validate (_opHash: OperationHash, opInfo: OperationInfo): Promise<boolean> {
+  private async validate (opHash: OperationHash, opInfo: OperationInfo): Promise<boolean> {
     const parentOpHash = opInfo.parent!;
     const parentOpInfo = this.opHashToInfo.get(parentOpHash)!;
     // Assert: parentOpInfo.status === OperationStatus.Valid.
@@ -576,7 +553,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(parentOpHash);
 
     // Fetch the public key to be used for signature verification.
-    const operation = await this.getOperation(opInfo);
+    const operation = await this.operationStore.lookup(opHash);
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
