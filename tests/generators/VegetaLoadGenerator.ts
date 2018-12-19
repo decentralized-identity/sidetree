@@ -12,8 +12,14 @@ export default class VegetaLoadGenerator {
 
   /**
    * Creates a Create request followed by an Update request for each DID.
+   * Two targets files will be generated:
+   *   One targets file containing all Create requests;
+   *   One targest file containing all Update requests
+   * @param uniqueDidCount The number of unique DID to be generated.
+   * @param endpointUrl The URL that the requests will be sent to.
+   * @param absoluteFolderPath The folder that all the generated files will be saved to.
    */
-  public static async generateCreateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
+  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
 
     const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
 
