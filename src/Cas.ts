@@ -46,14 +46,34 @@ export class CasClient implements Cas {
   }
 
   public async read (address: string): Promise<Buffer> {
+    // Fetch the resource.
     const queryUri = `${this.uri}/${address}`;
     const response = await nodeFetch(queryUri);
     if (response.status !== HttpStatus.OK) {
       throw new Error('Encountered an error reading content from CAS.');
     }
 
-    const content = response.body.read() as Buffer;
+    // Set callback for the 'readable' event to concatenate chunks of the readable stream.
+    let content: string = '';
+    response.body.on('readable', () => {
+      // NOTE: Cast to any is to work-around incorrect TS definition for read() where
+      // `null` should be a possible return type but is not defined in @types/node: 10.12.18.
+      let chunk = response.body.read() as any;
+      while (chunk !== null) {
+        content += chunk;
+        chunk = response.body.read();
+      }
+    });
 
-    return content;
+    // Create a promise to wrap the successful/failed read events.
+    const readBody = new Promise((resolve, reject) => {
+      response.body.on('end', resolve);
+      response.body.on('error', reject);
+    });
+
+    // Wait until the response body read is completed.
+    await readBody;
+
+    return Buffer.from(content);
   }
 }
