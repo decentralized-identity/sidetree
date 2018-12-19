@@ -53,6 +53,7 @@
     "lint": "tslint --fix --project .",
     "validate": "npm-run-all --parallel testCoverage lint",
     "build:live": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "startDebug": "npm run build:live",
     "start": "node dist/src/index.js"
   },
   "nyc": {
