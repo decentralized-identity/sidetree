@@ -1,10 +1,9 @@
-import BatchFile from './BatchFile';
 import Cryptography from './lib/Cryptography';
-import { Cache, getCache } from './Cache';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
 import { getOperationHash, WriteOperation, OperationType } from './Operation';
+import { OperationStore } from './OperationStore';
 
 /**
  * Each operation that is submitted to OperationProcessor for processing
@@ -132,7 +131,6 @@ export interface OperationProcessor {
  * TODO: Consider consolidating this modal interface with ResolvedTransaction.
  */
 interface OperationTimestamp {
-  readonly transactionTime: number;
   readonly transactionNumber: number;
   readonly operationIndex: number;
 }
@@ -146,7 +144,6 @@ function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
  * Information about a write operation relevant for maintaining OperationProcessor state.
  */
 interface OperationInfo {
-  readonly batchFileHash: string;
   readonly type: OperationType;
   readonly timestamp: OperationTimestamp;
   readonly parent?: VersionId;
@@ -156,63 +153,6 @@ interface OperationInfo {
   // Most recent missing ancestor if one of the ancestors is missing. Defined only if status
   // is Unvalidated.
   missingAncestor?: VersionId;
-}
-
-/**
- * An abstraction of a *complete* store for operations, exposing methods to store and
- * subsequently retrieve operations using OperationInfo. Internally relies on a
- * cache to lookup recent and/or heavily accessed operations; on a cache miss relies on
- * an expensive CAS lookup to reconstruct the operation.
- */
-class OperationStore {
-
-  private readonly operationCache: Cache<VersionId, WriteOperation>;
-
-  // Size for the operation cache; TODO: set from a config file?
-  private readonly operationCacheSize = 100000;
-
-  public constructor (private readonly cas: Cas) {
-    this.operationCache = getCache(this.operationCacheSize);
-  }
-
-  /**
-   * Store an operation in the store
-   */
-  public store (opHash: OperationHash, operation: WriteOperation) {
-    this.operationCache.store(opHash, operation);
-  }
-
-  /**
-   * Lookup an operation from the store
-   */
-  public async lookup (opHash: OperationHash, opInfo: OperationInfo): Promise<WriteOperation> {
-    const operation = this.operationCache.lookup(opHash);
-
-    if (operation !== undefined) {
-      return operation;
-    }
-    return this.constructOperationFromCas(opInfo);
-  }
-
-  private async constructOperationFromCas (opInfo: OperationInfo): Promise<WriteOperation> {
-    const batchBuffer = await this.cas.read(opInfo.batchFileHash);
-    const batchFile = BatchFile.fromBuffer(batchBuffer);
-    const operationBuffer = batchFile.getOperationBuffer(opInfo.timestamp.operationIndex);
-    const resolvedTransaction = {
-      transactionNumber: opInfo.timestamp.transactionNumber,
-      transactionTime: opInfo.timestamp.transactionTime,
-      transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'NOT_NEEDED',
-      batchFileHash: opInfo.batchFileHash
-    };
-
-    const operation = WriteOperation.create(
-      operationBuffer,
-      resolvedTransaction,
-      opInfo.timestamp.operationIndex);
-
-    return operation;
-  }
 }
 
 /**
@@ -294,13 +234,11 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // opInfo is operation with derivable properties projected out
     const opTimestamp: OperationTimestamp = {
-      transactionTime: operation.transactionTime,
       transactionNumber: operation.transactionNumber,
       operationIndex: operation.operationIndex
     };
 
     const opInfo: OperationInfo = {
-      batchFileHash: operation.batchFileHash,
       type: operation.type,
       timestamp: opTimestamp,
       parent: operation.previousOperationHash,
@@ -404,7 +342,7 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     // Construct the operation using a CAS lookup
-    const op = await this.operationStore.lookup(opHash, opInfo);
+    const op = await this.operationStore.lookup(opHash);
 
     if (this.isInitialVersion(opInfo)) {
       return WriteOperation.toDidDocument(op, this.didMethodName);
@@ -513,7 +451,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(operationHash);
 
     // Fetch the public key to be used for signature verification.
-    const operation = await this.operationStore.lookup(operationHash, operationInfo);
+    const operation = await this.operationStore.lookup(operationHash);
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
@@ -615,7 +553,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(parentOpHash);
 
     // Fetch the public key to be used for signature verification.
-    const operation = await this.operationStore.lookup(opHash, opInfo);
+    const operation = await this.operationStore.lookup(opHash);
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
