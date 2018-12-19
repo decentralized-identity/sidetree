@@ -6,5 +6,5 @@ COPY ./package.json /app
 COPY ./package-lock.json /app
 WORKDIR /app
 
-EXPOSE 3002
+EXPOSE 3009
 CMD npm start

@@ -4,7 +4,7 @@ import * as Router from 'koa-router';
 import RequestHandler from './RequestHandler';
 import { toHttpStatus, Response } from './Response';
 import { Config, ConfigKey } from './Config';
-import TransactionNumber from 'TransactionNumber';
+import TransactionNumber from './TransactionNumber';
 
 const configFile = require('../json/config.json');
 const config = new Config(configFile);
