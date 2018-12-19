@@ -30,7 +30,11 @@ export class IpfsStorage {
    * @returns The content of the given hash.
    */
   public async read (hash: string): Promise<Buffer> {
+    // files.get fetches the content from network if not available in local repo and stores in cache which is garbage collectable
     const files = await this.node.files.get(hash);
+
+    // Store the fetched content in local repo. Re-pinning already exisitng object doesnt create a duplicate.
+    await this.node.pin.add(hash);
     return files[0].content as Buffer;
   }
 

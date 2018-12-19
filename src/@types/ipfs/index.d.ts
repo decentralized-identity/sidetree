@@ -37,6 +37,7 @@ declare class IPFS {
     swarm: IPFS.SwarmAPI;
     files: IPFS.FilesAPI;
     bitswap: any;
+    pin: IPFS.PinAPI;
 
     ping(callback: (error: Error) => void): void;
     ping(): Promise<void>;
@@ -141,6 +142,16 @@ declare namespace IPFS {
         getPull(hash: Multihash, callback: Callback<any>): void;
     }
 
+    export interface PinAPI {
+        add(hash: Multihash, options: any, callback: Callback<any[]>): void;
+        add(hash: Multihash, options: any): Promise<any[]>;
+        add(hash: Multihash, callback: Callback<any>): void;
+        add(hash: Multihash): Promise<any[]>;
+
+        ls(): void;
+        rm(): void;
+    }
+    
     export interface PeersOptions {
         v?: boolean;
         verbose?: boolean;

@@ -25,6 +25,7 @@ describe('IpfsStorage', () => {
       return mockIpfsContent;
     };
     spyOn(ipfsStorage.node.files, 'get').and.callFake(mockIpfsGet);
+    spyOn(ipfsStorage.node.pin, 'add').and.returnValue(true);
 
     const expectedContent = Buffer.from('ipfs');
 
