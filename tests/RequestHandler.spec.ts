@@ -1,6 +1,7 @@
 import BatchFile from '../src/BatchFile';
 import Cryptography from '../src/lib/Cryptography';
 import Did from '../src/lib/Did';
+import DidPublicKey from '../src/lib/DidPublicKey';
 import Logger from '../src/lib/Logger';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
@@ -32,8 +33,8 @@ describe('RequestHandler', () => {
   let operationProcessor;
   let requestHandler: RequestHandler;
 
-  let publicKeyJwk: any;
-  let privateKeyJwk: any;
+  let publicKey: DidPublicKey;
+  let privateKey: any;
   let did: string; // This DID is created at the beginning of every test.
   let batchFileHash: string;
 
@@ -52,8 +53,8 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(mockLatestTime);
 
-    [publicKeyJwk, privateKeyJwk] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
-    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1'); // Generate a unique key-pair used for each test.
+    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleWriteRequest(createOperationBuffer);
     await rooter.rootOperations();
@@ -109,7 +110,7 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(blockchainTime);
 
-    const createRequest = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
+    const createRequest = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     const response = await requestHandler.handleWriteRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
@@ -166,7 +167,7 @@ describe('RequestHandler', () => {
       previousOperationHash: Did.getUniquePortion(did)
     };
 
-    const request = await OperationGenerator.generateUpdateOperation(updatePayload, privateKeyJwk);
+    const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleWriteRequest(request);
     const httpStatus = toHttpStatus(response.status);
 
@@ -191,7 +192,7 @@ describe('RequestHandler', () => {
       previousOperationHash: Did.getUniquePortion(did)
     };
 
-    const request = await OperationGenerator.generateUpdateOperation(updatePayload, privateKeyJwk);
+    const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleWriteRequest(request);
     const httpStatus = toHttpStatus(response.status);
 

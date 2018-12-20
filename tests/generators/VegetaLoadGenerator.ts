@@ -22,6 +22,7 @@ export default class VegetaLoadGenerator {
   public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
 
     const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
+    const keyId = 'key1';
 
     // Make directories needed by the request generator.
     fs.mkdirSync(absoluteFolderPath);
@@ -30,7 +31,7 @@ export default class VegetaLoadGenerator {
 
     for (let i = 0; i < uniqueDidCount; i++) {
       // Generate a random pair of public-private key pair and save them on disk.
-      const [publicKey, privateKey] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
+      const [publicKey, privateKey] = await Cryptography.generateKeyPairHex(keyId); // Generate a unique key-pair used for each test.
       fs.writeFileSync(absoluteFolderPath + `/keys/privateKey${i}.json`, JSON.stringify(privateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
@@ -61,7 +62,7 @@ export default class VegetaLoadGenerator {
       };
 
       // Generate an Update request body and save it on disk.
-      const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, privateKey);
+      const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, keyId, privateKey);
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
     }
 

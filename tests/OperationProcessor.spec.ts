@@ -39,7 +39,7 @@ async function createUpdateSequence (
   cas: Cas,
   numberOfUpdates:
   number,
-  privateKeyJwk: any): Promise<[WriteOperation[], string[]]> {
+  privateKey: any): Promise<[WriteOperation[], string[]]> {
 
   const ops = new Array(createOp);
   const opHashes = new Array(getOperationHash(createOp));
@@ -62,7 +62,7 @@ async function createUpdateSequence (
       }]
     };
 
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, privateKeyJwk);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, 'key1', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(
       updateOperationBuffer,
       cas,
@@ -143,17 +143,17 @@ describe('OperationProessor', async () => {
   let operationProcessor = createOperationProcessor(cas, didMethodName);
   let createOp: WriteOperation | undefined;
   let firstVersion: string | undefined;
-  let publicKeyJwk: any;
-  let privateKeyJwk: any;
+  let publicKey: any;
+  let privateKey: any;
   let did: string;
 
   beforeEach(async () => {
-    [publicKeyJwk, privateKeyJwk] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
 
-    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     firstVersion = await operationProcessor.process(createOp);
     did = didMethodName + firstVersion;
@@ -188,7 +188,7 @@ describe('OperationProessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKeyJwk);
+    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = 0 ; i < ops.length ; ++i) {
       const newVersion = await operationProcessor.process(ops[i]);
@@ -201,7 +201,7 @@ describe('OperationProessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKeyJwk);
+    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i > 0 ; --i) {
       const newVersion = await operationProcessor.process(ops[i]);
@@ -214,7 +214,7 @@ describe('OperationProessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const [ops, opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKeyJwk);
+    const [ops, opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
     const numberOfPermutations = getFactorial(numberOfOps);

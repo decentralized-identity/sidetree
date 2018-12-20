@@ -1,5 +1,8 @@
 import * as crypto from 'crypto';
-import { EcPrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
+import DidPublicKey from './DidPublicKey';
+import Encoder from '../Encoder';
+import { EcPrivateKey, PrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
+const secp256k1 = require('secp256k1');
 
 /**
  * Class containing reusable cryptographic operations.
@@ -14,22 +17,64 @@ export default class Cryptography {
 
   /**
    * Generates a random pair of SECP256K1 public-private key-pair in JWK format.
+   * NOTE: The public key returned is wrapped as a DidPublicKey for convenient usage.
    * @returns Public key, followed by private key.
    */
-  public static async generateKeyPair (keyId: string): Promise<[any, any]> {
-    const privateKey = await EcPrivateKey.generatePrivateKey(keyId);
-    const publicKey = privateKey.getPublicKey();
+  public static async generateKeyPairJwk (keyId: string): Promise<[DidPublicKey, PrivateKey]> {
+    const privateKeyJwk = await EcPrivateKey.generatePrivateKey(keyId);
+    const publicKeyJwk = privateKeyJwk.getPublicKey();
+    const didPublicKey = {
+      id: keyId,
+      type: 'Secp256k1VerificationKey2018',
+      publicKeyJwk
+    };
 
-    return [publicKey, privateKey];
+    return [didPublicKey, privateKeyJwk];
+  }
+
+  /**
+   * Generates a random pair of SECP256K1 public-private key-pair in HEX format.
+   * @returns Public key, followed by private key.
+   */
+  public static async generateKeyPairHex (keyId: string): Promise<[DidPublicKey, string]> {
+    let privateKeyBuffer;
+    do {
+      privateKeyBuffer = crypto.randomBytes(32);
+    } while (!secp256k1.privateKeyVerify(privateKeyBuffer));
+
+    const privateKeyHex = privateKeyBuffer.toString('hex');
+
+    const publicKeyBuffer = secp256k1.publicKeyCreate(privateKeyBuffer);
+    const publicKeyHex = publicKeyBuffer.toString('hex');
+
+    const didPublicKey = {
+      id: keyId,
+      type: 'Secp256k1VerificationKey2018',
+      publicKeyHex
+    };
+
+    return [didPublicKey, privateKeyHex];
   }
 
   /**
    * Sigs the given content using the given private key.
    * @param content Content to be signed.
-   * @param privateKeyJwk The JWK object representing a SECP256K1 private-key.
+   * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
    */
-  public static async sign (content: string, privateKeyJwk: any): Promise<string> {
-    const signature = await Secp256k1CryptoSuite.sign(content, privateKeyJwk);
+  public static async sign (content: string, privateKey: string | PrivateKey): Promise<string> {
+
+    let signature;
+    // This is the HEX string case.
+    if (typeof privateKey === 'string') {
+      const hash = Cryptography.sha256hash(Buffer.from(content));
+      const privateKeyBuffer = Buffer.from(privateKey, 'hex');
+      const signatureObject = secp256k1.sign(hash, privateKeyBuffer);
+      signature = Encoder.encode(signatureObject.signature);
+    } else {
+      // This is the JWK case.
+      signature = await Secp256k1CryptoSuite.sign(content, privateKey);
+    }
+
     return signature;
   }
 
@@ -37,10 +82,27 @@ export default class Cryptography {
    * Verifies that the given signature matches the given content being signed.
    * @param content Content signed.
    * @param encodedSignature Encoded signature.
-   * @param publicKeyJwk The JWK object representing a SECP256K1 public-key.
+   * @param publicKey The public key to be used for verification.
+   * @returns true if signature is successfully verified, false otherwise.
    */
-  public static async verifySignature (content: string, encodedSignature: string, publicKeyJwk: any): Promise<boolean> {
-    const verified = await Secp256k1CryptoSuite.verify(content, encodedSignature, publicKeyJwk);
-    return verified;
+  public static async verifySignature (content: string, encodedSignature: string, publicKey: DidPublicKey): Promise<boolean> {
+    try {
+      if (publicKey.type !== 'Secp256k1VerificationKey2018') {
+        return false;
+      }
+
+      let verified = false;
+      if (publicKey.publicKeyHex !== undefined) {
+        const hash = Cryptography.sha256hash(Buffer.from(content));
+        const publicKeyBuffer = Buffer.from(publicKey.publicKeyHex, 'hex');
+        verified = secp256k1.verify(hash, Encoder.decodeAsBuffer(encodedSignature), publicKeyBuffer);
+      } else if (publicKey.publicKeyJwk !== undefined) {
+        verified = await Secp256k1CryptoSuite.verify(content, encodedSignature, publicKey.publicKeyJwk);
+      }
+
+      return verified;
+    } catch {
+      return false;
+    }
   }
 }
