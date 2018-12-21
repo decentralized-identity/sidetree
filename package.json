@@ -18,7 +18,8 @@
     "linked-list-typescript": "^1.0.15",
     "multihashes": "^0.4.14",
     "node-fetch": "^2.3.0",
-    "raw-body": "^2.3.3"
+    "raw-body": "^2.3.3",
+    "secp256k1": "^3.5.2"
   },
   "devDependencies": {
     "@types/bs58": "^3.0.30",
@@ -42,7 +43,7 @@
   },
   "scripts": {
     "precommit": "npm run lint",
-    "build": "tsc && copyfiles json/*.json dist",
+    "build": "tsc && copyfiles json/*.json dist && copyfiles tests/json/*.json dist",
     "test": "jasmine-ts --config=./tests/jasmine.json",
     "cc": "npm run build && nyc jasmine --config=./tests/jasmine-cc.json",
     "lint": "tslint --fix --project .",

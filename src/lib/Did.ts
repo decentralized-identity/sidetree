@@ -2,7 +2,7 @@ import Encoder from '../Encoder';
 import Multihash from '../Multihash';
 
 /**
- * Class reusable reusable DID related operations.
+ * Class containing reusable DID related operations.
  */
 export default class Did {
   /**
