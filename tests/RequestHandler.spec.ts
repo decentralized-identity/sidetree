@@ -23,6 +23,9 @@ describe('RequestHandler', () => {
   const config = new Config(configFile);
   const didMethodName = config[ConfigKey.DidMethodName];
 
+  // Load the DID Document template.
+  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+
   const blockchain = new MockBlockchain();
   let cas: Cas;
   let rooter: Rooter;
@@ -50,7 +53,7 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     [publicKeyJwk, privateKeyJwk] = await Cryptography.generateKeyPair('key1'); // Generate a unique key-pair used for each test.
-    const createOperationBuffer = await OperationGenerator.generateCreateOperation(publicKeyJwk, privateKeyJwk);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
 
     await requestHandler.handleWriteRequest(createOperationBuffer);
     await rooter.rootOperations();
@@ -106,7 +109,7 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(blockchainTime);
 
-    const createRequest = await OperationGenerator.generateCreateOperation(publicKeyJwk, privateKeyJwk);
+    const createRequest = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKeyJwk, privateKeyJwk);
     const response = await requestHandler.handleWriteRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
