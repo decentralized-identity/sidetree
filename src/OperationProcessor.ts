@@ -1,4 +1,5 @@
 import Cryptography from './lib/Cryptography';
+import { Cache, getCache } from './Cache';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
@@ -198,8 +199,14 @@ class OperationProcessorImpl implements OperationProcessor {
 
   private readonly operationStore: OperationStore;
 
+   // Size for the operation cache; TODO: set from a config file?
+  private readonly didCacheSize = 100000;
+
+  private readonly didCache: Cache<VersionId, DidDocument>;
+
   public constructor (private readonly cas: Cas, private didMethodName: string) {
     this.operationStore = new OperationStore(this.cas);
+    this.didCache = getCache(this.didCacheSize);
   }
 
   /**
@@ -345,14 +352,24 @@ class OperationProcessorImpl implements OperationProcessor {
     const op = await this.operationStore.lookup(opHash);
 
     if (this.isInitialVersion(opInfo)) {
-      return WriteOperation.toDidDocument(op, this.didMethodName);
+      const didDocument = WriteOperation.toDidDocument(op, this.didMethodName);
+      this.didCache.store(versionId, didDocument);
+      return didDocument;
     } else {
+
+      const cachedDidDocument = this.didCache.lookup(versionId);
+      if (cachedDidDocument !== undefined) {
+        return cachedDidDocument;
+      }
+
       const prevVersion = op.previousOperationHash!;
       const prevDidDoc = await this.lookup(prevVersion);
       if (prevDidDoc === undefined) {
         return undefined;
       } else {
-        return WriteOperation.applyJsonPatchToDidDocument(prevDidDoc, op.patch!);
+        const didDocument = WriteOperation.applyJsonPatchToDidDocument(prevDidDoc, op.patch!);
+        this.didCache.store(versionId, didDocument);
+        return didDocument;
       }
     }
   }
@@ -525,6 +542,10 @@ class OperationProcessorImpl implements OperationProcessor {
 
     opInfo.status = OperationStatus.Valid;
     this.nextVersion.set(parentOpHash, opHash);
+
+    // To add didDocument to cache
+    await this.lookup(opHash);
+
     return;
   }
 
