@@ -451,11 +451,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(operationHash);
 
     // Fetch the public key to be used for signature verification.
-<<<<<<< HEAD
-    const operation = await this.operationStore.lookup(operationHash, operationInfo);
-=======
     const operation = await this.operationStore.lookup(operationHash);
->>>>>>> master
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
@@ -557,11 +553,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const didDocument = await this.lookup(parentOpHash);
 
     // Fetch the public key to be used for signature verification.
-<<<<<<< HEAD
-    const operation = await this.operationStore.lookup(opHash, opInfo);
-=======
     const operation = await this.operationStore.lookup(opHash);
->>>>>>> master
     const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
 
     // Signature verification.
