@@ -97,7 +97,7 @@ describe('RequestHandler', () => {
 
     // Verfiy that CAS was invoked to store the batch file.
     const batchFileBuffer = await cas.read(batchFileHash);
-    const batchFile = BatchFile.fromBuffer(batchFileBuffer);
+    const batchFile = await BatchFile.fromBuffer(batchFileBuffer);
     expect(batchFile.operations.length).toEqual(1);
   });
 

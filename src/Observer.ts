@@ -46,6 +46,8 @@ export default class Observer {
    * If everything is processed, will for the configured polling interval before processing again.
    */
   public async processTransactions () {
+    Logger.info('Polling for new Sidetree transactions...');
+
     let unhandledErrorOccurred = false;
     let moreTransactions = false;
 
@@ -85,6 +87,8 @@ export default class Observer {
       } else {
         setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
       }
+
+      Logger.info('End of processing new Sidetree transactions.');
     }
   }
 

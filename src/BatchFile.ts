@@ -1,4 +1,5 @@
 import Encoder from './Encoder';
+import JsonAsync from './lib/JsonAsync';
 
 /**
  * Defines the schema of a Batch File and its related operations.
@@ -33,8 +34,8 @@ export default class BatchFile {
   /**
    * Creates a BatchFile object from a batch file buffer.
    */
-  public static fromBuffer (batchFileBuffer: Buffer): BatchFile {
-    const batchFileObject = JSON.parse(batchFileBuffer.toString());
+  public static async fromBuffer (batchFileBuffer: Buffer): Promise<BatchFile> {
+    const batchFileObject = await JsonAsync.parse(batchFileBuffer);
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['operations']);
