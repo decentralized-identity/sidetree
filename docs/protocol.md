@@ -30,8 +30,8 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 # Format and Encoding
 * JSON is used as the data encapsulation format.
-* Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
-* [_Multihash_](https://multiformats.io/multihash/https://multiformats.io/multihash/d) is used to represent hashes.
+* Base64 encoding is used whenever encoding is needed for binary data or cryptographic consistency.
+* [_Multihash_](https://multiformats.io/multihash/) is used to represent hashes.
 
 
 # Sidetree Protocol Versioning & Parameters
@@ -96,7 +96,7 @@ Where the first entry in ```receipt``` is the sibling of the operation hash in t
 ## Sidetree Operation Batching Examples
 The following illustrates the construction of the Merkle tree with an array of 6 operations:
 * The smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
-* Receipt for [0] will be [B, H], and receipt for [5] will be [E, J].
+* Receipt for [0] will be [B, H, I], and receipt for [5] will be [E, J].
 
 ```
                           ROOT=H(K+J)
