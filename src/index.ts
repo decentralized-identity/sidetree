@@ -2,7 +2,7 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import RequestHandler from './RequestHandler';
-import { toHttpStatus, Response } from './Response';
+import { toHttpStatus, Response, ResponseStatus } from './Response';
 
 // TODO: Move the ipfs configuration to a config file.
 let ipfsOptions = {
@@ -10,6 +10,18 @@ let ipfsOptions = {
 };
 const requestHandler = new RequestHandler(ipfsOptions);
 const app = new Koa();
+let timeoutResponse: Response = {
+  status: ResponseStatus.ServerError,
+  body: Buffer.from('Server Timeout Exception')
+};
+
+// Set request timeout to 10 secs
+app.use(ctx => new Promise(resolve => {
+  setTimeout(() => {
+    setKoaResponse(timeoutResponse, ctx.response);
+    resolve();
+  }, 10 * 1000);
+}));
 
 // Raw body parser.
 app.use(async (ctx, next) => {
