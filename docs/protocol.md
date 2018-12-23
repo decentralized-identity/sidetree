@@ -255,7 +255,7 @@ POST /<api-version>/
 }
 ```
 
-In Sidetree implementation, certain properties or portion of which in teh initial DID Document will be ignored:
+In Sidetree implementation, certain properties or portion of which in the initial DID Document will be ignored:
 * `id` - Ignored.
 * `publicKey\*\id` - DID portion is ignored.
 
