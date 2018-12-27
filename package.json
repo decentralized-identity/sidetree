@@ -31,6 +31,7 @@
     "nodemon": "^1.18.9",
     "npm-run-all": "^4.1.5",
     "nyc": "^13.0.1",
+    "supertest": "^3.3.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.11.0",
     "tslint-config-standard": "^8.0.1",

@@ -12,7 +12,7 @@ const requestHandler = new RequestHandler(ipfsOptions);
 const app = new Koa();
 let timeoutResponse: Response = {
   status: ResponseStatus.ServerError,
-  body: Buffer.from('Server Timeout Exception')
+  body: Buffer.from(JSON.stringify({Error: 'Server Timeout Exception'}))
 };
 
 // Set request timeout to 10 secs
@@ -52,7 +52,7 @@ app.use((ctx, _next) => {
 });
 const port = 3001;
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Sidetree-IPFS node running on port: ${port}`);
 });
 
@@ -71,3 +71,5 @@ const setKoaResponse = (response: Response, koaResponse: Koa.Response, contentTy
   }
   koaResponse.body = response.body;
 };
+
+module.exports = server;
