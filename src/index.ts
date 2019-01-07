@@ -5,9 +5,11 @@ import RequestHandler from './RequestHandler';
 import { toHttpStatus, Response } from './Response';
 import { Config, ConfigKey } from './Config';
 import TransactionNumber from './TransactionNumber';
+import * as querystring from 'querystring';
 
 const configFile = require('../json/config.json');
 const config = new Config(configFile);
+
 const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
 const prefix = config[ConfigKey.SidetreeTransactionPrefix];
 
@@ -25,9 +27,18 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 
-router.get('/transactions/:since*/:transactionTimeHash*', async (ctx, _next) => {
-  const response = await requestHandler.handleFetchRequest(ctx.params.since, ctx.params.transactionTimeHash);
-  setKoaResponse(response, ctx.response);
+router.get('/transactions', async (ctx, _next) => {
+
+  const params = querystring.parse(ctx.querystring);
+  if ('since' in params && 'transaction-time-hash' in params) {
+    const since = Number(params['since']);
+    const transactionTimeHash = String(params['transaction-time-hash']);
+    const response = await requestHandler.handleFetchRequest(since, transactionTimeHash);
+    setKoaResponse(response, ctx.response);
+  } else {
+    const response = await requestHandler.handleFetchRequest();
+    setKoaResponse(response, ctx.response);
+  }
 });
 
 router.post('/transactions', async (ctx, _next) => {

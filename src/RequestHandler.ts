@@ -8,10 +8,18 @@ import TransactionNumber from './TransactionNumber';
  */
 export default class RequestHandler {
 
+  /**
+   * @param bitcoreSidetreeServiceUri URI for the blockchain service
+   * @param sidetreeTransactionPrefix prefix used to identify Sidetree transactions in Bitcoin's blockchain
+   * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
+   * @param genesisTimeHash the corresponding timehash of genesis transaction number
+   */
   public constructor (public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: TransactionNumber,
-    public genesisTimeHash: string) { }
+    public genesisTimeHash: string) {
+
+  }
 
   private buildTransactionsList (hashes: string[], blockNumber: number, blockHash: string, prefix: string) {
     let transactions = [];
@@ -197,14 +205,14 @@ export default class RequestHandler {
       body: {}
     };
 
-    let since;
-    let transactionTimeHash;
+    let since = this.genesisTransactionNumber.getTransactionNumber();
+    let transactionTimeHash = this.genesisTimeHash;
 
     // determine default values for optional parameters
-    if (sinceOptional) {
+    if (sinceOptional !== undefined) {
       since = sinceOptional;
 
-      if (transactionTimeHashOptional) {
+      if (transactionTimeHashOptional !== undefined) {
         transactionTimeHash = transactionTimeHashOptional;
       } else {
         // if since was supplied, transactionTimeHash must exist
@@ -213,9 +221,6 @@ export default class RequestHandler {
           body: {}
         };
       }
-    } else {
-      since = this.genesisTransactionNumber.getTransactionNumber();
-      transactionTimeHash = this.genesisTimeHash;
     }
 
     let transactionNumber = new TransactionNumber(0, 0);
