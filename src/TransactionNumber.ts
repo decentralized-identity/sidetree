@@ -36,7 +36,7 @@ export default class TransactionNumber {
    * Returns the block number component of transactionNumber
    */
   public getBlockNumber () {
-    let blockNumber = this.transactionNumber / (2 ** this.bitWidth);
+    let blockNumber = Math.floor(this.transactionNumber / (2 ** this.bitWidth));
     return blockNumber;
   }
 
