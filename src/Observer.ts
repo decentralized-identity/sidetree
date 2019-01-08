@@ -61,7 +61,11 @@ export default class Observer {
         // Get all the new transactions.
         const lastProcessedTransactionNumber = this.lastProcessedTransaction ?
           this.lastProcessedTransaction.transactionNumber : undefined;
-        const readResult = await this.blockchain.read(lastProcessedTransactionNumber);
+
+        const lastProcessedTransactionTimeHash = this.lastProcessedTransaction ?
+          this.lastProcessedTransaction.transactionTimeHash : undefined;
+
+        const readResult = await this.blockchain.read(lastProcessedTransactionNumber, lastProcessedTransactionTimeHash);
         transactions = readResult.transactions;
         moreTransactions = readResult.moreTransactions;
       }

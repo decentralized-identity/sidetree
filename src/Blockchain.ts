@@ -16,11 +16,13 @@ export interface Blockchain {
   /**
    * Gets Sidetree transactions in chronological order.
    * The function call may not return all known transactions, moreTransaction indicates if there are more transactions to be fetched.
-   * When afterTransaction is not given, Sidetree transactions starting from inception will be returned.
-   * When afterTransaction is given, only Sidetree transaction after the given transaction will be returned.
-   * @param afterTransaction A valid Sidetree transaction number.
+   * When sinceTransactionNumber is not given, Sidetree transactions starting from inception will be returned.
+   * When sinceTransactionNumber is given, only Sidetree transaction after the given transaction will be returned.
+   * @param sinceTransactionNumber A valid Sidetree transaction number.
+   * @param transactionTimeHash The hash associated with the anchored time of the transaction number given.
+   *                            Required if and only if sinceTransactionNumber is provided.
    */
-  read (afterTransaction?: number): Promise<{ moreTransactions: boolean, transactions: Transaction[] }>;
+  read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: Transaction[] }>;
 
   /**
    * Gets the latest blockchain time.
@@ -59,17 +61,21 @@ export class BlockchainClient implements Blockchain {
     }
   }
 
-  public async read (afterTransaction?: number): Promise<{ moreTransactions: boolean, transactions: Transaction[]}> {
-    let afterQueryParameter = '';
-    if (afterTransaction) {
-      afterQueryParameter = `?after=${afterTransaction}`;
+  public async read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: Transaction[]}> {
+    if ((sinceTransactionNumber !== undefined && transactionTimeHash === undefined) ||
+        (sinceTransactionNumber === undefined && transactionTimeHash !== undefined)) {
+      throw new Error('Transaction number and time hash must both be given or not given at the same time.');
     }
 
-    const readUri = this.transactionsUri + afterQueryParameter; // e.g. https://127.0.0.1/transactions?after=23
+    let queryString = '';
+    if (sinceTransactionNumber !== undefined && transactionTimeHash !== undefined) {
+      queryString = `?since=${sinceTransactionNumber}&transaction-time-hash=${transactionTimeHash}`;
+    }
+
+    const readUri = this.transactionsUri + queryString; // e.g. https://127.0.0.1/transactions?since=6212927891701761&transaction-time-hash=abc
 
     const requestParameters = {
-      method: 'get',
-      headers: { 'Content-Type': 'application/json' }
+      method: 'get'
     };
     const response = await nodeFetch(readUri, requestParameters);
 
