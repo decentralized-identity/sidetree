@@ -227,7 +227,7 @@ None.
   This is the hash associated with the time the transaction specified by the `since` parameter is anchored on blockchain.
   Multiple transactions can have the same _transaction time_ and thus the same _transaction time hash_.
 
-  The _transaction time hash_ helps the blockchain layer detect block reorganizations (temporary forks) and inform the requester using `HTTP 404` on such events.
+  The _transaction time hash_ helps the blockchain layer detect block reorganizations (temporary forks), `HTTP 400 Bad Request` with `invalid_transaction_number_or_time_hash` in the response body is returned on such events.
 
 ### Request example
 ```
@@ -250,8 +250,10 @@ GET /v1.0/transactions?since=170&transaction-time-hash=0000000000000000000010015
 }
 ```
 
-### Response body example
-```json
+### Response example
+```http
+HTTP/1.1 200 OK
+
 {
   "moreTransactions": false,
   "transactions": [
@@ -269,6 +271,13 @@ GET /v1.0/transactions?since=170&transaction-time-hash=0000000000000000000010015
     }
   ]
 }
+```
+
+### Response example - Bad request
+```http
+HTTP/1.1 400 Bad Request
+
+invalid_transaction_number_or_time_hash
 ```
 
 
