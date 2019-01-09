@@ -3,7 +3,7 @@
  */
 interface Response {
   status: ResponseStatus;
-  body: object;
+  body?: object;
 }
 /**
  * Possible Sidetree response status.

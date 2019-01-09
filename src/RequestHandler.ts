@@ -277,9 +277,19 @@ export default class RequestHandler {
 
   /**
    * Handles sidetree transaction anchor request
-   * @param anchorFileHash  Sidetree transaction to write into the underlying blockchain.
+   * @param requestBody Request body containing the anchor file hash.
    */
-  public async handleAnchorRequest (anchorFileHash: string): Promise<Response> {
+  public async handleAnchorRequest (requestBody: Buffer): Promise<Response> {
+    const jsonBody = JSON.parse(requestBody.toString());
+    const anchorFileHash = jsonBody.anchorFileHash;
+
+    // Respond with 'bad request' if no anchor file hash was given.
+    if (!anchorFileHash) {
+      return {
+        status: ResponseStatus.BadRequest
+      };
+    }
+
     const prefix = this.sidetreeTransactionPrefix;
     const baseUrl = this.bitcoreSidetreeServiceUri;
     const sidetreeTransaction = prefix + anchorFileHash;

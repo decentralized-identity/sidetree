@@ -42,7 +42,7 @@ router.get('/transactions', async (ctx, _next) => {
 });
 
 router.post('/transactions', async (ctx, _next) => {
-  const response = await requestHandler.handleAnchorRequest(ctx.body.anchorFileHash);
+  const response = await requestHandler.handleAnchorRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 

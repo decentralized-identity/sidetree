@@ -47,7 +47,12 @@ describe('RequestHandler', () => {
       body: {}
     };
 
-    const fetchedResponse = await requestHandler.handleAnchorRequest("hellow");
+    const anchorRequestBody = {
+      anchorFileHash: 'hellow'
+    };
+    const anchorRequestBodyBuffer = Buffer.from(JSON.stringify(anchorRequestBody));
+
+    const fetchedResponse = await requestHandler.handleAnchorRequest(anchorRequestBodyBuffer);
     expect(expectedResponse.status).toEqual(fetchedResponse.status);
   });
 
