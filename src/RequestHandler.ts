@@ -16,7 +16,7 @@ export default class RequestHandler {
    */
   public constructor (public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
-    public genesisTransactionNumber: TransactionNumber,
+    public genesisTransactionNumber: number,
     public genesisTimeHash: string) {
 
   }
@@ -25,14 +25,14 @@ export default class RequestHandler {
     blockNumber: number,
     blockHash: string,
     prefix: string,
-    sinceTransactionNumber: TransactionNumber) {
+    sinceTransactionNumber: number) {
 
-    let transactions = [];
+    const transactions = [];
     for (let j = 0; j < hashes.length; j++) {
-      let transactionNumber = new TransactionNumber(blockNumber, j);
-      if (transactionNumber.getTransactionNumber() > sinceTransactionNumber.getTransactionNumber()) {
+      const transactionNumber = TransactionNumber.construct(blockNumber, j);
+      if (transactionNumber > sinceTransactionNumber) {
         transactions.push({
-          'transactionNumber': transactionNumber.getTransactionNumber(),
+          'transactionNumber': transactionNumber,
           'transactionTime': blockNumber,
           'transactionTimeHash': blockHash,
           'anchorFileHash': hashes[j].slice(prefix.length)
@@ -44,12 +44,12 @@ export default class RequestHandler {
   }
 
   /**
-   * Fetches a block from Bitcoin's blockchain
+   * Fetches transactions that are new than the specified transaction in the specified block.
    * @param blockNumber specifies the blocknumber that will be examined
    * @param isInternalBlock specifies whether the block that will be examined is the current tail of the blockchain
    * @param sinceTransactionNumber specifies the transaction number that the caller already knows
    */
-  private async handleFetchBlock (blockNumber: number, isInternalBlock: boolean, sinceTransactionNumber: TransactionNumber): Promise<Response> {
+  private async handleFetchBlock (blockNumber: number, isInternalBlock: boolean, sinceTransactionNumber: number): Promise<Response> {
     const prefix = this.sidetreeTransactionPrefix;
     const baseUrl = this.bitcoreSidetreeServiceUri;
     const requestParameters = {
@@ -107,8 +107,8 @@ export default class RequestHandler {
     }
   }
 
-  private async handleFetchRequestHelper (transactionNumber: TransactionNumber, blockNumberLast: number): Promise<Response> {
-    let defaultResponse = {
+  private async handleFetchRequestHelper (transactionNumber: number, blockNumberLast: number): Promise<Response> {
+    const defaultResponse = {
       status: ResponseStatus.Succeeded,
       body: {
         'moreTransactions': false,
@@ -119,14 +119,14 @@ export default class RequestHandler {
     // loop from the block corresponding to the requested block number until the tip of the blockchain
     // return as soon as we find any Sidetree transaction and use "moreTransactions" to ask the caller
     // to call this API for more
-    for (let blockNumber = transactionNumber.getBlockNumber(); blockNumber <= blockNumberLast; blockNumber++) {
+    for (let blockNumber = TransactionNumber.getBlockNumber(transactionNumber); blockNumber <= blockNumberLast; blockNumber++) {
       let isInternalBlock = false;
 
       if (blockNumber < blockNumberLast) {
         isInternalBlock = true;
       }
 
-      let response = await this.handleFetchBlock(blockNumber, isInternalBlock, transactionNumber);
+      const response = await this.handleFetchBlock(blockNumber, isInternalBlock, transactionNumber);
 
       if (response.status === ResponseStatus.Succeeded) {
         return response;
@@ -141,14 +141,14 @@ export default class RequestHandler {
     return defaultResponse;
   }
 
-  private async verifyTransactionTimeHash (transactionNumber: TransactionNumber, transactionTimeHash: string) {
-    let errorResponse = {
+  private async verifyTransactionTimeHash (transactionNumber: number, transactionTimeHash: string) {
+    const errorResponse = {
       status: ResponseStatus.ServerError,
       body: {}
     };
 
     try {
-      let blockResponse = await this.handleBlockByHeightRequest(transactionNumber.getBlockNumber());
+      const blockResponse = await this.handleBlockByHeightRequest(TransactionNumber.getBlockNumber(transactionNumber));
       if (blockResponse.status === ResponseStatus.Succeeded) {
         const blockResponseBody = JSON.parse(JSON.stringify(blockResponse.body));
 
@@ -177,21 +177,17 @@ export default class RequestHandler {
    */
 
   public async handleTraceRequest (transactions: string): Promise<Response> {
-    let transactionsObj = JSON.parse(transactions)['transactions'];
+    const transactionsObj = JSON.parse(transactions)['transactions'];
 
-    let response = [];
+    const response = [];
     for (let i = 0; i < transactionsObj.length; i++) {
-      let transaction = transactionsObj[i];
-      let transactionNumber = transaction['transactionNumber'];
-      let transactionTimeHash = transaction['transactionTimeHash'];
-
-      let transactionNumberObject = new TransactionNumber(0, 0);
-      transactionNumberObject.setTransactionNumber(transactionNumber);
-
-      let verifyResponse = await this.verifyTransactionTimeHash(transactionNumberObject, transactionTimeHash);
+      const transaction = transactionsObj[i];
+      const transactionNumber = transaction['transactionNumber'];
+      const transactionTimeHash = transaction['transactionTimeHash'];
+      const verifyResponse = await this.verifyTransactionTimeHash(transactionNumber, transactionTimeHash);
 
       if (verifyResponse.status === ResponseStatus.Succeeded) {
-        let verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
+        const verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
 
         response.push({
           'transactionNumber': transactionNumber,
@@ -217,22 +213,22 @@ export default class RequestHandler {
 
   /**
    * Handles the fetch request
-   * @param since specifies the minimum Sidetree transaction number that the caller is interested in
-   * @param transactionTimeHash specifies the transactionTimeHash corresponding to the since parameter
+   * @param sinceOptional specifies the minimum Sidetree transaction number that the caller is interested in
+   * @param transactionTimeHashOptional specifies the transactionTimeHash corresponding to the since parameter
    */
   public async handleFetchRequest (sinceOptional?: number, transactionTimeHashOptional?: string): Promise<Response> {
 
-    let errorResponse = {
+    const errorResponse = {
       status: ResponseStatus.ServerError,
       body: {}
     };
 
-    let since = this.genesisTransactionNumber.getTransactionNumber();
+    let sinceTransactionNumber = this.genesisTransactionNumber;
     let transactionTimeHash = this.genesisTimeHash;
 
     // determine default values for optional parameters
     if (sinceOptional !== undefined) {
-      since = sinceOptional;
+      sinceTransactionNumber = sinceOptional;
 
       if (transactionTimeHashOptional !== undefined) {
         transactionTimeHash = transactionTimeHashOptional;
@@ -245,13 +241,10 @@ export default class RequestHandler {
       }
     }
 
-    let transactionNumber = new TransactionNumber(0, 0);
-    transactionNumber.setTransactionNumber(since);
-
     // verify the validity of since and transactionTimeHash
-    let verifyResponse = await this.verifyTransactionTimeHash(transactionNumber, transactionTimeHash);
+    const verifyResponse = await this.verifyTransactionTimeHash(sinceTransactionNumber, transactionTimeHash);
     if (verifyResponse.status === ResponseStatus.Succeeded) {
-      let verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
+      const verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
 
       // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
       if (verifyResponseBody['match'] === false) {
@@ -269,7 +262,7 @@ export default class RequestHandler {
 
     // get the height of the tip of the blockchain
     let blockNumberTip = 0;
-    let blockResponse = await this.handleLastBlockRequest();
+    const blockResponse = await this.handleLastBlockRequest();
     if (blockResponse.status === ResponseStatus.Succeeded) {
       const blockResponseBody = JSON.parse(JSON.stringify(blockResponse.body));
       blockNumberTip = blockResponseBody['time'];
@@ -278,7 +271,7 @@ export default class RequestHandler {
     }
 
     // produce a list of Sidetree transactions starting from the transactionNumber until blockNumberTip
-    let response = this.handleFetchRequestHelper(transactionNumber, blockNumberTip);
+    const response = this.handleFetchRequestHelper(sinceTransactionNumber, blockNumberTip);
     return response;
   }
 

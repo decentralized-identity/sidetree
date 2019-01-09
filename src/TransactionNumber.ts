@@ -3,48 +3,33 @@
  */
 export default class TransactionNumber {
 
-  private bitWidth: number;
+  /* We set blockNumber and position to be 32 bits each */
+  private static readonly bitWidth = 32;
 
   /**
-   * datatype to store the transaction number
+   * Constructs the transaction number given the block number and position of the transaction in the block.
    */
-  public transactionNumber: number;
-
-  /* We assume blockNumber and position to be 32 bits each */
-  public constructor (blockNumber: number, position: number) {
-    this.bitWidth = 32;
-    this.transactionNumber =
+  public static construct (blockNumber: number, position: number) {
+    const transactionNumber =
       blockNumber * (2 ** this.bitWidth)
       + position;
-  }
 
-  /**
-   * Sets the transaction number
-   */
-  public setTransactionNumber (transactionNumber: number) {
-    this.transactionNumber = transactionNumber;
-  }
-
-  /**
-   * Returns the transaction number
-   */
-  public getTransactionNumber () {
-    return this.transactionNumber;
+    return transactionNumber;
   }
 
   /**
    * Returns the block number component of transactionNumber
    */
-  public getBlockNumber () {
-    let blockNumber = Math.floor(this.transactionNumber / (2 ** this.bitWidth));
+  public static getBlockNumber (transactionNumber: number) {
+    const blockNumber = Math.floor(transactionNumber / (2 ** this.bitWidth));
     return blockNumber;
   }
 
   /**
    * Returns the position component of transactionNumber
    */
-  public getPosition () {
-    let mask = 2 ** this.bitWidth - 1;
-    return (this.transactionNumber & mask);
+  public getPosition (transactionNumber: number) {
+    const mask = 2 ** TransactionNumber.bitWidth - 1;
+    return (transactionNumber & mask);
   }
 }

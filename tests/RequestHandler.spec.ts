@@ -9,7 +9,7 @@ describe('RequestHandler', () => {
   const config = new Config(configFile);
   const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
   const prefix = config[ConfigKey.SidetreeTransactionPrefix];
-  const genesisTransactionNumber = new TransactionNumber(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
+  const genesisTransactionNumber = TransactionNumber.construct(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
   const genesisTimeHash = config[ConfigKey.BitcoinSidetreeGenesisBlockHash];
 
   const requestHandler = new RequestHandler(uri, prefix, genesisTransactionNumber, genesisTimeHash);
@@ -60,9 +60,9 @@ describe('RequestHandler', () => {
       }
     }
 
-    var transactionNumber = new TransactionNumber(1446559, 0);
+    var transactionNumber = TransactionNumber.construct(1446559, 0);
     var transactionTimeHash = "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe";
-    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber.getTransactionNumber(), transactionTimeHash);
+    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
 
@@ -83,9 +83,9 @@ describe('RequestHandler', () => {
     }
 
 
-    var transactionNumber = new TransactionNumber(1446557, 0);
+    var transactionNumber = TransactionNumber.construct(1446557, 0);
     var transactionTimeHash = "000000000000005f62979f4e2edf33efffe3148d2d8fec3b9c64d8d8f190fd07";
-    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber.getTransactionNumber(), transactionTimeHash);
+    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
 
@@ -110,10 +110,9 @@ describe('RequestHandler', () => {
       }
     }
 
-    var transactionNumber = new TransactionNumber(0, 0);
-    transactionNumber.setTransactionNumber(6212927891701760);
-    var transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
-    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber.getTransactionNumber(), transactionTimeHash);
+    const transactionNumber = 6212927891701760;
+    const transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
+    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
 

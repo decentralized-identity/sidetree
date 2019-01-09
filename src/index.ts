@@ -13,7 +13,7 @@ const config = new Config(configFile);
 const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
 const prefix = config[ConfigKey.SidetreeTransactionPrefix];
 
-const genesisTransactionNumber = new TransactionNumber(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
+const genesisTransactionNumber = TransactionNumber.construct(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
 const genesisTimeHash = config[ConfigKey.BitcoinSidetreeGenesisBlockHash];
 
 const requestHandler = new RequestHandler(uri, prefix, genesisTransactionNumber, genesisTimeHash);
