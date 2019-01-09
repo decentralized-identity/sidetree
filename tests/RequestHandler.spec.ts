@@ -51,6 +51,22 @@ describe('RequestHandler', () => {
     expect(expectedResponse.status).toEqual(fetchedResponse.status);
   });
 
+
+  it('should return the HTTP 400 for reogranized transactions request', async () => {
+    const expectedResponse: Response = {
+      "status": ResponseStatus.BadRequest,
+      "body": {
+        'code': 'invalid_transaction_number_or_time_hash'
+      }
+    }
+
+    var transactionNumber = new TransactionNumber(1446559, 0);
+    var transactionTimeHash = "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe";
+    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber.getTransactionNumber(), transactionTimeHash);
+    expect(expectedResponse).toEqual(fetchedResponse);
+  });
+
+
   it('should return the correct response body with content for transactions request', async () => {
     const expectedResponse: Response = {
       "status": ResponseStatus.Succeeded,
@@ -69,6 +85,34 @@ describe('RequestHandler', () => {
 
     var transactionNumber = new TransactionNumber(1446557, 0);
     var transactionTimeHash = "000000000000005f62979f4e2edf33efffe3148d2d8fec3b9c64d8d8f190fd07";
+    const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber.getTransactionNumber(), transactionTimeHash);
+    expect(expectedResponse).toEqual(fetchedResponse);
+  });
+
+  // check if pagination works even within a block
+  it('should return the correct response body with content for transactions request', async () => {
+    const expectedResponse: Response = {
+      "status": ResponseStatus.Succeeded,
+      "body": {
+        "moreTransactions": true,
+        "transactions": [
+          {
+            "transactionNumber": 6212927891701761,
+            "transactionTime": 1446560,
+            "transactionTimeHash": "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199",
+            "anchorFileHash": "hellow"
+          }, {
+            "transactionNumber": 6212927891701762,
+            "transactionTime": 1446560,
+            "transactionTimeHash": "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199",
+            "anchorFileHash": "hellow"
+          }]
+      }
+    }
+
+    var transactionNumber = new TransactionNumber(0, 0);
+    transactionNumber.setTransactionNumber(6212927891701760);
+    var transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
     const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber.getTransactionNumber(), transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });

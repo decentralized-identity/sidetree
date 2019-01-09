@@ -21,34 +21,47 @@ export default class RequestHandler {
 
   }
 
-  private buildTransactionsList (hashes: string[], blockNumber: number, blockHash: string, prefix: string) {
+  private buildTransactionsList (hashes: string[],
+    blockNumber: number,
+    blockHash: string,
+    prefix: string,
+    sinceTransactionNumber: TransactionNumber) {
+
     let transactions = [];
     for (let j = 0; j < hashes.length; j++) {
       let transactionNumber = new TransactionNumber(blockNumber, j);
-      transactions.push({
-        'transactionNumber': transactionNumber.getTransactionNumber(),
-        'transactionTime': blockNumber,
-        'transactionTimeHash': blockHash,
-        'anchorFileHash': hashes[j].slice(prefix.length)
-      });
+      if (transactionNumber.getTransactionNumber() > sinceTransactionNumber.getTransactionNumber()) {
+        transactions.push({
+          'transactionNumber': transactionNumber.getTransactionNumber(),
+          'transactionTime': blockNumber,
+          'transactionTimeHash': blockHash,
+          'anchorFileHash': hashes[j].slice(prefix.length)
+        });
+      }
     }
 
     return transactions;
   }
 
-  private async handleFetchBlock (blockNumber: number, isInternalBlock: boolean) {
+  /**
+   * Fetches a block from Bitcoin's blockchain
+   * @param blockNumber specifies the blocknumber that will be examined
+   * @param isInternalBlock specifies whether the block that will be examined is the current tail of the blockchain
+   * @param sinceTransactionNumber specifies the transaction number that the caller already knows
+   */
+  private async handleFetchBlock (blockNumber: number, isInternalBlock: boolean, sinceTransactionNumber: TransactionNumber): Promise<Response> {
     const prefix = this.sidetreeTransactionPrefix;
     const baseUrl = this.bitcoreSidetreeServiceUri;
     const requestParameters = {
       method: 'get'
     };
 
-    let errorResponse = {
+    const errorResponse = {
       status: ResponseStatus.ServerError,
       body: {}
     };
 
-    let queryString = '/transactions/' + blockNumber + '/' + prefix;
+    const queryString = '/transactions/' + blockNumber + '/' + prefix;
     const uri = baseUrl + queryString;
 
     try {
@@ -57,19 +70,28 @@ export default class RequestHandler {
         const responseBodyString = (content.body.read() as Buffer).toString();
         const contentBody = JSON.parse(responseBodyString);
 
-        let blockHash = contentBody['blockHash'];
-        let hashes = contentBody['hashes'];
+        const blockHash = contentBody['blockHash'];
+        const hashes = contentBody['hashes'];
 
         // check if there are Sidetree transactions in the given block
         if (hashes.length > 0) {
-          let transactions = this.buildTransactionsList(hashes, blockNumber, blockHash, prefix);
-          return {
-            status: ResponseStatus.Succeeded,
-            body: {
-              'moreTransactions': isInternalBlock,
-              'transactions': transactions
-            }
-          };
+          const transactions = this.buildTransactionsList(hashes, blockNumber, blockHash, prefix, sinceTransactionNumber);
+
+          if (transactions.length > 0) {
+            return {
+              status: ResponseStatus.Succeeded,
+              body: {
+                'moreTransactions': isInternalBlock,
+                'transactions': transactions
+              }
+            };
+          } else {
+            // We found Sidetree transactions but their transaction numbers are not larger than sinceTransactionNumber
+            return {
+              status: ResponseStatus.NotFound,
+              body: {}
+            };
+          }
         } else {
           // we didn't find any Sidetree transactions in the requested block, so return 404 to the caller
           return {
@@ -97,14 +119,14 @@ export default class RequestHandler {
     // loop from the block corresponding to the requested block number until the tip of the blockchain
     // return as soon as we find any Sidetree transaction and use "moreTransactions" to ask the caller
     // to call this API for more
-    for (let blockNumber = transactionNumber.getBlockNumber() + 1; blockNumber <= blockNumberLast; blockNumber++) {
+    for (let blockNumber = transactionNumber.getBlockNumber(); blockNumber <= blockNumberLast; blockNumber++) {
       let isInternalBlock = false;
 
       if (blockNumber < blockNumberLast) {
         isInternalBlock = true;
       }
 
-      let response = await this.handleFetchBlock(blockNumber, isInternalBlock);
+      let response = await this.handleFetchBlock(blockNumber, isInternalBlock, transactionNumber);
 
       if (response.status === ResponseStatus.Succeeded) {
         return response;
@@ -231,11 +253,13 @@ export default class RequestHandler {
     if (verifyResponse.status === ResponseStatus.Succeeded) {
       let verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
 
-      // return HTTP 404 if the requested transactionNumber does not match the transactionTimeHash
+      // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
       if (verifyResponseBody['match'] === false) {
         return {
-          status: ResponseStatus.NotFound,
-          body: {}
+          status: ResponseStatus.BadRequest,
+          body: {
+            'code': 'invalid_transaction_number_or_time_hash'
+          }
         };
       }
     } else {
