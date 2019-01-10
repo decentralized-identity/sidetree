@@ -227,7 +227,7 @@ None.
   This is the hash associated with the time the transaction specified by the `since` parameter is anchored on blockchain.
   Multiple transactions can have the same _transaction time_ and thus the same _transaction time hash_.
 
-  The _transaction time hash_ helps the blockchain layer detect block reorganizations (temporary forks), `HTTP 400 Bad Request` with `invalid_transaction_number_or_time_hash` in the response body is returned on such events.
+  The _transaction time hash_ helps the blockchain layer detect block reorganizations (temporary forks); `HTTP 400 Bad Request` with `invalid_transaction_number_or_time_hash` as the `code` parameter value in a JSON body is returned on such events.
 
 ### Request example
 ```
@@ -273,11 +273,14 @@ HTTP/1.1 200 OK
 }
 ```
 
-### Response example - Bad request
+### Response example - Block reorganization detected
+
 ```http
 HTTP/1.1 400 Bad Request
 
-invalid_transaction_number_or_time_hash
+{
+  "Code": "invalid_transaction_number_or_time_hash"
+}
 ```
 
 
@@ -379,15 +382,14 @@ POST /<api-version>/transactions
 ### Request body schema
 ```json
 {
-  "anchorFileHash": "A Sidetree file hash."
+  "anchorFileHash": "The hash of a Sidetree anchor file."
 }
 ```
 
 ### Request example
-```
-POST /v1.0/transactions
-```
-```json
+```http
+POST /v1.0/transactions HTTP/1.1
+
 {
   "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
 }
@@ -435,6 +437,12 @@ GET /v1.0/QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
 | Name                  | Value                  |
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/octet-stream``` |
+
+### Response example - Resoucre not found
+
+```http
+HTTP/1.1 404 Not Found
+```
 
 
 ## Write content
