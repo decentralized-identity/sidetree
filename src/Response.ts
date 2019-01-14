@@ -11,7 +11,8 @@ interface Response {
 enum ResponseStatus {
   Succeeded,
   BadRequest,
-  ServerError
+  ServerError,
+  NotFound
 }
 /**
  * Converts a Sidetree response status to an HTTP status.
@@ -22,6 +23,8 @@ function toHttpStatus (status: ResponseStatus): number {
       return 200;
     case ResponseStatus.BadRequest:
       return 400;
+    case ResponseStatus.NotFound:
+      return 404;
     default:
       return 500;
   }

@@ -10,9 +10,9 @@ let ipfsOptions = {
 };
 const requestHandler = new RequestHandler(ipfsOptions);
 const app = new Koa();
-let timeoutResponse: Response = {
-  status: ResponseStatus.ServerError,
-  body: Buffer.from(JSON.stringify({Error: 'Server Timeout Exception'}))
+const timeoutResponse: Response = {
+  status: ResponseStatus.NotFound,
+  body: Buffer.from(JSON.stringify({Error: 'Resource Not Found'}))
 };
 
 // Set request timeout to 10 secs
