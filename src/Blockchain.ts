@@ -1,5 +1,6 @@
 import * as HttpStatus from 'http-status';
 import BlockchainTime from './BlockchainTime';
+import Logger from './lib/Logger';
 import nodeFetch from 'node-fetch';
 import Transaction from './Transaction';
 
@@ -77,7 +78,10 @@ export class BlockchainClient implements Blockchain {
     const requestParameters = {
       method: 'get'
     };
+
+    Logger.info(`Fetching URI '${readUri}'...`);
     const response = await nodeFetch(readUri, requestParameters);
+    Logger.info(`Fetch URI '${readUri}' response: ${response.status}'.`);
 
     if (response.status !== HttpStatus.OK) {
       throw new Error('Encountered an error fetching Sidetree transactions from blockchain.');
