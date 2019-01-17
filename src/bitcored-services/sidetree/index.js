@@ -5,13 +5,10 @@ delete global._bitcore;
 var inherits = require('util').inherits;
 var EventEmitter = require('events').EventEmitter;
 var bitcore = require('bitcore-lib');
-var BufferUtil = bitcore.util.buffer;
-var Networks = bitcore.Networks;
-var Block = bitcore.Block;
 var $ = bitcore.util.preconditions;
 var config = require('./config.json');
 
-function SidetreeBlockchainService(options) {
+function SidetreeBlockchainService (options) {
   EventEmitter.call(this);
   this.node = options.node;
 
@@ -45,53 +42,15 @@ SidetreeBlockchainService.prototype.getRoutePrefix = function () {
   return 'SidetreeBlockchainService';
 };
 
-function headers(response) {
+function setHeaders (response) {
   response.set('Access-Control-Allow-Origin', '*');
   response.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT');
-  response.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  response.set('Access-Control-Allow-setHeaders', 'Origin, X-Requested-With, Content-Type, Accept');
 }
 
-//returns the UTXOs associated with an address
-SidetreeBlockchainService.prototype.getAddressInfo = function (request, response, next) {
-  headers(response);
 
-  var self = this;
-  var addr = request.params.address;
-  this.node.getAddressUnspentOutputs(addr, {}, function (err, unspentOutputs) {
-    if (err) {
-      self.log.info('error retrieving information', err);
-      return response.send(500, err);
-    }
-    response.send(unspentOutputs);
-  });
-};
-
-// anchors a given string on Bitcoin by constructing a bitcoin transaction and transmitting it to the blockchain network
-SidetreeBlockchainService.prototype.anchorBitcoinTransaction = function (request, response, next) {
-  headers(response);
-  var self = this;
-  var sidetreeTransaction = request.body.transaction;
-
-  var privateKeyWIF = config.privateKeyWIF;
-  var privateKey = bitcore.PrivateKey.fromWIF(privateKeyWIF);
-  var address = privateKey.toAddress();
-
-  var fees = config.fees;
-
-  this.node.getAddressUnspentOutputs(address.toString(), {}, function (err, unspentOutputs) {
-    if (err) {
-      self.log.info('error retrieving information', err);
-      return response.status(500).send(err);
-    }
-
-    var tx = constructBitcoinTransaction(unspentOutputs, sidetreeTransaction, address, privateKey, fees);
-
-    // anchor the transaction on the Bitcoin blockchain
-    submitBitcoinTransaction(self, tx, response);
-  });
-};
-
-function constructBitcoinTransaction(unspentOutputs, sidetreeTransaction, address, privateKey, fees) {
+function constructBitcoinTransaction (unspentOutputs, sidetreeTransaction, privateKey, fees) {
+  const address = privateKey.toAddress();
   var tx = bitcore.Transaction();
   tx.from(unspentOutputs);
   tx.addOutput(new bitcore.Transaction.Output({
@@ -104,10 +63,10 @@ function constructBitcoinTransaction(unspentOutputs, sidetreeTransaction, addres
   return tx;
 }
 
-function submitBitcoinTransaction(self, tx, response) {
+function submitBitcoinTransaction (self, tx, response) {
   self.node.sendTransaction(tx, function (err, transactionId) {
     if (err) {
-      self.log.info('error anchoring your transaction on Bitcoin', err);
+      self.log.error('error anchoring your transaction on Bitcoin', err);
       return response.status(500).send(err);
     }
     self.log.info('Transaction id ' + transactionId);
@@ -115,59 +74,143 @@ function submitBitcoinTransaction(self, tx, response) {
   });
 }
 
-function getBlockByHashHelper(self, blockIdentifier, response) {
-  self.node.getBlockHeader(blockIdentifier, function (err, blockHeader) {
+/** 
+ * Anchors a given string on Bitcoin by constructing a bitcoin transaction and transmitting it to the blockchain network
+ * @param request's body contains the string to be embedded in the blockchain
+ * In the absence of an error, it returns the identity of the transaction transmitted to Bitcoin network as a JSON object
+ */
+SidetreeBlockchainService.prototype.anchorTransactionHandler = function (request, response, next) {
+  setHeaders(response);
+  var self = this;
+  const sidetreeTransaction = request.body.transaction;
+  const privateKeyWIF = config.privateKeyWIF;
+  const privateKey = bitcore.PrivateKey.fromWIF(privateKeyWIF);
+  const address = privateKey.toAddress();
+  const fees = config.fees;
+
+  this.node.getAddressUnspentOutputs(address.toString(), {}, function (err, unspentOutputs) {
     if (err) {
-      self.log.info('error retrieving the requested hash from Bitcoin', err);
-      return response.status(404).send(err);
-    }
-    if (!blockHeader) {
-      self.log.info('could not get height for the requested hash');
+      self.log.error('error retrieving information', err);
       return response.status(500).send(err);
     }
-    self.log.info('Requested block height ' + blockHeader.height);
-    response.status(200).send({
-      'blockNumber': blockHeader.height,
-      'blockHash': blockHeader.hash
+
+    // builds a Bitcoin transaction
+    const tx = constructBitcoinTransaction(unspentOutputs, sidetreeTransaction, privateKey, fees);
+
+    // anchor the transaction on the Bitcoin blockchain
+    submitBitcoinTransaction(self, tx, response);
+  });
+};
+
+/** 
+ * Returns the tip of the Bitcoin blockchain
+ * @returns A Response object with 'blockNumber' and 'blockHash' parameters in the JSON body.
+*/
+function getLastBlockAsync (self) {
+  const errorResponse = {
+    status: 500,
+    body: {}
+  };
+
+  return new Promise(function (resolve, reject) {
+    self.node.getBestBlockHash(function (err, blockHash) {
+      if (err || !blockHash) {
+        self.log.error('error retrieving the latest hash from Bitcoin', err);
+        reject(errorResponse);
+        return;
+      }
+
+      self.node.getBlockHeader(blockHash, function (err, blockHeader) {
+        if (err || !blockHeader) {
+          self.log.error('error retrieving the requested hash from Bitcoin', err);
+          reject(errorResponse);
+          return;
+        }
+
+        self.log.info('Requested block height ' + blockHeader.height);
+        const successResponse = {
+          status: 200,
+          body: {
+            'blockNumber': blockHeader.height,
+            'blockHash': blockHeader.hash
+          }
+        };
+        resolve(successResponse);
+      });
     });
   });
 }
 
-
-// returns the block information, specifically the height of a block and its hash, for the most recent block
-SidetreeBlockchainService.prototype.getLastBlock = function (request, response, next) {
+SidetreeBlockchainService.prototype.getLastBlockHandler = function (request, response, next) {
   var self = this;
-  headers(response);
-  self.node.getBestBlockHash(function (err, blockHash) {
-    if (err) {
-      self.log.info('error retrieving the latest hash from Bitcoin', err);
-      return response.status(404).send(err);
-    }
-    if (!blockHash) {
-      self.log.info('could not get the latest blockHash for the requested hash');
+  setHeaders(response);
+  const handle = getLastBlockAsync(self);
+  handle
+    .then(ok => {
+      return response.status(ok.status).send(ok.body);
+    })
+    .catch(err => {
+      self.log.error(err);
       return response.status(500).send(err);
-    }
-    getBlockByHashHelper(self, blockHash, response);
+    });
+};
+
+/** 
+ * Returns the information associated with a block
+ * @param blockId The identifier of the block; accepts either a block hash or a block number
+ * @returns A Response object with 'blockNumber' and 'blockHash' parameters in the JSON body.
+*/
+function getBlockByIdAsync (self, blockId) {
+  return new Promise(function (resolve, reject) {
+    self.node.getBlockHeader(blockId, function (err, blockHeader) {
+      if (err || !blockHeader) {
+        self.log.error('error retrieving the requested hash from Bitcoin', err);
+        const errorResponse = {
+          status: 500,
+          body: {
+            'error': err
+          }
+        };
+        reject(errorResponse);
+        return;
+      }
+
+      self.log.info('Requested block height ' + blockHeader.height);
+      const successResponse = {
+        status: 200,
+        body: {
+          'blockNumber': blockHeader.height,
+          'blockHash': blockHeader.hash
+        }
+      };
+      resolve(successResponse);
+    });
   });
-};
+}
 
-// returns the block information, specifically the height of a block, given its hash
-SidetreeBlockchainService.prototype.getBlockByHash = function (request, response, next) {
-  headers(response);
+SidetreeBlockchainService.prototype.getBlockByIdHandler = function (request, response, next) {
   var self = this;
-  var blockHash = request.params.hash;
-  getBlockByHashHelper(self, blockHash, response);
+  setHeaders(response);
+  const blockId = request.params.id;
+  const handle = getBlockByIdAsync(self, blockId);
+  handle
+    .then(ok => {
+      return response.status(ok.status).send(ok.body);
+    })
+    .catch(err => {
+      self.log.error(err);
+      return response.status(500).send(err);
+    });
 };
 
-// returns the block information, specifically the hash of a block, given its height
-SidetreeBlockchainService.prototype.getBlockByHeight = function (request, response, next) {
-  headers(response);
-  var self = this;
-  var blockHeight = request.params.height;
-  getBlockByHashHelper(self, blockHeight, response);
-};
-
-function extractTransactions(transactions, prefix, hashes) {
+/** 
+ * Extracts sidetree's anchor file hashes from a list of Bitcoin transactions 
+ * @param transactions The list of Bitcoin transactions
+ * @param prefix The prefix used for Sidetree transactions (i.e., anchor file hashes)
+ * @returns an array of anchor file hashes
+*/
+function extractAnchorFileHashes (transactions, prefix) {
+  var hashes = [];
   for (var i = 0; i < transactions.length; i++) {
     var tx = transactions[i];
     var outputs = tx.outputs;
@@ -181,58 +224,98 @@ function extractTransactions(transactions, prefix, hashes) {
 
       var data = script.getData().toString();
       if (data.startsWith(prefix)) {
-        hashes.push(data);
+        hashes.push(data.slice(prefix.length));
       }
     }
   }
+  return hashes;
 }
 
-// returns the ordered list of sidetree transactions at a given height
-SidetreeBlockchainService.prototype.getTransactions = function (request, response, next) {
-  headers(response);
-  var self = this;
-  var height = request.params.height;
-  var prefix = request.params.prefix;
+/** 
+ * Scans the blockchain recursively, one block at a time.
+ * The range (@param blockNumberStart, @param blockNumberEnd) is inclusive
+ * When it scans a block, it searches for Bitcoin transaction with OP_RETURN strings that start with @param prefix
+ * The method returns a list of anchor file hashes (along with their location) at their first occurance in the range
+ * @param prefix The prefix used for Sidetree operations
+ * @param response The object that will be set with appropriate HTTP response according to the design document
+*/
+function scanBlockRange (self, blockNumberStart, blockNumberEnd, prefix, response) {
 
+  if (blockNumberStart > blockNumberEnd) {
+    return response.status(200).send({
+      'blockNumber': blockNumberStart,
+      'hashes': []
+    })
+  }
 
-  // get the block header associated with the requested height
-  this.node.getBlockHeader(height, function (err, blockHeader) {
-    if (err) {
-      self.log.info('error retrieving the requested hash from Bitcoin', err);
-      return response.status(404).send(err);
+  // get the block header associated with blockHeight
+  self.node.getBlockHeader(blockNumberStart, function (err, blockHeader) {
+    if (err || !blockHeader) {
+      self.log.error('error retrieving the requested hash from Bitcoin', err);
+      return response.status(500).send(err);
     }
-    if (!blockHeader) {
-      self.log.info('could not get header for the requested height');
-      return response.status(500).send(err)
-    }
 
+    // now get the block 
     self.node.getBlock(blockHeader.hash, function (err, block) {
-      if (err) {
-        self.log.info('error retrieving raw block from bitcoind', err);
-        return response.status(404).send(err);
+      if (err || !block) {
+        self.log.error('error retrieving raw block from bitcoind', err);
+        return response.status(500).send(err);
       }
 
-      var hashes = [];
-      extractTransactions(block.transactions, prefix, hashes);
+      // extract hashes embedded in transactions that match prefix
+      var hashes = extractAnchorFileHashes(block.transactions, prefix);
 
-      // send the response
-      response.status(200).send({
-        'blockNumber': blockHeader.height,
-        'blockHash': blockHeader.hash,
-        'hashes': hashes
-      });
+      if (hashes.length > 0) {
+        return response.status(200).send({
+          'blockNumber': blockHeader.height,
+          'blockHash': blockHeader.hash,
+          'hashes': hashes,
+          'moreTransactions': (blockNumberStart < blockNumberEnd)
+        });
+      } else {
+        return scanBlockRange(self, blockNumberStart + 1, blockNumberEnd, prefix, response);
+      }
     });
   });
+}
+
+/**
+ * Scans the blockchain (starting from the block number specified in the request) for Sidetree transactions
+ * The method returns a list of anchor file hashes (along with information on where it found them). 
+ * The current implementation returns as soon as it finds a block with Sidetree transactions in the range
+ */
+SidetreeBlockchainService.prototype.getTransactions = function (request, response, next) {
+  setHeaders(response);
+  var self = this;
+  const blockNumberStart = Number(request.params.blockNumber); // the starting blocknumber
+  const prefix = request.params.prefix;
+
+  // obtain the block number of the tip of the blockchain
+  const handle = getLastBlockAsync(self);
+  handle
+    .then(ok => {
+      if (ok.status == 200) {
+        const blockNumberEnd = Number(ok.body['blockNumber']);
+        scanBlockRange(self, blockNumberStart, blockNumberEnd, prefix, response);
+      } else {
+        return response.status(500).send(err);
+      }
+    })
+    .catch(err => {
+      self.log.error(err);
+      return response.status(500).send(err);
+    });
 };
 
-// setup HTTP routes for various backend APIs exposed atop bitcored
+
+/** 
+ * Setup HTTP routes for various backend APIs exposed atop bitcored 
+ */
 SidetreeBlockchainService.prototype.setupRoutes = function (app) {
-  app.post('/anchor/', this.anchorBitcoinTransaction.bind(this));
-  app.get('/address/:address', this.getAddressInfo.bind(this));
-  app.get('/blocks/last', this.getLastBlock.bind(this));
-  app.get('/blocks/:hash', this.getBlockByHash.bind(this));
-  app.get('/blocks/:height', this.getBlockByHeight.bind(this));
-  app.get('/transactions/:height/:prefix', this.getTransactions.bind(this));
+  app.post('/anchor/', this.anchorTransactionHandler.bind(this));
+  app.get('/blocks/last', this.getLastBlockHandler.bind(this));
+  app.get('/blocks/:id', this.getBlockByIdHandler.bind(this));
+  app.get('/transactions/:blockNumber/:prefix', this.getTransactions.bind(this));
 };
 
 module.exports = SidetreeBlockchainService;
