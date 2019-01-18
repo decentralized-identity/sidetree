@@ -43,6 +43,10 @@ export default class MockBlockchain implements Blockchain {
     };
   }
 
+  public async getFirstValidTransaction (_transactions: Transaction[]): Promise<Transaction | undefined> {
+    return undefined;
+  }
+
   private latestTime?: BlockchainTime = { time: 500000, hash: 'dummyHash' };
   public async getLatestTime (): Promise<BlockchainTime> {
     return this.latestTime!;
