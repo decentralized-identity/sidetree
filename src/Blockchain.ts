@@ -66,6 +66,8 @@ export class BlockchainClient implements Blockchain {
     const response = await nodeFetch(this.transactionsUri, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
+      Logger.error(`Blockchain write error response: ${response.status}`);
+      Logger.error(`Blockchain write error body: ${(response.body.read() as Buffer).toString()}`);
       throw new Error('Encountered an error writing anchor file hash to blockchain.');
     }
   }
@@ -85,7 +87,7 @@ export class BlockchainClient implements Blockchain {
 
     Logger.info(`Fetching URI '${readUri}'...`);
     const response = await nodeFetch(readUri);
-    Logger.info(`Fetch URI '${readUri}' response: ${response.status}'.`);
+    Logger.info(`Fetch response: ${response.status}'.`);
 
     const responseBodyString = (response.body.read() as Buffer).toString();
     const responseBody = JSON.parse(responseBodyString);
@@ -96,6 +98,8 @@ export class BlockchainClient implements Blockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
+      Logger.error(`Blockchain read error response: ${response.status}`);
+      Logger.error(`Blockchain read error body: ${(response.body.read() as Buffer).toString()}`);
       throw new Error('Encountered an error fetching Sidetree transactions from blockchain.');
     }
 
