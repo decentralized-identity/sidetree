@@ -87,5 +87,10 @@ const setKoaResponse = (response: Response, koaResponse: Koa.Response, contentTy
   } else {
     koaResponse.set('Content-Type', 'application/json');
   }
-  koaResponse.body = response.body;
+  if (response.body) {
+    koaResponse.body = response.body;
+  } else {
+    // Need to set the body explicitly, otherwise Koa will return HTTP 204
+    koaResponse.body = '';
+  }
 };
