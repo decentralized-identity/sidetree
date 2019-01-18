@@ -18,5 +18,6 @@ export class SidetreeError extends Error {
  */
 export enum ErrorCode {
   DidNotFound = 'did_not_found',
+  InvalidTransactionNumberOrTimeHash = 'invalid_transaction_number_or_time_hash',
   NoMatchingProtocolVersion = 'no_matching_protocol_version'
 }
