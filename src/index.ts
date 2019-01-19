@@ -47,6 +47,20 @@ const server = app.listen(port, () => {
   console.error(`${e.message} on starting Sidetree-IPFS service`);
 });
 
+// Listen for graceful termination
+process.on('SIGTERM', () => {
+  requestHandler.ipfsStorage.node.stop();
+});
+process.on('SIGINT', () => {
+  requestHandler.ipfsStorage.node.stop();
+});
+process.on('SIGHUP', () => {
+  requestHandler.ipfsStorage.node.stop();
+});
+process.on('uncaughtException', () => {
+  requestHandler.ipfsStorage.node.stop();
+});
+
 /**
  * Sets the koa response according to the Sidetree response object given.
  * @param response Response object fetched from request handler.

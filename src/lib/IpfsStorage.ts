@@ -12,7 +12,7 @@ export class IpfsStorage {
   /**
    * Static method to have a single instance of class and mock in unit tests
    */
-  public static create (options: Ipfs.Options): IpfsStorage {
+  public static create (options?: Ipfs.Options): IpfsStorage {
     if (!IpfsStorage.ipfsStorageInstance) {
       IpfsStorage.ipfsStorageInstance = new IpfsStorage(options);
     }
@@ -20,8 +20,8 @@ export class IpfsStorage {
     return IpfsStorage.ipfsStorageInstance;
   }
 
-  private constructor (options: Ipfs.Options) {
-    this.node = Ipfs.createNode(options);
+  private constructor (options?: Ipfs.Options) {
+    this.node = new Ipfs(options);
   }
 
   /**
