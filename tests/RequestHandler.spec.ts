@@ -121,22 +121,14 @@ describe('RequestHandler', () => {
     expect(expectedResponse).toEqual(fetchedResponse);
   });
 
-  it('should return the correct response body with content for trace request', async () => {
+  it('should return the correct response body with content for firstValid request', async () => {
     const expectedResponse: Response = {
       "status": ResponseStatus.Succeeded,
       "body": {
-        "transactions": [
-          {
-            "transactionNumber": 6212923596734464,
-            "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
-            "validity": true
-          },
-          {
-            "transactionNumber": 6212923596734464,
-            "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe",
-            "validity": false
-          },
-        ]
+        "transactionNumber": 6212923596734464,
+        "transactionTime": 1446559,
+        "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
+        "anchorFileHash": "hellow"
       }
     };
 
@@ -144,18 +136,21 @@ describe('RequestHandler', () => {
       "transactions": [
         {
           "transactionNumber": 6212923596734464,
+          "transactionTime": 1446559,
           "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
+          "anchorFileHash": "hellow"
         },
         {
           "transactionNumber": 6212923596734464,
+          "transactionTime": 1446559,
           "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe",
+          "anchorFileHash": "hellow"
         },
       ]
     };
 
-    const fetchedResponse = await requestHandler.handleTraceRequest(JSON.stringify(requestBody));
+    const requestBodyBuffer = Buffer.from(JSON.stringify(requestBody));
+    const fetchedResponse = await requestHandler.handleFirstValidRequest(requestBodyBuffer);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
-
-
 });

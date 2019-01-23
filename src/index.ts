@@ -46,8 +46,8 @@ router.post('/transactions', async (ctx, _next) => {
   setKoaResponse(response, ctx.response);
 });
 
-router.post('/transactions/trace', async (ctx, _next) => {
-  const response = await requestHandler.handleTraceRequest(JSON.stringify(ctx.body.transactions));
+router.post('/transactions/firstValid', async (ctx, _next) => {
+  const response = await requestHandler.handleFirstValidRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 

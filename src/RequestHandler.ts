@@ -14,7 +14,7 @@ export default class RequestHandler {
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
    */
-  public constructor (public bitcoreSidetreeServiceUri: string,
+  public constructor(public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
     public genesisTimeHash: string) {
@@ -155,39 +155,57 @@ export default class RequestHandler {
   }
 
   /**
-   * Handles the trace request
-   * @param transactions an array of (transaction number, transactionTimeHash) tuples (serialized as a JSON string) to verify the validity
+   * Handles the firstValid request
+   * @param requestBody Request body containing the list of transactions to be validated
    */
-  public async handleTraceRequest (transactions: string): Promise<Response> {
+  public async handleFirstValidRequest (requestBody: Buffer): Promise<Response> {
+    const jsonBody = JSON.parse(requestBody.toString());
+    const transactions = jsonBody.transactions;
+
+    // Respond with 'bad request' if no transactions list were provided
+    if (!transactions) {
+      return {
+        status: ResponseStatus.BadRequest
+      };
+    }
+
     try {
-      const transactionsObj = JSON.parse(transactions)['transactions'];
-      const response = [];
+      const transactionsObj = jsonBody['transactions'];
       for (let i = 0; i < transactionsObj.length; i++) {
         const transaction = transactionsObj[i];
         const transactionNumber = transaction['transactionNumber'];
+        const transactionTime = transaction['transactionTime'];
         const transactionTimeHash = transaction['transactionTimeHash'];
+        const anchorFileHash = transaction['anchorFileHash'];
+
+        // make a call to verify if the tuple (transactionNumber, transactionTimeHash) are valid
         const verifyResponse = await this.verifyTransactionTimeHash(transactionNumber, transactionTimeHash);
 
-        if (verifyResponse.status === ResponseStatus.Succeeded) {
-          const verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
-          response.push({
-            'transactionNumber': transactionNumber,
-            'transactionTimeHash': transactionTimeHash,
-            'validity': verifyResponseBody['match']
-          });
-        } else {
+        // check if the request succeeded
+        if (verifyResponse.status !== ResponseStatus.Succeeded) {
           // an error occured, so return the default response
           return {
             status: ResponseStatus.ServerError
           };
         }
-      }
 
-      return {
-        status: ResponseStatus.Succeeded,
-        body: {
-          'transactions': response
+        const verifyResponseBody = verifyResponse.body as any;
+        // check if there was a match; if so return
+        if (Boolean(verifyResponseBody['match']) === true) {
+          return {
+            status: ResponseStatus.Succeeded,
+            body: {
+              'transactionNumber': transactionNumber,
+              'transactionTime': transactionTime,
+              'transactionTimeHash': transactionTimeHash,
+              'anchorFileHash': anchorFileHash
+            }
+          };
         }
+      }
+      // none of the (transactionNumber, transactionTimeHash) tuples is valid, so return 404 NOT FOUND
+      return {
+        status: ResponseStatus.NotFound
       };
     } catch {
       return {
@@ -228,7 +246,7 @@ export default class RequestHandler {
     // verify the validity of since and transactionTimeHash
     const verifyResponse = await this.verifyTransactionTimeHash(sinceTransactionNumber, transactionTimeHash);
     if (verifyResponse.status === ResponseStatus.Succeeded) {
-      const verifyResponseBody = JSON.parse(JSON.stringify(verifyResponse.body));
+      const verifyResponseBody = verifyResponse.body as any;
 
       // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
       if (verifyResponseBody['match'] === false) {
