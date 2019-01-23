@@ -99,7 +99,7 @@ export class BlockchainClient implements Blockchain {
 
     if (response.status !== HttpStatus.OK) {
       Logger.error(`Blockchain read error response: ${response.status}`);
-      Logger.error(`Blockchain read error body: ${(response.body.read() as Buffer).toString()}`);
+      Logger.error(`Blockchain read error body: ${response.body.read()}`);
       throw new Error('Encountered an error fetching Sidetree transactions from blockchain.');
     }
 
