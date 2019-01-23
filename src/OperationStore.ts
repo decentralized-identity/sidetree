@@ -1,7 +1,9 @@
 import BatchFile from './BatchFile';
+import Logger from './lib/Logger';
 import { Cache, getCache } from './Cache';
 import { Cas } from './Cas';
 import { WriteOperation } from './Operation';
+import * as startTimer from 'time-span';
 
 /**
  * Information of an operation that is required to reconstruct it from
@@ -21,13 +23,12 @@ interface OperationAccessInfo {
  * an expensive CAS lookup to reconstruct the operation.
  */
 export class OperationStore {
-
   private readonly operationCache: Cache<string, WriteOperation>;
 
   private readonly opHashToAccessInfo: Map<string, OperationAccessInfo> = new Map();
 
   // Size for the operation cache; TODO: set from a config file?
-  private readonly operationCacheSize = 100000;
+  private readonly operationCacheSize = 10000000;
 
   public constructor (private readonly cas: Cas) {
     this.operationCache = getCache(this.operationCacheSize);
@@ -63,7 +64,12 @@ export class OperationStore {
 
   private async constructOperationFromCas (operationAccessInfo: OperationAccessInfo): Promise<WriteOperation> {
     const batchBuffer = await this.cas.read(operationAccessInfo.batchFileHash);
-    const batchFile = BatchFile.fromBuffer(batchBuffer);
+
+    const endTimer = startTimer();
+    const batchFile = await BatchFile.fromBuffer(batchBuffer);
+    const duration = endTimer();
+    Logger.info(`Deserialized batch file of size ${batchBuffer.length} bytes in: ${duration} ms.`);
+
     const operationBuffer = batchFile.getOperationBuffer(operationAccessInfo.operationIndex);
     const resolvedTransaction = {
       transactionNumber: operationAccessInfo.transactionNumber,

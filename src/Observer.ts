@@ -59,18 +59,29 @@ export default class Observer {
         // Get all the new transactions.
         const lastProcessedTransactionNumber = this.lastProcessedTransaction ?
           this.lastProcessedTransaction.transactionNumber : undefined;
-        const readResult = await this.blockchain.read(lastProcessedTransactionNumber);
+
+        const lastProcessedTransactionTimeHash = this.lastProcessedTransaction ?
+          this.lastProcessedTransaction.transactionTimeHash : undefined;
+
+        Logger.info('Fetching Sidetree transactions from blockchain service...');
+        const readResult = await this.blockchain.read(lastProcessedTransactionNumber, lastProcessedTransactionTimeHash);
+
         transactions = readResult.transactions;
         moreTransactions = readResult.moreTransactions;
+
+        Logger.info(`Fetched ${transactions.length} Sidetree transactions from blockchain service.`);
       }
 
       // Process each transaction sequentially.
       for (const transaction of transactions) {
+        Logger.info(`Processing transaction ${transaction.transactionNumber}...`);
         await this.processTransaction(transaction);
 
         // Resetting error retry back to 1 seconds if everytime we are able to process a transaction.
         // i.e. Transaction processing is not stalling.
         this.errorRetryIntervalInSeconds = 1;
+
+        Logger.info(`Finished processing transaction ${transaction.transactionNumber}...`);
       }
     } catch (e) {
       unhandledErrorOccurred = true;
@@ -85,6 +96,8 @@ export default class Observer {
       } else {
         setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
       }
+
+      Logger.info('End of processing new Sidetree transactions.');
     }
   }
 

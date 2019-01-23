@@ -30,8 +30,8 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 # Format and Encoding
 * JSON is used as the data encapsulation format.
-* Base58 encoding is use whenever encoding is needed for binary data or cryptographic consistency.
-* [_Multihash_](https://multiformats.io/multihash/https://multiformats.io/multihash/d) is used to represent hashes.
+* Base64 encoding is used whenever encoding is needed for binary data or cryptographic consistency.
+* [_Multihash_](https://multiformats.io/multihash/) is used to represent hashes.
 
 
 # Sidetree Protocol Versioning & Parameters
@@ -96,7 +96,7 @@ Where the first entry in ```receipt``` is the sibling of the operation hash in t
 ## Sidetree Operation Batching Examples
 The following illustrates the construction of the Merkle tree with an array of 6 operations:
 * The smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
-* Receipt for [0] will be [B, H], and receipt for [5] will be [E, J].
+* Receipt for [0] will be [B, H, I], and receipt for [5] will be [E, J].
 
 ```
                           ROOT=H(K+J)
@@ -184,7 +184,7 @@ Sidetree protocol defines the following two mechanisms to prevent DDoS:
    Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
 
 # Sidetree Transaction Processing
-A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a logical incrementing number starting from 1, this _transaction number_ deterministically defines the order of transactions, and thus the order of operations. The _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
+A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increasing by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
 
 1. The corresponding _anchor file_ must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
 1. The corresponding _batch file_ must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
@@ -204,7 +204,7 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 Sidetree protocol requires dedicated cryptographic keys called _recovery keys_ for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. The recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
 
 # Sidetree REST API
-A _Sidetree node_ expose a set of REST API that enables the creation of a new DID and its initial DID Document, subsequent DID Document updates, and DID Document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
+A _Sidetree node_ exposes a set of REST API that enables the creation of a new DID and its initial DID Document, subsequent DID Document updates, and DID Document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
 
 ## Response HTTP status codes
 
@@ -255,7 +255,7 @@ POST /<api-version>/
 }
 ```
 
-In Sidetree implementation, certain properties or portion of which in teh initial DID Document will be ignored:
+In Sidetree implementation, certain properties or portion of which in the initial DID Document will be ignored:
 * `id` - Ignored.
 * `publicKey\*\id` - DID portion is ignored.
 

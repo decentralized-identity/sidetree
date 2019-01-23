@@ -34,35 +34,23 @@ class Logger {
   }
 
   /**
-   * Writes an error log entry with call stack.
-   * If an Error is given, Error.message will be appended to the message given.
+   * Writes an error log entry.
+   * If an Error is given, call stack is also logged.
    *
-   * @param secondArgument Can either be and Error object or any JS object.
-   * When Error object is given, call stack will be logged.
-   *
-   * @param thirdArgument Will only be logged if second argument is an Error.
+   * @param additionalInfo Additional info to be logged.
    */
-  public error (message: string, secondArgument?: Error | Object, thirdArgument?: Object) {
+  public error (error: string | Error, additionalInfo?: Object) {
+    let message;
+    let callStack;
 
-    // Parsing the 2nd and 3rd arguments.
-    let error = undefined;
-    let additionalInfo = undefined;
-    if (secondArgument instanceof Error) {
-      error = secondArgument;
-      additionalInfo = thirdArgument;
-    } else if (secondArgument) {
-      additionalInfo = secondArgument;
-    }
-
-    let fullMessage = message;
-    let callStack = undefined;
-
-    if (error) {
-      fullMessage += '\n' + error.message;
+    if (error instanceof Error) {
+      message = error.message;
       callStack = error.stack;
+    } else {
+      message = error;
     }
 
-    this.log(LogLevel.Error, fullMessage, callStack, additionalInfo);
+    this.log(LogLevel.Error, message, callStack, additionalInfo);
   }
 
   /**

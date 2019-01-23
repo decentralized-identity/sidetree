@@ -1,4 +1,5 @@
 import Cryptography from './lib/Cryptography';
+import DidPublicKey from './lib/DidPublicKey';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
@@ -452,10 +453,13 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // Fetch the public key to be used for signature verification.
     const operation = await this.operationStore.lookup(operationHash);
-    const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
+    const publicKey = OperationProcessorImpl.getPublicKey(didDocument!, operation.signingKeyId);
 
     // Signature verification.
-    const verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+    let verified = false;
+    if (publicKey) {
+      verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+    }
 
     if (verified) {
       operationInfo.status = OperationStatus.Valid;
@@ -554,10 +558,13 @@ class OperationProcessorImpl implements OperationProcessor {
 
     // Fetch the public key to be used for signature verification.
     const operation = await this.operationStore.lookup(opHash);
-    const publicKey = OperationProcessorImpl.getPublicKeyJwk(didDocument!, operation.signingKeyId);
+    const publicKey = OperationProcessorImpl.getPublicKey(didDocument!, operation.signingKeyId);
 
     // Signature verification.
-    const verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+    let verified = false;
+    if (publicKey) {
+      verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+    }
     return verified;
 
     return true;
@@ -593,18 +600,16 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Gets the SECP256K1 public-key in JWK format from the given DID Document.
+   * Gets the specified public key from the given DID Document.
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  private static getPublicKeyJwk (didDocument: DidDocument, keyId: string): any {
+  private static getPublicKey (didDocument: DidDocument, keyId: string): DidPublicKey | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 
-      if (publicKey.id && publicKey.id.endsWith(keyId) &&
-          publicKey.type === 'Secp256k1VerificationKey2018' &&
-          publicKey.hasOwnProperty('publicKeyJwk')) {
-        return (publicKey as any).publicKeyJwk;
+      if (publicKey.id && publicKey.id.endsWith(keyId)) {
+        return publicKey;
       }
     }
 

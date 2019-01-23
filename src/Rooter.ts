@@ -1,10 +1,10 @@
 import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
+import Logger from './lib/Logger';
 import MerkleTree from './lib/MerkleTree';
 import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
-import Logger from './lib/Logger';
 
 /**
  * Class that performs periodic rooting of batches of Sidetree operations.

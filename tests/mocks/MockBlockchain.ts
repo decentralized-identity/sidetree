@@ -13,21 +13,21 @@ export default class MockBlockchain implements Blockchain {
     this.hashes.push(anchorFileHash);
   }
 
-  public async read (afterTransaction?: number): Promise<{ moreTransactions: boolean, transactions: Transaction[] }> {
-    if (afterTransaction === undefined) {
-      afterTransaction = -1;
+  public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: Transaction[] }> {
+    if (sinceTransactionNumber === undefined) {
+      sinceTransactionNumber = -1;
     }
 
     let moreTransactions = false;
     if (this.hashes.length > 0 &&
-      afterTransaction < this.hashes.length - 2) {
+      sinceTransactionNumber < this.hashes.length - 2) {
       moreTransactions = true;
     }
 
     const transactions: Transaction[] = [];
     if (this.hashes.length > 0 &&
-      afterTransaction < this.hashes.length - 1) {
-      const hashIndex = afterTransaction + 1;
+      sinceTransactionNumber < this.hashes.length - 1) {
+      const hashIndex = sinceTransactionNumber + 1;
       const transaction = {
         transactionNumber: hashIndex,
         transactionTime: hashIndex,
