@@ -284,35 +284,29 @@ HTTP/1.1 400 Bad Request
 ```
 
 
-## Trace Sidetree transaction chain
-Returns Sidetree transactions that are "_2 to the power of N_" prior to the specified transaction until the first transaction is reached, where _N_ is integer incremented from 0. This API is primarily used by the Sidetree core library to determine a transaction that can be used as a marker in time to reprocess transactions in the event of a block reorganization (temporary fork).
-
-The returned list of transactions is in reverse chronological order.
-
+## Get first valid Sidetree transaction
+Given a list of Sidetree transactions, returns the first transaction in the list that is valid. Returns 404 NOT FOUND if none of the given transactions are valid. This API is primarily used by the Sidetree core library to determine a transaction that can be used as a marker in time to reprocess transactions in the event of a block reorganization (temporary fork).
 
 |                     |      |
 | ------------------- | ---- |
 | Minimum API version | v1.0 |
 
 ### Request path
-```
-GET /<api-version>/transactions/trace/<transaction-number>
+```http
+POST /<api-version>/transactions/firstValid HTTP/1.1
 ```
 
 ### Request headers
-None.
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
 
-### Request example
-```
-GET /v1.0/transactions/trace/20
-```
-
-### Response body schema
+### Request body schema
 ```json
 {
   "transactions": [
     {
-      "transactionNumber": "The transaction 'two to the power of N' prior to the transaction specified. N is the array index.",
+      "transactionNumber": "The transaction to be validated.",
       "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
       "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorFileHash": "Hash of the anchor file of this transaction."
@@ -322,10 +316,12 @@ GET /v1.0/transactions/trace/20
 }
 ```
 
-### Success Response body example
-```json
+### Request example
+```http
+POST /v1.0/transactions/firstValid HTTP/1.1
+Content-Type: application/json
+
 {
-  "moreTransactions": false,
   "transactions": [
     {
       "transactionNumber": 19,
@@ -359,6 +355,33 @@ GET /v1.0/transactions/trace/20
     }
   ]
 }
+```
+
+### Response body schema
+```json
+{
+  "transactionNumber": "The transaction number of the first valid transaction in the given list",
+  "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
+  "transactionTimeHash": "The hash associated with the transaction time.",
+  "anchorFileHash": "Hash of the anchor file of this transaction."
+}
+```
+
+### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "transactionNumber": 16,
+  "transactionTime": 545200,
+  "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
+  "anchorFileHash": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
+}
+```
+
+### Response example - All transactions are invalid
+```http
+HTTP/1.1 404 NOT FOUND
 ```
 
 
