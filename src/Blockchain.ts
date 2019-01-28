@@ -44,11 +44,21 @@ export interface Blockchain {
  */
 export class BlockchainClient implements Blockchain {
 
+  private fetch = nodeFetch;
+
   /** URI that handles transaction operations. */
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private timeUri: string; // e.g. https://127.0.0.1/time
 
-  public constructor (public uri: string) {
+  /**
+   * @param fetchFunction A fetch function compatible with node-fetch's fetch, mainly for mocked fetch for test purposes.
+   *                      Typed 'any' unfortunately because it is non-trivial to merge the types defined in @types/fetch-mock with types in @types/node-fetch.
+   */
+  public constructor (public uri: string, fetchFunction?: any) {
+    if (fetchFunction) {
+      this.fetch = fetchFunction;
+    }
+
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
   }
@@ -63,11 +73,11 @@ export class BlockchainClient implements Blockchain {
       body: Buffer.from(JSON.stringify(anchorFileHashObject)),
       headers: { 'Content-Type': 'application/json' }
     };
-    const response = await nodeFetch(this.transactionsUri, requestParameters);
+    const response = await this.fetch(this.transactionsUri, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`Blockchain write error response: ${response.status}`);
-      Logger.error(`Blockchain write error body: ${(response.body.read() as Buffer).toString()}`);
+      Logger.error(`Blockchain write error response status: ${response.status}`);
+      Logger.error(`Blockchain write error body: ${response.body.read()}`);
       throw new Error('Encountered an error writing anchor file hash to blockchain.');
     }
   }
@@ -86,7 +96,7 @@ export class BlockchainClient implements Blockchain {
     const readUri = this.transactionsUri + queryString; // e.g. https://127.0.0.1/transactions?since=6212927891701761&transaction-time-hash=abc
 
     Logger.info(`Fetching URI '${readUri}'...`);
-    const response = await nodeFetch(readUri);
+    const response = await this.fetch(readUri);
     Logger.info(`Fetch response: ${response.status}'.`);
 
     const responseBodyString = (response.body.read() as Buffer).toString();
@@ -98,7 +108,7 @@ export class BlockchainClient implements Blockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`Blockchain read error response: ${response.status}`);
+      Logger.error(`Blockchain read error response status: ${response.status}`);
       Logger.error(`Blockchain read error body: ${response.body.read()}`);
       throw new Error('Encountered an error fetching Sidetree transactions from blockchain.');
     }
@@ -114,7 +124,7 @@ export class BlockchainClient implements Blockchain {
     };
 
     const firstValidTransactionUri = `${this.transactionsUri}/firstValid`;
-    const response = await nodeFetch(firstValidTransactionUri, requestParameters);
+    const response = await this.fetch(firstValidTransactionUri, requestParameters);
 
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
@@ -128,7 +138,7 @@ export class BlockchainClient implements Blockchain {
 
   // TODO: Consider caching strategy since this will be invoked very frequently, especially by the Rooter.
   public async getLatestTime (): Promise<BlockchainTime> {
-    const response = await nodeFetch(this.timeUri);
+    const response = await this.fetch(this.timeUri);
 
     if (response.status !== HttpStatus.OK) {
       throw new Error('Encountered an error fetching latest time from blockchain.');
