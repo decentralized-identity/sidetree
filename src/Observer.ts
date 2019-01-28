@@ -14,11 +14,10 @@ import { WriteOperation } from './Operation';
 export default class Observer {
 
   /**
-   * The number of seconds to wait before retry.
-   * This value doubles for every consecutive processing failure.
-   * The value is reset to 1 if batch processing is successful.
+   * Denotes if the periodic transaction processing should continue to occur.
+   * Used mainly for test purposes.
    */
-  private errorRetryIntervalInSeconds = 1;
+  private continuePeriodicProcessing = false;
 
   /**
    * List of processed Sidetree transactions.
@@ -36,17 +35,39 @@ export default class Observer {
    * The function that starts the periodic polling and processing of Sidetree operations.
    */
   public startPeriodicProcessing () {
-    setImmediate(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
+    Logger.info(`Starting periodic transactions processing.`);
+    setImmediate(async () => {
+      this.continuePeriodicProcessing = true;
+
+      // tslint:disable-next-line:no-floating-promises - this.processTransactions() never throws.
+      this.processTransactions();
+    });
   }
 
   /**
-   * Processes new transactions, then scehdules the next processing:
-   * If there are more transactions, schedules processing immediately.
-   * If encountered error, then wait twice longer than the previous error retry interval before retry.
-   * If everything is processed, will for the configured polling interval before processing again.
+   * Stops periodic transaction processing.
+   * Mainly used for test purposes.
+   */
+  public stopPeriodicProcessing () {
+    Logger.info(`Stopped periodic transactions processing.`);
+    this.continuePeriodicProcessing = false;
+  }
+
+  /**
+   * Gets the list of processed transactions.
+   * Mainly used for test purposes.
+   */
+  public getProcessedTransactions (): Transaction[] {
+    return this.processedTransactions;
+  }
+
+  /**
+   * Processes new transactions if any,
+   * then scehdules the next processing using the following rules unless `stopPeriodicProcessing()` is invoked:
+   *   - If there are more pending transactions to process, schedules processing immediately;
+   *   - Else wait for the next polling interval before processing again.
    */
   public async processTransactions () {
-    let unhandledErrorOccurred = false;
     let moreTransactions = false;
 
     try {
@@ -89,24 +110,16 @@ export default class Observer {
       for (const transaction of transactions) {
         Logger.info(`Processing transaction ${transaction.transactionNumber}...`);
         await this.processTransaction(transaction);
-
-        // Resetting error retry back to 1 seconds if everytime we are able to process a transaction.
-        // i.e. Transaction processing is not stalling.
-        this.errorRetryIntervalInSeconds = 1;
-
         Logger.info(`Finished processing transaction ${transaction.transactionNumber}...`);
       }
     } catch (e) {
-      unhandledErrorOccurred = true;
-      this.errorRetryIntervalInSeconds *= 2;
+      Logger.error(`Encountered unhandled Observer error, investigate and fix:`);
       Logger.error(e);
-      Logger.error(`Encountered Observer error, will attempt to process unprocessed operations again in ${this.errorRetryIntervalInSeconds} seconds.`);
     } finally {
-      if (unhandledErrorOccurred) {
-        setTimeout(async () => this.processTransactions(), this.errorRetryIntervalInSeconds * 1000);
-      } else if (moreTransactions) {
+      if (moreTransactions) {
         setImmediate(async () => this.processTransactions());
-      } else {
+      } else if (this.continuePeriodicProcessing) {
+        Logger.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
         setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
       }
 
@@ -130,6 +143,7 @@ export default class Observer {
       } catch {
         // If unable to fetch the anchor file, place the transaction for future retries.
         this.addUnresolvableTransaction(transaction);
+        Logger.info(`Failed downloading anchor file '${transaction.anchorFileHash}' for transaction '${transaction.transactionNumber}'.`);
         return;
       }
 
@@ -150,6 +164,7 @@ export default class Observer {
       } catch {
         // If unable to fetch the batch file, place the transaction for future retries.
         this.addUnresolvableTransaction(transaction);
+        Logger.info(`Failed downloading batch file '${anchorFile.batchFileHash}' for transaction '${transaction.transactionNumber}'.`);
         return;
       }
 
@@ -237,7 +252,7 @@ export default class Observer {
     const bestKnownValidRecentTransaction
       = await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions.map(value => value.transaction));
 
-    Logger.info(`Best known valid recent transaction: ${bestKnownValidRecentTransaction}`);
+    Logger.info(`Best known valid recent transaction: ${bestKnownValidRecentTransaction ? bestKnownValidRecentTransaction.transactionNumber : 'none'}`);
 
     // If we found a known valid transaciton, get the index of that transation in the list of processed transactions.
     let bestKnownValidRecentTransactionIndex = -1;
