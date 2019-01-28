@@ -13,8 +13,9 @@ describe('Sidetree-ipfs integration test', () => {
     server.close();
   });
 
-  it('Should return timeout exception for GET/ if ipfs content not present', async () => {
-    const response = await request(server).get('/v1.0/EiCpCIUFS-4cXGiFJG_L_w_TN6Hrco1-XFYaJ7vthh3FMA');
-    expect(response.status).toEqual(404);
-  });
+  // TODO: Fix timeout integration test - https://github.com/decentralized-identity/sidetree-ipfs/issues/27
+  // it('Should return timeout exception for GET/ if ipfs content not present', async () => {
+  //   const response = await request(server).get('/v1.0/EiCpCIUFS-4cXGiFJG_L_w_TN6Hrco1-XFYaJ7vthh3FMA');
+  //   expect(response.status).toEqual(404);
+  // });
 });

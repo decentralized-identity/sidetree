@@ -1,7 +1,8 @@
-import { Response, ResponseStatus } from './Response';
-import { IpfsStorage } from './lib/IpfsStorage';
 import * as Ipfs from 'ipfs';
 import base64url from 'base64url';
+import { IpfsStorage } from './lib/IpfsStorage';
+import { Response, ResponseStatus } from './Response';
+import { Timeout } from './lib/Timeout';
 const multihashes = require('multihashes');
 
 /**
@@ -34,11 +35,22 @@ export default class RequestHandler {
     }
     try {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
-      const content = await this.ipfsStorage.read(base58EncodedMultihashString);
-      response = {
-        status: ResponseStatus.Succeeded,
-        body: content
-      };
+      const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString);
+
+      // TODO: Move fetch timeout into a configurable config file - https://github.com/decentralized-identity/sidetree-ipfs/issues/28
+      const timeoutInMilliseconds = 10000;
+      const result = await Timeout.timeout(fetchPromsie, timeoutInMilliseconds);
+
+      if (result instanceof Error) {
+        response = {
+          status: ResponseStatus.NotFound
+        };
+      } else {
+        response = {
+          status: ResponseStatus.Succeeded,
+          body: result
+        };
+      }
     } catch (err) {
       response = {
         status: ResponseStatus.ServerError,

@@ -2,7 +2,7 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import RequestHandler from './RequestHandler';
-import { toHttpStatus, Response, ResponseStatus } from './Response';
+import { toHttpStatus, Response } from './Response';
 
 // TODO: Move the ipfs configuration to a config file.
 let ipfsOptions = {
@@ -10,18 +10,6 @@ let ipfsOptions = {
 };
 const requestHandler = new RequestHandler(ipfsOptions);
 const app = new Koa();
-const timeoutResponse: Response = {
-  status: ResponseStatus.NotFound,
-  body: Buffer.from(JSON.stringify({Error: 'Resource Not Found'}))
-};
-
-// Set request timeout to 10 secs
-app.use(ctx => new Promise(resolve => {
-  setTimeout(() => {
-    setKoaResponse(timeoutResponse, ctx.response);
-    resolve();
-  }, 10 * 1000);
-}));
 
 // Raw body parser.
 app.use(async (ctx, next) => {
@@ -69,7 +57,13 @@ const setKoaResponse = (response: Response, koaResponse: Koa.Response, contentTy
   } else {
     koaResponse.set('Content-Type', 'application/json');
   }
-  koaResponse.body = response.body;
+
+  if (response.body) {
+    koaResponse.body = response.body;
+  } else {
+    // Need to set the body explicitly, otherwise Koa will return HTTP 204.
+    koaResponse.body = '';
+  }
 };
 
 module.exports = server;
