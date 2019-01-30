@@ -69,15 +69,14 @@ export type OperationHash = string;
  * DID document.
  */
 export interface OperationProcessor {
+
   /**
-   * Process a DID write (state changing) operation.
-   * @returns An identifier that can be used to retrieve
-   * the DID document version produced by the operation
-   * and to traverse the version chain using the
-   * first/last/prev/next methods below. If the write
-   * operation is not legitimate return undefined.
+   * Process a DID write (state changing) operation with the guarantee
+   * that any future resolve for the same DID sees the effect of the
+   * operation.
+   * @returns the hash of the operation.
    */
-  process (operation: WriteOperation): Promise<string | undefined>;
+  process (operation: WriteOperation): Promise<string>;
 
   /**
    * Remove all previously processed operations with transactionNumber
@@ -210,16 +209,11 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Processes a specified DID state changing operation.
-   * @returns Hash of the operation if:
-   *            1. The operation (of the same hash) is not process before; or
-   *            2. The operation is processed before but this operation has an earlier timestamp.
-   *          Returns undefined if the same operation with an earlier timestamp was processed previously.
-   *
-   * The current implementation simply stores the operation in a deferred operations list and returns. The
-   * deferred operations for a particular did are processed during the next resolve of the did.
+   * Processes a specified DID state changing operation. The current implementation simply stores the operation
+   * in a deferred operations list and returns the hash of the operation. The deferred operations for a
+   * particular did are processed during the next resolve of the did.
    */
-  public async process (operation: WriteOperation): Promise<string | undefined> {
+  public async process (operation: WriteOperation): Promise<string> {
     const opHash = getOperationHash(operation);
 
     // Throw errors if missing any required metadata:
