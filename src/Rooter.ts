@@ -91,9 +91,9 @@ export default class Rooter {
 
       // Anchor the 'anchor file hash' on blockchain.
       await this.blockchain.write(anchorFileAddress);
-    } catch (e) {
-      Logger.info('TODO: batch rooting error handling not implemented.');
-      Logger.info(e);
+    } catch (error) {
+      Logger.error('Unexpected and unhandled error during batch rooting, investigate and fix:');
+      Logger.error(error);
     } finally {
       this.processing = false;
 

@@ -1,11 +1,11 @@
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { ErrorCode, SidetreeError } from './Error';
 import { getProtocol } from './Protocol';
 import { OperationProcessor } from './OperationProcessor';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
-import { ErrorCode, SidetreeError } from './Error';
 
 /**
  * Sidetree operation request handler.

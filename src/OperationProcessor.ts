@@ -85,7 +85,7 @@ export interface OperationProcessor {
    * The intended use case for this method is to handle rollbacks
    * in the blockchain.
    */
-  rollback (transactionNumber: number): Promise<void>;
+  rollback (transactionNumber?: number): Promise<void>;
 
   /**
    * Resolve a did.
@@ -197,7 +197,7 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   private waitingDescendants: Map<OperationHash, LinkedList<OperationHash>> = new Map();
 
-  private readonly operationStore: OperationStore;
+  private operationStore: OperationStore;
 
   /**
    * The list of deferred (unapplied) operations, stored as a mapping from each did to the list
@@ -250,7 +250,8 @@ class OperationProcessorImpl implements OperationProcessor {
 
   /**
    * Remove all previously processed operations
-   * with transactionNumber greater than or equal to the provided transaction number.
+   * with transactionNumber greater than the provided transaction number.
+   * If no transaction number is given, all operations are rolled back (unlikely scenario).
    * The intended use case for this method is to handle rollbacks
    * in the blockchain.
    *
@@ -259,7 +260,19 @@ class OperationProcessorImpl implements OperationProcessor {
    * a greater transaction number.  In future, the implementation should be optimized
    * for the common case by keeping a sliding window of recent operations.
    */
-  public async rollback (transactionNumber: number): Promise<void> {
+  public async rollback (transactionNumber?: number): Promise<void> {
+
+    // If no transaction number is given to rollback to, rollback everything.
+    if (!transactionNumber) {
+      console.warn('Rolling back all operations...');
+      this.opHashToInfo.clear();
+      this.deletedDids.clear();
+      this.nextVersion.clear();
+      this.waitingDescendants.clear();
+      this.operationStore = new OperationStore(this.cas);
+      console.warn('Rolled back all operations.');
+      return;
+    }
 
     // Iterate over all operations and remove those with with
     // transactionNumber greater or equal to the provided parameter.
