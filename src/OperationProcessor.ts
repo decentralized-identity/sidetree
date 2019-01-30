@@ -22,7 +22,7 @@ import { OperationStore } from './OperationStore';
  */
 enum OperationStatus {
   /**
-   * An operation is in Unvalidated state if its ancestry is complete.
+   * An operation is in Unvalidated state if its ancestry is incomplete.
    */
   Unvalidated,
 
@@ -85,7 +85,7 @@ export interface OperationProcessor {
    * The intended use case for this method is to handle rollbacks
    * in the blockchain.
    */
-  rollback (transactionNumber: number): void;
+  rollback (transactionNumber: number): Promise<void>;
 
   /**
    * Resolve a did.
@@ -249,47 +249,6 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Processes a specified DID state changing operation.
-   */
-  private async processDeferred (operation: WriteOperation, opHash: OperationHash): Promise<void> {
-    // opInfo is operation with derivable properties projected out
-    const opTimestamp: OperationTimestamp = {
-      transactionNumber: operation.transactionNumber!,
-      operationIndex: operation.operationIndex!
-    };
-
-    const opInfo: OperationInfo = {
-      type: operation.type,
-      timestamp: opTimestamp,
-      parent: operation.previousOperationHash,
-      status: OperationStatus.Unvalidated
-    };
-
-    // If there is already a known operation with the same hash
-    // and that operation is timestamped earlier than this incoming one being processed,
-    // we can ignore incoming operation because the earlier operation of the same hash takes precedence.
-    const existingOperationInfo = this.opHashToInfo.get(opHash);
-    if (existingOperationInfo !== undefined && earlier(existingOperationInfo.timestamp, opInfo.timestamp)) {
-      return undefined;
-    }
-
-    // Update our mapping of operation hash to operation info overwriting
-    // previous info if it exists
-    this.opHashToInfo.set(opHash, opInfo);
-
-    if (operation.type === OperationType.Delete ||
-        operation.type === OperationType.Recover) {
-      // NOTE: only assuming and hanldling delete currently.
-      // TODO: validate recovery key.
-
-      this.deletedDids.add(operation.did!);
-    }
-
-    // Else the operation is a create or an update.
-    await this.processInternal(opHash, opInfo);
-  }
-
-  /**
    * Remove all previously processed operations
    * with transactionNumber greater than or equal to the provided transaction number.
    * The intended use case for this method is to handle rollbacks
@@ -300,10 +259,11 @@ class OperationProcessorImpl implements OperationProcessor {
    * a greater transaction number.  In future, the implementation should be optimized
    * for the common case by keeping a sliding window of recent operations.
    */
-  public rollback (transactionNumber: number) {
+  public async rollback (transactionNumber: number): Promise<void> {
 
     // Iterate over all operations and remove those with with
     // transactionNumber greater or equal to the provided parameter.
+    // applied operations are in opHashToInfo structure...
     this.opHashToInfo.forEach((opInfo, opHash, map) => {
       if (opInfo.timestamp.transactionNumber >= transactionNumber) {
 
@@ -321,6 +281,24 @@ class OperationProcessorImpl implements OperationProcessor {
         map.delete(opHash);
       }
     });
+
+    // ... deferred operations are in the deferred operations list
+    for (const [, opList] of this.deferredOperations.entries()) {
+      // The documentation for LinkedList does not say anything about iteration with list updates.
+      // To be safe, we store the deleted operations in a separate list and delete them after the
+      // iteration of opList.
+      const deletedOpList = new LinkedList<OperationHash>();
+      for (const opHash of opList) {
+        const operator = await this.operationStore.lookup(opHash);
+        if (operator.transactionNumber! >= transactionNumber) {
+          deletedOpList.append(opHash);
+        }
+      }
+
+      for (const deletedOpHash of deletedOpList) {
+        opList.remove(deletedOpHash);
+      }
+    }
   }
 
   /**
@@ -451,6 +429,49 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   private isInitialVersion (opInfo: OperationInfo): boolean {
     return opInfo.type === OperationType.Create;
+  }
+
+  /**
+   * Processes a specified DID state changing operation.
+   */
+  private async processOperation (opHash: OperationHash): Promise<void> {
+    const operation = await this.operationStore.lookup(opHash);
+
+    // opInfo is operation with derivable properties projected out
+    const opTimestamp: OperationTimestamp = {
+      transactionNumber: operation.transactionNumber!,
+      operationIndex: operation.operationIndex!
+    };
+
+    const opInfo: OperationInfo = {
+      type: operation.type,
+      timestamp: opTimestamp,
+      parent: operation.previousOperationHash,
+      status: OperationStatus.Unvalidated
+    };
+
+    // If there is already a known operation with the same hash
+    // and that operation is timestamped earlier than this incoming one being processed,
+    // we can ignore incoming operation because the earlier operation of the same hash takes precedence.
+    const existingOperationInfo = this.opHashToInfo.get(opHash);
+    if (existingOperationInfo !== undefined && earlier(existingOperationInfo.timestamp, opInfo.timestamp)) {
+      return undefined;
+    }
+
+    // Update our mapping of operation hash to operation info overwriting
+    // previous info if it exists
+    this.opHashToInfo.set(opHash, opInfo);
+
+    if (operation.type === OperationType.Delete ||
+        operation.type === OperationType.Recover) {
+      // NOTE: only assuming and hanldling delete currently.
+      // TODO: validate recovery key.
+
+      this.deletedDids.add(operation.did!);
+    }
+
+    // Else the operation is a create or an update.
+    await this.processInternal(opHash, opInfo);
   }
 
   private async processInternal (opHash: OperationHash, opInfo: OperationInfo): Promise<void> {
@@ -669,8 +690,7 @@ class OperationProcessorImpl implements OperationProcessor {
     const deferredOperationsList = this.deferredOperations.get(did);
     if (deferredOperationsList !== undefined) {
       for (const deferredOpHash of deferredOperationsList) {
-        const deferredOperation = await this.operationStore.lookup(deferredOpHash);
-        await this.processDeferred(deferredOperation, deferredOpHash);
+        await this.processOperation(deferredOpHash);
       }
       this.deferredOperations.delete(did);
     }
