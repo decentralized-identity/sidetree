@@ -5,7 +5,7 @@ import TransactionNumber from '../src/TransactionNumber';
 
 describe('RequestHandler', () => {
 
-  const configFile = require('../json/config.json');
+  const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
   const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
   const prefix = config[ConfigKey.SidetreeTransactionPrefix];
