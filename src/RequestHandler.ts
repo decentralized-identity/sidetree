@@ -14,7 +14,7 @@ export default class RequestHandler {
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
    */
-  public constructor(public bitcoreSidetreeServiceUri: string,
+  public constructor (public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
     public genesisTimeHash: string) {
@@ -300,16 +300,22 @@ export default class RequestHandler {
     };
 
     try {
-      const content = await nodeFetch(uri, requestParameters);
+      const response = await nodeFetch(uri, requestParameters);
 
-      if (content.status === HttpStatus.OK) {
+      if (response.status === HttpStatus.OK) {
+        // Log the anchor file hash and the bitcoin transaction it will be written in.
+        const responseBodyString = (response.body.read() as Buffer).toString();
+        const resposneBody = JSON.parse(responseBodyString);
+        const bitcoinTransactionHash = resposneBody.transactionId;
+        console.info(`Anchor file '${anchorFileHash}' will be written in bitcoin transaction '${bitcoinTransactionHash}'.`);
+
         return {
           status: ResponseStatus.Succeeded
         };
       } else {
         return {
-          status: content.status,
-          body: content.body
+          status: response.status,
+          body: response.body
         };
       }
     } catch {
