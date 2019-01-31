@@ -1,5 +1,6 @@
 import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
+import Encoder from './Encoder';
 import Logger from './lib/Logger';
 import MerkleTree from './lib/MerkleTree';
 import { getProtocol } from './Protocol';
@@ -75,19 +76,22 @@ export default class Rooter {
 
       // Make the 'batch file' available in CAS.
       const batchFileHash = await this.cas.write(batchBuffer);
+      Logger.info(`Wrote batch file ${batchFileHash} to CAS.`);
 
       // Compute the Merkle root hash.
       const merkleRoot = MerkleTree.create(batch).rootHash;
+      const encodedMerkleRoot = Encoder.encode(merkleRoot);
 
       // Construct the 'anchor file'.
       const anchorFile = {
         batchFileHash: batchFileHash,
-        merkleRoot: merkleRoot
+        merkleRoot: encodedMerkleRoot
       };
 
       // Make the 'anchor file' available in CAS.
       const anchorFileJsonBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
+      Logger.info(`Wrote anchor file ${anchorFileAddress} to CAS.`);
 
       // Anchor the 'anchor file hash' on blockchain.
       await this.blockchain.write(anchorFileAddress);
