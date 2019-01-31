@@ -166,15 +166,18 @@ describe('OperationProessor', async () => {
   });
 
   it('should return firstVersion for first(firstVersion)', async () => {
+    await operationProcessor.resolve(did);
     const firstOfFirstVersion = await operationProcessor.first(firstVersion!);
     expect(firstOfFirstVersion).toBe(firstVersion!);
   });
 
   it('should return firstVersion for last(firstVersion) if firstVersion is the only version', async () => {
+    await operationProcessor.resolve(did);
     expect(await operationProcessor.last(firstVersion!)).toBe(firstVersion!);
   });
 
   it('should return undefined for prev(firstVersion)', async () => {
+    await operationProcessor.resolve(did);
     const prev = await operationProcessor.previous(firstVersion!);
     expect(prev).toBeUndefined();
   });
@@ -195,6 +198,7 @@ describe('OperationProessor', async () => {
       expect(newVersion).toBeDefined();
       expect(newVersion!).toBe(opHashes[i]);
     }
+    await operationProcessor.resolve(did);
 
     await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
   });
@@ -208,6 +212,7 @@ describe('OperationProessor', async () => {
       expect(newVersion).toBeDefined();
       expect(newVersion!).toBe(opHashes[i]);
     }
+    await operationProcessor.resolve(did);
 
     await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
   });
@@ -228,6 +233,7 @@ describe('OperationProessor', async () => {
         expect(newVersion).toBeDefined();
         expect(newVersion!).toBe(opHashes[opIdx]);
       }
+      await operationProcessor.resolve(did);
 
       await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
     }

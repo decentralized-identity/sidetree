@@ -271,7 +271,7 @@ export default class Observer {
 
     // Revert all processed operations that came after the best known valid recent transaction.
     Logger.info('Reverting operations...');
-    this.operationProcessor.rollback(bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber);
+    await this.operationProcessor.rollback(bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber);
   }
 
   /**
