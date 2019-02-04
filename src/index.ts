@@ -42,6 +42,9 @@ const port = 3001;
 
 const server = app.listen(port, () => {
   console.log(`Sidetree-IPFS node running on port: ${port}`);
+})
+.on('error', (e) => {
+  console.error(`${e.message} on starting Sidetree-IPFS service`);
 });
 
 /**
