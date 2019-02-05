@@ -30,7 +30,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 # Format and Encoding
 * JSON is used as the data encapsulation format.
-* Base64 encoding is used whenever encoding is needed for binary data or cryptographic consistency.
+* Base64URL encoding is used whenever encoding is needed for binary data or cryptographic consistency.
 * [_Multihash_](https://multiformats.io/multihash/) is used to represent hashes.
 
 
@@ -61,13 +61,14 @@ An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.
 
 ## Sidetree Operation Hashes
 
-An _operation hash_ is the hash of the JSON-formatted request of a state-modifying Sidetree operation. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. An _operation hash_ serves as a globally unique identifier of the operation, each write operation must reference the previous operation using the _operation hash_, forming a chain of change history.
+An _operation hash_ is the hash of the _encoded payload_ of a Sidetree operation request. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. With the exception of the create operation, each operation must reference the previous operation using the _operation hash_, forming a chain of change history.
 
 ## Sidetree DIDs
 
-A Sidetree DID is the hash of the DID Document given in the initial create operation as the create payload, prefixed by the Sidetree DID method name.
+A Sidetree DID is simply the _operation hash_ of the initial create operation, it is also intentionally the hash of the encoded DID Document given as the create operation payload, prefixed by the Sidetree DID method name.
 
-Since the requester is in control of the initial DID Document, the requester can deterministically know the DID assigned before the create operation is anchored on the blockchain. This allows newly created DIDs to be immediately consumed by services who optionally and temporarily accepts DIDs not yet anchored on the blockchain.
+Since the requester is in control of the initial DID Document, the requester can deterministically know the DID to be created before the create operation is anchored on the blockchain.
+
 
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
