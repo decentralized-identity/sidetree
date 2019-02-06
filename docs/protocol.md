@@ -235,8 +235,8 @@ When `proofOfWork` is not given in a write request, the the Sidetree node must p
 The API to create a Sidetree DID and its initial DID Document.
 
 ### Request path
-```
-POST /<api-version>/
+```http
+POST /<api-version>/ HTTP/1.1
 ```
 
 ### Request headers
@@ -284,16 +284,14 @@ In Sidetree implementation, certain properties or portion of which in the initia
 ```
 
 ### Request example
-```
-POST /v1.0/
-```
-```json
+```http
+POST /v1.0/ HTTP/1.1
+
 {
   "didDocument": "...",
   "signature": "...",
-  "proofOfWork": { ... }
+  "proofOfWork": { }
 }
-
 ```
 
 ### Response headers
@@ -332,8 +330,8 @@ The response body is the constructed DID Document of the DID created.
 The API to fetch the latest DID Document of the given DID.
 
 ### Request path
-```
-GET /<api-version>/<did>
+```http
+GET /<api-version>/<did> HTTP/1.1
 ```
 
 ### Request headers
@@ -343,8 +341,8 @@ None.
 None.
 
 ### Request example
-```
-GET /v1.0/did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A
+```http
+GET /v1.0/did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A HTTP/1.1
 ```
 
 ### Response body schema
@@ -378,8 +376,8 @@ The response body is the latest DID Document.
 The API to update a DID Document.
 
 ### Request path
-```
-POST /<api-version>/
+```http
+POST /<api-version>/ HTTP/1.1
 ```
 
 ### Request headers
@@ -423,15 +421,14 @@ POST /<api-version>/
 ```
 
 ### Request example
-```
-POST /v1.0/
-```
-```json
+```http
+POST /v1.0/ HTTP/1.1
+
 {
   "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
   "updatePayload": "...",
   "signature": "...",
-  "proofOfWork": { ... }
+  "proofOfWork": { }
 }
 ```
 
@@ -479,15 +476,14 @@ POST /<api-version>/
 ```
 
 ### Request example
-```
-POST /v1.0/
-```
-```json
+```http
+POST /v1.0/ HTTP/1.1
+
 {
   "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
   "deletePayload": "3hAPKZnaKcJkR85UvXhiAH7majrfpZGFFVJj8tgAtK9aSrxnrbygDTN2URoQEghPbWtFgZDMNU6RQjiMD1dpbEaoZwKBSVB3oCq1LR2",
   "signature": "...",
-  "proofOfWork": { ... }
+  "proofOfWork": { }
 }
 ```
 
