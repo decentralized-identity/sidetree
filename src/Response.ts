@@ -1,10 +1,18 @@
 /**
  * Defines a Sidetree response object.
+ NOTE: The interface is intentionally HTTP agnostic.
  */
 interface Response {
+  /**
+   * Status Code.
+   */
   status: ResponseStatus;
+  /**
+   * Response Body.
+   */
   body?: object;
 }
+
 /**
  * Possible Sidetree response status.
  */
