@@ -22,7 +22,7 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | DCAS           | Distributed content-addressable storage.                                       |
 | DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | Operation      | A change to a DID Document.                                                    |
-| Operation hash | The hash of the JSON-formatted request of a Sidetree operation.                 |
+| Operation hash | The hash of the JSON-formatted request of a Sidetree operation.                |
 | Original DID Document | A DID Document that is used in create operation to generate the DID.    |
 | Recovery key   | A key that is used to perform recovery or delete operation.                    |
 | Sidetree node  | A logical server executing Sidetree protocol rules.                            |
