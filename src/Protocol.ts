@@ -15,12 +15,19 @@ export default interface Protocol {
 // Reverse sorted protocol versions. ie. latest version first.
 let protocolVersionsSorted: Protocol[];
 
+// Cached list of supported hashing algorithms.
+let supportedHashAlgorithms: number[];
+
 /**
  * Initializes the protocol parameters. Must be invoked frist before other calls.
  */
 export function initializeProtocol (protocolFileName: string) {
   const protocolParameterFile = require(`../json/${protocolFileName}`);
   protocolVersionsSorted = Object.values<Protocol>(protocolParameterFile).sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
+
+  // Compute and cache supported hashing algorithms.
+  supportedHashAlgorithms = protocolVersionsSorted.map(version => version.hashAlgorithmInMultihashCode); // Result here can contain duplicates.
+  supportedHashAlgorithms = Array.from(new Set(supportedHashAlgorithms)); // This line removes duplicates.
 }
 
 /**
@@ -35,4 +42,11 @@ export function getProtocol (blockchainTime: number): Protocol {
   }
 
   throw new Error(`Unabled to find protocol parameters for the given blockchain time ${blockchainTime}`);
+}
+
+/**
+ * Gets the list of hashing algorithms by this Sidetree network.
+ */
+export function getSupportedHashAlgorithms (): number[] {
+  return supportedHashAlgorithms;
 }

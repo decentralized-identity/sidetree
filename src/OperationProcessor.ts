@@ -1,5 +1,7 @@
+import * as Protocol from './Protocol';
 import Cryptography from './lib/Cryptography';
 import DidPublicKey from './lib/DidPublicKey';
+import Document from './lib/Document';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { LinkedList } from 'linked-list-typescript';
@@ -89,7 +91,7 @@ export interface OperationProcessor {
   /**
    * Resolve a did.
    */
-  resolve (didUniquePortion: string): Promise<DidDocument | undefined>;
+  resolve (did: string): Promise<DidDocument | undefined>;
 
   /**
    * Returns the Did document for a given version identifier.
@@ -236,7 +238,7 @@ class OperationProcessorImpl implements OperationProcessor {
 
     this.operationStore.store(opHash, operation);
 
-    const did = this.getDid(operation, opHash);
+    const did = this.getDidUniqueSuffix(operation, opHash);
     this.getDeferredOperationsList(did).append(opHash);
 
     return opHash;
@@ -314,15 +316,15 @@ class OperationProcessorImpl implements OperationProcessor {
    * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
    */
   public async resolve (did: string): Promise<DidDocument | undefined> {
-    const didUniquePortion = did.substring(this.didMethodName.length);
+    const didUniqueSuffix = did.substring(this.didMethodName.length);
 
-    await this.processDeferredOperationsOfDid(didUniquePortion);
+    await this.processDeferredOperationsOfDid(didUniqueSuffix);
 
     if (this.deletedDids.has(did)) {
       return undefined;
     }
 
-    const latestVersion = await this.last(didUniquePortion);
+    const latestVersion = await this.last(didUniqueSuffix);
 
     // lastVersion === undefined implies we do not know about the did
     if (latestVersion === undefined) {
@@ -350,7 +352,8 @@ class OperationProcessorImpl implements OperationProcessor {
     const op = await this.operationStore.lookup(opHash);
 
     if (this.isInitialVersion(opInfo)) {
-      return WriteOperation.toDidDocument(op, this.didMethodName);
+      const protocolVersion = Protocol.getProtocol(op.transactionTime!);
+      return Document.from(op.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
     } else {
       const prevVersion = op.previousOperationHash!;
       const prevDidDoc = await this.lookup(prevVersion);
@@ -678,15 +681,15 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Get a did for an operation. For create operation, this is the operation hash;
-   * for others the did is a property included with the operation.
+   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
+   * for others the DID included with the operation can be used to obtain the unique suffix.
    */
-  private getDid (operation: WriteOperation, operationHash: OperationHash): string {
+  private getDidUniqueSuffix (operation: WriteOperation, operationHash: OperationHash): string {
     if (operation.type === OperationType.Create) {
       return operationHash;
     } else {
-      const didUniquePortion = operation.did!.substring(this.didMethodName.length);
-      return didUniquePortion;
+      const didUniqueSuffix = operation.did!.substring(this.didMethodName.length);
+      return didUniqueSuffix;
     }
   }
 
