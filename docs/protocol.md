@@ -22,7 +22,8 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 | DCAS           | Distributed content-addressable storage.                                       |
 | DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | Operation      | A change to a DID Document.                                                    |
-| Operation hash | The hash of the JSON-formated request of a Sidetree operation.                 |
+| Operation hash | The hash of the JSON-formatted request of a Sidetree operation.                 |
+| Original DID Document | A DID Document that is used in create operation to generate the DID.    |
 | Recovery key   | A key that is used to perform recovery or delete operation.                    |
 | Sidetree node  | A logical server executing Sidetree protocol rules.                            |
 | Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
@@ -65,9 +66,9 @@ An _operation hash_ is the hash of the _encoded payload_ of a Sidetree operation
 
 ## Sidetree DIDs
 
-A Sidetree DID is simply the _operation hash_ of the initial create operation, it is also intentionally the hash of the encoded DID Document given as the create operation payload, prefixed by the Sidetree DID method name.
+A Sidetree DID is simply the _operation hash_ of the initial create operation, it is also intentionally the hash of the encoded DID Document given as the create operation payload (_original DID Document_), prefixed by the Sidetree method name.
 
-Since the requester is in control of the initial DID Document, the requester can deterministically know the DID to be created before the create operation is anchored on the blockchain.
+Since the requester is in control of the _original DID Document_, the requester can deterministically calculate the DID before the create operation is anchored on the blockchain.
 
 
 # Sidetree Operation Batching
@@ -161,7 +162,7 @@ The _anchor file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded hash of the batch file.",
-  "merkleRoot": "Encoded root hash of the Merkle tree contructed using the batch file."
+  "merkleRoot": "Encoded root hash of the Merkle tree constructed using the batch file."
 }
 ```
 
@@ -205,7 +206,7 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 Sidetree protocol requires dedicated cryptographic keys called _recovery keys_ for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. The recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
 
 # Sidetree REST API
-A _Sidetree node_ exposes a set of REST API that enables the creation of a new DID and its initial DID Document, subsequent DID Document updates, and DID Document lookups. This section defines the `v1.0` version of the Sidetree DID REST API.
+A _Sidetree node_ exposes a set of REST API that enables the creation of new DIDs and their initial state, subsequent DID Document updates, and DID Document resolutions. This section defines the `v1.0` version of the Sidetree REST API.
 
 ## Response HTTP status codes
 
@@ -223,16 +224,16 @@ Every Sidetree write request must have a proof-of-work for it to be considered v
 "proofOfWork": {
   "algorithm": "Proof-of-work algorithm used.",
   "lastBlockHash": "The hash of the latest known blockchain block.",
-  "operationHash": "The hash of the opeartion this proof-of-work is for.",
+  "operationHash": "The hash of the operation this proof-of-work is for.",
   "proof": "The proof depending on the algorithm used."
 }
 ```
 
-When `proofOfWork` is not given in a write request, the the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
+When `proofOfWork` is not given in a write request, the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
 
 
 ## DID and DID Document Creation
-The API to create a Sidetree DID and its initial DID Document.
+The API to create a Sidetree DID and its initial state.
 
 ### Request path
 ```http
@@ -247,8 +248,8 @@ POST /<api-version>/ HTTP/1.1
 ### Request body schema
 ```json
 {
-  "signingKeyId": "ID of the key used to sign the initial didDocument.",
-  "createPayload": "Encoded initial DID Document of the DID.",
+  "signingKeyId": "ID of the key used to sign the original DID Document.",
+  "createPayload": "Encoded original DID Document.",
   "signature": "Encoded signature of the payload signed by the private-key corresponding to the
     public-key specified by the signingKeyId.",
   "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
@@ -256,11 +257,11 @@ POST /<api-version>/ HTTP/1.1
 }
 ```
 
-In Sidetree implementation, certain properties or portion of which in the initial DID Document will be ignored:
+In Sidetree implementation, certain properties or portion of which in the _original DID Document_ will be ignored:
 * `id` - Ignored.
 * `publicKey\*\id` - DID portion is ignored.
 
-### Initial DID Document example
+### Original DID Document example
 ```json
 {
   "@context": "https://w3id.org/did/v1",
@@ -327,11 +328,25 @@ The response body is the constructed DID Document of the DID created.
 
 
 ## DID Document resolution
-The API to fetch the latest DID Document of the given DID.
+This API fetches the latest DID Document of a DID.
+Two types of string can be passed in the URI:
+1. DID
+
+   e.g.
+   ```did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A```
+
+   The latest DID Document will be returned if found.
+
+1. Method name prefixed, encoded _original DID Document_
+
+   e.g.
+   ```did:sidetree:ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ```
+
+   The encoded DID Document is hashed using the current supported hashing algorithm to obtain the corresponding DID, after which the resolution is done against the computed DID. If a DID Document cannot be found, the supplied DID Document is used directly to generate and return a resolved DID Document, in which case the supplied DID Document is subject to the same validation as an _original DID Document_ in a create operation.
 
 ### Request path
 ```http
-GET /<api-version>/<did> HTTP/1.1
+GET /<api-version>/<did-or-method-name-prefixed-encoded-original-did-document> HTTP/1.1
 ```
 
 ### Request headers
@@ -340,9 +355,14 @@ None.
 ### Request body schema
 None.
 
-### Request example
+### Request example - DID
 ```http
 GET /v1.0/did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A HTTP/1.1
+```
+
+### Request example - Method name prefixed, encoded original DID Document
+```http
+GET /v1.0/did:sidetree:ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ HTTP/1.1
 ```
 
 ### Response body schema
