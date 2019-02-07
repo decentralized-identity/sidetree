@@ -196,7 +196,7 @@ describe('OperationProessor', async () => {
     for (let i = 0 ; i < ops.length ; ++i) {
       const newVersion = await operationProcessor.process(ops[i]);
       expect(newVersion).toBeDefined();
-      expect(newVersion!).toBe(opHashes[i]);
+      expect(newVersion).toBe(opHashes[i]);
     }
     await operationProcessor.resolve(did);
 
@@ -210,7 +210,7 @@ describe('OperationProessor', async () => {
     for (let i = numberOfUpdates ; i > 0 ; --i) {
       const newVersion = await operationProcessor.process(ops[i]);
       expect(newVersion).toBeDefined();
-      expect(newVersion!).toBe(opHashes[i]);
+      expect(newVersion).toBe(opHashes[i]);
     }
     await operationProcessor.resolve(did);
 
@@ -231,7 +231,7 @@ describe('OperationProessor', async () => {
         const opIdx = permutation[i];
         const newVersion = await operationProcessor.process(ops[opIdx]);
         expect(newVersion).toBeDefined();
-        expect(newVersion!).toBe(opHashes[opIdx]);
+        expect(newVersion).toBe(opHashes[opIdx]);
       }
       await operationProcessor.resolve(did);
 

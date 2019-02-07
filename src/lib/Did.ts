@@ -19,9 +19,9 @@ export default class Did {
   /**
    * Gets the unique portion of the DID. e.g. "did:sidetree:12345" -> "12345"
    */
-  public static getUniquePortion (did: string): string {
+  public static getUniqueSuffix (did: string): string {
     const lastColonIndex = did.lastIndexOf(':');
-    const uniquePortion = did.substring(lastColonIndex + 1);
-    return uniquePortion;
+    const uniqueSuffix = did.substring(lastColonIndex + 1);
+    return uniqueSuffix;
   }
 }

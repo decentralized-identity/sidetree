@@ -2,9 +2,11 @@ import BatchFile from '../src/BatchFile';
 import Cryptography from '../src/lib/Cryptography';
 import Did from '../src/lib/Did';
 import DidPublicKey from '../src/lib/DidPublicKey';
+import Encoder from '../src/Encoder';
 import Logger from '../src/lib/Logger';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
+import Multihash from '../src/Multihash';
 import OperationGenerator from './generators/OperationGenerator';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
@@ -20,7 +22,7 @@ describe('RequestHandler', () => {
   initializeProtocol('protocol-test.json');
   Logger.suppressLogging(true);
 
-  const configFile = require('../json/config.json');
+  const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
   const didMethodName = config[ConfigKey.DidMethodName];
 
@@ -79,7 +81,8 @@ describe('RequestHandler', () => {
     const response = await requestHandler.handleWriteRequest(createOperationBuffer);
     const httpStatus = toHttpStatus(response.status);
 
-    did = Did.from(createOperation.encodedPayload, didMethodName, getProtocol(1000000).hashAlgorithmInMultihashCode);
+    const currentBlockchainTime = await blockchain.getLatestTime();
+    did = Did.from(createOperation.encodedPayload, didMethodName, getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
 
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
@@ -118,7 +121,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(400);
   });
 
-  it('should return a DID Document for a known DID given.', async () => {
+  it('should return a resolved DID Document given a known DID.', async () => {
     const response = await requestHandler.handleResolveRequest(did);
     const httpStatus = toHttpStatus(response.status);
 
@@ -127,11 +130,38 @@ describe('RequestHandler', () => {
     expect((response.body).id).toEqual(did);
   });
 
-  it('should return NotFound for an unknown DID given.', async () => {
-    const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
+  it('should return a resolved DID Document given a valid encoded original DID Document for resolution.', async () => {
+    // Create an original DID Document.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1');
+    const originalDidDocument = {
+      '@context': 'https://w3id.org/did/v1',
+      publicKey: [JSON.stringify(publicKey)]
+    };
+    const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
+    const currentBlockchainTime = await blockchain.getLatestTime();
+    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
+    const expectedDid = didMethodName + Encoder.encode(documentHash);
+    const response = await requestHandler.handleResolveRequest(didMethodName + encodedOriginalDidDocument);
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+    expect(response.body).toBeDefined();
+    expect((response.body).id).toEqual(expectedDid);
+  });
+
+  it('should return NotFound given an unknown DID.', async () => {
+    const response = await requestHandler.handleResolveRequest('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg');
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(404);
+    expect(response.body).toBeUndefined();
+  });
+
+  it('should return BadRequest given a malformed DID.', async () => {
+    const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
+    const httpStatus = toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(400);
     expect(response.body).toBeUndefined();
   });
 
@@ -164,7 +194,7 @@ describe('RequestHandler', () => {
       did,
       operationNumber: 1,
       patch: jsonPatch,
-      previousOperationHash: Did.getUniquePortion(did)
+      previousOperationHash: Did.getUniqueSuffix(did)
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
@@ -189,7 +219,7 @@ describe('RequestHandler', () => {
       did: didMethodName + 'nonExistentDid',
       operationNumber: 1,
       patch: jsonPatch,
-      previousOperationHash: Did.getUniquePortion(did)
+      previousOperationHash: Did.getUniqueSuffix(did)
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);

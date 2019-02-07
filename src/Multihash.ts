@@ -25,4 +25,16 @@ export default class Multihash {
 
     return multihash;
   }
+
+  /**
+   * Checks to see if the given hash is multihash formatted in one of the given accepted hash algorithms.
+   */
+  public static isSupportedHash (hash: Buffer, acceptedHashAlgorithms: number[]): boolean {
+    try {
+      const multihash = multihashes.decode(hash);
+      return (acceptedHashAlgorithms.indexOf(multihash.code) >= 0);
+    } catch {
+      return false;
+    }
+  }
 }

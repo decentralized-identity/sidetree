@@ -42,13 +42,13 @@ export default class VegetaLoadGenerator {
 
       // Compute the DID from the generated Create payload.
       const did = Did.from(createPayload, 'did:sidetree:', getProtocol(1000000).hashAlgorithmInMultihashCode);
-      const didUniquePortion = Did.getUniquePortion(did);
+      const didUniqueSuffix = Did.getUniqueSuffix(did);
 
       // Generate an Update payload.
       const updatePayload = {
         did,
         operationNumber: i + 1,
-        previousOperationHash: didUniquePortion,
+        previousOperationHash: didUniqueSuffix,
         patch: [{
           op: 'replace',
           path: '/publicKey/1',

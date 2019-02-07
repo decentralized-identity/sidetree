@@ -39,8 +39,8 @@ router.post('/', async (ctx, _next) => {
   setKoaResponse(response, ctx.response);
 });
 
-router.get('/:did', async (ctx, _next) => {
-  const response = await requestHandler.handleResolveRequest(ctx.params.did);
+router.get('/:didOrDidDocument', async (ctx, _next) => {
+  const response = await requestHandler.handleResolveRequest(ctx.params.didOrDidDocument);
   setKoaResponse(response, ctx.response);
 });
 

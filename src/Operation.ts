@@ -1,4 +1,3 @@
-import Did from './lib/Did';
 import Encoder from './Encoder';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
@@ -177,7 +176,6 @@ class WriteOperation {
     switch (this.type) {
       case OperationType.Create:
         this.operationNumber = 0;
-        this.didDocument = WriteOperation.parseCreatePayload(decodedPayload);
         break;
       case OperationType.Update:
         this.operationNumber = decodedPayload.operationNumber;
@@ -205,40 +203,6 @@ class WriteOperation {
     resolvedTransaction?: ResolvedTransaction,
     operationIndex?: number): WriteOperation {
     return new WriteOperation(operationBuffer, resolvedTransaction, operationIndex);
-  }
-
-  /**
-   * Retuns the constructed DID Document from the given create operation.
-   * Throws error if:
-   *  1. the given operation is not a create operation; or
-   *  2. if unable to locate the transaction time to be used for DID generation.
-   * @param transactionTime Optional. Logical blockchain time that the given operation was anchored on blockchain.
-   *                        Used to decide protocol version to use for DID generation.
-   *                        If not given operation.transactionTime must be given and will be used instead.
-   */
-  public static toDidDocument (operation: WriteOperation, didMethodName: string, transactionTime?: number): DidDocument {
-    if (operation.type !== OperationType.Create) {
-      throw new Error(`Unable to construct a DID Document from a '${operation.type}' operation.`);
-    }
-
-    if (transactionTime === undefined) {
-      transactionTime = operation.transactionTime;
-    }
-
-    if (transactionTime === undefined) {
-      throw new Error(`Transaction time not given but needed for DID generation.`);
-    }
-
-    // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-    const protocol = getProtocol(transactionTime);
-
-    // Compute the hash of the DID Document in the create payload as the DID
-    const did = Did.from(operation.encodedPayload, didMethodName, protocol.hashAlgorithmInMultihashCode);
-
-    // Construct real DID document and return it.
-    const didDocument = operation.didDocument!;
-    didDocument.id = did;
-    return didDocument;
   }
 
   /**
@@ -278,16 +242,6 @@ class WriteOperation {
     }
 
     return [operationType, encodedPayload];
-  }
-
-  /**
-   * Parses the given create payload into a DidDocument.
-   */
-  private static parseCreatePayload (payload: any): DidDocument {
-    // DidDocument class requires 'id' property, where as Sidetree does not.
-    // So here we make sure the 'id' property is added before passing to DidDocument constructor.
-    payload.id = 'disregard';
-    return new DidDocument(payload);
   }
 }
 

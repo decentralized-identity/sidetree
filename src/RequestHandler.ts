@@ -1,8 +1,12 @@
+import * as Protocol from './Protocol';
+import Encoder from './Encoder';
+import Did from './lib/Did';
+import Document from './lib/Document';
+import Multihash from './Multihash';
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { ErrorCode, SidetreeError } from './Error';
-import { getProtocol } from './Protocol';
 import { OperationProcessor } from './OperationProcessor';
 import { OperationType, WriteOperation } from './Operation';
 import { Response, ResponseStatus } from './Response';
@@ -23,7 +27,7 @@ export default class RequestHandler {
     try {
       // Get the protocol version according to current blockchain time to validate the operation request.
       const currentTime = await this.blockchain.getLatestTime();
-      protocol = getProtocol(currentTime.time + 1);
+      protocol = Protocol.getProtocol(currentTime.time + 1);
     } catch {
       return {
         status: ResponseStatus.ServerError,
@@ -86,8 +90,39 @@ export default class RequestHandler {
 
   /**
    * Handles resolve operation.
+   * @param didOrDidDocument Can either be:
+   *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
+   *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  public async handleResolveRequest (did: string): Promise<Response> {
+  public async handleResolveRequest (didOrDidDocument: string): Promise<Response> {
+    if (!didOrDidDocument.startsWith(this.didMethodName)) {
+      return {
+        status: ResponseStatus.BadRequest
+      };
+    }
+
+    // Figure out if the given parameter contains a DID or DID Document.
+    let uniquePortion;
+    let parameterIsDid;
+    try {
+      uniquePortion = didOrDidDocument.substring(this.didMethodName.length);
+
+      const supportedHashAlgorithms = Protocol.getSupportedHashAlgorithms();
+      parameterIsDid = Multihash.isSupportedHash(Encoder.decodeAsBuffer(uniquePortion), supportedHashAlgorithms);
+    } catch {
+      return {
+        status: ResponseStatus.BadRequest
+      };
+    }
+
+    if (parameterIsDid) {
+      return this.handleResolveRequestWithDid(didOrDidDocument);
+    } else {
+      return this.handleResolveRequestWithDidDocument(uniquePortion);
+    }
+  }
+
+  private async handleResolveRequestWithDid (did: string): Promise<Response> {
     const didDocument = await this.operationProcessor.resolve(did);
 
     if (!didDocument) {
@@ -102,6 +137,42 @@ export default class RequestHandler {
     };
   }
 
+  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<Response> {
+    // Get the protocol version according to current blockchain time.
+    const currentTime = await this.blockchain.getLatestTime();
+    const protocol = Protocol.getProtocol(currentTime.time + 1);
+    const currentHashAlgorithm = protocol.hashAlgorithmInMultihashCode;
+
+    // Validate that the given encoded DID Document is a valid original document.
+    const isValidOriginalDocument = await Document.isValidOriginalDocument(encodedDidDocument, protocol.maxOperationByteSize);
+    if (!isValidOriginalDocument) {
+      return {
+        status: ResponseStatus.BadRequest
+      };
+    }
+
+    const did = Did.from(encodedDidDocument, this.didMethodName, currentHashAlgorithm);
+
+    // Attempt to resolve the DID.
+    const didDocument = await this.operationProcessor.resolve(did);
+
+    // If DID Document found then return it.
+    if (didDocument) {
+      return {
+        status: ResponseStatus.Succeeded,
+        body: didDocument
+      };
+    }
+
+    // Else contruct a DID Document with valid DID using the given encoded DID Document string.
+    const constructedDidDocument = Document.from(encodedDidDocument, this.didMethodName, currentHashAlgorithm);
+
+    return {
+      status: ResponseStatus.Succeeded,
+      body: constructedDidDocument
+    };
+  }
+
   /**
    * Handles create operation.
    */
@@ -110,7 +181,8 @@ export default class RequestHandler {
     const currentTime = await this.blockchain.getLatestTime();
 
     // Construct real DID document and return it.
-    const didDocument = WriteOperation.toDidDocument(operation, this.didMethodName, currentTime.time + 1);
+    const protocolVersion = Protocol.getProtocol(currentTime.time);
+    const didDocument = Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
 
     return {
       status: ResponseStatus.Succeeded,
