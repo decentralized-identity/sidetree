@@ -140,15 +140,13 @@ export default class RequestHandler {
   private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<Response> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
-    const protocol = Protocol.getProtocol(currentTime.time + 1);
-    const currentHashAlgorithm = protocol.hashAlgorithmInMultihashCode;
+    const protocolVersion = Protocol.getProtocol(currentTime.time);
+    const currentHashAlgorithm = protocolVersion.hashAlgorithmInMultihashCode;
 
     // Validate that the given encoded DID Document is a valid original document.
-    const isValidOriginalDocument = await Document.isValidOriginalDocument(encodedDidDocument, protocol.maxOperationByteSize);
+    const isValidOriginalDocument = Document.isEncodedStringValidOriginalDocument(encodedDidDocument, protocolVersion.maxOperationByteSize);
     if (!isValidOriginalDocument) {
-      return {
-        status: ResponseStatus.BadRequest
-      };
+      return { status: ResponseStatus.BadRequest };
     }
 
     const did = Did.from(encodedDidDocument, this.didMethodName, currentHashAlgorithm);
@@ -177,11 +175,17 @@ export default class RequestHandler {
    * Handles create operation.
    */
   public async handleCreateOperation (operation: WriteOperation): Promise<Response> {
-    // Get the current blockchain time so the correct protocol version can be used for generating the DID.
+    // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
+    const protocolVersion = Protocol.getProtocol(currentTime.time);
+
+    // Validate that the given encoded DID Document is a valid original document.
+    const isValidOriginalDocument = Document.isEncodedStringValidOriginalDocument(operation.encodedPayload, protocolVersion.maxOperationByteSize);
+    if (!isValidOriginalDocument) {
+      return { status: ResponseStatus.BadRequest };
+    }
 
     // Construct real DID document and return it.
-    const protocolVersion = Protocol.getProtocol(currentTime.time);
     const didDocument = Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
 
     return {

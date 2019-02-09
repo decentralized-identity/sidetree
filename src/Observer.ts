@@ -213,7 +213,13 @@ export default class Observer {
           throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${protocol.maxOperationByteSize} bytes.`);
         }
 
-        const operation = WriteOperation.create(operationBuffer, resolvedTransaction, operationIndex);
+        let operation;
+        try {
+          operation = WriteOperation.create(operationBuffer, resolvedTransaction, operationIndex);
+        } catch (error) {
+          Logger.info(`Unable to create an operation with '${operationBuffer}': ${error}`);
+          throw error;
+        }
 
         operations.push(operation);
         operationIndex++;
@@ -222,6 +228,7 @@ export default class Observer {
       // Ensure the batch meets proof-of-work requirements.
       this.verifyProofOfWork(operations);
     } catch {
+      Logger.info(`Batch file '${resolvedTransaction.batchFileHash}' failed validation, transaction ignored.`);
       return; // Invalid batch file, nothing to process.
     }
 

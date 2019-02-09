@@ -1,9 +1,8 @@
 import * as fs from 'fs';
-
-import OperationGenerator from './OperationGenerator';
-import Did from '../../src/lib/Did';
-import { getProtocol } from '../../src/Protocol';
 import Cryptography from '../../src/lib/Cryptography';
+import Did from '../../src/lib/Did';
+import OperationGenerator from './OperationGenerator';
+import { getProtocol } from '../../src/Protocol';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -22,7 +21,7 @@ export default class VegetaLoadGenerator {
   public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
 
     const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
-    const keyId = 'key1';
+    const keyId = '#key1';
 
     // Make directories needed by the request generator.
     fs.mkdirSync(absoluteFolderPath);

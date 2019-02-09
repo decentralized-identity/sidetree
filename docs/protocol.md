@@ -70,6 +70,11 @@ A Sidetree DID is simply the _operation hash_ of the initial create operation, i
 
 Since the requester is in control of the _original DID Document_, the requester can deterministically calculate the DID before the create operation is anchored on the blockchain.
 
+A valid _original DID Document_ must be a valid generic DID Document that adheres to the following additional rules:
+1. The document must NOT have the `id` property.
+1. The document must contain at least 1 entry in the `publicKey` array property.
+1. The `id` property of a `publickey` element must be specified and be a fragment (e.g. `#key1`).
+
 
 # Sidetree Operation Batching
 Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
@@ -257,10 +262,6 @@ POST /<api-version>/ HTTP/1.1
 }
 ```
 
-In Sidetree implementation, certain properties or portion of which in the _original DID Document_ will be ignored:
-* `id` - Ignored.
-* `publicKey\*\id` - DID portion is ignored.
-
 ### Original DID Document example
 ```json
 {
@@ -289,7 +290,8 @@ In Sidetree implementation, certain properties or portion of which in the _origi
 POST /v1.0/ HTTP/1.1
 
 {
-  "didDocument": "...",
+  "signingKeyId": "#key-1",
+  "createPayload": "...",
   "signature": "...",
   "proofOfWork": { }
 }
