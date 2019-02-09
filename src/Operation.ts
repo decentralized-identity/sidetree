@@ -1,3 +1,4 @@
+import Document from './lib/Document';
 import Encoder from './Encoder';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
@@ -173,6 +174,20 @@ class WriteOperation {
     const decodedPayloadJson = Encoder.decodeAsString(encodedPayload);
     const decodedPayload = JSON.parse(decodedPayloadJson);
 
+    // Verify operation specific payload schema.
+    let payloadSchemaIsValid;
+    switch (this.type) {
+      case OperationType.Create:
+        payloadSchemaIsValid = Document.isObjectValidOriginalDocument(decodedPayload);
+        break;
+      default:
+        payloadSchemaIsValid = true;
+    }
+    if (!payloadSchemaIsValid) {
+      throw new Error(`${OperationType[this.type]} payload failed schema validation.`);
+    }
+
+    // Initialize operation specific properties.
     switch (this.type) {
       case OperationType.Create:
         this.operationNumber = 0;

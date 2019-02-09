@@ -18,7 +18,7 @@ describe('Document', () => {
     const encodedOriginalDidDocument = Encoder.encode(originalDidDocument);
 
     // Max allowed size set to 10 bytes.
-    const isDocumentValid = await Document.isValidOriginalDocument(encodedOriginalDidDocument, 10);
+    const isDocumentValid = Document.isEncodedStringValidOriginalDocument(encodedOriginalDidDocument, 10);
     expect(isDocumentValid).toBeFalsy();
   });
 });

@@ -55,7 +55,7 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(mockLatestTime);
 
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
     const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleWriteRequest(createOperationBuffer);
@@ -132,7 +132,7 @@ describe('RequestHandler', () => {
 
   it('should return a resolved DID Document given a valid encoded original DID Document for resolution.', async () => {
     // Create an original DID Document.
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1');
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
       publicKey: [JSON.stringify(publicKey)]

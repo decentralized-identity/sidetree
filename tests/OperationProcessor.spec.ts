@@ -54,7 +54,7 @@ async function createUpdateSequence (
         op: 'replace',
         path: '/publicKey/1',
         value: {
-          id: 'key2',
+          id: '#key2',
           type: 'RsaVerificationKey2018',
           owner: 'did:sidetree:dummydid',
           publicKeyPem: process.hrtime() // Some dummy value that's not used.
@@ -62,7 +62,7 @@ async function createUpdateSequence (
       }]
     };
 
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, 'key1', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(
       updateOperationBuffer,
       cas,
@@ -148,7 +148,7 @@ describe('OperationProessor', async () => {
   let did: string;
 
   beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
