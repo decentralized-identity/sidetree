@@ -1,6 +1,6 @@
 /**
  * Defines a Sidetree response object.
- NOTE: The interface is intentionally HTTP agnostic.
+ * NOTE: The interface is intentionally HTTP agnostic.
  */
 interface Response {
   /**
