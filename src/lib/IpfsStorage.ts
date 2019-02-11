@@ -5,7 +5,7 @@ import * as Ipfs from 'ipfs';
  */
 export class IpfsStorage {
   /**  IPFS node instance  */
-  public node: Ipfs;
+  public node: IPFS;
   /**  IPFS Storage class object  */
   static ipfsStorageInstance: IpfsStorage;
 
@@ -31,7 +31,7 @@ export class IpfsStorage {
    */
   public async read (hash: string): Promise<Buffer> {
     // files.get fetches the content from network if not available in local repo and stores in cache which is garbage collectable
-    const files = await this.node.files.get(hash);
+    const files = await this.node.get(hash);
 
     // Store the fetched content in local repo. Re-pinning already exisitng object doesnt create a duplicate.
     await this.node.pin.add(hash);
@@ -44,7 +44,7 @@ export class IpfsStorage {
    * @returns The multihash content identifier of the stored content.
    */
   public async write (content: Buffer): Promise<string> {
-    const files = await this.node.files.add(content);
+    const files = await this.node.add(content);
     return files[0].hash;
   }
 }

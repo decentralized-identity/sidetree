@@ -24,7 +24,7 @@ describe('IpfsStorage', () => {
     const mockIpfsGet = async () => {
       return mockIpfsContent;
     };
-    spyOn(ipfsStorage.node.files, 'get').and.callFake(mockIpfsGet);
+    spyOn(ipfsStorage.node, 'get').and.callFake(mockIpfsGet);
     spyOn(ipfsStorage.node.pin, 'add').and.returnValue(true);
 
     const expectedContent = Buffer.from('ipfs');
@@ -45,7 +45,7 @@ describe('IpfsStorage', () => {
     const mockIpfsWrite = async () => {
       return mockSidetreeContent;
     };
-    spyOn(ipfsStorage.node.files, 'add').and.callFake(mockIpfsWrite);
+    spyOn(ipfsStorage.node, 'add').and.callFake(mockIpfsWrite);
 
     const expectedHash = 'Qm12345abc';
     const bufferContent = Buffer.from('ipfs');

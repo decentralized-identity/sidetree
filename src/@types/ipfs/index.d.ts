@@ -35,7 +35,6 @@ declare class IPFS {
     dag: IPFS.DagAPI;
     libp2p: any;
     swarm: IPFS.SwarmAPI;
-    files: IPFS.FilesAPI;
     bitswap: any;
     pin: IPFS.PinAPI;
 
@@ -47,6 +46,24 @@ declare class IPFS {
     on(event: string, callback: () => void): IPFS;
     on(event: 'error', callback: (error: { message: any }) => void): IPFS;
     once(event: string, callback: () => void): IPFS;
+ 
+    createAddStream(options: any, callback: Callback<any>): void;
+    createAddStream(callback: Callback<any>): void;
+
+    createPullStream(options: any): any;
+
+    add(data: IPFS.FileContent, options: any, callback: Callback<IPFS.IPFSFile[]>): void;
+    add(data: IPFS.FileContent, options: any): Promise<IPFS.IPFSFile[]>;
+    add(data: IPFS.FileContent, callback: Callback<IPFS.IPFSFile[]>): void;
+    add(data: IPFS.FileContent): Promise<IPFS.IPFSFile[]>;
+
+    cat(hash: IPFS.Multihash, callback: Callback<IPFS.FileContent>): void;
+    cat(hash: IPFS.Multihash): Promise<IPFS.FileContent>;
+
+    get(hash: IPFS.Multihash, callback: Callback<IPFS.Files[]>): void;
+    get(hash: IPFS.Multihash): Promise<IPFS.Files[]>;
+
+    getPull(hash: IPFS.Multihash, callback: Callback<any>): void;
 }
 
 declare namespace IPFS {
@@ -106,6 +123,7 @@ declare namespace IPFS {
     }
 
     // TODO: Add type for pull-stream
+    
     export type FileContent = Buffer | NodeJS.ReadableStream | Files[];
 
     export interface Files {
@@ -114,34 +132,13 @@ declare namespace IPFS {
         content?: Buffer | NodeJS.ReadableStream;
     }
 
-    /** old version? */
     export interface IPFSFile {
         path: string;
         hash: string;
         size: number;
         content?: FileContent;
     }
-
-    export interface FilesAPI {
-        createAddStream(options: any, callback: Callback<any>): void;
-        createAddStream(callback: Callback<any>): void;
-
-        createPullStream(options: any): any;
-
-        add(data: FileContent, options: any, callback: Callback<IPFSFile[]>): void;
-        add(data: FileContent, options: any): Promise<IPFSFile[]>;
-        add(data: FileContent, callback: Callback<IPFSFile[]>): void;
-        add(data: FileContent): Promise<IPFSFile[]>;
-
-        cat(hash: Multihash, callback: Callback<FileContent>): void;
-        cat(hash: Multihash): Promise<FileContent>;
-
-        get(hash: Multihash, callback: Callback<Files[]>): void;
-        get(hash: Multihash): Promise<Files[]>;
-
-        getPull(hash: Multihash, callback: Callback<any>): void;
-    }
-
+    
     export interface PinAPI {
         add(hash: Multihash, options: any, callback: Callback<any[]>): void;
         add(hash: Multihash, options: any): Promise<any[]>;

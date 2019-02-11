@@ -40,7 +40,7 @@
   "dependencies": {
     "base64url": "^3.0.1",
     "http-status": "^1.2.0",
-    "ipfs": "^0.33",
+    "ipfs": "^0.34",
     "koa": "^2.3.0",
     "koa-router": "^7.2.1",
     "multihashes": "^0.4.14",
