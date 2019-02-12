@@ -4,8 +4,8 @@ import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { getOperationHash, Operation, OperationType } from './Operation';
 import { LinkedList } from 'linked-list-typescript';
-import { getOperationHash, WriteOperation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';
 
 /**
@@ -78,7 +78,7 @@ export interface OperationProcessor {
    * operation.
    * @returns the hash of the operation.
    */
-  process (operation: WriteOperation): Promise<string>;
+  process (operation: Operation): Promise<string>;
 
   /**
    * Remove all previously processed operations with transactionNumber
@@ -143,7 +143,7 @@ function earlier (ts1: OperationTimestamp, ts2: OperationTimestamp): boolean {
 }
 
 /**
- * Information about a write operation relevant for maintaining OperationProcessor state.
+ * Information about an operation relevant for maintaining OperationProcessor state.
  */
 interface OperationInfo {
   readonly type: OperationType;
@@ -215,7 +215,7 @@ class OperationProcessorImpl implements OperationProcessor {
    * in a deferred operations list and returns the hash of the operation. The deferred operations for a
    * particular did are processed during the next resolve of the did.
    */
-  public async process (operation: WriteOperation): Promise<string> {
+  public async process (operation: Operation): Promise<string> {
     const opHash = getOperationHash(operation);
 
     // Throw errors if missing any required metadata:
@@ -360,7 +360,7 @@ class OperationProcessorImpl implements OperationProcessor {
       if (prevDidDoc === undefined) {
         return undefined;
       } else {
-        return WriteOperation.applyJsonPatchToDidDocument(prevDidDoc, op.patch!);
+        return Operation.applyJsonPatchToDidDocument(prevDidDoc, op.patch!);
       }
     }
   }
@@ -684,7 +684,7 @@ class OperationProcessorImpl implements OperationProcessor {
    * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
    * for others the DID included with the operation can be used to obtain the unique suffix.
    */
-  private getDidUniqueSuffix (operation: WriteOperation, operationHash: OperationHash): string {
+  private getDidUniqueSuffix (operation: Operation, operationHash: OperationHash): string {
     if (operation.type === OperationType.Create) {
       return operationHash;
     } else {

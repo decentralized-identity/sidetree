@@ -15,8 +15,8 @@ import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { getProtocol, initializeProtocol } from '../src/Protocol';
+import { Operation } from '../src/Operation';
 import { toHttpStatus } from '../src/Response';
-import { WriteOperation } from '../src/Operation';
 
 describe('RequestHandler', () => {
   initializeProtocol('protocol-test.json');
@@ -58,7 +58,7 @@ describe('RequestHandler', () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
     const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
 
-    await requestHandler.handleWriteRequest(createOperationBuffer);
+    await requestHandler.handleOperationRequest(createOperationBuffer);
     await rooter.rootOperations();
 
     // Generate the batch file and batch file hash.
@@ -73,12 +73,12 @@ describe('RequestHandler', () => {
       anchorFileHash: 'NOT_NEEDED',
       batchFileHash
     };
-    const createOperation = WriteOperation.create(createOperationBuffer, resolvedTransaction, 0);
+    const createOperation = Operation.create(createOperationBuffer, resolvedTransaction, 0);
     await operationProcessor.process(createOperation);
 
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
-    const response = await requestHandler.handleWriteRequest(createOperationBuffer);
+    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = toHttpStatus(response.status);
 
     const currentBlockchainTime = await blockchain.getLatestTime();
@@ -114,7 +114,7 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(blockchainTime);
 
     const createRequest = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
-    const response = await requestHandler.handleWriteRequest(createRequest);
+    const response = await requestHandler.handleOperationRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
@@ -167,7 +167,7 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
     const request = await OperationGenerator.generateDeleteOperation(did);
-    const response = await requestHandler.handleWriteRequest(request);
+    const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
@@ -175,7 +175,7 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
     const request = await OperationGenerator.generateDeleteOperation(didMethodName + 'nonExistentDid');
-    const response = await requestHandler.handleWriteRequest(request);
+    const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
@@ -198,7 +198,7 @@ describe('RequestHandler', () => {
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
-    const response = await requestHandler.handleWriteRequest(request);
+    const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
@@ -223,7 +223,7 @@ describe('RequestHandler', () => {
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
-    const response = await requestHandler.handleWriteRequest(request);
+    const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);

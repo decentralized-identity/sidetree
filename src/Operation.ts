@@ -40,15 +40,14 @@ enum OperationType {
 }
 
 /**
- * A class that represents a Sidetree write operation.
+ * A class that represents a Sidetree operation.
  * The primary purphose of this class is to provide an abstraction to the underlying JSON data structure.
  *
  * NOTE: Design choices of:
- * 1. Excluding resolve/read operation as it is currently very different, ie. far simpler than write operations.
- * 2. No subclassing of specific operations. The intention here is to keep the hierarchy flat, as most properties are common.
- * 3. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
+ * 1. No subclassing of specific operations. The intention here is to keep the hierarchy flat, as most properties are common.
+ * 2. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
-class WriteOperation {
+class Operation {
   /** The logical blockchain time that this opeartion was anchored on the blockchain */
   public readonly transactionTime?: number;
   /** The transaction number of the transaction this operation was batched within. */
@@ -88,8 +87,7 @@ class WriteOperation {
   public readonly patch?: any[];
 
   /**
-   * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
-   * throws error otherwise.
+   * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
    * @param resolvedTransaction The transaction operation this opeartion was batched within.
    *                            If given, operationIndex must be given else error will be thrown.
    *                            The transactoinTimeHash is ignored by the constructor.
@@ -166,7 +164,7 @@ class WriteOperation {
     this.proofOfWork = operation.proofOfWork;
 
     // Get the operation type and encoded operation string.
-    const [operationType, encodedPayload] = WriteOperation.getOperationTypeAndEncodedPayload(operation);
+    const [operationType, encodedPayload] = Operation.getOperationTypeAndEncodedPayload(operation);
     this.type = operationType;
     this.encodedPayload = encodedPayload;
 
@@ -207,8 +205,7 @@ class WriteOperation {
   }
 
   /**
-   * Creates a WriteOperation if the request given follows one and only one write operation JSON schema,
-   * throws error otherwise.
+   * Creates an Operation if the given operation buffer passes schema validation, throws error otherwise.
    * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
    * @param operationIndex The operation index this operation was assigned to in the batch.
    *                       If given, resolvedTransaction must be given else error will be thrown.
@@ -216,8 +213,8 @@ class WriteOperation {
   public static create (
     operationBuffer: Buffer,
     resolvedTransaction?: ResolvedTransaction,
-    operationIndex?: number): WriteOperation {
-    return new WriteOperation(operationBuffer, resolvedTransaction, operationIndex);
+    operationIndex?: number): Operation {
+    return new Operation(operationBuffer, resolvedTransaction, operationIndex);
   }
 
   /**
@@ -261,11 +258,11 @@ class WriteOperation {
 }
 
 /**
- * Get a cryptographic hash of the write operation.
+ * Get a cryptographic hash of the operation.
  * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
  * for all other cases, the hash is calculated against the entire opeartion buffer.
  */
-function getOperationHash (operation: WriteOperation): string {
+function getOperationHash (operation: Operation): string {
 
   if (operation.transactionTime === undefined) {
     throw new Error(`Transaction time not given but needed for DID generation.`);
@@ -286,4 +283,4 @@ function getOperationHash (operation: WriteOperation): string {
   return encodedMultihash;
 }
 
-export { getOperationHash, OperationType, WriteOperation };
+export { getOperationHash, OperationType, Operation };
