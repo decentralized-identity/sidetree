@@ -46,7 +46,7 @@ export default class VegetaLoadGenerator {
       // Generate an Update payload.
       const updatePayload = {
         did,
-        operationNumber: i + 1,
+        operationNumber: 1,
         previousOperationHash: didUniqueSuffix,
         patch: [{
           op: 'replace',
