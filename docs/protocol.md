@@ -54,9 +54,9 @@ The following lists the parameters of each version of the Sidetree protocol.
 ## Sidetree Operations
 
 A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
-) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_. All write operations are authenticated with a signature using a key specified in the corresponding DID Document.
+) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_. All operations are authenticated with a signature using a key specified in the corresponding DID Document.
 
-An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.org/html/rfc6902) so that only differences from the previous version of the DID Document is stored in each write operation.
+An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.org/html/rfc6902) so that only differences from the previous version of the DID Document is specified in each operation.
 
 > NOTE: Create and recover operations require a complete DID Document as input as opposed to a _JSON patch_.
 
@@ -210,8 +210,10 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 # DID Deletion and Recovery
 Sidetree protocol requires dedicated cryptographic keys called _recovery keys_ for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. The recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
 
+
 # Sidetree REST API
 A _Sidetree node_ exposes a set of REST API that enables the creation of new DIDs and their initial state, subsequent DID Document updates, and DID Document resolutions. This section defines the `v1.0` version of the Sidetree REST API.
+
 
 ## Response HTTP status codes
 
@@ -222,8 +224,9 @@ A _Sidetree node_ exposes a set of REST API that enables the creation of new DID
 | 400              | Bad client request.                      |
 | 500              | Server error.                            |
 
+
 ## Proof-of-work
-Every Sidetree write request must have a proof-of-work for it to be considered valid. As a result, every write request (e.g. DID create, update, delete, and recover) has an optional `proofOfWork` property with the following schema:
+Every Sidetree operation request must have a proof-of-work for it to be considered valid. As a result, every operation request (e.g. DID create, update, delete, and recover) has an optional `proofOfWork` property with the following schema:
 
 ```json
 "proofOfWork": {
@@ -234,7 +237,11 @@ Every Sidetree write request must have a proof-of-work for it to be considered v
 }
 ```
 
-When `proofOfWork` is not given in a write request, the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
+When `proofOfWork` is not given in an operation request, the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
+
+
+## JSON Web Signature (JWS)
+Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme. Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
 
 
 ## DID and DID Document Creation
@@ -253,12 +260,14 @@ POST /<api-version>/ HTTP/1.1
 ### Request body schema
 ```json
 {
-  "signingKeyId": "ID of the key used to sign the original DID Document.",
-  "createPayload": "Encoded original DID Document.",
-  "signature": "Encoded signature of the payload signed by the private-key corresponding to the
-    public-key specified by the signingKeyId.",
-  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+  "header": {
+    "opertion": "create",
+    "kid": "ID of the key used to sign the original DID Document.",
+    "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
+  },
+  "payload": "Encoded original DID Document.",
+  "signature": "Encoded signature."
 }
 ```
 
@@ -266,16 +275,14 @@ POST /<api-version>/ HTTP/1.1
 ```json
 {
   "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:ignored",
   "publicKey": [{
-    "id": "did:sidetree:didPortionIgnored#key-1",
+    "id": "#key-1",
     "type": "RsaVerificationKey2018",
-    "owner": "did:sidetree:ignoredUnlessResolvable",
     "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
   }],
   "service": [{
     "type": "IdentityHub",
-    "publicKey": "did:sidetree:ignored#key-1",
+    "publicKey": "#key-1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
@@ -290,10 +297,13 @@ POST /<api-version>/ HTTP/1.1
 POST /v1.0/ HTTP/1.1
 
 {
-  "signingKeyId": "#key-1",
-  "createPayload": "...",
-  "signature": "...",
-  "proofOfWork": { }
+  "header": {
+    "opertion": "create",
+    "kid": "#key1",
+    "proofOfWork": { }
+  },
+  "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwiaWQiOiJkaWQ6c2lkZXRyZWU6aWdub3JlZCIsInB1YmxpY0tleSI6W3siaWQiOiIja2V5MSIsInR5cGUiOiJTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE4IiwicHVibGljS2V5SGV4IjoiMDI5YTQ3NzRkNTQzMDk0ZGVhZjM0MjY2M2FlNjcyNzI4ZTEyZjAzYjNiNmQ5ODE2YjBiNzk5OTVmYWRlMGZhYjIzIn1dfQ",
+  "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
 }
 ```
 
@@ -309,16 +319,15 @@ The response body is the constructed DID Document of the DID created.
 ```json
 {
   "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:realDid",
+  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
   "publicKey": [{
-    "id": "did:sidetree:realDid#key-1",
-    "type": "RsaVerificationKey2018",
-    "owner": "did:sidetree:realDid",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+    "id": "#key1",
+    "type": "Secp256k1VerificationKey2018",
+    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
   }],
   "service": [{
     "type": "IdentityHub",
-    "publicKey": "did:sidetree:realDid#key-1",
+    "publicKey": "#key1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
@@ -374,12 +383,11 @@ The response body is the latest DID Document.
 ```json
 {
   "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:123456789abcdefghi",
+  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
   "publicKey": [{
-    "id": "did:sidetree:123456789abcdefghi#key-1",
-    "type": "RsaVerificationKey2018",
-    "owner": "did:sidetree:123456789abcdefghi",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+    "id": "#key1",
+    "type": "Secp256k1VerificationKey2018",
+    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
   }],
   "service": [{
     "type": "IdentityHub",
@@ -410,12 +418,14 @@ POST /<api-version>/ HTTP/1.1
 ### Request body schema
 ```json
 {
-  "signingKeyId": "ID of the key used to sign the update payload",
-  "updatePayload": "Encoded update payload JSON object define by the schema below.",
-  "signature": "Encoded signature of the payload signed by the private-key corresponding to the
-    public-key specified by the signingKeyId.",
-  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+  "header": {
+    "opertion": "update",
+    "kid": "ID of the key used to sign the update payload.",
+    "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
+  },
+  "payload": "Encoded update payload JSON object define by the schema below.",
+  "signature": "Encoded signature."
 }
 ```
 
@@ -447,10 +457,13 @@ POST /<api-version>/ HTTP/1.1
 POST /v1.0/ HTTP/1.1
 
 {
-  "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
-  "updatePayload": "...",
-  "signature": "...",
-  "proofOfWork": { }
+  "header": {
+    "opertion": "update",
+    "kid": "#key1",
+    "proofOfWork": { }
+  },
+  "payload": "eyJkaWQiOiJkaWQ6c2lkZXRyZWU6RWlERkRGVVNnb3hsWm94U2x1LTE3eXpfRm1NQ0l4NGhwU2FyZUNFN0lSWnYwQSIsIm9wZXJhdGlvbk51bWJlciI6MSwicHJldmlvdXNPcGVyYXRpb25IYXNoIjoiRWlERkRGVVNnb3hsWm94U2x1LTE3eXpfRm1NQ0l4NGhwU2FyZUNFN0lSWnYwQSIsInBhdGNoIjpbeyJvcCI6InJlcGxhY2UiLCJwYXRoIjoiL3B1YmxpY0tleS8xIiwidmFsdWUiOnsiaWQiOiIja2V5MiIsInR5cGUiOiJTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE4IiwicHVibGljS2V5SGV4IjoiMDI5YTQ3NzRkNTQzMDk0ZGVhZjM0MjY2M2FlNjcyNzI4ZTEyZjAzYjNiNmQ5ODE2YjBiNzk5OTVmYWRlMGZhYjIzIn19XX0",
+  "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
 }
 ```
 
@@ -474,12 +487,14 @@ POST /<api-version>/
 ### Request body schema
 ```json
 {
-  "signingKeyId": "ID of the recovery key used to sign the delete payload",
-  "deletePayload": "Encoded delete payload JSON object define by the schema below.",
-  "signature": "Encoded signature of the payload signed by the private-key corresponding to the
-    public-key specified by the signingKeyId.",
-  "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
+  "header": {
+    "opertion": "delete",
+    "kid": "ID of the key used to sign the delete payload.",
+    "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
+  },
+  "payload": "Encoded update payload JSON object define by the schema below.",
+  "signature": "Encoded signature."
 }
 ```
 
@@ -500,12 +515,14 @@ POST /<api-version>/
 ### Request example
 ```http
 POST /v1.0/ HTTP/1.1
-
 {
-  "signingKeyId": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf#key-1",
-  "deletePayload": "3hAPKZnaKcJkR85UvXhiAH7majrfpZGFFVJj8tgAtK9aSrxnrbygDTN2URoQEghPbWtFgZDMNU6RQjiMD1dpbEaoZwKBSVB3oCq1LR2",
-  "signature": "...",
-  "proofOfWork": { }
+  "header": {
+    "opertion": "delete",
+    "kid": "#key1",
+    "proofOfWork": { }
+  },
+  "payload": "3hAPKZnaKcJkR85UvXhiAH7majrfpZGFFVJj8tgAtK9aSrxnrbygDTN2URoQEghPbWtFgZDMNU6RQjiMD1dpbEaoZwKBSVB3oCq1LR2",
+  "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
 }
 ```
 
@@ -529,15 +546,7 @@ If the operation is successful, it applies the provided JSON patch to the versio
 > - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.
 
 
-# Q&A
-* Why have different payload name for each type of write operations?
+# FAQs
+* Why assign a _transaction number_ to invalid transactions?
 
-  Each write operation type have different payload schema.
-
-* Why assign a _transaction number_ for invalid transactions?
-
-  In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of existing valid transactions remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
-
-* Why is a request payload encoded?
-
-For the ease of implementation of signature verification code.
+  In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of valid transactions that occur at a later time remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
