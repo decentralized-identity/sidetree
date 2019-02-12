@@ -2,7 +2,7 @@ import BatchFile from './BatchFile';
 import Logger from './lib/Logger';
 import { Cache, getCache } from './Cache';
 import { Cas } from './Cas';
-import { WriteOperation } from './Operation';
+import { Operation } from './Operation';
 import * as startTimer from 'time-span';
 
 /**
@@ -23,7 +23,7 @@ interface OperationAccessInfo {
  * an expensive CAS lookup to reconstruct the operation.
  */
 export class OperationStore {
-  private readonly operationCache: Cache<string, WriteOperation>;
+  private readonly operationCache: Cache<string, Operation>;
 
   private readonly opHashToAccessInfo: Map<string, OperationAccessInfo> = new Map();
 
@@ -37,7 +37,7 @@ export class OperationStore {
   /**
    * Store an operation in the store.
    */
-  public store (opHash: string, operation: WriteOperation) {
+  public store (opHash: string, operation: Operation) {
     const operationAccessInfo: OperationAccessInfo = {
       batchFileHash: operation.batchFileHash!,
       operationIndex: operation.operationIndex!,
@@ -52,7 +52,7 @@ export class OperationStore {
   /**
    * Lookup an operation from the store
    */
-  public async lookup (opHash: string): Promise<WriteOperation> {
+  public async lookup (opHash: string): Promise<Operation> {
     const operation = this.operationCache.lookup(opHash);
 
     if (operation !== undefined) {
@@ -62,7 +62,7 @@ export class OperationStore {
     return this.constructOperationFromCas(this.opHashToAccessInfo.get(opHash)!);
   }
 
-  private async constructOperationFromCas (operationAccessInfo: OperationAccessInfo): Promise<WriteOperation> {
+  private async constructOperationFromCas (operationAccessInfo: OperationAccessInfo): Promise<Operation> {
     const batchBuffer = await this.cas.read(operationAccessInfo.batchFileHash);
 
     const endTimer = startTimer();
@@ -79,7 +79,7 @@ export class OperationStore {
       batchFileHash: operationAccessInfo.batchFileHash
     };
 
-    const operation = WriteOperation.create(
+    const operation = Operation.create(
       operationBuffer,
       resolvedTransaction,
       operationAccessInfo.operationIndex);

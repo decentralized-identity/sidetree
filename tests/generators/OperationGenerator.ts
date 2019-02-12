@@ -4,7 +4,7 @@ import Encoder from '../../src/Encoder';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
- * A class that can generate valid write operations.
+ * A class that can generate valid operations.
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {

@@ -8,7 +8,7 @@ import { Blockchain } from './Blockchain';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { ErrorCode, SidetreeError } from './Error';
 import { OperationProcessor } from './OperationProcessor';
-import { OperationType, WriteOperation } from './Operation';
+import { Operation, OperationType } from './Operation';
 import { Response, ResponseStatus } from './Response';
 
 /**
@@ -20,9 +20,9 @@ export default class RequestHandler {
   }
 
   /**
-   * Handles write operations.
+   * Handles an operation request.
    */
-  public async handleWriteRequest (request: Buffer): Promise<Response> {
+  public async handleOperationRequest (request: Buffer): Promise<Response> {
     let protocol;
     try {
       // Get the protocol version according to current blockchain time to validate the operation request.
@@ -35,16 +35,16 @@ export default class RequestHandler {
       };
     }
 
-    // Perform common validation for any write request and parse it into a write operation.
-    let operation: WriteOperation;
+    // Perform common validation for any write request and parse it into an `Operation`.
+    let operation: Operation;
     try {
       // Validate operation request size.
       if (request.length > protocol.maxOperationByteSize) {
         throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocol.maxOperationByteSize}`);
       }
 
-      // Parse request into a WriteOperation.
-      operation = WriteOperation.create(request);
+      // Parse request into a Operation.
+      operation = Operation.create(request);
 
       // TODO: Validate or perform proof-of-work.
 
@@ -56,7 +56,7 @@ export default class RequestHandler {
     }
 
     try {
-      // Passed common write operation validation, hand off to specific operation handler.
+      // Passed common operation validation, hand off to specific operation handler.
       let response: Response;
       switch (operation.type) {
         case OperationType.Create:
@@ -174,7 +174,7 @@ export default class RequestHandler {
   /**
    * Handles create operation.
    */
-  public async handleCreateOperation (operation: WriteOperation): Promise<Response> {
+  public async handleCreateOperation (operation: Operation): Promise<Response> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
     const protocolVersion = Protocol.getProtocol(currentTime.time);
@@ -197,9 +197,9 @@ export default class RequestHandler {
   /**
    * Handles update operation.
    */
-  public async handleUpdateOperation (operation: WriteOperation): Promise<Response> {
+  public async handleUpdateOperation (operation: Operation): Promise<Response> {
     // TODO: Assert that operation is well-formed once the code reaches here.
-    // ie. Need to make sure invalid patch, missing operation number, etc will cause WriteOperation creation failure.
+    // ie. Need to make sure invalid patch, missing operation number, etc will cause Operation creation failure.
 
     let updatedDidDocument;
     try {
@@ -225,7 +225,7 @@ export default class RequestHandler {
   /**
    * Handles update operation.
    */
-  public async handleDeleteOperation (operation: WriteOperation): Promise<Response> {
+  public async handleDeleteOperation (operation: Operation): Promise<Response> {
     // TODO: Assert that operation is well-formed once the code reaches here.
 
     try {
@@ -256,7 +256,7 @@ export default class RequestHandler {
    * @returns The resultant DID Document.
    * @throws Error if operation given is invalid.
    */
-  private async simulateUpdateOperation (operation: WriteOperation): Promise<DidDocument> {
+  private async simulateUpdateOperation (operation: Operation): Promise<DidDocument> {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
     // Get the current DID Document of the specified DID.
@@ -266,11 +266,11 @@ export default class RequestHandler {
     }
 
     // Apply the patch on top of the current DID Document.
-    const updatedDidDocument = WriteOperation.applyJsonPatchToDidDocument(currentDidDcoument, operation.patch!);
+    const updatedDidDocument = Operation.applyJsonPatchToDidDocument(currentDidDcoument, operation.patch!);
     return updatedDidDocument;
   }
 
-  private async simulateDeleteOperation (operation: WriteOperation) {
+  private async simulateDeleteOperation (operation: Operation) {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
     const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);

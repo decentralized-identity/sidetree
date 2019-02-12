@@ -4,20 +4,20 @@ import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
 import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
-import { getOperationHash, WriteOperation } from '../src/Operation';
+import { getOperationHash, Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
 /**
  * Creates a batch file with single operation given operation buffer,
  * then adds the batch file to the given CAS.
- * @returns The operation in the batch file added in the form of a WriteOperation.
+ * @returns The operation in the batch file added in the form of a Operation.
  */
 async function addBatchFileOfOneOperationToCas (
   opBuf: Buffer,
   cas: Cas,
   transactionNumber: number,
   transactionTime: number,
-  operationIndex: number): Promise<WriteOperation> {
+  operationIndex: number): Promise<Operation> {
   const operations: Buffer[] = [ opBuf ];
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
@@ -29,17 +29,17 @@ async function addBatchFileOfOneOperationToCas (
     batchFileHash: batchFileAddress
   };
 
-  const op = WriteOperation.create(opBuf, resolvedTransaction, operationIndex);
+  const op = Operation.create(opBuf, resolvedTransaction, operationIndex);
   return op;
 }
 
 async function createUpdateSequence (
   did: string,
-  createOp: WriteOperation,
+  createOp: Operation,
   cas: Cas,
   numberOfUpdates:
   number,
-  privateKey: any): Promise<[WriteOperation[], string[]]> {
+  privateKey: any): Promise<[Operation[], string[]]> {
 
   const ops = new Array(createOp);
   const opHashes = new Array(getOperationHash(createOp));
@@ -141,7 +141,7 @@ describe('OperationProessor', async () => {
 
   let cas = new MockCas();
   let operationProcessor = createOperationProcessor(cas, didMethodName);
-  let createOp: WriteOperation | undefined;
+  let createOp: Operation | undefined;
   let firstVersion: string | undefined;
   let publicKey: any;
   let privateKey: any;

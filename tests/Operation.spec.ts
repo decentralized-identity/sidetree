@@ -1,8 +1,8 @@
 import Cryptography from '../src/lib/Cryptography';
 import OperationGenerator from './generators/OperationGenerator';
-import { WriteOperation } from '../src/Operation';
+import { Operation } from '../src/Operation';
 
-describe('WriteOperation', async () => {
+describe('Operation', async () => {
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
 
@@ -18,20 +18,20 @@ describe('WriteOperation', async () => {
     createRequest.dummyProperty = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { WriteOperation.create(requestWithUnknownProperty); }).toThrowError();
+    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
   });
 
   it('should throw error if more than one type of payload is found when parsing request.', async () => {
     createRequest.updatePayload = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { WriteOperation.create(requestWithUnknownProperty); }).toThrowError();
+    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
   });
 
   it('should throw error if signature is not found when parsing request.', async () => {
     delete createRequest.signature;
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { WriteOperation.create(requestWithUnknownProperty); }).toThrowError();
+    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
   });
 });
