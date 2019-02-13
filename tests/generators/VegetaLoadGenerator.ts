@@ -1,9 +1,8 @@
 import * as fs from 'fs';
-
-import OperationGenerator from './OperationGenerator';
-import Did from '../../src/lib/Did';
-import { getProtocol } from '../../src/Protocol';
 import Cryptography from '../../src/lib/Cryptography';
+import Did from '../../src/lib/Did';
+import OperationGenerator from './OperationGenerator';
+import { getProtocol } from '../../src/Protocol';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -16,13 +15,14 @@ export default class VegetaLoadGenerator {
    *   One targets file containing all Create requests;
    *   One targest file containing all Update requests
    * @param uniqueDidCount The number of unique DID to be generated.
+   * @param methodName The method name used to generate DIDs referenced in the update payload. e.g. 'did:sidetree:'
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
    */
-  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
+  public static async generateLoadFiles (uniqueDidCount: number, methodName: string, endpointUrl: string, absoluteFolderPath: string) {
 
     const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
-    const keyId = 'key1';
+    const keyId = '#key1';
 
     // Make directories needed by the request generator.
     fs.mkdirSync(absoluteFolderPath);
@@ -37,17 +37,17 @@ export default class VegetaLoadGenerator {
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
-      const createPayload = JSON.parse(createOperationBuffer.toString()).createPayload;
+      const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
       // Compute the DID from the generated Create payload.
-      const did = Did.from(createPayload, 'did:sidetree:', getProtocol(1000000).hashAlgorithmInMultihashCode);
+      const did = Did.from(createPayload, methodName, getProtocol(1000000).hashAlgorithmInMultihashCode);
       const didUniqueSuffix = Did.getUniqueSuffix(did);
 
       // Generate an Update payload.
       const updatePayload = {
         did,
-        operationNumber: i + 1,
+        operationNumber: 1,
         previousOperationHash: didUniqueSuffix,
         patch: [{
           op: 'replace',
@@ -55,7 +55,6 @@ export default class VegetaLoadGenerator {
           value: {
             id: 'key2',
             type: 'RsaVerificationKey2018',
-            owner: 'did:sidetree:dummydid',
             publicKeyPem: process.hrtime() // Some dummy value that's not used.
           }
         }]

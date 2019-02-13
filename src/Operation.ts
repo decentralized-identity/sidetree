@@ -1,4 +1,7 @@
+import * as Yup from 'yup';
+import Document from './lib/Document';
 import Encoder from './Encoder';
+import Logger from './lib/Logger';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
@@ -6,48 +9,37 @@ import { getProtocol } from './Protocol';
 import { ResolvedTransaction } from './Transaction';
 
 /**
- * Class that contains property names used in the operation requests specified in Sidetree REST API.
- */
-class OperationProperty {
-  /** signingKeyId */
-  static signingKeyId = 'signingKeyId';
-  /** createPayload */
-  static createPayload = 'createPayload';
-  /** updatePayload */
-  static updatePayload = 'updatePayload';
-  /** deletePayload */
-  static deletePayload = 'deletePayload';
-  /** recoverPayload */
-  static recoverPayload = 'recoverPayload';
-  /** signature */
-  static signature = 'signature';
-  /** proofOfWork */
-  static proofOfWork = 'proofOfWork';
-  /** previous operation hash */
-  static previousOperationHash = 'previousOperationHash';
-}
-
-/**
  * Sidetree operation types.
  */
 enum OperationType {
   Create,
-  Resolve,
   Update,
   Delete,
   Recover
 }
 
 /**
- * A class that represents a Sidetree write operation.
+ * Defines operation request data structure for basic type safety checks.
+ */
+interface IOperation {
+  header: {
+    operation: string,
+    kid: string,
+    proofOfWork: object
+  };
+  payload: string;
+  signature: string;
+}
+
+/**
+ * A class that represents a Sidetree operation.
  * The primary purphose of this class is to provide an abstraction to the underlying JSON data structure.
  *
  * NOTE: Design choices of:
- * 1. Excluding resolve/read operation as it is currently very different, ie. far simpler than write operations.
- * 2. No subclassing of specific operations. The intention here is to keep the hierarchy flat, as most properties are common.
- * 3. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
+ * 1. No subclassing of specific operations. The intention here is to keep the hierarchy flat, as most properties are common.
+ * 2. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
-class WriteOperation {
+class Operation {
   /** The logical blockchain time that this opeartion was anchored on the blockchain */
   public readonly transactionTime?: number;
   /** The transaction number of the transaction this operation was batched within. */
@@ -87,8 +79,7 @@ class WriteOperation {
   public readonly patch?: any[];
 
   /**
-   * Constructs a WriteOperation if the request given follows one and only one write operation JSON schema,
-   * throws error otherwise.
+   * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
    * @param resolvedTransaction The transaction operation this opeartion was batched within.
    *                            If given, operationIndex must be given else error will be thrown.
    *                            The transactoinTimeHash is ignored by the constructor.
@@ -114,65 +105,24 @@ class WriteOperation {
     this.operationBuffer = operationBuffer;
 
     // Parse request buffer into a JS object.
-    const operation = JSON.parse(operationBuffer.toString());
+    const operationJson = operationBuffer.toString();
+    const operation = JSON.parse(operationJson);
 
-    // Ensure all properties given are specified in Sidetree protocol.
-    const allowedProperties = new Set([
-      OperationProperty.signingKeyId,
-      OperationProperty.createPayload,
-      OperationProperty.updatePayload,
-      OperationProperty.deletePayload,
-      OperationProperty.recoverPayload,
-      OperationProperty.signature,
-      OperationProperty.proofOfWork,
-      OperationProperty.previousOperationHash]);
-    for (let property in operation) {
-      if (!allowedProperties.has(property)) {
-        throw new Error(`Unexpected property ${property} in operation.`);
-      }
+    // Ensure that the operation is well-formed.
+    const wellFormedResult = Operation.isWellFormed(operation);
+    if (wellFormedResult === undefined) {
+      throw new Error(`Operation buffer is not well-formed: ${operationJson}`);
     }
 
-    // Verify required properties.
-    const requiredProperties = [OperationProperty.signature, OperationProperty.proofOfWork];
-    for (let requiredProperty of requiredProperties) {
-      if (!(requiredProperty in operation)) {
-        throw new Error(`Required property ${requiredProperty} not found in operation.`);
-      }
-    }
-
-    // Verify that operation must contain one of the mutually exclusive properties.
-    const mutuallyExclusiveProperties = [
-      OperationProperty.createPayload,
-      OperationProperty.updatePayload,
-      OperationProperty.deletePayload,
-      OperationProperty.recoverPayload];
-    let mutuallyExclusivePropertyFound = false;
-    for (let property of mutuallyExclusiveProperties) {
-      if (property in operation) {
-        if (mutuallyExclusivePropertyFound) {
-          throw new Error('More than one mutually exclusive property found in operation.');
-        } else {
-          mutuallyExclusivePropertyFound = true;
-        }
-      }
-    }
-    if (!mutuallyExclusivePropertyFound) {
-      throw new Error(`Must contain one of the '${mutuallyExclusiveProperties.join(', ')}' properties in request.`);
-    }
-
-    this.signingKeyId = operation.signingKeyId;
-    this.signature = operation.signature;
-    this.proofOfWork = operation.proofOfWork;
-
-    // Get the operation type and encoded operation string.
-    const [operationType, encodedPayload] = WriteOperation.getOperationTypeAndEncodedPayload(operation);
+    // Initialize common operation properties.
+    const [operationType, decodedPayload] = wellFormedResult;
     this.type = operationType;
-    this.encodedPayload = encodedPayload;
+    this.signingKeyId = operation.header.kid;
+    this.proofOfWork = operation.header.proofOfWork;
+    this.encodedPayload = operation.payload;
+    this.signature = operation.signature;
 
-    // Decode the encoded operation string.
-    const decodedPayloadJson = Encoder.decodeAsString(encodedPayload);
-    const decodedPayload = JSON.parse(decodedPayloadJson);
-
+    // Initialize operation specific properties.
     switch (this.type) {
       case OperationType.Create:
         this.operationNumber = 0;
@@ -192,8 +142,7 @@ class WriteOperation {
   }
 
   /**
-   * Creates a WriteOperation if the request given follows one and only one write operation JSON schema,
-   * throws error otherwise.
+   * Creates an Operation if the given operation buffer passes schema validation, throws error otherwise.
    * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
    * @param operationIndex The operation index this operation was assigned to in the batch.
    *                       If given, resolvedTransaction must be given else error will be thrown.
@@ -201,8 +150,8 @@ class WriteOperation {
   public static create (
     operationBuffer: Buffer,
     resolvedTransaction?: ResolvedTransaction,
-    operationIndex?: number): WriteOperation {
-    return new WriteOperation(operationBuffer, resolvedTransaction, operationIndex);
+    operationIndex?: number): Operation {
+    return new Operation(operationBuffer, resolvedTransaction, operationIndex);
   }
 
   /**
@@ -220,37 +169,82 @@ class WriteOperation {
   }
 
   /**
-   * Given an operation object, returns a tuple of operation type and the encoded operation payload.
+   * Gets the operation type given an operation object.
    */
-  private static getOperationTypeAndEncodedPayload (operation: any): [OperationType, string] {
-    let operationType;
-    let encodedPayload;
-    if (operation.hasOwnProperty(OperationProperty.createPayload)) {
-      operationType = OperationType.Create;
-      encodedPayload = operation.createPayload;
-    } else if (operation.hasOwnProperty(OperationProperty.updatePayload)) {
-      operationType = OperationType.Update;
-      encodedPayload = operation.updatePayload;
-    } else if (operation.hasOwnProperty(OperationProperty.deletePayload)) {
-      operationType = OperationType.Delete;
-      encodedPayload = operation.deletePayload;
-    } else if (operation.hasOwnProperty(OperationProperty.recoverPayload)) {
-      operationType = OperationType.Recover;
-      encodedPayload = operation.recoverPayload;
-    } else {
-      throw new Error('Unknown operation.');
+  private static getOperationType (operation: IOperation): OperationType {
+    switch (operation.header.operation) {
+      case 'create':
+        return OperationType.Create;
+      case 'update':
+        return OperationType.Update;
+      case 'delete':
+        return OperationType.Delete;
+      case 'recover':
+        return OperationType.Recover;
+      default:
+        throw new Error(`Unknown operation type: ${operation.header.operation}`);
     }
+  }
 
-    return [operationType, encodedPayload];
+  /**
+   * Verifies if the given operation object is well-formed.
+   * NOTE: Well-formed validation does not include signature verification.
+   * @returns [operation type, decoded payload json object] if given operation is well-formed, returns undefined otherwise.
+   */
+  private static isWellFormed (operation: IOperation): [OperationType, any] | undefined {
+    try {
+      const commonSchema = Yup.object({
+        header: Yup.object({
+          operation: Yup.string().required().oneOf(['create', 'update', 'delete', 'recover']),
+          kid: Yup.string().required(),
+          proofOfWork: Yup.object().required()
+        }).required(),
+        payload: Yup.string().required(),
+        signature: Yup.string().required()
+      });
+
+      const passedCommonSchemaValidation = commonSchema.isValidSync(operation);
+      if (!passedCommonSchemaValidation) {
+        Logger.info(`Operation failed common schema validation: ${JSON.stringify(operation)}`);
+        return undefined;
+      }
+
+      // Get the operation type.
+      const operationType = Operation.getOperationType(operation);
+
+      // Decode the encoded operation string.
+      const decodedPayloadJson = Encoder.decodeAsString(operation.payload);
+      const decodedPayload = JSON.parse(decodedPayloadJson);
+
+      // Verify operation specific payload schema.
+      let payloadSchemaIsValid;
+      switch (operationType) {
+        case OperationType.Create:
+          payloadSchemaIsValid = Document.isObjectValidOriginalDocument(decodedPayload);
+          break;
+        default:
+          payloadSchemaIsValid = true;
+      }
+
+      if (!payloadSchemaIsValid) {
+        Logger.info(`${OperationType[operationType]} payload failed schema validation: ${decodedPayloadJson}`);
+        return undefined;
+      }
+
+      return [operationType, decodedPayload];
+    } catch (error) {
+      Logger.info(`Operation failed schema validation: ${JSON.stringify(operation)}`);
+      return undefined;
+    }
   }
 }
 
 /**
- * Get a cryptographic hash of the write operation.
+ * Get a cryptographic hash of the operation.
  * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
  * for all other cases, the hash is calculated against the entire opeartion buffer.
  */
-function getOperationHash (operation: WriteOperation): string {
+function getOperationHash (operation: Operation): string {
 
   if (operation.transactionTime === undefined) {
     throw new Error(`Transaction time not given but needed for DID generation.`);
@@ -271,4 +265,4 @@ function getOperationHash (operation: WriteOperation): string {
   return encodedMultihash;
 }
 
-export { getOperationHash, OperationType, WriteOperation };
+export { getOperationHash, OperationType, Operation };

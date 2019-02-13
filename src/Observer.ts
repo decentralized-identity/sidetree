@@ -5,8 +5,8 @@ import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 import { ErrorCode, SidetreeError } from './Error';
 import { getProtocol } from './Protocol';
+import { Operation } from './Operation';
 import { OperationProcessor } from './OperationProcessor';
-import { WriteOperation } from './Operation';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
@@ -192,7 +192,7 @@ export default class Observer {
 
   private async processResolvedTransaction (resolvedTransaction: ResolvedTransaction, batchFileBuffer: Buffer) {
     // Validate the batch file.
-    const operations: WriteOperation[] = [];
+    const operations: Operation[] = [];
     try {
       const batchFile = JSON.parse(batchFileBuffer.toString());
 
@@ -213,7 +213,13 @@ export default class Observer {
           throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${protocol.maxOperationByteSize} bytes.`);
         }
 
-        const operation = WriteOperation.create(operationBuffer, resolvedTransaction, operationIndex);
+        let operation;
+        try {
+          operation = Operation.create(operationBuffer, resolvedTransaction, operationIndex);
+        } catch (error) {
+          Logger.info(`Unable to create an operation with '${operationBuffer}': ${error}`);
+          throw error;
+        }
 
         operations.push(operation);
         operationIndex++;
@@ -222,6 +228,7 @@ export default class Observer {
       // Ensure the batch meets proof-of-work requirements.
       this.verifyProofOfWork(operations);
     } catch {
+      Logger.info(`Batch file '${resolvedTransaction.batchFileHash}' failed validation, transaction ignored.`);
       return; // Invalid batch file, nothing to process.
     }
 
@@ -293,7 +300,7 @@ export default class Observer {
    * Verifies the given batch satisfies the proof-of-work requirements.
    * Throws error if fails proof-of-work requirements.
    */
-  private verifyProofOfWork (_operations: WriteOperation[]) {
+  private verifyProofOfWork (_operations: Operation[]) {
     // TODO
   }
 }

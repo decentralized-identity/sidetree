@@ -4,7 +4,7 @@ import Cryptography from './lib/Cryptography';
 import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { WriteOperation, OperationType, getOperationHash } from './Operation';
+import { Operation, OperationType, getOperationHash } from './Operation';
 import { createOperationStore, OperationStore } from './OperationStore';
 
 /**
@@ -19,7 +19,7 @@ export interface OperationProcessor {
    * that any future resolve for the same DID sees the effect of the
    * operation.
    */
-  process (operation: WriteOperation): Promise<void>;
+  process (operation: Operation): Promise<void>;
 
   /**
    * Remove all previously processed operations with transactionNumber
@@ -55,7 +55,7 @@ class OperationProcessorImpl implements OperationProcessor {
    * Processes a specified DID state changing operation. Simply store
    * the operation in the store.
    */
-  public async process (operation: WriteOperation): Promise<void> {
+  public async process (operation: Operation): Promise<void> {
     return this.operationStore.put(operation);
   }
 
@@ -78,7 +78,7 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   public async resolve (did: string): Promise<DidDocument | undefined> {
     let didDocument: DidDocument | undefined;
-    let previousOperation: WriteOperation | undefined;
+    let previousOperation: Operation | undefined;
 
     const didUniqueSuffix = did.substring(this.didMethodName.length);
 
@@ -101,7 +101,7 @@ class OperationProcessorImpl implements OperationProcessor {
    * This function checks if parameter operation can be used to legitimately
    * extend this chain.
    */
-  private async isValid (operation: WriteOperation, previousOperation: WriteOperation | undefined, currentDidDocument: DidDocument | undefined):
+  private async isValid (operation: Operation, previousOperation: Operation | undefined, currentDidDocument: DidDocument | undefined):
     Promise<boolean> {
 
     if (operation.type === OperationType.Create) {
@@ -151,12 +151,12 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   // Update a document with a specified operation.
-  private getUpdatedDocument (didDocument: DidDocument | undefined, operation: WriteOperation): DidDocument {
+  private getUpdatedDocument (didDocument: DidDocument | undefined, operation: Operation): DidDocument {
     if (operation.type === OperationType.Create) {
       const protocolVersion = Protocol.getProtocol(operation.transactionTime!);
       return Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
     } else {
-      return WriteOperation.applyJsonPatchToDidDocument(didDocument!, operation.patch!);
+      return Operation.applyJsonPatchToDidDocument(didDocument!, operation.patch!);
     }
   }
 

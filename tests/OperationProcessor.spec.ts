@@ -6,20 +6,20 @@ import { Cas } from '../src/Cas';
 import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import DidPublicKey from '../src/lib/DidPublicKey';
-import { getOperationHash, WriteOperation } from '../src/Operation';
+import { getOperationHash, Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
 /**
  * Creates a batch file with single operation given operation buffer,
  * then adds the batch file to the given CAS.
- * @returns The operation in the batch file added in the form of a WriteOperation.
+ * @returns The operation in the batch file added in the form of a Operation.
  */
 async function addBatchFileOfOneOperationToCas (
   opBuf: Buffer,
   cas: Cas,
   transactionNumber: number,
   transactionTime: number,
-  operationIndex: number): Promise<WriteOperation> {
+  operationIndex: number): Promise<Operation> {
   const operations: Buffer[] = [ opBuf ];
   const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
   const batchFileAddress = await cas.write(batchBuffer);
@@ -31,17 +31,17 @@ async function addBatchFileOfOneOperationToCas (
     batchFileHash: batchFileAddress
   };
 
-  const op = WriteOperation.create(opBuf, resolvedTransaction, operationIndex);
+  const op = Operation.create(opBuf, resolvedTransaction, operationIndex);
   return op;
 }
 
 async function createUpdateSequence (
   did: string,
-  createOp: WriteOperation,
+  createOp: Operation,
   cas: Cas,
   numberOfUpdates:
   number,
-  privateKey: any): Promise<WriteOperation[]> {
+  privateKey: any): Promise<Operation[]> {
 
   const ops = new Array(createOp);
   const opHashes = new Array(getOperationHash(createOp));
@@ -56,7 +56,7 @@ async function createUpdateSequence (
         op: 'replace',
         path: '/publicKey/1',
         value: {
-          id: 'key2',
+          id: '#key2',
           type: 'RsaVerificationKey2018',
           owner: 'did:sidetree:updateid' + i,
           publicKeyPem: process.hrtime() // Some dummy value that's not used.
@@ -64,7 +64,7 @@ async function createUpdateSequence (
       }]
     };
 
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, 'key1', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(
       updateOperationBuffer,
       cas,
@@ -133,13 +133,13 @@ describe('OperationProessor', async () => {
 
   let cas = new MockCas();
   let operationProcessor = createOperationProcessor(cas, didMethodName);
-  let createOp: WriteOperation | undefined;
+  let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
   let did: string;
 
   beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
@@ -159,8 +159,7 @@ describe('OperationProessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeDefined();
-    expect(publicKey2!.owner!).toEqual('did:sidetree:ignoredUnlessResolvable');
+    expect(publicKey2!.owner).toBeUndefined();
   });
 
   it('should process updates correctly', async () => {

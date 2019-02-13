@@ -17,7 +17,7 @@ The Operation Processor holds most of the state of a Sidetree node. It is a sing
 This is the core method to update the state of a DID Document:
 
 ```javascript
-public process (transactionNumber: number, operationIndex: number, operation: WriteOperation)
+public process (transactionNumber: number, operationIndex: number, operation: Operation)
 ```
 The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation.
 
@@ -78,7 +78,7 @@ The resolve method returns the latest document for a given DID. It is implemente
 
 
 # Merkle Rooter
-The Merkle Rooter batches write operations (Create, Update, Delete and Recover) operations and anchors them on a blockchain. 
+The Merkle Rooter batches operations (Create, Update, Delete and Recover) operations and anchors them on a blockchain. 
 
 > TODO: more content to be added.
 

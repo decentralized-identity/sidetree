@@ -4,7 +4,7 @@ import Encoder from '../../src/Encoder';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
- * A class that can generate valid write operations.
+ * A class that can generate valid operations.
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
@@ -25,10 +25,13 @@ export default class OperationGenerator {
     const signature = await Cryptography.sign(createPayload, privateKey);
 
     const operation = {
-      signingKeyId: publicKey.id,
-      createPayload,
-      signature,
-      proofOfWork: 'proof of work'
+      header: {
+        operation: 'create',
+        kid: publicKey.id,
+        proofOfWork: {}
+      },
+      payload: createPayload,
+      signature
     };
 
     return Buffer.from(JSON.stringify(operation));
@@ -46,10 +49,13 @@ export default class OperationGenerator {
     const signature = await Cryptography.sign(updatePayloadEncoded, privateKey);
 
     const operation = {
-      signingKeyId: keyId,
-      updatePayload: updatePayloadEncoded,
-      signature,
-      proofOfWork: 'proof of work'
+      header: {
+        operation: 'update',
+        kid: keyId,
+        proofOfWork: {}
+      },
+      payload: updatePayloadEncoded,
+      signature
     };
 
     return Buffer.from(JSON.stringify(operation));
@@ -63,13 +69,16 @@ export default class OperationGenerator {
 
     // Encode payload.
     const payloadJson = JSON.stringify(payload);
-    const updatePayloadEncoded = Encoder.encode(payloadJson);
+    const payloadEncoded = Encoder.encode(payloadJson);
 
     const operation = {
-      signingKeyId: 'not implemented',
-      deletePayload: updatePayloadEncoded,
-      signature: 'not implemented',
-      proofOfWork: 'proof of work'
+      header: {
+        operation: 'delete',
+        kid: 'not implemented',
+        proofOfWork: {}
+      },
+      payload: payloadEncoded,
+      signature: 'not implemented'
     };
 
     return Buffer.from(JSON.stringify(operation));
