@@ -2,7 +2,7 @@ import { getOperationHash, OperationType, WriteOperation } from './Operation';
 
 /**
  * An abstraction of a complete store for operations exposing methods to
- * store and retrieve all operations.
+ * put and get operations.
  */
 export interface OperationStore {
 
@@ -13,8 +13,8 @@ export interface OperationStore {
 
   /**
    * Get an iterator that returns all operations with a given
-   * did ordered by (transactionNumber, operationIndex).
-   *
+   * did ordered by (transactionNumber, operationIndex)
+   * ascending.
    */
   get (did: string): Promise<Iterable<WriteOperation>>;
 
@@ -25,6 +25,11 @@ export interface OperationStore {
 
 }
 
+/**
+ * Compare two operations returning -1, 0, 1 when the first operand
+ * is less than, equal, and greater than the second, respectively.
+ * Used to sort operations by blockchain 'time' order.
+ */
 function compareOperation (op1: WriteOperation, op2: WriteOperation): number {
   if (op1.transactionNumber! < op2.transactionNumber!) {
     return -1;
@@ -40,14 +45,17 @@ function compareOperation (op1: WriteOperation, op2: WriteOperation): number {
 }
 
 /**
- * An abstraction of a *complete* store for operations, exposing methods to store and
- * subsequently retrieve operations using OperationInfo. Internally relies on a
- * cache to lookup recent and/or heavily accessed operations; on a cache miss relies on
- * an expensive CAS lookup to reconstruct the operation.
+ * A simple in-memory implementation of operation store.
  */
 class OperationStoreImpl {
+  // Map DID to operations over it stored as an array. The array might be sorted
+  // or unsorted by blockchain time order.
   private readonly didToOperations: Map<string, Array<WriteOperation>> = new Map();
+
+  // Map DID to a boolean indicating if the operations array for the DID is sorted
+  // or not.
   private readonly didTouchedSinceLastSort: Map<string, boolean> = new Map();
+
   private readonly emptyOperationsArray: Array<WriteOperation> = new Array();
 
   public constructor (private didMethodName: string) {
@@ -55,17 +63,20 @@ class OperationStoreImpl {
   }
 
   /**
-   * Store an operation in the store.
+   * Implement OperationStore.put.
    */
   public async put (operation: WriteOperation): Promise<void> {
     const did = this.getDidUniqueSuffix(operation);
 
     this.ensureDidEntriesExist(did);
+    // Append the operation to the operation array for the did ...
     this.didToOperations.get(did)!.push(operation);
+    // ... which leaves the array unsorted, so we record this fact
     this.didTouchedSinceLastSort.set(did, true);
   }
 
   /**
+   * Implement OperationStore.put
    * Get an iterator that returns all operations with a given
    * did ordered by (transactionNumber, operationIndex).
    *
@@ -79,8 +90,9 @@ class OperationStoreImpl {
 
     const touchedSinceLastSort = this.didTouchedSinceLastSort.get(did)!;
 
+    // Sort needed if there was a put operation since last sort.
     if (touchedSinceLastSort) {
-      didOps.sort(compareOperation);
+      didOps.sort(compareOperation);       // in-place sort
       this.didTouchedSinceLastSort.set(did, false);
     }
 
@@ -97,11 +109,18 @@ class OperationStoreImpl {
       return;
     }
 
+    // Iterate over all DID and remove operations from corresponding
+    // operations array. Remove leaves the original order intact so
+    // we do not need to update didTouchedSinceLastSort
     for (const [, didOps] of this.didToOperations) {
       OperationStoreImpl.removeOperations(didOps, transactionNumber);
     }
   }
 
+  /**
+   * Remove operations. A simple linear scan + filter that leaves the
+   * original order intact for non-filters operations.
+   */
   private static removeOperations (operations: Array<WriteOperation>, transactionNumber: number) {
     let writeIndex = 0;
 

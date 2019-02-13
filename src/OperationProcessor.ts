@@ -4,7 +4,7 @@ import Cryptography from './lib/Cryptography';
 import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { WriteOperation, OperationType } from './Operation';
+import { WriteOperation, OperationType, getOperationHash } from './Operation';
 import { createOperationStore, OperationStore } from './OperationStore';
 
 /**
@@ -18,7 +18,6 @@ export interface OperationProcessor {
    * Process a DID write (state changing) operation with the guarantee
    * that any future resolve for the same DID sees the effect of the
    * operation.
-   * @returns the hash of the operation.
    */
   process (operation: WriteOperation): Promise<void>;
 
@@ -32,15 +31,17 @@ export interface OperationProcessor {
 
   /**
    * Resolve a did.
+   * @param did The DID to resolve. e.g. did:sidetree:abc123.
+   * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
    */
   resolve (did: string): Promise<DidDocument | undefined>;
 }
 
 /**
- * The current implementation of OperationProcessor is a main-memory implementation without any persistence. This
- * means that when a node is powered down and restarted DID operations need to be applied
- * from the beginning of time. This implementation will be extended in the future to support
- * persistence.
+ * Implementation of OperationProcessor. Uses a OperationStore
+ * that might, e.g., use a backend database for persistence.
+ * All 'processing' is deferred to resolve time, with process()
+ * simply storing the operation in the store.
  */
 class OperationProcessorImpl implements OperationProcessor {
 
@@ -51,68 +52,29 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Processes a specified DID state changing operation. The current implementation inserts
-   * the operation in the store and returns the hash of the operation.
+   * Processes a specified DID state changing operation. Simply store
+   * the operation in the store.
    */
   public async process (operation: WriteOperation): Promise<void> {
     return this.operationStore.put(operation);
   }
 
   /**
-   * Remove all previously processed operations
-   * with transactionNumber greater or equal to the provided transaction number.
-   * If no transaction number is given, all operations are rolled back (unlikely scenario).
-   * The intended use case for this method is to handle rollbacks
-   * in the blockchain.
+   * Remove all previously processed operations with transactionNumber
+   * greater or equal to the provided transaction number. Relies on
+   * OperationStore.delete that implements this functionality.
    */
   public async rollback (transactionNumber?: number): Promise<void> {
     return this.operationStore.delete(transactionNumber);
-  }
-
-  private async isValid (operation: WriteOperation, previousOperation: WriteOperation | undefined, currentDidDocument: DidDocument | undefined):
-    Promise<boolean> {
-
-    if (operation.type === OperationType.Create) {
-      // TODO: Add signature verification for create operation
-      return true;
-    } else {
-      // Every operation other than a create has a previous operation and a valid
-      // current DID document.
-      if (!previousOperation || !currentDidDocument) {
-        return false;
-      }
-
-      // If previous operation is a delete, then any subsequent operation is not valid
-      if (previousOperation.type === OperationType.Delete) {
-        return false;
-      }
-
-      const publicKey = OperationProcessorImpl.getPublicKey(currentDidDocument, operation.signingKeyId);
-      if (!publicKey) {
-        return false;
-      }
-
-      if (!(await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey))) {
-        return false;
-      }
-
-      return true;
-    }
-  }
-
-  private getUpdatedDocument (didDocument: DidDocument | undefined, operation: WriteOperation): DidDocument {
-    if (operation.type === OperationType.Create) {
-      const protocolVersion = Protocol.getProtocol(operation.transactionTime!);
-      return Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
-    } else {
-      return WriteOperation.applyJsonPatchToDidDocument(didDocument!, operation.patch!);
-    }
   }
 
   /**
    * Resolve the given DID to its DID Doducment.
    * @param did The DID to resolve. e.g. did:sidetree:abc123.
    * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
+   *
+   * Iterate over all operations in blockchain-time order extending the
+   * the operation chain while checking validity.
    */
   public async resolve (did: string): Promise<DidDocument | undefined> {
     let didDocument: DidDocument | undefined;
@@ -129,6 +91,73 @@ class OperationProcessorImpl implements OperationProcessor {
     }
 
     return didDocument;
+  }
+
+  /**
+   * Is an operation valid in the context of a resolve() when extending
+   * operation chain for a DID. When this function is called, resolve() has
+   * constructed a valid operation that starts with some Create operation and
+   * ends with previousOperation, resulting the DID Document 'currentDidDocument'.
+   * This function checks if parameter operation can be used to legitimately
+   * extend this chain.
+   */
+  private async isValid (operation: WriteOperation, previousOperation: WriteOperation | undefined, currentDidDocument: DidDocument | undefined):
+    Promise<boolean> {
+
+    if (operation.type === OperationType.Create) {
+
+      // If either of these is defined, then we have seen a previous create operation.
+      if (previousOperation || currentDidDocument) {
+        return false;
+      }
+
+      // TODO: Add signature verification for create operation
+      return true;
+    } else {
+      // Every operation other than a create has a previous operation and a valid
+      // current DID document.
+      if (!previousOperation || !currentDidDocument) {
+        return false;
+      }
+
+      // If previous operation is a delete, then any subsequent operation is not valid
+      if (previousOperation.type === OperationType.Delete) {
+        return false;
+      }
+
+      // Any non-create needs a previous operation hash  ...
+      if (!operation.previousOperationHash) {
+        return false;
+      }
+
+      // ... that should match the hash of the latest valid operation (previousOperation)
+      if (operation.previousOperationHash !== getOperationHash(previousOperation)) {
+        return false;
+      }
+
+      // The current did document should contain the public key mentioned in the operation ...
+      const publicKey = OperationProcessorImpl.getPublicKey(currentDidDocument, operation.signingKeyId);
+      if (!publicKey) {
+        return false;
+      }
+
+      // ... and the signature should verify
+      if (!(await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey))) {
+        return false;
+      }
+
+      return true;
+    }
+  }
+
+  // Update a document with a specified operation.
+  private getUpdatedDocument (didDocument: DidDocument | undefined, operation: WriteOperation): DidDocument {
+    if (operation.type === OperationType.Create) {
+      const protocolVersion = Protocol.getProtocol(operation.transactionTime!);
+      return Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
+    } else {
+      return WriteOperation.applyJsonPatchToDidDocument(didDocument!, operation.patch!);
+    }
   }
 
   /**
