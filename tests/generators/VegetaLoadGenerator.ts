@@ -15,10 +15,11 @@ export default class VegetaLoadGenerator {
    *   One targets file containing all Create requests;
    *   One targest file containing all Update requests
    * @param uniqueDidCount The number of unique DID to be generated.
+   * @param methodName The method name used to generate DIDs referenced in the update payload. e.g. 'did:sidetree:'
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
    */
-  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
+  public static async generateLoadFiles (uniqueDidCount: number, methodName: string, endpointUrl: string, absoluteFolderPath: string) {
 
     const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
     const keyId = '#key1';
@@ -36,11 +37,11 @@ export default class VegetaLoadGenerator {
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
-      const createPayload = JSON.parse(createOperationBuffer.toString()).createPayload;
+      const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
       // Compute the DID from the generated Create payload.
-      const did = Did.from(createPayload, 'did:sidetree:', getProtocol(1000000).hashAlgorithmInMultihashCode);
+      const did = Did.from(createPayload, methodName, getProtocol(1000000).hashAlgorithmInMultihashCode);
       const didUniqueSuffix = Did.getUniqueSuffix(did);
 
       // Generate an Update payload.
@@ -54,7 +55,6 @@ export default class VegetaLoadGenerator {
           value: {
             id: 'key2',
             type: 'RsaVerificationKey2018',
-            owner: 'did:sidetree:dummydid',
             publicKeyPem: process.hrtime() // Some dummy value that's not used.
           }
         }]
