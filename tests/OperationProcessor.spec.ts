@@ -3,7 +3,9 @@ import Cryptography from '../src/lib/Cryptography';
 import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
-import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
+import { createOperationProcessor } from '../src/OperationProcessor';
+import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import DidPublicKey from '../src/lib/DidPublicKey';
 import { getOperationHash, WriteOperation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
@@ -39,7 +41,7 @@ async function createUpdateSequence (
   cas: Cas,
   numberOfUpdates:
   number,
-  privateKey: any): Promise<[WriteOperation[], string[]]> {
+  privateKey: any): Promise<WriteOperation[]> {
 
   const ops = new Array(createOp);
   const opHashes = new Array(getOperationHash(createOp));
@@ -56,7 +58,7 @@ async function createUpdateSequence (
         value: {
           id: 'key2',
           type: 'RsaVerificationKey2018',
-          owner: 'did:sidetree:dummydid',
+          owner: 'did:sidetree:updateid' + i,
           publicKeyPem: process.hrtime() // Some dummy value that's not used.
         }
       }]
@@ -76,29 +78,7 @@ async function createUpdateSequence (
     opHashes.push(updateOpHash);
   }
 
-  return [ops, opHashes];
-}
-
-async function checkUpdateSequenceVersionChaining (operationProcessor: OperationProcessor, opHashes: string[]): Promise<void> {
-  // Check first(), last(), prev(), next() return expected outputs. Since
-  // if the OperationProcessor did not process the operations correctly
-  // some version defined by these operations would be "invalid" and we would
-  // not get the correct output below.
-  for (let i = 0; i < opHashes.length; ++i) {
-    expect(await operationProcessor.first(opHashes[i])).toBe(opHashes[0]);
-    expect(await operationProcessor.last(opHashes[i])).toBe(opHashes[opHashes.length - 1]);
-
-    if (i === 0) {
-      expect(await operationProcessor.previous(opHashes[i])).toBeUndefined();
-    } else {
-      expect(await operationProcessor.previous(opHashes[i])).toBe(opHashes[i - 1]);
-    }
-    if (i === opHashes.length - 1) {
-      expect(await operationProcessor.next(opHashes[i])).toBeUndefined();
-    } else {
-      expect(await operationProcessor.next(opHashes[i])).toBe(opHashes[i + 1]);
-    }
-  }
+  return ops;
 }
 
 function getFactorial (n: number): number {
@@ -132,6 +112,18 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
+function getPublicKey (didDocument: DidDocument, keyId: string): DidPublicKey | undefined {
+  for (let i = 0; i < didDocument.publicKey.length; i++) {
+    const publicKey = didDocument.publicKey[i];
+
+    if (publicKey.id && publicKey.id.endsWith(keyId)) {
+      return publicKey;
+    }
+  }
+
+  return undefined;
+}
+
 describe('OperationProessor', async () => {
   initializeProtocol('protocol-test.json');
 
@@ -155,71 +147,57 @@ describe('OperationProessor', async () => {
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
-    firstVersion = await operationProcessor.process(createOp);
-    did = didMethodName + firstVersion;
-  });
-
-  it('should return operation hash for create op', async () => {
-    const expectedHash = getOperationHash(createOp!);
-    expect(firstVersion).not.toBeUndefined();
-    expect(firstVersion).toBe(expectedHash);
-  });
-
-  it('should return firstVersion for first(firstVersion)', async () => {
-    await operationProcessor.resolve(did);
-    const firstOfFirstVersion = await operationProcessor.first(firstVersion!);
-    expect(firstOfFirstVersion).toBe(firstVersion!);
-  });
-
-  it('should return firstVersion for last(firstVersion) if firstVersion is the only version', async () => {
-    await operationProcessor.resolve(did);
-    expect(await operationProcessor.last(firstVersion!)).toBe(firstVersion!);
-  });
-
-  it('should return undefined for prev(firstVersion)', async () => {
-    await operationProcessor.resolve(did);
-    const prev = await operationProcessor.previous(firstVersion!);
-    expect(prev).toBeUndefined();
+    const createOpHash = getOperationHash(createOp);
+    await operationProcessor.process(createOp);
+    did = didMethodName + createOpHash;
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
     const did = `${didMethodName}${firstVersion!}`;
     const didDocument = await operationProcessor.resolve(did);
+
     // TODO: can we get the raw json from did? if so, we can write a better test.
-    expect(didDocument).not.toBeUndefined();
+    // This is a poor man's version based on public key properties
+    expect(didDocument).toBeDefined();
+    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.publicKeyHex!).toEqual('-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----');
   });
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = 0 ; i < ops.length ; ++i) {
-      const newVersion = await operationProcessor.process(ops[i]);
-      expect(newVersion).toBeDefined();
-      expect(newVersion).toBe(opHashes[i]);
+      await operationProcessor.process(ops[i]);
     }
-    await operationProcessor.resolve(did);
 
-    await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
+    const didDocument = await operationProcessor.resolve(did);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
   });
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i > 0 ; --i) {
-      const newVersion = await operationProcessor.process(ops[i]);
-      expect(newVersion).toBeDefined();
-      expect(newVersion).toBe(opHashes[i]);
+      await operationProcessor.process(ops[i]);
     }
-    await operationProcessor.resolve(did);
-
-    await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
+    const didDocument = await operationProcessor.resolve(did);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
   });
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const [ops, opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
     const numberOfPermutations = getFactorial(numberOfOps);
@@ -229,13 +207,14 @@ describe('OperationProessor', async () => {
 
       for (let i = 0 ; i < numberOfOps ; ++i) {
         const opIdx = permutation[i];
-        const newVersion = await operationProcessor.process(ops[opIdx]);
-        expect(newVersion).toBeDefined();
-        expect(newVersion).toBe(opHashes[opIdx]);
+        await operationProcessor.process(ops[opIdx]);
       }
-      await operationProcessor.resolve(did);
-
-      await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
+      const didDocument = await operationProcessor.resolve(did);
+      expect(didDocument).toBeDefined();
+      const publicKey2 = getPublicKey(didDocument!, 'key2');
+      expect(publicKey2).toBeDefined();
+      expect(publicKey2!.owner).toBeDefined();
+      expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
     }
   });
 });

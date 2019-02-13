@@ -1,19 +1,42 @@
-import BatchFile from './BatchFile';
-import Logger from './lib/Logger';
-import { Cache, getCache } from './Cache';
-import { Cas } from './Cas';
-import { WriteOperation } from './Operation';
-import * as startTimer from 'time-span';
+import { getOperationHash, OperationType, WriteOperation } from './Operation';
 
 /**
- * Information of an operation that is required to reconstruct it from
- * the CAS.
+ * An abstraction of a complete store for operations exposing methods to
+ * store and retrieve all operations.
  */
-interface OperationAccessInfo {
-  readonly batchFileHash: string;
-  readonly operationIndex: number;
-  readonly transactionTime: number;
-  readonly transactionNumber: number;
+export interface OperationStore {
+
+  /**
+   * Store an operation.
+   */
+  put (operation: WriteOperation): Promise<void>;
+
+  /**
+   * Get an iterator that returns all operations with a given
+   * did ordered by (transactionNumber, operationIndex).
+   *
+   */
+  get (did: string): Promise<Iterable<WriteOperation>>;
+
+  /**
+   * Delete all operations with at least a given transactionNumber.
+   */
+  delete (transactionNumber?: number): Promise<void>;
+
+}
+
+function compareOperation (op1: WriteOperation, op2: WriteOperation): number {
+  if (op1.transactionNumber! < op2.transactionNumber!) {
+    return -1;
+  } else if (op1.transactionNumber! > op2.transactionNumber!) {
+    return 1;
+  } else if (op1.operationIndex! < op2.operationIndex!) {
+    return -1;
+  } else if (op1.operationIndex! > op2.operationIndex!) {
+    return 1;
+  }
+
+  return 0;
 }
 
 /**
@@ -22,68 +45,101 @@ interface OperationAccessInfo {
  * cache to lookup recent and/or heavily accessed operations; on a cache miss relies on
  * an expensive CAS lookup to reconstruct the operation.
  */
-export class OperationStore {
-  private readonly operationCache: Cache<string, WriteOperation>;
+class OperationStoreImpl {
+  private readonly didToOperations: Map<string, Array<WriteOperation>> = new Map();
+  private readonly didTouchedSinceLastSort: Map<string, boolean> = new Map();
+  private readonly emptyOperationsArray: Array<WriteOperation> = new Array();
 
-  private readonly opHashToAccessInfo: Map<string, OperationAccessInfo> = new Map();
+  public constructor (private didMethodName: string) {
 
-  // Size for the operation cache; TODO: set from a config file?
-  private readonly operationCacheSize = 10000000;
-
-  public constructor (private readonly cas: Cas) {
-    this.operationCache = getCache(this.operationCacheSize);
   }
 
   /**
    * Store an operation in the store.
    */
-  public store (opHash: string, operation: WriteOperation) {
-    const operationAccessInfo: OperationAccessInfo = {
-      batchFileHash: operation.batchFileHash!,
-      operationIndex: operation.operationIndex!,
-      transactionTime: operation.transactionTime!,
-      transactionNumber: operation.transactionNumber!
-    };
+  public async put (operation: WriteOperation): Promise<void> {
+    const did = this.getDidUniqueSuffix(operation);
 
-    this.operationCache.store(opHash, operation);
-    this.opHashToAccessInfo.set(opHash, operationAccessInfo);
+    this.ensureDidEntriesExist(did);
+    this.didToOperations.get(did)!.push(operation);
+    this.didTouchedSinceLastSort.set(did, false);
   }
 
   /**
-   * Lookup an operation from the store
+   * Get an iterator that returns all operations with a given
+   * did ordered by (transactionNumber, operationIndex).
+   *
    */
-  public async lookup (opHash: string): Promise<WriteOperation> {
-    const operation = this.operationCache.lookup(opHash);
+  public async get (did: string): Promise<Iterable<WriteOperation>> {
+    let didOps = this.didToOperations.get(did);
 
-    if (operation !== undefined) {
-      return operation;
+    if (!didOps) {
+      return this.emptyOperationsArray;
     }
 
-    return this.constructOperationFromCas(this.opHashToAccessInfo.get(opHash)!);
+    const touchedSinceLastSort = this.didTouchedSinceLastSort.get(did)!;
+
+    if (touchedSinceLastSort) {
+      didOps.sort(compareOperation);
+      this.didTouchedSinceLastSort.set(did, false);
+    }
+
+    return didOps;
   }
 
-  private async constructOperationFromCas (operationAccessInfo: OperationAccessInfo): Promise<WriteOperation> {
-    const batchBuffer = await this.cas.read(operationAccessInfo.batchFileHash);
+  /**
+   * Delete all operations with at least a given transactionNumber.
+   */
+  public async delete (transactionNumber?: number): Promise<void> {
+    if (!transactionNumber) {
+      this.didToOperations.clear();
+      this.didTouchedSinceLastSort.clear();
+      return;
+    }
 
-    const endTimer = startTimer();
-    const batchFile = await BatchFile.fromBuffer(batchBuffer);
-    const duration = endTimer();
-    Logger.info(`Deserialized batch file of size ${batchBuffer.length} bytes in: ${duration} ms.`);
-
-    const operationBuffer = batchFile.getOperationBuffer(operationAccessInfo.operationIndex);
-    const resolvedTransaction = {
-      transactionNumber: operationAccessInfo.transactionNumber,
-      transactionTime: operationAccessInfo.transactionTime,
-      transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'NOT_NEEDED',
-      batchFileHash: operationAccessInfo.batchFileHash
-    };
-
-    const operation = WriteOperation.create(
-      operationBuffer,
-      resolvedTransaction,
-      operationAccessInfo.operationIndex);
-
-    return operation;
+    for (const [, didOps] of this.didToOperations) {
+      OperationStoreImpl.removeOperations(didOps, transactionNumber);
+    }
   }
+
+  private static removeOperations (operations: Array<WriteOperation>, transactionNumber: number) {
+    let writeIndex = 0;
+
+    for (let i = 0 ; i < operations.length ; i++) {
+      if (operations[i].transactionNumber! >= transactionNumber) {
+        operations[writeIndex++] = operations[i];
+      }
+    }
+
+    for (let i = writeIndex ; i < operations.length ; i++) {
+      operations.pop();
+    }
+  }
+
+  /**
+   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
+   * for others the DID included with the operation can be used to obtain the unique suffix.
+   */
+  private getDidUniqueSuffix (operation: WriteOperation): string {
+    if (operation.type === OperationType.Create) {
+      return getOperationHash(operation);
+    } else {
+      const didUniqueSuffix = operation.did!.substring(this.didMethodName.length);
+      return didUniqueSuffix;
+    }
+  }
+
+  private ensureDidEntriesExist (did: string) {
+    if (this.didToOperations.get(did) === undefined) {
+      this.didToOperations.set(did, new Array<WriteOperation>());
+      this.didTouchedSinceLastSort.set(did, false);
+    }
+  }
+}
+
+/**
+ * Factory function to create an operation store
+ */
+export function createOperationStore (didMethodName: string) {
+  return new OperationStoreImpl(didMethodName);
 }
