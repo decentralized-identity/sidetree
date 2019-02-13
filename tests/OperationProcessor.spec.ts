@@ -161,7 +161,7 @@ describe('OperationProessor', async () => {
     expect(publicKey2).toBeDefined();
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:ignoredUnlessResolvable');
-  }); 
+  });
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
@@ -178,7 +178,7 @@ describe('OperationProessor', async () => {
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
   });
-  
+
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
