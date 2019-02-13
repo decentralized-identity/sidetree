@@ -78,7 +78,7 @@ The resolve method returns the latest document for a given DID. It is implemente
 
 
 # Merkle Rooter
-The Merkle Rooter batches write operations (Create, Update, Delete and Recover) operations and anchors them on a blockchain. 
+The Merkle Rooter batches operations (Create, Update, Delete and Recover) operations and anchors them on a blockchain. 
 
 > TODO: more content to be added.
 

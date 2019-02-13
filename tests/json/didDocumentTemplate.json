@@ -5,7 +5,6 @@
     {
       "id": "#key1",
       "type": "Secp256k1VerificationKey2018",
-      "owner": "did:sidetree:ignoredUnlessResolvable",
       "publicKeyJwk": {
         "kty": "EC",
         "kid": "key1",
@@ -19,7 +18,6 @@
     {
       "id": "#key2",
       "type": "RsaVerificationKey2018",
-      "owner": "did:sidetree:ignoredUnlessResolvable",
       "publicKeyPem": "-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----"
     }
   ],
