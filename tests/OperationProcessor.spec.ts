@@ -134,7 +134,6 @@ describe('OperationProessor', async () => {
   let cas = new MockCas();
   let operationProcessor = createOperationProcessor(cas, didMethodName);
   let createOp: WriteOperation | undefined;
-  let firstVersion: string | undefined;
   let publicKey: any;
   let privateKey: any;
   let did: string;
@@ -153,7 +152,6 @@ describe('OperationProessor', async () => {
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
-    const did = `${didMethodName}${firstVersion!}`;
     const didDocument = await operationProcessor.resolve(did);
 
     // TODO: can we get the raw json from did? if so, we can write a better test.
@@ -161,8 +159,9 @@ describe('OperationProessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
-    expect(publicKey2!.publicKeyHex!).toEqual('-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----');
-  });
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:ignoredUnlessResolvable');
+  }); 
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
@@ -179,12 +178,12 @@ describe('OperationProessor', async () => {
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
   });
-
+  
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
-    for (let i = numberOfUpdates ; i > 0 ; --i) {
+    for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationProcessor.process(ops[i]);
     }
     const didDocument = await operationProcessor.resolve(did);

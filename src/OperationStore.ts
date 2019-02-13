@@ -62,7 +62,7 @@ class OperationStoreImpl {
 
     this.ensureDidEntriesExist(did);
     this.didToOperations.get(did)!.push(operation);
-    this.didTouchedSinceLastSort.set(did, false);
+    this.didTouchedSinceLastSort.set(did, true);
   }
 
   /**

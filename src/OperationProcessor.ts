@@ -124,6 +124,7 @@ class OperationProcessorImpl implements OperationProcessor {
     for (const operation of didOps) {
       if (await this.isValid(operation, previousOperation, didDocument)) {
         didDocument = this.getUpdatedDocument(didDocument, operation);
+        previousOperation = operation;
       }
     }
 
