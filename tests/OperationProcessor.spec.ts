@@ -153,10 +153,29 @@ describe('OperationProessor', async () => {
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
 
-    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     firstVersion = await operationProcessor.process(createOp);
     did = didMethodName + firstVersion;
+  });
+
+  it('should not resolve the DID if its create operation failed signature validation.', async () => {
+    // Generate a create operation with an invalid signature.
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    operation.signature = 'AnInvalidSignature';
+
+    // Create and upload the batch file with the invalid operation.
+    const operationBuffer = Buffer.from(JSON.stringify(operation));
+    const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
+
+    // Trigger processing of the operation.
+    const didUniqueSuffix = await operationProcessor.process(createOperation);
+    const did = didMethodName + didUniqueSuffix;
+
+    // Attempt to resolve the DID and validate the outcome.
+    const didDocument = await operationProcessor.resolve(did);
+    expect(didDocument).toBeUndefined();
   });
 
   it('should return operation hash for create op', async () => {

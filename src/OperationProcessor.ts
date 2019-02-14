@@ -352,6 +352,9 @@ class OperationProcessorImpl implements OperationProcessor {
     const op = await this.operationStore.lookup(opHash);
 
     if (this.isInitialVersion(opInfo)) {
+      if (opInfo.status === OperationStatus.Invalid) {
+        return undefined;
+      }
       const protocolVersion = Protocol.getProtocol(op.transactionTime!);
       return Document.from(op.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
     } else {

@@ -265,4 +265,4 @@ function getOperationHash (operation: Operation): string {
   return encodedMultihash;
 }
 
-export { getOperationHash, OperationType, Operation };
+export { getOperationHash, IOperation, OperationType, Operation };

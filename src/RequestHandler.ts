@@ -48,7 +48,6 @@ export default class RequestHandler {
 
       // TODO: Validate or perform proof-of-work.
 
-      // TODO: Validate signature.
     } catch {
       return {
         status: ResponseStatus.BadRequest
