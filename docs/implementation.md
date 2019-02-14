@@ -84,19 +84,16 @@ The Merkle Rooter batches operations (Create, Update, Delete and Recover) operat
 
 # Observer
 
-The observer watches the public blockchain to identify Sidetree operations, verifying their authenticity, and building a local cache to help a Sidetree node perform resolve operations quickly.
+The _Observer_ watches the public blockchain to identify Sidetree operations, then parses the operations into data structures that can be used for efficient DID resolutions.
+The primary goals for the _Observer_ are to:
+1. Maximize ingestion processing rate.
+1. Allow horizontal scaling for high DID resolution throughput.
+1. Allow sharing of the processed data structure by multiple Sidetree nodes to minimize redundant computation.
 
-> TODO: more content to be added.
-
+The above goals lead to a design where minimal processing of the operations at the time of ingestion and defers the heavy processing such as signature validation and JSON patch to the time of DID resolution.
 
 # Blockchain REST API
 The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
-
-All hashes used in the API are encoded multihash as specified by the Sidetree protocol.
-
->TODO: Decide on signature format.
->TODO: Decide on compression.
-
 
 ## Response HTTP status codes
 
