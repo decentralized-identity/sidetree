@@ -140,6 +140,7 @@ export default class Observer {
       let anchorFileBuffer;
       try {
         anchorFileBuffer = await this.cas.read(transaction.anchorFileHash);
+        Logger.info(`Downloaded anchor file '${transaction.anchorFileHash}' for transaction '${transaction.transactionNumber}'.`);
       } catch {
         // If unable to fetch the anchor file, place the transaction for future retries.
         this.addUnresolvableTransaction(transaction);
@@ -150,8 +151,6 @@ export default class Observer {
       let anchorFile;
       try {
         anchorFile = JSON.parse(anchorFileBuffer.toString());
-
-        // TODO: validate anchor file schema.
       } catch {
         return; // Invalid transaction, no further processing necessary.
       }
@@ -160,7 +159,7 @@ export default class Observer {
       let batchFileBuffer;
       try {
         batchFileBuffer = await this.cas.read(anchorFile.batchFileHash);
-        // TODO: Consider short-circuit optimization: check file size before downloading.
+        Logger.info(`Downloaded batch file '${anchorFile.batchFileHash}' for transaction '${transaction.transactionNumber}'.`);
       } catch {
         // If unable to fetch the batch file, place the transaction for future retries.
         this.addUnresolvableTransaction(transaction);
@@ -195,8 +194,6 @@ export default class Observer {
     const operations: Operation[] = [];
     try {
       const batchFile = JSON.parse(batchFileBuffer.toString());
-
-      // TODO: validate batch file JSON schema.
 
       // Verify the number of operations does not exceed the maximum allowed limit.
       const protocol = getProtocol(resolvedTransaction.transactionTime);
@@ -285,14 +282,14 @@ export default class Observer {
    * Adds the given transaction to the list of unresolvable trasactions for future retries.
    */
   private addUnresolvableTransaction (_transaction: Transaction) {
-    // TODO
+    // TODO: https://github.com/decentralized-identity/sidetree-core/issues/89
   }
 
   /**
    * Gets resolved transations that are previously not resolvable (i.e. unable to download anchor or batch file).
    */
   private getNewlyResolvedTransactions (): Transaction[] | undefined {
-    // TODO
+    // TODO: https://github.com/decentralized-identity/sidetree-core/issues/89
     return;
   }
 
@@ -301,6 +298,6 @@ export default class Observer {
    * Throws error if fails proof-of-work requirements.
    */
   private verifyProofOfWork (_operations: Operation[]) {
-    // TODO
+    // TODO: https://github.com/decentralized-identity/sidetree-core/issues/25
   }
 }

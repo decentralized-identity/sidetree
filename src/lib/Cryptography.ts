@@ -57,7 +57,7 @@ export default class Cryptography {
   }
 
   /**
-   * Sigs the given content using the given private key.
+   * Signs the given content using the given private key.
    * @param content Content to be signed.
    * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
    */
