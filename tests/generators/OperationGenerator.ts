@@ -1,7 +1,6 @@
-import Cryptography from '../../src/lib/Cryptography';
 import DidPublicKey from '../../src/lib/DidPublicKey';
 import Encoder from '../../src/Encoder';
-import { IOperation } from '../../src/Operation';
+import { IOperation, Operation } from '../../src/Operation';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
@@ -23,7 +22,7 @@ export default class OperationGenerator {
     const createPayload = Encoder.encode(didDocumentJson);
 
     // Generate the signature.
-    const signature = await Cryptography.sign(createPayload, privateKey);
+    const signature = await Operation.sign(createPayload, privateKey);
 
     const operation = {
       header: {
@@ -56,7 +55,7 @@ export default class OperationGenerator {
     const updatePayloadEncoded = Encoder.encode(updatePayloadJson);
 
     // Generate the signature.
-    const signature = await Cryptography.sign(updatePayloadEncoded, privateKey);
+    const signature = await Operation.sign(updatePayloadEncoded, privateKey);
 
     const operation = {
       header: {

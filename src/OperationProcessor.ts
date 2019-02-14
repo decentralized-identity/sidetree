@@ -1,5 +1,4 @@
 import * as Protocol from './Protocol';
-import Cryptography from './lib/Cryptography';
 import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';
 import { Cas } from './Cas';
@@ -511,7 +510,7 @@ class OperationProcessorImpl implements OperationProcessor {
     // Signature verification.
     let verified = false;
     if (publicKey) {
-      verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+      verified = await operation.verifySignature(publicKey);
     }
 
     if (verified) {
@@ -616,7 +615,7 @@ class OperationProcessorImpl implements OperationProcessor {
     // Signature verification.
     let verified = false;
     if (publicKey) {
-      verified = await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey);
+      verified = await operation.verifySignature(publicKey);
     }
     return verified;
 
