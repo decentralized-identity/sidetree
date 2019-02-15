@@ -1,5 +1,5 @@
 import * as Protocol from './Protocol';
-import { Cas } from '../src/Cas';
+import { Cas } from './Cas';
 import Cryptography from './lib/Cryptography';
 import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';

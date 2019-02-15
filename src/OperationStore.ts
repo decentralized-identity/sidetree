@@ -13,13 +13,14 @@ export interface OperationStore {
 
   /**
    * Get an iterator that returns all operations with a given
-   * did ordered by (transactionNumber, operationIndex)
+   * didUniqueSuffix ordered by (transactionNumber, operationIndex)
    * ascending.
    */
-  get (did: string): Promise<Iterable<Operation>>;
+  get (didUniqueSuffix: string): Promise<Iterable<Operation>>;
 
   /**
-   * Delete all operations with at least a given transactionNumber.
+   * Delete all operations with transaction number greater than the 
+   * provided parameter.
    */
   delete (transactionNumber?: number): Promise<void>;
 
@@ -78,29 +79,29 @@ class OperationStoreImpl {
   /**
    * Implement OperationStore.put
    * Get an iterator that returns all operations with a given
-   * did ordered by (transactionNumber, operationIndex).
+   * didUniqueSuffix ordered by (transactionNumber, operationIndex).
    *
    */
-  public async get (did: string): Promise<Iterable<Operation>> {
-    let didOps = this.didToOperations.get(did);
+  public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
+    let didOps = this.didToOperations.get(didUniqueSuffix);
 
     if (!didOps) {
       return this.emptyOperationsArray;
     }
 
-    const touchedSinceLastSort = this.didTouchedSinceLastSort.get(did)!;
+    const touchedSinceLastSort = this.didTouchedSinceLastSort.get(didUniqueSuffix)!;
 
     // Sort needed if there was a put operation since last sort.
     if (touchedSinceLastSort) {
       didOps.sort(compareOperation);       // in-place sort
-      this.didTouchedSinceLastSort.set(did, false);
+      this.didTouchedSinceLastSort.set(didUniqueSuffix, false);
     }
 
     return didOps;
   }
 
   /**
-   * Delete all operations with at least a given transactionNumber.
+   * Delete all operations transactionNumber greater than the given transactionNumber.
    */
   public async delete (transactionNumber?: number): Promise<void> {
     if (!transactionNumber) {
@@ -125,7 +126,7 @@ class OperationStoreImpl {
     let writeIndex = 0;
 
     for (let i = 0 ; i < operations.length ; i++) {
-      if (operations[i].transactionNumber! >= transactionNumber) {
+      if (operations[i].transactionNumber! > transactionNumber) {
         operations[writeIndex++] = operations[i];
       }
     }
