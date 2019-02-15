@@ -86,6 +86,10 @@ class OperationProcessorImpl implements OperationProcessor {
       if (await this.isValid(operation, previousOperation, didDocument)) {
         didDocument = this.getUpdatedDocument(didDocument, operation);
         previousOperation = operation;
+
+        if (operation.type === OperationType.Delete) {
+          break;
+        }
       }
     }
 
@@ -129,11 +133,6 @@ class OperationProcessorImpl implements OperationProcessor {
         return false;
       }
 
-      // If previous operation is a delete, then any subsequent operation is not valid
-      if (previousOperation.type === OperationType.Delete) {
-        return false;
-      }
-
       // Any non-create needs a previous operation hash  ...
       if (!operation.previousOperationHash) {
         return false;
@@ -169,7 +168,7 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   // Get the initial DID document for a create operation
-  private getInitialDocument(createOperation: Operation): DidDocument {
+  private getInitialDocument (createOperation: Operation): DidDocument {
     const protocolVersion = Protocol.getProtocol(createOperation.transactionTime!);
     return Document.from(createOperation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
   }
