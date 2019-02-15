@@ -1,6 +1,5 @@
 import * as Protocol from './Protocol';
 import { Cas } from './Cas';
-import Cryptography from './lib/Cryptography';
 import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
@@ -111,7 +110,17 @@ class OperationProcessorImpl implements OperationProcessor {
         return false;
       }
 
-      // TODO: Add signature verification for create operation
+      const initialDidDocument = this.getInitialDocument(operation);
+      const signingKey = OperationProcessorImpl.getPublicKey(initialDidDocument, operation.signingKeyId);
+
+      if (!signingKey) {
+        return false;
+      }
+
+      if (!(await operation.verifySignature(signingKey))) {
+        return false;
+      }
+
       return true;
     } else {
       // Every operation other than a create has a previous operation and a valid
@@ -142,7 +151,7 @@ class OperationProcessorImpl implements OperationProcessor {
       }
 
       // ... and the signature should verify
-      if (!(await Cryptography.verifySignature(operation.encodedPayload, operation.signature, publicKey))) {
+      if (!(await operation.verifySignature(publicKey))) {
         return false;
       }
 
@@ -153,11 +162,16 @@ class OperationProcessorImpl implements OperationProcessor {
   // Update a document with a specified operation.
   private getUpdatedDocument (didDocument: DidDocument | undefined, operation: Operation): DidDocument {
     if (operation.type === OperationType.Create) {
-      const protocolVersion = Protocol.getProtocol(operation.transactionTime!);
-      return Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
+      return this.getInitialDocument(operation);
     } else {
       return Operation.applyJsonPatchToDidDocument(didDocument!, operation.patch!);
     }
+  }
+
+  // Get the initial DID document for a create operation
+  private getInitialDocument(createOperation: Operation): DidDocument {
+    const protocolVersion = Protocol.getProtocol(createOperation.transactionTime!);
+    return Document.from(createOperation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
   }
 
   /**
