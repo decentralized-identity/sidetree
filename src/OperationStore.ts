@@ -19,7 +19,7 @@ export interface OperationStore {
   get (didUniqueSuffix: string): Promise<Iterable<Operation>>;
 
   /**
-   * Delete all operations with transaction number greater than the 
+   * Delete all operations with transaction number greater than the
    * provided parameter.
    */
   delete (transactionNumber?: number): Promise<void>;
