@@ -225,7 +225,7 @@ describe('OperationProessor', async () => {
     // Create and upload the batch file with the invalid operation.
     const operationBuffer = Buffer.from(JSON.stringify(operation));
     const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
-    
+
     // Trigger processing of the operation.
     await operationProcessor.process(createOperation);
     const did = didMethodName + getOperationHash(createOperation);
