@@ -10,7 +10,7 @@ describe('Operation', async () => {
 
   beforeAll(async () => {
     const [publicKey, privateKey] = await Cryptography.generateKeyPairJwk('key1'); // Generate a unique key-pair used for each test.
-    const createRequestBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createRequest = JSON.parse(createRequestBuffer.toString());
   });
 

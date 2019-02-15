@@ -56,7 +56,7 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
-    const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
     await rooter.rootOperations();
@@ -113,7 +113,7 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(blockchainTime);
 
-    const createRequest = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    const createRequest = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     const response = await requestHandler.handleOperationRequest(createRequest);
     const httpStatus = toHttpStatus(response.status);
 

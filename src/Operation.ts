@@ -1,11 +1,13 @@
 import * as Yup from 'yup';
+import Cryptography from './lib/Cryptography';
 import Document from './lib/Document';
 import Encoder from './Encoder';
 import Logger from './lib/Logger';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { DidDocument, DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { getProtocol } from './Protocol';
+import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { ResolvedTransaction } from './Transaction';
 
 /**
@@ -155,6 +157,31 @@ class Operation {
   }
 
   /**
+   * Verifies the operation is signed correctly.
+   * @param publicKey The public key used for verification.
+   * @returns true if signature is successfully verified, false otherwise.
+   */
+  public async verifySignature (publicKey: DidPublicKey): Promise<boolean> {
+    // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
+    // NOTE: there is no protected header in Sidetree operation.
+    const jwsSigningInput = '.' + this.encodedPayload;
+    const verified = await Cryptography.verifySignature(jwsSigningInput, this.signature, publicKey);
+    return verified;
+  }
+
+  /**
+   * Signs the given encoded payload using the given private key.
+   * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
+   */
+  public static async sign (encodedPayload: string, privateKey: string | PrivateKey): Promise<string> {
+    // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
+    // NOTE: there is no protected header in Sidetree operation.
+    const jwsSigningInput = '.' + encodedPayload;
+    const signature = await Cryptography.sign(jwsSigningInput, privateKey);
+    return signature;
+  }
+
+  /**
    * Applies the given JSON Patch to the specified DID Document.
    * NOTE: a new instance of the DidDocument is returned, the original instance is not modified.
    * @returns The resultant DID Document.
@@ -163,7 +190,6 @@ class Operation {
     const validatePatchOperation = true;
     const mutateOriginalContent = false;
     const updatedDidDocument = applyPatch(didDocument, jsonPatch, validatePatchOperation, mutateOriginalContent);
-    // TODO: Need to add extensive tests to make sure validation follows protocol behavior.
 
     return updatedDidDocument.newDocument;
   }
@@ -265,4 +291,4 @@ function getOperationHash (operation: Operation): string {
   return encodedMultihash;
 }
 
-export { getOperationHash, OperationType, Operation };
+export { getOperationHash, IOperation, OperationType, Operation };

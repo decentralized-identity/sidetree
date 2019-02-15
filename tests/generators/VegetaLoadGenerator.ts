@@ -36,7 +36,7 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
       // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 

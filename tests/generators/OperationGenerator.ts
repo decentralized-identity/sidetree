@@ -1,6 +1,6 @@
-import Cryptography from '../../src/lib/Cryptography';
 import DidPublicKey from '../../src/lib/DidPublicKey';
 import Encoder from '../../src/Encoder';
+import { IOperation, Operation } from '../../src/Operation';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
@@ -13,7 +13,7 @@ export default class OperationGenerator {
    * Creates a Create Operation with valid signature.
    * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
    */
-  public static async generateCreateOperation (didDocumentTemplate: any, publicKey: DidPublicKey, privateKey: string | PrivateKey): Promise<Buffer> {
+  public static async generateCreateOperation (didDocumentTemplate: any, publicKey: DidPublicKey, privateKey: string | PrivateKey): Promise<IOperation> {
     // Replace the placeholder public-key with the public-key given.
     didDocumentTemplate.publicKey[0] = publicKey;
 
@@ -22,7 +22,7 @@ export default class OperationGenerator {
     const createPayload = Encoder.encode(didDocumentJson);
 
     // Generate the signature.
-    const signature = await Cryptography.sign(createPayload, privateKey);
+    const signature = await Operation.sign(createPayload, privateKey);
 
     const operation = {
       header: {
@@ -34,6 +34,15 @@ export default class OperationGenerator {
       signature
     };
 
+    return operation;
+  }
+
+  /**
+   * Creates a Create Operation buffer with valid signature.
+   * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
+   */
+  public static async generateCreateOperationBuffer (didDocumentTemplate: any, publicKey: DidPublicKey, privateKey: string | PrivateKey): Promise<Buffer> {
+    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 
@@ -46,7 +55,7 @@ export default class OperationGenerator {
     const updatePayloadEncoded = Encoder.encode(updatePayloadJson);
 
     // Generate the signature.
-    const signature = await Cryptography.sign(updatePayloadEncoded, privateKey);
+    const signature = await Operation.sign(updatePayloadEncoded, privateKey);
 
     const operation = {
       header: {

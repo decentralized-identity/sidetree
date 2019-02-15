@@ -243,6 +243,8 @@ When `proofOfWork` is not given in an operation request, the Sidetree node must 
 ## JSON Web Signature (JWS)
 Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme. Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
 
+Note that signature validation is _only_ being performed when the Sidetree node is processing operations anchored on the blockchain. No signature validation will be done when the operation requests are being received and handled. This is because there is no way of guaranteeing/enforcing the validity of the signing key used in an update since the signing key could have been invalidated in an earlier update that has not been anchored or seen by the Sidetree node yet.
+
 
 ## DID and DID Document Creation
 The API to create a Sidetree DID and its initial state.
@@ -550,3 +552,4 @@ If the operation is successful, it applies the provided JSON patch to the versio
 * Why assign a _transaction number_ to invalid transactions?
 
   In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of valid transactions that occur at a later time remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
+
