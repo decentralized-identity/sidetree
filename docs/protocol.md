@@ -241,7 +241,14 @@ When `proofOfWork` is not given in an operation request, the Sidetree node must 
 
 
 ## JSON Web Signature (JWS)
-Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme. Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
+Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme.
+Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
+
+When constructing the JWS input for signing (_JWS Signing Input_), the following scheme is specified by the JWS specification:
+
+`ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))`
+
+Since there is no protected header in a Sidetree operation, the JWS Signing Input will always begin with the '`.`' character.
 
 Note that signature validation is _only_ being performed when the Sidetree node is processing operations anchored on the blockchain. No signature validation will be done when the operation requests are being received and handled. This is because there is no way of guaranteeing/enforcing the validity of the signing key used in an update since the signing key could have been invalidated in an earlier update that has not been anchored or seen by the Sidetree node yet.
 
@@ -393,7 +400,7 @@ The response body is the latest DID Document.
   }],
   "service": [{
     "type": "IdentityHub",
-    "publicKey": "did:sidetree:123456789abcdefghi#key-1",
+    "publicKey": "#key1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
