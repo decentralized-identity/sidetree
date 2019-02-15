@@ -1,6 +1,5 @@
 {
   "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:ignored",
   "publicKey": [
     {
       "id": "#key1",
@@ -24,7 +23,7 @@
   "service": [
     {
       "type": "IdentityHub",
-      "publicKey": "did:sidetree:ignored#key-1",
+      "publicKey": "#key1",
       "serviceEndpoint": {
         "@context": "schema.identity.foundation/hub",
         "@type": "UserServiceEndpoint",
