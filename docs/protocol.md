@@ -49,7 +49,7 @@ The following lists the parameters of each version of the Sidetree protocol.
 | Maximum operation size   | 2 KB             |
 
 
-# Sidetree Operations and DIDs
+# Sidetree Operations
 
 ## Sidetree Operations
 
@@ -64,9 +64,8 @@ An update to a DID Document is specified as a [_JSON patch_](https://tools.ietf.
 
 An _operation hash_ is the hash of the _encoded payload_ of a Sidetree operation request. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. With the exception of the create operation, each operation must reference the previous operation using the _operation hash_, forming a chain of change history.
 
-## Sidetree DIDs
-
-A Sidetree DID is simply the _operation hash_ of the initial create operation, it is also intentionally the hash of the encoded DID Document given as the create operation payload (_original DID Document_), prefixed by the Sidetree method name.
+# Sidetree DID and Original DID Document
+A Sidetree DID is intentionally the hash of the encoded DID Document given as the create operation payload (_original DID Document_), prefixed by the Sidetree method name. Given how _operation hash_ is computed, A DID is also the operation hash of the initial create operation.
 
 Since the requester is in control of the _original DID Document_, the requester can deterministically calculate the DID before the create operation is anchored on the blockchain.
 
@@ -241,13 +240,22 @@ When `proofOfWork` is not given in an operation request, the Sidetree node must 
 
 
 ## JSON Web Signature (JWS)
-Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme. Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
+Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme.
+Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
+
+When constructing the JWS input for signing (_JWS Signing Input_), the following scheme is specified by the JWS specification:
+
+`ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))`
+
+Since there is no protected header in a Sidetree operation, the JWS Signing Input will always begin with the '`.`' character.
 
 Note that signature validation is _only_ being performed when the Sidetree node is processing operations anchored on the blockchain. No signature validation will be done when the operation requests are being received and handled. This is because there is no way of guaranteeing/enforcing the validity of the signing key used in an update since the signing key could have been invalidated in an earlier update that has not been anchored or seen by the Sidetree node yet.
 
 
 ## DID and DID Document Creation
-The API to create a Sidetree DID and its initial state.
+Use this API to create a Sidetree DID and its initial state.
+
+An encoded _original DID Document_ must be supplied as the request payload, see [Original DID Document](#Sidetree-DID-and-Original-DID-Document) section for the requirements of a valid original DID Document.
 
 ### Request path
 ```http
@@ -279,8 +287,8 @@ POST /<api-version>/ HTTP/1.1
   "@context": "https://w3id.org/did/v1",
   "publicKey": [{
     "id": "#key-1",
-    "type": "RsaVerificationKey2018",
-    "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----\r\n"
+    "type": "Secp256k1VerificationKey2018",
+    "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1"
   }],
   "service": [{
     "type": "IdentityHub",
@@ -304,8 +312,8 @@ POST /v1.0/ HTTP/1.1
     "kid": "#key1",
     "proofOfWork": { }
   },
-  "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwiaWQiOiJkaWQ6c2lkZXRyZWU6aWdub3JlZCIsInB1YmxpY0tleSI6W3siaWQiOiIja2V5MSIsInR5cGUiOiJTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE4IiwicHVibGljS2V5SGV4IjoiMDI5YTQ3NzRkNTQzMDk0ZGVhZjM0MjY2M2FlNjcyNzI4ZTEyZjAzYjNiNmQ5ODE2YjBiNzk5OTVmYWRlMGZhYjIzIn1dfQ",
-  "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
+  "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwicHVibGljS2V5IjpbeyJpZCI6IiNrZXkxIiwidHlwZSI6IlNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTgiLCJwdWJsaWNLZXlIZXgiOiIwMmY0OTgwMmZiM2UwOWM2ZGQ0M2YxOWFhNDEyOTNkMWUwZGFkMDQ0YjY4Y2Y4MWNmNzA3OTQ5OWVkZmQwYWE5ZjEifSx7ImlkIjoiI2tleTIiLCJ0eXBlIjoiUnNhVmVyaWZpY2F0aW9uS2V5MjAxOCIsInB1YmxpY0tleVBlbSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS4yLkVORCBQVUJMSUMgS0VZLS0tLS0ifV0sInNlcnZpY2UiOlt7InR5cGUiOiJJZGVudGl0eUh1YiIsInB1YmxpY0tleSI6IiNrZXkxIiwic2VydmljZUVuZHBvaW50Ijp7IkBjb250ZXh0Ijoic2NoZW1hLmlkZW50aXR5LmZvdW5kYXRpb24vaHViIiwiQHR5cGUiOiJVc2VyU2VydmljZUVuZHBvaW50IiwiaW5zdGFuY2VzIjpbImRpZDpiYXI6NDU2IiwiZGlkOnphejo3ODkiXX19XX0",
+  "signature": "mAJp4ZHwY5UMA05OEKvoZreRo0XrYe77s3RLyGKArG85IoBULs4cLDBtdpOToCtSZhPvCC2xOUXMGyGXDmmEHg"
 }
 ```
 
@@ -393,7 +401,7 @@ The response body is the latest DID Document.
   }],
   "service": [{
     "type": "IdentityHub",
-    "publicKey": "did:sidetree:123456789abcdefghi#key-1",
+    "publicKey": "#key1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
