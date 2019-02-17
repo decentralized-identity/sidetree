@@ -3,6 +3,7 @@ import Cryptography from '../src/lib/Cryptography';
 import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
+import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import DidPublicKey from '../src/lib/DidPublicKey';
@@ -129,10 +130,12 @@ describe('OperationProessor', async () => {
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
-  const didMethodName = 'did:sidetree:';
 
   let cas = new MockCas();
-  let operationProcessor = createOperationProcessor(cas, didMethodName);
+  const configFile = require('../json/config.json');
+  const config = new Config(configFile);
+  const didMethodName = config[ConfigKey.DidMethodName];
+  let operationProcessor = createOperationProcessor(cas, config);
   let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
@@ -142,7 +145,7 @@ describe('OperationProessor', async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
-    operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
+    operationProcessor = createOperationProcessor(cas, config); // TODO: add a clear method to avoid double initialization.
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -201,7 +204,7 @@ describe('OperationProessor', async () => {
     const numberOfPermutations = getFactorial(numberOfOps);
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
-      operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // Reset
+      operationProcessor = createOperationProcessor(cas, config); // Reset
 
       for (let i = 0 ; i < numberOfOps ; ++i) {
         const opIdx = permutation[i];

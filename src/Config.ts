@@ -9,7 +9,9 @@ export enum ConfigKey {
   DidMethodName = 'didMethodName',
   ExampleSecret = 'exampleSecret', // TODO: used only for testing. Remove/replace once there is a real secret.
   PollingIntervalInSeconds = 'pollingIntervalInSeconds',
-  Port = 'port'
+  Port = 'port',
+  OperationStoreType = 'operationStoreType', // Values corresponds to OperationStoreType
+  OperationStoreUri = 'operationStoreUri'
 }
 
 /**

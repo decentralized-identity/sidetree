@@ -1,5 +1,6 @@
 import * as Protocol from './Protocol';
 import { Cas } from './Cas';
+import { Config, ConfigKey } from './Config';
 import DidPublicKey from './lib/DidPublicKey';
 import Document from './lib/Document';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
@@ -194,6 +195,6 @@ class OperationProcessorImpl implements OperationProcessor {
 /**
  * Factory function for creating a operation processor
  */
-export function createOperationProcessor (_cas: Cas, didMethodName: string): OperationProcessor {
-  return new OperationProcessorImpl(didMethodName);
+export function createOperationProcessor (_cas: Cas, config: Config): OperationProcessor {
+  return new OperationProcessorImpl(config[ConfigKey.DidMethodName]);
 }

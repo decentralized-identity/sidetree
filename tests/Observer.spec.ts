@@ -12,7 +12,7 @@ describe('Observer', async () => {
   const configFile = require('../json/config.json');
   const config = new Config(configFile);
   const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-  const operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
+  const operationProcessor = createOperationProcessor(cas, config);
 
   fetchMock.config.sendAsJson = false;
 

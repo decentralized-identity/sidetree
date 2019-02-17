@@ -27,6 +27,14 @@ export interface OperationStore {
 }
 
 /**
+ * Types of operation stores that we support.
+ */
+export enum OperationStoreType {
+  InMemory,                      // Basic in-memory operation store
+  Mongo                          // MongoDB backend based operation store
+}
+
+/**
  * Compare two operations returning -1, 0, 1 when the first operand
  * is less than, equal, and greater than the second, respectively.
  * Used to sort operations by blockchain 'time' order.
