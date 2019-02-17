@@ -172,8 +172,7 @@ class OperationStoreImpl {
 export function createOperationStore (config: Config) {
   if (config[ConfigKey.OperationStoreType] === 'InMemory') {
     return new OperationStoreImpl(config[ConfigKey.DidMethodName]);
-  }
-  else {
+  } else {
     console.log(config);
     throw Error('Unsupported operation store type: ' + config[ConfigKey.OperationStoreType]);
   }
