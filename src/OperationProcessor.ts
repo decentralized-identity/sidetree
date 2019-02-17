@@ -46,9 +46,11 @@ export interface OperationProcessor {
 class OperationProcessorImpl implements OperationProcessor {
 
   private operationStore: OperationStore;
+  private didMethodName: string;
 
-  public constructor (private didMethodName: string) {
-    this.operationStore = createOperationStore(didMethodName);
+  public constructor (config: Config) {
+    this.didMethodName = config[ConfigKey.DidMethodName];
+    this.operationStore = createOperationStore(config);
   }
 
   /**
@@ -196,5 +198,5 @@ class OperationProcessorImpl implements OperationProcessor {
  * Factory function for creating a operation processor
  */
 export function createOperationProcessor (_cas: Cas, config: Config): OperationProcessor {
-  return new OperationProcessorImpl(config[ConfigKey.DidMethodName]);
+  return new OperationProcessorImpl(config);
 }

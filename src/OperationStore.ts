@@ -1,3 +1,4 @@
+import { Config, ConfigKey } from './Config';
 import { getOperationHash, OperationType, Operation } from './Operation';
 
 /**
@@ -168,6 +169,12 @@ class OperationStoreImpl {
 /**
  * Factory function to create an operation store
  */
-export function createOperationStore (didMethodName: string) {
-  return new OperationStoreImpl(didMethodName);
+export function createOperationStore (config: Config) {
+  if (config[ConfigKey.OperationStoreType] === 'InMemory') {
+    return new OperationStoreImpl(config[ConfigKey.DidMethodName]);
+  }
+  else {
+    console.log(config);
+    throw Error('Unsupported operation store type: ' + config[ConfigKey.OperationStoreType]);
+  }
 }
