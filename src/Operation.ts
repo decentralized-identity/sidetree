@@ -188,11 +188,36 @@ class Operation {
    */
   public getDidUniqueSuffix (): string {
     if (this.type === OperationType.Create) {
-      return getOperationHash(this);
+      return this.getOperationHash();
     } else {
       const didUniqueSuffix = Did.getUniqueSuffix(this.did!);
       return didUniqueSuffix;
     }
+  }
+
+  /**
+   * Gets a cryptographic hash of the operation.
+   * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
+   * for all other cases, the hash is calculated against the entire opeartion buffer.
+   */
+  getOperationHash (): string {
+    if (this.transactionTime === undefined) {
+      throw new Error(`Transaction time not given but needed for hash algorithm selection.`);
+    }
+
+    // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
+    const protocol = getProtocol(this.transactionTime);
+
+    let contentBuffer;
+    if (this.type === OperationType.Create) {
+      contentBuffer = Buffer.from(this.encodedPayload);
+    } else {
+      contentBuffer = this.operationBuffer;
+    }
+
+    const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
+    const encodedMultihash = Encoder.encode(multihash);
+    return encodedMultihash;
   }
 
   /**
@@ -279,30 +304,4 @@ class Operation {
   }
 }
 
-/**
- * Get a cryptographic hash of the operation.
- * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
- * for all other cases, the hash is calculated against the entire opeartion buffer.
- */
-function getOperationHash (operation: Operation): string {
-
-  if (operation.transactionTime === undefined) {
-    throw new Error(`Transaction time not given but needed for DID generation.`);
-  }
-
-  // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-  const protocol = getProtocol(operation.transactionTime);
-
-  let contentBuffer;
-  if (operation.type === OperationType.Create) {
-    contentBuffer = Buffer.from(operation.encodedPayload);
-  } else {
-    contentBuffer = operation.operationBuffer;
-  }
-
-  const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
-  const encodedMultihash = Encoder.encode(multihash);
-  return encodedMultihash;
-}
-
-export { getOperationHash, IOperation, OperationType, Operation };
+export { IOperation, OperationType, Operation };
