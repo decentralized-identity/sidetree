@@ -1,4 +1,4 @@
-import { getOperationHash, OperationType, Operation } from './Operation';
+import { Operation } from './Operation';
 
 /**
  * An abstraction of a complete store for operations exposing methods to
@@ -49,38 +49,33 @@ function compareOperation (op1: Operation, op2: Operation): number {
  * A simple in-memory implementation of operation store.
  */
 class OperationStoreImpl {
-  // Map DID to operations over it stored as an array. The array might be sorted
+  // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
   private readonly didToOperations: Map<string, Array<Operation>> = new Map();
 
-  // Map DID to a boolean indicating if the operations array for the DID is sorted
+  // Map DID unique suffixes to a boolean indicating if the operations array for the DID is sorted
   // or not.
-  private readonly didTouchedSinceLastSort: Map<string, boolean> = new Map();
+  private readonly didUpdatedSinceLastSort: Map<string, boolean> = new Map();
 
   private readonly emptyOperationsArray: Array<Operation> = new Array();
 
-  public constructor (private didMethodName: string) {
-
-  }
-
   /**
-   * Implement OperationStore.put.
+   * Implements OperationStore.put().
    */
   public async put (operation: Operation): Promise<void> {
-    const did = this.getDidUniqueSuffix(operation);
+    const didUniqueSuffix = operation.getDidUniqueSuffix();
 
-    this.ensureDidEntriesExist(did);
+    this.ensureDidEntriesExist(didUniqueSuffix);
     // Append the operation to the operation array for the did ...
-    this.didToOperations.get(did)!.push(operation);
+    this.didToOperations.get(didUniqueSuffix)!.push(operation);
     // ... which leaves the array unsorted, so we record this fact
-    this.didTouchedSinceLastSort.set(did, true);
+    this.didUpdatedSinceLastSort.set(didUniqueSuffix, true);
   }
 
   /**
-   * Implement OperationStore.put
+   * Implements OperationStore.get().
    * Get an iterator that returns all operations with a given
    * didUniqueSuffix ordered by (transactionNumber, operationIndex).
-   *
    */
   public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
     let didOps = this.didToOperations.get(didUniqueSuffix);
@@ -89,12 +84,12 @@ class OperationStoreImpl {
       return this.emptyOperationsArray;
     }
 
-    const touchedSinceLastSort = this.didTouchedSinceLastSort.get(didUniqueSuffix)!;
+    const updatedSinceLastSort = this.didUpdatedSinceLastSort.get(didUniqueSuffix)!;
 
     // Sort needed if there was a put operation since last sort.
-    if (touchedSinceLastSort) {
+    if (updatedSinceLastSort) {
       didOps.sort(compareOperation);       // in-place sort
-      this.didTouchedSinceLastSort.set(didUniqueSuffix, false);
+      this.didUpdatedSinceLastSort.set(didUniqueSuffix, false);
     }
 
     return didOps;
@@ -106,13 +101,13 @@ class OperationStoreImpl {
   public async delete (transactionNumber?: number): Promise<void> {
     if (!transactionNumber) {
       this.didToOperations.clear();
-      this.didTouchedSinceLastSort.clear();
+      this.didUpdatedSinceLastSort.clear();
       return;
     }
 
     // Iterate over all DID and remove operations from corresponding
     // operations array. Remove leaves the original order intact so
-    // we do not need to update didTouchedSinceLastSort
+    // we do not need to update didUpdatedSinceLastSort
     for (const [, didOps] of this.didToOperations) {
       OperationStoreImpl.removeOperations(didOps, transactionNumber);
     }
@@ -136,23 +131,10 @@ class OperationStoreImpl {
     }
   }
 
-  /**
-   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
-   * for others the DID included with the operation can be used to obtain the unique suffix.
-   */
-  private getDidUniqueSuffix (operation: Operation): string {
-    if (operation.type === OperationType.Create) {
-      return getOperationHash(operation);
-    } else {
-      const didUniqueSuffix = operation.did!.substring(this.didMethodName.length);
-      return didUniqueSuffix;
-    }
-  }
-
   private ensureDidEntriesExist (did: string) {
     if (this.didToOperations.get(did) === undefined) {
       this.didToOperations.set(did, new Array<Operation>());
-      this.didTouchedSinceLastSort.set(did, false);
+      this.didUpdatedSinceLastSort.set(did, false);
     }
   }
 }
@@ -160,6 +142,6 @@ class OperationStoreImpl {
 /**
  * Factory function to create an operation store
  */
-export function createOperationStore (didMethodName: string) {
-  return new OperationStoreImpl(didMethodName);
+export function createOperationStore () {
+  return new OperationStoreImpl();
 }

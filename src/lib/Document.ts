@@ -1,7 +1,7 @@
 import * as Yup from 'yup';
 import Did from './Did';
 import Encoder from '../Encoder';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { DidDocument, DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
@@ -96,6 +96,23 @@ export default class Document {
 
     const isValid = schema.isValidSync(didDocument);
     return isValid;
+  }
+
+  /**
+   * Gets the specified public key from the given DID Document.
+   * Returns undefined if not found.
+   * @param keyId The ID of the public-key.
+   */
+  public static getPublicKey (didDocument: DidDocument, keyId: string): DidPublicKey | undefined {
+    for (let i = 0; i < didDocument.publicKey.length; i++) {
+      const publicKey = didDocument.publicKey[i];
+
+      if (publicKey.id && publicKey.id.endsWith(keyId)) {
+        return publicKey;
+      }
+    }
+
+    return undefined;
   }
 
   /**

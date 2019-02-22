@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
 import Cryptography from './lib/Cryptography';
+import Did from './lib/Did';
 import Document from './lib/Document';
 import Encoder from './Encoder';
 import Logger from './lib/Logger';
@@ -179,6 +180,19 @@ class Operation {
     const jwsSigningInput = '.' + encodedPayload;
     const signature = await Cryptography.sign(jwsSigningInput, privateKey);
     return signature;
+  }
+
+  /**
+   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
+   * for others the DID included with the operation can be used to obtain the unique suffix.
+   */
+  public getDidUniqueSuffix (): string {
+    if (this.type === OperationType.Create) {
+      return getOperationHash(this);
+    } else {
+      const didUniqueSuffix = Did.getUniqueSuffix(this.did!);
+      return didUniqueSuffix;
+    }
   }
 
   /**
