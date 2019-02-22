@@ -3,7 +3,9 @@ import Cryptography from '../src/lib/Cryptography';
 import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
-import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
+import { createOperationProcessor } from '../src/OperationProcessor';
+import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import DidPublicKey from '../src/lib/DidPublicKey';
 import { getOperationHash, Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
@@ -39,7 +41,7 @@ async function createUpdateSequence (
   cas: Cas,
   numberOfUpdates:
   number,
-  privateKey: any): Promise<[Operation[], string[]]> {
+  privateKey: any): Promise<Operation[]> {
 
   const ops = new Array(createOp);
   const opHashes = new Array(getOperationHash(createOp));
@@ -56,7 +58,7 @@ async function createUpdateSequence (
         value: {
           id: '#key2',
           type: 'RsaVerificationKey2018',
-          owner: 'did:sidetree:dummydid',
+          owner: 'did:sidetree:updateid' + i,
           publicKeyPem: process.hrtime() // Some dummy value that's not used.
         }
       }]
@@ -76,29 +78,7 @@ async function createUpdateSequence (
     opHashes.push(updateOpHash);
   }
 
-  return [ops, opHashes];
-}
-
-async function checkUpdateSequenceVersionChaining (operationProcessor: OperationProcessor, opHashes: string[]): Promise<void> {
-  // Check first(), last(), prev(), next() return expected outputs. Since
-  // if the OperationProcessor did not process the operations correctly
-  // some version defined by these operations would be "invalid" and we would
-  // not get the correct output below.
-  for (let i = 0; i < opHashes.length; ++i) {
-    expect(await operationProcessor.first(opHashes[i])).toBe(opHashes[0]);
-    expect(await operationProcessor.last(opHashes[i])).toBe(opHashes[opHashes.length - 1]);
-
-    if (i === 0) {
-      expect(await operationProcessor.previous(opHashes[i])).toBeUndefined();
-    } else {
-      expect(await operationProcessor.previous(opHashes[i])).toBe(opHashes[i - 1]);
-    }
-    if (i === opHashes.length - 1) {
-      expect(await operationProcessor.next(opHashes[i])).toBeUndefined();
-    } else {
-      expect(await operationProcessor.next(opHashes[i])).toBe(opHashes[i + 1]);
-    }
-  }
+  return ops;
 }
 
 function getFactorial (n: number): number {
@@ -132,6 +112,18 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
+function getPublicKey (didDocument: DidDocument, keyId: string): DidPublicKey | undefined {
+  for (let i = 0; i < didDocument.publicKey.length; i++) {
+    const publicKey = didDocument.publicKey[i];
+
+    if (publicKey.id && publicKey.id.endsWith(keyId)) {
+      return publicKey;
+    }
+  }
+
+  return undefined;
+}
+
 describe('OperationProessor', async () => {
   initializeProtocol('protocol-test.json');
 
@@ -142,7 +134,6 @@ describe('OperationProessor', async () => {
   let cas = new MockCas();
   let operationProcessor = createOperationProcessor(cas, didMethodName);
   let createOp: Operation | undefined;
-  let firstVersion: string | undefined;
   let publicKey: any;
   let privateKey: any;
   let did: string;
@@ -155,8 +146,74 @@ describe('OperationProessor', async () => {
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
-    firstVersion = await operationProcessor.process(createOp);
-    did = didMethodName + firstVersion;
+    const createOpHash = getOperationHash(createOp);
+    await operationProcessor.process(createOp);
+    did = didMethodName + createOpHash;
+  });
+
+  it('should return a DID Document for resolve(did) for a registered DID', async () => {
+    const didDocument = await operationProcessor.resolve(did);
+
+    // TODO: can we get the raw json from did? if so, we can write a better test.
+    // This is a poor man's version based on public key properties
+    expect(didDocument).toBeDefined();
+    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined();
+  });
+
+  it('should process updates correctly', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+
+    for (let i = 0 ; i < ops.length ; ++i) {
+      await operationProcessor.process(ops[i]);
+    }
+
+    const didDocument = await operationProcessor.resolve(did);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+  });
+
+  it('should correctly process updates in reverse order', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+
+    for (let i = numberOfUpdates ; i >= 0 ; --i) {
+      await operationProcessor.process(ops[i]);
+    }
+    const didDocument = await operationProcessor.resolve(did);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+  });
+
+  it('should correctly process updates in every (5! = 120) order', async () => {
+    const numberOfUpdates = 4;
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+
+    const numberOfOps = ops.length;
+    const numberOfPermutations = getFactorial(numberOfOps);
+    for (let i = 0 ; i < numberOfPermutations; ++i) {
+      const permutation = getPermutation(numberOfOps, i);
+      operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // Reset
+
+      for (let i = 0 ; i < numberOfOps ; ++i) {
+        const opIdx = permutation[i];
+        await operationProcessor.process(ops[opIdx]);
+      }
+      const didDocument = await operationProcessor.resolve(did);
+      expect(didDocument).toBeDefined();
+      const publicKey2 = getPublicKey(didDocument!, 'key2');
+      expect(publicKey2).toBeDefined();
+      expect(publicKey2!.owner).toBeDefined();
+      expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+    }
   });
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
@@ -170,91 +227,11 @@ describe('OperationProessor', async () => {
     const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
 
     // Trigger processing of the operation.
-    const didUniqueSuffix = await operationProcessor.process(createOperation);
-    const did = didMethodName + didUniqueSuffix;
+    await operationProcessor.process(createOperation);
+    const did = didMethodName + getOperationHash(createOperation);
 
     // Attempt to resolve the DID and validate the outcome.
     const didDocument = await operationProcessor.resolve(did);
     expect(didDocument).toBeUndefined();
-  });
-
-  it('should return operation hash for create op', async () => {
-    const expectedHash = getOperationHash(createOp!);
-    expect(firstVersion).not.toBeUndefined();
-    expect(firstVersion).toBe(expectedHash);
-  });
-
-  it('should return firstVersion for first(firstVersion)', async () => {
-    await operationProcessor.resolve(did);
-    const firstOfFirstVersion = await operationProcessor.first(firstVersion!);
-    expect(firstOfFirstVersion).toBe(firstVersion!);
-  });
-
-  it('should return firstVersion for last(firstVersion) if firstVersion is the only version', async () => {
-    await operationProcessor.resolve(did);
-    expect(await operationProcessor.last(firstVersion!)).toBe(firstVersion!);
-  });
-
-  it('should return undefined for prev(firstVersion)', async () => {
-    await operationProcessor.resolve(did);
-    const prev = await operationProcessor.previous(firstVersion!);
-    expect(prev).toBeUndefined();
-  });
-
-  it('should return a DID Document for resolve(did) for a registered DID', async () => {
-    const did = `${didMethodName}${firstVersion!}`;
-    const didDocument = await operationProcessor.resolve(did);
-    // TODO: can we get the raw json from did? if so, we can write a better test.
-    expect(didDocument).not.toBeUndefined();
-  });
-
-  it('should process updates correctly', async () => {
-    const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      const newVersion = await operationProcessor.process(ops[i]);
-      expect(newVersion).toBeDefined();
-      expect(newVersion).toBe(opHashes[i]);
-    }
-    await operationProcessor.resolve(did);
-
-    await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
-  });
-
-  it('should correctly process updates in reverse order', async () => {
-    const numberOfUpdates = 10;
-    const [ops,opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = numberOfUpdates ; i > 0 ; --i) {
-      const newVersion = await operationProcessor.process(ops[i]);
-      expect(newVersion).toBeDefined();
-      expect(newVersion).toBe(opHashes[i]);
-    }
-    await operationProcessor.resolve(did);
-
-    await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
-  });
-
-  it('should correctly process updates in every (5! = 120) order', async () => {
-    const numberOfUpdates = 4;
-    const [ops, opHashes] = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
-
-    const numberOfOps = ops.length;
-    const numberOfPermutations = getFactorial(numberOfOps);
-    for (let i = 0 ; i < numberOfPermutations; ++i) {
-      const permutation = getPermutation(numberOfOps, i);
-      operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // Reset
-
-      for (let i = 0 ; i < numberOfOps ; ++i) {
-        const opIdx = permutation[i];
-        const newVersion = await operationProcessor.process(ops[opIdx]);
-        expect(newVersion).toBeDefined();
-        expect(newVersion).toBe(opHashes[opIdx]);
-      }
-      await operationProcessor.resolve(did);
-
-      await checkUpdateSequenceVersionChaining(operationProcessor, opHashes);
-    }
   });
 });
