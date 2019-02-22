@@ -2,7 +2,7 @@ import * as Protocol from './Protocol';
 import Document from './lib/Document';
 import { Cas } from './Cas';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import { Operation, OperationType, getOperationHash } from './Operation';
+import { Operation, OperationType } from './Operation';
 import { createOperationStore, OperationStore } from './OperationStore';
 
 /**
@@ -141,7 +141,7 @@ class OperationProcessorImpl implements OperationProcessor {
       }
 
       // ... that should match the hash of the latest valid operation (previousOperation)
-      if (operation.previousOperationHash !== getOperationHash(previousOperation)) {
+      if (operation.previousOperationHash !== previousOperation.getOperationHash()) {
         return undefined;
       }
 

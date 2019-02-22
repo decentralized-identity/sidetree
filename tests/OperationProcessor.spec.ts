@@ -6,7 +6,7 @@ import { Cas } from '../src/Cas';
 import { createOperationProcessor } from '../src/OperationProcessor';
 import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import DidPublicKey from '../src/lib/DidPublicKey';
-import { getOperationHash, Operation } from '../src/Operation';
+import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
 /**
@@ -44,7 +44,7 @@ async function createUpdateSequence (
   privateKey: any): Promise<Operation[]> {
 
   const ops = new Array(createOp);
-  const opHashes = new Array(getOperationHash(createOp));
+  const opHashes = new Array(createOp.getOperationHash());
 
   for (let i = 0; i < numberOfUpdates; ++i) {
     const mostRecentVersion = opHashes[i];
@@ -74,7 +74,7 @@ async function createUpdateSequence (
       );
     ops.push(updateOp);
 
-    const updateOpHash = getOperationHash(updateOp);
+    const updateOpHash = updateOp.getOperationHash();
     opHashes.push(updateOpHash);
   }
 
@@ -146,7 +146,7 @@ describe('OperationProessor', async () => {
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
-    const createOpHash = getOperationHash(createOp);
+    const createOpHash = createOp.getOperationHash();
     await operationProcessor.process(createOp);
     did = didMethodName + createOpHash;
   });
@@ -228,7 +228,7 @@ describe('OperationProessor', async () => {
 
     // Trigger processing of the operation.
     await operationProcessor.process(createOperation);
-    const did = didMethodName + getOperationHash(createOperation);
+    const did = didMethodName + createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
     const didDocument = await operationProcessor.resolve(did);
