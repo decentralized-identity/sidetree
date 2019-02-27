@@ -1,10 +1,12 @@
 import Encoder from './Encoder';
 import Logger from './lib/Logger';
+import timeSpan = require('time-span');
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 import { ErrorCode, SidetreeError } from './Error';
 import { getProtocol } from './Protocol';
+import { InMemoryTransactionStore } from './TransactionStore';
 import { Operation } from './Operation';
 import { OperationProcessor } from './OperationProcessor';
 
@@ -19,10 +21,7 @@ export default class Observer {
    */
   private continuePeriodicProcessing = false;
 
-  /**
-   * List of processed Sidetree transactions.
-   */
-  private processedTransactions: Transaction[] = [];
+  private transactionStore = new InMemoryTransactionStore();
 
   public constructor (
     private blockchain: Blockchain,
@@ -58,7 +57,7 @@ export default class Observer {
    * Mainly used for test purposes.
    */
   public getProcessedTransactions (): Transaction[] {
-    return this.processedTransactions;
+    return this.transactionStore.getProcessedTransactions();
   }
 
   /**
@@ -71,40 +70,33 @@ export default class Observer {
     let moreTransactions = false;
 
     try {
-      // First check if there are resolved transactions that are previously unresolvable.
-      // If there are, then process those first, then mark moreTransactions to true to process new transactions.
-      let transactions = this.getNewlyResolvedTransactions();
-      if (transactions) {
-        moreTransactions = true;
-      } else {
-        // Get all the new transactions.
-        const lastProcessedTransactionIndex = this.processedTransactions.length - 1;
-        const lastProcessedTransaction = this.processedTransactions[lastProcessedTransactionIndex];
-        const lastProcessedTransactionNumber = lastProcessedTransaction ? lastProcessedTransaction.transactionNumber : undefined;
-        const lastProcessedTransactionTimeHash = lastProcessedTransaction ? lastProcessedTransaction.transactionTimeHash : undefined;
+      // Get the last transaction to be used as a timestamp/watermark to fetch new transactions.
+      const lastProcessedTransaction = await this.transactionStore.getLastTransaction();
+      const lastProcessedTransactionNumber = lastProcessedTransaction ? lastProcessedTransaction.transactionNumber : undefined;
+      const lastProcessedTransactionTimeHash = lastProcessedTransaction ? lastProcessedTransaction.transactionTimeHash : undefined;
 
-        let readResult;
-        try {
-          Logger.info('Fetching Sidetree transactions from blockchain service...');
-          readResult = await this.blockchain.read(lastProcessedTransactionNumber, lastProcessedTransactionTimeHash);
-        } catch (error) {
-          // If block reorganization (temporary fork) has happened.
-          if (error instanceof SidetreeError && error.errorCode === ErrorCode.InvalidTransactionNumberOrTimeHash) {
-            Logger.info(`Block reorganization detected, reverting transactions...`);
-            await this.detectAndRevertInvalidTransactions();
-            Logger.info(`Completed reverting invalide transactions.`);
-            moreTransactions = true;
-            return;
-          } else {
-            throw error;
-          }
+      let readResult;
+      let endTimer = timeSpan(); // Measure time taken to go blockchain read.
+      try {
+        Logger.info('Fetching Sidetree transactions from blockchain service...');
+        readResult = await this.blockchain.read(lastProcessedTransactionNumber, lastProcessedTransactionTimeHash);
+      } catch (error) {
+        // If block reorganization (temporary fork) has happened.
+        if (error instanceof SidetreeError && error.errorCode === ErrorCode.InvalidTransactionNumberOrTimeHash) {
+          Logger.info(`Block reorganization detected, reverting transactions...`);
+          await this.RevertInvalidTransactions();
+          Logger.info(`Completed reverting invalid transactions.`);
+          moreTransactions = true;
+          return;
+        } else {
+          throw error;
         }
-
-        transactions = readResult.transactions;
-        moreTransactions = readResult.moreTransactions;
-
-        Logger.info(`Fetched ${transactions.length} Sidetree transactions from blockchain service.`);
       }
+
+      let transactions = readResult.transactions;
+      moreTransactions = readResult.moreTransactions;
+
+      Logger.info(`Fetched ${transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
 
       // Process each transaction sequentially.
       for (const transaction of transactions) {
@@ -112,8 +104,24 @@ export default class Observer {
         await this.processTransaction(transaction);
         Logger.info(`Finished processing transaction ${transaction.transactionNumber}...`);
       }
+
+      // Only continue to process unresolvable transactions if there are no more new transactions from blockchain to process.
+      if (moreTransactions) {
+        return;
+      }
+
+      endTimer = timeSpan();
+      transactions = await this.transactionStore.getUnresolvableTransactionsToRetry();
+      Logger.info(`Fetched ${transactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
+
+      // Process each transaction sequentially.
+      for (const transaction of transactions) {
+        Logger.info(`Retrying processing of transaction ${transaction.transactionNumber}...`);
+        await this.processTransaction(transaction);
+        Logger.info(`Finished retrying processing of transaction ${transaction.transactionNumber}...`);
+      }
     } catch (e) {
-      Logger.error(`Encountered unhandled Observer error, investigate and fix:`);
+      Logger.error(`Encountered unhandled and possibly fatal Observer error, investigate and fix:`);
       Logger.error(e);
     } finally {
       if (moreTransactions) {
@@ -134,6 +142,7 @@ export default class Observer {
    */
   private async processTransaction (transaction: Transaction) {
     let errorOccurred = false;
+    let transactionResolved = false;
 
     try {
       // Try fetching the anchor file.
@@ -143,7 +152,6 @@ export default class Observer {
         Logger.info(`Downloaded anchor file '${transaction.anchorFileHash}' for transaction '${transaction.transactionNumber}'.`);
       } catch {
         // If unable to fetch the anchor file, place the transaction for future retries.
-        this.addUnresolvableTransaction(transaction);
         Logger.info(`Failed downloading anchor file '${transaction.anchorFileHash}' for transaction '${transaction.transactionNumber}'.`);
         return;
       }
@@ -162,10 +170,11 @@ export default class Observer {
         Logger.info(`Downloaded batch file '${anchorFile.batchFileHash}' for transaction '${transaction.transactionNumber}'.`);
       } catch {
         // If unable to fetch the batch file, place the transaction for future retries.
-        this.addUnresolvableTransaction(transaction);
         Logger.info(`Failed downloading batch file '${anchorFile.batchFileHash}' for transaction '${transaction.transactionNumber}'.`);
         return;
       }
+
+      transactionResolved = true;
 
       // Construct a resolved transaction from the original transaction object now that batch file is fetched.
       const resolvedTransaction: ResolvedTransaction = {
@@ -181,10 +190,16 @@ export default class Observer {
       errorOccurred = true;
       throw e;
     } finally {
+      if (transactionResolved) {
+        await this.transactionStore.removeUnresolvableTransaction(transaction);
+      } else {
+        await this.transactionStore.recordUnresolvableTransactionFetchAttempt(transaction);
+      }
+
       // If no error occurred, we add the transaction to the list of processed transactions.
       // NOTE: unresolvable transaction is considered a processed transaction.
       if (!errorOccurred) {
-        this.processedTransactions.push(transaction);
+        await this.transactionStore.addProcessedTransaction(transaction);
       }
     }
   }
@@ -239,58 +254,25 @@ export default class Observer {
   }
 
   /**
-   * Detects and reverts invalid transactions. Used in the event of a block-reorganization.
+   * Reverts invalid transactions. Used in the event of a block-reorganization.
    */
-  private async detectAndRevertInvalidTransactions () {
+  private async RevertInvalidTransactions () {
     // Compute a list of exponentially-spaced transactions with their index, starting from the last transaction of the processed transactions.
-    const exponentiallySpacedTransactions: { transaction: Transaction, index: number }[] = [];
-    let index = this.processResolvedTransaction.length - 1;
-    let distance = 1;
-    while (index >= 0) {
-      exponentiallySpacedTransactions.push({ transaction: this.processedTransactions[index], index: index });
-      index -= distance;
-      distance *= 2;
-    }
+    const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
     // Find a known valid Sidetree transaction that is prior to the block reorganization.
     const bestKnownValidRecentTransaction
-      = await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions.map(value => value.transaction));
+      = await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
 
-    Logger.info(`Best known valid recent transaction: ${bestKnownValidRecentTransaction ? bestKnownValidRecentTransaction.transactionNumber : 'none'}`);
-
-    // If we found a known valid transaciton, get the index of that transation in the list of processed transactions.
-    let bestKnownValidRecentTransactionIndex = -1;
-    if (bestKnownValidRecentTransaction) {
-      for (let i = 0; i < exponentiallySpacedTransactions.length; i++) {
-        if (exponentiallySpacedTransactions[i].transaction.transactionNumber === bestKnownValidRecentTransaction.transactionNumber) {
-          bestKnownValidRecentTransactionIndex = exponentiallySpacedTransactions[i].index;
-          break;
-        }
-      }
-    }
-
-    // Revert all processed transactions that came after the best known valid recent transaction.
-    Logger.info(`Reverting ${this.processedTransactions.length - bestKnownValidRecentTransactionIndex - 1} transactions...`);
-    this.processedTransactions.splice(bestKnownValidRecentTransactionIndex + 1);
+    const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
+    Logger.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
 
     // Revert all processed operations that came after the best known valid recent transaction.
     Logger.info('Reverting operations...');
-    await this.operationProcessor.rollback(bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber);
-  }
+    await this.operationProcessor.rollback(bestKnownValidRecentTransactionNumber);
 
-  /**
-   * Adds the given transaction to the list of unresolvable trasactions for future retries.
-   */
-  private addUnresolvableTransaction (_transaction: Transaction) {
-    // TODO: https://github.com/decentralized-identity/sidetree-core/issues/89
-  }
-
-  /**
-   * Gets resolved transations that are previously not resolvable (i.e. unable to download anchor or batch file).
-   */
-  private getNewlyResolvedTransactions (): Transaction[] | undefined {
-    // TODO: https://github.com/decentralized-identity/sidetree-core/issues/89
-    return;
+    // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
+    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
   }
 
   /**
