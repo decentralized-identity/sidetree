@@ -101,7 +101,7 @@ The _anchor file_ is a JSON document of the following schema:
 ```
 > NOTE: See [Sidetree Operation Receipts](#Sidetree-Operation-Receipts) section on purpose and construction of the `merkleRoot`.
 
-## Operation chaining of a DID:
+## Operation chaining of a DID
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
