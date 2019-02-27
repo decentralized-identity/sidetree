@@ -1,7 +1,7 @@
 ﻿**Sidetree Protocol Specification**
 ===================================
 
-This specification document describes the Sidetree protocol, which can be applied to any decentralized ledger system (e.g. Bitcoin) to create a 'Layer 2' PKI network. Identifiers and PKI metadata in the protocol are expressed via the emerging [_Decentralized Identifiers_](https://w3c-ccg.github.io/did-spec/) standard, and implementations of the protocol can be codified as their own distinct DID Methods. Briefly, a _DID Method_ is a deterministic mechanism for creating unique identifiers and managing metadata (_DID Documents_) associated with these identifiers, without the need for a centralized authority, denoted by unqique prefixes that distinguish one DID Method's identifiers from another (`did:foo`, `did:bar`, etc.).
+This specification document describes the Sidetree protocol, which can be applied to any decentralized ledger system (e.g. Bitcoin) to create a 'Layer 2' PKI network. Identifiers and PKI metadata in the protocol are expressed via the emerging [_Decentralized Identifiers_](https://w3c-ccg.github.io/did-spec/) standard, and implementations of the protocol can be codified as their own distinct DID Methods. Briefly, a _DID Method_ is a deterministic mechanism for creating unique identifiers and managing metadata (_DID Documents_) associated with these identifiers, without the need for a centralized authority, denoted by unique prefixes that distinguish one DID Method's identifiers from another (`did:foo`, `did:bar`, etc.).
 
 # Overview
 
@@ -9,7 +9,7 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations using an unbalanced Merkle tree and embeds the hash of a file (_anchor file_) containing the Merkle root hash in the blockchain. The actual data of all batched operations are stored as one single file (_batch file_) in a _distributed content-addressable storage (DCAS or CAS)_. Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
 
 # Terminology
@@ -51,8 +51,6 @@ The following lists the parameters of each version of the Sidetree protocol.
 
 # Sidetree Operations
 
-## Sidetree Operations
-
 A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
 ) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_. All operations are authenticated with a signature using a key specified in the corresponding DID Document.
 
@@ -76,80 +74,12 @@ A valid _original DID Document_ must be a valid generic DID Document that adhere
 
 
 # Sidetree Operation Batching
-Sidetree anchors the root hash of a Merkle tree that cryptographically represents a batch of Sidetree operations on the blockchain. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2; in which case a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees, then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
-
-## Sidetree Operation Receipts
-Since Sidetree batches many operations using a Merkle tree, each operation can be given a concise receipt such that it can be cryptographically proven to be part of the batch. Sidetree uses the following JSON schema to represent a receipt:
-
-```json
-{
-  "receipt": [
-    {
-      "hash": "A Merkle tree node hash.",
-      "side": "Must be 'left' or 'right', denotes the position of this hash."
-    },
-    ...
-  ]
-}
-```
-
-Where the first entry in ```receipt``` is the sibling of the operation hash in the Merkle tree; followed by the uncle, then the great uncle and so on.
-
-> NOTE: This scheme does __not__ include the root hash as the last entry of the receipt.
-
-> NOTE: Receipt array will be empty thus is optional if no batching occurs (i.e. a tree of one operation).
-
-## Sidetree Operation Batching Examples
-The following illustrates the construction of the Merkle tree with an array of 6 operations:
-* The smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
-* Receipt for [0] will be [B, H, I], and receipt for [5] will be [E, J].
-
-```
-                          ROOT=H(K+J)
-                          /          \
-                        /              \
-                J=H(H+I)                 \
-              /        \                   \
-            /            \                   \
-      G=H(A+B)             H=H(C+D)          I=H(E+F)
-      /      \             /     \           /      \
-    /        \           /        \         /        \
-  A=H([0])  B=H([1])  C=H([2])  D=H([3])  E=H([4])  F=H([5])
-    |         |         |         |         |         |
-    |         |         |         |         |         |
-[   0    ,    1    ,    2    ,    3    ,    4    ,    5   ]
-
-Where: [1] -> Denotes the binary buffer of the 1st element in the array of operation data.
-        |  -> Denotes the logical relationship between an operation data and its hash.
-       H() -> Denotes a hash function that returns a binary buffer representing the hash.
-       A+B -> Denotes the concatenation of two binary buffers A and B.
-```
-
-The following illustrates the construction of the Merkle tree with an array of 7 operations:
-* The smallest balanced subtree G of 1 leaf [6] is merged with the adjacent balanced subtree J of 2 leaves [4, 5] to form parent L, which in turn is merged with the adjacent balanced subtree K of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
-* Receipt for [0] will be [B, I, L]; receipt for [4] will be [F, G, K]; receipt for [6] will be [J, K].
-```
-                             ROOT=H(K+L)
-                          /               \
-                        /                  \
-                K=H(H+I)                    L=H(J+G)
-              /        \                     /       \
-            /            \                  /          \
-      H=H(A+B)             I=H(C+D)        J=H(E+F)      \
-      /      \             /     \         /      \        \
-     /        \           /       \       /         \        \
-  A=H([0])  B=H([1])  C=H([2])  D=H([3])  E=H([4])  F=H([5])  G=H([6])
-    |         |         |         |         |         |         |
-    |         |         |         |         |         |         |
-[   0    ,    1    ,    2    ,    3    ,    4    ,    5    ,    6   ]
-```
-
-## Sidetree CAS-layer Files
+The Sidetree protocol increases operation throughput by batching multiple operations together then anchoring a reference to this batch on the blockchain.
 For every batch of Sidetree operations created, there are two files that are created and stored in the CAS layer: 
 1. Batch file - The file containing the actual change data of all the operations batched together.
 2. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the metadata of the batch of Sidetree operations, this includes the reference to the corresponding _batch file_.
 
-### Batch File Schema
+## Batch File Schema
 The _batch file_ is a ZIP compressed JSON document of the following schema:
 ```json
 {
@@ -161,16 +91,17 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 }
 ```
 
-### Anchor File Schema
+## Anchor File Schema
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded hash of the batch file.",
-  "merkleRoot": "Encoded root hash of the Merkle tree constructed using the batch file."
+  "merkleRoot": "Encoded root hash of the Merkle tree constructed from the operations included in the batch file."
 }
 ```
+> NOTE: See [Sidetree Operation Receipts](#Sidetree-Operation-Receipts) section on purpose and construction of the `merkleRoot`.
 
-Operation chaining of a DID:
+## Operation chaining of a DID:
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
@@ -271,7 +202,7 @@ POST /<api-version>/ HTTP/1.1
 ```json
 {
   "header": {
-    "opertion": "create",
+    "operation": "create",
     "kid": "ID of the key used to sign the original DID Document.",
     "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -308,7 +239,7 @@ POST /v1.0/ HTTP/1.1
 
 {
   "header": {
-    "opertion": "create",
+    "operation": "create",
     "kid": "#key1",
     "proofOfWork": { }
   },
@@ -429,7 +360,7 @@ POST /<api-version>/ HTTP/1.1
 ```json
 {
   "header": {
-    "opertion": "update",
+    "operation": "update",
     "kid": "ID of the key used to sign the update payload.",
     "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -468,7 +399,7 @@ POST /v1.0/ HTTP/1.1
 
 {
   "header": {
-    "opertion": "update",
+    "operation": "update",
     "kid": "#key1",
     "proofOfWork": { }
   },
@@ -498,7 +429,7 @@ POST /<api-version>/
 ```json
 {
   "header": {
-    "opertion": "delete",
+    "operation": "delete",
     "kid": "ID of the key used to sign the delete payload.",
     "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
     or reject the request."
@@ -527,7 +458,7 @@ POST /<api-version>/
 POST /v1.0/ HTTP/1.1
 {
   "header": {
-    "opertion": "delete",
+    "operation": "delete",
     "kid": "#key1",
     "proofOfWork": { }
   },
@@ -556,7 +487,81 @@ If the operation is successful, it applies the provided JSON patch to the versio
 > - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.
 
 
+# Sidetree Operation Receipts
+Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2: a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees; then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
+
+The inclusion of the Merkle root hash provides the opportunity for an operation to be assigned a concise receipt such that it can be cryptographically proven to be part of the batch. Sidetree uses the following JSON schema to represent a receipt:
+
+```json
+{
+  "receipt": [
+    {
+      "hash": "A Merkle tree node hash.",
+      "side": "Must be 'left' or 'right', denotes the position of this hash."
+    },
+    ...
+  ]
+}
+```
+
+Where the first entry in ```receipt``` is the sibling of the operation hash in the Merkle tree; followed by the uncle, then the great uncle and so on.
+
+> NOTE: This scheme does __not__ include the root hash as the last entry of the receipt.
+
+> NOTE: Receipt array will be empty thus is optional if no batching occurs (i.e. a tree of one operation).
+
+## Sidetree Operation Batching Examples
+The following illustrates the construction of the Merkle tree with an array of 6 operations:
+* The smallest balance subtree I of 2 leaves [4, 5] is merged with the adjacent balanced tree J of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+* Receipt for [0] will be [B, H, I], and receipt for [5] will be [E, J].
+
+```
+                          ROOT=H(K+J)
+                          /          \
+                        /              \
+                J=H(H+I)                 \
+              /        \                   \
+            /            \                   \
+      G=H(A+B)             H=H(C+D)          I=H(E+F)
+      /      \             /     \           /      \
+    /        \           /        \         /        \
+  A=H([0])  B=H([1])  C=H([2])  D=H([3])  E=H([4])  F=H([5])
+    |         |         |         |         |         |
+    |         |         |         |         |         |
+[   0    ,    1    ,    2    ,    3    ,    4    ,    5   ]
+
+Where: [1] -> Denotes the binary buffer of the 1st element in the array of operation data.
+        |  -> Denotes the logical relationship between an operation data and its hash.
+       H() -> Denotes a hash function that returns a binary buffer representing the hash.
+       A+B -> Denotes the concatenation of two binary buffers A and B.
+```
+
+The following illustrates the construction of the Merkle tree with an array of 7 operations:
+* The smallest balanced subtree G of 1 leaf [6] is merged with the adjacent balanced subtree J of 2 leaves [4, 5] to form parent L, which in turn is merged with the adjacent balanced subtree K of 4 leaves [0, 1, 2, 3] to form the final Merkle tree.
+* Receipt for [0] will be [B, I, L]; receipt for [4] will be [F, G, K]; receipt for [6] will be [J, K].
+```
+                             ROOT=H(K+L)
+                          /               \
+                        /                  \
+                K=H(H+I)                    L=H(J+G)
+              /        \                     /       \
+            /            \                  /          \
+      H=H(A+B)             I=H(C+D)        J=H(E+F)      \
+      /      \             /     \         /      \        \
+     /        \           /       \       /         \        \
+  A=H([0])  B=H([1])  C=H([2])  D=H([3])  E=H([4])  F=H([5])  G=H([6])
+    |         |         |         |         |         |         |
+    |         |         |         |         |         |         |
+[   0    ,    1    ,    2    ,    3    ,    4    ,    5    ,    6   ]
+```
+
+
 # FAQs
+* Why introduce the concept of an _anchor file_? Why not just anchor the _batch file hash_ directly on blockchain?
+  It would be ideal to be able to fetch metadata about the batched operations efficiently,
+  without needing to download the entire batch file.
+  This design also opens up possibilities of other applications of the Sidetree protocol.
+
 * Why assign a _transaction number_ to invalid transactions?
 
   In the case of an _unresolvable transaction_, it is unknown if the transaction will be valid or not if it becomes resolvable, thus it is assigned a transaction number such that if the transaction turns out to be valid, the transaction number of valid transactions that occur at a later time remain immutable. This also enables all Sidetree nodes to refer to the same transaction using the same transaction number.
