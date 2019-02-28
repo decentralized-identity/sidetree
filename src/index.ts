@@ -3,10 +3,13 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import RequestHandler from './RequestHandler';
 import { toHttpStatus, Response } from './Response';
+import { Config, ConfigKey } from './Config';
+import * as configFile from '../json/config.json';
 
+const config = new Config(configFile);
 // TODO: Move the ipfs configuration to a config file.
 let ipfsOptions = {
-  repo: 'sidetree-ipfs'
+  repo: config[ConfigKey.IpfsRepo]
 };
 const requestHandler = new RequestHandler(ipfsOptions);
 const app = new Koa();
@@ -22,7 +25,7 @@ const router = new Router({
 });
 
 router.get('/:hash', async (ctx, _next) => {
-  const response = await requestHandler.handleFetchRequest(ctx.params.hash);
+  const response = await requestHandler.handleFetchRequest(ctx.params.hash, +config[ConfigKey.RequestTimeoutInSeconds]);
   setKoaResponse(response, ctx.response, 'application/octet-stream');
 });
 
@@ -38,7 +41,7 @@ app.use(router.routes())
 app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
-const port = 3001;
+const port = config[ConfigKey.Port];
 
 const server = app.listen(port, () => {
   console.log(`Sidetree-IPFS node running on port: ${port}`);

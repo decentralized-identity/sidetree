@@ -21,8 +21,9 @@ export default class RequestHandler {
   /**
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
+   * @param requestTimeoutInSeconds Timeout for fetch request.
    */
-  public async handleFetchRequest (base64urlEncodedMultihash: string): Promise<Response> {
+  public async handleFetchRequest (base64urlEncodedMultihash: string, requestTimeoutInSeconds: number): Promise<Response> {
     const multihashBuffer = base64url.toBuffer(base64urlEncodedMultihash);
     let response: Response;
     try {
@@ -37,9 +38,7 @@ export default class RequestHandler {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
       const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString);
 
-      // TODO: Move fetch timeout into a configurable config file - https://github.com/decentralized-identity/sidetree-ipfs/issues/28
-      const timeoutInMilliseconds = 10000;
-      const result = await Timeout.timeout(fetchPromsie, timeoutInMilliseconds);
+      const result = await Timeout.timeout(fetchPromsie, requestTimeoutInSeconds * 1000);
 
       if (result instanceof Error) {
         response = {
