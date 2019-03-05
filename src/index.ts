@@ -1,6 +1,7 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
+import DownloadManager from './DownloadManager';
 import Observer from './Observer';
 import RequestHandler from './RequestHandler';
 import Rooter from './Rooter';
@@ -19,11 +20,13 @@ const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
 const operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-const observer = new Observer(blockchain, cas, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
+const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
+const observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
+downloadManager.start();
 rooter.startPeriodicRooting();
-observer.startPeriodicProcessing();
+void observer.startPeriodicProcessing();
 
 const app = new Koa();
 

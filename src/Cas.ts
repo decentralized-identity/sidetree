@@ -25,7 +25,17 @@ export interface Cas {
  */
 export class CasClient implements Cas {
 
-  public constructor (public uri: string) { }
+  private fetch = nodeFetch;
+
+  /**
+   * @param fetchFunction A fetch function compatible with node-fetch's fetch, mainly for mocked fetch for test purposes.
+   *                      Typed 'any' unfortunately because it is non-trivial to merge the types defined in @types/fetch-mock with types in @types/node-fetch.
+   */
+  public constructor (public uri: string, fetchFunction?: any) {
+    if (fetchFunction) {
+      this.fetch = fetchFunction;
+    }
+  }
 
   /**
    * TODO: consider using multi-hash format.
@@ -36,7 +46,7 @@ export class CasClient implements Cas {
       body: content,
       headers: { 'Content-Type': 'application/octet-stream' }
     };
-    const response = await nodeFetch(this.uri, requestParameters);
+    const response = await this.fetch(this.uri, requestParameters);
     if (response.status !== HttpStatus.OK) {
       Logger.error(`CAS write error response status: ${response.status}`);
       Logger.error(`CAS write error body: ${response.body.read()}`);
@@ -51,7 +61,7 @@ export class CasClient implements Cas {
   public async read (address: string): Promise<Buffer> {
     // Fetch the resource.
     const queryUri = `${this.uri}/${address}`;
-    const response = await nodeFetch(queryUri);
+    const response = await this.fetch(queryUri);
     if (response.status !== HttpStatus.OK) {
       Logger.error(`CAS read error response status: ${response.status}`);
       Logger.error(`CAS read error body: ${response.body.read()}`);

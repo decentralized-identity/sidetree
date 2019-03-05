@@ -3,8 +3,8 @@ import SortedArray from './lib/SortedArray';
 import Transaction from './Transaction';
 
 /**
- * An abstraction for the persistence of transactions needed to avoid
- * re-fetching and reprocessing of transactions when the Sidetree node restarts.
+ * An abstraction for the persistence of transactions that have been processed.
+ * Needed to avoidre-fetching and reprocessing of transactions when the Sidetree node crashes or restarts.
  */
 export interface TransactionStore {
 
@@ -115,8 +115,10 @@ export class InMemoryTransactionStore implements TransactionStore {
 
       // Exponentially delay the retry the more attempts are done in the past.
       const exponentialFactorInMilliseconds = 60000;
-      const requiredTimeLapsedSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * exponentialFactorInMilliseconds;
-      unresolvableTransaction.nextRetryTime = unresolvableTransaction.firstFetchTime + requiredTimeLapsedSinceFirstFetchBeforeNextRetry;
+      const requiredElapsedTimeSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * exponentialFactorInMilliseconds;
+      const requiredElapsedTimeInSeconds = requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
+      Logger.info(`Required elapsed time before retry for anchor file ${transaction.anchorFileHash} is now ${requiredElapsedTimeInSeconds} seconds.`);
+      unresolvableTransaction.nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
     }
   }
 
