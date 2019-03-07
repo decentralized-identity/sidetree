@@ -51,7 +51,9 @@ export default class DownloadManager {
   }
 
   /**
-   * Starts the download manager to actively manage concurrent downloads and resolve them when downloads are completed.
+   * Starts pending downloads if maximum concurrent download count is not reached,
+   * and resolve downloads that are completed, then invokes this same method again,
+   * thus this method must only be invoked once externally as initialization.
    */
   public start () {
     try {

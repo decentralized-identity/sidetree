@@ -18,8 +18,6 @@ describe('Observer', async () => {
   let downloadManager: DownloadManager;
   let operationProcessor: OperationProcessor;
 
-  fetchMock.config.sendAsJson = false;
-
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
   beforeAll(() => {
