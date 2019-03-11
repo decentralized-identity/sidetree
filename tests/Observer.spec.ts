@@ -10,7 +10,7 @@ import { Response } from 'node-fetch';
 import { Readable } from 'readable-stream';
 
 describe('Observer', async () => {
-  const configFile = require('../json/config.json');
+  const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
 
   let mockCasFetch;

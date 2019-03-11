@@ -1,4 +1,3 @@
-import * as Yup from 'yup';
 import Cryptography from './lib/Cryptography';
 import Did from './lib/Did';
 import Document from './lib/Document';
@@ -54,10 +53,10 @@ class Operation {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
+
   /**
    * The incremental number of each update made to the same DID Document.
    * Delete and Recover operations don't have this number.
-   * TODO: need to revisit: 1. Should this really be called update number? What happens to this number.
    */
   public readonly operationNumber?: Number;
   /** The encoded operation payload. */
@@ -256,21 +255,27 @@ class Operation {
    * NOTE: Well-formed validation does not include signature verification.
    * @returns [operation type, decoded payload json object] if given operation is well-formed, returns undefined otherwise.
    */
-  private static isWellFormed (operation: IOperation): [OperationType, any] | undefined {
+  private static isWellFormed (operation: any): [OperationType, any] | undefined {
     try {
-      const commonSchema = Yup.object({
-        header: Yup.object({
-          operation: Yup.string().required().oneOf(['create', 'update', 'delete', 'recover']),
-          kid: Yup.string().required(),
-          proofOfWork: Yup.object().required()
-        }).required(),
-        payload: Yup.string().required(),
-        signature: Yup.string().required()
-      });
+      // Must contain 'header' property and 'header' property must contain a string 'kid' property.
+      if (typeof operation.header.kid !== 'string') {
+        return undefined;
+      }
 
-      const passedCommonSchemaValidation = commonSchema.isValidSync(operation);
-      if (!passedCommonSchemaValidation) {
-        Logger.info(`Operation failed common schema validation: ${JSON.stringify(operation)}`);
+      // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
+      const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
+      if (typeof operation.header.operation !== 'string' ||
+          !allowedOperations.has(operation.header.operation)) {
+        return undefined;
+      }
+
+      // Must contain string 'payload' property.
+      if (typeof operation.payload !== 'string') {
+        return undefined;
+      }
+
+      // Must contain string 'signature' property.
+      if (typeof operation.signature !== 'string') {
         return undefined;
       }
 
