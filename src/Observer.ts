@@ -304,7 +304,9 @@ export default class Observer {
     // Validate the batch file.
     const operations: Operation[] = [];
     try {
+      let endTimer = timeSpan();
       const batchFile = JSON.parse(batchFileBuffer.toString());
+      Logger.info(`Parsed batch file ${resolvedTransaction.batchFileHash} in ${endTimer.rounded()} ms.`);
 
       // Verify the number of operations does not exceed the maximum allowed limit.
       const protocol = getProtocol(resolvedTransaction.transactionTime);
@@ -312,6 +314,7 @@ export default class Observer {
         throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
       }
 
+      endTimer = timeSpan();
       let operationIndex = 0;
       for (const encodedOperation of batchFile.operations) {
         const operationBuffer = Encoder.decodeAsBuffer(encodedOperation);
@@ -332,6 +335,7 @@ export default class Observer {
         operations.push(operation);
         operationIndex++;
       }
+      Logger.info(`Decoded ${operations.length} operations in batch ${resolvedTransaction.batchFileHash}. Time taken: ${endTimer.rounded()} ms.`);
 
       // Ensure the batch meets proof-of-work requirements.
       this.verifyProofOfWork(operations);
@@ -341,12 +345,11 @@ export default class Observer {
     }
 
     // If the code reaches here, it means that the batch of operations is valid, process each operations.
-    const startTime = process.hrtime(); // For calcuating time taken to process operations.
+    const endTimer = timeSpan();
     for (const operation of operations) {
       await this.operationProcessor.process(operation);
     }
-    const duration = process.hrtime(startTime);
-    Logger.info(`Processed a batch of ${operations.length} operations. Time taken: ${duration[0]} s ${duration[1] / 1000000} ms.`);
+    Logger.info(`Processed batch ${resolvedTransaction.batchFileHash} containing ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
   }
 
   /**

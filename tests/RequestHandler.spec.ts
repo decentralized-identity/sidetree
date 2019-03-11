@@ -135,7 +135,7 @@ describe('RequestHandler', () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
-      publicKey: [JSON.stringify(publicKey)]
+      publicKey: [publicKey]
     };
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
     const currentBlockchainTime = await blockchain.getLatestTime();
