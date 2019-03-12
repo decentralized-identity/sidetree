@@ -28,6 +28,7 @@ export default class OperationGenerator {
       header: {
         operation: 'create',
         kid: publicKey.id,
+        alg: 'ES256K',
         proofOfWork: {}
       },
       payload: createPayload,
@@ -61,6 +62,7 @@ export default class OperationGenerator {
       header: {
         operation: 'update',
         kid: keyId,
+        alg: 'ES256K',
         proofOfWork: {}
       },
       payload: updatePayloadEncoded,
@@ -84,6 +86,7 @@ export default class OperationGenerator {
       header: {
         operation: 'delete',
         kid: 'not implemented',
+        alg: 'ES256K',
         proofOfWork: {}
       },
       payload: payloadEncoded,
