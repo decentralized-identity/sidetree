@@ -1,6 +1,28 @@
 import Did from './Did';
 import Encoder from '../Encoder';
-import { DidDocument, DidPublicKey } from '@decentralized-identity/did-common-typescript';
+import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
+
+/**
+ * Defines DID Document data structure used by Sidetree for basic type safety checks.
+ */
+export interface IDocument {
+  '@context': string;
+  id: string;
+  publicKey: [{
+    id: string,
+    type: string,
+    publicKeyJwk?: object
+    publicKeyHex?: object
+  }];
+  service: [{
+    type: string,
+    serviceEndpoint: [{
+      '@context': string;
+      '@type': string;
+      instance: [string]
+    }]
+  }];
+}
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
@@ -8,25 +30,26 @@ import { DidDocument, DidPublicKey } from '@decentralized-identity/did-common-ty
  */
 export default class Document {
   /**
-   * Creates a DID Document with a valid Sidetree DID from an encoded initial Sidetree DID document.
+   * Creates a DID Document with a valid Sidetree DID from an encoded original DID Document.
+   * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
    */
-  public static from (encodedDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): DidDocument {
+  public static from (encodedOriginalDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): IDocument | undefined {
     // Compute the hash of the DID Document in the create payload as the DID
-    const did = Did.from(encodedDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
+    const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
 
     // Decode the encoded DID Document.
-    const decodedJsonString = Encoder.decodeAsString(encodedDidDocument);
+    const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
     const decodedDidDocument = JSON.parse(decodedJsonString);
 
-    // Construct real DID document and return it.
-    // NOTE: DidDocument class requires 'id' property, where as Sidetree original document does not.
-    // So here we create a placeholder 'id' property before passing to DidDocument constructor.
-    decodedDidDocument.id = 'placeholder';
-    const didDocument = new DidDocument(decodedDidDocument);
-
     // Replace the placeholder DID with real DID before returning it.
-    didDocument.id = did;
-    return didDocument;
+    decodedDidDocument.id = did;
+
+    // Return `undefined` if original DID Document is invalid.
+    if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
+      return undefined;
+    }
+
+    return decodedDidDocument;
   }
 
   /**
@@ -56,7 +79,7 @@ export default class Document {
   }
 
   /**
-   * Verifies that the given JSON object is a valid encoded DID Document that can be accepted by the Sidetree create operation.
+   * Verifies that the given JSON object is a valid Sidetree specific encoded DID Document that can be accepted by the Sidetree create operation.
    */
   public static isObjectValidOriginalDocument (originalDocument: any): boolean {
     // Original document must pass generic DID Document schema validation.
@@ -65,21 +88,50 @@ export default class Document {
       return false;
     }
 
-    // 'publicKey' property must be an array.
-    if (!Array.isArray(originalDocument.publicKey)) {
+    // 'publicKey' property is required and must be an array that is not empty.
+    if (!Array.isArray(originalDocument.publicKey) ||
+        (originalDocument.publicKey as object[]).length === 0) {
       return false;
     }
 
     // Verify each publicKey entry in array.
     for (let publicKeyEntry of originalDocument.publicKey) {
-      // 'id' must be string type.
-      if (typeof publicKeyEntry.id !== 'string') {
-        return false;
-      }
-
       // 'id' must be a fragment (starts with '#').
       if (!(publicKeyEntry.id as string).startsWith('#')) {
         return false;
+      }
+    }
+
+    // Verify 'service' property if it exists.
+    if (originalDocument.hasOwnProperty('service')) {
+
+      // Verify each service entry in array.
+      for (let serviceEntry of originalDocument.service) {
+        const serviceEndpoint = serviceEntry.serviceEndpoint;
+
+        // Verify required '@context' property.
+        if (serviceEndpoint['@context'] !== 'schema.identity.foundation/hub') {
+          return false;
+        }
+
+        // Verify required '@type' property.
+        if (serviceEndpoint['@type'] !== 'UserServiceEndpoint') {
+          return false;
+        }
+
+        // 'instance' property is required and must be an array that is not empty.
+        if (!Array.isArray(serviceEndpoint.instance) ||
+            (serviceEndpoint.instance as object[]).length === 0) {
+          return false;
+        }
+
+        // Verify each instance entry in array.
+        for (let instanceEntry of serviceEndpoint.instance) {
+          // 'id' must be string type.
+          if (typeof instanceEntry !== 'string') {
+            return false;
+          }
+        }
       }
     }
 
@@ -105,6 +157,47 @@ export default class Document {
       return false;
     }
 
+    // Verify 'publicKey' property if it exists.
+    if (didDocument.hasOwnProperty('publicKey')) {
+      // Verify each publicKey entry in array.
+      for (let publicKeyEntry of didDocument.publicKey) {
+        // 'id' must be string type.
+        if (typeof publicKeyEntry.id !== 'string') {
+          return false;
+        }
+
+        if (typeof publicKeyEntry.type !== 'string') {
+          return false;
+        }
+      }
+    }
+
+    // Verify 'service' property if it exists.
+    if (didDocument.hasOwnProperty('service')) {
+      // 'service' property must be an array.
+      if (!Array.isArray(didDocument.service)) {
+        return false;
+      }
+
+      // Verify each service entry in array.
+      for (let serviceEntry of didDocument.service) {
+        // 'id' is required and must be string type.
+        if (typeof serviceEntry.id !== 'string') {
+          return false;
+        }
+
+        // 'type' is required and must be string type.
+        if (typeof serviceEntry.type !== 'string') {
+          return false;
+        }
+
+        // 'serviceEndpoint' is required.
+        if (serviceEntry.serviceEndpoint === undefined) {
+          return false;
+        }
+      }
+    }
+
     return true;
   }
 
@@ -113,7 +206,7 @@ export default class Document {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (didDocument: DidDocument, keyId: string): DidPublicKey | undefined {
+  public static getPublicKey (didDocument: IDocument, keyId: string): DidPublicKey | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 

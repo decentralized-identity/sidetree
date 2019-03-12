@@ -1,11 +1,10 @@
 import * as Protocol from './Protocol';
 import Encoder from './Encoder';
 import Did from './lib/Did';
-import Document from './lib/Document';
+import Document, { IDocument } from './lib/Document';
 import Multihash from './Multihash';
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { ErrorCode, SidetreeError } from './Error';
 import { OperationProcessor } from './OperationProcessor';
 import { Operation, OperationType } from './Operation';
@@ -255,7 +254,7 @@ export default class RequestHandler {
    * @returns The resultant DID Document.
    * @throws Error if operation given is invalid.
    */
-  private async simulateUpdateOperation (operation: Operation): Promise<DidDocument> {
+  private async simulateUpdateOperation (operation: Operation): Promise<IDocument> {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
     // Get the current DID Document of the specified DID.

@@ -67,10 +67,17 @@ A Sidetree DID is intentionally the hash of the encoded DID Document given as th
 
 Since the requester is in control of the _original DID Document_, the requester can deterministically calculate the DID before the create operation is anchored on the blockchain.
 
-A valid _original DID Document_ must be a valid generic DID Document that adheres to the following additional rules:
+A valid _original DID Document_ must be a valid generic DID Document that adheres to the following additional Sidetree protocol specific rules:
 1. The document must NOT have the `id` property.
 1. The document must contain at least 1 entry in the `publicKey` array property.
 1. The `id` property of a `publickey` element must be specified and be a fragment (e.g. `#key1`).
+1. Can have `service` property.
+1. `serviceEndpoint` property of each element inside the `service` array must:
+   1. Contain a `@context` property with value `schema.identity.foundation/hub`.
+   1. Contain a `@type` property with value `UserServiceEndpoint`.
+   1. Contain at least one element in an `instance` property typed as an array of strings.
+
+See [DID Create API](#original-did-document-example) section for an example of an original DID Document.
 
 
 # Sidetree Operation Batching
@@ -218,17 +225,17 @@ POST /<api-version>/ HTTP/1.1
 {
   "@context": "https://w3id.org/did/v1",
   "publicKey": [{
-    "id": "#key-1",
+    "id": "#key1",
     "type": "Secp256k1VerificationKey2018",
     "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1"
   }],
   "service": [{
+    "id": "IdentityHub",
     "type": "IdentityHub",
-    "publicKey": "#key-1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
-      "instances": ["did:bar:456", "did:zaz:789"]
+      "instance": ["did:bar:456", "did:zaz:789"]
     }
   }]
 }
@@ -269,12 +276,12 @@ The response body is the constructed DID Document of the DID created.
     "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
   }],
   "service": [{
+    "id": "IdentityHub",
     "type": "IdentityHub",
-    "publicKey": "#key1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
-      "instances": ["did:bar:456", "did:zaz:789"]
+      "instance": ["did:bar:456", "did:zaz:789"]
     }
   }]
 }
@@ -333,12 +340,12 @@ The response body is the latest DID Document.
     "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
   }],
   "service": [{
+    "id": "IdentityHub",
     "type": "IdentityHub",
-    "publicKey": "#key1",
     "serviceEndpoint": {
       "@context": "schema.identity.foundation/hub",
       "@type": "UserServiceEndpoint",
-      "instances": ["did:bar:456", "did:zaz:789"]
+      "instance": ["did:bar:456", "did:zaz:789"]
     }
   }]
 }
