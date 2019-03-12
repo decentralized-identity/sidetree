@@ -262,6 +262,11 @@ class Operation {
         return undefined;
       }
 
+      // 'header' property must contain 'alg' property with value 'ES256k'.
+      if (operation.header.alg !== 'ES256K') {
+        return undefined;
+      }
+
       // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
       const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
       if (typeof operation.header.operation !== 'string' ||
