@@ -1,7 +1,6 @@
 import * as Protocol from './Protocol';
-import Document from './lib/Document';
+import Document, { IDocument } from './lib/Document';
 import { Cas } from './Cas';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
 import { Operation, OperationType } from './Operation';
 import { createOperationStore, OperationStore } from './OperationStore';
 
@@ -32,7 +31,7 @@ export interface OperationProcessor {
    * @param did The DID to resolve. e.g. did:sidetree:abc123.
    * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
    */
-  resolve (did: string): Promise<DidDocument | undefined>;
+  resolve (did: string): Promise<IDocument | undefined>;
 }
 
 /**
@@ -74,8 +73,8 @@ class OperationProcessorImpl implements OperationProcessor {
    * Iterate over all operations in blockchain-time order extending the
    * the operation chain while checking validity.
    */
-  public async resolve (did: string): Promise<DidDocument | undefined> {
-    let didDocument: DidDocument | undefined;
+  public async resolve (did: string): Promise<IDocument | undefined> {
+    let didDocument: IDocument | undefined;
     let previousOperation: Operation | undefined;
 
     const didUniqueSuffix = did.substring(this.didMethodName.length);
@@ -106,8 +105,8 @@ class OperationProcessorImpl implements OperationProcessor {
    * @param currentDidDocument The DID document to apply the given operation against.
    * @returns undefined if any validation fails; the updated document otherwise.
    */
-  private async apply (operation: Operation, previousOperation: Operation | undefined, currentDidDocument: DidDocument | undefined):
-    Promise<DidDocument | undefined> {
+  private async apply (operation: Operation, previousOperation: Operation | undefined, currentDidDocument: IDocument | undefined):
+    Promise<IDocument | undefined> {
 
     if (operation.type === OperationType.Create) {
 
@@ -117,6 +116,10 @@ class OperationProcessorImpl implements OperationProcessor {
       }
 
       const originalDidDocument = this.getOriginalDocument(operation);
+      if (originalDidDocument === undefined) {
+        return undefined;
+      }
+
       const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
 
       if (!signingKey) {
@@ -164,7 +167,7 @@ class OperationProcessorImpl implements OperationProcessor {
   /**
    * Gets the original DID document from a create operation.
    */
-  private getOriginalDocument (createOperation: Operation): DidDocument {
+  private getOriginalDocument (createOperation: Operation): IDocument | undefined {
     const protocolVersion = Protocol.getProtocol(createOperation.transactionTime!);
     return Document.from(createOperation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
   }

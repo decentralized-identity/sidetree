@@ -1,11 +1,11 @@
 import Cryptography from './lib/Cryptography';
 import Did from './lib/Did';
-import Document from './lib/Document';
+import Document, { IDocument } from './lib/Document';
 import Encoder from './Encoder';
 import Logger from './lib/Logger';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
-import { DidDocument, DidPublicKey } from '@decentralized-identity/did-common-typescript';
+import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { getProtocol } from './Protocol';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { ResolvedTransaction } from './Transaction';
@@ -75,7 +75,7 @@ class Operation {
   public proofOfWork: any; // TODO: to be implemented.
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
-  public readonly didDocument?: DidDocument;
+  public readonly didDocument?: IDocument;
 
   /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
   public readonly patch?: any[];
@@ -224,7 +224,7 @@ class Operation {
    * NOTE: a new instance of the DidDocument is returned, the original instance is not modified.
    * @returns The resultant DID Document.
    */
-  public static applyJsonPatchToDidDocument (didDocument: DidDocument, jsonPatch: any[]): DidDocument {
+  public static applyJsonPatchToDidDocument (didDocument: IDocument, jsonPatch: any[]): IDocument {
     const validatePatchOperation = true;
     const mutateOriginalContent = false;
     const updatedDidDocument = applyPatch(didDocument, jsonPatch, validatePatchOperation, mutateOriginalContent);

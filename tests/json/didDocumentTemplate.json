@@ -22,14 +22,14 @@
   ],
   "service": [
     {
+      "id": "IdentityHub",
       "type": "IdentityHub",
-      "publicKey": "#key1",
       "serviceEndpoint": {
         "@context": "schema.identity.foundation/hub",
         "@type": "UserServiceEndpoint",
-        "instances": [
-          "did:bar:456",
-          "did:zaz:789"
+        "instance": [
+          "did:sidetree:456",
+          "did:sidetree:789"
         ]
       }
     }

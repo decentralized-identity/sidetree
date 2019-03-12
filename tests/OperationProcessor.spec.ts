@@ -1,11 +1,10 @@
 import BatchFile from '../src/BatchFile';
 import Cryptography from '../src/lib/Cryptography';
+import Document from '../src/lib/Document';
 import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
 import { createOperationProcessor } from '../src/OperationProcessor';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
-import DidPublicKey from '../src/lib/DidPublicKey';
 import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
@@ -112,18 +111,6 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
-function getPublicKey (didDocument: DidDocument, keyId: string): DidPublicKey | undefined {
-  for (let i = 0; i < didDocument.publicKey.length; i++) {
-    const publicKey = didDocument.publicKey[i];
-
-    if (publicKey.id && publicKey.id.endsWith(keyId)) {
-      return publicKey;
-    }
-  }
-
-  return undefined;
-}
-
 describe('OperationProessor', async () => {
   initializeProtocol('protocol-test.json');
 
@@ -157,7 +144,7 @@ describe('OperationProessor', async () => {
     // TODO: can we get the raw json from did? if so, we can write a better test.
     // This is a poor man's version based on public key properties
     expect(didDocument).toBeDefined();
-    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
     expect(publicKey2!.owner).toBeUndefined();
   });
@@ -172,7 +159,7 @@ describe('OperationProessor', async () => {
 
     const didDocument = await operationProcessor.resolve(did);
     expect(didDocument).toBeDefined();
-    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
@@ -187,7 +174,7 @@ describe('OperationProessor', async () => {
     }
     const didDocument = await operationProcessor.resolve(did);
     expect(didDocument).toBeDefined();
-    const publicKey2 = getPublicKey(didDocument!, 'key2');
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
@@ -209,7 +196,7 @@ describe('OperationProessor', async () => {
       }
       const didDocument = await operationProcessor.resolve(did);
       expect(didDocument).toBeDefined();
-      const publicKey2 = getPublicKey(didDocument!, 'key2');
+      const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
       expect(publicKey2).toBeDefined();
       expect(publicKey2!.owner).toBeDefined();
       expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
