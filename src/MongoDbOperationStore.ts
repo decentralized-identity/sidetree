@@ -5,7 +5,7 @@ import { OperationStore } from './OperationStore';
 
 interface MongoOperation {
   didUniqueSuffix: string;
-  operationBuffer: Buffer;
+  operationBufferBase64: string;
   operationIndex: number;
   transactionNumber: number;
   transactionTime: number;
@@ -42,11 +42,13 @@ export class MongoDbOperationStore implements OperationStore {
 
     // If we are resuming, then the collection, indexes already exist.
     // Otherwise, we need to create the collection and define an index on
-    // (did, transactionNumber, operationIndex)
+    // (did, transactionNumber, operationIndex), first dropping the collection if
+    // it exists.
     if (resuming) {
       this.collection = this.db.collection(this.collectionsName);
     } else {
-      this.collection = await this.db.createCollection(this.collectionsName, { strict: false /* drop previously existing collection */ });
+      await this.db.collection(this.collectionsName).drop();
+      this.collection = await this.db.createCollection(this.collectionsName, { strict: false });
       await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
     }
   }
@@ -55,9 +57,13 @@ export class MongoDbOperationStore implements OperationStore {
    * Implement OperationStore.put.
    */
   public async put (operation: Operation): Promise<void> {
+
+    // Convert the operation buffer to string (mongo read-write not handled seamlessly for buffer types)
+    const operationBufferBase64Encoding = operation.operationBuffer.toString('base64');
+
     const mongoOperation: MongoOperation = {
       didUniqueSuffix: operation.getDidUniqueSuffix(),
-      operationBuffer: operation.operationBuffer,
+      operationBufferBase64: operationBufferBase64Encoding,
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
       transactionTime: operation.transactionTime!,
@@ -76,8 +82,10 @@ export class MongoDbOperationStore implements OperationStore {
     const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
 
     return mongoOperations.map((mongoOperation) => {
+      const operationBuffer: Buffer = Buffer.from(mongoOperation.operationBufferBase64 as string, 'base64');
+
       return Operation.create(
-        mongoOperation.operationBuffer,
+        operationBuffer,
         {
           transactionNumber: mongoOperation.transactionNumber,
           transactionTime: mongoOperation.transactionTime,

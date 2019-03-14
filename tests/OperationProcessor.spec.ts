@@ -5,7 +5,7 @@ import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor } from '../src/OperationProcessor';
+import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
 import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
 
@@ -119,10 +119,10 @@ describe('OperationProcessor', async () => {
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
 
   let cas = new MockCas();
-  const configFile = require('../json/config.json');
+  const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
   const didMethodName = config[ConfigKey.DidMethodName];
-  let operationProcessor = createOperationProcessor(cas, config);
+  let operationProcessor: OperationProcessor;
   let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
@@ -133,15 +133,16 @@ describe('OperationProcessor', async () => {
 
     cas = new MockCas();
     operationProcessor = createOperationProcessor(cas, config); // TODO: add a clear method to avoid double initialization.
+    await operationProcessor.initialize(false);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     const createOpHash = createOp.getOperationHash();
-    await operationProcessor.process(createOp);
     did = didMethodName + createOpHash;
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
+    await operationProcessor.process(createOp!);
     const didDocument = await operationProcessor.resolve(did);
 
     // TODO: can we get the raw json from did? if so, we can write a better test.
@@ -192,7 +193,7 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationProcessor = createOperationProcessor(cas, config); // Reset
-
+      await operationProcessor.initialize(false);
       for (let i = 0 ; i < numberOfOps ; ++i) {
         const opIdx = permutation[i];
         await operationProcessor.process(ops[opIdx]);
