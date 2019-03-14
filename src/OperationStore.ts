@@ -1,11 +1,20 @@
 import { Config, ConfigKey } from './Config';
 import { getOperationHash, OperationType, Operation } from './Operation';
+import { MongoDbOperationStore } from './MongoDbOperationStore';
 
 /**
  * An abstraction of a complete store for operations exposing methods to
  * put and get operations.
  */
 export interface OperationStore {
+
+  /**
+   * Initialize the operation store. This method
+   * is called once before any of the operations below.
+   * @param resuming is the initialization from "scratch" or resuming
+   *                 from a previous stored state?
+   */
+  initialize (resuming: boolean): Promise<void>;
 
   /**
    * Store an operation.
@@ -57,7 +66,7 @@ function compareOperation (op1: Operation, op2: Operation): number {
 /**
  * A simple in-memory implementation of operation store.
  */
-class OperationStoreImpl {
+class InMemoryOperationStoreImpl implements OperationStore {
   // Map DID to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
   private readonly didToOperations: Map<string, Array<Operation>> = new Map();
@@ -70,6 +79,16 @@ class OperationStoreImpl {
 
   public constructor (private didMethodName: string) {
 
+  }
+
+  /**
+   * Initialize the operation store. The implementation
+   * is a no op for in-memory operation store.
+   */
+  public async initialize (resuming: boolean) {
+    if (resuming) {
+      throw new Error('Resume not supported in in-memory operation store');
+    }
   }
 
   /**
@@ -123,7 +142,7 @@ class OperationStoreImpl {
     // operations array. Remove leaves the original order intact so
     // we do not need to update didTouchedSinceLastSort
     for (const [, didOps] of this.didToOperations) {
-      OperationStoreImpl.removeOperations(didOps, transactionNumber);
+      InMemoryOperationStoreImpl.removeOperations(didOps, transactionNumber);
     }
   }
 
@@ -169,9 +188,11 @@ class OperationStoreImpl {
 /**
  * Factory function to create an operation store
  */
-export function createOperationStore (config: Config) {
+export function createOperationStore (config: Config): OperationStore {
   if (config[ConfigKey.OperationStoreType] === 'InMemory') {
-    return new OperationStoreImpl(config[ConfigKey.DidMethodName]);
+    return new InMemoryOperationStoreImpl(config[ConfigKey.DidMethodName]);
+  } else if (config[ConfigKey.OperationStoreType] === 'Mongo') {
+    return new MongoDbOperationStore(config);
   } else {
     console.log(config);
     throw Error('Unsupported operation store type: ' + config[ConfigKey.OperationStoreType]);

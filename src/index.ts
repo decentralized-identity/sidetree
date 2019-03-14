@@ -22,9 +22,6 @@ const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeco
 const observer = new Observer(blockchain, cas, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
-rooter.startPeriodicRooting();
-observer.startPeriodicProcessing();
-
 const app = new Koa();
 
 // Raw body parser.
@@ -53,8 +50,16 @@ app.use((ctx, _next) => {
 });
 
 const port = config[ConfigKey.Port];
-app.listen(port, () => {
-  console.log(`Sidetree node running on port: ${port}`);
+operationProcessor.initialize(false)
+.then(() => {
+  rooter.startPeriodicRooting();
+  observer.startPeriodicProcessing();
+  app.listen(port, () => {
+    console.log(`Sidetree node running on port: ${port}`);
+  });
+})
+.catch((e) => {
+  console.log(`Operation processor initialization failed with error ${e}`);
 });
 
 /**

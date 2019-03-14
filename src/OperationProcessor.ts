@@ -15,6 +15,12 @@ import { createOperationStore, OperationStore } from './OperationStore';
 export interface OperationProcessor {
 
   /**
+   * Initialize the operation processor. This method
+   * is called once before any of the operations below.
+   */
+  initialize (resuming: boolean): Promise<void>;
+
+  /**
    * Process a DID write (state changing) operation with the guarantee
    * that any future resolve for the same DID sees the effect of the
    * operation.
@@ -45,12 +51,17 @@ export interface OperationProcessor {
  */
 class OperationProcessorImpl implements OperationProcessor {
 
-  private operationStore: OperationStore;
-  private didMethodName: string;
+  public constructor (private didMethodName: string, private operationStore: OperationStore) {
 
-  public constructor (config: Config) {
-    this.didMethodName = config[ConfigKey.DidMethodName];
-    this.operationStore = createOperationStore(config);
+  }
+
+  /**
+   * Initialize the operation processor
+   * @param resuming is the initialization from "scratch" or resuming
+   *                 from a previous stored state?
+   */
+  public async initialize (resuming: boolean) {
+    await this.operationStore.initialize(resuming);
   }
 
   /**
@@ -198,5 +209,6 @@ class OperationProcessorImpl implements OperationProcessor {
  * Factory function for creating a operation processor
  */
 export function createOperationProcessor (_cas: Cas, config: Config): OperationProcessor {
-  return new OperationProcessorImpl(config);
+  const operationStore = createOperationStore(config);
+  return new OperationProcessorImpl(config[ConfigKey.DidMethodName], operationStore);
 }

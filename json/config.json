@@ -6,5 +6,7 @@
   "blockchainNodeUri": "http://127.0.0.1:3009",
   "batchIntervalInSeconds": 10,
   "pollingIntervalInSeconds": 10,
-  "operationStoreType": "InMemory"
+  "operationStoreType": "InMemory",
+  "operationStoreDatabaseName": "sidetree",
+  "operationStoreCollectionsName": "operations"
 }

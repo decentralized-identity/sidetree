@@ -10,8 +10,10 @@ export enum ConfigKey {
   ExampleSecret = 'exampleSecret', // TODO: used only for testing. Remove/replace once there is a real secret.
   PollingIntervalInSeconds = 'pollingIntervalInSeconds',
   Port = 'port',
-  OperationStoreType = 'operationStoreType', // Values corresponds to OperationStoreType
-  OperationStoreUri = 'operationStoreUri'
+  OperationStoreType = 'operationStoreType', // Values corresponds to OperationStoreType (currently one of {InMemory, Mongo})
+  OperationStoreUri = 'operationStoreUri',
+  OperationStoreDatabaseName = 'operationStoreDatabaseName',
+  OperationStoreCollectionName = 'operationStoreCollectionName'
 }
 
 /**
