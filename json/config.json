@@ -9,5 +9,6 @@
   "pollingIntervalInSeconds": 10,
   "operationStoreType": "InMemory",
   "operationStoreDatabaseName": "sidetree",
-  "operationStoreCollectionsName": "operations"
+  "operationStoreCollectionName": "operations",
+  "operationStoreUri": "mongodb://localhost:27017/"
 }

@@ -5,6 +5,9 @@ import { initializeProtocol } from '../src/Protocol';
 import OperationGenerator from './generators/OperationGenerator';
 import { Operation } from '../src/Operation';
 
+/**
+ * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
+ */
 function getOperation (
   opBuf: Buffer,
   transactionNumber: number,
@@ -22,6 +25,9 @@ function getOperation (
   return Operation.create(opBuf, resolvedTransaction, operationIndex);
 }
 
+/**
+ * Convert an Iterable<Operation> object to Array<Operation>
+ */
 function toArray (ops: Iterable<Operation>) {
   const opsArray = new Array<Operation>();
   for (const op of ops) {
@@ -35,7 +41,7 @@ describe('OperationStore', async () => {
   initializeProtocol('protocol-test.json');
 
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
-  const configFile = require('../json/config.json');
+  const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
   let operationStore: OperationStore;
   let publicKey: any;
@@ -44,6 +50,7 @@ describe('OperationStore', async () => {
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
     operationStore = createOperationStore(config);
+    await operationStore.initialize(false);
   });
 
   it('should get a put operation', async () => {

@@ -9,6 +9,7 @@ interface MongoOperation {
   operationIndex: number;
   transactionNumber: number;
   transactionTime: number;
+  batchFileHash: string;
 }
 
 /**
@@ -45,7 +46,7 @@ export class MongoDbOperationStore implements OperationStore {
     if (resuming) {
       this.collection = this.db.collection(this.collectionsName);
     } else {
-      this.collection = await this.db.createCollection(this.collectionsName, { strict: true /* drop previously existing collection */ });
+      this.collection = await this.db.createCollection(this.collectionsName, { strict: false /* drop previously existing collection */ });
       await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
     }
   }
@@ -59,7 +60,8 @@ export class MongoDbOperationStore implements OperationStore {
       operationBuffer: operation.operationBuffer,
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
-      transactionTime: operation.transactionTime!
+      transactionTime: operation.transactionTime!,
+      batchFileHash: operation.batchFileHash!
     };
 
     await this.collection!.insertOne(mongoOperation);
@@ -71,7 +73,21 @@ export class MongoDbOperationStore implements OperationStore {
    * ascending.
    */
   public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
-    return this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
+    const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
+
+    return mongoOperations.map((mongoOperation) => {
+      return Operation.create(
+        mongoOperation.operationBuffer,
+        {
+          transactionNumber: mongoOperation.transactionNumber,
+          transactionTime: mongoOperation.transactionTime,
+          transactionTimeHash: 'unavailable',
+          anchorFileHash: 'unavailable',
+          batchFileHash: mongoOperation.batchFileHash
+        },
+        mongoOperation.operationIndex
+      );
+    });
   }
 
   /**
