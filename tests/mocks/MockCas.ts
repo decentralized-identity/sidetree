@@ -10,6 +10,15 @@ export default class MockCas implements Cas {
   /** A Map that stores the given content. */
   private storage: Map<string, Buffer> = new Map();
 
+  /** Time taken in seconds for each mock fetch. */
+  private mockSecondsTakenForEachCasFetch = 0;
+
+  constructor (mockSecondsTakenForEachCasFetch?: number) {
+    if (mockSecondsTakenForEachCasFetch !== undefined) {
+      this.mockSecondsTakenForEachCasFetch = mockSecondsTakenForEachCasFetch;
+    }
+  }
+
   /**
    * Gets the address that can be used to access the given content.
    */
@@ -27,6 +36,9 @@ export default class MockCas implements Cas {
   }
 
   public async read (address: string): Promise<Buffer> {
+    // Wait for configured time before returning.
+    await new Promise(resolve => setTimeout(resolve, this.mockSecondsTakenForEachCasFetch * 1000));
+
     const content = this.storage.get(address);
     return content ? content : Buffer.from('');
   }

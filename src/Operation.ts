@@ -1,11 +1,11 @@
-import * as Yup from 'yup';
 import Cryptography from './lib/Cryptography';
-import Document from './lib/Document';
+import Did from './lib/Did';
+import Document, { IDocument } from './lib/Document';
 import Encoder from './Encoder';
 import Logger from './lib/Logger';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
-import { DidDocument, DidPublicKey } from '@decentralized-identity/did-common-typescript';
+import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { getProtocol } from './Protocol';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { ResolvedTransaction } from './Transaction';
@@ -53,10 +53,10 @@ class Operation {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
+
   /**
    * The incremental number of each update made to the same DID Document.
    * Delete and Recover operations don't have this number.
-   * TODO: need to revisit: 1. Should this really be called update number? What happens to this number.
    */
   public readonly operationNumber?: Number;
   /** The encoded operation payload. */
@@ -75,7 +75,7 @@ class Operation {
   public proofOfWork: any; // TODO: to be implemented.
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
-  public readonly didDocument?: DidDocument;
+  public readonly didDocument?: IDocument;
 
   /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
   public readonly patch?: any[];
@@ -182,11 +182,49 @@ class Operation {
   }
 
   /**
+   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
+   * for others the DID included with the operation can be used to obtain the unique suffix.
+   */
+  public getDidUniqueSuffix (): string {
+    if (this.type === OperationType.Create) {
+      return this.getOperationHash();
+    } else {
+      const didUniqueSuffix = Did.getUniqueSuffix(this.did!);
+      return didUniqueSuffix;
+    }
+  }
+
+  /**
+   * Gets a cryptographic hash of the operation.
+   * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
+   * for all other cases, the hash is calculated against the entire opeartion buffer.
+   */
+  getOperationHash (): string {
+    if (this.transactionTime === undefined) {
+      throw new Error(`Transaction time not given but needed for hash algorithm selection.`);
+    }
+
+    // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
+    const protocol = getProtocol(this.transactionTime);
+
+    let contentBuffer;
+    if (this.type === OperationType.Create) {
+      contentBuffer = Buffer.from(this.encodedPayload);
+    } else {
+      contentBuffer = this.operationBuffer;
+    }
+
+    const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
+    const encodedMultihash = Encoder.encode(multihash);
+    return encodedMultihash;
+  }
+
+  /**
    * Applies the given JSON Patch to the specified DID Document.
    * NOTE: a new instance of the DidDocument is returned, the original instance is not modified.
    * @returns The resultant DID Document.
    */
-  public static applyJsonPatchToDidDocument (didDocument: DidDocument, jsonPatch: any[]): DidDocument {
+  public static applyJsonPatchToDidDocument (didDocument: IDocument, jsonPatch: any[]): IDocument {
     const validatePatchOperation = true;
     const mutateOriginalContent = false;
     const updatedDidDocument = applyPatch(didDocument, jsonPatch, validatePatchOperation, mutateOriginalContent);
@@ -217,21 +255,32 @@ class Operation {
    * NOTE: Well-formed validation does not include signature verification.
    * @returns [operation type, decoded payload json object] if given operation is well-formed, returns undefined otherwise.
    */
-  private static isWellFormed (operation: IOperation): [OperationType, any] | undefined {
+  private static isWellFormed (operation: any): [OperationType, any] | undefined {
     try {
-      const commonSchema = Yup.object({
-        header: Yup.object({
-          operation: Yup.string().required().oneOf(['create', 'update', 'delete', 'recover']),
-          kid: Yup.string().required(),
-          proofOfWork: Yup.object().required()
-        }).required(),
-        payload: Yup.string().required(),
-        signature: Yup.string().required()
-      });
+      // Must contain 'header' property and 'header' property must contain a string 'kid' property.
+      if (typeof operation.header.kid !== 'string') {
+        return undefined;
+      }
 
-      const passedCommonSchemaValidation = commonSchema.isValidSync(operation);
-      if (!passedCommonSchemaValidation) {
-        Logger.info(`Operation failed common schema validation: ${JSON.stringify(operation)}`);
+      // 'header' property must contain 'alg' property with value 'ES256k'.
+      if (operation.header.alg !== 'ES256K') {
+        return undefined;
+      }
+
+      // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
+      const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
+      if (typeof operation.header.operation !== 'string' ||
+          !allowedOperations.has(operation.header.operation)) {
+        return undefined;
+      }
+
+      // Must contain string 'payload' property.
+      if (typeof operation.payload !== 'string') {
+        return undefined;
+      }
+
+      // Must contain string 'signature' property.
+      if (typeof operation.signature !== 'string') {
         return undefined;
       }
 
@@ -265,30 +314,4 @@ class Operation {
   }
 }
 
-/**
- * Get a cryptographic hash of the operation.
- * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
- * for all other cases, the hash is calculated against the entire opeartion buffer.
- */
-function getOperationHash (operation: Operation): string {
-
-  if (operation.transactionTime === undefined) {
-    throw new Error(`Transaction time not given but needed for DID generation.`);
-  }
-
-  // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-  const protocol = getProtocol(operation.transactionTime);
-
-  let contentBuffer;
-  if (operation.type === OperationType.Create) {
-    contentBuffer = Buffer.from(operation.encodedPayload);
-  } else {
-    contentBuffer = operation.operationBuffer;
-  }
-
-  const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
-  const encodedMultihash = Encoder.encode(multihash);
-  return encodedMultihash;
-}
-
-export { getOperationHash, IOperation, OperationType, Operation };
+export { IOperation, OperationType, Operation };

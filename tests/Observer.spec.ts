@@ -1,25 +1,33 @@
 import * as retry from 'async-retry';
 import * as fetchMock from 'fetch-mock';
+import DownloadManager from '../src/DownloadManager';
 import Observer from '../src/Observer';
 import { BlockchainClient } from '../src/Blockchain';
 import { CasClient } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor } from '../src/OperationProcessor';
+import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
 import { Response } from 'node-fetch';
 import { Readable } from 'readable-stream';
 
 describe('Observer', async () => {
-  const configFile = require('../json/config.json');
+  const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
-  const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-  const operationProcessor = createOperationProcessor(cas, config);
 
-  fetchMock.config.sendAsJson = false;
+  let mockCasFetch;
+  let cas;
+  let downloadManager: DownloadManager;
+  let operationProcessor: OperationProcessor;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
   beforeAll(() => {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000; // These asynchronous tests can take a bit longer than normal.
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
+
+    mockCasFetch = fetchMock.sandbox().get('*', 404); // Setting the CAS to always return 404.
+    cas = new CasClient(config[ConfigKey.CasNodeUri], mockCasFetch);
+    downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
+    operationProcessor = createOperationProcessor(cas, config);
+    downloadManager.start();
   });
 
   afterAll(() => {
@@ -31,7 +39,7 @@ describe('Observer', async () => {
     fetchMock.reset();
   });
 
-  it('should cache transactions processed.', async () => {
+  it('should record transactions processed.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
       'moreTransactions': false,
@@ -60,9 +68,9 @@ describe('Observer', async () => {
     const blockchainClient = new BlockchainClient(config[ConfigKey.BlockchainNodeUri], mockNodeFetch);
 
     // Start the Observer.
-    const observer = new Observer(blockchainClient, cas, operationProcessor, 1);
+    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, 1);
     const processedTransactions = observer.getProcessedTransactions();
-    observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
+    await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until change is detected or max retries is reached.
     await retry(async _bail => {
@@ -134,21 +142,23 @@ describe('Observer', async () => {
         }
       ]
     };
+    const subsequentTransactionFetchResponseBody = {
+      'moreTransactions': false,
+      'transactions': []
+    };
     const mockNodeFetch = fetchMock.sandbox().getOnce('*', createReadableStreamResponse(initialTransactionFetchResponseBody))
-                                             .getOnce('http://127.0.0.1:3009/transactions?since=3&transaction-time-hash=3000',
+                                             .get('http://127.0.0.1:3009/transactions?since=3&transaction-time-hash=3000',
                                                createReadableStreamResponse({ code: 'invalid_transaction_number_or_time_hash' }, 400))
-                                             .postOnce('*', createReadableStreamResponse(initialTransactionFetchResponseBody.transactions[0]))
-                                             .getOnce('http://127.0.0.1:3009/transactions?since=1&transaction-time-hash=1000',
-                                               createReadableStreamResponse(transactionFetchResponseBodyAfterBlockReorg));
+                                             .post('*', createReadableStreamResponse(initialTransactionFetchResponseBody.transactions[0]))
+                                             .get('http://127.0.0.1:3009/transactions?since=1&transaction-time-hash=1000',
+                                               createReadableStreamResponse(transactionFetchResponseBodyAfterBlockReorg))
+                                             .get('http://127.0.0.1:3009/transactions?since=4&transaction-time-hash=4000',
+                                               createReadableStreamResponse(subsequentTransactionFetchResponseBody));
     const blockchainClient = new BlockchainClient(config[ConfigKey.BlockchainNodeUri], mockNodeFetch);
 
     // Process first set of transactions.
-    const observer = new Observer(blockchainClient, cas, operationProcessor, 1);
-
-    await observer.processTransactions(); // Fetching initial set of transactions.
-    await observer.processTransactions(); // Fetching more transactions which triggers the detection and handling of block reorganization.
-
-    // NOTE: the above processTransactions will trigger the 2nd GET call followed by subsequent POST CALL and final GET call.
+    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, 1);
+    await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.
     const processedTransactions = observer.getProcessedTransactions();
@@ -162,8 +172,8 @@ describe('Observer', async () => {
       throw new Error('Block reorganization not handled yet.');
     }, {
       retries: 10,
-      minTimeout: 500, // milliseconds
-      maxTimeout: 500 // milliseconds
+      minTimeout: 1000, // milliseconds
+      maxTimeout: 1000 // milliseconds
     });
 
     expect(processedTransactions[1].anchorFileHash).toEqual('2ndTransactionNew');
@@ -176,10 +186,36 @@ describe('Observer', async () => {
  * Creates a Response with the given object as readable stream body.
  * @param status Used as the status of the response if given. Else response status is defaulted to 200.
  */
-function createReadableStreamResponse (obj: object, status?: number): Response {
-  const stream = new Readable({ objectMode: true });
-  stream.push(JSON.stringify(obj));
+function createReadableStreamResponse (content: object, status?: number): Response {
+  // const stream = new Readable({ objectMode: true });
+  const stream = new RepeatingReadable(content);
+  stream.push(JSON.stringify(content));
 
   const response = new Response(stream, { status: status ? status : 200 });
   return response;
+}
+
+// NOTE: Be careful, this mock Readable will NOT work for reader who is reading based on events (e.g. current CasClient), it will result in a deadlock.
+/**
+ * A mock class that extends the `Readable` class that will repeatedly return the same JSON object everytime `read()` is invoked.
+ * NOTE: This mock `Readable` currently will NOT work for consumer who is consuming the `Readable` using events
+ * (e.g. current CasClient), it will result in a deadlock.
+ */
+class RepeatingReadable extends Readable {
+
+  /**
+   * @param content The content object to be returned everytime `read()` is invoked.
+   */
+  constructor (private content: object) {
+    super({ objectMode: true });
+  }
+
+  /**
+   * Overrides the parent class's `read()` behavior such that `this.content` will be returned everytime this method is invoked.
+   */
+  public read (_size?: number): string | Buffer {
+    this.push(JSON.stringify(this.content));
+    const result = super.read();
+    return result;
+  }
 }

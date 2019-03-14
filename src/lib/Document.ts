@@ -1,7 +1,28 @@
-import * as Yup from 'yup';
 import Did from './Did';
 import Encoder from '../Encoder';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
+
+/**
+ * Defines DID Document data structure used by Sidetree for basic type safety checks.
+ */
+export interface IDocument {
+  '@context': string;
+  id: string;
+  publicKey: [{
+    id: string,
+    type: string,
+    publicKeyJwk?: object
+    publicKeyHex?: object
+  }];
+  service: [{
+    type: string,
+    serviceEndpoint: [{
+      '@context': string;
+      '@type': string;
+      instance: [string]
+    }]
+  }];
+}
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
@@ -9,25 +30,26 @@ import { DidDocument } from '@decentralized-identity/did-common-typescript';
  */
 export default class Document {
   /**
-   * Creates a DID Document with a valid Sidetree DID from an encoded initial Sidetree DID document.
+   * Creates a DID Document with a valid Sidetree DID from an encoded original DID Document.
+   * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
    */
-  public static from (encodedDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): DidDocument {
+  public static from (encodedOriginalDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): IDocument | undefined {
     // Compute the hash of the DID Document in the create payload as the DID
-    const did = Did.from(encodedDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
+    const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
 
     // Decode the encoded DID Document.
-    const decodedJsonString = Encoder.decodeAsString(encodedDidDocument);
+    const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
     const decodedDidDocument = JSON.parse(decodedJsonString);
 
-    // Construct real DID document and return it.
-    // NOTE: DidDocument class requires 'id' property, where as Sidetree original document does not.
-    // So here we create a placeholder 'id' property before passing to DidDocument constructor.
-    decodedDidDocument.id = 'placeholder';
-    const didDocument = new DidDocument(decodedDidDocument);
-
     // Replace the placeholder DID with real DID before returning it.
-    didDocument.id = did;
-    return didDocument;
+    decodedDidDocument.id = did;
+
+    // Return `undefined` if original DID Document is invalid.
+    if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
+      return undefined;
+    }
+
+    return decodedDidDocument;
   }
 
   /**
@@ -51,67 +73,148 @@ export default class Document {
       return false;
     }
 
-    // Verify that the document passes generic DID Document schema validation.
-    const isValidGenericDidDocument = Document.isValid(originalDocument, false);
-    if (!isValidGenericDidDocument) {
-      return false;
-    }
-
     // Verify additional Sidetree-specific rules for a valid original DID Document.
     const isValidOriginalDidDocument = Document.isObjectValidOriginalDocument(originalDocument);
     return isValidOriginalDidDocument;
   }
 
   /**
-   * Verifies that the given JSON object is a valid encoded DID Document that can be accepted by the Sidetree create operation.
+   * Verifies that the given JSON object is a valid Sidetree specific encoded DID Document that can be accepted by the Sidetree create operation.
    */
-  public static isObjectValidOriginalDocument (originalDocument: object): boolean {
-    const isValidOriginalDidDocument = Document.getOriginalDidDocumentSchema().isValidSync(originalDocument);
-    return isValidOriginalDidDocument;
+  public static isObjectValidOriginalDocument (originalDocument: any): boolean {
+    // Original document must pass generic DID Document schema validation.
+    const isValidGenericDidDocument = Document.isValid(originalDocument, false);
+    if (!isValidGenericDidDocument) {
+      return false;
+    }
+
+    // 'publicKey' property is required and must be an array that is not empty.
+    if (!Array.isArray(originalDocument.publicKey) ||
+        (originalDocument.publicKey as object[]).length === 0) {
+      return false;
+    }
+
+    // Verify each publicKey entry in array.
+    for (let publicKeyEntry of originalDocument.publicKey) {
+      // 'id' must be a fragment (starts with '#').
+      if (!(publicKeyEntry.id as string).startsWith('#')) {
+        return false;
+      }
+    }
+
+    // Verify 'service' property if it exists.
+    if (originalDocument.hasOwnProperty('service')) {
+
+      // Verify each service entry in array.
+      for (let serviceEntry of originalDocument.service) {
+        const serviceEndpoint = serviceEntry.serviceEndpoint;
+
+        // Verify required '@context' property.
+        if (serviceEndpoint['@context'] !== 'schema.identity.foundation/hub') {
+          return false;
+        }
+
+        // Verify required '@type' property.
+        if (serviceEndpoint['@type'] !== 'UserServiceEndpoint') {
+          return false;
+        }
+
+        // 'instance' property is required and must be an array that is not empty.
+        if (!Array.isArray(serviceEndpoint.instance) ||
+            (serviceEndpoint.instance as object[]).length === 0) {
+          return false;
+        }
+
+        // Verify each instance entry in array.
+        for (let instanceEntry of serviceEndpoint.instance) {
+          // 'id' must be string type.
+          if (typeof instanceEntry !== 'string') {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
   }
 
   /**
    * Verifies that the given object is a valid generic DID Document (not Sidetree specific).
    * @param requireDid Optional. Specifies if validation rules require the `id` property. Defaults to true if not given.
    */
-  public static isValid (didDocument: object, requireId?: boolean): boolean {
+  public static isValid (didDocument: any, requireId?: boolean): boolean {
     if (requireId === undefined) {
       requireId = true;
     }
 
-    // Construct schema of `id` property.
-    let idSchema = Yup.string();
-    if (requireId === true) {
-      idSchema = idSchema.required();
-    } else {
-      idSchema = idSchema.notRequired();
+    // Verify 'id' property.
+    if (requireId && !didDocument.hasOwnProperty('id')) {
+      return false;
     }
 
-    // Define the schema for the generic DID Document.
-    const schema = Yup.object({
-      '@context': Yup.string().required().oneOf(['https://w3id.org/did/v1']),
-      id: idSchema,
-      publicKey: Yup.array().notRequired()
-    });
+    // Verify required '@context' property.
+    if (didDocument['@context'] !== 'https://w3id.org/did/v1') {
+      return false;
+    }
 
-    const isValid = schema.isValidSync(didDocument);
-    return isValid;
+    // Verify 'publicKey' property if it exists.
+    if (didDocument.hasOwnProperty('publicKey')) {
+      // Verify each publicKey entry in array.
+      for (let publicKeyEntry of didDocument.publicKey) {
+        // 'id' must be string type.
+        if (typeof publicKeyEntry.id !== 'string') {
+          return false;
+        }
+
+        if (typeof publicKeyEntry.type !== 'string') {
+          return false;
+        }
+      }
+    }
+
+    // Verify 'service' property if it exists.
+    if (didDocument.hasOwnProperty('service')) {
+      // 'service' property must be an array.
+      if (!Array.isArray(didDocument.service)) {
+        return false;
+      }
+
+      // Verify each service entry in array.
+      for (let serviceEntry of didDocument.service) {
+        // 'id' is required and must be string type.
+        if (typeof serviceEntry.id !== 'string') {
+          return false;
+        }
+
+        // 'type' is required and must be string type.
+        if (typeof serviceEntry.type !== 'string') {
+          return false;
+        }
+
+        // 'serviceEndpoint' is required.
+        if (serviceEntry.serviceEndpoint === undefined) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   /**
-   * Get Sidetree-specific schema required for a original DID Dcoument.
+   * Gets the specified public key from the given DID Document.
+   * Returns undefined if not found.
+   * @param keyId The ID of the public-key.
    */
-  private static getOriginalDidDocumentSchema (): Yup.ObjectSchema<object> {
-    // A public key must contain an `id` field and it must be a fragment (starts with '#').
-    const publicKeySchema = Yup.object().shape({
-      id: Yup.string().required().test('is-fragment', '${path} is not a fragment', keyId => (keyId as string).startsWith('#'))
-    });
+  public static getPublicKey (didDocument: IDocument, keyId: string): DidPublicKey | undefined {
+    for (let i = 0; i < didDocument.publicKey.length; i++) {
+      const publicKey = didDocument.publicKey[i];
 
-    const originalDidDocumentSchema = Yup.object({
-      // The public key array must exist and must contain at least 1 public-key entry.
-      publicKey: Yup.array(publicKeySchema).required().min(1)
-    });
+      if (publicKey.id && publicKey.id.endsWith(keyId)) {
+        return publicKey;
+      }
+    }
 
-    return originalDidDocumentSchema;
+    return undefined;
   }
 }

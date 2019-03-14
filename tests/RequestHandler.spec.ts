@@ -13,7 +13,7 @@ import Rooter from '../src/Rooter';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
-import { DidDocument } from '@decentralized-identity/did-common-typescript';
+import { IDocument } from '../src/lib/Document';
 import { getProtocol, initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
 import { toHttpStatus } from '../src/Response';
@@ -87,7 +87,7 @@ describe('RequestHandler', () => {
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DidDocument).id).toEqual(did);
+    expect((response.body as IDocument).id).toEqual(did);
   });
 
   it('should handle create operation request.', async () => {
@@ -135,7 +135,7 @@ describe('RequestHandler', () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
-      publicKey: [JSON.stringify(publicKey)]
+      publicKey: [publicKey]
     };
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
     const currentBlockchainTime = await blockchain.getLatestTime();

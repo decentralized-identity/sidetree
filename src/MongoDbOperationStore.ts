@@ -1,10 +1,10 @@
 import { Config, ConfigKey } from './Config';
 import { Collection, Db, MongoClient } from 'mongodb';
-import { getOperationHash, OperationType, Operation } from './Operation';
+import { Operation } from './Operation';
 import { OperationStore } from './OperationStore';
 
 interface MongoOperation {
-  did: string;
+  didUniqueSuffix: string;
   operationBuffer: Buffer;
   operationIndex: number;
   transactionNumber: number;
@@ -16,7 +16,6 @@ interface MongoOperation {
  * a MongoDB database.
  */
 export class MongoDbOperationStore implements OperationStore {
-  private didMethodName: string;
   private serverUrl: string;
   private databaseName: string;
   private collectionsName: string;
@@ -28,7 +27,6 @@ export class MongoDbOperationStore implements OperationStore {
     this.serverUrl = config[ConfigKey.OperationStoreUri];
     this.databaseName = config[ConfigKey.OperationStoreDatabaseName];
     this.collectionsName = config[ConfigKey.OperationStoreCollectionName];
-    this.didMethodName = config[ConfigKey.DidMethodName];
   }
 
   /**
@@ -48,7 +46,7 @@ export class MongoDbOperationStore implements OperationStore {
       this.collection = this.db.collection(this.collectionsName);
     } else {
       this.collection = await this.db.createCollection(this.collectionsName, { strict: true /* drop previously existing collection */ });
-      await this.collection.createIndex({ did: 1, transactionNumber: 1, operationIndex: 1 });
+      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
     }
   }
 
@@ -57,7 +55,7 @@ export class MongoDbOperationStore implements OperationStore {
    */
   public async put (operation: Operation): Promise<void> {
     const mongoOperation: MongoOperation = {
-      did: this.getDidUniqueSuffix(operation),
+      didUniqueSuffix: operation.getDidUniqueSuffix(),
       operationBuffer: operation.operationBuffer,
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
@@ -73,7 +71,7 @@ export class MongoDbOperationStore implements OperationStore {
    * ascending.
    */
   public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
-    return this.collection!.find({ did: didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
+    return this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
   }
 
   /**
@@ -85,19 +83,6 @@ export class MongoDbOperationStore implements OperationStore {
       await this.collection!.deleteMany({ transactionNumber: { $gt: transactionNumber } });
     } else {
       await this.collection!.deleteMany({});
-    }
-  }
-
-  /**
-   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
-   * for others the DID included with the operation can be used to obtain the unique suffix.
-   */
-  private getDidUniqueSuffix (operation: Operation): string {
-    if (operation.type === OperationType.Create) {
-      return getOperationHash(operation);
-    } else {
-      const didUniqueSuffix = operation.did!.substring(this.didMethodName.length);
-      return didUniqueSuffix;
     }
   }
 }
