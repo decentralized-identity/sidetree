@@ -112,7 +112,7 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
-describe('OperationProessor', async () => {
+describe('OperationProcessor', async () => {
   initializeProtocol('protocol-test.json');
 
   // Load the DID Document template.
