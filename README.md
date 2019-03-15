@@ -6,7 +6,7 @@ Blockchain-specific code for the Sidetree-based DID Method implementation on Bit
 
 Our reference implementation of the blockchain service is based on bitcored. Here is the list of instructions to deploy Sidetree's blockchain service on your node.
 
-- Install a Bitcored full node using instructions at [this link](https://bitcore.io/guides/full-node). We reproduce them below since we run bitcored with node v9:
+- Install a Bitcored full node using instructions at [this link](https://bitcore.io/guides/full-node). We reproduce their instructions below since we run bitcored with node v9 rather than v4:
 
   - Install node version manager (NVM) by following instructions at [this link](https://github.com/creationix/nvm#install-script).
   - Install node v9 by using: 
@@ -25,7 +25,12 @@ Our reference implementation of the blockchain service is based on bitcored. Her
     ```bash
     bitcore create mynode --testnet
     ```
-  
+
+- Clone this repository to folder `$(SIDETREE_BITCOIN_REPO)` and run the following:
+    ```bash
+      cd $(SIDETREE_BITCOIN_REPO)/src/bitcored-services/sidetree
+      npm install bitcore-lib
+    ```
 - Suppose that we install bitcored to `$(BITCORE_DIR)` on `$(NODE_IP)`, use the following instructions to add Sidetree's blockchain service:
 
    ```bash
