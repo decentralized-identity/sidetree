@@ -22,6 +22,11 @@ export interface OperationStore {
   put (operation: Operation): Promise<void>;
 
   /**
+   * Store a batch of operations
+   */
+  putBatch (operations: Array<Operation>): Promise<void>;
+
+  /**
    * Get an iterator that returns all operations with a given
    * didUniqueSuffix ordered by (transactionNumber, operationIndex)
    * ascending.
@@ -98,6 +103,15 @@ class InMemoryOperationStoreImpl implements OperationStore {
     this.didToOperations.get(didUniqueSuffix)!.push(operation);
     // ... which leaves the array unsorted, so we record this fact
     this.didUpdatedSinceLastSort.set(didUniqueSuffix, true);
+  }
+
+  /**
+   * Implements OperationStore.putBatch()
+   */
+  public async putBatch (operations: Array<Operation>): Promise<void> {
+    for (const operation of operations) {
+      await this.put(operation);
+    }
   }
 
   /**

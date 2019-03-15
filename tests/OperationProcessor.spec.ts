@@ -189,15 +189,17 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
-    const numberOfPermutations = getFactorial(numberOfOps);
+    let numberOfPermutations = getFactorial(numberOfOps);
+    if (config[ConfigKey.OperationStoreType] === 'Mongo') {
+      numberOfPermutations = 32;
+      console.log(`Limiting number of permutations to ${numberOfPermutations} for Mongo-based testing`);
+    }
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationProcessor = createOperationProcessor(cas, config); // Reset
       await operationProcessor.initialize(false);
-      for (let i = 0 ; i < numberOfOps ; ++i) {
-        const opIdx = permutation[i];
-        await operationProcessor.process(ops[opIdx]);
-      }
+      const permutedOps = permutation.map(i => ops[i]);
+      await operationProcessor.processBatch(permutedOps);
       const didDocument = await operationProcessor.resolve(did);
       expect(didDocument).toBeDefined();
       const publicKey2 = Document.getPublicKey(didDocument!, 'key2');

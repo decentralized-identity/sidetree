@@ -26,6 +26,14 @@ export interface OperationProcessor {
   process (operation: Operation): Promise<void>;
 
   /**
+   * Process a batch of DID write (state changing) operations with
+   * the guarantee that any future resolve for the same DID sees the effect
+   * of the operation.
+   * @param operations Batch of operations to process.
+   */
+  processBatch (operations: Array<Operation>): Promise<void>;
+
+  /**
    * Remove all previously processed operations with transactionNumber
    * greater or equal to the provided parameter value.
    * The intended use case for this method is to handle rollbacks
@@ -68,6 +76,14 @@ class OperationProcessorImpl implements OperationProcessor {
    */
   public async process (operation: Operation): Promise<void> {
     return this.operationStore.put(operation);
+  }
+
+  /**
+   * Process a batch of operations. Simply store the operations in the
+   * store.
+   */
+  public async processBatch (operations: Array<Operation>): Promise<void> {
+    return this.operationStore.putBatch(operations);
   }
 
   /**

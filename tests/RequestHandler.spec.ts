@@ -45,6 +45,8 @@ describe('RequestHandler', () => {
     cas = new MockCas();
     rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
     operationProcessor = createOperationProcessor(cas, config);
+    await operationProcessor.initialize(false);
+
     requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);
 
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.

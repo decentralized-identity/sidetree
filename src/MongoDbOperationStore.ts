@@ -57,20 +57,22 @@ export class MongoDbOperationStore implements OperationStore {
    * Implement OperationStore.put.
    */
   public async put (operation: Operation): Promise<void> {
-
-    // Convert the operation buffer to string (mongo read-write not handled seamlessly for buffer types)
-    const operationBufferBase64Encoding = operation.operationBuffer.toString('base64');
-
-    const mongoOperation: MongoOperation = {
-      didUniqueSuffix: operation.getDidUniqueSuffix(),
-      operationBufferBase64: operationBufferBase64Encoding,
-      operationIndex: operation.operationIndex!,
-      transactionNumber: operation.transactionNumber!,
-      transactionTime: operation.transactionTime!,
-      batchFileHash: operation.batchFileHash!
-    };
-
+    const mongoOperation = this.getMongoOperation(operation);
     await this.collection!.insertOne(mongoOperation);
+  }
+
+  /**
+   * Implement OperationStore.putBatch
+   */
+  public async putBatch (operations: Array<Operation>): Promise<void> {
+    let batch = this.collection!.initializeUnorderedBulkOp();
+
+    for (const operation of operations) {
+      const mongoOperation = this.getMongoOperation(operation);
+      batch.insert(mongoOperation);
+    }
+
+    await batch.execute();
   }
 
   /**
@@ -80,22 +82,7 @@ export class MongoDbOperationStore implements OperationStore {
    */
   public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
     const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
-
-    return mongoOperations.map((mongoOperation) => {
-      const operationBuffer: Buffer = Buffer.from(mongoOperation.operationBufferBase64 as string, 'base64');
-
-      return Operation.create(
-        operationBuffer,
-        {
-          transactionNumber: mongoOperation.transactionNumber,
-          transactionTime: mongoOperation.transactionTime,
-          transactionTimeHash: 'unavailable',
-          anchorFileHash: 'unavailable',
-          batchFileHash: mongoOperation.batchFileHash
-        },
-        mongoOperation.operationIndex
-      );
-    });
+    return mongoOperations.map(this.getOperation);
   }
 
   /**
@@ -108,5 +95,44 @@ export class MongoDbOperationStore implements OperationStore {
     } else {
       await this.collection!.deleteMany({});
     }
+  }
+
+  /**
+   * Convert a Sidetree operation to a more minimal MongoOperation object
+   * that can be stored on MongoDb. The MongoOperation object has sufficient
+   * information to reconstruct the original operation.
+   */
+  private getMongoOperation (operation: Operation): MongoOperation {
+    // Convert the operation buffer to string (mongo read-write not handled seamlessly for buffer types)
+    const operationBufferBase64Encoding = operation.operationBuffer.toString('base64');
+
+    return {
+      didUniqueSuffix: operation.getDidUniqueSuffix(),
+      operationBufferBase64: operationBufferBase64Encoding,
+      operationIndex: operation.operationIndex!,
+      transactionNumber: operation.transactionNumber!,
+      transactionTime: operation.transactionTime!,
+      batchFileHash: operation.batchFileHash!
+    };
+  }
+
+  /**
+   * Convert a MongoDB representation of an operation to a Sidetree operation.
+   * Inverse of getMongoOperation() method above.
+   */
+  private getOperation (mongoOperation: MongoOperation): Operation {
+    const operationBuffer: Buffer = Buffer.from(mongoOperation.operationBufferBase64, 'base64');
+
+    return Operation.create(
+      operationBuffer,
+      {
+        transactionNumber: mongoOperation.transactionNumber,
+        transactionTime: mongoOperation.transactionTime,
+        transactionTimeHash: 'unavailable',
+        anchorFileHash: 'unavailable',
+        batchFileHash: mongoOperation.batchFileHash
+      },
+      mongoOperation.operationIndex
+    );
   }
 }

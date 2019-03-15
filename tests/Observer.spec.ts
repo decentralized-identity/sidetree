@@ -20,13 +20,15 @@ describe('Observer', async () => {
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
     mockCasFetch = fetchMock.sandbox().get('*', 404); // Setting the CAS to always return 404.
     cas = new CasClient(config[ConfigKey.CasNodeUri], mockCasFetch);
     downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
     operationProcessor = createOperationProcessor(cas, config);
+    await operationProcessor.initialize(false);
+
     downloadManager.start();
   });
 
