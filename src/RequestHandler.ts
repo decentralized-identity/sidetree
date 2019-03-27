@@ -24,6 +24,8 @@ export default class RequestHandler {
    * @param requestTimeoutInSeconds Timeout for fetch request.
    */
   public async handleFetchRequest (base64urlEncodedMultihash: string, requestTimeoutInSeconds: number): Promise<Response> {
+    console.log(`Fetching '${base64urlEncodedMultihash}'...`);
+
     const multihashBuffer = base64url.toBuffer(base64urlEncodedMultihash);
     let response: Response;
     try {
@@ -33,7 +35,9 @@ export default class RequestHandler {
         status: ResponseStatus.BadRequest,
         body: { error: 'Invalid content Hash' }
       };
+      console.error(`Invalid content hash '${base64urlEncodedMultihash}'.`);
     }
+
     try {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
       const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString);
@@ -44,18 +48,22 @@ export default class RequestHandler {
         response = {
           status: ResponseStatus.NotFound
         };
+        console.warn(`'${base64urlEncodedMultihash}' not found on IPFS.`);
       } else {
         response = {
           status: ResponseStatus.Succeeded,
           body: result
         };
+        console.log(`Fetched '${base64urlEncodedMultihash}'.`);
       }
     } catch (err) {
       response = {
         status: ResponseStatus.ServerError,
         body: err.message
       };
+      console.error(`Error fetching '${base64urlEncodedMultihash}': ${err}`);
     }
+
     return response;
   }
 
@@ -64,11 +72,15 @@ export default class RequestHandler {
    * @param content Sidetree content to write into CAS storage
    */
   public async handleWriteRequest (content: Buffer): Promise<Response> {
+    console.log(`Writing content of ${content.length} bytes...`);
+
     let response: Response;
+    let base64urlEncodedMultihash;
     try {
       const base58EncodedMultihashString = await this.ipfsStorage.write(content);
       const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
-      const base64urlEncodedMultihash = base64url.encode(multihashBuffer);
+      base64urlEncodedMultihash = base64url.encode(multihashBuffer);
+
       response = {
         status: ResponseStatus.Succeeded,
         body: { hash: base64urlEncodedMultihash }
@@ -78,7 +90,10 @@ export default class RequestHandler {
         status: ResponseStatus.ServerError,
         body: err.message
       };
+      console.error(`Error writing content: ${err}`);
     }
+
+    console.error(`Wrote content '${base64urlEncodedMultihash}'.`);
     return response;
   }
 }
