@@ -143,7 +143,7 @@ export default class Observer {
         // If block reorg is detected, we must wait until no more operation processing is pending,
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
-          Logger.info(`Block reorganization deteced.`);
+          Logger.info(`Block reorganization detected.`);
           await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(0);
 
           Logger.info(`Reverting invalid transactions...`);
