@@ -130,6 +130,7 @@ export default class Observer {
         moreTransactions = readResult ? readResult.moreTransactions : false;
 
         // Queue parallel downloading and processing of batch files.
+        Logger.info(`Queueing parallel downloading and processing of operation batches of ${transactions.length} transactions...`);
         for (const transaction of transactions) {
           const awaitingTransaction = {
             transaction: transaction,
@@ -139,10 +140,12 @@ export default class Observer {
           // Intentionally not awaiting on downloading and processing each operation batch.
           void this.downloadThenProcessBatchAsync(transaction, awaitingTransaction);
         }
+        Logger.info(`Queued downloading and processing of operation batches of ${transactions.length} transactions.`);
 
         // If block reorg is detected, we must wait until no more operation processing is pending,
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
+          Logger.info(`Block reorganization deteced.`);
           await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(0);
 
           Logger.info(`Reverting invalid transactions...`);
@@ -249,6 +252,7 @@ export default class Observer {
    * If no error encountered (unresolvable transaction is NOT an error), advance the 'last processed transaction' marker.
    */
   private async downloadThenProcessBatchAsync (transaction: Transaction, transactionUnderProcessing: TransactionUnderProcessing) {
+    Logger.info(`Downloading then processing transaction '${transaction.transactionNumber}' with anchor file '${transaction.anchorFileHash}'...`);
     let retryNeeded = false;
 
     try {
