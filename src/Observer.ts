@@ -143,6 +143,7 @@ export default class Observer {
         // If block reorg is detected, we must wait until no more operation processing is pending,
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
+          Logger.info(`Block reorganization detected.`);
           await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(0);
 
           Logger.info(`Reverting invalid transactions...`);
@@ -252,6 +253,7 @@ export default class Observer {
     let retryNeeded = false;
 
     try {
+      Logger.info(`Downloading anchor file '${transaction.anchorFileHash}'...`);
       const anchorFileBuffer = await this.downloadManager.download(transaction.anchorFileHash);
 
       if (anchorFileBuffer === undefined) {
@@ -268,6 +270,7 @@ export default class Observer {
         return;
       }
 
+      Logger.info(`Downloading batch file '${anchorFile.batchFileHash}'...`);
       const batchFileBuffer = await this.downloadManager.download(anchorFile.batchFileHash);
 
       if (batchFileBuffer === undefined) {
