@@ -48,6 +48,13 @@ export default class DownloadManager {
   public constructor (
     public maxConcurrentCasDownloads: number,
     private cas: Cas) {
+
+    // If maximum concurrent CAS download count is NaN, set it to a default value.
+    if (isNaN(maxConcurrentCasDownloads)) {
+      const defaultMaxConcurrentCasDownloads = 20;
+      Logger.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentCasDownloads}.`);
+      this.maxConcurrentCasDownloads = defaultMaxConcurrentCasDownloads;
+    }
   }
 
   /**
