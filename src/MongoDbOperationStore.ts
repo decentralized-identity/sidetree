@@ -18,16 +18,14 @@ interface MongoOperation {
  */
 export class MongoDbOperationStore implements OperationStore {
   private serverUrl: string;
-  private databaseName: string;
-  private collectionsName: string;
+  private readonly databaseName = 'sidetree';
+  private readonly collectionsName = 'operations';
   private client: MongoClient | undefined;
   private db: Db | undefined;
   private collection: Collection<any> | undefined;
 
   constructor (config: Config) {
     this.serverUrl = config[ConfigKey.OperationStoreUri];
-    this.databaseName = config[ConfigKey.OperationStoreDatabaseName];
-    this.collectionsName = config[ConfigKey.OperationStoreCollectionName];
   }
 
   /**

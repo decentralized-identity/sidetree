@@ -1,9 +1,8 @@
 import * as Protocol from './Protocol';
 import Document, { IDocument } from './lib/Document';
-import { Cas } from './Cas';
 import { Config, ConfigKey } from './Config';
 import { Operation, OperationType } from './Operation';
-import { createOperationStore, OperationStore } from './OperationStore';
+import { OperationStore } from './OperationStore';
 
 /**
  * Represents the interface used by other components to process DID operations
@@ -206,7 +205,6 @@ class OperationProcessorImpl implements OperationProcessor {
 /**
  * Factory function for creating a operation processor
  */
-export function createOperationProcessor (_cas: Cas, config: Config): OperationProcessor {
-  const operationStore = createOperationStore(config);
+export function createOperationProcessor (config: Config, operationStore: OperationStore): OperationProcessor {
   return new OperationProcessorImpl(config[ConfigKey.DidMethodName], operationStore);
 }

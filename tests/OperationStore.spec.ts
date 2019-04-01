@@ -1,10 +1,11 @@
 import { Config, ConfigKey } from '../src/Config';
 import Cryptography from '../src/lib/Cryptography';
-import { createOperationStore, OperationStore } from '../src/OperationStore';
+import { OperationStore } from '../src/OperationStore';
 import { initializeProtocol } from '../src/Protocol';
 import OperationGenerator from './generators/OperationGenerator';
 import { Operation } from '../src/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
+import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 
 /**
  * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
@@ -92,7 +93,7 @@ describe('OperationStore', async () => {
 
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
-    operationStore = createOperationStore(config);
+    operationStore = new MockOperationStoreImpl();
     await operationStore.initialize(false);
   });
 

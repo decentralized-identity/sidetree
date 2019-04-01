@@ -13,10 +13,12 @@ import Rooter from '../src/Rooter';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
+import { OperationStore } from '../src/OperationStore';
 import { IDocument } from '../src/lib/Document';
 import { getProtocol, initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
 import { toHttpStatus } from '../src/Response';
+import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 
 describe('RequestHandler', () => {
   initializeProtocol('protocol-test.json');
@@ -32,6 +34,7 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   let cas: Cas;
   let rooter: Rooter;
+  let operationStore: OperationStore;
   let operationProcessor;
   let requestHandler: RequestHandler;
 
@@ -44,7 +47,8 @@ describe('RequestHandler', () => {
   beforeEach(async () => {
     cas = new MockCas();
     rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-    operationProcessor = createOperationProcessor(cas, config);
+    operationStore = new MockOperationStoreImpl();
+    operationProcessor = createOperationProcessor(config, operationStore);
     await operationProcessor.initialize(false);
 
     requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);

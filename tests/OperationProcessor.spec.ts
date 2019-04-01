@@ -6,8 +6,10 @@ import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
+import { OperationStore } from '../src/OperationStore';
 import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
+import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -123,6 +125,7 @@ describe('OperationProcessor', async () => {
   const config = new Config(configFile);
   const didMethodName = config[ConfigKey.DidMethodName];
   let operationProcessor: OperationProcessor;
+  let operationStore: OperationStore;
   let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
@@ -132,7 +135,8 @@ describe('OperationProcessor', async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
-    operationProcessor = createOperationProcessor(cas, config); // TODO: add a clear method to avoid double initialization.
+    operationStore = new MockOperationStoreImpl();
+    operationProcessor = createOperationProcessor(config, operationStore); // TODO: add a clear method to avoid double initialization.
     await operationProcessor.initialize(false);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
@@ -190,13 +194,11 @@ describe('OperationProcessor', async () => {
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
-    if (config[ConfigKey.OperationStoreType] === 'Mongo') {
-      numberOfPermutations = 32;
-      console.log(`Limiting number of permutations to ${numberOfPermutations} for Mongo-based testing`);
-    }
+
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
-      operationProcessor = createOperationProcessor(cas, config); // Reset
+      operationStore = new MockOperationStoreImpl();
+      operationProcessor = createOperationProcessor(config, operationStore); // Reset
       await operationProcessor.initialize(false);
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);

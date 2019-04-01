@@ -11,10 +11,7 @@ export enum ConfigKey {
   MaxConcurrentCasDownloads = 'maxConcurrentCasDownloads',
   PollingIntervalInSeconds = 'pollingIntervalInSeconds',
   Port = 'port',
-  OperationStoreType = 'operationStoreType', // Values corresponds to OperationStoreType (currently one of {InMemory, Mongo})
-  OperationStoreUri = 'operationStoreUri',
-  OperationStoreDatabaseName = 'operationStoreDatabaseName',
-  OperationStoreCollectionName = 'operationStoreCollectionName'
+  OperationStoreUri = 'operationStoreUri'
 }
 
 /**

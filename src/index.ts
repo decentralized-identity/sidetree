@@ -9,6 +9,7 @@ import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
 import { Config, ConfigKey } from './Config';
 import { createOperationProcessor } from './OperationProcessor';
+import { createOperationStore } from './OperationStore';
 import { initializeProtocol } from './Protocol';
 import { toHttpStatus, Response } from './Response';
 
@@ -18,13 +19,16 @@ const configFile = require('../json/config.json');
 const config = new Config(configFile);
 const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
 const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-const operationProcessor = createOperationProcessor(cas, config);
+const operationStore = createOperationStore(config);
+const operationProcessor = createOperationProcessor(config, operationStore);
 const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
 const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
 const observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
 const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
 const app = new Koa();
+downloadManager.start();
+rooter.startPeriodicRooting();
 
 // Raw body parser.
 app.use(async (ctx, next) => {
@@ -54,9 +58,9 @@ app.use((ctx, _next) => {
 const port = config[ConfigKey.Port];
 operationProcessor.initialize(false)
 .then(() => {
-  downloadManager.start();
-  rooter.startPeriodicRooting();
-  void observer.startPeriodicProcessing();
+  return observer.startPeriodicProcessing();
+})
+.then(() => {
   app.listen(port, () => {
     console.log(`Sidetree node running on port: ${port}`);
   });

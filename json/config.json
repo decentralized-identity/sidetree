@@ -8,7 +8,5 @@
   "maxConcurrentCasDownloads": 20,
   "pollingIntervalInSeconds": 10,
   "operationStoreType": "InMemory",
-  "operationStoreDatabaseName": "sidetree",
-  "operationStoreCollectionName": "operations",
   "operationStoreUri": "mongodb://localhost:27017/"
 }
