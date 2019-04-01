@@ -347,7 +347,7 @@ export default class Observer {
     // If the code reaches here, it means that the batch of operations is valid, process each operations.
     const endTimer = timeSpan();
     for (const operation of operations) {
-      await this.operationProcessor.process(operation);
+      await this.operationProcessor.processBatch([operation]);
     }
     Logger.info(`Processed batch ${resolvedTransaction.batchFileHash} containing ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
   }

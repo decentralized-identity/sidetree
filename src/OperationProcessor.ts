@@ -18,13 +18,6 @@ export interface OperationProcessor {
   initialize (resuming: boolean): Promise<void>;
 
   /**
-   * Process a DID write (state changing) operation with the guarantee
-   * that any future resolve for the same DID sees the effect of the
-   * operation.
-   */
-  process (operation: Operation): Promise<void>;
-
-  /**
    * Process a batch of DID write (state changing) operations with
    * the guarantee that any future resolve for the same DID sees the effect
    * of the operation.

@@ -10,7 +10,7 @@ import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 /**
  * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
  */
-function getOperation (
+function constructAnchoredOperation (
   opBuf: Buffer,
   transactionNumber: number,
   transactionTime: number,
@@ -27,19 +27,7 @@ function getOperation (
   return Operation.create(opBuf, resolvedTransaction, operationIndex);
 }
 
-/**
- * Convert an Iterable<Operation> object to Array<Operation>
- */
-function toArray (ops: Iterable<Operation>) {
-  const opsArray = new Array<Operation>();
-  for (const op of ops) {
-    opsArray.push(op);
-  }
-
-  return opsArray;
-}
-
-async function getCreateOperation (
+async function constructAnchoredCreateOperation (
   publicKey: DidPublicKey,
   privateKey: string,
   transactionNumber: number,
@@ -47,11 +35,11 @@ async function getCreateOperation (
   operationIndex: number): Promise<Operation> {
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
   const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
-  const operation = getOperation(operationBuffer, transactionNumber, transactionTime, operationIndex);
+  const operation = constructAnchoredOperation(operationBuffer, transactionNumber, transactionTime, operationIndex);
   return operation;
 }
 
-async function getUpdateOperation (
+async function constructAnchoredUpdateOperation (
   privateKey: string,
   did: string,
   previousVersion: string,
@@ -78,7 +66,7 @@ async function getUpdateOperation (
   };
 
   const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
-  return getOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
+  return constructAnchoredOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
 }
 
 describe('OperationStore', async () => {
@@ -98,9 +86,9 @@ describe('OperationStore', async () => {
   });
 
   it('should get a put create operation', async () => {
-    const operation = await getCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const operation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     await operationStore.put(operation);
-    const returnedOperations = toArray(await operationStore.get(operation.getDidUniqueSuffix()));
+    const returnedOperations = Array.from(await operationStore.get(operation.getDidUniqueSuffix()));
 
     expect(returnedOperations.length).toEqual(1);
     const returnedOperation = returnedOperations[0];
@@ -117,12 +105,12 @@ describe('OperationStore', async () => {
 
   it('should get a put update operation', async () => {
     // Use a create operation to generate a DID
-    const createOperation = await getCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const did = didMethodName + createOperation.getDidUniqueSuffix();
     const createVersion = createOperation.getOperationHash();
-    const updateOperation = await getUpdateOperation(privateKey, did, createVersion, 1, 1, 0, 1);
+    const updateOperation = await constructAnchoredUpdateOperation(privateKey, did, createVersion, 1, 1, 0, 1);
     await operationStore.put(updateOperation);
-    const returnedOperations = toArray(await operationStore.get(createOperation.getDidUniqueSuffix()));
+    const returnedOperations = Array.from(await operationStore.get(createOperation.getDidUniqueSuffix()));
 
     expect(returnedOperations.length).toEqual(1);
     const returnedOperation = returnedOperations[0];
@@ -139,20 +127,20 @@ describe('OperationStore', async () => {
 
   it('should get all operations in a batch put', async () => {
     // Use a create operation to generate a DID
-    const createOperation = await getCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const did = didMethodName + createOperation.getDidUniqueSuffix();
 
-    const batchSize = 2;
+    const batchSize = 10;
     const batch = new Array<Operation>(createOperation);
     for (let i = 1; i < batchSize ; i++) {
       const previousOperation = batch[i - 1];
       const previousVersion = previousOperation.getOperationHash();
-      const operation = await getUpdateOperation(privateKey, did, previousVersion, i, i, 0, i);
+      const operation = await constructAnchoredUpdateOperation(privateKey, did, previousVersion, i, i, 0, i);
       batch.push(operation);
     }
 
     await operationStore.putBatch(batch);
-    const returnedOperations = toArray(await operationStore.get(createOperation.getDidUniqueSuffix()));
+    const returnedOperations = Array.from(await operationStore.get(createOperation.getDidUniqueSuffix()));
 
     expect(returnedOperations.length).toEqual(batchSize);
     for (let i = 0 ; i < batchSize ; i++) {

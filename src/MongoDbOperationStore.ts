@@ -3,6 +3,9 @@ import { Collection, Db, MongoClient } from 'mongodb';
 import { Operation } from './Operation';
 import { OperationStore } from './OperationStore';
 
+/**
+ * Sidetree operation stored in MongoDb.
+ */
 interface MongoOperation {
   didUniqueSuffix: string;
   operationBufferBase64: string;
@@ -18,8 +21,6 @@ interface MongoOperation {
  */
 export class MongoDbOperationStore implements OperationStore {
   private serverUrl: string;
-  private readonly databaseName = 'sidetree';
-  private readonly collectionsName = 'operations';
   private client: MongoClient | undefined;
   private db: Db | undefined;
   private collection: Collection<any> | undefined;
@@ -35,18 +36,20 @@ export class MongoDbOperationStore implements OperationStore {
    * database and collection is created.
    */
   public async initialize (resuming: boolean): Promise<void> {
+    const databaseName = 'sidetree';
+    const collectionsName = 'operations';
     this.client = await MongoClient.connect(this.serverUrl);
-    this.db = this.client.db(this.databaseName);
+    this.db = this.client.db(databaseName);
 
     // If we are resuming, then the collection, indexes already exist.
     // Otherwise, we need to create the collection and define an index on
     // (did, transactionNumber, operationIndex), first dropping the collection if
     // it exists.
     if (resuming) {
-      this.collection = this.db.collection(this.collectionsName);
+      this.collection = this.db.collection(collectionsName);
     } else {
-      await this.db.collection(this.collectionsName).drop();
-      this.collection = await this.db.createCollection(this.collectionsName, { strict: false });
+      await this.db.collection(collectionsName).drop();
+      this.collection = await this.db.createCollection(collectionsName, { strict: false });
       await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
     }
   }
@@ -55,7 +58,7 @@ export class MongoDbOperationStore implements OperationStore {
    * Implement OperationStore.put.
    */
   public async put (operation: Operation): Promise<void> {
-    const mongoOperation = this.getMongoOperation(operation);
+    const mongoOperation = this.convertToMongoOperation(operation);
     await this.collection!.insertOne(mongoOperation);
   }
 
@@ -66,7 +69,7 @@ export class MongoDbOperationStore implements OperationStore {
     let batch = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
-      const mongoOperation = this.getMongoOperation(operation);
+      const mongoOperation = this.convertToMongoOperation(operation);
       batch.insert(mongoOperation);
     }
 
@@ -80,7 +83,7 @@ export class MongoDbOperationStore implements OperationStore {
    */
   public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
     const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
-    return mongoOperations.map(this.getOperation);
+    return mongoOperations.map(this.convertToOperation);
   }
 
   /**
@@ -100,7 +103,7 @@ export class MongoDbOperationStore implements OperationStore {
    * that can be stored on MongoDb. The MongoOperation object has sufficient
    * information to reconstruct the original operation.
    */
-  private getMongoOperation (operation: Operation): MongoOperation {
+  private convertToMongoOperation (operation: Operation): MongoOperation {
     // Convert the operation buffer to string (mongo read-write not handled seamlessly for buffer types)
     const operationBufferBase64Encoding = operation.operationBuffer.toString('base64');
 
@@ -118,7 +121,7 @@ export class MongoDbOperationStore implements OperationStore {
    * Convert a MongoDB representation of an operation to a Sidetree operation.
    * Inverse of getMongoOperation() method above.
    */
-  private getOperation (mongoOperation: MongoOperation): Operation {
+  private convertToOperation (mongoOperation: MongoOperation): Operation {
     const operationBuffer: Buffer = Buffer.from(mongoOperation.operationBufferBase64, 'base64');
 
     return Operation.create(

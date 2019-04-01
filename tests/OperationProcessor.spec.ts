@@ -146,7 +146,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
-    await operationProcessor.process(createOp!);
+    await operationProcessor.processBatch([createOp!]);
     const didDocument = await operationProcessor.resolve(did);
 
     // TODO: can we get the raw json from did? if so, we can write a better test.
@@ -162,7 +162,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.process(ops[i]);
+      await operationProcessor.processBatch([ops[i]]);
     }
 
     const didDocument = await operationProcessor.resolve(did);
@@ -178,7 +178,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
-      await operationProcessor.process(ops[i]);
+      await operationProcessor.processBatch([ops[i]]);
     }
     const didDocument = await operationProcessor.resolve(did);
     expect(didDocument).toBeDefined();
@@ -222,7 +222,7 @@ describe('OperationProcessor', async () => {
     const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
 
     // Trigger processing of the operation.
-    await operationProcessor.process(createOperation);
+    await operationProcessor.processBatch([createOperation]);
     const did = didMethodName + createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
