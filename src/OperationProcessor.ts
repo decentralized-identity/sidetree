@@ -5,49 +5,12 @@ import { Operation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';
 
 /**
- * Represents the interface used by other components to process DID operations
- * (create, update, delete, recover) and to retrieve the current version of a
- * DID document.
- */
-export interface OperationProcessor {
-
-  /**
-   * Initialize the operation processor. This method
-   * is called once before any of the operations below.
-   */
-  initialize (resuming: boolean): Promise<void>;
-
-  /**
-   * Process a batch of DID write (state changing) operations with
-   * the guarantee that any future resolve for the same DID sees the effect
-   * of the operation.
-   * @param operations Batch of operations to process.
-   */
-  processBatch (operations: Array<Operation>): Promise<void>;
-
-  /**
-   * Remove all previously processed operations with transactionNumber
-   * greater or equal to the provided parameter value.
-   * The intended use case for this method is to handle rollbacks
-   * in the blockchain.
-   */
-  rollback (transactionNumber?: number): Promise<void>;
-
-  /**
-   * Resolve a did.
-   * @param did The DID to resolve. e.g. did:sidetree:abc123.
-   * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
-   */
-  resolve (did: string): Promise<IDocument | undefined>;
-}
-
-/**
  * Implementation of OperationProcessor. Uses a OperationStore
  * that might, e.g., use a backend database for persistence.
  * All 'processing' is deferred to resolve time, with process()
  * simply storing the operation in the store.
  */
-class OperationProcessorImpl implements OperationProcessor {
+export class OperationProcessor {
 
   public constructor (private didMethodName: string, private operationStore: OperationStore) {
 
@@ -191,5 +154,5 @@ class OperationProcessorImpl implements OperationProcessor {
  * Factory function for creating a operation processor
  */
 export function createOperationProcessor (config: Config, operationStore: OperationStore): OperationProcessor {
-  return new OperationProcessorImpl(config[ConfigKey.DidMethodName], operationStore);
+  return new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 }
