@@ -11,10 +11,8 @@ export interface OperationStore {
   /**
    * Initialize the operation store. This method
    * is called once before any of the operations below.
-   * @param resuming is the initialization from "scratch" or resuming
-   *                 from a previous stored state?
    */
-  initialize (resuming: boolean): Promise<void>;
+  initialize (): Promise<void>;
 
   /**
    * Store an operation.

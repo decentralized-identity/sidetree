@@ -82,7 +82,7 @@ describe('OperationStore', async () => {
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
     operationStore = new MockOperationStoreImpl();
-    await operationStore.initialize(false);
+    await operationStore.initialize();
   });
 
   it('should get a put create operation', async () => {

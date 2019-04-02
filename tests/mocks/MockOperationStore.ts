@@ -38,11 +38,7 @@ export class MockOperationStoreImpl implements OperationStore {
    * Initialize the operation store. The implementation
    * is a no op for in-memory operation store.
    */
-  public async initialize (resuming: boolean) {
-    if (resuming) {
-      throw new Error('Resume not supported in in-memory operation store');
-    }
-  }
+  public async initialize () { return; }
 
   /**
    * Implements OperationStore.put().
