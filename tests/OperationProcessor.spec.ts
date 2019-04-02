@@ -137,7 +137,7 @@ describe('OperationProcessor', async () => {
     cas = new MockCas();
     operationStore = new MockOperationStoreImpl();
     operationProcessor = createOperationProcessor(config, operationStore); // TODO: add a clear method to avoid double initialization.
-    await operationProcessor.initialize(false);
+    await operationProcessor.initialize();
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -199,7 +199,7 @@ describe('OperationProcessor', async () => {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStoreImpl();
       operationProcessor = createOperationProcessor(config, operationStore); // Reset
-      await operationProcessor.initialize(false);
+      await operationProcessor.initialize();
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);
       const didDocument = await operationProcessor.resolve(did);

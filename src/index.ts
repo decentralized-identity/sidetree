@@ -56,7 +56,7 @@ app.use((ctx, _next) => {
 });
 
 const port = config[ConfigKey.Port];
-operationProcessor.initialize(false)
+operationProcessor.initialize()
 .then(() => {
   return observer.startPeriodicProcessing();
 })

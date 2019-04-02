@@ -28,26 +28,21 @@ export class MongoDbOperationStore implements OperationStore {
   }
 
   /**
-   * Initialize the MongoDB operation store. The parameter resuming indicates
-   * whether the initialization is resuming from a previous stoppage with state
-   * stored in the backend mongodb database; if resuming is false, then a new
-   * database and collection is created.
+   * Initialize the MongoDB operation store.
    */
-  public async initialize (resuming: boolean): Promise<void> {
+  public async initialize (): Promise<void> {
     const databaseName = 'sidetree';
-    const collectionsName = 'operations';
+    const operationCollectionName = 'operations';
     const client = await MongoClient.connect(this.serverUrl);
     const db = client.db(databaseName);
+    const collections = await db.collections();
+    const collectionNames = collections.map(collection => collection.collectionName);
 
-    // If we are resuming, then the collection, indexes already exist.
-    // Otherwise, we need to create the collection and define an index on
-    // (did, transactionNumber, operationIndex), first dropping the collection if
-    // it exists.
-    if (resuming) {
-      this.collection = db.collection(collectionsName);
+    // If the operation collection exists, use it; else create it then use it.
+    if (collectionNames.includes(operationCollectionName)) {
+      this.collection = db.collection(operationCollectionName);
     } else {
-      await db.collection(collectionsName).drop();
-      this.collection = await db.createCollection(collectionsName, { strict: false });
+      this.collection = await db.createCollection(operationCollectionName);
       await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
     }
   }

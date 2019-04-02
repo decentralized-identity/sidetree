@@ -17,12 +17,10 @@ export class OperationProcessor {
   }
 
   /**
-   * Initialize the operation processor
-   * @param resuming is the initialization from "scratch" or resuming
-   *                 from a previous stored state?
+   * Initialize the operation processor.
    */
-  public async initialize (resuming: boolean) {
-    await this.operationStore.initialize(resuming);
+  public async initialize () {
+    await this.operationStore.initialize();
   }
 
   /**
