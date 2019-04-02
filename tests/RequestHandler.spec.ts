@@ -13,10 +13,12 @@ import Rooter from '../src/Rooter';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor } from '../src/OperationProcessor';
+import { OperationStore } from '../src/OperationStore';
 import { IDocument } from '../src/lib/Document';
 import { getProtocol, initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
 import { toHttpStatus } from '../src/Response';
+import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 
 describe('RequestHandler', () => {
   initializeProtocol('protocol-test.json');
@@ -32,6 +34,7 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   let cas: Cas;
   let rooter: Rooter;
+  let operationStore: OperationStore;
   let operationProcessor;
   let requestHandler: RequestHandler;
 
@@ -44,7 +47,10 @@ describe('RequestHandler', () => {
   beforeEach(async () => {
     cas = new MockCas();
     rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-    operationProcessor = createOperationProcessor(cas, didMethodName);
+    operationStore = new MockOperationStoreImpl();
+    operationProcessor = createOperationProcessor(config, operationStore);
+    await operationProcessor.initialize(false);
+
     requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);
 
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
@@ -74,7 +80,7 @@ describe('RequestHandler', () => {
       batchFileHash
     };
     const createOperation = Operation.create(createOperationBuffer, resolvedTransaction, 0);
-    await operationProcessor.process(createOperation);
+    await operationProcessor.processBatch([createOperation]);
 
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.

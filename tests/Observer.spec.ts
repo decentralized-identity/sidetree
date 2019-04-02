@@ -6,6 +6,8 @@ import { BlockchainClient } from '../src/Blockchain';
 import { CasClient } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
+import { OperationStore } from '../src/OperationStore';
+import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 import { Response } from 'node-fetch';
 import { Readable } from 'readable-stream';
 
@@ -17,16 +19,20 @@ describe('Observer', async () => {
   let cas;
   let downloadManager: DownloadManager;
   let operationProcessor: OperationProcessor;
+  let operationStore: OperationStore;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
     mockCasFetch = fetchMock.sandbox().get('*', 404); // Setting the CAS to always return 404.
     cas = new CasClient(config[ConfigKey.CasNodeUri], mockCasFetch);
     downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-    operationProcessor = createOperationProcessor(cas, config[ConfigKey.DidMethodName]);
+    operationStore = new MockOperationStoreImpl();
+    operationProcessor = createOperationProcessor(config, operationStore);
+    await operationProcessor.initialize(false);
+
     downloadManager.start();
   });
 

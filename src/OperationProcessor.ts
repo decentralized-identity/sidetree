@@ -1,38 +1,8 @@
 import * as Protocol from './Protocol';
 import Document, { IDocument } from './lib/Document';
-import { Cas } from './Cas';
+import { Config, ConfigKey } from './Config';
 import { Operation, OperationType } from './Operation';
-import { createOperationStore, OperationStore } from './OperationStore';
-
-/**
- * Represents the interface used by other components to process DID operations
- * (create, update, delete, recover) and to retrieve the current version of a
- * DID document.
- */
-export interface OperationProcessor {
-
-  /**
-   * Process a DID write (state changing) operation with the guarantee
-   * that any future resolve for the same DID sees the effect of the
-   * operation.
-   */
-  process (operation: Operation): Promise<void>;
-
-  /**
-   * Remove all previously processed operations with transactionNumber
-   * greater or equal to the provided parameter value.
-   * The intended use case for this method is to handle rollbacks
-   * in the blockchain.
-   */
-  rollback (transactionNumber?: number): Promise<void>;
-
-  /**
-   * Resolve a did.
-   * @param did The DID to resolve. e.g. did:sidetree:abc123.
-   * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
-   */
-  resolve (did: string): Promise<IDocument | undefined>;
-}
+import { OperationStore } from './OperationStore';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore
@@ -40,20 +10,27 @@ export interface OperationProcessor {
  * All 'processing' is deferred to resolve time, with process()
  * simply storing the operation in the store.
  */
-class OperationProcessorImpl implements OperationProcessor {
+export class OperationProcessor {
 
-  private operationStore: OperationStore;
+  public constructor (private didMethodName: string, private operationStore: OperationStore) {
 
-  public constructor (private didMethodName: string) {
-    this.operationStore = createOperationStore();
   }
 
   /**
-   * Processes a specified DID state changing operation. Simply store
-   * the operation in the store.
+   * Initialize the operation processor
+   * @param resuming is the initialization from "scratch" or resuming
+   *                 from a previous stored state?
    */
-  public async process (operation: Operation): Promise<void> {
-    return this.operationStore.put(operation);
+  public async initialize (resuming: boolean) {
+    await this.operationStore.initialize(resuming);
+  }
+
+  /**
+   * Process a batch of operations. Simply store the operations in the
+   * store.
+   */
+  public async processBatch (operations: Array<Operation>): Promise<void> {
+    return this.operationStore.putBatch(operations);
   }
 
   /**
@@ -176,6 +153,6 @@ class OperationProcessorImpl implements OperationProcessor {
 /**
  * Factory function for creating a operation processor
  */
-export function createOperationProcessor (_cas: Cas, didMethodName: string): OperationProcessor {
-  return new OperationProcessorImpl(didMethodName);
+export function createOperationProcessor (config: Config, operationStore: OperationStore): OperationProcessor {
+  return new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 }

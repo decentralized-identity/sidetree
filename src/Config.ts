@@ -10,7 +10,8 @@ export enum ConfigKey {
   ExampleSecret = 'exampleSecret', // TODO: used only for testing. Remove/replace once there is a real secret.
   MaxConcurrentCasDownloads = 'maxConcurrentCasDownloads',
   PollingIntervalInSeconds = 'pollingIntervalInSeconds',
-  Port = 'port'
+  Port = 'port',
+  OperationStoreUri = 'operationStoreUri'
 }
 
 /**

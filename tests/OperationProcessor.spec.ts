@@ -4,9 +4,12 @@ import Document from '../src/lib/Document';
 import MockCas from './mocks/MockCas';
 import OperationGenerator from './generators/OperationGenerator';
 import { Cas } from '../src/Cas';
-import { createOperationProcessor } from '../src/OperationProcessor';
+import { Config, ConfigKey } from '../src/Config';
+import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
+import { OperationStore } from '../src/OperationStore';
 import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
+import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -111,15 +114,18 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
-describe('OperationProessor', async () => {
+describe('OperationProcessor', async () => {
   initializeProtocol('protocol-test.json');
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
-  const didMethodName = 'did:sidetree:';
 
   let cas = new MockCas();
-  let operationProcessor = createOperationProcessor(cas, didMethodName);
+  const configFile = require('../json/config-test.json');
+  const config = new Config(configFile);
+  const didMethodName = config[ConfigKey.DidMethodName];
+  let operationProcessor: OperationProcessor;
+  let operationStore: OperationStore;
   let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
@@ -129,16 +135,18 @@ describe('OperationProessor', async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
-    operationProcessor = createOperationProcessor(cas, didMethodName); // TODO: add a clear method to avoid double initialization.
+    operationStore = new MockOperationStoreImpl();
+    operationProcessor = createOperationProcessor(config, operationStore); // TODO: add a clear method to avoid double initialization.
+    await operationProcessor.initialize(false);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     const createOpHash = createOp.getOperationHash();
-    await operationProcessor.process(createOp);
     did = didMethodName + createOpHash;
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
+    await operationProcessor.processBatch([createOp!]);
     const didDocument = await operationProcessor.resolve(did);
 
     // TODO: can we get the raw json from did? if so, we can write a better test.
@@ -154,7 +162,7 @@ describe('OperationProessor', async () => {
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.process(ops[i]);
+      await operationProcessor.processBatch([ops[i]]);
     }
 
     const didDocument = await operationProcessor.resolve(did);
@@ -170,7 +178,7 @@ describe('OperationProessor', async () => {
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
-      await operationProcessor.process(ops[i]);
+      await operationProcessor.processBatch([ops[i]]);
     }
     const didDocument = await operationProcessor.resolve(did);
     expect(didDocument).toBeDefined();
@@ -185,15 +193,15 @@ describe('OperationProessor', async () => {
     const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
-    const numberOfPermutations = getFactorial(numberOfOps);
+    let numberOfPermutations = getFactorial(numberOfOps);
+
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
-      operationProcessor = createOperationProcessor(cas, 'did:sidetree:'); // Reset
-
-      for (let i = 0 ; i < numberOfOps ; ++i) {
-        const opIdx = permutation[i];
-        await operationProcessor.process(ops[opIdx]);
-      }
+      operationStore = new MockOperationStoreImpl();
+      operationProcessor = createOperationProcessor(config, operationStore); // Reset
+      await operationProcessor.initialize(false);
+      const permutedOps = permutation.map(i => ops[i]);
+      await operationProcessor.processBatch(permutedOps);
       const didDocument = await operationProcessor.resolve(did);
       expect(didDocument).toBeDefined();
       const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
@@ -214,7 +222,7 @@ describe('OperationProessor', async () => {
     const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
 
     // Trigger processing of the operation.
-    await operationProcessor.process(createOperation);
+    await operationProcessor.processBatch([createOperation]);
     const did = didMethodName + createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
