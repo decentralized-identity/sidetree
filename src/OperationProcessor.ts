@@ -63,14 +63,6 @@ class OperationProcessorImpl implements OperationProcessor {
   }
 
   /**
-   * Processes a specified DID state changing operation. Simply store
-   * the operation in the store.
-   */
-  public async process (operation: Operation): Promise<void> {
-    return this.operationStore.put(operation);
-  }
-
-  /**
    * Process a batch of operations. Simply store the operations in the
    * store.
    */
