@@ -49,7 +49,6 @@ describe('RequestHandler', () => {
     rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
     operationStore = new MockOperationStoreImpl();
     operationProcessor = createOperationProcessor(config, operationStore);
-    await operationProcessor.initialize();
 
     requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);
 

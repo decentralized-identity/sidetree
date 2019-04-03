@@ -55,18 +55,18 @@ app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
 
-const port = config[ConfigKey.Port];
-operationProcessor.initialize()
+operationStore.initialize()
 .then(() => {
   return observer.startPeriodicProcessing();
 })
 .then(() => {
+  const port = config[ConfigKey.Port];
   app.listen(port, () => {
     console.log(`Sidetree node running on port: ${port}`);
   });
 })
 .catch((e) => {
-  console.log(`Operation processor initialization failed with error ${e}`);
+  console.log(`Sidetree node initialization failed with error ${e}`);
 });
 
 /**

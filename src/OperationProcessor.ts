@@ -17,13 +17,6 @@ export class OperationProcessor {
   }
 
   /**
-   * Initialize the operation processor.
-   */
-  public async initialize () {
-    await this.operationStore.initialize();
-  }
-
-  /**
    * Process a batch of operations. Simply store the operations in the
    * store.
    */
