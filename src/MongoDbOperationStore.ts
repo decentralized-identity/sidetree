@@ -8,7 +8,7 @@ import { OperationStore } from './OperationStore';
  */
 interface MongoOperation {
   didUniqueSuffix: string;
-  operationBufferBase64: string;
+  operationBuffer: Buffer;
   operationIndex: number;
   transactionNumber: number;
   transactionTime: number;
@@ -89,12 +89,9 @@ export class MongoDbOperationStore implements OperationStore {
    * information to reconstruct the original operation.
    */
   private static convertToMongoOperation (operation: Operation): MongoOperation {
-    // Convert the operation buffer to string (mongo read-write not handled seamlessly for buffer types)
-    const operationBufferBase64Encoding = operation.operationBuffer.toString('base64');
-
     return {
       didUniqueSuffix: operation.getDidUniqueSuffix(),
-      operationBufferBase64: operationBufferBase64Encoding,
+      operationBuffer: operation.operationBuffer,
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
       transactionTime: operation.transactionTime!,
@@ -107,10 +104,8 @@ export class MongoDbOperationStore implements OperationStore {
    * Inverse of convertToMongoOperation() method above.
    */
   private static convertToOperation (mongoOperation: MongoOperation): Operation {
-    const operationBuffer: Buffer = Buffer.from(mongoOperation.operationBufferBase64, 'base64');
-
     return Operation.create(
-      operationBuffer,
+      mongoOperation.operationBuffer,
       {
         transactionNumber: mongoOperation.transactionNumber,
         transactionTime: mongoOperation.transactionTime,
