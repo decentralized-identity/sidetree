@@ -48,14 +48,6 @@ export class MongoDbOperationStore implements OperationStore {
   }
 
   /**
-   * Implement OperationStore.put.
-   */
-  public async put (operation: Operation): Promise<void> {
-    const mongoOperation = MongoDbOperationStore.convertToMongoOperation(operation);
-    await this.collection!.insertOne(mongoOperation);
-  }
-
-  /**
    * Implement OperationStore.putBatch
    */
   public async putBatch (operations: Array<Operation>): Promise<void> {

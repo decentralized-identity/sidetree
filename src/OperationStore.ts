@@ -9,11 +9,6 @@ import { MongoDbOperationStore } from './MongoDbOperationStore';
 export interface OperationStore {
 
   /**
-   * Store an operation.
-   */
-  put (operation: Operation): Promise<void>;
-
-  /**
    * Store a batch of operations
    */
   putBatch (operations: Array<Operation>): Promise<void>;

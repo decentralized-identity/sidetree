@@ -86,7 +86,7 @@ describe('OperationStore', async () => {
 
   it('should get a put create operation', async () => {
     const operation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    await operationStore.put(operation);
+    await operationStore.putBatch([operation]);
     const returnedOperations = Array.from(await operationStore.get(operation.getDidUniqueSuffix()));
 
     expect(returnedOperations.length).toEqual(1);
@@ -108,7 +108,7 @@ describe('OperationStore', async () => {
     const did = didMethodName + createOperation.getDidUniqueSuffix();
     const createVersion = createOperation.getOperationHash();
     const updateOperation = await constructAnchoredUpdateOperation(privateKey, did, createVersion, 1, 1, 0, 1);
-    await operationStore.put(updateOperation);
+    await operationStore.putBatch([updateOperation]);
     const returnedOperations = Array.from(await operationStore.get(createOperation.getDidUniqueSuffix()));
 
     expect(returnedOperations.length).toEqual(1);
