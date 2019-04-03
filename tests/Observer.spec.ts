@@ -31,7 +31,6 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
     operationStore = new MockOperationStoreImpl();
     operationProcessor = createOperationProcessor(config, operationStore);
-    await operationProcessor.initialize();
 
     downloadManager.start();
   });

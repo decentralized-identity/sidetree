@@ -9,12 +9,6 @@ import { MongoDbOperationStore } from './MongoDbOperationStore';
 export interface OperationStore {
 
   /**
-   * Initialize the operation store. This method
-   * is called once before any of the operations below.
-   */
-  initialize (): Promise<void>;
-
-  /**
    * Store an operation.
    */
   put (operation: Operation): Promise<void>;
@@ -36,12 +30,11 @@ export interface OperationStore {
    * provided parameter.
    */
   delete (transactionNumber?: number): Promise<void>;
-
 }
 
 /**
  * Factory function to create an operation store
  */
-export function createOperationStore (config: Config): OperationStore {
+export function createOperationStore (config: Config): MongoDbOperationStore {
   return new MongoDbOperationStore(config);
 }

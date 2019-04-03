@@ -35,12 +35,6 @@ export class MockOperationStoreImpl implements OperationStore {
   private readonly emptyOperationsArray: Array<Operation> = new Array();
 
   /**
-   * Initialize the operation store. The implementation
-   * is a no op for in-memory operation store.
-   */
-  public async initialize () { return; }
-
-  /**
    * Implements OperationStore.put().
    */
   public async put (operation: Operation): Promise<void> {
