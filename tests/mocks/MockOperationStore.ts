@@ -35,9 +35,9 @@ export class MockOperationStoreImpl implements OperationStore {
   private readonly emptyOperationsArray: Array<Operation> = new Array();
 
   /**
-   * Implements OperationStore.put().
+   * Inserts an operation into the in-memory store.
    */
-  public async put (operation: Operation): Promise<void> {
+  private async put (operation: Operation): Promise<void> {
     const didUniqueSuffix = operation.getDidUniqueSuffix();
 
     this.ensureDidEntriesExist(didUniqueSuffix);
