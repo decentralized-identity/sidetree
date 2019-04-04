@@ -1,5 +1,5 @@
+import { Binary, Collection, MongoClient } from 'mongodb';
 import { Config, ConfigKey } from './Config';
-import { Collection, MongoClient } from 'mongodb';
 import { Operation } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -8,7 +8,7 @@ import { OperationStore } from './OperationStore';
  */
 interface MongoOperation {
   didUniqueSuffix: string;
-  operationBuffer: Buffer;
+  operationBufferBsonBinary: Binary;
   operationIndex: number;
   transactionNumber: number;
   transactionTime: number;
@@ -91,7 +91,7 @@ export class MongoDbOperationStore implements OperationStore {
   private static convertToMongoOperation (operation: Operation): MongoOperation {
     return {
       didUniqueSuffix: operation.getDidUniqueSuffix(),
-      operationBuffer: operation.operationBuffer,
+      operationBufferBsonBinary: new Binary(operation.operationBuffer),
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
       transactionTime: operation.transactionTime!,
@@ -105,7 +105,7 @@ export class MongoDbOperationStore implements OperationStore {
    */
   private static convertToOperation (mongoOperation: MongoOperation): Operation {
     return Operation.create(
-      mongoOperation.operationBuffer,
+      mongoOperation.operationBufferBsonBinary.buffer,
       {
         transactionNumber: mongoOperation.transactionNumber,
         transactionTime: mongoOperation.transactionTime,
