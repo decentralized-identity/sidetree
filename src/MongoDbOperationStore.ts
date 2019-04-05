@@ -1,5 +1,4 @@
 import { Binary, Collection, MongoClient } from 'mongodb';
-import { Config, ConfigKey } from './Config';
 import { Operation } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -19,13 +18,10 @@ interface MongoOperation {
  * Implementation of OperationStore that stores the operation data in
  * a MongoDB database.
  */
-export class MongoDbOperationStore implements OperationStore {
-  private serverUrl: string;
+export default class MongoDbOperationStore implements OperationStore {
   private collection: Collection<any> | undefined;
 
-  constructor (config: Config) {
-    this.serverUrl = config[ConfigKey.OperationStoreUri];
-  }
+  constructor (private serverUrl: string) { }
 
   /**
    * Initialize the MongoDB operation store.

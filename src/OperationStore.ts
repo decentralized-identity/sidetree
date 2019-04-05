@@ -1,6 +1,4 @@
-import { Config } from './Config';
 import { Operation } from './Operation';
-import { MongoDbOperationStore } from './MongoDbOperationStore';
 
 /**
  * An abstraction of a complete store for operations exposing methods to
@@ -25,11 +23,4 @@ export interface OperationStore {
    * provided parameter.
    */
   delete (transactionNumber?: number): Promise<void>;
-}
-
-/**
- * Factory function to create an operation store
- */
-export function createOperationStore (config: Config): MongoDbOperationStore {
-  return new MongoDbOperationStore(config);
 }

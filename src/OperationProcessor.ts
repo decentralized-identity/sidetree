@@ -1,6 +1,5 @@
 import * as Protocol from './Protocol';
 import Document, { IDocument } from './lib/Document';
-import { Config, ConfigKey } from './Config';
 import { Operation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -10,11 +9,9 @@ import { OperationStore } from './OperationStore';
  * All 'processing' is deferred to resolve time, with process()
  * simply storing the operation in the store.
  */
-export class OperationProcessor {
+export default class OperationProcessor {
 
-  public constructor (private didMethodName: string, private operationStore: OperationStore) {
-
-  }
+  public constructor (private didMethodName: string, private operationStore: OperationStore) { }
 
   /**
    * Process a batch of operations. Simply store the operations in the
@@ -139,11 +136,4 @@ export class OperationProcessor {
     const protocolVersion = Protocol.getProtocol(createOperation.transactionTime!);
     return Document.from(createOperation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
   }
-}
-
-/**
- * Factory function for creating a operation processor
- */
-export function createOperationProcessor (config: Config, operationStore: OperationStore): OperationProcessor {
-  return new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 }

@@ -23,7 +23,7 @@ function compareOperation (op1: Operation, op2: Operation): number {
 /**
  * A simple in-memory implementation of operation store.
  */
-export class MockOperationStoreImpl implements OperationStore {
+export default class MockOperationStore implements OperationStore {
   // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
   private readonly didToOperations: Map<string, Array<Operation>> = new Map();
@@ -93,7 +93,7 @@ export class MockOperationStoreImpl implements OperationStore {
     // operations array. Remove leaves the original order intact so
     // we do not need to update didUpdatedSinceLastSort
     for (const [, didOps] of this.didToOperations) {
-      MockOperationStoreImpl.removeOperations(didOps, transactionNumber);
+      MockOperationStore.removeOperations(didOps, transactionNumber);
     }
   }
 

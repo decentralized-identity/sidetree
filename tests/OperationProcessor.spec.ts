@@ -2,14 +2,14 @@ import BatchFile from '../src/BatchFile';
 import Cryptography from '../src/lib/Cryptography';
 import Document from '../src/lib/Document';
 import MockCas from './mocks/MockCas';
+import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
+import OperationProcessor from '../src/OperationProcessor';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
 import { OperationStore } from '../src/OperationStore';
 import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
-import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -135,8 +135,8 @@ describe('OperationProcessor', async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
-    operationStore = new MockOperationStoreImpl();
-    operationProcessor = createOperationProcessor(config, operationStore); // TODO: add a clear method to avoid double initialization.
+    operationStore = new MockOperationStore();
+    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore); // TODO: add a clear method to avoid double initialization.
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -148,7 +148,6 @@ describe('OperationProcessor', async () => {
     await operationProcessor.processBatch([createOp!]);
     const didDocument = await operationProcessor.resolve(did);
 
-    // TODO: can we get the raw json from did? if so, we can write a better test.
     // This is a poor man's version based on public key properties
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
@@ -196,8 +195,8 @@ describe('OperationProcessor', async () => {
 
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
-      operationStore = new MockOperationStoreImpl();
-      operationProcessor = createOperationProcessor(config, operationStore); // Reset
+      operationStore = new MockOperationStore();
+      operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);
       const didDocument = await operationProcessor.resolve(did);
