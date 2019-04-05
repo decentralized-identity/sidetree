@@ -2,18 +2,19 @@ import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
 import Encoder from './Encoder';
 import MerkleTree from './lib/MerkleTree';
+import timeSpan = require('time-span');
 import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 
 /**
- * Class that performs periodic rooting of batches of Sidetree operations.
+ * Class that performs periodic writing of batches of Sidetree operations to CAS and blockchain.
  */
-export default class Rooter {
+export default class BatchWriter {
   private operations: Deque<Buffer> = new Deque<Buffer>();
 
   /**
-   * Flag indicating if the rooter is currently processing a batch of operations.
+   * Flag indicating if this Batch Writer is currently processing a batch of operations.
    */
   private processing: boolean = false;
 
@@ -40,23 +41,23 @@ export default class Rooter {
   /**
    * The function that starts periodically anchoring operation batches to blockchain.
    */
-  public startPeriodicRooting () {
-    setInterval(async () => this.rootOperations(), this.batchIntervalInSeconds * 1000);
+  public startPeriodicBatchWriting () {
+    setInterval(async () => this.writeOperationBatch(), this.batchIntervalInSeconds * 1000);
   }
 
   /**
    * Processes the operations in the queue.
    */
-  public async rootOperations () {
-    const startTime = process.hrtime(); // For calcuating time taken to root operations.
+  public async writeOperationBatch () {
+    const endTimer = timeSpan(); // For calcuating time taken to write operations.
 
-    // Wait until the next interval if the rooter is still processing a batch.
+    // Wait until the next interval if the Batch Writer is still processing a batch.
     if (this.processing) {
       return;
     }
 
     try {
-      console.info('Start batch rooting...');
+      console.info('Start batch writing...');
       this.processing = true;
 
       // Get the batch of operations to be anchored on the blockchain.
@@ -95,13 +96,12 @@ export default class Rooter {
       // Anchor the 'anchor file hash' on blockchain.
       await this.blockchain.write(anchorFileAddress);
     } catch (error) {
-      console.error('Unexpected and unhandled error during batch rooting, investigate and fix:');
+      console.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       console.error(error);
     } finally {
       this.processing = false;
 
-      const duration = process.hrtime(startTime);
-      console.info(`End batch rooting. Duration: ${duration[0]} s ${duration[1] / 1000000} ms.`);
+      console.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
     }
   }
 

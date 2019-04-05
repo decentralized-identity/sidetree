@@ -1,9 +1,9 @@
+import BatchWriter from './BatchWriter';
 import DownloadManager from './DownloadManager';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import Observer from './Observer';
 import OperationProcessor from './OperationProcessor';
 import RequestHandler from './RequestHandler';
-import Rooter from './Rooter';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
 import { Config, ConfigKey } from './Config';
@@ -28,14 +28,14 @@ export default class Core {
     const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
     const cas = new CasClient(config[ConfigKey.CasNodeUri]);
     const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-    const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+    const batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
     this.operationStore = new MongoDbOperationStore(config[ConfigKey.OperationStoreUri]);
     const operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], this.operationStore);
     this.observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
-    this.requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
+    this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config[ConfigKey.DidMethodName]);
 
     downloadManager.start();
-    rooter.startPeriodicRooting();
+    batchWriter.startPeriodicBatchWriting();
   }
 
   /**

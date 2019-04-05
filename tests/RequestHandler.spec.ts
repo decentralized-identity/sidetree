@@ -1,4 +1,5 @@
 import BatchFile from '../src/BatchFile';
+import BatchWriter from '../src/BatchWriter';
 import Cryptography from '../src/lib/Cryptography';
 import Did from '../src/lib/Did';
 import DidPublicKey from '../src/lib/DidPublicKey';
@@ -10,7 +11,6 @@ import Multihash from '../src/Multihash';
 import OperationGenerator from './generators/OperationGenerator';
 import OperationProcessor from '../src/OperationProcessor';
 import RequestHandler from '../src/RequestHandler';
-import Rooter from '../src/Rooter';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
 import { OperationStore } from '../src/OperationStore';
@@ -35,7 +35,7 @@ describe('RequestHandler', () => {
 
   const blockchain = new MockBlockchain();
   let cas: Cas;
-  let rooter: Rooter;
+  let batchWriter: BatchWriter;
   let operationStore: OperationStore;
   let operationProcessor;
   let requestHandler: RequestHandler;
@@ -48,11 +48,11 @@ describe('RequestHandler', () => {
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
     cas = new MockCas();
-    rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+    batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 
-    requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);
+    requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, didMethodName);
 
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
     const mockLatestTime = {
@@ -66,7 +66,7 @@ describe('RequestHandler', () => {
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
-    await rooter.rootOperations();
+    await batchWriter.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
     const batchBuffer = BatchFile.fromOperations([createOperationBuffer]).toBuffer();
@@ -99,10 +99,10 @@ describe('RequestHandler', () => {
 
   it('should handle create operation request.', async () => {
     const blockchainWriteSpy = spyOn(blockchain, 'write');
-    expect(rooter.getOperationQueueLength()).toEqual(1);
+    expect(batchWriter.getOperationQueueLength()).toEqual(1);
 
-    await rooter.rootOperations();
-    expect(rooter.getOperationQueueLength()).toEqual(0);
+    await batchWriter.writeOperationBatch();
+    expect(batchWriter.getOperationQueueLength()).toEqual(0);
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verfiy that CAS was invoked to store the batch file.
