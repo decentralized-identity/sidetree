@@ -135,7 +135,7 @@ export class BlockchainClient implements Blockchain {
     return transaction;
   }
 
-  // TODO: Consider caching strategy since this will be invoked very frequently, especially by the Rooter.
+  // TODO: Issue #161: Consider caching since this will be invoked for every operation and resolution requests.
   public async getLatestTime (): Promise<BlockchainTime> {
     const response = await this.fetch(this.timeUri);
 

@@ -1,10 +1,10 @@
 import * as Protocol from './Protocol';
+import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
 import Did from './lib/Did';
 import Document, { IDocument } from './lib/Document';
 import Multihash from './Multihash';
 import OperationProcessor from './OperationProcessor';
-import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
 import { Operation, OperationType } from './Operation';
@@ -15,7 +15,11 @@ import { IResponse, ResponseStatus } from './Response';
  */
 export default class RequestHandler {
 
-  public constructor (private operationProcessor: OperationProcessor, private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
+  public constructor (
+    private operationProcessor: OperationProcessor,
+    private blockchain: Blockchain,
+    private batchWriter: BatchWriter,
+    private didMethodName: string) {
   }
 
   /**
@@ -75,7 +79,7 @@ export default class RequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        this.rooter.add(request);
+        this.batchWriter.add(request);
       }
 
       return response;
@@ -246,7 +250,7 @@ export default class RequestHandler {
 
   /**
    * Simulates an Update operation without actually commiting the state change.
-   * This method is used to sanity validate an write-operation request before it is batched for rooting.
+   * This method is used to sanity validate a write-operation request before it is queued for batch-writing.
    * NOTE: This method is intentionally not placed within Operation Processor because:
    * 1. This avoids to create yet another interface method.
    * 2. It is more appropriate to think of this method a higher-layer logic that uses the building blocks exposed by the Operation Processor.
