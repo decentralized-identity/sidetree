@@ -1,13 +1,13 @@
 import * as retry from 'async-retry';
 import * as fetchMock from 'fetch-mock';
 import DownloadManager from '../src/DownloadManager';
+import MockOperationStore from './mocks/MockOperationStore';
 import Observer from '../src/Observer';
+import OperationProcessor from '../src/OperationProcessor';
 import { BlockchainClient } from '../src/Blockchain';
 import { CasClient } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
 import { OperationStore } from '../src/OperationStore';
-import { MockOperationStoreImpl } from './mocks/MockOperationStore';
 import { Response } from 'node-fetch';
 import { Readable } from 'readable-stream';
 
@@ -29,8 +29,8 @@ describe('Observer', async () => {
     mockCasFetch = fetchMock.sandbox().get('*', 404); // Setting the CAS to always return 404.
     cas = new CasClient(config[ConfigKey.CasNodeUri], mockCasFetch);
     downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-    operationStore = new MockOperationStoreImpl();
-    operationProcessor = createOperationProcessor(config, operationStore);
+    operationStore = new MockOperationStore();
+    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 
     downloadManager.start();
   });

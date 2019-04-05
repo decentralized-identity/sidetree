@@ -6,19 +6,19 @@ import Encoder from '../src/Encoder';
 import Logger from '../src/lib/Logger';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
+import MockOperationStore from './mocks/MockOperationStore';
 import Multihash from '../src/Multihash';
 import OperationGenerator from './generators/OperationGenerator';
+import OperationProcessor from '../src/OperationProcessor';
 import RequestHandler from '../src/RequestHandler';
 import Rooter from '../src/Rooter';
 import { Cas } from '../src/Cas';
 import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor } from '../src/OperationProcessor';
 import { OperationStore } from '../src/OperationStore';
 import { IDocument } from '../src/lib/Document';
 import { getProtocol, initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
-import { toHttpStatus } from '../src/Response';
-import { MockOperationStoreImpl } from './mocks/MockOperationStore';
+import { Response } from '../src/Response';
 
 describe('RequestHandler', () => {
   initializeProtocol('protocol-test.json');
@@ -47,8 +47,8 @@ describe('RequestHandler', () => {
   beforeEach(async () => {
     cas = new MockCas();
     rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-    operationStore = new MockOperationStoreImpl();
-    operationProcessor = createOperationProcessor(config, operationStore);
+    operationStore = new MockOperationStore();
+    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 
     requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);
 
@@ -84,7 +84,7 @@ describe('RequestHandler', () => {
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     const currentBlockchainTime = await blockchain.getLatestTime();
     did = Did.from(createOperation.encodedPayload, didMethodName, getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
@@ -120,7 +120,7 @@ describe('RequestHandler', () => {
 
     const createRequest = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     const response = await requestHandler.handleOperationRequest(createRequest);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(400);
@@ -128,7 +128,7 @@ describe('RequestHandler', () => {
 
   it('should return a resolved DID Document given a known DID.', async () => {
     const response = await requestHandler.handleResolveRequest(did);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
@@ -147,7 +147,7 @@ describe('RequestHandler', () => {
     const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
     const expectedDid = didMethodName + Encoder.encode(documentHash);
     const response = await requestHandler.handleResolveRequest(didMethodName + encodedOriginalDidDocument);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
@@ -156,7 +156,7 @@ describe('RequestHandler', () => {
 
   it('should return NotFound given an unknown DID.', async () => {
     const response = await requestHandler.handleResolveRequest('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg');
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(404);
     expect(response.body).toBeUndefined();
@@ -164,7 +164,7 @@ describe('RequestHandler', () => {
 
   it('should return BadRequest given a malformed DID.', async () => {
     const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
     expect(response.body).toBeUndefined();
@@ -173,7 +173,7 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
     const request = await OperationGenerator.generateDeleteOperation(did);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
   });
@@ -181,7 +181,7 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
     const request = await OperationGenerator.generateDeleteOperation(didMethodName + 'nonExistentDid');
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
     expect(response.body.errorCode).toEqual('did_not_found');
@@ -204,7 +204,7 @@ describe('RequestHandler', () => {
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
 
@@ -229,7 +229,7 @@ describe('RequestHandler', () => {
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
     expect(response.body.errorCode).toEqual('did_not_found');

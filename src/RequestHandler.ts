@@ -3,12 +3,12 @@ import Encoder from './Encoder';
 import Did from './lib/Did';
 import Document, { IDocument } from './lib/Document';
 import Multihash from './Multihash';
+import OperationProcessor from './OperationProcessor';
 import Rooter from './Rooter';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
-import { OperationProcessor } from './OperationProcessor';
 import { Operation, OperationType } from './Operation';
-import { Response, ResponseStatus } from './Response';
+import { IResponse, ResponseStatus } from './Response';
 
 /**
  * Sidetree operation request handler.
@@ -21,7 +21,7 @@ export default class RequestHandler {
   /**
    * Handles an operation request.
    */
-  public async handleOperationRequest (request: Buffer): Promise<Response> {
+  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
     let protocol;
     try {
       // Get the protocol version according to current blockchain time to validate the operation request.
@@ -55,7 +55,7 @@ export default class RequestHandler {
 
     try {
       // Passed common operation validation, hand off to specific operation handler.
-      let response: Response;
+      let response: IResponse;
       switch (operation.type) {
         case OperationType.Create:
           response = await this.handleCreateOperation(operation);
@@ -92,7 +92,7 @@ export default class RequestHandler {
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  public async handleResolveRequest (didOrDidDocument: string): Promise<Response> {
+  public async handleResolveRequest (didOrDidDocument: string): Promise<IResponse> {
     if (!didOrDidDocument.startsWith(this.didMethodName)) {
       return {
         status: ResponseStatus.BadRequest
@@ -120,7 +120,7 @@ export default class RequestHandler {
     }
   }
 
-  private async handleResolveRequestWithDid (did: string): Promise<Response> {
+  private async handleResolveRequestWithDid (did: string): Promise<IResponse> {
     const didDocument = await this.operationProcessor.resolve(did);
 
     if (!didDocument) {
@@ -135,7 +135,7 @@ export default class RequestHandler {
     };
   }
 
-  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<Response> {
+  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
     const protocolVersion = Protocol.getProtocol(currentTime.time);
@@ -172,7 +172,7 @@ export default class RequestHandler {
   /**
    * Handles create operation.
    */
-  public async handleCreateOperation (operation: Operation): Promise<Response> {
+  public async handleCreateOperation (operation: Operation): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
     const protocolVersion = Protocol.getProtocol(currentTime.time);
@@ -195,7 +195,7 @@ export default class RequestHandler {
   /**
    * Handles update operation.
    */
-  public async handleUpdateOperation (operation: Operation): Promise<Response> {
+  public async handleUpdateOperation (operation: Operation): Promise<IResponse> {
     // TODO: Assert that operation is well-formed once the code reaches here.
     // ie. Need to make sure invalid patch, missing operation number, etc will cause Operation creation failure.
 
@@ -223,7 +223,7 @@ export default class RequestHandler {
   /**
    * Handles update operation.
    */
-  public async handleDeleteOperation (operation: Operation): Promise<Response> {
+  public async handleDeleteOperation (operation: Operation): Promise<IResponse> {
     // TODO: Assert that operation is well-formed once the code reaches here.
 
     try {

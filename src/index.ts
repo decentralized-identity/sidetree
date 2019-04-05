@@ -1,34 +1,17 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import DownloadManager from './DownloadManager';
-import Observer from './Observer';
-import RequestHandler from './RequestHandler';
-import Rooter from './Rooter';
-import { BlockchainClient } from './Blockchain';
-import { CasClient } from './Cas';
+import Core from './Core';
 import { Config, ConfigKey } from './Config';
-import { createOperationProcessor } from './OperationProcessor';
-import { createOperationStore } from './OperationStore';
 import { initializeProtocol } from './Protocol';
-import { toHttpStatus, Response } from './Response';
+import { IResponse, Response } from './Response';
 
-// Component dependency initialization & injection.
 initializeProtocol('protocol.json');
 const configFile = require('../json/config.json');
 const config = new Config(configFile);
-const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
-const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-const operationStore = createOperationStore(config);
-const operationProcessor = createOperationProcessor(config, operationStore);
-const rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-const observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
-const requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, config[ConfigKey.DidMethodName]);
 
+const sidetreeCore = new Core(config);
 const app = new Koa();
-downloadManager.start();
-rooter.startPeriodicRooting();
 
 // Raw body parser.
 app.use(async (ctx, next) => {
@@ -38,12 +21,12 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 router.post('/', async (ctx, _next) => {
-  const response = await requestHandler.handleOperationRequest(ctx.body);
+  const response = await sidetreeCore.requestHandler.handleOperationRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 
 router.get('/:didOrDidDocument', async (ctx, _next) => {
-  const response = await requestHandler.handleResolveRequest(ctx.params.didOrDidDocument);
+  const response = await sidetreeCore.requestHandler.handleResolveRequest(ctx.params.didOrDidDocument);
   setKoaResponse(response, ctx.response);
 });
 
@@ -55,10 +38,7 @@ app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
 
-operationStore.initialize()
-.then(() => {
-  return observer.startPeriodicProcessing();
-})
+sidetreeCore.initialize()
 .then(() => {
   const port = config[ConfigKey.Port];
   app.listen(port, () => {
@@ -72,8 +52,8 @@ operationStore.initialize()
 /**
  * Sets the koa response according to the Sidetree response object given.
  */
-const setKoaResponse = (response: Response, koaResponse: Koa.Response) => {
-  koaResponse.status = toHttpStatus(response.status);
+const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
+  koaResponse.status = Response.toHttpStatus(response.status);
 
   if (response.body) {
     koaResponse.set('Content-Type', 'application/json');
@@ -82,4 +62,17 @@ const setKoaResponse = (response: Response, koaResponse: Koa.Response) => {
     // Need to set the body explicitly to empty string, else koa will echo the request as the response.
     koaResponse.body = '';
   }
+};
+
+// Creating aliases to classes and interfaces used for external consumption.
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import SidetreeCore, {
+  IResponse as ISidetreeResponse,
+  Response as SidetreeResponse
+} from './Response';
+
+export default SidetreeCore;
+export {
+  ISidetreeResponse,
+  SidetreeResponse
 };

@@ -1,6 +1,7 @@
 import DownloadManager from './DownloadManager';
 import Encoder from './Encoder';
 import Logger from './lib/Logger';
+import OperationProcessor from './OperationProcessor';
 import timeSpan = require('time-span');
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
@@ -8,7 +9,6 @@ import { ErrorCode, SidetreeError } from './Error';
 import { getProtocol } from './Protocol';
 import { InMemoryTransactionStore } from './TransactionStore';
 import { Operation } from './Operation';
-import { OperationProcessor } from './OperationProcessor';
 
 /**
  * The state of a transaction that is being processed.
