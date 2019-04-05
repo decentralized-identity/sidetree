@@ -3,7 +3,6 @@ import Cryptography from '../src/lib/Cryptography';
 import Did from '../src/lib/Did';
 import DidPublicKey from '../src/lib/DidPublicKey';
 import Encoder from '../src/Encoder';
-import Logger from '../src/lib/Logger';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
 import MockOperationStore from './mocks/MockOperationStore';
@@ -22,7 +21,10 @@ import { Response } from '../src/Response';
 
 describe('RequestHandler', () => {
   initializeProtocol('protocol-test.json');
-  Logger.suppressLogging(true);
+
+  // Surpress console logging during dtesting so we get a compact test summary in console.
+  console.info = () => { return; };
+  console.error = () => { return; };
 
   const configFile = require('../json/config-test.json');
   const config = new Config(configFile);

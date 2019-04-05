@@ -2,7 +2,6 @@ import Cryptography from './lib/Cryptography';
 import Did from './lib/Did';
 import Document, { IDocument } from './lib/Document';
 import Encoder from './Encoder';
-import Logger from './lib/Logger';
 import Multihash from './Multihash';
 import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
@@ -302,13 +301,13 @@ class Operation {
       }
 
       if (!payloadSchemaIsValid) {
-        Logger.info(`${OperationType[operationType]} payload failed schema validation: ${decodedPayloadJson}`);
+        console.info(`${OperationType[operationType]} payload failed schema validation: ${decodedPayloadJson}`);
         return undefined;
       }
 
       return [operationType, decodedPayload];
     } catch (error) {
-      Logger.info(`Operation failed schema validation: ${JSON.stringify(operation)}`);
+      console.info(`Operation failed schema validation: ${JSON.stringify(operation)}`);
       return undefined;
     }
   }
