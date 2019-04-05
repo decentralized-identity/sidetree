@@ -194,11 +194,9 @@ class Operation {
   }
 
   /**
-   * Gets a cryptographic hash of the operation.
-   * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
-   * for all other cases, the hash is calculated against the entire opeartion buffer.
+   * Gets a cryptographic hash of the operation payload.
    */
-  getOperationHash (): string {
+  public getOperationHash (): string {
     if (this.transactionTime === undefined) {
       throw new Error(`Transaction time not given but needed for hash algorithm selection.`);
     }
@@ -206,14 +204,8 @@ class Operation {
     // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
     const protocol = getProtocol(this.transactionTime);
 
-    let contentBuffer;
-    if (this.type === OperationType.Create) {
-      contentBuffer = Buffer.from(this.encodedPayload);
-    } else {
-      contentBuffer = this.operationBuffer;
-    }
-
-    const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
+    const encodedOperationPayloadBuffer = Buffer.from(this.encodedPayload);
+    const multihash = Multihash.hash(encodedOperationPayloadBuffer, protocol.hashAlgorithmInMultihashCode);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }
