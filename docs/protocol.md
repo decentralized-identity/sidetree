@@ -14,19 +14,20 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 # Terminology
 
-| Term           | Description                                                                    |
-|----------------|--------------------------------------------------------------------------------|
-| Anchor file    | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file     | The file containing all the operation data batched together.                   |
-| CAS            | Same as DCAS.                                                                  |
-| DCAS           | Distributed content-addressable storage.                                       |
-| DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
-| Operation      | A change to a DID Document.                                                    |
-| Operation hash | The hash of the JSON-formatted request of a Sidetree operation.                |
-| Original DID Document | A DID Document that is used in create operation to generate the DID.    |
-| Recovery key   | A key that is used to perform recovery or delete operation.                    |
-| Sidetree node  | A logical server executing Sidetree protocol rules.                            |
-| Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
+| Term                  | Description                                                                    |
+|-----------------------|--------------------------------------------------------------------------------|
+| Anchor file           | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
+| Batch file            | The file containing all the operation data batched together.                   |
+| CAS                   | Same as DCAS.                                                                  |
+| DCAS                  | Distributed content-addressable storage.                                       |
+| DID Document          | A document containing metadata of a DID, see [DID specification](https://w3c-ccg.github.io/did-spec/). |
+| Operation             | A change to a DID Document.                                                    |
+| Operation hash        | The hash of the encoded payload of an _operation request_.                     |
+| Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
+| Original DID Document | A DID Document that is used in create operation to generate the DID.           |
+| Recovery key          | A key that is used to perform recovery or delete operation.                    |
+| Sidetree node         | A logical server executing Sidetree protocol rules.                            |
+| Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
 
 
 # Format and Encoding
