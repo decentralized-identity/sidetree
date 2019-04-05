@@ -1,6 +1,5 @@
 import DownloadManager from './DownloadManager';
 import Encoder from './Encoder';
-import Logger from './lib/Logger';
 import OperationProcessor from './OperationProcessor';
 import timeSpan = require('time-span');
 import Transaction, { ResolvedTransaction } from './Transaction';
@@ -66,7 +65,7 @@ export default class Observer {
     // Initialize the last known transaction before starting processing.
     this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
 
-    Logger.info(`Starting periodic transactions processing.`);
+    console.info(`Starting periodic transactions processing.`);
     setImmediate(async () => {
       this.continuePeriodicProcessing = true;
 
@@ -80,7 +79,7 @@ export default class Observer {
    * Mainly used for test purposes.
    */
   public stopPeriodicProcessing () {
-    Logger.info(`Stopped periodic transactions processing.`);
+    console.info(`Stopped periodic transactions processing.`);
     this.continuePeriodicProcessing = false;
   }
 
@@ -112,13 +111,13 @@ export default class Observer {
         let readResult;
         const endTimer = timeSpan(); // Measure time taken to go blockchain read.
         try {
-          Logger.info('Fetching Sidetree transactions from blockchain service...');
+          console.info('Fetching Sidetree transactions from blockchain service...');
           readResult = await this.blockchain.read(lastKnownTransactionNumber, lastKnownTransactionTimeHash);
-          Logger.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
+          console.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
         } catch (error) {
           // If block reorganization (temporary fork) has happened.
           if (error instanceof SidetreeError && error.errorCode === ErrorCode.InvalidTransactionNumberOrTimeHash) {
-            Logger.info(`Block reorganization detected.`);
+            console.info(`Block reorganization detected.`);
             blockReorganizationDetected = true;
             moreTransactions = true;
           } else {
@@ -143,12 +142,12 @@ export default class Observer {
         // If block reorg is detected, we must wait until no more operation processing is pending,
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
-          Logger.info(`Block reorganization detected.`);
+          console.info(`Block reorganization detected.`);
           await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(0);
 
-          Logger.info(`Reverting invalid transactions...`);
+          console.info(`Reverting invalid transactions...`);
           await this.RevertInvalidTransactions();
-          Logger.info(`Completed reverting invalid transactions.`);
+          console.info(`Completed reverting invalid transactions.`);
         } else {
           // Else it means transaction fetch was successful:
           // We hold off from fetching more transactions if the list of transactions under processing gets too long.
@@ -165,16 +164,16 @@ export default class Observer {
       } while (moreTransactions);
 
       await this.storeConsecutiveTransactionsProcessed();
-      Logger.info('Successfully kicked off downloading/processing of all new Sidetree transactions.');
+      console.info('Successfully kicked off downloading/processing of all new Sidetree transactions.');
 
       // Continue onto processing unresolvable transactions if any.
       await this.processUnresolvableTransactions();
     } catch (error) {
-      Logger.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
-      Logger.error(error);
+      console.error(`Encountered unhandled and possibly fatal Observer error, must investigate and fix:`);
+      console.error(error);
     } finally {
       if (this.continuePeriodicProcessing) {
-        Logger.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
+        console.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
         setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
       }
     }
@@ -198,7 +197,7 @@ export default class Observer {
   private async processUnresolvableTransactions () {
     const endTimer = timeSpan();
     const unresolvableTransactions = await this.transactionStore.getUnresolvableTransactionsToRetry();
-    Logger.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
+    console.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
 
     // Download and process each unresolvable transactions.
     const unresolvableTransactionStatus = [];
@@ -253,7 +252,7 @@ export default class Observer {
     let retryNeeded = false;
 
     try {
-      Logger.info(`Downloading anchor file '${transaction.anchorFileHash}'...`);
+      console.info(`Downloading anchor file '${transaction.anchorFileHash}'...`);
       const anchorFileBuffer = await this.downloadManager.download(transaction.anchorFileHash);
 
       if (anchorFileBuffer === undefined) {
@@ -270,7 +269,7 @@ export default class Observer {
         return;
       }
 
-      Logger.info(`Downloading batch file '${anchorFile.batchFileHash}'...`);
+      console.info(`Downloading batch file '${anchorFile.batchFileHash}'...`);
       const batchFileBuffer = await this.downloadManager.download(anchorFile.batchFileHash);
 
       if (batchFileBuffer === undefined) {
@@ -288,9 +287,9 @@ export default class Observer {
       };
 
       await this.processResolvedTransaction(resolvedTransaction, batchFileBuffer);
-    } catch (e) {
-      Logger.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
-      Logger.error(e);
+    } catch (error) {
+      console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
+      console.error(error);
       retryNeeded = true;
     } finally {
       transactionUnderProcessing.processingStatus = TransactionProcessingStatus.Processsed;
@@ -309,7 +308,7 @@ export default class Observer {
     try {
       let endTimer = timeSpan();
       const batchFile = JSON.parse(batchFileBuffer.toString());
-      Logger.info(`Parsed batch file ${resolvedTransaction.batchFileHash} in ${endTimer.rounded()} ms.`);
+      console.info(`Parsed batch file ${resolvedTransaction.batchFileHash} in ${endTimer.rounded()} ms.`);
 
       // Verify the number of operations does not exceed the maximum allowed limit.
       const protocol = getProtocol(resolvedTransaction.transactionTime);
@@ -331,19 +330,19 @@ export default class Observer {
         try {
           operation = Operation.create(operationBuffer, resolvedTransaction, operationIndex);
         } catch (error) {
-          Logger.info(`Unable to create an operation with '${operationBuffer}': ${error}`);
+          console.info(`Unable to create an operation with '${operationBuffer}': ${error}`);
           throw error;
         }
 
         operations.push(operation);
         operationIndex++;
       }
-      Logger.info(`Decoded ${operations.length} operations in batch ${resolvedTransaction.batchFileHash}. Time taken: ${endTimer.rounded()} ms.`);
+      console.info(`Decoded ${operations.length} operations in batch ${resolvedTransaction.batchFileHash}. Time taken: ${endTimer.rounded()} ms.`);
 
       // Ensure the batch meets proof-of-work requirements.
       this.verifyProofOfWork(operations);
     } catch {
-      Logger.info(`Batch file '${resolvedTransaction.batchFileHash}' failed validation, transaction ignored.`);
+      console.info(`Batch file '${resolvedTransaction.batchFileHash}' failed validation, transaction ignored.`);
       return; // Invalid batch file, nothing to process.
     }
 
@@ -352,7 +351,7 @@ export default class Observer {
     for (const operation of operations) {
       await this.operationProcessor.processBatch([operation]);
     }
-    Logger.info(`Processed batch ${resolvedTransaction.batchFileHash} containing ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
+    console.info(`Processed batch ${resolvedTransaction.batchFileHash} containing ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
   }
 
   /**
@@ -367,10 +366,10 @@ export default class Observer {
       = await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
 
     const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
-    Logger.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
+    console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
 
     // Revert all processed operations that came after the best known valid recent transaction.
-    Logger.info('Reverting operations...');
+    console.info('Reverting operations...');
     await this.operationProcessor.rollback(bestKnownValidRecentTransactionNumber);
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.

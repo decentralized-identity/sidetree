@@ -1,5 +1,4 @@
 import * as HttpStatus from 'http-status';
-import Logger from './lib/Logger';
 import nodeFetch from 'node-fetch';
 
 /**
@@ -48,8 +47,8 @@ export class CasClient implements Cas {
     };
     const response = await this.fetch(this.uri, requestParameters);
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`CAS write error response status: ${response.status}`);
-      Logger.error(`CAS write error body: ${response.body.read()}`);
+      console.error(`CAS write error response status: ${response.status}`);
+      console.error(`CAS write error body: ${response.body.read()}`);
       throw new Error('Encountered an error writing content to CAS.');
     }
 
@@ -63,8 +62,8 @@ export class CasClient implements Cas {
     const queryUri = `${this.uri}/${address}`;
     const response = await this.fetch(queryUri);
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`CAS read error response status: ${response.status}`);
-      Logger.error(`CAS read error body: ${response.body.read()}`);
+      console.error(`CAS read error response status: ${response.status}`);
+      console.error(`CAS read error body: ${response.body.read()}`);
       throw new Error('Encountered an error reading content from CAS.');
     }
 

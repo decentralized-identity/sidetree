@@ -1,7 +1,6 @@
 import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
 import Encoder from './Encoder';
-import Logger from './lib/Logger';
 import MerkleTree from './lib/MerkleTree';
 import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
@@ -57,12 +56,12 @@ export default class Rooter {
     }
 
     try {
-      Logger.info('Start batch rooting...');
+      console.info('Start batch rooting...');
       this.processing = true;
 
       // Get the batch of operations to be anchored on the blockchain.
       const batch = await this.getBatch();
-      Logger.info('Batch size = ' + batch.length);
+      console.info('Batch size = ' + batch.length);
 
       // Do nothing if there is nothing to batch together.
       if (batch.length === 0) {
@@ -76,7 +75,7 @@ export default class Rooter {
 
       // Make the 'batch file' available in CAS.
       const batchFileHash = await this.cas.write(batchBuffer);
-      Logger.info(`Wrote batch file ${batchFileHash} to CAS.`);
+      console.info(`Wrote batch file ${batchFileHash} to CAS.`);
 
       // Compute the Merkle root hash.
       const merkleRoot = MerkleTree.create(batch).rootHash;
@@ -91,18 +90,18 @@ export default class Rooter {
       // Make the 'anchor file' available in CAS.
       const anchorFileJsonBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
-      Logger.info(`Wrote anchor file ${anchorFileAddress} to CAS.`);
+      console.info(`Wrote anchor file ${anchorFileAddress} to CAS.`);
 
       // Anchor the 'anchor file hash' on blockchain.
       await this.blockchain.write(anchorFileAddress);
     } catch (error) {
-      Logger.error('Unexpected and unhandled error during batch rooting, investigate and fix:');
-      Logger.error(error);
+      console.error('Unexpected and unhandled error during batch rooting, investigate and fix:');
+      console.error(error);
     } finally {
       this.processing = false;
 
       const duration = process.hrtime(startTime);
-      Logger.info(`End batch rooting. Duration: ${duration[0]} s ${duration[1] / 1000000} ms.`);
+      console.info(`End batch rooting. Duration: ${duration[0]} s ${duration[1] / 1000000} ms.`);
     }
   }
 
