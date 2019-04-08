@@ -1,5 +1,4 @@
 import Cryptography from './lib/Cryptography';
-import Did from './lib/Did';
 import Document, { IDocument } from './lib/Document';
 import Encoder from './Encoder';
 import Multihash from './Multihash';
@@ -60,8 +59,8 @@ class Operation {
   public readonly operationNumber?: Number;
   /** The encoded operation payload. */
   public readonly encodedPayload: string;
-  /** The DID of the DID document to be updated. */
-  public readonly did?: string;
+  /** The unique suffix of the DID of the DID document to be created/updated. */
+  public readonly didUniqueSuffix?: string;
   /** The type of operation. */
   public readonly type: OperationType;
   /** The hash of the previous operation - undefined for DID create operation */
@@ -127,15 +126,18 @@ class Operation {
     switch (this.type) {
       case OperationType.Create:
         this.operationNumber = 0;
+        if (this.transactionTime !== undefined) {
+          this.didUniqueSuffix = this.getOperationHash();
+        }
         break;
       case OperationType.Update:
         this.operationNumber = decodedPayload.operationNumber;
-        this.did = decodedPayload.did;
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.previousOperationHash = decodedPayload.previousOperationHash;
         this.patch = decodedPayload.patch;
         break;
       case OperationType.Delete:
-        this.did = decodedPayload.did;
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -178,19 +180,6 @@ class Operation {
     const jwsSigningInput = '.' + encodedPayload;
     const signature = await Cryptography.sign(jwsSigningInput, privateKey);
     return signature;
-  }
-
-  /**
-   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
-   * for others the DID included with the operation can be used to obtain the unique suffix.
-   */
-  public getDidUniqueSuffix (): string {
-    if (this.type === OperationType.Create) {
-      return this.getOperationHash();
-    } else {
-      const didUniqueSuffix = Did.getUniqueSuffix(this.did!);
-      return didUniqueSuffix;
-    }
   }
 
   /**
