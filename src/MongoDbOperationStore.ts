@@ -39,7 +39,9 @@ export default class MongoDbOperationStore implements OperationStore {
       this.collection = db.collection(operationCollectionName);
     } else {
       this.collection = await db.createCollection(operationCollectionName);
-      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
+      // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
+      // this is an unique index, so duplicate inserts are rejected.
+      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 }, { unique: true });
     }
   }
 
@@ -54,7 +56,14 @@ export default class MongoDbOperationStore implements OperationStore {
       batch.insert(mongoOperation);
     }
 
-    await batch.execute();
+    try {
+      await batch.execute();
+    } catch (e) {
+      // Swallow duplicate insert errors (error code 11000); rethrow others
+      if (e.name !== 'BulkWriteError' || e.code !== 11000) {
+        throw e;
+      }
+    }
   }
 
   /**

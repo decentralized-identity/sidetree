@@ -73,6 +73,9 @@ export default class MockOperationStore implements OperationStore {
     // Sort needed if there was a put operation since last sort.
     if (updatedSinceLastSort) {
       didOps.sort(compareOperation);       // in-place sort
+      didOps = didOps.filter((elem, index, self) => {  // remove duplicates
+        return (index === 0) || compareOperation(elem, self[index - 1]) !== 0;
+      });
       this.didUpdatedSinceLastSort.set(didUniqueSuffix, false);
     }
 
