@@ -124,13 +124,13 @@ describe('OperationStore', async () => {
   it('should ignore duplicate updates', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const did = didMethodName + createOperation.getDidUniqueSuffix();
+    const didUniqueSuffix = createOperation.didUniqueSuffix!;
     const createVersion = createOperation.getOperationHash();
-    const updateOperation = await constructAnchoredUpdateOperation(privateKey, did, createVersion, 1, 1, 0, 1);
+    const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
     await operationStore.putBatch([updateOperation]);
     // duplicate operation
     await operationStore.putBatch([updateOperation]);
-    const returnedOperations = Array.from(await operationStore.get(createOperation.getDidUniqueSuffix()));
+    const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
 
     expect(returnedOperations.length).toEqual(1);
     const returnedOperation = returnedOperations[0];
@@ -142,7 +142,7 @@ describe('OperationStore', async () => {
     expect(returnedOperation.operationIndex!).toEqual(0);
     expect(returnedOperation.transactionTime).toBeDefined();
     expect(returnedOperation.transactionTime!).toEqual(1);
-    expect(returnedOperation.getDidUniqueSuffix()).toEqual(createOperation.getDidUniqueSuffix());
+    expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
     expect(returnedOperationHash).toEqual(updateOperation.getOperationHash());
   });
 
@@ -181,7 +181,7 @@ describe('OperationStore', async () => {
   it('should get all operations in a batch put with duplicates', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const did = didMethodName + createOperation.getDidUniqueSuffix();
+    const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
     const batch = new Array<Operation>(createOperation);
@@ -189,13 +189,13 @@ describe('OperationStore', async () => {
     for (let i = 1; i < batchSize ; i++) {
       const previousOperation = batch[i - 1];
       const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, did, previousVersion, i, i, 0, i);
+      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
       batch.push(operation);
       batch.push(operation); // duplicate
     }
 
     await operationStore.putBatch(batch);
-    const returnedOperations = Array.from(await operationStore.get(createOperation.getDidUniqueSuffix()));
+    const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
 
     expect(returnedOperations.length).toEqual(batchSize);
     for (let i = 0 ; i < batchSize ; i++) {
@@ -207,7 +207,7 @@ describe('OperationStore', async () => {
       expect(returnedOperation.operationIndex!).toEqual(0);
       expect(returnedOperation.transactionTime).toBeDefined();
       expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(didMethodName + returnedOperation.getDidUniqueSuffix()).toEqual(did);
+      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
       expect(returnedOperation.getOperationHash()).toEqual(batch[i * 2].getOperationHash());
     }
   });

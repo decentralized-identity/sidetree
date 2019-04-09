@@ -58,10 +58,10 @@ export default class MongoDbOperationStore implements OperationStore {
 
     try {
       await batch.execute();
-    } catch (e) {
+    } catch (error) {
       // Swallow duplicate insert errors (error code 11000); rethrow others
-      if (e.name !== 'BulkWriteError' || e.code !== 11000) {
-        throw e;
+      if (error.name !== 'BulkWriteError' || error.code !== 11000) {
+        throw error;
       }
     }
   }
