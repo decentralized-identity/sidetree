@@ -175,7 +175,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
+    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -183,7 +183,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation('nonExistentDidUniqueSuffix', '#key1', privateKey);
+    const request = await OperationGenerator.generateDeleteOperationBuffer('nonExistentDidUniqueSuffix', '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -206,7 +206,7 @@ describe('RequestHandler', () => {
       previousOperationHash: didUniqueSuffix
     };
 
-    const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
+    const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -231,7 +231,7 @@ describe('RequestHandler', () => {
       previousOperationHash: 'someOperationHash'
     };
 
-    const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
+    const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 

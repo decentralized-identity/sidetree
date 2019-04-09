@@ -48,9 +48,17 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an Update Operation with valid signature.
+   * Generates an Update Operation buffer with valid signature.
    */
-  public static async generateUpdateOperation (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+  public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+    const operation = await OperationGenerator.generateUpdateOperation(updatePayload, keyId, privateKey);
+    return Buffer.from(JSON.stringify(operation));
+  }
+
+  /**
+   * Generates an Update Operation buffer with valid signature.
+   */
+  public static async generateUpdateOperation (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<IOperation> {
     // Encode Update payload.
     const updatePayloadJson = JSON.stringify(updatePayload);
     const updatePayloadEncoded = Encoder.encode(updatePayloadJson);
@@ -69,13 +77,21 @@ export default class OperationGenerator {
       signature
     };
 
+    return operation;
+  }
+
+  /**
+   * Generates a Delete Operation buffer.
+   */
+  public static async generateDeleteOperationBuffer (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, keyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+  public static async generateDeleteOperation (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<IOperation> {
     const payload = { didUniqueSuffix };
 
     // Encode payload.
@@ -95,6 +111,6 @@ export default class OperationGenerator {
       signature
     };
 
-    return Buffer.from(JSON.stringify(operation));
+    return operation;
   }
 }

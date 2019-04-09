@@ -64,7 +64,7 @@ async function constructAnchoredUpdateOperation (
     }]
   };
 
-  const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
+  const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
   return constructAnchoredOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
 }
 

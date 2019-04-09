@@ -66,7 +66,7 @@ async function createUpdateSequence (
       }]
     };
 
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(
       updateOperationBuffer,
       cas,
@@ -262,7 +262,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should return undefined for deleted did', async () => {
-    const numberOfUpdates = 1;
+    const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = 0 ; i < ops.length ; ++i) {
@@ -276,11 +276,210 @@ describe('OperationProcessor', async () => {
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
 
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
     await operationProcessor.processBatch([deleteOperation]);
 
     const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
+  });
+
+  it('should ignore delete operations of a non-existent did', async () => {
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
+    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([deleteOperation]);
+
+    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocumentAfterDelete).toBeUndefined();
+  });
+
+  it('should ignore delete operations with invalid signing key id', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, 'InvalidKeyId', privateKey);
+    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([deleteOperation]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined();
+  });
+
+  it('should ignore delete operations with invalid signature', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    const deleteOperation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
+    deleteOperation.signature = 'InvalidSignature';
+    const deleteOperationBuffer = Buffer.from(JSON.stringify(deleteOperation));
+    const anchoredDeleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([anchoredDeleteOperation]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined();
+  });
+
+  it('should ignore updates to did that is not created', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+
+    // elide i = 0, the create operation
+    for (let i = 1 ; i < ops.length ; ++i) {
+      await operationProcessor.processBatch([ops[i]]);
+    }
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeUndefined();
+  });
+
+  it('should ignore update operation without a previous operation hash', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    const updatePayload = {
+      didUniqueSuffix,
+      operationNumber: 1,
+      patch: [{
+        op: 'replace',
+        path: '/publicKey/1',
+        value: {
+          id: '#key2',
+          type: 'RsaVerificationKey2018',
+          owner: 'did:sidetree:updateid1',
+          publicKeyPem: process.hrtime() // Some dummy value that's not used.
+        }
+      }]
+    };
+
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
+    const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([updateOp]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined(); // if update above went through, the owner would be defined
+  });
+
+  it('should ignore update operation with an invalid key id', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    const updatePayload = {
+      didUniqueSuffix,
+      operationNumber: 1,
+      previousOperationHash: createOp!.getOperationHash(),
+      patch: [{
+        op: 'replace',
+        path: '/publicKey/1',
+        value: {
+          id: '#key2',
+          type: 'RsaVerificationKey2018',
+          owner: 'did:sidetree:updateid1',
+          publicKeyPem: process.hrtime() // Some dummy value that's not used.
+        }
+      }]
+    };
+
+    // Generate operation with an invalid key
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#InvalidKeyId', privateKey);
+    const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([updateOp]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined(); // if update above went through, the owner would be defined
+  });
+
+  it('should ignore update operation with an invalid signature', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    const updatePayload = {
+      didUniqueSuffix,
+      operationNumber: 1,
+      previousOperationHash: createOp!.getOperationHash(),
+      patch: [{
+        op: 'replace',
+        path: '/publicKey/1',
+        value: {
+          id: '#key2',
+          type: 'RsaVerificationKey2018',
+          owner: 'did:sidetree:updateid1',
+          publicKeyPem: process.hrtime() // Some dummy value that's not used.
+        }
+      }]
+    };
+
+    // Generate operation with an invalid key
+    const updateOperation = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
+    updateOperation.signature = 'InvalidSignature';
+    const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperation));
+    const anchoredUpdateOperation = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([anchoredUpdateOperation]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined(); // if update above went through, the owner would be defined
+  });
+
+  it('should pick earlier of two conflicting updates', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    const update1Payload = {
+      didUniqueSuffix,
+      operationNumber: 1,
+      previousOperationHash: createOp!.getOperationHash(),
+      patch: [{
+        op: 'replace',
+        path: '/publicKey/1',
+        value: {
+          id: '#key2',
+          type: 'RsaVerificationKey2018',
+          owner: 'did:sidetree:updateid1',
+          publicKeyPem: process.hrtime() // Some dummy value that's not used.
+        }
+      }]
+    };
+
+    const update2Payload = {
+      didUniqueSuffix,
+      operationNumber: 2,
+      previousOperationHash: createOp!.getOperationHash(),
+      patch: [{
+        op: 'replace',
+        path: '/publicKey/1',
+        value: {
+          id: '#key2',
+          type: 'RsaVerificationKey2018',
+          owner: 'did:sidetree:updateid2',
+          publicKeyPem: process.hrtime() // Some dummy value that's not used.
+        }
+      }]
+    };
+
+    const updateOperation1Buffer = await OperationGenerator.generateUpdateOperationBuffer(update1Payload, '#key1', privateKey);
+    const updateOperation1 = await addBatchFileOfOneOperationToCas(updateOperation1Buffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([updateOperation1]);
+
+    const updateOperation2Buffer = await OperationGenerator.generateUpdateOperationBuffer(update2Payload, '#key1', privateKey);
+    const updateOperation2 = await addBatchFileOfOneOperationToCas(updateOperation2Buffer, cas, 2, 2, 0);
+    await operationProcessor.processBatch([updateOperation2]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid1');
   });
 });

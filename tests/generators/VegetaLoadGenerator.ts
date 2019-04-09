@@ -61,7 +61,7 @@ export default class VegetaLoadGenerator {
       };
 
       // Generate an Update request body and save it on disk.
-      const updateOperationBuffer = await OperationGenerator.generateUpdateOperation(updatePayload, keyId, privateKey);
+      const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, keyId, privateKey);
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
     }
 
