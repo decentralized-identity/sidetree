@@ -173,7 +173,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(did);
+    const request = await OperationGenerator.generateDeleteOperation(did, '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -181,7 +181,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(didMethodName + 'nonExistentDid');
+    const request = await OperationGenerator.generateDeleteOperation(didMethodName + 'nonExistentDid', '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 

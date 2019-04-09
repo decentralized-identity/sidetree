@@ -75,31 +75,7 @@ export default class OperationGenerator {
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (did: string): Promise<Buffer> {
-    const payload = { did };
-
-    // Encode payload.
-    const payloadJson = JSON.stringify(payload);
-    const payloadEncoded = Encoder.encode(payloadJson);
-
-    const operation = {
-      header: {
-        operation: 'delete',
-        kid: 'not implemented',
-        alg: 'ES256K',
-        proofOfWork: {}
-      },
-      payload: payloadEncoded,
-      signature: 'not implemented'
-    };
-
-    return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
-   * Generates a Delete Operation.
-   */
-  public static async generateDeleteOperation2 (did: string, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+  public static async generateDeleteOperation (did: string, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
     const payload = { did };
 
     // Encode payload.

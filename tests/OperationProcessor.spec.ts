@@ -242,7 +242,7 @@ describe('OperationProcessor', async () => {
     expect(publicKey2!.owner).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
 
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperation2(did, '#key1', privateKey);
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperation(did, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
     await operationProcessor.processBatch([deleteOperation]);
 
