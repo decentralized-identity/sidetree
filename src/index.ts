@@ -66,13 +66,15 @@ const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
 
 // Creating aliases to classes and interfaces used for external consumption.
 // tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
-import SidetreeCore, {
+import SidetreeCore from './Core';
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
 } from './Response';
 
-export default SidetreeCore;
 export {
   ISidetreeResponse,
+  SidetreeCore,
   SidetreeResponse
 };
