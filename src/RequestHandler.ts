@@ -125,7 +125,8 @@ export default class RequestHandler {
   }
 
   private async handleResolveRequestWithDid (did: string): Promise<IResponse> {
-    const didDocument = await this.operationProcessor.resolve(did);
+    const didUniqueSuffix = did.substring(this.didMethodName.length);
+    const didDocument = await this.operationProcessor.resolve(didUniqueSuffix);
 
     if (!didDocument) {
       return {
@@ -151,10 +152,10 @@ export default class RequestHandler {
       return { status: ResponseStatus.BadRequest };
     }
 
-    const did = Did.from(encodedDidDocument, this.didMethodName, currentHashAlgorithm);
+    const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(encodedDidDocument, currentHashAlgorithm);
 
     // Attempt to resolve the DID.
-    const didDocument = await this.operationProcessor.resolve(did);
+    const didDocument = await this.operationProcessor.resolve(didUniqueSuffix);
 
     // If DID Document found then return it.
     if (didDocument) {
@@ -262,7 +263,7 @@ export default class RequestHandler {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
     // Get the current DID Document of the specified DID.
-    const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
+    const currentDidDcoument = await this.operationProcessor.resolve(operation.didUniqueSuffix!);
     if (!currentDidDcoument) {
       throw new SidetreeError(ErrorCode.DidNotFound);
     }
@@ -275,7 +276,7 @@ export default class RequestHandler {
   private async simulateDeleteOperation (operation: Operation) {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
-    const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
+    const currentDidDcoument = await this.operationProcessor.resolve(operation.didUniqueSuffix!);
 
     if (!currentDidDcoument) {
       throw new SidetreeError(ErrorCode.DidNotFound);

@@ -43,6 +43,7 @@ describe('RequestHandler', () => {
   let publicKey: DidPublicKey;
   let privateKey: any;
   let did: string; // This DID is created at the beginning of every test.
+  let didUniqueSuffix: string;
   let batchFileHash: string;
 
   // Start a new instance of Operation Processor, and create a DID before every test.
@@ -89,9 +90,10 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     const currentBlockchainTime = await blockchain.getLatestTime();
-    did = Did.from(createOperation.encodedPayload, didMethodName, getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
+    const currentHashingAlgorithm = getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
+    didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createOperation.encodedPayload, currentHashingAlgorithm);
+    did = didMethodName + didUniqueSuffix;
 
-    // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
     expect((response.body as IDocument).id).toEqual(did);
@@ -173,7 +175,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(did, '#key1', privateKey);
+    const request = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -181,7 +183,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(didMethodName + 'nonExistentDid', '#key1', privateKey);
+    const request = await OperationGenerator.generateDeleteOperation('nonExistentDidUniqueSuffix', '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -198,10 +200,10 @@ describe('RequestHandler', () => {
 
     // Construct update payload.
     const updatePayload = {
-      did,
+      didUniqueSuffix,
       operationNumber: 1,
       patch: jsonPatch,
-      previousOperationHash: Did.getUniqueSuffix(did)
+      previousOperationHash: didUniqueSuffix
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
@@ -223,10 +225,10 @@ describe('RequestHandler', () => {
 
     // Construct update payload.
     const updatePayload = {
-      did: didMethodName + 'nonExistentDid',
+      didUniqueSuffix: 'nonExistentDidUniqueSuffix',
       operationNumber: 1,
       patch: jsonPatch,
-      previousOperationHash: Did.getUniqueSuffix(did)
+      previousOperationHash: 'someOperationHash'
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);

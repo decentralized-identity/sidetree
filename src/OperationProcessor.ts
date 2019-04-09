@@ -31,18 +31,17 @@ export default class OperationProcessor {
   }
 
   /**
-   * Resolve the given DID to its DID Doducment.
-   * @param did The DID to resolve. e.g. did:sidetree:abc123.
-   * @returns DID Document of the given DID. Undefined if the DID is deleted or not found.
+   * Resolve the given DID unique suffix to its DID Doducment.
+   * @param didUniqueSuffix The unique suffix of the DID to resolve. e.g. if 'did:sidetree:abc123' is the DID, the unique suffix would be 'abc123'
+   * @returns DID Document. Undefined if the unique suffix of the DID is deleted or not found.
    *
    * Iterate over all operations in blockchain-time order extending the
    * the operation chain while checking validity.
    */
-  public async resolve (did: string): Promise<IDocument | undefined> {
+  public async resolve (didUniqueSuffix: string): Promise<IDocument | undefined> {
     let didDocument: IDocument | undefined;
     let previousOperation: Operation | undefined;
 
-    const didUniqueSuffix = did.substring(this.didMethodName.length);
     const didOps = await this.operationStore.get(didUniqueSuffix);
 
     // Apply each operation in chronological order to build a complete DID Document.
