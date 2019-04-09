@@ -38,7 +38,7 @@ async function addBatchFileOfOneOperationToCas (
 }
 
 async function createUpdateSequence (
-  did: string,
+  didUniqueSuffix: string,
   createOp: Operation,
   cas: Cas,
   numberOfUpdates:
@@ -51,7 +51,7 @@ async function createUpdateSequence (
   for (let i = 0; i < numberOfUpdates; ++i) {
     const mostRecentVersion = opHashes[i];
     const updatePayload = {
-      did,
+      didUniqueSuffix,
       operationNumber: i + 1,
       previousOperationHash: mostRecentVersion,
       patch: [{
@@ -123,13 +123,12 @@ describe('OperationProcessor', async () => {
   let cas = new MockCas();
   const configFile = require('../json/config-test.json');
   const config = new Config(configFile);
-  const didMethodName = config[ConfigKey.DidMethodName];
   let operationProcessor: OperationProcessor;
   let operationStore: OperationStore;
   let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
-  let did: string;
+  let didUniqueSuffix: string;
 
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
@@ -140,13 +139,12 @@ describe('OperationProcessor', async () => {
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
-    const createOpHash = createOp.getOperationHash();
-    did = didMethodName + createOpHash;
+    didUniqueSuffix = createOp.getOperationHash();
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationProcessor.processBatch([createOp!]);
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
     // This is a poor man's version based on public key properties
     expect(didDocument).toBeDefined();
@@ -157,13 +155,13 @@ describe('OperationProcessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = 0 ; i < ops.length ; ++i) {
       await operationProcessor.processBatch([ops[i]]);
     }
 
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
@@ -173,12 +171,12 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationProcessor.processBatch([ops[i]]);
     }
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
@@ -188,7 +186,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
@@ -199,7 +197,7 @@ describe('OperationProcessor', async () => {
       operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);
-      const didDocument = await operationProcessor.resolve(did);
+      const didDocument = await operationProcessor.resolve(didUniqueSuffix);
       expect(didDocument).toBeDefined();
       const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
       expect(publicKey2).toBeDefined();
@@ -220,10 +218,10 @@ describe('OperationProcessor', async () => {
 
     // Trigger processing of the operation.
     await operationProcessor.processBatch([createOperation]);
-    const did = didMethodName + createOperation.getOperationHash();
+    const didUniqueSuffix = createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
   });
 });

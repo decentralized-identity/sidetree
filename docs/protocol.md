@@ -14,19 +14,21 @@ Architecturally, a Sidetree network is a network consists of multiple logical se
 
 # Terminology
 
-| Term           | Description                                                                    |
-|----------------|--------------------------------------------------------------------------------|
-| Anchor file    | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file     | The file containing all the operation data batched together.                   |
-| CAS            | Same as DCAS.                                                                  |
-| DCAS           | Distributed content-addressable storage.                                       |
-| DID Document   | A document containing metadata of a DID, as described by the [DID specification](https://w3c-ccg.github.io/did-spec/). |
-| Operation      | A change to a DID Document.                                                    |
-| Operation hash | The hash of the JSON-formatted request of a Sidetree operation.                |
-| Original DID Document | A DID Document that is used in create operation to generate the DID.    |
-| Recovery key   | A key that is used to perform recovery or delete operation.                    |
-| Sidetree node  | A logical server executing Sidetree protocol rules.                            |
-| Transaction    | A blockchain transaction representing a batch of Sidetree operations.          |
+| Term                  | Description                                                                    |
+|-----------------------|--------------------------------------------------------------------------------|
+| Anchor file           | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
+| Batch file            | The file containing all the operation data batched together.                   |
+| CAS                   | Same as DCAS.                                                                  |
+| DCAS                  | Distributed content-addressable storage.                                       |
+| DID Document          | A document containing metadata of a DID, see [DID specification](https://w3c-ccg.github.io/did-spec/). |
+| DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
+| Operation             | A change to a DID Document.                                                    |
+| Operation hash        | The hash of the encoded payload of an _operation request_.                     |
+| Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
+| Original DID Document | A DID Document that is used in create operation to generate the DID.           |
+| Recovery key          | A key that is used to perform recovery or delete operation.                    |
+| Sidetree node         | A logical server executing Sidetree protocol rules.                            |
+| Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
 
 
 # Format and Encoding
@@ -383,7 +385,7 @@ POST /<api-version>/ HTTP/1.1
 ### Update payload schema
 ```json
 {
-  "did": "The DID to be updated",
+  "didUniqueSuffix": "The unique suffix of the DID",
   "operationNumber": "The number incremented from the last change version number. 1 if first change.",
   "previousOperationHash": "The hash of the previous operation made to the DID Document.",
   "patch": "An RFC 6902 JSON patch to the current DID Document",
@@ -393,7 +395,7 @@ POST /<api-version>/ HTTP/1.1
 ### Update payload schema example
 ```json
 {
-  "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+  "didUniqueSuffix": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
   "operationNumber": 12,
   "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
   "patch": [{
@@ -454,14 +456,14 @@ POST /<api-version>/
 ### Delete payload schema
 ```json
 {
-  "did": "The DID to be deleted",
+  "didUniqueSuffix": "The unique suffix of the DID to be deleted.",
 }
 ```
 
 ### Delete payload example
 ```json
 {
-  "did": "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+  "didUniqueSuffix": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
 }
 ```
 

@@ -95,7 +95,7 @@ export default class MongoDbOperationStore implements OperationStore {
    */
   private static convertToMongoOperation (operation: Operation): MongoOperation {
     return {
-      didUniqueSuffix: operation.getDidUniqueSuffix(),
+      didUniqueSuffix: operation.didUniqueSuffix!,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
