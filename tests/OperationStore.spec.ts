@@ -333,4 +333,40 @@ describe('OperationStore', async () => {
       }
     }
   });
+
+  it('should get all operations in transaction time order', async () => {
+    // Use a create operation to generate a DID
+    const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+
+    const batchSize = 10;
+    const batch = new Array<Operation>(createOperation);
+    for (let i = 1; i < batchSize ; i++) {
+      const previousOperation = batch[i - 1];
+      const previousVersion = previousOperation.getOperationHash();
+      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
+      batch.push(operation);
+    }
+
+    // Insert operations in reverse transaction time order
+    for (let i = batchSize - 1 ; i >= 0 ; i--) {
+      await operationStore.putBatch([batch[i]]);
+    }
+
+    const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
+
+    expect(returnedOperations.length).toEqual(batchSize);
+    for (let i = 0 ; i < batchSize ; i++) {
+      const returnedOperation = returnedOperations[i];
+
+      expect(returnedOperation.transactionNumber).toBeDefined();
+      expect(returnedOperation.transactionNumber!).toEqual(i);
+      expect(returnedOperation.operationIndex).toBeDefined();
+      expect(returnedOperation.operationIndex!).toEqual(0);
+      expect(returnedOperation.transactionTime).toBeDefined();
+      expect(returnedOperation.transactionTime!).toEqual(i);
+      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
+      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
+    }
+  });
 });
