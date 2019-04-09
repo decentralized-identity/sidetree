@@ -2,14 +2,14 @@
  * This enum contains all the config keys.
  */
 export enum ConfigKey {
-  BatchIntervalInSeconds = 'batchIntervalInSeconds',
-  BlockchainNodeUri = 'blockchainNodeUri',
-  CasNodeUri = 'casNodeUri',
+  BatchingIntervalInSeconds = 'batchingIntervalInSeconds',
+  BlockchainServiceUri = 'blockchainServiceUri',
+  CasServiceUri = 'casServiceUri',
   DevMode = 'devMode', // Used to enable test hooks that are disabled in production.
   DidMethodName = 'didMethodName',
   ExampleSecret = 'exampleSecret', // TODO: used only for testing. Remove/replace once there is a real secret.
   MaxConcurrentCasDownloads = 'maxConcurrentCasDownloads',
-  PollingIntervalInSeconds = 'pollingIntervalInSeconds',
+  ObservingIntervalInSeconds = 'observingIntervalInSeconds',
   Port = 'port',
   OperationStoreUri = 'operationStoreUri'
 }

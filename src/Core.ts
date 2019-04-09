@@ -25,13 +25,13 @@ export default class Core {
    */
   public constructor (config: Config) {
     // Component dependency initialization & injection.
-    const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
-    const cas = new CasClient(config[ConfigKey.CasNodeUri]);
+    const blockchain = new BlockchainClient(config[ConfigKey.BlockchainServiceUri]);
+    const cas = new CasClient(config[ConfigKey.CasServiceUri]);
     const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-    const batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+    const batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchingIntervalInSeconds]);
     this.operationStore = new MongoDbOperationStore(config[ConfigKey.OperationStoreUri]);
     const operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], this.operationStore);
-    this.observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
+    this.observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.ObservingIntervalInSeconds]);
     this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config[ConfigKey.DidMethodName]);
 
     downloadManager.start();

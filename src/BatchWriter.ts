@@ -21,7 +21,7 @@ export default class BatchWriter {
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
-    private batchIntervalInSeconds: number) {
+    private batchingIntervalInSeconds: number) {
   }
 
   /**
@@ -42,7 +42,7 @@ export default class BatchWriter {
    * The function that starts periodically anchoring operation batches to blockchain.
    */
   public startPeriodicBatchWriting () {
-    setInterval(async () => this.writeOperationBatch(), this.batchIntervalInSeconds * 1000);
+    setInterval(async () => this.writeOperationBatch(), this.batchingIntervalInSeconds * 1000);
   }
 
   /**

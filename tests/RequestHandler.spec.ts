@@ -49,7 +49,7 @@ describe('RequestHandler', () => {
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
     cas = new MockCas();
-    batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+    batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchingIntervalInSeconds]);
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
 
