@@ -105,12 +105,12 @@ export default class MockOperationStore implements OperationStore {
     let writeIndex = 0;
 
     for (let i = 0 ; i < operations.length ; i++) {
-      if (operations[i].transactionNumber! > transactionNumber) {
+      if (operations[i].transactionNumber! <= transactionNumber) {
         operations[writeIndex++] = operations[i];
       }
     }
 
-    for (let i = writeIndex ; i < operations.length ; i++) {
+    while (operations.length > writeIndex) {
       operations.pop();
     }
   }

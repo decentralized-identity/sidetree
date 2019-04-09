@@ -23,7 +23,7 @@ export default class OperationProcessor {
 
   /**
    * Remove all previously processed operations with transactionNumber
-   * greater or equal to the provided transaction number. Relies on
+   * greater than the provided transaction number. Relies on
    * OperationStore.delete that implements this functionality.
    */
   public async rollback (transactionNumber?: number): Promise<void> {

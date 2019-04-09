@@ -482,4 +482,25 @@ describe('OperationProcessor', async () => {
     expect(publicKey2).toBeDefined();
     expect(publicKey2!.owner!).toEqual('did:sidetree:updateid1');
   });
+
+  it('should rollback all', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+
+    for (let i = 0 ; i < ops.length ; ++i) {
+      await operationProcessor.processBatch([ops[i]]);
+    }
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+
+    // rollback
+    await operationProcessor.rollback();
+    const didDocumentAfterRollback = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocumentAfterRollback).toBeUndefined();
+  });
 });
