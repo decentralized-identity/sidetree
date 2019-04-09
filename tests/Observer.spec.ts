@@ -27,7 +27,7 @@ describe('Observer', async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
     mockCasFetch = fetchMock.sandbox().get('*', 404); // Setting the CAS to always return 404.
-    cas = new CasClient(config[ConfigKey.CasNodeUri], mockCasFetch);
+    cas = new CasClient(config[ConfigKey.CasServiceUri], mockCasFetch);
     downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
@@ -70,7 +70,7 @@ describe('Observer', async () => {
     const mockNodeFetch = fetchMock.sandbox().getOnce('*', createReadableStreamResponse(initialTransactionFetchResponseBody))
                                              .get('http://127.0.0.1:3009/transactions?since=2&transaction-time-hash=1000',
                                                createReadableStreamResponse(subsequentTransactionFetchResponseBody));
-    const blockchainClient = new BlockchainClient(config[ConfigKey.BlockchainNodeUri], mockNodeFetch);
+    const blockchainClient = new BlockchainClient(config[ConfigKey.BlockchainServiceUri], mockNodeFetch);
 
     // Start the Observer.
     const observer = new Observer(blockchainClient, downloadManager, operationProcessor, 1);
@@ -159,7 +159,7 @@ describe('Observer', async () => {
                                                createReadableStreamResponse(transactionFetchResponseBodyAfterBlockReorg))
                                              .get('http://127.0.0.1:3009/transactions?since=4&transaction-time-hash=4000',
                                                createReadableStreamResponse(subsequentTransactionFetchResponseBody));
-    const blockchainClient = new BlockchainClient(config[ConfigKey.BlockchainNodeUri], mockNodeFetch);
+    const blockchainClient = new BlockchainClient(config[ConfigKey.BlockchainServiceUri], mockNodeFetch);
 
     // Process first set of transactions.
     const observer = new Observer(blockchainClient, downloadManager, operationProcessor, 1);

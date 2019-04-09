@@ -55,7 +55,7 @@ export default class Observer {
     private blockchain: Blockchain,
     private downloadManager: DownloadManager,
     private operationProcessor: OperationProcessor,
-    private pollingIntervalInSeconds: number) {
+    private observingIntervalInSeconds: number) {
   }
 
   /**
@@ -173,8 +173,8 @@ export default class Observer {
       console.error(error);
     } finally {
       if (this.continuePeriodicProcessing) {
-        console.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
-        setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
+        console.info(`Waiting for ${this.observingIntervalInSeconds} seconds before fetching and processing transactions again.`);
+        setTimeout(async () => this.processTransactions(), this.observingIntervalInSeconds * 1000);
       }
     }
   }
