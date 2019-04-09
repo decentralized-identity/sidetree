@@ -226,4 +226,27 @@ describe('OperationProcessor', async () => {
     const didDocument = await operationProcessor.resolve(did);
     expect(didDocument).toBeUndefined();
   });
+
+  it('should return undefined for deleted did', async () => {
+    const numberOfUpdates = 1;
+    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+
+    for (let i = 0 ; i < ops.length ; ++i) {
+      await operationProcessor.processBatch([ops[i]]);
+    }
+
+    const didDocument = await operationProcessor.resolve(did);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperation2(did, '#key1', privateKey);
+    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
+    await operationProcessor.processBatch([deleteOperation]);
+
+    const didDocumentAfterDelete = await operationProcessor.resolve(did);
+    expect(didDocumentAfterDelete).toBeUndefined();
+  });
 });
