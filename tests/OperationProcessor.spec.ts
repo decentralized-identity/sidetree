@@ -153,6 +153,23 @@ describe('OperationProcessor', async () => {
     expect(publicKey2!.owner).toBeUndefined();
   });
 
+  it('should ignore a duplicate create operation', async () => {
+    await operationProcessor.processBatch([createOp!]);
+
+    // Create and process a duplicate create op
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+    const duplicateCreateOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([duplicateCreateOp]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+
+    // This is a poor man's version based on public key properties
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeUndefined();
+  });
+
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
@@ -211,6 +228,25 @@ describe('OperationProcessor', async () => {
     const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.signature = 'AnInvalidSignature';
+
+    // Create and upload the batch file with the invalid operation.
+    const operationBuffer = Buffer.from(JSON.stringify(operation));
+    const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
+
+    // Trigger processing of the operation.
+    await operationProcessor.processBatch([createOperation]);
+    const didUniqueSuffix = createOperation.getOperationHash();
+
+    // Attempt to resolve the DID and validate the outcome.
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeUndefined();
+  });
+
+  it('should not resolve the DID if its create operation contains invalid key id.', async () => {
+    // Generate a create operation with an invalid signature.
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    operation.header.kid = 'InvalidKeyId';
 
     // Create and upload the batch file with the invalid operation.
     const operationBuffer = Buffer.from(JSON.stringify(operation));

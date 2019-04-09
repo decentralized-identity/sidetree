@@ -81,10 +81,9 @@ export default class OperationProcessor {
         return [false, currentDidDocument];
       }
 
-      const originalDidDocument = this.getOriginalDocument(operation);
-      if (originalDidDocument === undefined) {
-        return [false, currentDidDocument];
-      }
+      // Assert: originalDidDocument is defined at this point, since this is checked within Operation.isWellFormed
+      // at operation construction time
+      const originalDidDocument = this.getOriginalDocument(operation)!;
 
       const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
 
