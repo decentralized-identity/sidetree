@@ -6,7 +6,7 @@ import OperationProcessor from './OperationProcessor';
 import RequestHandler from './RequestHandler';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
-import { Config, ConfigKey } from './Config';
+import { IConfig } from './Config';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -23,16 +23,16 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: Config) {
+  public constructor (config: IConfig) {
     // Component dependency initialization & injection.
-    const blockchain = new BlockchainClient(config[ConfigKey.BlockchainServiceUri]);
-    const cas = new CasClient(config[ConfigKey.CasServiceUri]);
-    const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-    const batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchingIntervalInSeconds]);
-    this.operationStore = new MongoDbOperationStore(config[ConfigKey.OperationStoreUri]);
-    const operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], this.operationStore);
-    this.observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.ObservingIntervalInSeconds]);
-    this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config[ConfigKey.DidMethodName]);
+    const blockchain = new BlockchainClient(config.blockchainServiceUri);
+    const cas = new CasClient(config.casServiceUri);
+    const downloadManager = new DownloadManager(config.maxConcurrentCasDownloads, cas);
+    const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
+    this.operationStore = new MongoDbOperationStore(config.operationStoreUri);
+    const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
+    this.observer = new Observer(blockchain, downloadManager, operationProcessor, config.observingIntervalInSeconds);
+    this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config.didMethodName);
 
     downloadManager.start();
     batchWriter.startPeriodicBatchWriting();
