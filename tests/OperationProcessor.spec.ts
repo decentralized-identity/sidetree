@@ -6,7 +6,6 @@ import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
 import OperationProcessor from '../src/OperationProcessor';
 import { Cas } from '../src/Cas';
-import { Config, ConfigKey } from '../src/Config';
 import { OperationStore } from '../src/OperationStore';
 import { Operation } from '../src/Operation';
 import { initializeProtocol } from '../src/Protocol';
@@ -121,8 +120,7 @@ describe('OperationProcessor', async () => {
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
 
   let cas = new MockCas();
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
+  const config = require('../json/config-test.json');
   let operationProcessor: OperationProcessor;
   let operationStore: OperationStore;
   let createOp: Operation | undefined;
@@ -135,7 +133,7 @@ describe('OperationProcessor', async () => {
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore); // TODO: add a clear method to avoid double initialization.
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore); // TODO: add a clear method to avoid double initialization.
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -194,7 +192,7 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
-      operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
+      operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);
       const didDocument = await operationProcessor.resolve(didUniqueSuffix);

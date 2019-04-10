@@ -2,13 +2,17 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from './Core';
-import { Config, ConfigKey } from './Config';
+import { IConfig } from './Config';
 import { initializeProtocol } from './Protocol';
 import { IResponse, Response } from './Response';
 
+/** Configuration used by this server. */
+interface IServerConfig extends IConfig {
+  port: number;
+}
+
 initializeProtocol('protocol.json');
-const configFile = require('../json/config.json');
-const config = new Config(configFile);
+const config: IServerConfig = require('../json/config.json');
 
 const sidetreeCore = new Core(config);
 const app = new Koa();
@@ -40,13 +44,13 @@ app.use((ctx, _next) => {
 
 sidetreeCore.initialize()
 .then(() => {
-  const port = config[ConfigKey.Port];
+  const port = config.port;
   app.listen(port, () => {
     console.log(`Sidetree node running on port: ${port}`);
   });
 })
-.catch((e) => {
-  console.log(`Sidetree node initialization failed with error ${e}`);
+.catch((error: Error) => {
+  console.log(`Sidetree node initialization failed with error ${error}`);
 });
 
 /**
@@ -68,12 +72,15 @@ const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
 // tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
 import SidetreeCore from './Core';
 // tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import { IConfig as ISidetreeConfig } from './Config';
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
 import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
 } from './Response';
 
 export {
+  ISidetreeConfig,
   ISidetreeResponse,
   SidetreeCore,
   SidetreeResponse

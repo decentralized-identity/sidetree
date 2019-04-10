@@ -12,8 +12,8 @@ import OperationGenerator from './generators/OperationGenerator';
 import OperationProcessor from '../src/OperationProcessor';
 import RequestHandler from '../src/RequestHandler';
 import { Cas } from '../src/Cas';
-import { Config, ConfigKey } from '../src/Config';
 import { OperationStore } from '../src/OperationStore';
+import { IConfig } from '../src/Config';
 import { IDocument } from '../src/lib/Document';
 import { getProtocol, initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
@@ -26,9 +26,8 @@ describe('RequestHandler', () => {
   console.info = () => { return; };
   console.error = () => { return; };
 
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
-  const didMethodName = config[ConfigKey.DidMethodName];
+  const config: IConfig = require('../json/config-test.json');
+  const didMethodName = config.didMethodName;
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
@@ -49,9 +48,9 @@ describe('RequestHandler', () => {
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
     cas = new MockCas();
-    batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchingIntervalInSeconds]);
+    batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
 
     requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, didMethodName);
 
