@@ -10,25 +10,25 @@ import MockOperationStore from './mocks/MockOperationStore';
 import Multihash from '../src/Multihash';
 import OperationGenerator from './generators/OperationGenerator';
 import OperationProcessor from '../src/OperationProcessor';
+import ProtocolParameters from '../src/ProtocolParameters';
 import RequestHandler from '../src/RequestHandler';
 import { Cas } from '../src/Cas';
-import { Config, ConfigKey } from '../src/Config';
 import { OperationStore } from '../src/OperationStore';
+import { IConfig } from '../src/Config';
 import { IDocument } from '../src/lib/Document';
-import { getProtocol, initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
 import { Response } from '../src/Response';
 
 describe('RequestHandler', () => {
-  initializeProtocol('protocol-test.json');
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Surpress console logging during dtesting so we get a compact test summary in console.
   console.info = () => { return; };
   console.error = () => { return; };
 
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
-  const didMethodName = config[ConfigKey.DidMethodName];
+  const config: IConfig = require('../json/config-test.json');
+  const didMethodName = config.didMethodName;
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
@@ -49,9 +49,9 @@ describe('RequestHandler', () => {
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
     cas = new MockCas();
-    batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
+    batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
 
     requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, didMethodName);
 
@@ -90,7 +90,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     const currentBlockchainTime = await blockchain.getLatestTime();
-    const currentHashingAlgorithm = getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
+    const currentHashingAlgorithm = ProtocolParameters.get(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
     didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createOperation.encodedPayload, currentHashingAlgorithm);
     did = didMethodName + didUniqueSuffix;
 
@@ -148,7 +148,8 @@ describe('RequestHandler', () => {
     };
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
     const currentBlockchainTime = await blockchain.getLatestTime();
-    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
+    const hashAlgorithmInMultihashCode = ProtocolParameters.get(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
+    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
     const expectedDid = didMethodName + Encoder.encode(documentHash);
     const response = await requestHandler.handleResolveRequest(didMethodName + encodedOriginalDidDocument);
     const httpStatus = Response.toHttpStatus(response.status);

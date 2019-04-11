@@ -59,7 +59,7 @@ The resolve method returns the latest document for a given DID.
 # Batch Writer
 The Batch Writer batches pending (Create, Update, Delete and Recover) operations and anchors them on the blockchain at a periodic interval.
 
-The batching interval can specified by the `batchIntervalInSeconds` configuration parameter.
+The batching interval can specified by the `batchingIntervalInSeconds` configuration parameter.
 
 # Observer
 

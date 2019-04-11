@@ -2,15 +2,19 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from './Core';
-import { Config, ConfigKey } from './Config';
-import { initializeProtocol } from './Protocol';
+import { IConfig } from './Config';
+import { IProtocolParameters } from './ProtocolParameters';
 import { IResponse, Response } from './Response';
 
-initializeProtocol('protocol.json');
-const configFile = require('../json/config.json');
-const config = new Config(configFile);
+/** Configuration used by this server. */
+interface IServerConfig extends IConfig {
+  port: number;
+}
 
-const sidetreeCore = new Core(config);
+const config: IServerConfig = require('../json/config.json');
+const versionsOfProtocolParameters: IProtocolParameters[] = require('../json/protocol-parameters.json');
+
+const sidetreeCore = new Core(config, versionsOfProtocolParameters);
 const app = new Koa();
 
 // Raw body parser.
@@ -40,13 +44,13 @@ app.use((ctx, _next) => {
 
 sidetreeCore.initialize()
 .then(() => {
-  const port = config[ConfigKey.Port];
+  const port = config.port;
   app.listen(port, () => {
     console.log(`Sidetree node running on port: ${port}`);
   });
 })
-.catch((e) => {
-  console.log(`Sidetree node initialization failed with error ${e}`);
+.catch((error: Error) => {
+  console.log(`Sidetree node initialization failed with error ${error}`);
 });
 
 /**
@@ -66,13 +70,21 @@ const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
 
 // Creating aliases to classes and interfaces used for external consumption.
 // tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
-import SidetreeCore, {
+import SidetreeCore from './Core';
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import { IConfig as ISidetreeConfig } from './Config';
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import { IProtocolParameters as ISidetreeProtocolParameters } from './ProtocolParameters';
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
 } from './Response';
 
-export default SidetreeCore;
 export {
+  ISidetreeConfig,
+  ISidetreeProtocolParameters,
   ISidetreeResponse,
+  SidetreeCore,
   SidetreeResponse
 };

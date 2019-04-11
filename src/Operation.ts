@@ -2,9 +2,9 @@ import Cryptography from './lib/Cryptography';
 import Document, { IDocument } from './lib/Document';
 import Encoder from './Encoder';
 import Multihash from './Multihash';
+import ProtocolParameters from './ProtocolParameters';
 import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
-import { getProtocol } from './Protocol';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { ResolvedTransaction } from './Transaction';
 
@@ -191,7 +191,7 @@ class Operation {
     }
 
     // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-    const protocol = getProtocol(this.transactionTime);
+    const protocol = ProtocolParameters.get(this.transactionTime);
 
     const encodedOperationPayloadBuffer = Buffer.from(this.encodedPayload);
     const multihash = Multihash.hash(encodedOperationPayloadBuffer, protocol.hashAlgorithmInMultihashCode);
