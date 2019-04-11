@@ -5,10 +5,10 @@ import MockCas from './mocks/MockCas';
 import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
 import OperationProcessor from '../src/OperationProcessor';
+import ProtocolParameters from '../src/ProtocolParameters';
 import { Cas } from '../src/Cas';
 import { OperationStore } from '../src/OperationStore';
 import { Operation } from '../src/Operation';
-import { initializeProtocol } from '../src/Protocol';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -114,7 +114,8 @@ function getPermutation (size: number, index: number): Array<number> {
 }
 
 describe('OperationProcessor', async () => {
-  initializeProtocol('protocol-test.json');
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');

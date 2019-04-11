@@ -1,8 +1,8 @@
 import Cryptography from '../src/lib/Cryptography';
 import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
+import ProtocolParameters from '../src/ProtocolParameters';
 import { OperationStore } from '../src/OperationStore';
-import { initializeProtocol } from '../src/Protocol';
 import { Operation } from '../src/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
@@ -69,7 +69,8 @@ async function constructAnchoredUpdateOperation (
 }
 
 describe('OperationStore', async () => {
-  initializeProtocol('protocol-test.json');
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   let operationStore: OperationStore;
   let publicKey: DidPublicKey;

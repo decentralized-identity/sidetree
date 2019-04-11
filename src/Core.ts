@@ -1,5 +1,6 @@
 import BatchWriter from './BatchWriter';
 import DownloadManager from './DownloadManager';
+import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import Observer from './Observer';
 import OperationProcessor from './OperationProcessor';
@@ -23,7 +24,9 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: IConfig) {
+  public constructor (config: IConfig, versionsOfProtocolParameters: IProtocolParameters[]) {
+    ProtocolParameters.initialize(versionsOfProtocolParameters);
+
     // Component dependency initialization & injection.
     const blockchain = new BlockchainClient(config.blockchainServiceUri);
     const cas = new CasClient(config.casServiceUri);

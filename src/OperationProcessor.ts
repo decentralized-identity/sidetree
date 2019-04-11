@@ -1,5 +1,5 @@
-import * as Protocol from './Protocol';
 import Document, { IDocument } from './lib/Document';
+import ProtocolParameters from './ProtocolParameters';
 import { Operation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -132,7 +132,7 @@ export default class OperationProcessor {
    * Gets the original DID document from a create operation.
    */
   private getOriginalDocument (createOperation: Operation): IDocument | undefined {
-    const protocolVersion = Protocol.getProtocol(createOperation.transactionTime!);
+    const protocolVersion = ProtocolParameters.get(createOperation.transactionTime!);
     return Document.from(createOperation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
   }
 }
