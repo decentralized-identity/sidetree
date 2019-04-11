@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import Cryptography from '../../src/lib/Cryptography';
 import Did from '../../src/lib/Did';
 import OperationGenerator from './OperationGenerator';
-import { getProtocol } from '../../src/Protocol';
+import ProtocolParameters from '../../src/ProtocolParameters';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -20,6 +20,8 @@ export default class VegetaLoadGenerator {
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
    */
   public static async generateLoadFiles (uniqueDidCount: number, methodName: string, endpointUrl: string, absoluteFolderPath: string) {
+    const versionsOfProtocolParameters = require('../../../json/protocol-parameters-test.json');
+    ProtocolParameters.initialize(versionsOfProtocolParameters);
 
     const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
     const keyId = '#key1';
@@ -41,7 +43,7 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
       // Compute the DID from the generated Create payload.
-      const did = Did.from(createPayload, methodName, getProtocol(1000000).hashAlgorithmInMultihashCode);
+      const did = Did.from(createPayload, methodName, ProtocolParameters.get(1000000).hashAlgorithmInMultihashCode);
       const didUniqueSuffix = Did.getUniqueSuffix(did);
 
       // Generate an Update payload.

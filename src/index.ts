@@ -3,7 +3,7 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from './Core';
 import { IConfig } from './Config';
-import { initializeProtocol } from './Protocol';
+import { IProtocolParameters } from './ProtocolParameters';
 import { IResponse, Response } from './Response';
 
 /** Configuration used by this server. */
@@ -11,10 +11,10 @@ interface IServerConfig extends IConfig {
   port: number;
 }
 
-initializeProtocol('protocol.json');
 const config: IServerConfig = require('../json/config.json');
+const versionsOfProtocolParameters: IProtocolParameters[] = require('../json/protocol-parameters.json');
 
-const sidetreeCore = new Core(config);
+const sidetreeCore = new Core(config, versionsOfProtocolParameters);
 const app = new Koa();
 
 // Raw body parser.
@@ -74,6 +74,8 @@ import SidetreeCore from './Core';
 // tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
 import { IConfig as ISidetreeConfig } from './Config';
 // tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
+import { IProtocolParameters as ISidetreeProtocolParameters } from './ProtocolParameters';
+// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
 import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
@@ -81,6 +83,7 @@ import {
 
 export {
   ISidetreeConfig,
+  ISidetreeProtocolParameters,
   ISidetreeResponse,
   SidetreeCore,
   SidetreeResponse

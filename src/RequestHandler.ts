@@ -1,10 +1,10 @@
-import * as Protocol from './Protocol';
 import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
 import Did from './lib/Did';
 import Document, { IDocument } from './lib/Document';
 import Multihash from './Multihash';
 import OperationProcessor from './OperationProcessor';
+import ProtocolParameters from './ProtocolParameters';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
 import { Operation, OperationType } from './Operation';
@@ -26,11 +26,11 @@ export default class RequestHandler {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<IResponse> {
-    let protocol;
+    let protocolParameters;
     try {
       // Get the protocol version according to current blockchain time to validate the operation request.
       const currentTime = await this.blockchain.getLatestTime();
-      protocol = Protocol.getProtocol(currentTime.time + 1);
+      protocolParameters = ProtocolParameters.get(currentTime.time + 1);
     } catch {
       return {
         status: ResponseStatus.ServerError,
@@ -42,8 +42,8 @@ export default class RequestHandler {
     let operation: Operation;
     try {
       // Validate operation request size.
-      if (request.length > protocol.maxOperationByteSize) {
-        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocol.maxOperationByteSize}`);
+      if (request.length > protocolParameters.maxOperationByteSize) {
+        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocolParameters.maxOperationByteSize}`);
       }
 
       // Parse request into a Operation.
@@ -109,7 +109,7 @@ export default class RequestHandler {
     try {
       uniquePortion = didOrDidDocument.substring(this.didMethodName.length);
 
-      const supportedHashAlgorithms = Protocol.getSupportedHashAlgorithms();
+      const supportedHashAlgorithms = ProtocolParameters.getSupportedHashAlgorithms();
       parameterIsDid = Multihash.isSupportedHash(Encoder.decodeAsBuffer(uniquePortion), supportedHashAlgorithms);
     } catch {
       return {
@@ -143,7 +143,7 @@ export default class RequestHandler {
   private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
-    const protocolVersion = Protocol.getProtocol(currentTime.time);
+    const protocolVersion = ProtocolParameters.get(currentTime.time);
     const currentHashAlgorithm = protocolVersion.hashAlgorithmInMultihashCode;
 
     // Validate that the given encoded DID Document is a valid original document.
@@ -180,7 +180,7 @@ export default class RequestHandler {
   public async handleCreateOperation (operation: Operation): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
-    const protocolVersion = Protocol.getProtocol(currentTime.time);
+    const protocolVersion = ProtocolParameters.get(currentTime.time);
 
     // Validate that the given encoded DID Document is a valid original document.
     const isValidOriginalDocument = Document.isEncodedStringValidOriginalDocument(operation.encodedPayload, protocolVersion.maxOperationByteSize);
@@ -202,7 +202,7 @@ export default class RequestHandler {
    */
   public async handleUpdateOperation (operation: Operation): Promise<IResponse> {
     // TODO: Assert that operation is well-formed once the code reaches here.
-    // ie. Need to make sure invalid patch, missing operation number, etc will cause Operation creation failure.
+    // ie. Need to make sure invalid patch etc will cause Operation creation failure.
 
     let updatedDidDocument;
     try {

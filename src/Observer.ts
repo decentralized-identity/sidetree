@@ -1,11 +1,11 @@
 import DownloadManager from './DownloadManager';
 import Encoder from './Encoder';
 import OperationProcessor from './OperationProcessor';
+import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
-import { getProtocol } from './Protocol';
 import { InMemoryTransactionStore } from './TransactionStore';
 import { Operation } from './Operation';
 
@@ -311,7 +311,7 @@ export default class Observer {
       console.info(`Parsed batch file ${resolvedTransaction.batchFileHash} in ${endTimer.rounded()} ms.`);
 
       // Verify the number of operations does not exceed the maximum allowed limit.
-      const protocol = getProtocol(resolvedTransaction.transactionTime);
+      const protocol = ProtocolParameters.get(resolvedTransaction.transactionTime);
       if (batchFile.operations.length > protocol.maxOperationsPerBatch) {
         throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
       }
