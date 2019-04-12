@@ -155,10 +155,7 @@ describe('OperationProcessor', async () => {
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
+    await operationProcessor.processBatch(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
@@ -225,12 +222,9 @@ describe('OperationProcessor', async () => {
   });
 
   it('should return undefined for deleted did', async () => {
-    const numberOfUpdates = 1;
+    const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
+    await operationProcessor.processBatch(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();

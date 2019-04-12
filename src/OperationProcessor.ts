@@ -69,7 +69,8 @@ export default class OperationProcessor {
    * @param currentDidDocument The DID document to apply the given operation against.
    * @returns [isOperationValid, updatedDidDocument]; isOperationValid is a boolean that indicates if the
    *          operation is valid given the operation context. If the operation is valid, updatedDidDocument
-   *          contains the updated document, Otherwise, it contains currentDidDocument (unchanged).
+   *          contains the updated document, Otherwise, it contains currentDidDocument (unchanged). In the case
+   *          of a (valid) delete operation, the returned updatedDidDocument is undefined.
    */
   private async apply (operation: Operation, previousOperation: Operation | undefined, currentDidDocument: IDocument | undefined):
     Promise<[boolean, IDocument | undefined]> {
