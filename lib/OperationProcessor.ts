@@ -46,10 +46,10 @@ export default class OperationProcessor {
 
     // Apply each operation in chronological order to build a complete DID Document.
     for (const operation of didOps) {
-      const newDidDocument = await this.apply(operation, previousOperation, didDocument);
+      let isOperationValid: boolean;
+      [isOperationValid, didDocument] = await this.apply(operation, previousOperation, didDocument);
 
-      if (newDidDocument) {
-        didDocument = newDidDocument;
+      if (isOperationValid) {
         previousOperation = operation;
 
         // If this is a delete operation, this will be the last valid operation for this DID.
@@ -67,64 +67,86 @@ export default class OperationProcessor {
    * @param operation The operation to apply against the given current DID Document (if any).
    * @param previousOperation The previously operation applied if any. Used for operation validation.
    * @param currentDidDocument The DID document to apply the given operation against.
-   * @returns undefined if any validation fails; the updated document otherwise.
+   * @returns [isOperationValid, updatedDidDocument]; isOperationValid is a boolean that indicates if the
+   *          operation is valid given the operation context. If the operation is valid, updatedDidDocument
+   *          contains the updated document, Otherwise, it contains currentDidDocument (unchanged). In the case
+   *          of a (valid) delete operation, the returned updatedDidDocument is undefined.
    */
   private async apply (operation: Operation, previousOperation: Operation | undefined, currentDidDocument: IDocument | undefined):
-    Promise<IDocument | undefined> {
+    Promise<[boolean, IDocument | undefined]> {
 
     if (operation.type === OperationType.Create) {
 
       // If either of these is defined, then we have seen a previous create operation.
       if (previousOperation || currentDidDocument) {
-        return undefined;
+        return [false, currentDidDocument];
       }
 
       const originalDidDocument = this.getOriginalDocument(operation);
       if (originalDidDocument === undefined) {
-        return undefined;
+        return [false, currentDidDocument];
       }
 
       const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
 
       if (!signingKey) {
-        return undefined;
+        return [false, currentDidDocument];
       }
 
       if (!(await operation.verifySignature(signingKey))) {
-        return undefined;
+        return [false, currentDidDocument];
       }
 
-      return originalDidDocument;
-    } else {
-      // Every operation other than a create has a previous operation and a valid
-      // current DID document.
-      if (!previousOperation || !currentDidDocument) {
-        return undefined;
-      }
-
-      // Any non-create needs a previous operation hash  ...
-      if (!operation.previousOperationHash) {
-        return undefined;
-      }
-
-      // ... that should match the hash of the latest valid operation (previousOperation)
-      if (operation.previousOperationHash !== previousOperation.getOperationHash()) {
-        return undefined;
+      return [true, originalDidDocument];
+    } else if (operation.type === OperationType.Delete) {
+      // Delete can be applied only on valid did with a current document
+      if (!currentDidDocument) {
+        return [false, undefined];
       }
 
       // The current did document should contain the public key mentioned in the operation ...
       const publicKey = Document.getPublicKey(currentDidDocument, operation.signingKeyId);
       if (!publicKey) {
-        return undefined;
+        return [false, currentDidDocument];
       }
 
       // ... and the signature should verify
       if (!(await operation.verifySignature(publicKey))) {
-        return undefined;
+        return [false, currentDidDocument];
+      }
+
+      // If the delete is valid,
+      return [true, undefined];
+    } else {
+      // Every operation other than a create has a previous operation and a valid
+      // current DID document.
+      if (!previousOperation || !currentDidDocument) {
+        return [false, currentDidDocument];
+      }
+
+      // Any non-create needs a previous operation hash  ...
+      if (!operation.previousOperationHash) {
+        return [false, currentDidDocument];
+      }
+
+      // ... that should match the hash of the latest valid operation (previousOperation)
+      if (operation.previousOperationHash !== previousOperation.getOperationHash()) {
+        return [false, currentDidDocument];
+      }
+
+      // The current did document should contain the public key mentioned in the operation ...
+      const publicKey = Document.getPublicKey(currentDidDocument, operation.signingKeyId);
+      if (!publicKey) {
+        return [false, currentDidDocument];
+      }
+
+      // ... and the signature should verify
+      if (!(await operation.verifySignature(publicKey))) {
+        return [false, currentDidDocument];
       }
 
       const patchedDocument = Operation.applyJsonPatchToDidDocument(currentDidDocument, operation.patch!);
-      return patchedDocument;
+      return [true, patchedDocument];
     }
   }
 

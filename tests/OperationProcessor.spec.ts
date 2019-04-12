@@ -155,10 +155,7 @@ describe('OperationProcessor', async () => {
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
+    await operationProcessor.processBatch(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
@@ -222,5 +219,25 @@ describe('OperationProcessor', async () => {
     // Attempt to resolve the DID and validate the outcome.
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
+  });
+
+  it('should return undefined for deleted did', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    await operationProcessor.processBatch(ops);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
+    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
+    await operationProcessor.processBatch([deleteOperation]);
+
+    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocumentAfterDelete).toBeUndefined();
   });
 });
