@@ -1,5 +1,5 @@
-import Cryptography from './lib/Cryptography';
-import Document, { IDocument } from './lib/Document';
+import Cryptography from './util/Cryptography';
+import Document, { IDocument } from './util/Document';
 import Encoder from './Encoder';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';

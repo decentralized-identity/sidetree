@@ -1,4 +1,4 @@
-import SortedArray from './lib/SortedArray';
+import SortedArray from './util/SortedArray';
 import Transaction from './Transaction';
 
 /**

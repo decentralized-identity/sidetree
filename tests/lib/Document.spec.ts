@@ -1,5 +1,5 @@
-import Document from '../../src/lib/Document';
-import Encoder from '../../src/Encoder';
+import Document from '../../lib/util/Document';
+import Encoder from '../../lib/Encoder';
 
 describe('Document', () => {
 

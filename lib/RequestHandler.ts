@@ -1,7 +1,7 @@
 import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
-import Did from './lib/Did';
-import Document, { IDocument } from './lib/Document';
+import Did from './util/Did';
+import Document, { IDocument } from './util/Document';
 import Multihash from './Multihash';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
