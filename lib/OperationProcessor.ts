@@ -1,4 +1,4 @@
-import Document, { IDocument } from './lib/Document';
+import Document, { IDocument } from './util/Document';
 import ProtocolParameters from './ProtocolParameters';
 import { Operation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';

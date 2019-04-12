@@ -4,7 +4,7 @@
   "description": "Node.js implementation of the Sidetree protocol.",
   "repository": "https://github.com/decentralized-identity/sidetree-core",
   "license": "Apache-2.0",
-  "main": "dist/src/index.js",
+  "main": "dist/lib/index.js",
   "dependencies": {
     "@decentralized-identity/did-auth-jose": "^0.1.5",
     "@decentralized-identity/did-common-typescript": "0.1.2",
@@ -56,7 +56,7 @@
     "test": "jasmine-ts --config=./tests/jasmine.json",
     "cc": "npm run build && nyc jasmine --config=./tests/jasmine-cc.json",
     "lint": "tslint --fix --project .",
-    "start": "node dist/src/index.js"
+    "start": "node dist/src/server.js"
   },
   "nyc": {
     "all": true,
@@ -64,7 +64,7 @@
       ".js"
     ],
     "include": [
-      "dist/src/**"
+      "dist/lib/**"
     ],
     "reporter": [
       "text",

@@ -1,7 +1,7 @@
 import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
 import Encoder from './Encoder';
-import MerkleTree from './lib/MerkleTree';
+import MerkleTree from './util/MerkleTree';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';

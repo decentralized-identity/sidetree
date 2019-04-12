@@ -1,12 +1,12 @@
 import * as retry from 'async-retry';
 import * as fetchMock from 'fetch-mock';
-import DownloadManager from '../src/DownloadManager';
+import DownloadManager from '../lib/DownloadManager';
 import MockOperationStore from './mocks/MockOperationStore';
-import Observer from '../src/Observer';
-import OperationProcessor from '../src/OperationProcessor';
-import { BlockchainClient } from '../src/Blockchain';
-import { CasClient } from '../src/Cas';
-import { OperationStore } from '../src/OperationStore';
+import Observer from '../lib/Observer';
+import OperationProcessor from '../lib/OperationProcessor';
+import { BlockchainClient } from '../lib/Blockchain';
+import { CasClient } from '../lib/Cas';
+import { OperationStore } from '../lib/OperationStore';
 import { Response } from 'node-fetch';
 import { Readable } from 'readable-stream';
 

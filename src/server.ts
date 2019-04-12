@@ -1,10 +1,14 @@
+/**
+ * NOTE: This file is not essential to the Sidetree Core library,
+ * this is only an example of how to create and run a Sidetree node.
+ */
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import Core from './Core';
-import { IConfig } from './Config';
-import { IProtocolParameters } from './ProtocolParameters';
-import { IResponse, Response } from './Response';
+import Core from '../lib/Core';
+import { IConfig } from '../lib/Config';
+import { IProtocolParameters } from '../lib/ProtocolParameters';
+import { IResponse, Response } from '../lib/Response';
 
 /** Configuration used by this server. */
 interface IServerConfig extends IConfig {
@@ -66,25 +70,4 @@ const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
     // Need to set the body explicitly to empty string, else koa will echo the request as the response.
     koaResponse.body = '';
   }
-};
-
-// Creating aliases to classes and interfaces used for external consumption.
-// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
-import SidetreeCore from './Core';
-// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
-import { IConfig as ISidetreeConfig } from './Config';
-// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
-import { IProtocolParameters as ISidetreeProtocolParameters } from './ProtocolParameters';
-// tslint:disable-next-line:no-duplicate-imports - Showing intent of external aliasing independently and explicitly.
-import {
-  IResponse as ISidetreeResponse,
-  Response as SidetreeResponse
-} from './Response';
-
-export {
-  ISidetreeConfig,
-  ISidetreeProtocolParameters,
-  ISidetreeResponse,
-  SidetreeCore,
-  SidetreeResponse
 };
