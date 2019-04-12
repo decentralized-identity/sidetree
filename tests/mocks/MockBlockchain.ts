@@ -1,6 +1,6 @@
-import BlockchainTime from '../../src/BlockchainTime';
-import Transaction from '../../src/Transaction';
-import { Blockchain } from '../../src/Blockchain';
+import BlockchainTime from '../../lib/BlockchainTime';
+import Transaction from '../../lib/Transaction';
+import { Blockchain } from '../../lib/Blockchain';
 
 /**
  * Mock Blockchain class for testing.

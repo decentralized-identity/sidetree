@@ -1,6 +1,6 @@
-import Cryptography from '../src/lib/Cryptography';
+import Cryptography from '../lib/util/Cryptography';
 import OperationGenerator from './generators/OperationGenerator';
-import { Operation } from '../src/Operation';
+import { Operation } from '../lib/Operation';
 
 describe('Operation', async () => {
   // Load the DID Document template.

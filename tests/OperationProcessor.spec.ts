@@ -1,14 +1,14 @@
-import BatchFile from '../src/BatchFile';
-import Cryptography from '../src/lib/Cryptography';
-import Document from '../src/lib/Document';
+import BatchFile from '../lib/BatchFile';
+import Cryptography from '../lib/util/Cryptography';
+import Document from '../lib/util/Document';
 import MockCas from './mocks/MockCas';
 import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
-import OperationProcessor from '../src/OperationProcessor';
-import ProtocolParameters from '../src/ProtocolParameters';
-import { Cas } from '../src/Cas';
-import { OperationStore } from '../src/OperationStore';
-import { Operation } from '../src/Operation';
+import OperationProcessor from '../lib/OperationProcessor';
+import ProtocolParameters from '../lib/ProtocolParameters';
+import { Cas } from '../lib/Cas';
+import { OperationStore } from '../lib/OperationStore';
+import { Operation } from '../lib/Operation';
 
 /**
  * Creates a batch file with single operation given operation buffer,

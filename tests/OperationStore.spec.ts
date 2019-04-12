@@ -1,9 +1,9 @@
-import Cryptography from '../src/lib/Cryptography';
+import Cryptography from '../lib/util/Cryptography';
 import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
-import ProtocolParameters from '../src/ProtocolParameters';
-import { OperationStore } from '../src/OperationStore';
-import { Operation } from '../src/Operation';
+import ProtocolParameters from '../lib/ProtocolParameters';
+import { OperationStore } from '../lib/OperationStore';
+import { Operation } from '../lib/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
 /**

@@ -1,6 +1,6 @@
-import DidPublicKey from '../../src/lib/DidPublicKey';
-import Encoder from '../../src/Encoder';
-import { IOperation, Operation } from '../../src/Operation';
+import DidPublicKey from '../../lib/util/DidPublicKey';
+import Encoder from '../../lib/Encoder';
+import { IOperation, Operation } from '../../lib/Operation';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
