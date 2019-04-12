@@ -1,5 +1,5 @@
 {
-  "name": "sidetree-core",
+  "name": "@decentralized-identity/sidetree-core",
   "version": "0.1.0",
   "description": "Node.js implementation of the Sidetree protocol.",
   "repository": "https://github.com/decentralized-identity/sidetree-core",
