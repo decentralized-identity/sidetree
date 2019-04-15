@@ -1,5 +1,4 @@
 import Cryptography from '../lib/util/Cryptography';
-import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
 import ProtocolParameters from '../lib/ProtocolParameters';
 import { OperationStore } from '../lib/OperationStore';
@@ -28,6 +27,9 @@ function constructAnchoredOperation (
   return Operation.create(opBuf, resolvedTransaction, operationIndex);
 }
 
+/**
+ * Construct a create operation anchored with a transactionNumber, transactionTime, and operationIndex
+ */
 async function constructAnchoredCreateOperation (
   publicKey: DidPublicKey,
   privateKey: string,
@@ -40,6 +42,9 @@ async function constructAnchoredCreateOperation (
   return operation;
 }
 
+/**
+ * Construct an update operation anchored with a transactionNumber, transactionTime, and operationIndex
+ */
 async function constructAnchoredUpdateOperation (
   privateKey: string,
   didUniqueSuffix: string,
@@ -70,9 +75,27 @@ async function constructAnchoredUpdateOperation (
   return constructAnchoredOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
 }
 
+const databaseName = 'sidetree';
+const operationCollectionName = 'operations';
+
+/**
+ * Test if a mongo service is running at the specified url
+ */
+async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
+  try {
+    const client = await MongoClient.connect(serverUrl);
+    await client.close();
+  } catch (error) {
+    console.log('Mongoclient connect error: ' + error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Clear a mongo collection - used to remove test state.
+ */
 async function clearMongoCollection () {
-  const databaseName = 'sidetree';
-  const operationCollectionName = 'operations';
   const client = await MongoClient.connect('mongodb://localhost:27017');
   const db = client.db(databaseName);
   const collections = await db.collections();
@@ -85,20 +108,10 @@ async function clearMongoCollection () {
   }
 }
 
-enum OperationStoreType {
-  Mongo,
-  Mock
-}
-
-async function getOperationStore (operationStoreType: OperationStoreType): Promise<OperationStore> {
-  if (operationStoreType === OperationStoreType.Mongo) {
-    const config = require('../json/config-test.json');
-    const operationStore = new MongoDbOperationStore(config.operationStoreUri);
-    await operationStore.initialize();
-    return operationStore;
-  } else {
-    return new MockOperationStore();
-  }
+async function getOperationStore (operationStoreUri: string): Promise<OperationStore> {
+  const operationStore = new MongoDbOperationStore(operationStoreUri);
+  await operationStore.initialize();
+  return operationStore;
 }
 
 describe('OperationStore', async () => {
@@ -106,19 +119,21 @@ describe('OperationStore', async () => {
   ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Change to OperationStoreType.Mongo to test Mongo-based store
-  let operationStoreType = OperationStoreType.Mock;
   let operationStore: OperationStore;
   let publicKey: DidPublicKey;
   let privateKey: string;
+  const config = require('../json/config-test.json');
 
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
-    if (operationStoreType === OperationStoreType.Mongo) {
-      await clearMongoCollection();
+    if (!await isMongoServiceAvailable(config.operationStoreUri)) {
+      pending('MongoDB service not available');
     }
 
-    operationStore = await getOperationStore(operationStoreType);
+    await clearMongoCollection();
+
+    operationStore = await getOperationStore(config.operationStoreUri);
   });
 
   it('should get a put create operation', async () => {
@@ -339,56 +354,54 @@ describe('OperationStore', async () => {
   });
 
   it('should remember operations after stop/restart', async () => {
-    if (operationStoreType === OperationStoreType.Mongo) {
-      // Use a create operation to generate a DID
-      const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-      const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    // Use a create operation to generate a DID
+    const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
-      const batchSize = 10;
-      const batch = new Array<Operation>(createOperation);
-      for (let i = 1; i < batchSize; i++) {
-        const previousOperation = batch[i - 1];
-        const previousVersion = previousOperation.getOperationHash();
-        const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-        batch.push(operation);
-      }
+    const batchSize = 10;
+    const batch = new Array<Operation>(createOperation);
+    for (let i = 1; i < batchSize; i++) {
+      const previousOperation = batch[i - 1];
+      const previousVersion = previousOperation.getOperationHash();
+      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
+      batch.push(operation);
+    }
 
-      await operationStore.putBatch(batch);
-      let returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
+    await operationStore.putBatch(batch);
+    let returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
 
-      expect(returnedOperations.length).toEqual(batchSize);
-      for (let i = 0; i < batchSize; i++) {
-        const returnedOperation = returnedOperations[i];
+    expect(returnedOperations.length).toEqual(batchSize);
+    for (let i = 0; i < batchSize; i++) {
+      const returnedOperation = returnedOperations[i];
 
-        expect(returnedOperation.transactionNumber).toBeDefined();
-        expect(returnedOperation.transactionNumber!).toEqual(i);
-        expect(returnedOperation.operationIndex).toBeDefined();
-        expect(returnedOperation.operationIndex!).toEqual(0);
-        expect(returnedOperation.transactionTime).toBeDefined();
-        expect(returnedOperation.transactionTime!).toEqual(i);
-        expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-        expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-      }
+      expect(returnedOperation.transactionNumber).toBeDefined();
+      expect(returnedOperation.transactionNumber!).toEqual(i);
+      expect(returnedOperation.operationIndex).toBeDefined();
+      expect(returnedOperation.operationIndex!).toEqual(0);
+      expect(returnedOperation.transactionTime).toBeDefined();
+      expect(returnedOperation.transactionTime!).toEqual(i);
+      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
+      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
+    }
 
-      // Create another instance of the operation store
-      operationStore = await getOperationStore(OperationStoreType.Mongo);
+    // Create another instance of the operation store
+    operationStore = await getOperationStore(config.operationStoreUri);
 
-      // Check if we have all the previously put operations
-      returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
+    // Check if we have all the previously put operations
+    returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
 
-      expect(returnedOperations.length).toEqual(batchSize);
-      for (let i = 0; i < batchSize; i++) {
-        const returnedOperation = returnedOperations[i];
+    expect(returnedOperations.length).toEqual(batchSize);
+    for (let i = 0; i < batchSize; i++) {
+      const returnedOperation = returnedOperations[i];
 
-        expect(returnedOperation.transactionNumber).toBeDefined();
-        expect(returnedOperation.transactionNumber!).toEqual(i);
-        expect(returnedOperation.operationIndex).toBeDefined();
-        expect(returnedOperation.operationIndex!).toEqual(0);
-        expect(returnedOperation.transactionTime).toBeDefined();
-        expect(returnedOperation.transactionTime!).toEqual(i);
-        expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-        expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-      }
+      expect(returnedOperation.transactionNumber).toBeDefined();
+      expect(returnedOperation.transactionNumber!).toEqual(i);
+      expect(returnedOperation.operationIndex).toBeDefined();
+      expect(returnedOperation.operationIndex!).toEqual(0);
+      expect(returnedOperation.transactionTime).toBeDefined();
+      expect(returnedOperation.transactionTime!).toEqual(i);
+      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
+      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
     }
   });
 

@@ -82,10 +82,7 @@ export default class OperationProcessor {
         return [false, currentDidDocument];
       }
 
-      const originalDidDocument = this.getOriginalDocument(operation);
-      if (originalDidDocument === undefined) {
-        return [false, currentDidDocument];
-      }
+      const originalDidDocument = this.getOriginalDocument(operation)!;
 
       const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
 
