@@ -4,7 +4,7 @@ import timeSpan = require('time-span');
 import { Cas } from '../lib/Cas';
 
 describe('DownloadManager', async () => {
-  const maxConcurrentCasDownloads = 3;
+  const maxConcurrentDownloads = 3;
   const mockSecondsTakenForEachCasFetch = 2;
 
   let cas: Cas;
@@ -16,7 +16,7 @@ describe('DownloadManager', async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
     cas = new MockCas(mockSecondsTakenForEachCasFetch);
-    downloadManager = new DownloadManager(maxConcurrentCasDownloads, cas);
+    downloadManager = new DownloadManager(maxConcurrentDownloads, cas);
     downloadManager.start();
   });
 
