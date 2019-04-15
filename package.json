@@ -47,7 +47,7 @@
     "nyc": "13.3.0",
     "readable-stream": "3.3.0",
     "ts-node": "8.0.3",
-    "tslint": "5.15.0",
+    "tslint": "5.11.0",
     "tslint-config-standard": "8.0.1",
     "typescript": "3.4.3"
   },
