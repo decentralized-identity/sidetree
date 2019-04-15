@@ -29,8 +29,8 @@ export default class Core {
 
     // Component dependency initialization & injection.
     const blockchain = new BlockchainClient(config.blockchainServiceUri);
-    const cas = new CasClient(config.casServiceUri);
-    const downloadManager = new DownloadManager(config.maxConcurrentCasDownloads, cas);
+    const cas = new CasClient(config.contentAddressableStoreServiceUri);
+    const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
     const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
     this.operationStore = new MongoDbOperationStore(config.operationStoreUri);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);

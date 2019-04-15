@@ -4,9 +4,9 @@
 export interface IConfig {
   batchingIntervalInSeconds: number;
   blockchainServiceUri: string;
-  casServiceUri: string;
+  contentAddressableStoreServiceUri: string;
   didMethodName: string;
-  maxConcurrentCasDownloads: number;
+  maxConcurrentDownloads: number;
   observingIntervalInSeconds: number;
   operationStoreUri: string;
 }

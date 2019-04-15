@@ -25,8 +25,8 @@ describe('Observer', async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
     mockCasFetch = fetchMock.sandbox().get('*', 404); // Setting the CAS to always return 404.
-    cas = new CasClient(config.casServiceUri, mockCasFetch);
-    downloadManager = new DownloadManager(config.maxConcurrentCasDownloads, cas);
+    cas = new CasClient(config.contentAddressableStoreServiceUri, mockCasFetch);
+    downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
 

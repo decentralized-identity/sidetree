@@ -153,7 +153,7 @@ export default class Observer {
           // We hold off from fetching more transactions if the list of transactions under processing gets too long.
           // We will wait for count of transaction being processed to fall to the maximum allowed concurrent downloads
           // before attempting further transaction fetches.
-          await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.downloadManager.maxConcurrentCasDownloads);
+          await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.downloadManager.maxConcurrentDownloads);
         }
 
         // Update the last known transaction.
