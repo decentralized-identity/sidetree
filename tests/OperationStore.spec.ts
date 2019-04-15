@@ -1,13 +1,12 @@
-import Cryptography from '../src/lib/Cryptography';
+import Cryptography from '../lib/util/Cryptography';
 import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
-import { OperationStore } from '../src/OperationStore';
-import { initializeProtocol } from '../src/Protocol';
-import { Operation } from '../src/Operation';
+import ProtocolParameters from '../lib/ProtocolParameters';
+import { OperationStore } from '../lib/OperationStore';
+import { Operation } from '../lib/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
-import MongoDbOperationStore from '../src/MongoDbOperationStore';
+import MongoDbOperationStore from '../lib/MongoDbOperationStore';
 import { MongoClient } from 'mongodb';
-import { Config, ConfigKey } from '../src/Config';
 
 /**
  * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
@@ -93,9 +92,8 @@ enum OperationStoreType {
 
 async function getOperationStore (operationStoreType: OperationStoreType): Promise<OperationStore> {
   if (operationStoreType === OperationStoreType.Mongo) {
-    const configFile = require('../json/config-test.json');
-    const config = new Config(configFile);
-    const operationStore = new MongoDbOperationStore(config[ConfigKey.OperationStoreUri]);
+    const config = require('../json/config-test.json');
+    const operationStore = new MongoDbOperationStore(config.operationStoreUri);
     await operationStore.initialize();
     return operationStore;
   } else {
@@ -104,7 +102,8 @@ async function getOperationStore (operationStoreType: OperationStoreType): Promi
 }
 
 describe('OperationStore', async () => {
-  initializeProtocol('protocol-test.json');
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Change to OperationStoreType.Mongo to test Mongo-based store
   let operationStoreType = OperationStoreType.Mock;
@@ -163,6 +162,31 @@ describe('OperationStore', async () => {
     expect(returnedOperationHash).toEqual(updateOperation.getOperationHash());
   });
 
+  it('should ignore duplicate updates', async () => {
+    // Use a create operation to generate a DID
+    const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const createVersion = createOperation.getOperationHash();
+    const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
+    await operationStore.putBatch([updateOperation]);
+    // duplicate operation
+    await operationStore.putBatch([updateOperation]);
+    const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
+
+    expect(returnedOperations.length).toEqual(1);
+    const returnedOperation = returnedOperations[0];
+    const returnedOperationHash = returnedOperation.getOperationHash();
+
+    expect(returnedOperation.transactionNumber).toBeDefined();
+    expect(returnedOperation.transactionNumber!).toEqual(1);
+    expect(returnedOperation.operationIndex).toBeDefined();
+    expect(returnedOperation.operationIndex!).toEqual(0);
+    expect(returnedOperation.transactionTime).toBeDefined();
+    expect(returnedOperation.transactionTime!).toEqual(1);
+    expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
+    expect(returnedOperationHash).toEqual(updateOperation.getOperationHash());
+  });
+
   it('should get all operations in a batch put', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
@@ -192,6 +216,40 @@ describe('OperationStore', async () => {
       expect(returnedOperation.transactionTime!).toEqual(i);
       expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
       expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
+    }
+  });
+
+  it('should get all operations in a batch put with duplicates', async () => {
+    // Use a create operation to generate a DID
+    const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
+    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+
+    const batchSize = 10;
+    const batch = new Array<Operation>(createOperation);
+    // construct a batch with each operation duplicated.
+    for (let i = 1; i < batchSize ; i++) {
+      const previousOperation = batch[i - 1];
+      const previousVersion = previousOperation.getOperationHash();
+      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
+      batch.push(operation);
+      batch.push(operation); // duplicate
+    }
+
+    await operationStore.putBatch(batch);
+    const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
+
+    expect(returnedOperations.length).toEqual(batchSize);
+    for (let i = 0 ; i < batchSize ; i++) {
+      const returnedOperation = returnedOperations[i];
+
+      expect(returnedOperation.transactionNumber).toBeDefined();
+      expect(returnedOperation.transactionNumber!).toEqual(i);
+      expect(returnedOperation.operationIndex).toBeDefined();
+      expect(returnedOperation.operationIndex!).toEqual(0);
+      expect(returnedOperation.transactionTime).toBeDefined();
+      expect(returnedOperation.transactionTime!).toEqual(i);
+      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
+      expect(returnedOperation.getOperationHash()).toEqual(batch[i * 2].getOperationHash());
     }
   });
 

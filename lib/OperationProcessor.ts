@@ -1,5 +1,5 @@
-import * as Protocol from './Protocol';
-import Document, { IDocument } from './lib/Document';
+import Document, { IDocument } from './util/Document';
+import ProtocolParameters from './ProtocolParameters';
 import { Operation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -69,7 +69,8 @@ export default class OperationProcessor {
    * @param currentDidDocument The DID document to apply the given operation against.
    * @returns [isOperationValid, updatedDidDocument]; isOperationValid is a boolean that indicates if the
    *          operation is valid given the operation context. If the operation is valid, updatedDidDocument
-   *          contains the updated document, Otherwise, it contains currentDidDocument (unchanged).
+   *          contains the updated document, Otherwise, it contains currentDidDocument (unchanged). In the case
+   *          of a (valid) delete operation, the returned updatedDidDocument is undefined.
    */
   private async apply (operation: Operation, previousOperation: Operation | undefined, currentDidDocument: IDocument | undefined):
     Promise<[boolean, IDocument | undefined]> {
@@ -81,9 +82,10 @@ export default class OperationProcessor {
         return [false, currentDidDocument];
       }
 
-      // Assert: originalDidDocument is defined at this point, since this is checked within Operation.isWellFormed
-      // at operation construction time
-      const originalDidDocument = this.getOriginalDocument(operation)!;
+      const originalDidDocument = this.getOriginalDocument(operation);
+      if (originalDidDocument === undefined) {
+        return [false, currentDidDocument];
+      }
 
       const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
 
@@ -152,7 +154,7 @@ export default class OperationProcessor {
    * Gets the original DID document from a create operation.
    */
   private getOriginalDocument (createOperation: Operation): IDocument | undefined {
-    const protocolVersion = Protocol.getProtocol(createOperation.transactionTime!);
+    const protocolVersion = ProtocolParameters.get(createOperation.transactionTime!);
     return Document.from(createOperation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
   }
 }

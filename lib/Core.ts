@@ -1,12 +1,13 @@
 import BatchWriter from './BatchWriter';
 import DownloadManager from './DownloadManager';
+import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import Observer from './Observer';
 import OperationProcessor from './OperationProcessor';
 import RequestHandler from './RequestHandler';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
-import { Config, ConfigKey } from './Config';
+import { IConfig } from './Config';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -23,16 +24,18 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: Config) {
+  public constructor (config: IConfig, versionsOfProtocolParameters: IProtocolParameters[]) {
+    ProtocolParameters.initialize(versionsOfProtocolParameters);
+
     // Component dependency initialization & injection.
-    const blockchain = new BlockchainClient(config[ConfigKey.BlockchainNodeUri]);
-    const cas = new CasClient(config[ConfigKey.CasNodeUri]);
-    const downloadManager = new DownloadManager(+config[ConfigKey.MaxConcurrentCasDownloads], cas);
-    const batchWriter = new BatchWriter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-    this.operationStore = new MongoDbOperationStore(config[ConfigKey.OperationStoreUri]);
-    const operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], this.operationStore);
-    this.observer = new Observer(blockchain, downloadManager, operationProcessor, +config[ConfigKey.PollingIntervalInSeconds]);
-    this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config[ConfigKey.DidMethodName]);
+    const blockchain = new BlockchainClient(config.blockchainServiceUri);
+    const cas = new CasClient(config.contentAddressableStoreServiceUri);
+    const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
+    const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
+    this.operationStore = new MongoDbOperationStore(config.operationStoreUri);
+    const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
+    this.observer = new Observer(blockchain, downloadManager, operationProcessor, config.observingIntervalInSeconds);
+    this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config.didMethodName);
 
     downloadManager.start();
     batchWriter.startPeriodicBatchWriting();

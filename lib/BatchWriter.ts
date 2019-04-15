@@ -1,9 +1,9 @@
 import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
 import Encoder from './Encoder';
-import MerkleTree from './lib/MerkleTree';
+import MerkleTree from './util/MerkleTree';
+import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
-import { getProtocol } from './Protocol';
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
 
@@ -21,7 +21,7 @@ export default class BatchWriter {
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
-    private batchIntervalInSeconds: number) {
+    private batchingIntervalInSeconds: number) {
   }
 
   /**
@@ -42,7 +42,7 @@ export default class BatchWriter {
    * The function that starts periodically anchoring operation batches to blockchain.
    */
   public startPeriodicBatchWriting () {
-    setInterval(async () => this.writeOperationBatch(), this.batchIntervalInSeconds * 1000);
+    setInterval(async () => this.writeOperationBatch(), this.batchingIntervalInSeconds * 1000);
   }
 
   /**
@@ -113,7 +113,7 @@ export default class BatchWriter {
   private async getBatch (): Promise<Buffer[]> {
     // Get the protocol version according to current blockchain time to decide on the batch size limit to enforce.
     const currentTime = await this.blockchain.getLatestTime();
-    const protocol = getProtocol(currentTime.time + 1);
+    const protocol = ProtocolParameters.get(currentTime.time + 1);
 
     let queueSize = this.operations.length;
     let batchSize = queueSize;

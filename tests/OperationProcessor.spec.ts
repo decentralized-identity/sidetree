@@ -1,15 +1,14 @@
-import BatchFile from '../src/BatchFile';
-import Cryptography from '../src/lib/Cryptography';
-import Document from '../src/lib/Document';
+import BatchFile from '../lib/BatchFile';
+import Cryptography from '../lib/util/Cryptography';
+import Document from '../lib/util/Document';
 import MockCas from './mocks/MockCas';
 import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
-import OperationProcessor from '../src/OperationProcessor';
-import { Cas } from '../src/Cas';
-import { Config, ConfigKey } from '../src/Config';
-import { OperationStore } from '../src/OperationStore';
-import { Operation } from '../src/Operation';
-import { initializeProtocol } from '../src/Protocol';
+import OperationProcessor from '../lib/OperationProcessor';
+import ProtocolParameters from '../lib/ProtocolParameters';
+import { Cas } from '../lib/Cas';
+import { OperationStore } from '../lib/OperationStore';
+import { Operation } from '../lib/Operation';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -115,14 +114,14 @@ function getPermutation (size: number, index: number): Array<number> {
 }
 
 describe('OperationProcessor', async () => {
-  initializeProtocol('protocol-test.json');
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
 
   let cas = new MockCas();
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
+  const config = require('../json/config-test.json');
   let operationProcessor: OperationProcessor;
   let operationStore: OperationStore;
   let createOp: Operation | undefined;
@@ -135,7 +134,7 @@ describe('OperationProcessor', async () => {
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore); // TODO: add a clear method to avoid double initialization.
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore); // TODO: add a clear method to avoid double initialization.
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -173,10 +172,7 @@ describe('OperationProcessor', async () => {
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
+    await operationProcessor.processBatch(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
@@ -211,7 +207,7 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
-      operationProcessor = new OperationProcessor(config[ConfigKey.DidMethodName], operationStore);
+      operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);
       const didDocument = await operationProcessor.resolve(didUniqueSuffix);
@@ -240,6 +236,26 @@ describe('OperationProcessor', async () => {
     // Attempt to resolve the DID and validate the outcome.
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
+  });
+
+  it('should return undefined for deleted did', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    await operationProcessor.processBatch(ops);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
+    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
+    await operationProcessor.processBatch([deleteOperation]);
+
+    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocumentAfterDelete).toBeUndefined();
   });
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {

@@ -42,17 +42,17 @@ export default class DownloadManager {
 
   /**
    * Constructs the download manager.
-   * @param cas The CAS to use for fetching the actual content.
+   * @param cas The Content Adressable Store to use for fetching the actual content.
    */
   public constructor (
-    public maxConcurrentCasDownloads: number,
+    public maxConcurrentDownloads: number,
     private cas: Cas) {
 
     // If maximum concurrent CAS download count is NaN, set it to a default value.
-    if (isNaN(maxConcurrentCasDownloads)) {
-      const defaultMaxConcurrentCasDownloads = 20;
-      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentCasDownloads}.`);
-      this.maxConcurrentCasDownloads = defaultMaxConcurrentCasDownloads;
+    if (isNaN(maxConcurrentDownloads)) {
+      const defaultmaxConcurrentDownloads = 20;
+      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultmaxConcurrentDownloads}.`);
+      this.maxConcurrentDownloads = defaultmaxConcurrentDownloads;
     }
   }
 
@@ -79,7 +79,7 @@ export default class DownloadManager {
       }
 
       // If maximum concurrent download count is reached, then we can't schedule more downloads.
-      const availableDownloadLanes = this.maxConcurrentCasDownloads - this.activeDownloads.size;
+      const availableDownloadLanes = this.maxConcurrentDownloads - this.activeDownloads.size;
       if (availableDownloadLanes <= 0) {
         return;
       }

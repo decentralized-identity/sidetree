@@ -2,7 +2,7 @@ import * as HttpStatus from 'http-status';
 import nodeFetch from 'node-fetch';
 
 /**
- * Interface for accessing the underlying CAS.
+ * Interface for accessing the underlying CAS (Content Addressable Store).
  * This interface is mainly useful for creating a mock CAS for testing purposes.
  */
 export interface Cas {

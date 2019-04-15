@@ -1,11 +1,11 @@
 import DownloadManager from './DownloadManager';
 import Encoder from './Encoder';
 import OperationProcessor from './OperationProcessor';
+import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
-import { getProtocol } from './Protocol';
 import { InMemoryTransactionStore } from './TransactionStore';
 import { Operation } from './Operation';
 
@@ -55,7 +55,7 @@ export default class Observer {
     private blockchain: Blockchain,
     private downloadManager: DownloadManager,
     private operationProcessor: OperationProcessor,
-    private pollingIntervalInSeconds: number) {
+    private observingIntervalInSeconds: number) {
   }
 
   /**
@@ -153,7 +153,7 @@ export default class Observer {
           // We hold off from fetching more transactions if the list of transactions under processing gets too long.
           // We will wait for count of transaction being processed to fall to the maximum allowed concurrent downloads
           // before attempting further transaction fetches.
-          await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.downloadManager.maxConcurrentCasDownloads);
+          await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.downloadManager.maxConcurrentDownloads);
         }
 
         // Update the last known transaction.
@@ -173,8 +173,8 @@ export default class Observer {
       console.error(error);
     } finally {
       if (this.continuePeriodicProcessing) {
-        console.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
-        setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
+        console.info(`Waiting for ${this.observingIntervalInSeconds} seconds before fetching and processing transactions again.`);
+        setTimeout(async () => this.processTransactions(), this.observingIntervalInSeconds * 1000);
       }
     }
   }
@@ -311,7 +311,7 @@ export default class Observer {
       console.info(`Parsed batch file ${resolvedTransaction.batchFileHash} in ${endTimer.rounded()} ms.`);
 
       // Verify the number of operations does not exceed the maximum allowed limit.
-      const protocol = getProtocol(resolvedTransaction.transactionTime);
+      const protocol = ProtocolParameters.get(resolvedTransaction.transactionTime);
       if (batchFile.operations.length > protocol.maxOperationsPerBatch) {
         throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
       }
