@@ -90,13 +90,13 @@ async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
 /**
  * Clear a mongo collection - used to remove test state.
  */
-async function clearMongoCollection (serverUrl: string) {
+async function removeMongoCollection (serverUrl: string) {
   const client = await MongoClient.connect(serverUrl);
   const db = client.db(MongoDbOperationStore.databaseName);
   const collections = await db.collections();
   const collectionNames = collections.map(collection => collection.collectionName);
 
-  // If the operation collection exists, use it; else create it then use it.
+  // If the operation collection exists drop it
   if (collectionNames.includes(MongoDbOperationStore.operationCollectionName)) {
     const collection = db.collection(MongoDbOperationStore.operationCollectionName);
     await collection.drop();
@@ -126,7 +126,7 @@ describe('MongoDbOperationStore', async () => {
       pending('MongoDB service not available');
     }
 
-    await clearMongoCollection(config.operationStoreUri);
+    await removeMongoCollection(config.operationStoreUri);
 
     operationStore = await getOperationStore(config.operationStoreUri);
   });
