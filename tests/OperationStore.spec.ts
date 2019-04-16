@@ -52,12 +52,11 @@ async function constructAnchoredUpdateOperation (
   transactionNumber: number,
   transactionTime: number,
   operationIndex: number,
-  operationNumber: number
+  operationIdentifier: number
 ): Promise<Operation> {
 
   const updatePayload = {
     didUniqueSuffix,
-    operationNumber,
     previousOperationHash: previousVersion,
     patch: [{
       op: 'replace',
@@ -65,7 +64,7 @@ async function constructAnchoredUpdateOperation (
       value: {
         id: '#key2',
         type: 'RsaVerificationKey2018',
-        owner: 'did:sidetree:updateid' + operationNumber,
+        owner: 'did:sidetree:updateid' + operationIdentifier,
         publicKeyPem: process.hrtime() // Some dummy value that's not used.
       }
     }]

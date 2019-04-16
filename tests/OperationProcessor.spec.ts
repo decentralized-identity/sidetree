@@ -51,7 +51,6 @@ async function createUpdateSequence (
     const mostRecentVersion = opHashes[i];
     const updatePayload = {
       didUniqueSuffix,
-      operationNumber: i + 1,
       previousOperationHash: mostRecentVersion,
       patch: [{
         op: 'replace',
@@ -280,10 +279,7 @@ describe('OperationProcessor', async () => {
   it('should return undefined for deleted did', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
+    await operationProcessor.processBatch(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
@@ -357,7 +353,6 @@ describe('OperationProcessor', async () => {
 
     const updatePayload = {
       didUniqueSuffix,
-      operationNumber: 1,
       patch: [{
         op: 'replace',
         path: '/publicKey/1',
@@ -387,7 +382,6 @@ describe('OperationProcessor', async () => {
 
     const updatePayload = {
       didUniqueSuffix,
-      operationNumber: 1,
       previousOperationHash: createOp!.getOperationHash(),
       patch: [{
         op: 'replace',
@@ -419,7 +413,6 @@ describe('OperationProcessor', async () => {
 
     const updatePayload = {
       didUniqueSuffix,
-      operationNumber: 1,
       previousOperationHash: createOp!.getOperationHash(),
       patch: [{
         op: 'replace',
@@ -453,7 +446,6 @@ describe('OperationProcessor', async () => {
 
     const update1Payload = {
       didUniqueSuffix,
-      operationNumber: 1,
       previousOperationHash: createOp!.getOperationHash(),
       patch: [{
         op: 'replace',
@@ -469,7 +461,6 @@ describe('OperationProcessor', async () => {
 
     const update2Payload = {
       didUniqueSuffix,
-      operationNumber: 2,
       previousOperationHash: createOp!.getOperationHash(),
       patch: [{
         op: 'replace',
@@ -502,11 +493,7 @@ describe('OperationProcessor', async () => {
   it('should rollback all', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
-
+    await operationProcessor.processBatch(ops);
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
