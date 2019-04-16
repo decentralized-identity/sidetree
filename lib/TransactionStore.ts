@@ -1,5 +1,4 @@
-import Logger from './lib/Logger';
-import SortedArray from './lib/SortedArray';
+import SortedArray from './util/SortedArray';
 import Transaction from './Transaction';
 
 /**
@@ -117,7 +116,7 @@ export class InMemoryTransactionStore implements TransactionStore {
       const exponentialFactorInMilliseconds = 60000;
       const requiredElapsedTimeSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * exponentialFactorInMilliseconds;
       const requiredElapsedTimeInSeconds = requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
-      Logger.info(`Required elapsed time before retry for anchor file ${transaction.anchorFileHash} is now ${requiredElapsedTimeInSeconds} seconds.`);
+      console.info(`Required elapsed time before retry for anchor file ${transaction.anchorFileHash} is now ${requiredElapsedTimeInSeconds} seconds.`);
       unresolvableTransaction.nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
     }
   }
@@ -162,7 +161,7 @@ export class InMemoryTransactionStore implements TransactionStore {
       throw Error(`Unable to locate processed transction: ${transactionNumber}`);
     }
 
-    Logger.info(`Reverting ${this.processedTransactions.length - bestKnownValidRecentProcessedTransactionIndex - 1} transactions...`);
+    console.info(`Reverting ${this.processedTransactions.length - bestKnownValidRecentProcessedTransactionIndex - 1} transactions...`);
     this.processedTransactions.splice(bestKnownValidRecentProcessedTransactionIndex + 1);
   }
 

@@ -1,6 +1,6 @@
-import DidPublicKey from '../../src/lib/DidPublicKey';
-import Encoder from '../../src/Encoder';
-import { IOperation, Operation } from '../../src/Operation';
+import DidPublicKey from '../../lib/util/DidPublicKey';
+import Encoder from '../../lib/Encoder';
+import { IOperation, Operation } from '../../lib/Operation';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
@@ -75,22 +75,24 @@ export default class OperationGenerator {
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (did: string): Promise<Buffer> {
-    const payload = { did };
+  public static async generateDeleteOperation (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+    const payload = { didUniqueSuffix };
 
     // Encode payload.
     const payloadJson = JSON.stringify(payload);
     const payloadEncoded = Encoder.encode(payloadJson);
 
+    const signature = await Operation.sign(payloadEncoded, privateKey);
+
     const operation = {
       header: {
         operation: 'delete',
-        kid: 'not implemented',
+        kid: keyId,
         alg: 'ES256K',
         proofOfWork: {}
       },
       payload: payloadEncoded,
-      signature: 'not implemented'
+      signature
     };
 
     return Buffer.from(JSON.stringify(operation));

@@ -1,5 +1,5 @@
-import { Operation } from '../../src/Operation';
-import { OperationStore } from '../../src/OperationStore';
+import { Operation } from '../../lib/Operation';
+import { OperationStore } from '../../lib/OperationStore';
 
 /**
  * Compare two operations returning -1, 0, 1 when the first operand
@@ -23,7 +23,7 @@ function compareOperation (op1: Operation, op2: Operation): number {
 /**
  * A simple in-memory implementation of operation store.
  */
-export class MockOperationStoreImpl implements OperationStore {
+export default class MockOperationStore implements OperationStore {
   // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
   private readonly didToOperations: Map<string, Array<Operation>> = new Map();
@@ -38,7 +38,7 @@ export class MockOperationStoreImpl implements OperationStore {
    * Inserts an operation into the in-memory store.
    */
   private async put (operation: Operation): Promise<void> {
-    const didUniqueSuffix = operation.getDidUniqueSuffix();
+    const didUniqueSuffix = operation.didUniqueSuffix!;
 
     this.ensureDidEntriesExist(didUniqueSuffix);
     // Append the operation to the operation array for the did ...
@@ -73,6 +73,9 @@ export class MockOperationStoreImpl implements OperationStore {
     // Sort needed if there was a put operation since last sort.
     if (updatedSinceLastSort) {
       didOps.sort(compareOperation);       // in-place sort
+      didOps = didOps.filter((elem, index, self) => {  // remove duplicates
+        return (index === 0) || compareOperation(elem, self[index - 1]) !== 0;
+      });
       this.didUpdatedSinceLastSort.set(didUniqueSuffix, false);
     }
 
@@ -93,7 +96,7 @@ export class MockOperationStoreImpl implements OperationStore {
     // operations array. Remove leaves the original order intact so
     // we do not need to update didUpdatedSinceLastSort
     for (const [, didOps] of this.didToOperations) {
-      MockOperationStoreImpl.removeOperations(didOps, transactionNumber);
+      MockOperationStore.removeOperations(didOps, transactionNumber);
     }
   }
 

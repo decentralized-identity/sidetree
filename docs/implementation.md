@@ -51,36 +51,15 @@ public rollback (transactionNumber: number)
 
 The effect of this method is to delete the effects of any operation included in a transaction with a transaction number greater than or equal to the _transactionNumber_ provided.
 
-## Lookup
-
-This method looks up the DID Document given an _operation hash_.
-
-```javascript
-public lookup (operationHash: Buffer): DidDocument
-```
-
-If there is a missing update in the chain leading up to the provided `operationHash`, the method returns `null`.
-
-## Version chain navigation methods
-
-These methods navigate the version chain.
-
-```javascript
-public first (operationHash: Buffer): Buffer
-public last (operationHash: Buffer): Buffer
-public next (operationHash: Buffer): Buffer
-public previous (operationHash: Buffer): Buffer
-```
-
 ## Resolve
 
-The resolve method returns the latest document for a given DID. It is implemented as `lookup(last(did))`.
+The resolve method returns the latest document for a given DID.
 
 
-# Merkle Rooter
-The Merkle Rooter batches operations (Create, Update, Delete and Recover) operations and anchors them on a blockchain. 
+# Batch Writer
+The Batch Writer batches pending (Create, Update, Delete and Recover) operations and anchors them on the blockchain at a periodic interval.
 
-> TODO: more content to be added.
+The batching interval can specified by the `batchingIntervalInSeconds` configuration parameter.
 
 # Observer
 
@@ -109,7 +88,7 @@ The blockchain REST API interface aims to abstract the underlying blockchain awa
 
 ## Get latest blockchain time
 Gets the latest logical blockchain time. This API serves two purposes:
-1. Allows the Rooter to determine protocol version to be used.
+1. Allows the Batch Writer to determine protocol version to be used.
 2. Provides the hash associated with the blockchain time to be used for generating proof-of-work.
 
 A _blockchain time hash_ **must not** be predictable/pre-computable, a canonical implementation would be to use the _block number_ as the time and the _block hash_ as the _time hash_. It is intentional that the concepts related to _blockchain blocks_ are  hidden from the layers above.

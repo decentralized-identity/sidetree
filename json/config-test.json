@@ -2,10 +2,10 @@
   "devMode": true,
   "port": 3000,
   "didMethodName": "did:sidetree:",
-  "casNodeUri": "http://127.0.0.1:3001/v1.0",
-  "blockchainNodeUri": "http://127.0.0.1:3009",
-  "batchIntervalInSeconds": 10,
-  "maxConcurrentCasDownloads": 20,
-  "pollingIntervalInSeconds": 10,
+  "contentAddressableStoreServiceUri": "http://127.0.0.1:3001/v1.0",
+  "blockchainServiceUri": "http://127.0.0.1:3009",
+  "batchingIntervalInSeconds": 10,
+  "observingIntervalInSeconds": 10,
+  "maxConcurrentDownloads": 20,
   "operationStoreUri": "mongodb://localhost:27017/"
 }

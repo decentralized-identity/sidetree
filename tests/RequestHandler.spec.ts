@@ -1,39 +1,41 @@
-import BatchFile from '../src/BatchFile';
-import Cryptography from '../src/lib/Cryptography';
-import Did from '../src/lib/Did';
-import DidPublicKey from '../src/lib/DidPublicKey';
-import Encoder from '../src/Encoder';
-import Logger from '../src/lib/Logger';
+import BatchFile from '../lib/BatchFile';
+import BatchWriter from '../lib/BatchWriter';
+import Cryptography from '../lib/util/Cryptography';
+import Did from '../lib/util/Did';
+import DidPublicKey from '../lib/util/DidPublicKey';
+import Encoder from '../lib/Encoder';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
-import Multihash from '../src/Multihash';
+import MockOperationStore from './mocks/MockOperationStore';
+import Multihash from '../lib/Multihash';
 import OperationGenerator from './generators/OperationGenerator';
-import RequestHandler from '../src/RequestHandler';
-import Rooter from '../src/Rooter';
-import { Cas } from '../src/Cas';
-import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor } from '../src/OperationProcessor';
-import { OperationStore } from '../src/OperationStore';
-import { IDocument } from '../src/lib/Document';
-import { getProtocol, initializeProtocol } from '../src/Protocol';
-import { Operation } from '../src/Operation';
-import { toHttpStatus } from '../src/Response';
-import { MockOperationStoreImpl } from './mocks/MockOperationStore';
+import OperationProcessor from '../lib/OperationProcessor';
+import ProtocolParameters from '../lib/ProtocolParameters';
+import RequestHandler from '../lib/RequestHandler';
+import { Cas } from '../lib/Cas';
+import { OperationStore } from '../lib/OperationStore';
+import { IConfig } from '../lib/Config';
+import { IDocument } from '../lib/util/Document';
+import { Operation } from '../lib/Operation';
+import { Response } from '../lib/Response';
 
 describe('RequestHandler', () => {
-  initializeProtocol('protocol-test.json');
-  Logger.suppressLogging(true);
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
-  const didMethodName = config[ConfigKey.DidMethodName];
+  // Surpress console logging during dtesting so we get a compact test summary in console.
+  console.info = () => { return; };
+  console.error = () => { return; };
+
+  const config: IConfig = require('../json/config-test.json');
+  const didMethodName = config.didMethodName;
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
 
   const blockchain = new MockBlockchain();
   let cas: Cas;
-  let rooter: Rooter;
+  let batchWriter: BatchWriter;
   let operationStore: OperationStore;
   let operationProcessor;
   let requestHandler: RequestHandler;
@@ -41,16 +43,17 @@ describe('RequestHandler', () => {
   let publicKey: DidPublicKey;
   let privateKey: any;
   let did: string; // This DID is created at the beginning of every test.
+  let didUniqueSuffix: string;
   let batchFileHash: string;
 
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
     cas = new MockCas();
-    rooter = new Rooter(blockchain, cas, +config[ConfigKey.BatchIntervalInSeconds]);
-    operationStore = new MockOperationStoreImpl();
-    operationProcessor = createOperationProcessor(config, operationStore);
+    batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
+    operationStore = new MockOperationStore();
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
 
-    requestHandler = new RequestHandler(operationProcessor, blockchain, rooter, didMethodName);
+    requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, didMethodName);
 
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
     const mockLatestTime = {
@@ -64,7 +67,7 @@ describe('RequestHandler', () => {
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
-    await rooter.rootOperations();
+    await batchWriter.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
     const batchBuffer = BatchFile.fromOperations([createOperationBuffer]).toBuffer();
@@ -84,12 +87,13 @@ describe('RequestHandler', () => {
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     const currentBlockchainTime = await blockchain.getLatestTime();
-    did = Did.from(createOperation.encodedPayload, didMethodName, getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
+    const currentHashingAlgorithm = ProtocolParameters.get(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
+    didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createOperation.encodedPayload, currentHashingAlgorithm);
+    did = didMethodName + didUniqueSuffix;
 
-    // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
     expect((response.body as IDocument).id).toEqual(did);
@@ -97,10 +101,10 @@ describe('RequestHandler', () => {
 
   it('should handle create operation request.', async () => {
     const blockchainWriteSpy = spyOn(blockchain, 'write');
-    expect(rooter.getOperationQueueLength()).toEqual(1);
+    expect(batchWriter.getOperationQueueLength()).toEqual(1);
 
-    await rooter.rootOperations();
-    expect(rooter.getOperationQueueLength()).toEqual(0);
+    await batchWriter.writeOperationBatch();
+    expect(batchWriter.getOperationQueueLength()).toEqual(0);
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verfiy that CAS was invoked to store the batch file.
@@ -120,7 +124,7 @@ describe('RequestHandler', () => {
 
     const createRequest = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     const response = await requestHandler.handleOperationRequest(createRequest);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(400);
@@ -128,7 +132,7 @@ describe('RequestHandler', () => {
 
   it('should return a resolved DID Document given a known DID.', async () => {
     const response = await requestHandler.handleResolveRequest(did);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
@@ -144,10 +148,11 @@ describe('RequestHandler', () => {
     };
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
     const currentBlockchainTime = await blockchain.getLatestTime();
-    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), getProtocol(currentBlockchainTime.time).hashAlgorithmInMultihashCode);
+    const hashAlgorithmInMultihashCode = ProtocolParameters.get(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
+    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
     const expectedDid = didMethodName + Encoder.encode(documentHash);
     const response = await requestHandler.handleResolveRequest(didMethodName + encodedOriginalDidDocument);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
@@ -156,7 +161,7 @@ describe('RequestHandler', () => {
 
   it('should return NotFound given an unknown DID.', async () => {
     const response = await requestHandler.handleResolveRequest('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg');
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(404);
     expect(response.body).toBeUndefined();
@@ -164,24 +169,24 @@ describe('RequestHandler', () => {
 
   it('should return BadRequest given a malformed DID.', async () => {
     const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
     expect(response.body).toBeUndefined();
   });
 
   it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(did);
+    const request = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
   });
 
   it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
-    const request = await OperationGenerator.generateDeleteOperation(didMethodName + 'nonExistentDid');
+    const request = await OperationGenerator.generateDeleteOperation('nonExistentDidUniqueSuffix', '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
     expect(response.body.errorCode).toEqual('did_not_found');
@@ -196,15 +201,15 @@ describe('RequestHandler', () => {
 
     // Construct update payload.
     const updatePayload = {
-      did,
+      didUniqueSuffix,
       operationNumber: 1,
       patch: jsonPatch,
-      previousOperationHash: Did.getUniqueSuffix(did)
+      previousOperationHash: didUniqueSuffix
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
 
@@ -221,15 +226,15 @@ describe('RequestHandler', () => {
 
     // Construct update payload.
     const updatePayload = {
-      did: didMethodName + 'nonExistentDid',
+      didUniqueSuffix: 'nonExistentDidUniqueSuffix',
       operationNumber: 1,
       patch: jsonPatch,
-      previousOperationHash: Did.getUniqueSuffix(did)
+      previousOperationHash: 'someOperationHash'
     };
 
     const request = await OperationGenerator.generateUpdateOperation(updatePayload, publicKey.id, privateKey);
     const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = toHttpStatus(response.status);
+    const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
     expect(response.body.errorCode).toEqual('did_not_found');

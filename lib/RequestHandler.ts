@@ -1,32 +1,36 @@
-import * as Protocol from './Protocol';
+import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
-import Did from './lib/Did';
-import Document, { IDocument } from './lib/Document';
+import Did from './util/Did';
+import Document, { IDocument } from './util/Document';
 import Multihash from './Multihash';
-import Rooter from './Rooter';
+import OperationProcessor from './OperationProcessor';
+import ProtocolParameters from './ProtocolParameters';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
-import { OperationProcessor } from './OperationProcessor';
 import { Operation, OperationType } from './Operation';
-import { Response, ResponseStatus } from './Response';
+import { IResponse, ResponseStatus } from './Response';
 
 /**
  * Sidetree operation request handler.
  */
 export default class RequestHandler {
 
-  public constructor (private operationProcessor: OperationProcessor, private blockchain: Blockchain, private rooter: Rooter, private didMethodName: string) {
+  public constructor (
+    private operationProcessor: OperationProcessor,
+    private blockchain: Blockchain,
+    private batchWriter: BatchWriter,
+    private didMethodName: string) {
   }
 
   /**
    * Handles an operation request.
    */
-  public async handleOperationRequest (request: Buffer): Promise<Response> {
-    let protocol;
+  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
+    let protocolParameters;
     try {
       // Get the protocol version according to current blockchain time to validate the operation request.
       const currentTime = await this.blockchain.getLatestTime();
-      protocol = Protocol.getProtocol(currentTime.time + 1);
+      protocolParameters = ProtocolParameters.get(currentTime.time + 1);
     } catch {
       return {
         status: ResponseStatus.ServerError,
@@ -38,8 +42,8 @@ export default class RequestHandler {
     let operation: Operation;
     try {
       // Validate operation request size.
-      if (request.length > protocol.maxOperationByteSize) {
-        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocol.maxOperationByteSize}`);
+      if (request.length > protocolParameters.maxOperationByteSize) {
+        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocolParameters.maxOperationByteSize}`);
       }
 
       // Parse request into a Operation.
@@ -55,7 +59,7 @@ export default class RequestHandler {
 
     try {
       // Passed common operation validation, hand off to specific operation handler.
-      let response: Response;
+      let response: IResponse;
       switch (operation.type) {
         case OperationType.Create:
           response = await this.handleCreateOperation(operation);
@@ -75,7 +79,7 @@ export default class RequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        this.rooter.add(request);
+        this.batchWriter.add(request);
       }
 
       return response;
@@ -92,7 +96,7 @@ export default class RequestHandler {
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  public async handleResolveRequest (didOrDidDocument: string): Promise<Response> {
+  public async handleResolveRequest (didOrDidDocument: string): Promise<IResponse> {
     if (!didOrDidDocument.startsWith(this.didMethodName)) {
       return {
         status: ResponseStatus.BadRequest
@@ -105,7 +109,7 @@ export default class RequestHandler {
     try {
       uniquePortion = didOrDidDocument.substring(this.didMethodName.length);
 
-      const supportedHashAlgorithms = Protocol.getSupportedHashAlgorithms();
+      const supportedHashAlgorithms = ProtocolParameters.getSupportedHashAlgorithms();
       parameterIsDid = Multihash.isSupportedHash(Encoder.decodeAsBuffer(uniquePortion), supportedHashAlgorithms);
     } catch {
       return {
@@ -120,8 +124,9 @@ export default class RequestHandler {
     }
   }
 
-  private async handleResolveRequestWithDid (did: string): Promise<Response> {
-    const didDocument = await this.operationProcessor.resolve(did);
+  private async handleResolveRequestWithDid (did: string): Promise<IResponse> {
+    const didUniqueSuffix = did.substring(this.didMethodName.length);
+    const didDocument = await this.operationProcessor.resolve(didUniqueSuffix);
 
     if (!didDocument) {
       return {
@@ -135,10 +140,10 @@ export default class RequestHandler {
     };
   }
 
-  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<Response> {
+  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
-    const protocolVersion = Protocol.getProtocol(currentTime.time);
+    const protocolVersion = ProtocolParameters.get(currentTime.time);
     const currentHashAlgorithm = protocolVersion.hashAlgorithmInMultihashCode;
 
     // Validate that the given encoded DID Document is a valid original document.
@@ -147,10 +152,10 @@ export default class RequestHandler {
       return { status: ResponseStatus.BadRequest };
     }
 
-    const did = Did.from(encodedDidDocument, this.didMethodName, currentHashAlgorithm);
+    const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(encodedDidDocument, currentHashAlgorithm);
 
     // Attempt to resolve the DID.
-    const didDocument = await this.operationProcessor.resolve(did);
+    const didDocument = await this.operationProcessor.resolve(didUniqueSuffix);
 
     // If DID Document found then return it.
     if (didDocument) {
@@ -172,10 +177,10 @@ export default class RequestHandler {
   /**
    * Handles create operation.
    */
-  public async handleCreateOperation (operation: Operation): Promise<Response> {
+  public async handleCreateOperation (operation: Operation): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
     const currentTime = await this.blockchain.getLatestTime();
-    const protocolVersion = Protocol.getProtocol(currentTime.time);
+    const protocolVersion = ProtocolParameters.get(currentTime.time);
 
     // Validate that the given encoded DID Document is a valid original document.
     const isValidOriginalDocument = Document.isEncodedStringValidOriginalDocument(operation.encodedPayload, protocolVersion.maxOperationByteSize);
@@ -195,9 +200,9 @@ export default class RequestHandler {
   /**
    * Handles update operation.
    */
-  public async handleUpdateOperation (operation: Operation): Promise<Response> {
+  public async handleUpdateOperation (operation: Operation): Promise<IResponse> {
     // TODO: Assert that operation is well-formed once the code reaches here.
-    // ie. Need to make sure invalid patch, missing operation number, etc will cause Operation creation failure.
+    // ie. Need to make sure invalid patch etc will cause Operation creation failure.
 
     let updatedDidDocument;
     try {
@@ -223,7 +228,7 @@ export default class RequestHandler {
   /**
    * Handles update operation.
    */
-  public async handleDeleteOperation (operation: Operation): Promise<Response> {
+  public async handleDeleteOperation (operation: Operation): Promise<IResponse> {
     // TODO: Assert that operation is well-formed once the code reaches here.
 
     try {
@@ -246,7 +251,7 @@ export default class RequestHandler {
 
   /**
    * Simulates an Update operation without actually commiting the state change.
-   * This method is used to sanity validate an write-operation request before it is batched for rooting.
+   * This method is used to sanity validate a write-operation request before it is queued for batch-writing.
    * NOTE: This method is intentionally not placed within Operation Processor because:
    * 1. This avoids to create yet another interface method.
    * 2. It is more appropriate to think of this method a higher-layer logic that uses the building blocks exposed by the Operation Processor.
@@ -258,7 +263,7 @@ export default class RequestHandler {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
     // Get the current DID Document of the specified DID.
-    const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
+    const currentDidDcoument = await this.operationProcessor.resolve(operation.didUniqueSuffix!);
     if (!currentDidDcoument) {
       throw new SidetreeError(ErrorCode.DidNotFound);
     }
@@ -271,7 +276,7 @@ export default class RequestHandler {
   private async simulateDeleteOperation (operation: Operation) {
     // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
 
-    const currentDidDcoument = await this.operationProcessor.resolve(operation.did!);
+    const currentDidDcoument = await this.operationProcessor.resolve(operation.didUniqueSuffix!);
 
     if (!currentDidDcoument) {
       throw new SidetreeError(ErrorCode.DidNotFound);

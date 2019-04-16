@@ -1,15 +1,14 @@
-import BatchFile from '../src/BatchFile';
-import Cryptography from '../src/lib/Cryptography';
-import Document from '../src/lib/Document';
+import BatchFile from '../lib/BatchFile';
+import Cryptography from '../lib/util/Cryptography';
+import Document from '../lib/util/Document';
 import MockCas from './mocks/MockCas';
+import MockOperationStore from './mocks/MockOperationStore';
 import OperationGenerator from './generators/OperationGenerator';
-import { Cas } from '../src/Cas';
-import { Config, ConfigKey } from '../src/Config';
-import { createOperationProcessor, OperationProcessor } from '../src/OperationProcessor';
-import { OperationStore } from '../src/OperationStore';
-import { Operation } from '../src/Operation';
-import { initializeProtocol } from '../src/Protocol';
-import { MockOperationStoreImpl } from './mocks/MockOperationStore';
+import OperationProcessor from '../lib/OperationProcessor';
+import ProtocolParameters from '../lib/ProtocolParameters';
+import { Cas } from '../lib/Cas';
+import { OperationStore } from '../lib/OperationStore';
+import { Operation } from '../lib/Operation';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -38,7 +37,7 @@ async function addBatchFileOfOneOperationToCas (
 }
 
 async function createUpdateSequence (
-  did: string,
+  didUniqueSuffix: string,
   createOp: Operation,
   cas: Cas,
   numberOfUpdates:
@@ -51,7 +50,7 @@ async function createUpdateSequence (
   for (let i = 0; i < numberOfUpdates; ++i) {
     const mostRecentVersion = opHashes[i];
     const updatePayload = {
-      did,
+      didUniqueSuffix,
       operationNumber: i + 1,
       previousOperationHash: mostRecentVersion,
       patch: [{
@@ -115,40 +114,37 @@ function getPermutation (size: number, index: number): Array<number> {
 }
 
 describe('OperationProcessor', async () => {
-  initializeProtocol('protocol-test.json');
+  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
+  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Load the DID Document template.
   const didDocumentTemplate = require('./json/didDocumentTemplate.json');
 
   let cas = new MockCas();
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
-  const didMethodName = config[ConfigKey.DidMethodName];
+  const config = require('../json/config-test.json');
   let operationProcessor: OperationProcessor;
   let operationStore: OperationStore;
   let createOp: Operation | undefined;
   let publicKey: any;
   let privateKey: any;
-  let did: string;
+  let didUniqueSuffix: string;
 
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
-    operationStore = new MockOperationStoreImpl();
-    operationProcessor = createOperationProcessor(config, operationStore); // TODO: add a clear method to avoid double initialization.
+    operationStore = new MockOperationStore();
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore); // TODO: add a clear method to avoid double initialization.
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
-    const createOpHash = createOp.getOperationHash();
-    did = didMethodName + createOpHash;
+    didUniqueSuffix = createOp.getOperationHash();
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationProcessor.processBatch([createOp!]);
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
-    // TODO: can we get the raw json from did? if so, we can write a better test.
     // This is a poor man's version based on public key properties
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
@@ -158,13 +154,10 @@ describe('OperationProcessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    await operationProcessor.processBatch(ops);
 
-    for (let i = 0 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
-    }
-
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
@@ -174,12 +167,12 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationProcessor.processBatch([ops[i]]);
     }
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
@@ -189,18 +182,18 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(did, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
 
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
-      operationStore = new MockOperationStoreImpl();
-      operationProcessor = createOperationProcessor(config, operationStore); // Reset
+      operationStore = new MockOperationStore();
+      operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationProcessor.processBatch(permutedOps);
-      const didDocument = await operationProcessor.resolve(did);
+      const didDocument = await operationProcessor.resolve(didUniqueSuffix);
       expect(didDocument).toBeDefined();
       const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
       expect(publicKey2).toBeDefined();
@@ -221,10 +214,30 @@ describe('OperationProcessor', async () => {
 
     // Trigger processing of the operation.
     await operationProcessor.processBatch([createOperation]);
-    const did = didMethodName + createOperation.getOperationHash();
+    const didUniqueSuffix = createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
-    const didDocument = await operationProcessor.resolve(did);
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
+  });
+
+  it('should return undefined for deleted did', async () => {
+    const numberOfUpdates = 10;
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    await operationProcessor.processBatch(ops);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocument).toBeDefined();
+    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
+    expect(publicKey2).toBeDefined();
+    expect(publicKey2!.owner).toBeDefined();
+    expect(publicKey2!.owner!).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
+    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
+    await operationProcessor.processBatch([deleteOperation]);
+
+    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    expect(didDocumentAfterDelete).toBeUndefined();
   });
 });

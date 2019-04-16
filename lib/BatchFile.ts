@@ -1,5 +1,5 @@
 import Encoder from './Encoder';
-import JsonAsync from './lib/JsonAsync';
+import JsonAsync from './util/JsonAsync';
 
 /**
  * Defines the schema of a Batch File and its related operations.

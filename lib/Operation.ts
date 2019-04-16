@@ -1,12 +1,10 @@
-import Cryptography from './lib/Cryptography';
-import Did from './lib/Did';
-import Document, { IDocument } from './lib/Document';
+import Cryptography from './util/Cryptography';
+import Document, { IDocument } from './util/Document';
 import Encoder from './Encoder';
-import Logger from './lib/Logger';
 import Multihash from './Multihash';
+import ProtocolParameters from './ProtocolParameters';
 import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
-import { getProtocol } from './Protocol';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { ResolvedTransaction } from './Transaction';
 
@@ -61,8 +59,8 @@ class Operation {
   public readonly operationNumber?: Number;
   /** The encoded operation payload. */
   public readonly encodedPayload: string;
-  /** The DID of the DID document to be updated. */
-  public readonly did?: string;
+  /** The unique suffix of the DID of the DID document to be created/updated. */
+  public readonly didUniqueSuffix?: string;
   /** The type of operation. */
   public readonly type: OperationType;
   /** The hash of the previous operation - undefined for DID create operation */
@@ -128,15 +126,18 @@ class Operation {
     switch (this.type) {
       case OperationType.Create:
         this.operationNumber = 0;
+        if (this.transactionTime !== undefined) {
+          this.didUniqueSuffix = this.getOperationHash();
+        }
         break;
       case OperationType.Update:
         this.operationNumber = decodedPayload.operationNumber;
-        this.did = decodedPayload.did;
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.previousOperationHash = decodedPayload.previousOperationHash;
         this.patch = decodedPayload.patch;
         break;
       case OperationType.Delete:
-        this.did = decodedPayload.did;
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -182,39 +183,18 @@ class Operation {
   }
 
   /**
-   * Gets the DID unique suffix of an operation. For create operation, this is the operation hash;
-   * for others the DID included with the operation can be used to obtain the unique suffix.
+   * Gets a cryptographic hash of the operation payload.
    */
-  public getDidUniqueSuffix (): string {
-    if (this.type === OperationType.Create) {
-      return this.getOperationHash();
-    } else {
-      const didUniqueSuffix = Did.getUniqueSuffix(this.did!);
-      return didUniqueSuffix;
-    }
-  }
-
-  /**
-   * Gets a cryptographic hash of the operation.
-   * In the case of a Create operation, the hash is calculated against the initial encoded create payload (DID Document),
-   * for all other cases, the hash is calculated against the entire opeartion buffer.
-   */
-  getOperationHash (): string {
+  public getOperationHash (): string {
     if (this.transactionTime === undefined) {
       throw new Error(`Transaction time not given but needed for hash algorithm selection.`);
     }
 
     // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-    const protocol = getProtocol(this.transactionTime);
+    const protocol = ProtocolParameters.get(this.transactionTime);
 
-    let contentBuffer;
-    if (this.type === OperationType.Create) {
-      contentBuffer = Buffer.from(this.encodedPayload);
-    } else {
-      contentBuffer = this.operationBuffer;
-    }
-
-    const multihash = Multihash.hash(contentBuffer, protocol.hashAlgorithmInMultihashCode);
+    const encodedOperationPayloadBuffer = Buffer.from(this.encodedPayload);
+    const multihash = Multihash.hash(encodedOperationPayloadBuffer, protocol.hashAlgorithmInMultihashCode);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }
@@ -302,13 +282,13 @@ class Operation {
       }
 
       if (!payloadSchemaIsValid) {
-        Logger.info(`${OperationType[operationType]} payload failed schema validation: ${decodedPayloadJson}`);
+        console.info(`${OperationType[operationType]} payload failed schema validation: ${decodedPayloadJson}`);
         return undefined;
       }
 
       return [operationType, decodedPayload];
     } catch (error) {
-      Logger.info(`Operation failed schema validation: ${JSON.stringify(operation)}`);
+      console.info(`Operation failed schema validation: ${JSON.stringify(operation)}`);
       return undefined;
     }
   }

@@ -1,6 +1,5 @@
 import * as HttpStatus from 'http-status';
 import BlockchainTime from './BlockchainTime';
-import Logger from './lib/Logger';
 import nodeFetch from 'node-fetch';
 import Transaction from './Transaction';
 import { ErrorCode, SidetreeError } from './Error';
@@ -76,8 +75,8 @@ export class BlockchainClient implements Blockchain {
     const response = await this.fetch(this.transactionsUri, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`Blockchain write error response status: ${response.status}`);
-      Logger.error(`Blockchain write error body: ${response.body.read()}`);
+      console.error(`Blockchain write error response status: ${response.status}`);
+      console.error(`Blockchain write error body: ${response.body.read()}`);
       throw new Error('Encountered an error writing anchor file hash to blockchain.');
     }
   }
@@ -95,9 +94,9 @@ export class BlockchainClient implements Blockchain {
 
     const readUri = this.transactionsUri + queryString; // e.g. https://127.0.0.1/transactions?since=6212927891701761&transaction-time-hash=abc
 
-    Logger.info(`Fetching URI '${readUri}'...`);
+    console.info(`Fetching URI '${readUri}'...`);
     const response = await this.fetch(readUri);
-    Logger.info(`Fetch response: ${response.status}'.`);
+    console.info(`Fetch response: ${response.status}'.`);
 
     const responseBodyString = (response.body.read() as Buffer).toString();
     const responseBody = JSON.parse(responseBodyString);
@@ -108,8 +107,8 @@ export class BlockchainClient implements Blockchain {
     }
 
     if (response.status !== HttpStatus.OK) {
-      Logger.error(`Blockchain read error response status: ${response.status}`);
-      Logger.error(`Blockchain read error body: ${response.body.read()}`);
+      console.error(`Blockchain read error response status: ${response.status}`);
+      console.error(`Blockchain read error body: ${response.body.read()}`);
       throw new Error('Encountered an error fetching Sidetree transactions from blockchain.');
     }
 
@@ -136,7 +135,7 @@ export class BlockchainClient implements Blockchain {
     return transaction;
   }
 
-  // TODO: Consider caching strategy since this will be invoked very frequently, especially by the Rooter.
+  // TODO: Issue #161: Consider caching since this will be invoked for every operation and resolution requests.
   public async getLatestTime (): Promise<BlockchainTime> {
     const response = await this.fetch(this.timeUri);
 

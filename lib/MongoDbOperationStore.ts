@@ -1,5 +1,4 @@
-import { Config, ConfigKey } from './Config';
-import { Collection, MongoClient } from 'mongodb';
+import { Binary, Collection, MongoClient } from 'mongodb';
 import { Operation } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -8,7 +7,7 @@ import { OperationStore } from './OperationStore';
  */
 interface MongoOperation {
   didUniqueSuffix: string;
-  operationBufferBase64: string;
+  operationBufferBsonBinary: Binary;
   operationIndex: number;
   transactionNumber: number;
   transactionTime: number;
@@ -19,13 +18,10 @@ interface MongoOperation {
  * Implementation of OperationStore that stores the operation data in
  * a MongoDB database.
  */
-export class MongoDbOperationStore implements OperationStore {
-  private serverUrl: string;
+export default class MongoDbOperationStore implements OperationStore {
   private collection: Collection<any> | undefined;
 
-  constructor (config: Config) {
-    this.serverUrl = config[ConfigKey.OperationStoreUri];
-  }
+  constructor (private serverUrl: string) { }
 
   /**
    * Initialize the MongoDB operation store.
@@ -43,7 +39,9 @@ export class MongoDbOperationStore implements OperationStore {
       this.collection = db.collection(operationCollectionName);
     } else {
       this.collection = await db.createCollection(operationCollectionName);
-      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 });
+      // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
+      // this is an unique index, so duplicate inserts are rejected.
+      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 }, { unique: true });
     }
   }
 
@@ -58,7 +56,14 @@ export class MongoDbOperationStore implements OperationStore {
       batch.insert(mongoOperation);
     }
 
-    await batch.execute();
+    try {
+      await batch.execute();
+    } catch (error) {
+      // Swallow duplicate insert errors (error code 11000); rethrow others
+      if (error.name !== 'BulkWriteError' || error.code !== 11000) {
+        throw error;
+      }
+    }
   }
 
   /**
@@ -89,12 +94,9 @@ export class MongoDbOperationStore implements OperationStore {
    * information to reconstruct the original operation.
    */
   private static convertToMongoOperation (operation: Operation): MongoOperation {
-    // Convert the operation buffer to string (mongo read-write not handled seamlessly for buffer types)
-    const operationBufferBase64Encoding = operation.operationBuffer.toString('base64');
-
     return {
-      didUniqueSuffix: operation.getDidUniqueSuffix(),
-      operationBufferBase64: operationBufferBase64Encoding,
+      didUniqueSuffix: operation.didUniqueSuffix!,
+      operationBufferBsonBinary: new Binary(operation.operationBuffer),
       operationIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
       transactionTime: operation.transactionTime!,
@@ -107,10 +109,8 @@ export class MongoDbOperationStore implements OperationStore {
    * Inverse of convertToMongoOperation() method above.
    */
   private static convertToOperation (mongoOperation: MongoOperation): Operation {
-    const operationBuffer: Buffer = Buffer.from(mongoOperation.operationBufferBase64, 'base64');
-
     return Operation.create(
-      operationBuffer,
+      mongoOperation.operationBufferBsonBinary.buffer,
       {
         transactionNumber: mongoOperation.transactionNumber,
         transactionTime: mongoOperation.transactionTime,
