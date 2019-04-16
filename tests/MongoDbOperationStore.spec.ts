@@ -113,7 +113,7 @@ async function getOperationStore (operationStoreUri: string): Promise<OperationS
   return operationStore;
 }
 
-describe('OperationStore', async () => {
+describe('MongoDbOperationStore', async () => {
   const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
   ProtocolParameters.initialize(versionsOfProtocolParameters);
 
