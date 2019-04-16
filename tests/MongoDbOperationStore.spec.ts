@@ -74,9 +74,6 @@ async function constructAnchoredUpdateOperation (
   return constructAnchoredOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
 }
 
-const databaseName = 'sidetree';
-const operationCollectionName = 'operations';
-
 /**
  * Test if a mongo service is running at the specified url
  */
@@ -85,7 +82,6 @@ async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
     const client = await MongoClient.connect(serverUrl);
     await client.close();
   } catch (error) {
-    console.log('Mongoclient connect error: ' + error);
     return false;
   }
   return true;
@@ -94,15 +90,15 @@ async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
 /**
  * Clear a mongo collection - used to remove test state.
  */
-async function clearMongoCollection () {
-  const client = await MongoClient.connect('mongodb://localhost:27017');
-  const db = client.db(databaseName);
+async function clearMongoCollection (serverUrl: string) {
+  const client = await MongoClient.connect(serverUrl);
+  const db = client.db(MongoDbOperationStore.databaseName);
   const collections = await db.collections();
   const collectionNames = collections.map(collection => collection.collectionName);
 
   // If the operation collection exists, use it; else create it then use it.
-  if (collectionNames.includes(operationCollectionName)) {
-    const collection = db.collection(operationCollectionName);
+  if (collectionNames.includes(MongoDbOperationStore.operationCollectionName)) {
+    const collection = db.collection(MongoDbOperationStore.operationCollectionName);
     await collection.drop();
   }
 }
@@ -130,7 +126,7 @@ describe('MongoDbOperationStore', async () => {
       pending('MongoDB service not available');
     }
 
-    await clearMongoCollection();
+    await clearMongoCollection(config.operationStoreUri);
 
     operationStore = await getOperationStore(config.operationStoreUri);
   });

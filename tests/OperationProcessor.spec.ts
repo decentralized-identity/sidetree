@@ -474,13 +474,13 @@ describe('OperationProcessor', async () => {
       }]
     };
 
-    const updateOperation1Buffer = await OperationGenerator.generateUpdateOperationBuffer(update1Payload, '#key1', privateKey);
-    const updateOperation1 = await addBatchFileOfOneOperationToCas(updateOperation1Buffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([updateOperation1]);
-
     const updateOperation2Buffer = await OperationGenerator.generateUpdateOperationBuffer(update2Payload, '#key1', privateKey);
     const updateOperation2 = await addBatchFileOfOneOperationToCas(updateOperation2Buffer, cas, 2, 2, 0);
     await operationProcessor.processBatch([updateOperation2]);
+
+    const updateOperation1Buffer = await OperationGenerator.generateUpdateOperationBuffer(update1Payload, '#key1', privateKey);
+    const updateOperation1 = await addBatchFileOfOneOperationToCas(updateOperation1Buffer, cas, 1, 1, 0);
+    await operationProcessor.processBatch([updateOperation1]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
