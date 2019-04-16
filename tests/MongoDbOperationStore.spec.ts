@@ -87,33 +87,71 @@ async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
   return true;
 }
 
+const databaseName = 'sidetree-test';
+const operationCollectionName = 'operations-test';
+
 /**
  * Clear a mongo collection - used to remove test state.
  */
 async function removeMongoCollection (serverUrl: string) {
   const client = await MongoClient.connect(serverUrl);
-  const db = client.db(MongoDbOperationStore.databaseName);
+  const db = client.db(databaseName);
   const collections = await db.collections();
   const collectionNames = collections.map(collection => collection.collectionName);
 
   // If the operation collection exists drop it
-  if (collectionNames.includes(MongoDbOperationStore.operationCollectionName)) {
-    const collection = db.collection(MongoDbOperationStore.operationCollectionName);
+  if (collectionNames.includes(operationCollectionName)) {
+    const collection = db.collection(operationCollectionName);
     await collection.drop();
   }
 }
 
-async function getOperationStore (operationStoreUri: string): Promise<OperationStore> {
-  const operationStore = new MongoDbOperationStore(operationStoreUri);
+async function createOperationStore (operationStoreUri: string): Promise<OperationStore> {
+  const operationStore = new MongoDbOperationStore(operationStoreUri, databaseName, operationCollectionName);
   await operationStore.initialize();
   return operationStore;
+}
+
+async function createBatchOfUpdateOperations (createOperation: Operation, batchSize: number, privateKey: string): Promise<Operation[]> {
+  const didUniqueSuffix = createOperation.didUniqueSuffix!;
+  const batch = new Array<Operation>(createOperation);
+  for (let i = 1; i < batchSize ; i++) {
+    const previousOperation = batch[i - 1];
+    const previousVersion = previousOperation.getOperationHash();
+    const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
+    batch.push(operation);
+  }
+  return batch;
+}
+
+// Check if two operations are equal
+function checkEqual (operation1: Operation, operation2: Operation): void {
+  expect(operation1.transactionNumber).toBeDefined();
+  expect(operation2.transactionNumber).toBeDefined();
+  expect(operation1.transactionNumber!).toEqual(operation2.transactionNumber!);
+  expect(operation1.operationIndex).toBeDefined();
+  expect(operation2.operationIndex).toBeDefined();
+  expect(operation1.operationIndex!).toEqual(operation2.operationIndex!);
+  expect(operation1.transactionTime).toBeDefined();
+  expect(operation2.transactionTime).toBeDefined();
+  expect(operation1.transactionTime!).toEqual(operation2.transactionTime!);
+  expect(operation1.didUniqueSuffix).toEqual(operation2.didUniqueSuffix);
+  expect(operation1.getOperationHash()).toEqual(operation2.getOperationHash());
+}
+
+// Check if two operation arrays are equal
+function checkEqualArray (putOperations: Operation[], gotOperations: Operation[]): void {
+  expect(gotOperations.length).toEqual(putOperations.length);
+
+  for (let i = 0 ; i < putOperations.length ; i++) {
+    checkEqual(gotOperations[i], putOperations[i]);
+  }
 }
 
 describe('MongoDbOperationStore', async () => {
   const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
   ProtocolParameters.initialize(versionsOfProtocolParameters);
 
-  // Change to OperationStoreType.Mongo to test Mongo-based store
   let operationStore: OperationStore;
   let publicKey: DidPublicKey;
   let privateKey: string;
@@ -128,25 +166,14 @@ describe('MongoDbOperationStore', async () => {
 
     await removeMongoCollection(config.operationStoreUri);
 
-    operationStore = await getOperationStore(config.operationStoreUri);
+    operationStore = await createOperationStore(config.operationStoreUri);
   });
 
   it('should get a put create operation', async () => {
     const operation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     await operationStore.putBatch([operation]);
     const returnedOperations = Array.from(await operationStore.get(operation.didUniqueSuffix!));
-
-    expect(returnedOperations.length).toEqual(1);
-    const returnedOperation = returnedOperations[0];
-
-    expect(returnedOperation.transactionNumber).toBeDefined();
-    expect(returnedOperation.transactionNumber!).toEqual(0);
-    expect(returnedOperation.operationIndex).toBeDefined();
-    expect(returnedOperation.operationIndex!).toEqual(0);
-    expect(returnedOperation.transactionTime).toBeDefined();
-    expect(returnedOperation.transactionTime!).toEqual(0);
-    expect(returnedOperation.didUniqueSuffix).toEqual(operation.didUniqueSuffix);
-    expect(returnedOperation.getOperationHash()).toEqual(operation.getOperationHash());
+    checkEqualArray([operation], returnedOperations);
   });
 
   it('should get a put update operation', async () => {
@@ -157,19 +184,7 @@ describe('MongoDbOperationStore', async () => {
     const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
     await operationStore.putBatch([updateOperation]);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(1);
-    const returnedOperation = returnedOperations[0];
-    const returnedOperationHash = returnedOperation.getOperationHash();
-
-    expect(returnedOperation.transactionNumber).toBeDefined();
-    expect(returnedOperation.transactionNumber!).toEqual(1);
-    expect(returnedOperation.operationIndex).toBeDefined();
-    expect(returnedOperation.operationIndex!).toEqual(0);
-    expect(returnedOperation.transactionTime).toBeDefined();
-    expect(returnedOperation.transactionTime!).toEqual(1);
-    expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-    expect(returnedOperationHash).toEqual(updateOperation.getOperationHash());
+    checkEqualArray([updateOperation], returnedOperations);
   });
 
   it('should ignore duplicate updates', async () => {
@@ -182,19 +197,7 @@ describe('MongoDbOperationStore', async () => {
     // duplicate operation
     await operationStore.putBatch([updateOperation]);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(1);
-    const returnedOperation = returnedOperations[0];
-    const returnedOperationHash = returnedOperation.getOperationHash();
-
-    expect(returnedOperation.transactionNumber).toBeDefined();
-    expect(returnedOperation.transactionNumber!).toEqual(1);
-    expect(returnedOperation.operationIndex).toBeDefined();
-    expect(returnedOperation.operationIndex!).toEqual(0);
-    expect(returnedOperation.transactionTime).toBeDefined();
-    expect(returnedOperation.transactionTime!).toEqual(1);
-    expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-    expect(returnedOperationHash).toEqual(updateOperation.getOperationHash());
+    checkEqualArray([updateOperation], returnedOperations);
   });
 
   it('should get all operations in a batch put', async () => {
@@ -203,30 +206,11 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
-    const batch = new Array<Operation>(createOperation);
-    for (let i = 1; i < batchSize ; i++) {
-      const previousOperation = batch[i - 1];
-      const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-      batch.push(operation);
-    }
-
+    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
     await operationStore.putBatch(batch);
+
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0 ; i < batchSize ; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
   });
 
   it('should get all operations in a batch put with duplicates', async () => {
@@ -235,32 +219,13 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
-    const batch = new Array<Operation>(createOperation);
-    // construct a batch with each operation duplicated.
-    for (let i = 1; i < batchSize ; i++) {
-      const previousOperation = batch[i - 1];
-      const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-      batch.push(operation);
-      batch.push(operation); // duplicate
-    }
+    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
+        // construct a batch with each operation duplicated.
+    const batchWithDuplicates = batch.concat(batch);
 
-    await operationStore.putBatch(batch);
+    await operationStore.putBatch(batchWithDuplicates);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0 ; i < batchSize ; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i * 2].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
   });
 
   it('should delete all', async () => {
@@ -269,30 +234,11 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
-    const batch = new Array<Operation>(createOperation);
-    for (let i = 1; i < batchSize ; i++) {
-      const previousOperation = batch[i - 1];
-      const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-      batch.push(operation);
-    }
+    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
 
     await operationStore.putBatch(batch);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0 ; i < batchSize ; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
 
     await operationStore.delete();
     const returnedOperationsAfterRollback = Array.from(await operationStore.get(didUniqueSuffix));
@@ -305,47 +251,16 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
-    const batch = new Array<Operation>(createOperation);
-    for (let i = 1; i < batchSize ; i++) {
-      const previousOperation = batch[i - 1];
-      const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-      batch.push(operation);
-    }
-
+    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
     await operationStore.putBatch(batch);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0 ; i < batchSize ; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
 
     const rollbackTime = batchSize / 2;
     await operationStore.delete(rollbackTime);
     const returnedOperationsAfterRollback = Array.from(await operationStore.get(didUniqueSuffix));
-    expect(returnedOperationsAfterRollback.length).toEqual(rollbackTime + 1);
-    for (let i = 0 ; i <= rollbackTime ; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    // Returned operations should be equal to the first rollbackTime + 1 operations in the batch
+    checkEqualArray(batch.slice(0, rollbackTime + 1), returnedOperationsAfterRollback);
   });
 
   it('should remember operations after stop/restart', async () => {
@@ -354,50 +269,17 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
-    const batch = new Array<Operation>(createOperation);
-    for (let i = 1; i < batchSize; i++) {
-      const previousOperation = batch[i - 1];
-      const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-      batch.push(operation);
-    }
-
+    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
     await operationStore.putBatch(batch);
     let returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0; i < batchSize; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
 
     // Create another instance of the operation store
-    operationStore = await getOperationStore(config.operationStoreUri);
+    operationStore = await createOperationStore(config.operationStoreUri);
 
     // Check if we have all the previously put operations
     returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0; i < batchSize; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
   });
 
   it('should get all operations in transaction time order', async () => {
@@ -406,13 +288,7 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
 
     const batchSize = 10;
-    const batch = new Array<Operation>(createOperation);
-    for (let i = 1; i < batchSize ; i++) {
-      const previousOperation = batch[i - 1];
-      const previousVersion = previousOperation.getOperationHash();
-      const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-      batch.push(operation);
-    }
+    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
 
     // Insert operations in reverse transaction time order
     for (let i = batchSize - 1 ; i >= 0 ; i--) {
@@ -420,19 +296,6 @@ describe('MongoDbOperationStore', async () => {
     }
 
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-
-    expect(returnedOperations.length).toEqual(batchSize);
-    for (let i = 0 ; i < batchSize ; i++) {
-      const returnedOperation = returnedOperations[i];
-
-      expect(returnedOperation.transactionNumber).toBeDefined();
-      expect(returnedOperation.transactionNumber!).toEqual(i);
-      expect(returnedOperation.operationIndex).toBeDefined();
-      expect(returnedOperation.operationIndex!).toEqual(0);
-      expect(returnedOperation.transactionTime).toBeDefined();
-      expect(returnedOperation.transactionTime!).toEqual(i);
-      expect(returnedOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
-      expect(returnedOperation.getOperationHash()).toEqual(batch[i].getOperationHash());
-    }
+    checkEqualArray(batch, returnedOperations);
   });
 });

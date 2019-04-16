@@ -24,29 +24,32 @@ export default class MongoDbOperationStore implements OperationStore {
   /**
    * MongoDb database name where the operations are stored
    */
-  public static readonly databaseName = 'sidetree';
+  private readonly databaseName: string;
 
   /**
    * MongoDB collection name under the database where the operations are stored
    */
-  public static readonly operationCollectionName = 'operations';
+  private readonly operationCollectionName: string;
 
-  constructor (private serverUrl: string) { }
+  constructor (private serverUrl: string, databaseName?: string, operationCollectionName?: string) {
+    this.databaseName = databaseName ? databaseName : 'sidetree';
+    this.operationCollectionName = operationCollectionName ? operationCollectionName : 'operations';
+  }
 
   /**
    * Initialize the MongoDB operation store.
    */
   public async initialize (): Promise<void> {
     const client = await MongoClient.connect(this.serverUrl);
-    const db = client.db(MongoDbOperationStore.databaseName);
+    const db = client.db(this.databaseName);
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 
     // If the operation collection exists, use it; else create it then use it.
-    if (collectionNames.includes(MongoDbOperationStore.operationCollectionName)) {
-      this.collection = db.collection(MongoDbOperationStore.operationCollectionName);
+    if (collectionNames.includes(this.operationCollectionName)) {
+      this.collection = db.collection(this.operationCollectionName);
     } else {
-      this.collection = await db.createCollection(MongoDbOperationStore.operationCollectionName);
+      this.collection = await db.createCollection(this.operationCollectionName);
       // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
       // this is an unique index, so duplicate inserts are rejected.
       await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 }, { unique: true });
