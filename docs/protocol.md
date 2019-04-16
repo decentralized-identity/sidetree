@@ -112,20 +112,30 @@ The _anchor file_ is a JSON document of the following schema:
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
-# DDoS Mitigation
+# Batch Scaling & DDoS Mitigation
+
 Given the protocol was designed to enable operations to be performed at large volumes with cheap unit costs, DDoS is a real threat to the system.
 
 Without any mitigation strategy, each Sidetree batch can be arbitrarily large, allowing malicious, but protocol adherent nodes to create and broadcast 
 massive operation batches that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
 
-Sidetree protocol defines the following two mechanisms to prevent DDoS:
-1. Maximum batch size
+Sidetree protocol defines the following two mechanisms to enable scaling, while preventing DDoS attacks:
+
+##### Maximum batch size
    
-   By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost.
+   By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost. Each instantiation of a Sidetree-based DID Method may select a different maximum batch size; the size for the default configuration is TBD. 
 
-1. Operation-level proof-of-work
+##### Proof of Fee
 
-   Each Sidetree operation is required to show a protocol-specified proof-of-work for it to be recognized as a valid operation. Sidetree nodes would simply discard any operations that do not meet the proof-of-work requirements. Proof-of-work degrades the ability of bad actors to effectively spam the system. 
+   Each Sidetree transaction on the target chain is required to include a deterministic, protocol-specified fee, based on the number of DID operations they seek to include via the on-chain transaction. The deterministic protocol rules for the default configuration are still under discussion, but the following are roughly represent the direction under discussion:
+
+   1. Simple inclusion of a transaction in a block will enable the transaction writer to include a baseline of N operations
+   2. Any number of operations that exceed N will be subject to proof that a fee was paid that meets or exceeds a required amount, determined as follows:
+      1. Let the block range R include the last block the node believes to be the latest confirmed and the 9 blocks that precede it.
+      2. Compute an array of median fees M, wherein the result of each computation is the median of all transactions fees in each block, less any Sidetree-bearing transactions.
+      3. Let the target fee F be the average of all the values contained in M.
+      4. Let the per operation cost C be F divided by the baseline amount N.
+    3. To test the batch for adherence to the Proof of Fee requirement, divide the number of operations in the batch by the fee paid in the host transaction, and ensure that the resulting per operation amount exceeds the required per operation cost C.
 
 # Sidetree Transaction Processing
 A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increasing by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
@@ -162,23 +172,9 @@ A _Sidetree node_ exposes a set of REST API that enables the creation of new DID
 | 500              | Server error.                            |
 
 
-## Proof-of-work
-Every Sidetree operation request must have a proof-of-work for it to be considered valid. As a result, every operation request (e.g. DID create, update, delete, and recover) has an optional `proofOfWork` property with the following schema:
-
-```json
-"proofOfWork": {
-  "algorithm": "Proof-of-work algorithm used.",
-  "lastBlockHash": "The hash of the latest known blockchain block.",
-  "operationHash": "The hash of the operation this proof-of-work is for.",
-  "proof": "The proof depending on the algorithm used."
-}
-```
-
-When `proofOfWork` is not given in an operation request, the Sidetree node must perform proof-of-work on behalf of the requester or reject the request.
-
-
 ## JSON Web Signature (JWS)
 Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme.
+
 Compact serialization scheme is not supported because _proof of work_ data is intentionally not required to be signed to allow proof of work computation to be outsourced.
 
 When constructing the JWS input for signing (_JWS Signing Input_), the following scheme is specified by the JWS specification:
