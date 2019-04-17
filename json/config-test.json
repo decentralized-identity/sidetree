@@ -1,7 +1,0 @@
-{
-  "devMode": true,
-  "port": 3001,
-  "requestTimeoutInSeconds": "10",
-  "ipfsDataStore": "fs",
-  "ipfsRepo": "sidetree-ipfs"
-}

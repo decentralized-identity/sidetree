@@ -2,8 +2,7 @@
   "extends": "tslint-config-standard",
   "linterOptions": {
     "exclude": [
-      "node_modules/**",
-      "json/**"
+      "node_modules/**"
     ]
   },
   "defaultSeverity": "error",

@@ -1,21 +1,35 @@
-import * as Ipfs from 'ipfs';
 import base64url from 'base64url';
-import { IpfsStorage } from './lib/IpfsStorage';
+import IpfsStorage from './IpfsStorage';
 import { Response, ResponseStatus } from './Response';
 import { Timeout } from './lib/Timeout';
 const multihashes = require('multihashes');
 
 /**
+ * IPFS options for creation of IPFS node
+ */
+interface Options {
+  /** Init IPFS options */
+  init?: boolean;
+  /** Boolean option to start ipfs node defaults to true */
+  start?: boolean;
+  /** IPFS experimental features */
+  EXPERIMENTAL?: any;
+  /** IPFS repo object */
+  repo?: string;
+  /** IPFS config */
+  config?: any;
+}
+
+/**
  * Sidetree IPFS request handler class
  */
 export default class RequestHandler {
-
   /**
    * Instance of IpfsStorage.
    */
   public ipfsStorage: IpfsStorage;
 
-  public constructor (ipfsOptions: Ipfs.Options) {
+  public constructor (ipfsOptions: Options) {
     this.ipfsStorage = IpfsStorage.create(ipfsOptions);
   }
   /**

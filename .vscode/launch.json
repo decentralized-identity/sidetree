@@ -7,15 +7,6 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceFolder}/dist/src/index.js",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "Jasmine-ts - All tests",
             "program": "${workspaceFolder}/node_modules/jasmine-ts/lib/index.js",
             "env": {

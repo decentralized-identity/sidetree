@@ -1,9 +1,9 @@
-import * as Ipfs from 'ipfs';
+import * as IPFS from 'ipfs';
 
 /**
  * Class that implements the IPFS Storage functionality.
  */
-export class IpfsStorage {
+export default class IpfsStorage {
   /**  IPFS node instance  */
   public node: IPFS;
   /**  IPFS Storage class object  */
@@ -12,7 +12,7 @@ export class IpfsStorage {
   /**
    * Static method to have a single instance of class and mock in unit tests
    */
-  public static create (options?: Ipfs.Options): IpfsStorage {
+  public static create (options?: IPFS.Options): IpfsStorage {
     if (!IpfsStorage.ipfsStorageInstance) {
       IpfsStorage.ipfsStorageInstance = new IpfsStorage(options);
     }
@@ -20,8 +20,8 @@ export class IpfsStorage {
     return IpfsStorage.ipfsStorageInstance;
   }
 
-  private constructor (options?: Ipfs.Options) {
-    this.node = new Ipfs(options);
+  private constructor (options?: IPFS.Options) {
+    this.node = new IPFS(options);
   }
 
   /**

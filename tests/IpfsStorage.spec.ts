@@ -1,11 +1,11 @@
-import * as Ipfs from 'ipfs';
-import { IpfsStorage } from '../../src/lib/IpfsStorage';
+import * as IPFS from 'ipfs';
+import IpfsStorage from '../src/IpfsStorage';
 
-describe('IpfsStorage', () => {
+describe('IPFSStorage', () => {
   let ipfsStorage: IpfsStorage;
 
   beforeEach(() => {
-    const ipfsOptions: Ipfs.Options = {
+    const ipfsOptions: IPFS.Options = {
       repo: 'sidetree-ipfs',
       init: false,
       start: false
@@ -15,7 +15,7 @@ describe('IpfsStorage', () => {
   });
 
   it('should return the pinned content for the given hash.', async () => {
-    const mockIpfsContent: Ipfs.Files[] = [
+    const mockIpfsContent: IPFS.Files[] = [
       {
         path: '/tmp/myfile.txt',
         content: Buffer.from('ipfs')
@@ -34,7 +34,7 @@ describe('IpfsStorage', () => {
   });
 
   it('should write the content to IPFS and return the multihash.', async () => {
-    const mockSidetreeContent: Ipfs.IPFSFile[] = [
+    const mockSidetreeContent: IPFS.IPFSFile[] = [
       {
         path: '/tmp/myfile.txt',
         hash: 'Qm12345abc',

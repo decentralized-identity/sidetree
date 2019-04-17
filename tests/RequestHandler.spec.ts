@@ -1,11 +1,8 @@
 import RequestHandler from '../src/RequestHandler';
 import { Response, ResponseStatus } from '../src/Response';
-import { Config, ConfigKey } from '../src/Config';
-import * as configFile from '../json/config.json';
 
 describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
-  const config = new Config(configFile);
 
   beforeEach(() => {
     const ipfsOptions = {
@@ -23,7 +20,7 @@ describe('RequestHandler', () => {
     };
 
     const testSidetreeHash: string = '123abc';
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, +config[ConfigKey.RequestTimeoutInSeconds]);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, 10);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -36,7 +33,7 @@ describe('RequestHandler', () => {
     const testSidetreeHash: string = 'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw';
     spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Buffer.from('dummyContent'));
 
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, +config[ConfigKey.RequestTimeoutInSeconds]);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, 10);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
