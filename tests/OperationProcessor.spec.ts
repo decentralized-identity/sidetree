@@ -109,7 +109,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDidDocumentAfterUpdates (didDocument: IDocument | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
-  expect((didDocument! as any).service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+  expect(didDocument!.service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
