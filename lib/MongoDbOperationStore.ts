@@ -4,11 +4,13 @@ import { OperationStore } from './OperationStore';
 
 /**
  * Sidetree operation stored in MongoDb.
+ * Note: we use the shorter property name "opIndex" instead of "operatioIndex" due to a constraint imposed by CosmosDB/MongoDB:
+ * It does not like the sum of length of property names for unique indexes to be above a limit.
  */
 interface MongoOperation {
   didUniqueSuffix: string;
   operationBufferBsonBinary: Binary;
-  operationIndex: number;
+  opIndex: number;
   transactionNumber: number;
   transactionTime: number;
   batchFileHash: string;
@@ -52,7 +54,7 @@ export default class MongoDbOperationStore implements OperationStore {
       this.collection = await db.createCollection(this.operationCollectionName);
       // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
       // this is an unique index, so duplicate inserts are rejected.
-      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 }, { unique: true });
+      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, opIndex: 1 }, { unique: true });
     }
   }
 
@@ -108,7 +110,7 @@ export default class MongoDbOperationStore implements OperationStore {
     return {
       didUniqueSuffix: operation.didUniqueSuffix!,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
-      operationIndex: operation.operationIndex!,
+      opIndex: operation.operationIndex!,
       transactionNumber: operation.transactionNumber!,
       transactionTime: operation.transactionTime!,
       batchFileHash: operation.batchFileHash!
@@ -129,7 +131,7 @@ export default class MongoDbOperationStore implements OperationStore {
         anchorFileHash: 'unavailable',
         batchFileHash: mongoOperation.batchFileHash
       },
-      mongoOperation.operationIndex
+      mongoOperation.opIndex
     );
   }
 }
