@@ -32,7 +32,7 @@ export default class Core {
     const cas = new CasClient(config.contentAddressableStoreServiceUri);
     const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
     const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
-    this.operationStore = new MongoDbOperationStore(config.operationStoreUri);
+    this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
     this.observer = new Observer(blockchain, downloadManager, operationProcessor, config.observingIntervalInSeconds);
     this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config.didMethodName);

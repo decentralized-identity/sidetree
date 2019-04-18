@@ -8,5 +8,5 @@ export interface IConfig {
   didMethodName: string;
   maxConcurrentDownloads: number;
   observingIntervalInSeconds: number;
-  operationStoreUri: string;
+  mongoDbConnectionString: string;
 }

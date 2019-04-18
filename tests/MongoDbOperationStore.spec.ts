@@ -106,8 +106,8 @@ async function removeMongoCollection (serverUrl: string) {
   }
 }
 
-async function createOperationStore (operationStoreUri: string): Promise<OperationStore> {
-  const operationStore = new MongoDbOperationStore(operationStoreUri, databaseName, operationCollectionName);
+async function createOperationStore (mongoDbConnectionString: string): Promise<OperationStore> {
+  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName, operationCollectionName);
   await operationStore.initialize();
   return operationStore;
 }
@@ -160,13 +160,13 @@ describe('MongoDbOperationStore', async () => {
   beforeEach(async () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
 
-    if (!await isMongoServiceAvailable(config.operationStoreUri)) {
+    if (!await isMongoServiceAvailable(config.mongoDbConnectionString)) {
       pending('MongoDB service not available');
     }
 
-    await removeMongoCollection(config.operationStoreUri);
+    await removeMongoCollection(config.mongoDbConnectionString);
 
-    operationStore = await createOperationStore(config.operationStoreUri);
+    operationStore = await createOperationStore(config.mongoDbConnectionString);
   });
 
   it('should get a put create operation', async () => {
@@ -275,7 +275,7 @@ describe('MongoDbOperationStore', async () => {
     checkEqualArray(batch, returnedOperations);
 
     // Create another instance of the operation store
-    operationStore = await createOperationStore(config.operationStoreUri);
+    operationStore = await createOperationStore(config.mongoDbConnectionString);
 
     // Check if we have all the previously put operations
     returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
