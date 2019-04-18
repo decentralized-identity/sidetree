@@ -54,7 +54,7 @@ sidetreeCore.initialize()
   });
 })
 .catch((error: Error) => {
-  console.log(`Sidetree node initialization failed with error ${error}`);
+  console.error(`Sidetree node initialization failed with error ${error}`);
 });
 
 /**

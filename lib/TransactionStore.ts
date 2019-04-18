@@ -35,11 +35,12 @@ export interface TransactionStore {
   removeUnresolvableTransaction (transaction: Transaction): Promise<void>;
 
   /**
-   * Gets a list of unresolvable transactions to retry processing.
-   * The return list need not (and should not) be the full list of unresolvable transactions;
-   * The implementation chooses its own algorithm for retrying unresolvable transactions.
+   * Gets a list of unresolvable transactions due for retry processing.
+   * @param maxReturnCount
+   *   The maximum count of unresolvable transactions to return retry.
+   *   If not given, the implementation determines the number of unresolvable transactions to return.
    */
-  getUnresolvableTransactionsToRetry (): Promise<Transaction[]>;
+  getUnresolvableTransactionsDueForRetry (maxReturnCount?: number): Promise<Transaction[]>;
 
   /**
    * Remove all processed transactions and unresolvable transactions with transaction number greater than the
@@ -125,7 +126,7 @@ export class InMemoryTransactionStore implements TransactionStore {
     this.unresolvableTransactions.delete(transaction.transactionNumber);
   }
 
-  async getUnresolvableTransactionsToRetry (): Promise<Transaction[]> {
+  async getUnresolvableTransactionsDueForRetry (): Promise<Transaction[]> {
     const now = Date.now();
     const unresolvableTransactionsToRetry = [];
 

@@ -6,8 +6,8 @@ import timeSpan = require('time-span');
 import Transaction, { ResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
-import { InMemoryTransactionStore } from './TransactionStore';
 import { Operation } from './Operation';
+import { TransactionStore } from './TransactionStore';
 
 /**
  * The state of a transaction that is being processed.
@@ -37,11 +37,6 @@ export default class Observer {
   private continuePeriodicProcessing = false;
 
   /**
-   * Data store that stores the state of processed transactions.
-   */
-  private transactionStore = new InMemoryTransactionStore();
-
-  /**
    * The list of transactions that are being downloaded or processed.
    */
   private transactionsUnderProcessing: { transaction: Transaction; processingStatus: TransactionProcessingStatus }[] = [];
@@ -55,6 +50,7 @@ export default class Observer {
     private blockchain: Blockchain,
     private downloadManager: DownloadManager,
     private operationProcessor: OperationProcessor,
+    private transactionStore: TransactionStore,
     private observingIntervalInSeconds: number) {
   }
 
@@ -81,14 +77,6 @@ export default class Observer {
   public stopPeriodicProcessing () {
     console.info(`Stopped periodic transactions processing.`);
     this.continuePeriodicProcessing = false;
-  }
-
-  /**
-   * Gets the list of processed transactions.
-   * Mainly used for test purposes.
-   */
-  public getProcessedTransactions (): Transaction[] {
-    return this.transactionStore.getProcessedTransactions();
   }
 
   /**
@@ -196,7 +184,7 @@ export default class Observer {
    */
   private async processUnresolvableTransactions () {
     const endTimer = timeSpan();
-    const unresolvableTransactions = await this.transactionStore.getUnresolvableTransactionsToRetry();
+    const unresolvableTransactions = await this.transactionStore.getUnresolvableTransactionsDueForRetry();
     console.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
 
     // Download and process each unresolvable transactions.

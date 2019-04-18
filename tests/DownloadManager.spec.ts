@@ -24,7 +24,7 @@ describe('DownloadManager', async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = originalDefaultTestTimeout;
   });
 
-  it('queue up downloads if max concurrent download count is exceeded.', async () => {
+  it('should queue up downloads if max concurrent download count is exceeded.', async () => {
     // Write some content in CAS.
     const content1 = await cas.write(Buffer.from('1'));
     const content2 = await cas.write(Buffer.from('2'));
