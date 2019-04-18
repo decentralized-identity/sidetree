@@ -4,8 +4,8 @@ import { OperationStore } from './OperationStore';
 
 /**
  * Sidetree operation stored in MongoDb.
- * Note: we use the shorter property name "opIndex" instead of "operatioIndex" due to a constraint imposed by CosmosDB/MongoDB:
- * It does not like the sum of length of property names for unique indexes to be above a limit.
+ * Note: we use the shorter property name "opIndex" instead of "operationIndex" due to a constraint imposed by CosmosDB/MongoDB:
+ * the sum of property names of a unique index keys need to be less than 40 characters.
  */
 interface MongoOperation {
   didUniqueSuffix: string;
