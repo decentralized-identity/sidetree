@@ -21,24 +21,35 @@ interface MongoOperation {
 export default class MongoDbOperationStore implements OperationStore {
   private collection: Collection<any> | undefined;
 
-  constructor (private serverUrl: string) { }
+  /**
+   * MongoDb database name where the operations are stored
+   */
+  private readonly databaseName: string;
+
+  /**
+   * MongoDB collection name under the database where the operations are stored
+   */
+  private readonly operationCollectionName: string;
+
+  constructor (private serverUrl: string, databaseName?: string, operationCollectionName?: string) {
+    this.databaseName = databaseName ? databaseName : 'sidetree';
+    this.operationCollectionName = operationCollectionName ? operationCollectionName : 'operations';
+  }
 
   /**
    * Initialize the MongoDB operation store.
    */
   public async initialize (): Promise<void> {
-    const databaseName = 'sidetree';
-    const operationCollectionName = 'operations';
     const client = await MongoClient.connect(this.serverUrl);
-    const db = client.db(databaseName);
+    const db = client.db(this.databaseName);
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 
     // If the operation collection exists, use it; else create it then use it.
-    if (collectionNames.includes(operationCollectionName)) {
-      this.collection = db.collection(operationCollectionName);
+    if (collectionNames.includes(this.operationCollectionName)) {
+      this.collection = db.collection(this.operationCollectionName);
     } else {
-      this.collection = await db.createCollection(operationCollectionName);
+      this.collection = await db.createCollection(this.operationCollectionName);
       // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
       // this is an unique index, so duplicate inserts are rejected.
       await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, operationIndex: 1 }, { unique: true });

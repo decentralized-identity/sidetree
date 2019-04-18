@@ -16,11 +16,11 @@ export interface IDocument {
   }];
   service: [{
     type: string,
-    serviceEndpoint: [{
+    serviceEndpoint: {
       '@context': string;
       '@type': string;
       instance: [string]
-    }]
+    }
   }];
 }
 
