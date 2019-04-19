@@ -1,5 +1,5 @@
 import IBlockchainTime from '../../lib/BlockchainTime';
-import ITransaction from '../../lib/Transaction';
+import { ITransaction } from '../../lib/Transaction';
 import { Blockchain } from '../../lib/Blockchain';
 
 /**

@@ -22,7 +22,7 @@ async function addBatchFileOfOneOperationToCas (
   transactionTime: number,
   operationIndex: number): Promise<Operation> {
   const operations: Buffer[] = [ opBuf ];
-  const batchBuffer = BatchFile.fromOperations(operations).toBuffer();
+  const batchBuffer = BatchFile.fromOperationBuffers(operations);
   const batchFileAddress = await cas.write(batchBuffer);
   const resolvedTransaction = {
     transactionNumber,

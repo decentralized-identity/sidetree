@@ -1,5 +1,5 @@
-import ITransaction from './Transaction';
 import { Collection, MongoClient, Db } from 'mongodb';
+import { ITransaction } from './Transaction';
 import { TransactionStore } from './TransactionStore';
 
 interface IUnresolvableTransaction extends ITransaction {

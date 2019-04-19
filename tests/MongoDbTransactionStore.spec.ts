@@ -1,6 +1,6 @@
 import MongoDbTransactionStore from '../lib/MongoDbTransactionStore';
-import ITransaction from '../lib/Transaction';
 import { IConfig } from '../lib/Config';
+import { ITransaction } from '../lib/Transaction';
 import { MongoClient } from 'mongodb';
 import { TransactionStore } from '../lib/TransactionStore';
 

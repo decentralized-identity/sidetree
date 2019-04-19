@@ -1,8 +1,8 @@
 import * as HttpStatus from 'http-status';
 import IBlockchainTime from './BlockchainTime';
 import nodeFetch from 'node-fetch';
-import ITransaction from './Transaction';
 import { ErrorCode, SidetreeError } from './Error';
+import { ITransaction } from './Transaction';
 
 /**
  * Interface to access the underlying blockchain.

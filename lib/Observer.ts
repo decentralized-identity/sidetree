@@ -1,11 +1,11 @@
+import AnchorFile, { IAnchorFile } from './AnchorFile';
+import BatchFile from './BatchFile';
 import DownloadManager from './DownloadManager';
-import Encoder from './Encoder';
 import OperationProcessor from './OperationProcessor';
-import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
-import ITransaction, { IResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
+import { IResolvedTransaction, ITransaction } from './Transaction';
 import { Operation } from './Operation';
 import { TransactionStore } from './TransactionStore';
 
@@ -248,12 +248,11 @@ export default class Observer {
         return;
       }
 
-      let anchorFile;
+      let anchorFile: IAnchorFile;
       try {
-        anchorFile = JSON.parse(anchorFileBuffer.toString());
-        // TODO: Issue https://github.com/decentralized-identity/sidetree-core/issues/129 - Perform schema validation.
+        anchorFile = AnchorFile.parseAndValidate(anchorFileBuffer);
       } catch {
-        // Invalid transaction, no further processing will ever be possible.
+        console.info(`Anchor file '${transaction.anchorFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored...`);
         return;
       }
 
@@ -274,7 +273,18 @@ export default class Observer {
         batchFileHash: anchorFile.batchFileHash
       };
 
-      await this.processResolvedTransaction(resolvedTransaction, batchFileBuffer);
+      let operations: Operation[];
+      try {
+        operations = await BatchFile.parseAndValidate(batchFileBuffer, anchorFile, resolvedTransaction);
+      } catch {
+        console.info(`Batch file '${anchorFile.batchFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored.`);
+        return;
+      }
+
+      // If the code reaches here, it means that the batch of operations is valid, process the operations.
+      const endTimer = timeSpan();
+      await this.operationProcessor.processBatch(operations);
+      console.info(`Processed batch '${anchorFile.batchFileHash}' of ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
       console.error(error);
@@ -288,58 +298,6 @@ export default class Observer {
         await this.transactionStore.removeUnresolvableTransaction(transaction);
       }
     }
-  }
-
-  private async processResolvedTransaction (resolvedTransaction: IResolvedTransaction, batchFileBuffer: Buffer) {
-    // Validate the batch file.
-    const operations: Operation[] = [];
-    try {
-      let endTimer = timeSpan();
-      const batchFile = JSON.parse(batchFileBuffer.toString());
-      console.info(`Parsed batch file ${resolvedTransaction.batchFileHash} in ${endTimer.rounded()} ms.`);
-
-      // Verify the number of operations does not exceed the maximum allowed limit.
-      const protocol = ProtocolParameters.get(resolvedTransaction.transactionTime);
-      if (batchFile.operations.length > protocol.maxOperationsPerBatch) {
-        throw Error(`Batch size of ${batchFile.operations.length} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
-      }
-
-      endTimer = timeSpan();
-      let operationIndex = 0;
-      for (const encodedOperation of batchFile.operations) {
-        const operationBuffer = Encoder.decodeAsBuffer(encodedOperation);
-
-        // Verify size of each operation does not exceed the maximum allowed limit.
-        if (operationBuffer.length > protocol.maxOperationByteSize) {
-          throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${protocol.maxOperationByteSize} bytes.`);
-        }
-
-        let operation;
-        try {
-          operation = Operation.create(operationBuffer, resolvedTransaction, operationIndex);
-        } catch (error) {
-          console.info(`Unable to create an operation with '${operationBuffer}': ${error}`);
-          throw error;
-        }
-
-        operations.push(operation);
-        operationIndex++;
-      }
-      console.info(`Decoded ${operations.length} operations in batch ${resolvedTransaction.batchFileHash}. Time taken: ${endTimer.rounded()} ms.`);
-
-      // Ensure the batch meets proof-of-work requirements.
-      this.verifyProofOfWork(operations);
-    } catch {
-      console.info(`Batch file '${resolvedTransaction.batchFileHash}' failed validation, transaction ignored.`);
-      return; // Invalid batch file, nothing to process.
-    }
-
-    // If the code reaches here, it means that the batch of operations is valid, process each operations.
-    const endTimer = timeSpan();
-    for (const operation of operations) {
-      await this.operationProcessor.processBatch([operation]);
-    }
-    console.info(`Processed batch ${resolvedTransaction.batchFileHash} containing ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
   }
 
   /**
@@ -365,13 +323,5 @@ export default class Observer {
 
     // Reset the in-memory last known good Tranaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
-  }
-
-  /**
-   * Verifies the given batch satisfies the proof-of-work requirements.
-   * Throws error if fails proof-of-work requirements.
-   */
-  private verifyProofOfWork (_operations: Operation[]) {
-    // TODO: https://github.com/decentralized-identity/sidetree-core/issues/25
   }
 }

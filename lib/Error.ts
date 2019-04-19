@@ -17,7 +17,5 @@ export class SidetreeError extends Error {
  * Error code convention unless generic: error_category.sub_error_code
  */
 export enum ErrorCode {
-  DidNotFound = 'did_not_found',
-  InvalidTransactionNumberOrTimeHash = 'invalid_transaction_number_or_time_hash',
-  NoMatchingProtocolVersion = 'no_matching_protocol_version'
+  InvalidTransactionNumberOrTimeHash = 'invalid_transaction_number_or_time_hash'
 }

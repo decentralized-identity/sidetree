@@ -1,12 +1,11 @@
 import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
 import Did from './util/Did';
-import Document, { IDocument } from './util/Document';
+import Document from './util/Document';
 import Multihash from './Multihash';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import { Blockchain } from './Blockchain';
-import { ErrorCode, SidetreeError } from './Error';
 import { Operation, OperationType } from './Operation';
 import { IResponse, ResponseStatus } from './Response';
 
@@ -26,17 +25,9 @@ export default class RequestHandler {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<IResponse> {
-    let protocolParameters;
-    try {
-      // Get the protocol version according to current blockchain time to validate the operation request.
-      const currentTime = await this.blockchain.getLatestTime();
-      protocolParameters = ProtocolParameters.get(currentTime.time + 1);
-    } catch {
-      return {
-        status: ResponseStatus.ServerError,
-        body: new SidetreeError(ErrorCode.DidNotFound)
-      };
-    }
+    // Get the protocol version according to current blockchain time to validate the operation request.
+    const currentTime = await this.blockchain.getLatestTime();
+    const protocolParameters = ProtocolParameters.get(currentTime.time);
 
     // Perform common validation for any write request and parse it into an `Operation`.
     let operation: Operation;
@@ -51,7 +42,9 @@ export default class RequestHandler {
 
       // TODO: Validate or perform proof-of-work.
 
-    } catch {
+    } catch (error) {
+      console.error(`Bad request: ${error}`);
+
       return {
         status: ResponseStatus.BadRequest
       };
@@ -65,10 +58,14 @@ export default class RequestHandler {
           response = await this.handleCreateOperation(operation);
           break;
         case OperationType.Update:
-          response = await this.handleUpdateOperation(operation);
+          response = {
+            status: ResponseStatus.Succeeded
+          };
           break;
         case OperationType.Delete:
-          response = await this.handleDeleteOperation(operation);
+          response = {
+            status: ResponseStatus.Succeeded
+          };
           break;
         default:
           response = {
@@ -79,7 +76,7 @@ export default class RequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        this.batchWriter.add(request);
+        this.batchWriter.add(operation);
       }
 
       return response;
@@ -195,93 +192,5 @@ export default class RequestHandler {
       status: ResponseStatus.Succeeded,
       body: didDocument
     };
-  }
-
-  /**
-   * Handles update operation.
-   */
-  public async handleUpdateOperation (operation: Operation): Promise<IResponse> {
-    // TODO: Assert that operation is well-formed once the code reaches here.
-    // ie. Need to make sure invalid patch etc will cause Operation creation failure.
-
-    let updatedDidDocument;
-    try {
-      updatedDidDocument = await this.simulateUpdateOperation(operation);
-
-    } catch (error) {
-      if (error instanceof SidetreeError && error.errorCode === ErrorCode.DidNotFound) {
-        return {
-          status: ResponseStatus.BadRequest,
-          body: error
-        };
-      }
-
-      throw error;
-    }
-
-    return {
-      status: ResponseStatus.Succeeded,
-      body: updatedDidDocument
-    };
-  }
-
-  /**
-   * Handles update operation.
-   */
-  public async handleDeleteOperation (operation: Operation): Promise<IResponse> {
-    // TODO: Assert that operation is well-formed once the code reaches here.
-
-    try {
-      await this.simulateDeleteOperation(operation);
-    } catch (error) {
-      if (error instanceof SidetreeError && error.errorCode === ErrorCode.DidNotFound) {
-        return {
-          status: ResponseStatus.BadRequest,
-          body: error
-        };
-      }
-
-      throw error;
-    }
-
-    return {
-      status: ResponseStatus.Succeeded
-    };
-  }
-
-  /**
-   * Simulates an Update operation without actually commiting the state change.
-   * This method is used to sanity validate a write-operation request before it is queued for batch-writing.
-   * NOTE: This method is intentionally not placed within Operation Processor because:
-   * 1. This avoids to create yet another interface method.
-   * 2. It is more appropriate to think of this method a higher-layer logic that uses the building blocks exposed by the Operation Processor.
-   * @param operation The Update operation to be applied.
-   * @returns The resultant DID Document.
-   * @throws Error if operation given is invalid.
-   */
-  private async simulateUpdateOperation (operation: Operation): Promise<IDocument> {
-    // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
-
-    // Get the current DID Document of the specified DID.
-    const currentDidDcoument = await this.operationProcessor.resolve(operation.didUniqueSuffix!);
-    if (!currentDidDcoument) {
-      throw new SidetreeError(ErrorCode.DidNotFound);
-    }
-
-    // Apply the patch on top of the current DID Document.
-    const updatedDidDocument = Operation.applyJsonPatchToDidDocument(currentDidDcoument, operation.patch!);
-    return updatedDidDocument;
-  }
-
-  private async simulateDeleteOperation (operation: Operation) {
-    // TODO: add and refactor code such that same validation code is used by this method and anchored operation processing.
-
-    const currentDidDcoument = await this.operationProcessor.resolve(operation.didUniqueSuffix!);
-
-    if (!currentDidDcoument) {
-      throw new SidetreeError(ErrorCode.DidNotFound);
-    }
-
-    return;
   }
 }
