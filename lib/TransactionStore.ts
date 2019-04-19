@@ -1,5 +1,5 @@
 import SortedArray from './util/SortedArray';
-import ITransaction from './Transaction';
+import { ITransaction } from './Transaction';
 
 /**
  * An abstraction for the persistence of transactions that have been processed.

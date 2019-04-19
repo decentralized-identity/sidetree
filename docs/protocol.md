@@ -420,8 +420,8 @@ POST /v1.0/ HTTP/1.1
 }
 ```
 
-#### Response body schema
-The response body is the DID Document of the DID after the update.
+#### Response body
+None.
 
 
 ### DID Deletion
@@ -481,7 +481,7 @@ POST /v1.0/ HTTP/1.1
 }
 ```
 
-#### Response body schema
+#### Response body
 None.
 
 ### DID Recovery

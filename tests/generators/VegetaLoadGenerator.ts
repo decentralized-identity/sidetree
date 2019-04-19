@@ -15,11 +15,10 @@ export default class VegetaLoadGenerator {
    *   One targets file containing all Create requests;
    *   One targest file containing all Update requests
    * @param uniqueDidCount The number of unique DID to be generated.
-   * @param methodName The method name used to generate DIDs referenced in the update payload. e.g. 'did:sidetree:'
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
    */
-  public static async generateLoadFiles (uniqueDidCount: number, methodName: string, endpointUrl: string, absoluteFolderPath: string) {
+  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
     const versionsOfProtocolParameters = require('../../../json/protocol-parameters-test.json');
     ProtocolParameters.initialize(versionsOfProtocolParameters);
 
@@ -42,9 +41,8 @@ export default class VegetaLoadGenerator {
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
-      // Compute the DID from the generated Create payload.
-      const did = Did.from(createPayload, methodName, ProtocolParameters.get(1000000).hashAlgorithmInMultihashCode);
-      const didUniqueSuffix = Did.getUniqueSuffix(did);
+      // Compute the DID unique suffix from the generated Create payload.
+      const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createPayload, ProtocolParameters.get(1000000).hashAlgorithmInMultihashCode);
 
       // Generate an Update payload.
       const updatePayload = {

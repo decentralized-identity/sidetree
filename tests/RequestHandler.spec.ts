@@ -70,7 +70,7 @@ describe('RequestHandler', () => {
     await batchWriter.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
-    const batchBuffer = BatchFile.fromOperations([createOperationBuffer]).toBuffer();
+    const batchBuffer = BatchFile.fromOperationBuffers([createOperationBuffer]);
     batchFileHash = MockCas.getAddress(batchBuffer);
 
     // Now force Operation Processor to process the create operation.
@@ -109,7 +109,7 @@ describe('RequestHandler', () => {
 
     // Verfiy that CAS was invoked to store the batch file.
     const batchFileBuffer = await cas.read(batchFileHash);
-    const batchFile = await BatchFile.fromBuffer(batchFileBuffer);
+    const batchFile = JSON.parse(batchFileBuffer.toString());
     expect(batchFile.operations.length).toEqual(1);
   });
 
@@ -175,7 +175,7 @@ describe('RequestHandler', () => {
     expect(response.body).toBeUndefined();
   });
 
-  it('should respond with HTTP 200 when DID is deleted correctly.', async () => {
+  it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
     const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
@@ -183,16 +183,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(200);
   });
 
-  it('should respond with HTTP 400 when DID given to be deleted does not exist.', async () => {
-    const request = await OperationGenerator.generateDeleteOperationBuffer('nonExistentDidUniqueSuffix', '#key1', privateKey);
-    const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = Response.toHttpStatus(response.status);
-
-    expect(httpStatus).toEqual(400);
-    expect(response.body.errorCode).toEqual('did_not_found');
-  });
-
-  it('should respond with HTTP 200 with the update DID Docuemnt when an update operation is successful.', async () => {
+  it('should respond with HTTP 200 when an update operation rquest is successful.', async () => {
     // Create a request that will delete the 2nd public key.
     const jsonPatch = [{
       op: 'remove',
@@ -212,32 +203,5 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
-
-    // Verify that only one public key is remaining in the response.
-    expect(response.body.publicKey.length).toEqual(1);
-  });
-
-  it('should respond with HTTP 400 when DID given in an update operation is unknown.', async () => {
-    // Create a JSON patch that will delete the 2nd public key.
-    const jsonPatch = [{
-      op: 'remove',
-      path: '/publicKey/1'
-    }];
-
-    // Construct update payload.
-    const updatePayload = {
-      didUniqueSuffix: 'nonExistentDidUniqueSuffix',
-      operationNumber: 1,
-      patch: jsonPatch,
-      previousOperationHash: 'someOperationHash'
-    };
-
-    const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);
-    const response = await requestHandler.handleOperationRequest(request);
-    const httpStatus = Response.toHttpStatus(response.status);
-
-    expect(httpStatus).toEqual(400);
-    expect(response.body.errorCode).toEqual('did_not_found');
-
   });
 });
