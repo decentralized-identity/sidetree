@@ -1,5 +1,5 @@
-import BlockchainTime from '../../lib/BlockchainTime';
-import Transaction from '../../lib/Transaction';
+import IBlockchainTime from '../../lib/BlockchainTime';
+import ITransaction from '../../lib/Transaction';
 import { Blockchain } from '../../lib/Blockchain';
 
 /**
@@ -13,7 +13,7 @@ export default class MockBlockchain implements Blockchain {
     this.hashes.push(anchorFileHash);
   }
 
-  public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: Transaction[] }> {
+  public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: ITransaction[] }> {
     if (sinceTransactionNumber === undefined) {
       sinceTransactionNumber = -1;
     }
@@ -24,7 +24,7 @@ export default class MockBlockchain implements Blockchain {
       moreTransactions = true;
     }
 
-    const transactions: Transaction[] = [];
+    const transactions: ITransaction[] = [];
     if (this.hashes.length > 0 &&
       sinceTransactionNumber < this.hashes.length - 1) {
       const hashIndex = sinceTransactionNumber + 1;
@@ -43,19 +43,19 @@ export default class MockBlockchain implements Blockchain {
     };
   }
 
-  public async getFirstValidTransaction (_transactions: Transaction[]): Promise<Transaction | undefined> {
+  public async getFirstValidTransaction (_transactions: ITransaction[]): Promise<ITransaction | undefined> {
     return undefined;
   }
 
-  private latestTime?: BlockchainTime = { time: 500000, hash: 'dummyHash' };
-  public async getLatestTime (): Promise<BlockchainTime> {
+  private latestTime?: IBlockchainTime = { time: 500000, hash: 'dummyHash' };
+  public async getLatestTime (): Promise<IBlockchainTime> {
     return this.latestTime!;
   }
 
   /**
    * Hardcodes the latest time to be returned.
    */
-  public setLatestTime (time: BlockchainTime) {
+  public setLatestTime (time: IBlockchainTime) {
     this.latestTime = time;
   }
 }

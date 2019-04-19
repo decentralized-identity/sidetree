@@ -1,7 +1,7 @@
 /**
  * Defines a Sidetree transaction.
  */
-export default interface Transaction {
+export default interface ITransaction {
   transactionNumber: number;
   transactionTime: number;
   transactionTimeHash: string;
@@ -12,6 +12,6 @@ export default interface Transaction {
  * Defines a resolved Sidetree transaction.
  * A resolved transaction means the batch file is located in CAS.
  */
-export interface ResolvedTransaction extends Transaction {
+export interface IResolvedTransaction extends ITransaction {
   batchFileHash: string;
 }

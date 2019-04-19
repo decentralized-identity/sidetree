@@ -1,7 +1,7 @@
 /**
  * Represents an instance in time in a blockchain.
  */
-export default interface BlockchainTime {
+export default interface IBlockchainTime {
   /** A number that represents the time in the blockchain. */
   time: number;
   /** The globally unique hash that is associated with the time. */
