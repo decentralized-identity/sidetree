@@ -36,7 +36,7 @@ export default class Core {
     const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
-    this.transactionStore = new MongoDbTransactionStore(config.operationStoreUri);
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.observer = new Observer(blockchain, downloadManager, operationProcessor, this.transactionStore, config.observingIntervalInSeconds);
     this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config.didMethodName);
 
