@@ -6,7 +6,7 @@ import ProtocolParameters from './ProtocolParameters';
 import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
-import { ResolvedTransaction } from './Transaction';
+import { IResolvedTransaction } from './Transaction';
 
 /**
  * Sidetree operation types.
@@ -88,7 +88,7 @@ class Operation {
    */
   private constructor (
     operationBuffer: Buffer,
-    resolvedTransaction?: ResolvedTransaction,
+    resolvedTransaction?: IResolvedTransaction,
     operationIndex?: number) {
     // resolvedTransaction and operationIndex must both be defined or undefined at the same time.
     if (!((resolvedTransaction === undefined && operationIndex === undefined) ||
@@ -152,7 +152,7 @@ class Operation {
    */
   public static create (
     operationBuffer: Buffer,
-    resolvedTransaction?: ResolvedTransaction,
+    resolvedTransaction?: IResolvedTransaction,
     operationIndex?: number): Operation {
     return new Operation(operationBuffer, resolvedTransaction, operationIndex);
   }

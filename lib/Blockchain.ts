@@ -1,7 +1,7 @@
 import * as HttpStatus from 'http-status';
-import BlockchainTime from './BlockchainTime';
+import IBlockchainTime from './BlockchainTime';
 import nodeFetch from 'node-fetch';
-import Transaction from './Transaction';
+import ITransaction from './Transaction';
 import { ErrorCode, SidetreeError } from './Error';
 
 /**
@@ -24,18 +24,18 @@ export interface Blockchain {
    *                            Required if and only if sinceTransactionNumber is provided.
    * @throws SidetreeError with ErrorCode.InvalidTransactionNumberOrTimeHash if a potential block reorganization is detected.
    */
-  read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: Transaction[] }>;
+  read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: ITransaction[] }>;
 
   /**
    * Given a list of Sidetree transaction in any order, iterate through the list and return the first transaction that is valid.
    * @param transactions List of potentially valid transactions.
    */
-  getFirstValidTransaction (transactions: Transaction[]): Promise<Transaction | undefined>;
+  getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined>;
 
   /**
    * Gets the latest blockchain time.
    */
-  getLatestTime (): Promise<BlockchainTime>;
+  getLatestTime (): Promise<IBlockchainTime>;
 }
 
 /**
@@ -81,7 +81,7 @@ export class BlockchainClient implements Blockchain {
     }
   }
 
-  public async read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: Transaction[]}> {
+  public async read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: ITransaction[]}> {
     if ((sinceTransactionNumber !== undefined && transactionTimeHash === undefined) ||
         (sinceTransactionNumber === undefined && transactionTimeHash !== undefined)) {
       throw new Error('Transaction number and time hash must both be given or not given at the same time.');
@@ -115,7 +115,7 @@ export class BlockchainClient implements Blockchain {
     return responseBody;
   }
 
-  public async getFirstValidTransaction (transactions: Transaction[]): Promise<Transaction | undefined> {
+  public async getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined> {
     const requestParameters = {
       method: 'post',
       body: Buffer.from(JSON.stringify(transactions)),
@@ -136,7 +136,7 @@ export class BlockchainClient implements Blockchain {
   }
 
   // TODO: Issue #161: Consider caching since this will be invoked for every operation and resolution requests.
-  public async getLatestTime (): Promise<BlockchainTime> {
+  public async getLatestTime (): Promise<IBlockchainTime> {
     const response = await this.fetch(this.timeUri);
 
     if (response.status !== HttpStatus.OK) {

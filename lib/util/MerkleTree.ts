@@ -7,7 +7,7 @@ export default class MerkleTree {
   /**
    * Stores the Merkle tree root node once finalize() is called.
    */
-  private merkleTreeRootNode?: MerkleNode;
+  private merkleTreeRootNode?: IMerkleNode;
 
   /**
    * Hashing function usinged by this Merkle tree.
@@ -18,12 +18,12 @@ export default class MerkleTree {
    * Intermediate structure for storing different sizes of balanced Merkle trees that will eventually form one final tree.
    * [0] stores tree of 1 leaf, [1] stores tree of 2 leaves, [2] -> 4 leaves, [3] -> 8 leaves and so on.
    */
-  private subtrees: (MerkleNode | undefined) [] = [];
+  private subtrees: (IMerkleNode | undefined) [] = [];
 
   /**
    * A map such that given a value, the corresponding leaf hash node is located.
    */
-  private valueToMerkleNodeMap = new Map<Buffer, MerkleNode>();
+  private valueToMerkleNodeMap = new Map<Buffer, IMerkleNode>();
 
   /**
    * Creates a MerkleTree.
@@ -49,8 +49,8 @@ export default class MerkleTree {
    * Create a Merkle receipt for the given value.
    * @returns Merkle receipt in the format specified by the Sidetree protocol.
    */
-  public receipt (value: Buffer): MerkleReceiptEntry[] {
-    const receipt: MerkleReceiptEntry[] = [];
+  public receipt (value: Buffer): IMerkleReceiptEntry[] {
+    const receipt: IMerkleReceiptEntry[] = [];
     let node = this.valueToMerkleNodeMap.get(value);
 
     while (node && node.parent) {
@@ -76,7 +76,7 @@ export default class MerkleTree {
   public static prove (
     value: Buffer,
     merkleRoot: Buffer,
-    receipt: MerkleReceiptEntry[],
+    receipt: IMerkleReceiptEntry[],
     customHashFunction?: (value?: Buffer) => Buffer
   ): boolean {
     let hashFunction: (value: Buffer) => Buffer = Cryptography.sha256hash;
@@ -143,7 +143,7 @@ export default class MerkleTree {
     this.valueToMerkleNodeMap.set(value, newNode);
 
     // Initialize a subtree of one new leaf node.
-    let newSubtree: MerkleNode | undefined = newNode;
+    let newSubtree: IMerkleNode | undefined = newNode;
 
     // Insert/merge the new node into the list of subtrees.
     let newSubtreeHeight = 0; // Zero-based height.
@@ -182,7 +182,7 @@ export default class MerkleTree {
    */
   private finalize () {
     // Merge all the subtrees of different sizes into one single Merkle tree.
-    let smallestSubtree: MerkleNode | undefined = undefined;
+    let smallestSubtree: IMerkleNode | undefined = undefined;
     let i;
     for (i = 0; i < this.subtrees.length; i++) {
       // If we encounter a subtree.
@@ -209,13 +209,13 @@ export default class MerkleTree {
   /**
    * Creates a parent Merkle tree node given two child nodes.
    */
-  private createParent (left: MerkleNode, right: MerkleNode): MerkleNode {
+  private createParent (left: IMerkleNode, right: IMerkleNode): IMerkleNode {
     // Calculate hash(bigger subtree hash + smaller subtree hash)
     const combinedHashes = Buffer.concat([left.hash, right.hash]);
     const newHash = this.hash(combinedHashes);
 
     // Construct parent node.
-    const parent: MerkleNode = {
+    const parent: IMerkleNode = {
       hash: newHash,
       leftChild: left,
       rightChild: right,
@@ -232,19 +232,19 @@ export default class MerkleTree {
 /**
  * Internal representation of a node in a Merkle tree.
  */
-interface MerkleNode {
+interface IMerkleNode {
   hash: Buffer;
-  parent?: MerkleNode;
-  leftChild?: MerkleNode;
-  rightChild?: MerkleNode;
+  parent?: IMerkleNode;
+  leftChild?: IMerkleNode;
+  rightChild?: IMerkleNode;
 }
 
 /**
  * Represents an entry of many inside a Merkle receipt.
  */
-interface MerkleReceiptEntry {
+interface IMerkleReceiptEntry {
   side: string;
   hash: Buffer;
 }
 
-export { MerkleReceiptEntry };
+export { IMerkleReceiptEntry };

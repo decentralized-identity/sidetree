@@ -1,5 +1,5 @@
 import MongoDbTransactionStore from '../lib/MongoDbTransactionStore';
-import Transaction from '../lib/Transaction';
+import ITransaction from '../lib/Transaction';
 import { IConfig } from '../lib/Config';
 import { MongoClient } from 'mongodb';
 import { TransactionStore } from '../lib/TransactionStore';
@@ -33,10 +33,10 @@ async function createTransactionStore (transactionStoreUri: string, databaseName
  * @param transactionStore The transaction store to store the generated transactions.
  * @param count Number of transactions to generate and store.
  */
-async function generateAndStoreTransactions (transactionStore: TransactionStore, count: number): Promise<Transaction[]> {
-  const transactions: Transaction[] = [];
+async function generateAndStoreTransactions (transactionStore: TransactionStore, count: number): Promise<ITransaction[]> {
+  const transactions: ITransaction[] = [];
   for (let i = 1; i <= count; i++) {
-    const transaction: Transaction = {
+    const transaction: ITransaction = {
       anchorFileHash: i.toString(),
       transactionNumber: i,
       transactionTime: i,

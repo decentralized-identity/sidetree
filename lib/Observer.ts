@@ -3,7 +3,7 @@ import Encoder from './Encoder';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
-import Transaction, { ResolvedTransaction } from './Transaction';
+import ITransaction, { IResolvedTransaction } from './Transaction';
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
 import { Operation } from './Operation';
@@ -20,8 +20,8 @@ enum TransactionProcessingStatus {
 /**
  * Data structure for holding a transaction that is being processed and its state.
  */
-interface TransactionUnderProcessing {
-  transaction: Transaction;
+interface ITransactionUnderProcessing {
+  transaction: ITransaction;
   processingStatus: TransactionProcessingStatus;
 }
 
@@ -39,12 +39,12 @@ export default class Observer {
   /**
    * The list of transactions that are being downloaded or processed.
    */
-  private transactionsUnderProcessing: { transaction: Transaction; processingStatus: TransactionProcessingStatus }[] = [];
+  private transactionsUnderProcessing: { transaction: ITransaction; processingStatus: TransactionProcessingStatus }[] = [];
 
   /**
    * This is the transaction that is used as a timestamp to fetch newer transaction.
    */
-  private lastKnownTransaction: Transaction | undefined;
+  private lastKnownTransaction: ITransaction | undefined;
 
   public constructor (
     private blockchain: Blockchain,
@@ -236,7 +236,7 @@ export default class Observer {
    * If the given transaction is unresolvable (anchor/batch file not found), save the transaction for retry.
    * If no error encountered (unresolvable transaction is NOT an error), advance the 'last processed transaction' marker.
    */
-  private async downloadThenProcessBatchAsync (transaction: Transaction, transactionUnderProcessing: TransactionUnderProcessing) {
+  private async downloadThenProcessBatchAsync (transaction: ITransaction, transactionUnderProcessing: ITransactionUnderProcessing) {
     let retryNeeded = false;
 
     try {
@@ -266,7 +266,7 @@ export default class Observer {
       }
 
       // Construct a resolved transaction from the original transaction object now that batch file is fetched.
-      const resolvedTransaction: ResolvedTransaction = {
+      const resolvedTransaction: IResolvedTransaction = {
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
@@ -290,7 +290,7 @@ export default class Observer {
     }
   }
 
-  private async processResolvedTransaction (resolvedTransaction: ResolvedTransaction, batchFileBuffer: Buffer) {
+  private async processResolvedTransaction (resolvedTransaction: IResolvedTransaction, batchFileBuffer: Buffer) {
     // Validate the batch file.
     const operations: Operation[] = [];
     try {

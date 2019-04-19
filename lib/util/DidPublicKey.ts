@@ -1,7 +1,7 @@
 /**
  * Interface representing a public key inside the 'publicKey' array property of a DID Document.
  */
-export default interface DidPublicKey {
+export default interface IDidPublicKey {
   id: string;
   type: string;
   owner?: string;

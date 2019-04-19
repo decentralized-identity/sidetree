@@ -7,7 +7,7 @@ import { OperationStore } from './OperationStore';
  * Note: we use the shorter property name "opIndex" instead of "operationIndex" due to a constraint imposed by CosmosDB/MongoDB:
  * the sum of property names of a unique index keys need to be less than 40 characters.
  */
-interface MongoOperation {
+interface IMongoOperation {
   didUniqueSuffix: string;
   operationBufferBsonBinary: Binary;
   opIndex: number;
@@ -102,11 +102,11 @@ export default class MongoDbOperationStore implements OperationStore {
   }
 
   /**
-   * Convert a Sidetree operation to a more minimal MongoOperation object
-   * that can be stored on MongoDb. The MongoOperation object has sufficient
+   * Convert a Sidetree operation to a more minimal IMongoOperation object
+   * that can be stored on MongoDb. The IMongoOperation object has sufficient
    * information to reconstruct the original operation.
    */
-  private static convertToMongoOperation (operation: Operation): MongoOperation {
+  private static convertToMongoOperation (operation: Operation): IMongoOperation {
     return {
       didUniqueSuffix: operation.didUniqueSuffix!,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
@@ -121,7 +121,7 @@ export default class MongoDbOperationStore implements OperationStore {
    * Convert a MongoDB representation of an operation to a Sidetree operation.
    * Inverse of convertToMongoOperation() method above.
    */
-  private static convertToOperation (mongoOperation: MongoOperation): Operation {
+  private static convertToOperation (mongoOperation: IMongoOperation): Operation {
     return Operation.create(
       mongoOperation.operationBufferBsonBinary.buffer,
       {

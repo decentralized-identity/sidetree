@@ -2,7 +2,7 @@ import BatchFile from '../lib/BatchFile';
 import BatchWriter from '../lib/BatchWriter';
 import Cryptography from '../lib/util/Cryptography';
 import Did from '../lib/util/Did';
-import DidPublicKey from '../lib/util/DidPublicKey';
+import IDidPublicKey from '../lib/util/DidPublicKey';
 import Encoder from '../lib/Encoder';
 import MockBlockchain from '../tests/mocks/MockBlockchain';
 import MockCas from '../tests/mocks/MockCas';
@@ -40,7 +40,7 @@ describe('RequestHandler', () => {
   let operationProcessor;
   let requestHandler: RequestHandler;
 
-  let publicKey: DidPublicKey;
+  let publicKey: IDidPublicKey;
   let privateKey: any;
   let did: string; // This DID is created at the beginning of every test.
   let didUniqueSuffix: string;
