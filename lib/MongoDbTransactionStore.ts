@@ -199,8 +199,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     } else {
       console.info('Transaction collection does not exists, creating...');
       transactionCollection = await db.createCollection(MongoDbTransactionStore.transactionCollectionName);
-      // create an index on transactionNumber queries more efficient
-      // this is an unique index, so duplicate inserts are rejected.
+      // This is an unique index, so duplicate inserts are rejected.
       await transactionCollection.createIndex({ transactionTime: 1, transactionNumber: 1 }, { unique: true });
       console.info('Transaction collection created.');
     }

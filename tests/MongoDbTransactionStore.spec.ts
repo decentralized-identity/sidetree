@@ -58,17 +58,17 @@ describe('MongoDbTransactionStore', async () => {
   let transactionStore: MongoDbTransactionStore;
 
   beforeEach(async () => {
-    if (!await isMongoServiceAvailable(config.operationStoreUri)) {
+    if (!await isMongoServiceAvailable(config.mongoDbConnectionString)) {
       pending('MongoDB service not available');
     }
 
-    transactionStore = await createTransactionStore(config.operationStoreUri, databaseName);
+    transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
     await transactionStore.emptyCollections();
   });
 
   it('should create collections needed on initialization if they do not exist.', async () => {
     console.info(`Deleting collections...`);
-    const client = await MongoClient.connect(config.operationStoreUri);
+    const client = await MongoClient.connect(config.mongoDbConnectionString);
     const db = client.db(databaseName);
     await db.dropCollection(MongoDbTransactionStore.transactionCollectionName);
     await db.dropCollection(MongoDbTransactionStore.unresolvableTransactionCollectionName);
@@ -253,7 +253,7 @@ describe('MongoDbTransactionStore', async () => {
   });
 
   it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
-    const transactionStore = new MongoDbTransactionStore(config.operationStoreUri);
+    const transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     expect(transactionStore.databaseName).toEqual(MongoDbTransactionStore.defaultDatabaseName);
   });
 });

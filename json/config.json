@@ -7,5 +7,5 @@
   "batchingIntervalInSeconds": 600,
   "observingIntervalInSeconds": 60,
   "maxConcurrentDownloads": 20,
-  "operationStoreUri": "mongodb://localhost:27017/"
+  "mongoDbConnectionString": "mongodb://localhost:27017/"
 }
