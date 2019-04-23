@@ -307,6 +307,20 @@ SidetreeBlockchainService.prototype.getTransactions = function (request, respons
     });
 };
 
+/**
+ * Scans the blockchain (starting from the block number specified in the request) for Sidetree transactions
+ * The method returns a list of anchor file hashes (along with information on where it found them). 
+ * The current implementation returns as soon as it finds a block with Sidetree transactions in the range
+ */
+SidetreeBlockchainService.prototype.getTransactionsRange = function (request, response, next) {
+  setHeaders(response);
+  var self = this;
+  const blockNumberStart = Number(request.params.blockNumberStart); // the starting blocknumber
+  const blockNumberEnd = Number(request.params.blockNumberEnd); // the ending blocknumber
+  const prefix = request.params.prefix;
+  scanBlockRange(self, blockNumberStart, blockNumberEnd, prefix, response);
+};
+
 
 /** 
  * Setup HTTP routes for various backend APIs exposed atop bitcored 
@@ -316,6 +330,8 @@ SidetreeBlockchainService.prototype.setupRoutes = function (app) {
   app.get('/blocks/last', this.getLastBlockHandler.bind(this));
   app.get('/blocks/:id', this.getBlockByIdHandler.bind(this));
   app.get('/transactions/:blockNumber/:prefix', this.getTransactions.bind(this));
+  app.get('/transactionsRange/:blockNumberStart/:blockNumberEnd/:prefix', this.getTransactionsRange.bind(this));
+
 };
 
 module.exports = SidetreeBlockchainService;

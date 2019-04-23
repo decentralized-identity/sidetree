@@ -14,7 +14,7 @@ export default class RequestHandler {
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
    */
-  public constructor (public bitcoreSidetreeServiceUri: string,
+  public constructor(public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
     public genesisTimeHash: string) {
@@ -74,8 +74,25 @@ export default class RequestHandler {
     // determine the block number that we wish to query
     let blockNumber = TransactionNumber.getBlockNumber(sinceTransactionNumber);
 
+    // get the height of the tip of the blockchain
+    let blockNumberTip = 0;
+    const blockResponse = await this.handleLastBlockRequest();
+    if (blockResponse.status === ResponseStatus.Succeeded) {
+      const blockResponseBody = JSON.parse(JSON.stringify(blockResponse.body));
+      blockNumberTip = blockResponseBody['time'];
+    } else {
+      return errorResponse;
+    }
+
     do {
-      const queryString = '/transactions/' + blockNumber + '/' + prefix;
+      // this is the number of blocks we will examine in one REST call
+      const blockBudget = 100;
+      let blockNumberEnd = blockNumber + blockBudget;
+      if (blockNumberEnd > blockNumberTip) {
+        blockNumberEnd = blockNumberTip;
+      }
+
+      const queryString = '/transactionsRange/' + blockNumber + '/' + blockNumberEnd + '/' + prefix;
       const uri = baseUrl + queryString;
 
       try {
@@ -91,41 +108,45 @@ export default class RequestHandler {
         const hashes = contentBody['hashes'];
 
         // check if we found any hashes
-        if (hashes.length === 0) {
-          return defaultResponse;
-        }
+        if (hashes.length > 0) {
+          const blockNumber = Number(contentBody['blockNumber']);
+          const moreTransactions = Boolean(contentBody['moreTransactions']);
+          const transactions = this.buildTransactionsList(hashes, blockNumber, blockHash, sinceTransactionNumber);
 
-        const blockNumber = Number(contentBody['blockNumber']);
-        const moreTransactions = Boolean(contentBody['moreTransactions']);
-        const transactions = this.buildTransactionsList(hashes, blockNumber, blockHash, sinceTransactionNumber);
-
-        if (transactions.length > 0) {
-          return {
-            status: ResponseStatus.Succeeded,
-            body: {
-              'moreTransactions': moreTransactions,
-              'transactions': transactions
+          if (transactions.length > 0) {
+            return {
+              status: ResponseStatus.Succeeded,
+              body: {
+                'moreTransactions': moreTransactions,
+                'transactions': transactions
+              }
+            };
+          } else {
+            // else: we found anchor file hashes, but their transaction numbers aren't larger than sinceTransactionNumber
+            // check if there are more transactions; if not, return defaultResponse
+            if (!moreTransactions) {
+              return defaultResponse;
             }
-          };
-        } else {
-          // else: we found anchor file hashes, but their transaction numbers aren't larger than sinceTransactionNumber
-          // check if there are more transactions; if not, return defaultResponse
-          if (!moreTransactions) {
-            return defaultResponse;
           }
+        } else {
+          // set the block number to the block that was examined last
+          blockNumber = Number(contentBody['blockNumber']);
         }
       } catch {
         return errorResponse;
       }
 
+      // setup the block number for the next iteration
       blockNumber = blockNumber + 1;
-    } while (true);
+    } while (blockNumber <= blockNumberTip);
+
+    return defaultResponse;
   }
 
   /**
    * Verifies whether the tuple (@param transactionNumber, @param transactionTimeHash) are valid on the blockchain
    */
-  private async verifyTransactionTimeHash (transactionNumber: number, transactionTimeHash: string): Promise<Response> {
+  public async verifyTransactionTimeHash (transactionNumber: number, transactionTimeHash: string): Promise<Response> {
     const errorResponse = {
       status: ResponseStatus.ServerError
     };

@@ -16,11 +16,13 @@
   },
   "homepage": "https://github.com/decentralized-identity/sidetree-bitcoin#readme",
   "devDependencies": {
+    "@types/async-retry": "^1.4.0",
     "@types/http-status": "^0.2.30",
     "@types/jasmine": "^2.8.12",
     "@types/koa": "^2.0.47",
     "@types/koa-router": "^7.0.35",
     "@types/node": "^10.12.15",
+    "async-retry": "^1.2.3",
     "copyfiles": "^2.1.0",
     "husky": "^0.14.3",
     "jasmine": "^3.3.1",
