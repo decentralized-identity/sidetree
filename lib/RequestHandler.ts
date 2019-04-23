@@ -39,9 +39,6 @@ export default class RequestHandler {
 
       // Parse request into a Operation.
       operation = Operation.create(request);
-
-      // TODO: Validate or perform proof-of-work.
-
     } catch (error) {
       console.error(`Bad request: ${error}`);
 
