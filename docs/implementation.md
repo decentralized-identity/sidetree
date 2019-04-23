@@ -99,9 +99,7 @@ The blockchain REST API interface aims to abstract the underlying blockchain awa
 
 
 ### Get latest blockchain time
-Gets the latest logical blockchain time. This API serves two purposes:
-1. Allows the Batch Writer to determine protocol version to be used.
-2. Provides the hash associated with the blockchain time to be used for generating proof-of-work.
+Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
 
 A _blockchain time hash_ **must not** be predictable/pre-computable, a canonical implementation would be to use the _block number_ as the time and the _block hash_ as the _time hash_. It is intentional that the concepts related to _blockchain blocks_ are  hidden from the layers above.
 

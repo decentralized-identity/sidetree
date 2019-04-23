@@ -24,8 +24,7 @@ enum OperationType {
 interface IOperation {
   header: {
     operation: string,
-    kid: string,
-    proofOfWork: object
+    kid: string
   };
   payload: string;
   signature: string;
@@ -69,8 +68,6 @@ class Operation {
   public readonly signingKeyId: string;
   /** Signature of this operation. */
   public readonly signature: string;
-  /** Proof-of-work of this operation. */
-  public proofOfWork: any; // TODO: to be implemented.
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument?: IDocument;
@@ -118,7 +115,6 @@ class Operation {
     const [operationType, decodedPayload] = wellFormedResult;
     this.type = operationType;
     this.signingKeyId = operation.header.kid;
-    this.proofOfWork = operation.header.proofOfWork;
     this.encodedPayload = operation.payload;
     this.signature = operation.signature;
 

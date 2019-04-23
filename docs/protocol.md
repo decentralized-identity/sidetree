@@ -149,7 +149,7 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 1. The corresponding _anchor file_ must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
 1. The corresponding _batch file_ must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
 1. The operation batch size must not exceed the maximum size specified by the protocol.
-1. The transaction must meet the proof-of-work requirements defined by the protocol.
+1. The transaction must meet the proof-of-fee requirements defined by the protocol.
 1. Every operation batched in the same transaction must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
 
    1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
@@ -212,9 +212,7 @@ POST /<api-version>/ HTTP/1.1
   "header": {
     "operation": "create",
     "kid": "ID of the key used to sign the original DID Document.",
-    "alg": "ES256K",
-    "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
-    or reject the request."
+    "alg": "ES256K"
   },
   "payload": "Encoded original DID Document.",
   "signature": "Encoded signature."
@@ -250,8 +248,7 @@ POST /v1.0/ HTTP/1.1
   "header": {
     "operation": "create",
     "kid": "#key1",
-    "alg": "ES256K",
-    "proofOfWork": { }
+    "alg": "ES256K"
   },
   "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwicHVibGljS2V5IjpbeyJpZCI6IiNrZXkxIiwidHlwZSI6IlNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTgiLCJwdWJsaWNLZXlIZXgiOiIwMmY0OTgwMmZiM2UwOWM2ZGQ0M2YxOWFhNDEyOTNkMWUwZGFkMDQ0YjY4Y2Y4MWNmNzA3OTQ5OWVkZmQwYWE5ZjEifSx7ImlkIjoiI2tleTIiLCJ0eXBlIjoiUnNhVmVyaWZpY2F0aW9uS2V5MjAxOCIsInB1YmxpY0tleVBlbSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS4yLkVORCBQVUJMSUMgS0VZLS0tLS0ifV0sInNlcnZpY2UiOlt7InR5cGUiOiJJZGVudGl0eUh1YiIsInB1YmxpY0tleSI6IiNrZXkxIiwic2VydmljZUVuZHBvaW50Ijp7IkBjb250ZXh0Ijoic2NoZW1hLmlkZW50aXR5LmZvdW5kYXRpb24vaHViIiwiQHR5cGUiOiJVc2VyU2VydmljZUVuZHBvaW50IiwiaW5zdGFuY2VzIjpbImRpZDpiYXI6NDU2IiwiZGlkOnphejo3ODkiXX19XX0",
   "signature": "mAJp4ZHwY5UMA05OEKvoZreRo0XrYe77s3RLyGKArG85IoBULs4cLDBtdpOToCtSZhPvCC2xOUXMGyGXDmmEHg"
@@ -372,9 +369,7 @@ POST /<api-version>/ HTTP/1.1
   "header": {
     "operation": "update",
     "kid": "ID of the key used to sign the update payload.",
-    "alg": "ES256K",
-    "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
-    or reject the request."
+    "alg": "ES256K"
   },
   "payload": "Encoded update payload JSON object define by the schema below.",
   "signature": "Encoded signature."
@@ -412,8 +407,7 @@ POST /v1.0/ HTTP/1.1
   "header": {
     "operation": "update",
     "kid": "#key1",
-    "alg": "ES256K",
-    "proofOfWork": { }
+    "alg": "ES256K"
   },
   "payload": "eyJkaWQiOiJkaWQ6c2lkZXRyZWU6RWlERkRGVVNnb3hsWm94U2x1LTE3eXpfRm1NQ0l4NGhwU2FyZUNFN0lSWnYwQSIsIm9wZXJhdGlvbk51bWJlciI6MSwicHJldmlvdXNPcGVyYXRpb25IYXNoIjoiRWlERkRGVVNnb3hsWm94U2x1LTE3eXpfRm1NQ0l4NGhwU2FyZUNFN0lSWnYwQSIsInBhdGNoIjpbeyJvcCI6InJlcGxhY2UiLCJwYXRoIjoiL3B1YmxpY0tleS8xIiwidmFsdWUiOnsiaWQiOiIja2V5MiIsInR5cGUiOiJTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE4IiwicHVibGljS2V5SGV4IjoiMDI5YTQ3NzRkNTQzMDk0ZGVhZjM0MjY2M2FlNjcyNzI4ZTEyZjAzYjNiNmQ5ODE2YjBiNzk5OTVmYWRlMGZhYjIzIn19XX0",
   "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
@@ -443,9 +437,7 @@ POST /<api-version>/
   "header": {
     "operation": "delete",
     "kid": "ID of the key used to sign the delete payload.",
-    "alg": "ES256K",
-    "proofOfWork": "Optional. If not given, the Sidetree node must perform proof-of-work on the requester's behalf
-    or reject the request."
+    "alg": "ES256K"
   },
   "payload": "Encoded update payload JSON object define by the schema below.",
   "signature": "Encoded signature."
@@ -473,8 +465,7 @@ POST /v1.0/ HTTP/1.1
   "header": {
     "operation": "delete",
     "kid": "#key1",
-    "alg": "ES256K",
-    "proofOfWork": { }
+    "alg": "ES256K"
   },
   "payload": "3hAPKZnaKcJkR85UvXhiAH7majrfpZGFFVJj8tgAtK9aSrxnrbygDTN2URoQEghPbWtFgZDMNU6RQjiMD1dpbEaoZwKBSVB3oCq1LR2",
   "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
