@@ -104,7 +104,7 @@ export default class BlockchainService {
             const transactions = readResultBody['transactions'];
             moreTransactions = readResultBody['moreTransactions'];
             if (transactions.length > 0) {
-              console.info(`Fetched ${transactions.length} Sidetree transactions from blockchain service ${transactions[0].transactionNumber}`);
+              console.info(`Fetched ${transactions.length} Sidetree transactions from bitcored service ${transactions[0].transactionNumber}`);
               for (const transaction of transactions) {
                 await this.transactionStore.addTransaction(transaction);
               }
@@ -222,31 +222,22 @@ export default class BlockchainService {
 
   /**
    * Handles the fetch request from cache
-   * @param sinceOptional specifies the minimum Sidetree transaction number that the caller is interested in
-   * @param transactionTimeHashOptional specifies the transactionTimeHash corresponding to the since parameter
+   * @param sinceTransactionNumber specifies the minimum Sidetree transaction number that the caller is interested in
+   * @param transactionTimeHash specifies the transactionTimeHash corresponding to the since parameter
    */
-  public async handleFetchRequestCached (sinceOptional?: number, transactionTimeHashOptional?: string): Promise<Response> {
+  public async handleFetchRequestCached (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<Response> {
 
     const errorResponse = {
       status: ResponseStatus.ServerError,
       body: {}
     };
 
-    let sinceTransactionNumber = this.genesisTransactionNumber;
-    let transactionTimeHash = this.genesisTimeHash;
-
-    // determine default values for optional parameters
-    if (sinceOptional !== undefined) {
-      sinceTransactionNumber = sinceOptional;
-
-      if (transactionTimeHashOptional !== undefined) {
-        transactionTimeHash = transactionTimeHashOptional;
-      } else {
-        // if since was supplied, transactionTimeHash must exist
-        return {
-          status: ResponseStatus.BadRequest
-        };
-      }
+    // `sinceTransactionNumber` and `transactionTimeHash` must be both be undefined or defined at the same time.
+    if ((sinceTransactionNumber === undefined && transactionTimeHash !== undefined) ||
+        (sinceTransactionNumber !== undefined && transactionTimeHash === undefined)) {
+      return {
+        status: ResponseStatus.BadRequest
+      };
     }
 
     const reorgResponse = {
@@ -256,18 +247,21 @@ export default class BlockchainService {
       }
     };
 
-    // verify the validity of since and transactionTimeHash
-    const verifyResponse = await this.verifyTransactionTimeHashCached(sinceTransactionNumber, transactionTimeHash);
-    if (verifyResponse.status === ResponseStatus.Succeeded) {
-      const verifyResponseBody = verifyResponse.body as any;
+    // If 'since' transaction number and time is given, then need to validate them.
+    if (sinceTransactionNumber !== undefined) {
+      // verify the validity of since and transactionTimeHash
+      const verifyResponse = await this.verifyTransactionTimeHashCached(sinceTransactionNumber, transactionTimeHash!);
+      if (verifyResponse.status === ResponseStatus.Succeeded) {
+        const verifyResponseBody = verifyResponse.body as any;
 
-      // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
-      if (verifyResponseBody['match'] === false) {
-        return reorgResponse;
+        // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
+        if (verifyResponseBody['match'] === false) {
+          return reorgResponse;
+        }
+      } else {
+        // an error occured, so return the default response
+        return errorResponse;
       }
-    } else {
-      // an error occured, so return the default response
-      return errorResponse;
     }
 
     const response = await this.transactionStore.getTransactionsLaterThan(this.maxSidetreeTransactions, sinceTransactionNumber);

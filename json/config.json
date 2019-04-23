@@ -1,8 +1,8 @@
 ﻿{
-  "bitcoreSidetreeServiceUri": "http://104.42.185.66:3001/SidetreeBlockchainService/",
-  "sidetreeTransactionPrefix": "sidetree:",
-  "bitcoinSidetreeGenesisBlockNumber": 1446559,
-  "bitcoinSidetreeGenesisBlockHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
+  "bitcoreSidetreeServiceUri": "[FILL THIS IN]",
+  "sidetreeTransactionPrefix": "ion:",
+  "bitcoinSidetreeGenesisBlockNumber": 1480000,
+  "bitcoinSidetreeGenesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
   "bitcoinPollingInternalSeconds": 100,
   "maxSidetreeTransactions": 10
 }
