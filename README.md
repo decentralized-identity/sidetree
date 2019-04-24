@@ -4,7 +4,7 @@ Blockchain-specific code for the Sidetree-based DID Method implementation on Bit
 
 ## Getting started
 
-Our reference implementation of the blockchain service is based on bitcored. Here is the list of instructions to deploy Sidetree's blockchain service on your node.
+Our reference implementation of the blockchain service is based on bitcored. Here is the list of instructions to deploy Sidetree's extension code along with the bitcored service:
 
 - Install a Bitcored full node using instructions at [this link](https://github.com/bitpay/bitcore#bitcore). We reproduce their instructions below since we run bitcored with node v9 rather than v4:
 
@@ -56,3 +56,13 @@ Our reference implementation of the blockchain service is based on bitcored. Her
    ```
 
 - Verify that the bitcored installation was successful by pointing the browser to: `http://$(NODE_IP):3001/insight/`
+
+Once Sidetree extension is running in bitcored correctly, we can now build and run the Sidetree blockchain service that will be talking to our Sidetree extension running in bitcored:
+
+ 1. Clone this repo and go to the root folder.
+ 1. Run `npm i` to install dependencies.
+ 1. Modify `json/config.json` accordingly. Some parameters of interest:
+    1. Update `bitcoreSidetreeServiceUri` to point to the bitcored service configured earlier:
+       e.g. 'http://127.0.0.1:3002/SidetreeBlockchainService/'
+ 1. Run `npm run build` to build the service.
+ 1. Run 'npm start` to start the service. 
