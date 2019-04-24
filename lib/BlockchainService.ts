@@ -1,7 +1,7 @@
 import RequestHandler from './RequestHandler';
 import Transaction from './Transaction';
 import TransactionNumber from './TransactionNumber';
-import { IConfig } from 'Config';
+import { IConfig } from './Config';
 import { InMemoryTransactionStore } from './TransactionStore';
 import { IResponse, ResponseStatus } from './Response';
 
