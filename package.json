@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree-bitcoin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node.js implementation of the Sidetree bitcoin module",
   "main": "dist/lib/index.js",
   "types": "dist/lib/index.d.ts",
