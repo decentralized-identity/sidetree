@@ -1,6 +1,6 @@
-import SortedArray from './lib/SortedArray';
+import SortedArray from './util/SortedArray';
 import Transaction from './Transaction';
-import { Response, ResponseStatus } from './Response';
+import { IResponse, ResponseStatus } from './Response';
 
 /**
  * An abstraction for the caching transactions that have been found on the blockchain.
@@ -44,7 +44,7 @@ export interface TransactionStore {
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber
    * If @param transactionNumber is undefined, returns transactions from index 0 in the store
    */
-  getTransactionsLaterThan (max: number, transactionNumber?: number): Promise<Response>;
+  getTransactionsLaterThan (max: number, transactionNumber?: number): Promise<IResponse>;
 
   /**
    * Remove all transactions with transaction number greater than the provided parameter.
@@ -126,7 +126,7 @@ export class InMemoryTransactionStore implements TransactionStore {
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber
    * If @param transactionNumber is undefined, returns transactions from index 0 in the store
    */
-  async getTransactionsLaterThan (max: number, transactionNumber?: number): Promise<Response> {
+  async getTransactionsLaterThan (max: number, transactionNumber?: number): Promise<IResponse> {
 
     let startIndex = 0;
 

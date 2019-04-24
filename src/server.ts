@@ -1,23 +1,16 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import { toHttpStatus, Response } from './Response';
-import { Config, ConfigKey } from './Config';
-import TransactionNumber from './TransactionNumber';
 import * as querystring from 'querystring';
-import BlockchainService from './BlockchainService';
+import {
+  ISidetreeBitcoinConfig,
+  ISidetreeResponse,
+  SidetreeBitcoinService,
+  SidetreeResponse
+} from '../lib/index';
 
-const configFile = require('../json/config.json');
-const config = new Config(configFile);
-
-const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
-const prefix = config[ConfigKey.SidetreeTransactionPrefix];
-
-const genesisTransactionNumber = TransactionNumber.construct(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
-const genesisTimeHash = config[ConfigKey.BitcoinSidetreeGenesisBlockHash];
-const bitcoinPollingInternalSeconds = Number(config[ConfigKey.BitcoinPollingInternalSeconds]);
-const maxSidetreeTransactions = Number(config[ConfigKey.MaxSidetreeTransactions]);
-const blockchainService = new BlockchainService(uri, prefix, genesisTransactionNumber, genesisTimeHash, bitcoinPollingInternalSeconds, maxSidetreeTransactions);
+const config: ISidetreeBitcoinConfig = require('../json/config.json');
+const blockchainService = new SidetreeBitcoinService(config);
 
 const app = new Koa();
 
@@ -89,8 +82,8 @@ blockchainService.initialize()
  * @param koaResponse Koa Response object to be filled
  * @param contentType Content type to be set for response, defaults to application/json
  */
-const setKoaResponse = (response: Response, koaResponse: Koa.Response, contentType?: string) => {
-  koaResponse.status = toHttpStatus(response.status);
+const setKoaResponse = (response: ISidetreeResponse, koaResponse: Koa.Response, contentType?: string) => {
+  koaResponse.status = SidetreeResponse.toHttpStatus(response.status);
   if (contentType) {
     koaResponse.set('Content-Type', contentType);
   } else {

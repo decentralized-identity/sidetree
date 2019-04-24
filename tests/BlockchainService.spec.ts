@@ -1,36 +1,34 @@
-import BlockchainService from '../src/BlockchainService';
-import { ResponseStatus, Response } from '../src/Response';
-import { Config, ConfigKey } from '../src/Config';
-import TransactionNumber from '../src/TransactionNumber';
+import BlockchainService from '../lib/BlockchainService';
+import TransactionNumber from '../lib/TransactionNumber';
+import { IConfig } from '../lib/Config';
+import { IResponse, ResponseStatus, Response } from '../lib/Response';
+
 import retry = require('async-retry');
 
 describe('BlockchainService', () => {
+  const config: IConfig = require('../json/config-test.json');
+  const blockchainService = new BlockchainService(config);
 
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
-  const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
-  const prefix = config[ConfigKey.SidetreeTransactionPrefix];
-  const genesisTransactionNumber = TransactionNumber.construct(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
-  const genesisTimeHash = config[ConfigKey.BitcoinSidetreeGenesisBlockHash];
-  const bitcoinPollingInternalSeconds = Number(config[ConfigKey.BitcoinPollingInternalSeconds]);
-  const maxSidetreeTransactions = Number(config[ConfigKey.MaxSidetreeTransactions]);
-  const blockchainService = new BlockchainService(uri, prefix, genesisTransactionNumber, genesisTimeHash, bitcoinPollingInternalSeconds, maxSidetreeTransactions);
+  beforeAll(async () => {
+    await blockchainService.initialize();
 
-
-  it('should return the HTTP 400 for reogranized transactions request', async () => {
-    blockchainService.initialize();
     await retry(async (_bail: any) => {
       const transactionCount = await blockchainService.getTransactionsCount();
       if (transactionCount >= 20) {
         blockchainService.stopPeriodicProcessing();
         return;
       }
+
+      // NOTE: retry will only occur if Error is thrown.
+      throw new Error('No change to the processed transactions list.');
     }, {
-        retries: 10,
+        retries: 100,
         minTimeout: 500, // milliseconds
         maxTimeout: 500 // milliseconds
-      });
+    });
+  }, 20000); // Extended timeout as `beforeAll()` can take more than the default 5 seconds timeout.
 
+  it('should return the HTTP 400 for reogranized transactions request', async () => {
     const expectedResponse: Response = {
       "status": ResponseStatus.BadRequest,
       "body": {
@@ -38,7 +36,6 @@ describe('BlockchainService', () => {
       }
     }
 
-    await delay(2000);
     var transactionNumber = TransactionNumber.construct(1446559, 0);
     var transactionTimeHash = "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe";
     const fetchedResponse = await blockchainService.handleFetchRequestCached(transactionNumber, transactionTimeHash);
@@ -46,26 +43,8 @@ describe('BlockchainService', () => {
 
   });
 
-  function delay (ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
   it('should return the correct response body with content for cached transactions request', async () => {
-    blockchainService.initialize();
-
-    const transactionCount = await blockchainService.getTransactionsCount();
-    await retry(async (_bail: any) => {
-      if (transactionCount >= 20) {
-        blockchainService.stopPeriodicProcessing();
-        return;
-      }
-    }, {
-        retries: 100,
-        minTimeout: 500, // milliseconds
-        maxTimeout: 500 // milliseconds
-      });
-
-    const expectedResponse: Response = {
+    const expectedResponse: IResponse = {
       "status": ResponseStatus.Succeeded,
       "body":
       {
@@ -123,27 +102,13 @@ describe('BlockchainService', () => {
       }
     }
 
-    await delay(2000);
-    var transactionNumber = 6212927891701760;
-    var transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
+    const transactionNumber = 6212927891701760;
+    const transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
     const fetchedResponse = await blockchainService.handleFetchRequestCached(transactionNumber, transactionTimeHash);
     expect(fetchedResponse).toEqual(expectedResponse);
   });
 
   it('should return the correct response body with content for firstValidCached request', async () => {
-    blockchainService.initialize();
-    await retry(async (_bail: any) => {
-      const transactionCount = await blockchainService.getTransactionsCount();
-      if (transactionCount >= 200) {
-        blockchainService.stopPeriodicProcessing();
-        return;
-      }
-    }, {
-        retries: 10,
-        minTimeout: 500, // milliseconds
-        maxTimeout: 500 // milliseconds
-      });
-
     const expectedResponse: Response = {
       "status": ResponseStatus.Succeeded,
       "body": {
@@ -171,7 +136,6 @@ describe('BlockchainService', () => {
       ]
     };
 
-    await delay(2000);
     const requestBodyBuffer = Buffer.from(JSON.stringify(requestBody));
     const fetchedResponse = await blockchainService.handleFirstValidRequestCached(requestBodyBuffer);
     expect(expectedResponse).toEqual(fetchedResponse);

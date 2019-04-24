@@ -1,4 +1,4 @@
-import { Response, ResponseStatus } from './Response';
+import { IResponse, ResponseStatus } from './Response';
 import nodeFetch from 'node-fetch';
 import * as HttpStatus from 'http-status';
 import TransactionNumber from './TransactionNumber';
@@ -52,7 +52,7 @@ export default class RequestHandler {
    * Fetches Sidetree transactions (i.e., anchor file hashes) that are newer than the specified transactionNumber.
    * @param sinceTransactionNumber specifies the minimum transactionNumber that the caller knows about
    */
-  private async handleFetchRequestHelper (sinceTransactionNumber: number): Promise<Response> {
+  private async handleFetchRequestHelper (sinceTransactionNumber: number): Promise<IResponse> {
     const defaultResponse = {
       status: ResponseStatus.Succeeded,
       body: {
@@ -146,7 +146,7 @@ export default class RequestHandler {
   /**
    * Verifies whether the tuple (@param transactionNumber, @param transactionTimeHash) are valid on the blockchain
    */
-  public async verifyTransactionTimeHash (transactionNumber: number, transactionTimeHash: string): Promise<Response> {
+  public async verifyTransactionTimeHash (transactionNumber: number, transactionTimeHash: string): Promise<IResponse> {
     const errorResponse = {
       status: ResponseStatus.ServerError
     };
@@ -179,7 +179,7 @@ export default class RequestHandler {
    * Handles the firstValid request
    * @param requestBody Request body containing the list of transactions to be validated
    */
-  public async handleFirstValidRequest (requestBody: Buffer): Promise<Response> {
+  public async handleFirstValidRequest (requestBody: Buffer): Promise<IResponse> {
     const jsonBody = JSON.parse(requestBody.toString());
     const transactions = jsonBody.transactions;
 
@@ -240,7 +240,7 @@ export default class RequestHandler {
    * @param sinceOptional specifies the minimum Sidetree transaction number that the caller is interested in
    * @param transactionTimeHashOptional specifies the transactionTimeHash corresponding to the since parameter
    */
-  public async handleFetchRequest (sinceOptional?: number, transactionTimeHashOptional?: string): Promise<Response> {
+  public async handleFetchRequest (sinceOptional?: number, transactionTimeHashOptional?: string): Promise<IResponse> {
 
     const errorResponse = {
       status: ResponseStatus.ServerError,
@@ -292,7 +292,7 @@ export default class RequestHandler {
    * Handles sidetree transaction anchor request
    * @param requestBody Request body containing the anchor file hash.
    */
-  public async handleAnchorRequest (requestBody: Buffer): Promise<Response> {
+  public async handleAnchorRequest (requestBody: Buffer): Promise<IResponse> {
     const jsonBody = JSON.parse(requestBody.toString());
     const anchorFileHash = jsonBody.anchorFileHash;
 
@@ -349,7 +349,7 @@ export default class RequestHandler {
   /**
    * Helper method that interacts with the back-end service at @param uri to fetch metadata about a block
    */
-  private async handleBlockRequestHelper (uri: string): Promise<Response> {
+  private async handleBlockRequestHelper (uri: string): Promise<IResponse> {
     const requestParameters = {
       method: 'get'
     };
@@ -384,7 +384,7 @@ export default class RequestHandler {
    * Returns a block associated with the requested hash
    * @param hash Specifies the hash of the block the caller is interested in
    */
-  public async handleBlockByHashRequest (hash: string): Promise<Response> {
+  public async handleBlockByHashRequest (hash: string): Promise<IResponse> {
     const baseUrl = this.bitcoreSidetreeServiceUri;
     const queryString = '/blocks/' + hash;
     const uri = baseUrl + queryString;
@@ -395,7 +395,7 @@ export default class RequestHandler {
    * Returns a block associated with the requested height
    * @param height Specifies the height of the block the caller is interested in
    */
-  public async handleBlockByHeightRequest (height: number): Promise<Response> {
+  public async handleBlockByHeightRequest (height: number): Promise<IResponse> {
     const baseUrl = this.bitcoreSidetreeServiceUri;
     const queryString = '/blocks/' + height;
     const uri = baseUrl + queryString;
@@ -405,7 +405,7 @@ export default class RequestHandler {
   /**
    * Returns the blockhash of the last block in the blockchain
    */
-  public async handleLastBlockRequest (): Promise<Response> {
+  public async handleLastBlockRequest (): Promise<IResponse> {
     const baseUrl = this.bitcoreSidetreeServiceUri;
     const queryString = '/blocks/last';
     const uri = baseUrl + queryString;

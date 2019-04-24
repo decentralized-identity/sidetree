@@ -1,21 +1,20 @@
-import RequestHandler from '../src/RequestHandler';
-import { ResponseStatus, Response } from '../src/Response';
-import { Config, ConfigKey } from '../src/Config';
-import TransactionNumber from '../src/TransactionNumber';
+import RequestHandler from '../lib/RequestHandler';
+import TransactionNumber from '../lib/TransactionNumber';
+import { IConfig } from '../lib/Config';
+import { IResponse, ResponseStatus, Response } from '../lib/Response';
 
 describe('RequestHandler', () => {
 
-  const configFile = require('../json/config-test.json');
-  const config = new Config(configFile);
-  const uri = config[ConfigKey.BitcoreSidetreeServiceUri];
-  const prefix = config[ConfigKey.SidetreeTransactionPrefix];
-  const genesisTransactionNumber = TransactionNumber.construct(Number(config[ConfigKey.BitcoinSidetreeGenesisBlockNumber]), 0);
-  const genesisTimeHash = config[ConfigKey.BitcoinSidetreeGenesisBlockHash];
+  const config: IConfig = require('../json/config-test.json');
+  const uri = config.bitcoreSidetreeServiceUri;
+  const prefix = config.sidetreeTransactionPrefix;
+  const genesisTransactionNumber = TransactionNumber.construct(config.bitcoinSidetreeGenesisBlockNumber, 0);
+  const genesisTimeHash = config.bitcoinSidetreeGenesisBlockHash;
 
   const requestHandler = new RequestHandler(uri, prefix, genesisTransactionNumber, genesisTimeHash);
 
   it('should return the correct response body with height for blocks last request', async () => {
-    const expectedResponse: Response = {
+    const expectedResponse: IResponse = {
       status: ResponseStatus.Succeeded,
       body: {
         'time': 1444118,
@@ -42,7 +41,7 @@ describe('RequestHandler', () => {
   });
 
   it('should return the correct response body with content for anchor request', async () => {
-    const expectedResponse: Response = {
+    const expectedResponse: IResponse = {
       status: ResponseStatus.Succeeded,
       body: {}
     };

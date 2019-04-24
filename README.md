@@ -28,7 +28,7 @@ Our reference implementation of the blockchain service is based on bitcored. Her
 
 - Clone this repository to folder `$(SIDETREE_BITCOIN_REPO)` and run the following:
     ```bash
-      cd $(SIDETREE_BITCOIN_REPO)/src/bitcored-services/sidetree
+      cd $(SIDETREE_BITCOIN_REPO)/bitcored-services/sidetree
       npm install bitcore-lib
     ```
 
@@ -38,13 +38,13 @@ Our reference implementation of the blockchain service is based on bitcored. Her
   bitcore install insight-api insight-ui
   ```
 
-- Add a private key from a Bitcoin wallet to `$(SIDETREE_BITCOIN_REPO)/src/bitcored-services/sidetree/config.json`
+- Add a private key from a Bitcoin wallet to `$(SIDETREE_BITCOIN_REPO)/bitcored-services/sidetree/config.json`
 
 - Suppose that we install bitcored to `$(BITCORE_DIR)` on `$(NODE_IP)`, use the following instructions to add Sidetree's blockchain service:
 
    ```bash
       cd $(BITCORE_DIR)/node_modules
-      ln -s $(SIDETREE_BITCOIN_REPO)/src/bitcored-services/sidetree
+      ln -s $(SIDETREE_BITCOIN_REPO)/bitcored-services/sidetree
       add the string "sidetree" to the services array in $BITCORE_DIR/bitcore-node.json
     ```
 

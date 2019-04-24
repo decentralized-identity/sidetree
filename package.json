@@ -1,13 +1,15 @@
 {
-  "name": "sidetree-bitcoin",
+  "name": "@decentralized-identity/sidetree-bitcoin",
   "version": "0.1.0",
   "description": "Node.js implementation of the Sidetree bitcoin module",
-  "main": "src/index.ts",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/decentralized-identity/sidetree-bitcoin.git"
   },
   "contributors": [
+    "henrytsai <hentsai@microsoft.com>",
     "srinathsetty <srinath@microsoft.com>"
   ],
   "license": "Apache-2.0",
@@ -54,9 +56,9 @@
     "testCoverage": "npm run build && nyc jasmine --config=./tests/jasmine-cc.json",
     "lint": "tslint --fix --project .",
     "validate": "npm-run-all --parallel testCoverage lint",
-    "build:live": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "build:live": "nodemon --watch 'lib/**/*.ts' --exec 'ts-node' src/server.ts",
     "startDebug": "npm run build:live",
-    "start": "node dist/src/index.js"
+    "start": "node dist/src/server.js"
   },
   "nyc": {
     "all": true,
@@ -64,7 +66,7 @@
       ".js"
     ],
     "include": [
-      "dist/src/**"
+      "dist/lib/**"
     ],
     "reporter": [
       "text",
