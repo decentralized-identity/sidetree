@@ -290,11 +290,15 @@ export default class Observer {
       console.error(error);
       retryNeeded = true;
     } finally {
+      // Purposely setting processing status first before rest of the code to prevent any possibility of deadlocking the Observer.
+      console.info(`Finished processing transaction '${transaction.transactionNumber}'.`);
       transactionUnderProcessing.processingStatus = TransactionProcessingStatus.Processsed;
 
       if (retryNeeded) {
+        console.info(`Recording failed processing attempt for transaction '${transaction.transactionNumber}'...`);
         await this.transactionStore.recordUnresolvableTransactionFetchAttempt(transaction);
       } else {
+        console.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
         await this.transactionStore.removeUnresolvableTransaction(transaction);
       }
     }
