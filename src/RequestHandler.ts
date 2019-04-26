@@ -5,22 +5,6 @@ import { Timeout } from './lib/Timeout';
 const multihashes = require('multihashes');
 
 /**
- * IPFS options for creation of IPFS node
- */
-interface Options {
-  /** Init IPFS options */
-  init?: boolean;
-  /** Boolean option to start ipfs node defaults to true */
-  start?: boolean;
-  /** IPFS experimental features */
-  EXPERIMENTAL?: any;
-  /** IPFS repo object */
-  repo?: string;
-  /** IPFS config */
-  config?: any;
-}
-
-/**
  * Sidetree IPFS request handler class
  */
 export default class RequestHandler {
@@ -29,8 +13,8 @@ export default class RequestHandler {
    */
   public ipfsStorage: IpfsStorage;
 
-  public constructor (ipfsOptions: Options) {
-    this.ipfsStorage = IpfsStorage.create(ipfsOptions);
+  public constructor (repo?: any) {
+    this.ipfsStorage = IpfsStorage.create(repo);
   }
   /**
    * Handles read request
@@ -49,7 +33,6 @@ export default class RequestHandler {
         status: ResponseStatus.BadRequest,
         body: { error: 'Invalid content Hash' }
       };
-      console.error(`Invalid content hash '${base64urlEncodedMultihash}'.`);
     }
 
     try {

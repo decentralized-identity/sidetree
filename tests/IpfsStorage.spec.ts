@@ -5,13 +5,7 @@ describe('IPFSStorage', () => {
   let ipfsStorage: IpfsStorage;
 
   beforeEach(() => {
-    const ipfsOptions: IPFS.Options = {
-      repo: 'sidetree-ipfs',
-      init: false,
-      start: false
-    };
-
-    ipfsStorage = IpfsStorage.create(ipfsOptions);
+    ipfsStorage = IpfsStorage.create();
   });
 
   it('should return the pinned content for the given hash.', async () => {

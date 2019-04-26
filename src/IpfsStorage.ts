@@ -4,6 +4,7 @@ import * as IPFS from 'ipfs';
  * Class that implements the IPFS Storage functionality.
  */
 export default class IpfsStorage {
+
   /**  IPFS node instance  */
   public node: IPFS;
   /**  IPFS Storage class object  */
@@ -12,15 +13,20 @@ export default class IpfsStorage {
   /**
    * Static method to have a single instance of class and mock in unit tests
    */
-  public static create (options?: IPFS.Options): IpfsStorage {
+  public static create (repo?: any): IpfsStorage {
     if (!IpfsStorage.ipfsStorageInstance) {
-      IpfsStorage.ipfsStorageInstance = new IpfsStorage(options);
+      IpfsStorage.ipfsStorageInstance = new IpfsStorage(repo);
     }
 
     return IpfsStorage.ipfsStorageInstance;
   }
 
-  private constructor (options?: IPFS.Options) {
+  private constructor (repo?: any) {
+    const repoName = 'sidetree-ipfs';
+    const options = {
+      repo: repo !== undefined ? repo : repoName
+    };
+
     this.node = new IPFS(options);
   }
 

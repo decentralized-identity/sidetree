@@ -72,7 +72,7 @@ declare namespace IPFS {
         init?: boolean;
         start?: boolean;
         EXPERIMENTAL?: any;
-        repo?: string;
+        repo?: any;
         config?: any;
     }
 
