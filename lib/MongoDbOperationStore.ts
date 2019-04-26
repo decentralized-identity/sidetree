@@ -1,4 +1,4 @@
-import { Binary, Collection, MongoClient } from 'mongodb';
+import { Binary, Collection, Long, MongoClient } from 'mongodb';
 import { Operation } from './Operation';
 import { OperationStore } from './OperationStore';
 
@@ -6,13 +6,15 @@ import { OperationStore } from './OperationStore';
  * Sidetree operation stored in MongoDb.
  * Note: we use the shorter property name "opIndex" instead of "operationIndex" due to a constraint imposed by CosmosDB/MongoDB:
  * the sum of property names of a unique index keys need to be less than 40 characters.
+ * Note: We represent opIndex, transactionNumber, and transactionTime as long instead of number (double) to avoid some floating
+ * point comparison quirks.
  */
 interface IMongoOperation {
   didUniqueSuffix: string;
   operationBufferBsonBinary: Binary;
-  opIndex: number;
-  transactionNumber: number;
-  transactionTime: number;
+  opIndex: Long;
+  transactionNumber: Long;
+  transactionTime: Long;
   batchFileHash: string;
 }
 
@@ -110,9 +112,9 @@ export default class MongoDbOperationStore implements OperationStore {
     return {
       didUniqueSuffix: operation.didUniqueSuffix!,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
-      opIndex: operation.operationIndex!,
-      transactionNumber: operation.transactionNumber!,
-      transactionTime: operation.transactionTime!,
+      opIndex: Long.fromNumber(operation.operationIndex!),
+      transactionNumber: Long.fromNumber(operation.transactionNumber!),
+      transactionTime: Long.fromNumber(operation.transactionTime!),
       batchFileHash: operation.batchFileHash!
     };
   }
@@ -120,8 +122,11 @@ export default class MongoDbOperationStore implements OperationStore {
   /**
    * Convert a MongoDB representation of an operation to a Sidetree operation.
    * Inverse of convertToMongoOperation() method above.
+   *
+   * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
+   * hence the type 'any' for mongoOperation.
    */
-  private static convertToOperation (mongoOperation: IMongoOperation): Operation {
+  private static convertToOperation (mongoOperation: any): Operation {
     return Operation.create(
       mongoOperation.operationBufferBsonBinary.buffer,
       {
