@@ -65,7 +65,14 @@ export default class MongoDbTransactionStore implements TransactionStore {
 
   async addProcessedTransaction (transaction: ITransaction): Promise<void> {
     try {
-      await this.transactionCollection!.insertOne(transaction);
+      // Force `transactionNumber` to be Int64 in MondoDB.
+      const transactionInMongoDb = {
+        anchorFileHash: transaction.anchorFileHash,
+        transactionNumber: Long.fromNumber(transaction.transactionNumber),
+        transactionTime: transaction.transactionTime,
+        transactionTimeHash: transaction.transactionTimeHash
+      };
+      await this.transactionCollection!.insertOne(transactionInMongoDb);
     } catch (error) {
       // Swallow duplicate insert errors (error code 11000) as no-op; rethrow others
       if (error.code !== 11000) {
@@ -102,8 +109,8 @@ export default class MongoDbTransactionStore implements TransactionStore {
     // Try to get the unresolvable transaction from store.
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
-    const findResults =
-    await this.unresolvableTransactionCollection!.find({ transactionTime, transactionNumber: Long.fromNumber(transactionNumber) }).toArray();
+    const searchFilter = { transactionTime, transactionNumber: Long.fromNumber(transactionNumber) };
+    const findResults = await this.unresolvableTransactionCollection!.find(searchFilter).toArray();
     let unresolvableTransaction: IUnresolvableTransaction | undefined;
     if (findResults && findResults.length > 0) {
       unresolvableTransaction = findResults[0];
@@ -131,7 +138,8 @@ export default class MongoDbTransactionStore implements TransactionStore {
       console.info(`Required elapsed time before retry for anchor file ${transaction.anchorFileHash} is now ${requiredElapsedTimeInSeconds} seconds.`);
       const nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
 
-      await this.unresolvableTransactionCollection!.updateOne({ transactionTime, transactionNumber }, { $set: { retryAttempts, nextRetryTime } });
+      const searchFilter = { transactionTime, transactionNumber: Long.fromNumber(transactionNumber) };
+      await this.unresolvableTransactionCollection!.updateOne(searchFilter, { $set: { retryAttempts, nextRetryTime } });
     }
   }
 

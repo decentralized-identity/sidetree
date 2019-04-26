@@ -97,7 +97,7 @@ export default class MongoDbOperationStore implements OperationStore {
    */
   public async delete (transactionNumber?: number): Promise<void> {
     if (transactionNumber) {
-      await this.collection!.deleteMany({ transactionNumber: { $gt: transactionNumber } });
+      await this.collection!.deleteMany({ transactionNumber: { $gt: Long.fromNumber(transactionNumber) } });
     } else {
       await this.collection!.deleteMany({});
     }
