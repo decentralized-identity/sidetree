@@ -1,4 +1,4 @@
-import { Collection, MongoClient, Db } from 'mongodb';
+import { Collection, Db, Long, MongoClient } from 'mongodb';
 import { ITransaction } from './Transaction';
 import { TransactionStore } from './TransactionStore';
 
@@ -102,7 +102,8 @@ export default class MongoDbTransactionStore implements TransactionStore {
     // Try to get the unresolvable transaction from store.
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
-    const findResults = await this.unresolvableTransactionCollection!.find({ transactionTime, transactionNumber }).toArray();
+    const findResults =
+    await this.unresolvableTransactionCollection!.find({ transactionTime, transactionNumber: Long.fromNumber(transactionNumber) }).toArray();
     let unresolvableTransaction: IUnresolvableTransaction | undefined;
     if (findResults && findResults.length > 0) {
       unresolvableTransaction = findResults[0];
@@ -112,7 +113,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     if (unresolvableTransaction === undefined) {
       const newUnresolvableTransaction = {
         transactionTime,
-        transactionNumber,
+        transactionNumber: Long.fromNumber(transactionNumber),
         anchorFileHash: transaction.anchorFileHash,
         transactionTimeHash: transaction.transactionTimeHash,
         firstFetchTime: Date.now(),
@@ -137,7 +138,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
   async removeUnresolvableTransaction (transaction: ITransaction): Promise<void> {
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
-    await this.unresolvableTransactionCollection!.deleteOne({ transactionTime, transactionNumber });
+    await this.unresolvableTransactionCollection!.deleteOne({ transactionTime, transactionNumber: Long.fromNumber(transactionNumber) });
   }
 
   async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<ITransaction[]> {
@@ -161,8 +162,8 @@ export default class MongoDbTransactionStore implements TransactionStore {
       return;
     }
 
-    await this.unresolvableTransactionCollection!.deleteMany({ transactionNumber: { $gt: transactionNumber } });
-    await this.transactionCollection!.deleteMany({ transactionNumber: { $gt: transactionNumber } });
+    await this.unresolvableTransactionCollection!.deleteMany({ transactionNumber: { $gt: Long.fromNumber(transactionNumber) } });
+    await this.transactionCollection!.deleteMany({ transactionNumber: { $gt: Long.fromNumber(transactionNumber) } });
   }
 
   /**
