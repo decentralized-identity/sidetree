@@ -12,9 +12,9 @@ import { OperationStore } from './OperationStore';
 interface IMongoOperation {
   didUniqueSuffix: string;
   operationBufferBsonBinary: Binary;
-  opIndex: Long;
+  opIndex: number;
   transactionNumber: Long;
-  transactionTime: Long;
+  transactionTime: number;
   batchFileHash: string;
 }
 
@@ -112,9 +112,9 @@ export default class MongoDbOperationStore implements OperationStore {
     return {
       didUniqueSuffix: operation.didUniqueSuffix!,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
-      opIndex: Long.fromNumber(operation.operationIndex!),
+      opIndex: operation.operationIndex!,
       transactionNumber: Long.fromNumber(operation.transactionNumber!),
-      transactionTime: Long.fromNumber(operation.transactionTime!),
+      transactionTime: operation.transactionTime!,
       batchFileHash: operation.batchFileHash!
     };
   }
