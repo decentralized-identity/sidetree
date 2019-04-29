@@ -48,9 +48,9 @@ export default class MockOperationStore implements OperationStore {
   }
 
   /**
-   * Implements OperationStore.putBatch()
+   * Implements OperationStore.put()
    */
-  public async putBatch (operations: Array<Operation>): Promise<void> {
+  public async put (operations: Array<Operation>): Promise<void> {
     for (const operation of operations) {
       await this.put(operation);
     }

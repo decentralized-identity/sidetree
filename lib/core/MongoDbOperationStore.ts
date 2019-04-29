@@ -61,9 +61,9 @@ export default class MongoDbOperationStore implements OperationStore {
   }
 
   /**
-   * Implement OperationStore.putBatch
+   * Implement OperationStore.put
    */
-  public async putBatch (operations: Array<Operation>): Promise<void> {
+  public async put (operations: Array<Operation>): Promise<void> {
     let batch = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {

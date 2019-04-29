@@ -18,7 +18,7 @@ export default class OperationProcessor {
    * store.
    */
   public async processBatch (operations: Array<Operation>): Promise<void> {
-    return this.operationStore.putBatch(operations);
+    return this.operationStore.put(operations);
   }
 
   /**
