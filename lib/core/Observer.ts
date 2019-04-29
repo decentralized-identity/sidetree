@@ -285,7 +285,7 @@ export default class Observer {
 
       // If the code reaches here, it means that the batch of operations is valid, process the operations.
       const endTimer = timeSpan();
-      await this.operationProcessor.processBatch(operations);
+      await this.operationProcessor.process(operations);
       console.info(`Processed batch '${anchorFile.batchFileHash}' of ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);

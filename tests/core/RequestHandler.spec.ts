@@ -82,7 +82,7 @@ describe('RequestHandler', () => {
       batchFileHash
     };
     const createOperation = Operation.create(createOperationBuffer, resolvedTransaction, 0);
-    await operationProcessor.processBatch([createOperation]);
+    await operationProcessor.process([createOperation]);
 
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
