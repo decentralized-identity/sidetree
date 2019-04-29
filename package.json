@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree-ipfs",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Node.js implementation of the Sidetree IPFS module",
   "main": "dist/src/IpfsStorage.js",
   "types": "dist/src/IpfsStorage.d.ts",
