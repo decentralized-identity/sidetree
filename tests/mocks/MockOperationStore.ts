@@ -37,7 +37,7 @@ export default class MockOperationStore implements OperationStore {
   /**
    * Inserts an operation into the in-memory store.
    */
-  private async put (operation: Operation): Promise<void> {
+  private async insert (operation: Operation): Promise<void> {
     const didUniqueSuffix = operation.didUniqueSuffix!;
 
     this.ensureDidEntriesExist(didUniqueSuffix);
@@ -52,7 +52,7 @@ export default class MockOperationStore implements OperationStore {
    */
   public async put (operations: Array<Operation>): Promise<void> {
     for (const operation of operations) {
-      await this.put(operation);
+      await this.insert(operation);
     }
   }
 
