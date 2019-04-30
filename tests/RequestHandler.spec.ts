@@ -1,4 +1,5 @@
 import RequestHandler from '../lib/RequestHandler';
+import String from './util/String';
 import TransactionNumber from '../lib/TransactionNumber';
 import { IConfig } from '../lib/Config';
 import { IResponse, ResponseStatus, Response } from '../lib/Response';
@@ -12,6 +13,13 @@ describe('RequestHandler', () => {
   const genesisTimeHash = config.bitcoinSidetreeGenesisBlockHash;
 
   const requestHandler = new RequestHandler(uri, prefix, genesisTransactionNumber, genesisTimeHash);
+
+  beforeEach(async () => {
+    // Make sure bitcored servie URL is valid before starting the tests.
+    if (!String.isValidUrl(uri)) {
+      pending(`Test skipped: Bitcored URL '${uri}' in config-test.json is not a valid URL.`);
+    }
+  });
 
   it('should return the correct response body with height for blocks last request', async () => {
     const expectedResponse: IResponse = {

@@ -14,7 +14,8 @@ export default class RequestHandler {
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
    */
-  public constructor (public bitcoreSidetreeServiceUri: string,
+  public constructor (
+    public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
     public genesisTimeHash: string) {

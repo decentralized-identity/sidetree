@@ -1,4 +1,5 @@
 import BlockchainService from '../lib/BlockchainService';
+import String from './util/String';
 import TransactionNumber from '../lib/TransactionNumber';
 import { IConfig } from '../lib/Config';
 import { IResponse, ResponseStatus, Response } from '../lib/Response';
@@ -9,7 +10,14 @@ describe('BlockchainService', () => {
   const config: IConfig = require('../json/config-test.json');
   const blockchainService = new BlockchainService(config);
 
+  let bitcoredServiceUrlIsValid = true;
   beforeAll(async () => {
+    // Make sure bitcored servie URL is valid before starting the tests.
+    if (!String.isValidUrl(config.bitcoreSidetreeServiceUri)) {
+      bitcoredServiceUrlIsValid = false;
+      return;
+    }
+
     await blockchainService.initialize();
 
     await retry(async (_bail: any) => {
@@ -27,6 +35,14 @@ describe('BlockchainService', () => {
         maxTimeout: 500 // milliseconds
     });
   }, 20000); // Extended timeout as `beforeAll()` can take more than the default 5 seconds timeout.
+
+  beforeEach(async () => {
+    // Make sure bitcored servie URL is valid before starting the tests.
+    // NOTE: Code coverage run does not support `pending()` call in `beforeAll()`, so must do it in `beforeEach()`.
+    if (!bitcoredServiceUrlIsValid) {
+      pending(`Test skipped: Bitcored URL '${config.bitcoreSidetreeServiceUri}' in config-test.json is not a valid URL.`);
+    }
+  });
 
   it('should return the HTTP 400 for reogranized transactions request', async () => {
     const expectedResponse: Response = {
