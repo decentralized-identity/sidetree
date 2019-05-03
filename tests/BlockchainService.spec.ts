@@ -2,7 +2,7 @@ import BlockchainService from '../lib/BlockchainService';
 import String from './util/String';
 import TransactionNumber from '../lib/TransactionNumber';
 import { IConfig } from '../lib/Config';
-import { IResponse, ResponseStatus, Response } from '../lib/Response';
+import { ResponseStatus, Response } from '../lib/Response';
 
 import retry = require('async-retry');
 
@@ -13,12 +13,18 @@ describe('BlockchainService', () => {
   let bitcoredServiceUrlIsValid = true;
   beforeAll(async () => {
     // Make sure bitcored servie URL is valid before starting the tests.
+    // NOTE: Code coverage run does not support `pending()` call in `beforeAll()` so calling `pending()` in `beforeEach()`.
     if (!String.isValidUrl(config.bitcoreSidetreeServiceUri)) {
       bitcoredServiceUrlIsValid = false;
       return;
     }
 
     await blockchainService.initialize();
+
+    // Erase all transactions in database first.
+    await blockchainService.transactionStore.removeTransactionsLaterThan();
+
+    blockchainService.startPeriodicProcessing();
 
     await retry(async (_bail: any) => {
       const transactionCount = await blockchainService.getTransactionsCount();
@@ -38,9 +44,9 @@ describe('BlockchainService', () => {
 
   beforeEach(async () => {
     // Make sure bitcored servie URL is valid before starting the tests.
-    // NOTE: Code coverage run does not support `pending()` call in `beforeAll()`, so must do it in `beforeEach()`.
     if (!bitcoredServiceUrlIsValid) {
-      pending(`Test skipped: Bitcored URL '${config.bitcoreSidetreeServiceUri}' in config-test.json is not a valid URL.`);
+    // NOTE: `stopSpecOnExpectationFailure` must set to true in order for `beforeEach()` to not execute tests after `pending()` is called.
+    pending(`Test skipped: Bitcored URL '${config.bitcoreSidetreeServiceUri}' in config-test.json is not a valid URL.`);
     }
   });
 
@@ -56,11 +62,10 @@ describe('BlockchainService', () => {
     var transactionTimeHash = "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe";
     const fetchedResponse = await blockchainService.handleFetchRequestCached(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
-
   });
 
   it('should return the correct response body with content for cached transactions request', async () => {
-    const expectedResponse: IResponse = {
+    const expectedResponse = {
       "status": ResponseStatus.Succeeded,
       "body":
       {
@@ -120,8 +125,19 @@ describe('BlockchainService', () => {
 
     const transactionNumber = 6212927891701760;
     const transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
-    const fetchedResponse = await blockchainService.handleFetchRequestCached(transactionNumber, transactionTimeHash);
-    expect(fetchedResponse).toEqual(expectedResponse);
+    const fetchedResponse = await blockchainService.handleFetchRequestCached(transactionNumber, transactionTimeHash) as any;
+    expect(fetchedResponse.status).toEqual(expectedResponse.status);
+    expect(fetchedResponse.body.moreTransactions).toEqual(expectedResponse.body.moreTransactions);
+    expect(fetchedResponse.body.transactions.length).toEqual(expectedResponse.body.transactions.length);
+
+    for (let i = 0; i < expectedResponse.body.transactions.length; i++ ) {
+      const expectedTransaction = expectedResponse.body.transactions[i];
+      const actualTransaction = fetchedResponse.body.transactions[i];
+      expect(actualTransaction.anchorFileHash).toEqual(expectedTransaction.anchorFileHash);
+      expect(actualTransaction.transactionNumber).toEqual(expectedTransaction.transactionNumber);
+      expect(actualTransaction.transactionTime).toEqual(expectedTransaction.transactionTime);
+      expect(actualTransaction.transactionTimeHash).toEqual(expectedTransaction.transactionTimeHash);
+    }
   });
 
   it('should return the correct response body with content for firstValidCached request', async () => {

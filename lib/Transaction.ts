@@ -1,7 +1,7 @@
 /**
  * Defines a Sidetree transaction.
  */
-export default interface Transaction {
+export interface ITransaction {
   transactionNumber: number;
   transactionTime: number;
   transactionTimeHash: string;

@@ -68,6 +68,9 @@ const port = 3009;
 // initialize the blockchain service and kick-off background tasks
 blockchainService.initialize()
   .then(() => {
+    return blockchainService.startPeriodicProcessing();
+  })
+  .then(() => {
     app.listen(port, () => {
       console.log(`Sidetree-Bitcoin node running on port: ${port}`);
     });

@@ -1,8 +1,8 @@
+import MongoDbTransactionStore from './MongoDbTransactionStore';
 import RequestHandler from './RequestHandler';
-import Transaction from './Transaction';
 import TransactionNumber from './TransactionNumber';
+import { ITransaction } from './Transaction';
 import { IConfig } from './Config';
-import { InMemoryTransactionStore } from './TransactionStore';
 import { IResponse, ResponseStatus } from './Response';
 
 /**
@@ -18,12 +18,12 @@ export default class BlockchainService {
   /**
    * Data store that stores the state of transactions.
    */
-  private transactionStore = new InMemoryTransactionStore();
+  public transactionStore: MongoDbTransactionStore;
 
   /**
    * Tracks the last known Sidetree transaction
    */
-  private lastKnownTransaction: Transaction | undefined;
+  private lastKnownTransaction: ITransaction | undefined;
 
   /**
    * Denotes if the periodic transaction processing should continue to occur.
@@ -51,6 +51,8 @@ export default class BlockchainService {
     this.pollingIntervalInSeconds = config.bitcoinPollingInternalSeconds;
     this.maxSidetreeTransactions = config.maxSidetreeTransactions;
 
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
     this.requestHandler = new RequestHandler(
       this.bitcoreSidetreeServiceUri,
       this.sidetreeTransactionPrefix,
@@ -63,7 +65,7 @@ export default class BlockchainService {
    * The method starts a background thread to fetch Sidetree transactions from the blockchain layer.
    */
   public async initialize () {
-    await this.startPeriodicProcessing();
+    await this.transactionStore.initialize();
   }
 
   /**
@@ -108,20 +110,22 @@ export default class BlockchainService {
 
         let readResult;
         try {
-          console.info('Fetching Sidetree transactions from bitcored service...');
+          console.info(`Fetching Sidetree transactions after transation '${lastKnownTransactionNumber}' from bitcored service...`);
           readResult = await this.requestHandler.handleFetchRequest(lastKnownTransactionNumber, lastKnownTransactionTimeHash);
 
           // check if the request succeeded; if yes, process transactions
           if (readResult.status === ResponseStatus.Succeeded) {
             const readResultBody = readResult.body as any;
-            const transactions = readResultBody['transactions'];
+            const transactions: ITransaction[] = readResultBody['transactions'];
             moreTransactions = readResultBody['moreTransactions'];
             if (transactions.length > 0) {
-              console.info(`Fetched ${transactions.length} Sidetree transactions from bitcored service ${transactions[0].transactionNumber}`);
+              console.info(`Fetched ${transactions.length} Sidetree transactions from bitcored service.`);
               for (const transaction of transactions) {
                 await this.transactionStore.addTransaction(transaction);
               }
-              this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
+              this.lastKnownTransaction = transactions[transactions.length - 1];
+            } else {
+              console.info(`No new Sidetree transactions.`);
             }
           } else if (readResult.status === ResponseStatus.BadRequest) {
             const readResultBody = readResult.body as any;
@@ -136,6 +140,7 @@ export default class BlockchainService {
         }
 
         // If block reorg is detected, revert invalid transactions
+        // NOTE: In case of block reorg, last known transaction will be updated in `this.RevertInvalidTransactions()` method.
         if (blockReorganizationDetected) {
           console.info(`Reverting invalid transactions...`);
           await this.RevertInvalidTransactions();
@@ -199,36 +204,27 @@ export default class BlockchainService {
     };
 
     try {
-      const cacheIndex = await this.transactionStore.locateTransactionIndex(transactionNumber);
-      let match = true;
+      const cachedTransaction = await this.transactionStore.getTransaction(transactionNumber);
 
-      // if we can't locate the requested transaction, return false;
-      if (cacheIndex === undefined) {
+      let match;
+      // if we can't locate the transaction in the cache at the index, return false
+      if (cachedTransaction === undefined) {
         match = false;
       } else {
-        const cachedTransaction = await this.transactionStore.getTransaction(cacheIndex);
-
-        // if we can't locate the transaction in the cache at the index, return false
-        if (cachedTransaction === undefined) {
+        // if cached transaction doesn't match the caller's parameters, return false
+        if (cachedTransaction.transactionTimeHash !== transactionTimeHash) {
           match = false;
         } else {
-
-          // if cached transaction doesn't match the caller's parameters, return false
-          if (cachedTransaction.transactionNumber !== transactionNumber || cachedTransaction.transactionTimeHash !== transactionTimeHash) {
-            match = false;
-          } else {
-            match = true;
-          }
+          match = true;
         }
       }
 
       return {
         status: ResponseStatus.Succeeded,
-        body: {
-          'match': match
-        }
+        body: { match }
       };
-    } catch {
+    } catch (error) {
+      console.error(error);
       return errorResponse;
     }
   }
@@ -239,12 +235,6 @@ export default class BlockchainService {
    * @param transactionTimeHash specifies the transactionTimeHash corresponding to the since parameter
    */
   public async handleFetchRequestCached (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<IResponse> {
-
-    const errorResponse = {
-      status: ResponseStatus.ServerError,
-      body: {}
-    };
-
     // `sinceTransactionNumber` and `transactionTimeHash` must be both be undefined or defined at the same time.
     if ((sinceTransactionNumber === undefined && transactionTimeHash !== undefined) ||
         (sinceTransactionNumber !== undefined && transactionTimeHash === undefined)) {
@@ -252,6 +242,10 @@ export default class BlockchainService {
         status: ResponseStatus.BadRequest
       };
     }
+
+    const errorResponse = {
+      status: ResponseStatus.ServerError
+    };
 
     const reorgResponse = {
       status: ResponseStatus.BadRequest,
@@ -268,7 +262,7 @@ export default class BlockchainService {
         const verifyResponseBody = verifyResponse.body as any;
 
         // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
-        if (verifyResponseBody['match'] === false) {
+        if (verifyResponseBody.match === false) {
           return reorgResponse;
         }
       } else {
@@ -277,36 +271,22 @@ export default class BlockchainService {
       }
     }
 
-    const response = await this.transactionStore.getTransactionsLaterThan(this.maxSidetreeTransactions, sinceTransactionNumber);
-    if (response.status === ResponseStatus.Succeeded) {
-      const responseBody = response.body as any;
-      let moreTransactions;
+    const transactions = await this.transactionStore.getTransactionsLaterThan(sinceTransactionNumber, this.maxSidetreeTransactions);
 
-      if (this.lastKnownTransaction === undefined) {
-        moreTransactions = false;
-      } else {
-        if (responseBody.transactions.length > 0 &&
-          responseBody.transactions[responseBody.transactions.length - 1].transactionNumber < this.lastKnownTransaction.transactionNumber) {
-          moreTransactions = true;
-        } else {
-          moreTransactions = false;
-        }
-      }
-
-      return {
-        status: ResponseStatus.Succeeded,
-        body: {
-          'moreTransactions': moreTransactions,
-          'transactions': responseBody.transactions
-        }
-      };
-
-    } else if (response.status === ResponseStatus.BadRequest) {
-      return reorgResponse;
+    let moreTransactions;
+    if (transactions.length === 0) {
+      moreTransactions = false;
     } else {
-      // an error occured, so return the default response
-      return errorResponse;
+      moreTransactions = true;
     }
+
+    return {
+      status: ResponseStatus.Succeeded,
+      body: {
+        moreTransactions,
+        transactions
+      }
+    };
   }
 
   /**

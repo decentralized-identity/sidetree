@@ -4,5 +4,7 @@
   "bitcoinSidetreeGenesisBlockNumber": 1446559,
   "bitcoinSidetreeGenesisBlockHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
   "bitcoinPollingInternalSeconds": 100,
-  "maxSidetreeTransactions": 10
+  "databaseName": "sidetree-test",
+  "maxSidetreeTransactions": 10,
+  "mongoDbConnectionString": "mongodb://localhost:27017/"
 }

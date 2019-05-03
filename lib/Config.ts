@@ -7,5 +7,7 @@ export interface IConfig {
   bitcoinSidetreeGenesisBlockNumber: number;
   bitcoinSidetreeGenesisBlockHash: string;
   bitcoinPollingInternalSeconds: number;
+  databaseName: string | undefined;
   maxSidetreeTransactions: number;
+  mongoDbConnectionString: string;
 }

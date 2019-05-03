@@ -1,50 +1,37 @@
 import SortedArray from './util/SortedArray';
-import Transaction from './Transaction';
-import { IResponse, ResponseStatus } from './Response';
+import { ITransaction } from './Transaction';
 
 /**
  * An abstraction for the caching transactions that have been found on the blockchain.
  */
 export interface TransactionStore {
-
-  /**
-   * Returns the number of transactions in the store
-   */
-  getTransactionsCount (): Promise<number>;
-
   /**
    * Idempotent method that adds the given transaction to the list of transactions.
    */
-  addTransaction (transaction: Transaction): Promise<void>;
+  addTransaction (transaction: ITransaction): Promise<void>;
 
   /**
    * Gets the most recent transaction. Returns undefined if there is no transaction.
    */
-  getLastTransaction (): Promise<Transaction | undefined>;
+  getLastTransaction (): Promise<ITransaction | undefined>;
 
   /**
    * Gets a list of exponentially-spaced processed transactions in reverse direction of the list of processed transactions
    * where the first element in the returned list is the last transaction in the list of processed transactions.
    */
-  getExponentiallySpacedTransactions (): Promise<Transaction[]>;
+  getExponentiallySpacedTransactions (): Promise<ITransaction[]>;
 
   /**
-   * Returns a transaction from the cache at the requested index
-   * @param index The location of the requested transaction
+   * Returns the specified transaction.
+   * @param transactionNumber Transaction number of the transaction to be returned.
    */
-  getTransaction (index: number): Promise<Transaction | undefined>;
-
-  /**
-   * Locates a transactionNumber in the transactionStore using binary search
-   * @param transactionNumber The transactionNumber for which the index is requested
-   */
-  locateTransactionIndex (transactionNumber: number): Promise<number | undefined>;
+  getTransaction (transactionNumber: number): Promise<ITransaction | undefined>;
 
   /**
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber
    * If @param transactionNumber is undefined, returns transactions from index 0 in the store
    */
-  getTransactionsLaterThan (max: number, transactionNumber?: number): Promise<IResponse>;
+  getTransactionsLaterThan (transactionNumber: number | undefined, max: number): Promise<ITransaction[]>;
 
   /**
    * Remove all transactions with transaction number greater than the provided parameter.
@@ -57,13 +44,17 @@ export interface TransactionStore {
  * In-memory implementation of the `TransactionStore`.
  */
 export class InMemoryTransactionStore implements TransactionStore {
-  private transactions: Transaction[] = [];
+  private transactions: ITransaction[] = [];
 
+  /**
+   * Returns the number of transactions in the store.
+   * Mainly used by tests.
+   */
   async getTransactionsCount (): Promise<number> {
     return this.transactions.length;
   }
 
-  async addTransaction (transaction: Transaction): Promise<void> {
+  async addTransaction (transaction: ITransaction): Promise<void> {
     const lastTransaction = await this.getLastTransaction();
 
     // If the last transaction is later or equal to the transaction to add,
@@ -75,7 +66,7 @@ export class InMemoryTransactionStore implements TransactionStore {
     this.transactions.push(transaction);
   }
 
-  async getLastTransaction (): Promise<Transaction | undefined> {
+  async getLastTransaction (): Promise<ITransaction | undefined> {
     if (this.transactions.length === 0) {
       return undefined;
     }
@@ -85,8 +76,8 @@ export class InMemoryTransactionStore implements TransactionStore {
     return lastTransaction;
   }
 
-  async getExponentiallySpacedTransactions (): Promise<Transaction[]> {
-    const exponentiallySpacedTransactions: Transaction[] = [];
+  async getExponentiallySpacedTransactions (): Promise<ITransaction[]> {
+    const exponentiallySpacedTransactions: ITransaction[] = [];
     let index = this.transactions.length - 1;
     let distance = 1;
     while (index >= 0) {
@@ -101,7 +92,7 @@ export class InMemoryTransactionStore implements TransactionStore {
    * Returns a transaction from the cache at the requested index
    * @param index The location of the requested transaction
    */
-  async getTransaction (index: number): Promise<Transaction | undefined> {
+  async getTransaction (index: number): Promise<ITransaction | undefined> {
     if (index >= this.transactions.length) {
       return undefined;
     } else {
@@ -116,7 +107,7 @@ export class InMemoryTransactionStore implements TransactionStore {
   async locateTransactionIndex (transactionNumber: number): Promise<number | undefined> {
     // Locate the index of the given transaction using binary search.
     const compareTransactionAndTransactionNumber
-      = (transaction: Transaction, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
+      = (transaction: ITransaction, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
     const transactionIndex
       = SortedArray.binarySearch(this.transactions, transactionNumber, compareTransactionAndTransactionNumber);
     return transactionIndex;
@@ -126,7 +117,7 @@ export class InMemoryTransactionStore implements TransactionStore {
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber
    * If @param transactionNumber is undefined, returns transactions from index 0 in the store
    */
-  async getTransactionsLaterThan (max: number, transactionNumber?: number): Promise<IResponse> {
+  async getTransactionsLaterThan (transactionNumber: number | undefined, max: number): Promise<ITransaction[]> {
 
     let startIndex = 0;
 
@@ -136,19 +127,7 @@ export class InMemoryTransactionStore implements TransactionStore {
     } else {
       // Locate the index of the given transaction using binary search.
       const bestKnownValidRecentTransactionIndex = await this.locateTransactionIndex(transactionNumber);
-
-      // The following condition occurs if there was a blockchain reorganization
-      if (bestKnownValidRecentTransactionIndex === undefined) {
-        return {
-          'status': ResponseStatus.BadRequest,
-          'body': {
-            'transactions': []
-          }
-        };
-      } else {
-        startIndex = bestKnownValidRecentTransactionIndex + 1;
-      }
-
+      startIndex = bestKnownValidRecentTransactionIndex! + 1;
     }
 
     let responseTransactions = [];
@@ -166,12 +145,7 @@ export class InMemoryTransactionStore implements TransactionStore {
       i = i + 1;
     } while (true);
 
-    return {
-      'status': ResponseStatus.Succeeded,
-      'body': {
-        'transactions': responseTransactions
-      }
-    };
+    return responseTransactions;
   }
 
   async removeTransactionsLaterThan (transactionNumber?: number): Promise<void> {
