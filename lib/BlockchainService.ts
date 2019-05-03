@@ -109,34 +109,32 @@ export default class BlockchainService {
         const lastKnownTransactionTimeHash = this.lastKnownTransaction ? this.lastKnownTransaction.transactionTimeHash : undefined;
 
         let readResult;
-        try {
-          console.info(`Fetching Sidetree transactions after transation '${lastKnownTransactionNumber}' from bitcored service...`);
-          readResult = await this.requestHandler.handleFetchRequest(lastKnownTransactionNumber, lastKnownTransactionTimeHash);
+        console.info(`Fetching Sidetree transactions after transation '${lastKnownTransactionNumber}' from bitcored service...`);
+        readResult = await this.requestHandler.handleFetchRequest(lastKnownTransactionNumber, lastKnownTransactionTimeHash);
 
-          // check if the request succeeded; if yes, process transactions
-          if (readResult.status === ResponseStatus.Succeeded) {
-            const readResultBody = readResult.body as any;
-            const transactions: ITransaction[] = readResultBody['transactions'];
-            moreTransactions = readResultBody['moreTransactions'];
-            if (transactions.length > 0) {
-              console.info(`Fetched ${transactions.length} Sidetree transactions from bitcored service.`);
-              for (const transaction of transactions) {
-                await this.transactionStore.addTransaction(transaction);
-              }
-              this.lastKnownTransaction = transactions[transactions.length - 1];
-            } else {
-              console.info(`No new Sidetree transactions.`);
+        // check if the request succeeded; if yes, process transactions
+        if (readResult.status === ResponseStatus.Succeeded) {
+          const readResultBody = readResult.body as any;
+          const transactions: ITransaction[] = readResultBody['transactions'];
+          moreTransactions = readResultBody['moreTransactions'];
+          if (transactions.length > 0) {
+            console.info(`Fetched ${transactions.length} Sidetree transactions from bitcored service.`);
+            for (const transaction of transactions) {
+              await this.transactionStore.addTransaction(transaction);
             }
-          } else if (readResult.status === ResponseStatus.BadRequest) {
-            const readResultBody = readResult.body as any;
-            const code = readResultBody['code'];
-            if (code === 'invalid_transaction_number_or_time_hash') {
-              console.info(`Detected blockchain reorganization`);
-              blockReorganizationDetected = true;
-            }
+            this.lastKnownTransaction = transactions[transactions.length - 1];
+          } else {
+            console.info(`No new Sidetree transactions.`);
           }
-        } catch (error) {
-          throw error;
+        } else if (readResult.status === ResponseStatus.BadRequest) {
+          const readResultBody = readResult.body as any;
+          const code = readResultBody['code'];
+          if (code === 'invalid_transaction_number_or_time_hash') {
+            console.info(`Detected blockchain reorganization`);
+            blockReorganizationDetected = true;
+          }
+        } else {
+          console.error(`Response status '${ResponseStatus[readResult.status]}' when fetching transactions from bitcore.`);
         }
 
         // If block reorg is detected, revert invalid transactions
