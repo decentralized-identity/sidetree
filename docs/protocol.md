@@ -477,20 +477,7 @@ None.
 
 ### DID Recovery
 
-> TODO: Content to be revisited and updated.
-
-The signature of the Recover operation is the following:
-
-*Recover (RecoveryPatch, Signature)
-where,
--  RecoveryPatch: JSON patch specifying a new recovery public key. The patch can optionally identify old primary public key(s) and include new primary public key(s).
--  Signature: Signature with the recovery secret key (corresponding to the recovery public key stored in the latest version associated with the DID).
-
-If the operation is successful, it applies the provided JSON patch to the version of the DID Document identified.
-
-> NOTE: The recovery patch must contain a fresh recovery public key. It is crucial to not release the recovery secret key, or to sign any predetermined message to prove its knowledge, a i.e., to have a non-replayable recovery mechanism. Otherwise, the system is exposed to man-in-the-middle vulnerability, where a malicious party can replace the new recovery public key in the recovery patch with her his own public key.
-> - The recovery key of a DID can only be rotated through a recover op. If the primary secret key is lost or compromised, the owner can change it to a new pair through Recover op. If the owner loses the recovery key, but still has access to her primary key, she can invoke the Delete op to delete her DID. However, if the owner’s recovery key gets compromised, then she loses complete control of her DID.
-
+> TODO: API to be added which will impact delete API also.
 
 ## Sidetree Operation Receipts
 Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2: a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees; then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
