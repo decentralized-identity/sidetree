@@ -7,8 +7,17 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Launch Sidetree Core Service",
             "program": "${workspaceFolder}/dist/src/server.js",
+            "outFiles": [
+                "${workspaceFolder}/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Sidetree Bitcoin Service",
+            "program": "${workspaceFolder}/dist/src/bitcoin.js",
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]

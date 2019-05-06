@@ -1,7 +1,7 @@
 /**
- * Defines all the configuration parameters needed to initialize Sidetree blockchain service.
+ * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
-export interface IConfig {
+export interface IBitcoinConfig {
   bitcoreSidetreeServiceUri: string;
   sidetreeTransactionPrefix: string;
   bitcoinSidetreeGenesisBlockNumber: number;

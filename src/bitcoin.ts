@@ -9,7 +9,7 @@ import {
   SidetreeResponse
 } from '../lib/index';
 
-const config: ISidetreeBitcoinConfig = require('../json/config.json');
+const config: ISidetreeBitcoinConfig = require('./bitcoin-config.json');
 const blockchainService = new SidetreeBitcoinService(config);
 
 const app = new Koa();

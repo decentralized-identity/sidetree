@@ -1,7 +1,0 @@
-dist/
-node_modules/
-nunitresults.xml
-
-# Istanbul code coverage folders
-.nyc_output/
-coverage/

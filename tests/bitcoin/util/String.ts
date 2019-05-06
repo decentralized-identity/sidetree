@@ -9,6 +9,7 @@ export default class String {
    */
   static isValidUrl (url: string): boolean {
     try {
+      // tslint:disable-next-line:no-unused-expression
       new URL(url);
       return true;
     } catch {

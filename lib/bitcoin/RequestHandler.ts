@@ -1,4 +1,4 @@
-import { IResponse, ResponseStatus } from './Response';
+import { IResponse, ResponseStatus } from '../Response';
 import nodeFetch from 'node-fetch';
 import * as HttpStatus from 'http-status';
 import TransactionNumber from './TransactionNumber';

@@ -1,4 +1,4 @@
-import Response, { ResponseStatus } from '../lib/Response';
+import Response, { ResponseStatus } from '../../lib/Response';
 
 describe('Response', () => {
 

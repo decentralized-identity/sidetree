@@ -1,9 +1,9 @@
 import MongoDbTransactionStore from './MongoDbTransactionStore';
 import RequestHandler from './RequestHandler';
 import TransactionNumber from './TransactionNumber';
-import { ITransaction } from './Transaction';
-import { IConfig } from './Config';
-import { IResponse, ResponseStatus } from './Response';
+import { ITransaction } from '../Transaction';
+import { IBitcoinConfig } from './BitcoinConfig';
+import { IResponse, ResponseStatus } from '../Response';
 
 /**
  * The class that is instantiated when running a Sidetree blockchain service.
@@ -43,7 +43,7 @@ export default class BlockchainService {
   private pollingIntervalInSeconds: number;
   private maxSidetreeTransactions: number;
 
-  public constructor (config: IConfig) {
+  public constructor (config: IBitcoinConfig) {
     this.bitcoreSidetreeServiceUri = config.bitcoreSidetreeServiceUri;
     this.sidetreeTransactionPrefix = config.sidetreeTransactionPrefix;
     this.genesisTransactionNumber = TransactionNumber.construct(config.bitcoinSidetreeGenesisBlockNumber, 0);

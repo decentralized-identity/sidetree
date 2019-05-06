@@ -1,12 +1,12 @@
-import RequestHandler from '../lib/RequestHandler';
+import RequestHandler from '../../lib/bitcoin/RequestHandler';
 import String from './util/String';
-import TransactionNumber from '../lib/TransactionNumber';
-import { IConfig } from '../lib/Config';
-import { IResponse, ResponseStatus, Response } from '../lib/Response';
+import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
+import { IBitcoinConfig } from '../../lib/bitcoin/BitcoinConfig';
+import { IResponse, ResponseStatus, Response } from '../../lib/Response';
 
 describe('RequestHandler', () => {
 
-  const config: IConfig = require('../json/config-test.json');
+  const config: IBitcoinConfig = require('./bitcoin-test.json');
   const uri = config.bitcoreSidetreeServiceUri;
   const prefix = config.sidetreeTransactionPrefix;
   const genesisTransactionNumber = TransactionNumber.construct(config.bitcoinSidetreeGenesisBlockNumber, 0);
@@ -33,7 +33,6 @@ describe('RequestHandler', () => {
     const fetchedResponse = await requestHandler.handleLastBlockRequest();
     expect(fetchedResponse.status).toEqual(expectedResponse.status);
   });
-
 
   it('should return the correct response body with height for blocks request', async () => {
     const expectedResponse: Response = {
@@ -63,40 +62,37 @@ describe('RequestHandler', () => {
     expect(expectedResponse.status).toEqual(fetchedResponse.status);
   });
 
-
   it('should return the HTTP 400 for reogranized transactions request', async () => {
     const expectedResponse: Response = {
-      "status": ResponseStatus.BadRequest,
-      "body": {
+      'status': ResponseStatus.BadRequest,
+      'body': {
         'code': 'invalid_transaction_number_or_time_hash'
       }
-    }
+    };
 
-    var transactionNumber = TransactionNumber.construct(1446559, 0);
-    var transactionTimeHash = "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe";
+    let transactionNumber = TransactionNumber.construct(1446559, 0);
+    let transactionTimeHash = '000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe';
     const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
 
-
   it('should return the correct response body with content for transactions request', async () => {
     const expectedResponse: Response = {
-      "status": ResponseStatus.Succeeded,
-      "body": {
-        "moreTransactions": true,
-        "transactions": [
+      'status': ResponseStatus.Succeeded,
+      'body': {
+        'moreTransactions': true,
+        'transactions': [
           {
-            "transactionNumber": 6212923596734464,
-            "transactionTime": 1446559,
-            "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
-            "anchorFileHash": "hellow"
+            'transactionNumber': 6212923596734464,
+            'transactionTime': 1446559,
+            'transactionTimeHash': '000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd',
+            'anchorFileHash': 'hellow'
           }]
       }
-    }
+    };
 
-
-    var transactionNumber = TransactionNumber.construct(1446557, 0);
-    var transactionTimeHash = "000000000000005f62979f4e2edf33efffe3148d2d8fec3b9c64d8d8f190fd07";
+    let transactionNumber = TransactionNumber.construct(1446557, 0);
+    let transactionTimeHash = '000000000000005f62979f4e2edf33efffe3148d2d8fec3b9c64d8d8f190fd07';
     const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -104,55 +100,55 @@ describe('RequestHandler', () => {
   // check if pagination works even within a block
   it('should return the correct response body with content for transactions request', async () => {
     const expectedResponse: Response = {
-      "status": ResponseStatus.Succeeded,
-      "body": {
-        "moreTransactions": true,
-        "transactions": [
+      'status': ResponseStatus.Succeeded,
+      'body': {
+        'moreTransactions': true,
+        'transactions': [
           {
-            "transactionNumber": 6212927891701761,
-            "transactionTime": 1446560,
-            "transactionTimeHash": "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199",
-            "anchorFileHash": "hellow"
+            'transactionNumber': 6212927891701761,
+            'transactionTime': 1446560,
+            'transactionTimeHash': '000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199',
+            'anchorFileHash': 'hellow'
           }, {
-            "transactionNumber": 6212927891701762,
-            "transactionTime": 1446560,
-            "transactionTimeHash": "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199",
-            "anchorFileHash": "hellow"
+            'transactionNumber': 6212927891701762,
+            'transactionTime': 1446560,
+            'transactionTimeHash': '000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199',
+            'anchorFileHash': 'hellow'
           }]
       }
-    }
+    };
 
     const transactionNumber = 6212927891701760;
-    const transactionTimeHash = "000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199";
+    const transactionTimeHash = '000000000000002deb21a9b78c381179bccf84aa7fc0db4e1a0cc37cf46ad199';
     const fetchedResponse = await requestHandler.handleFetchRequest(transactionNumber, transactionTimeHash);
     expect(expectedResponse).toEqual(fetchedResponse);
   });
 
   it('should return the correct response body with content for firstValid request', async () => {
     const expectedResponse: Response = {
-      "status": ResponseStatus.Succeeded,
-      "body": {
-        "transactionNumber": 6212923596734464,
-        "transactionTime": 1446559,
-        "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
-        "anchorFileHash": "hellow"
+      'status': ResponseStatus.Succeeded,
+      'body': {
+        'transactionNumber': 6212923596734464,
+        'transactionTime': 1446559,
+        'transactionTimeHash': '000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd',
+        'anchorFileHash': 'hellow'
       }
     };
 
     const requestBody = {
-      "transactions": [
+      'transactions': [
         {
-          "transactionNumber": 6212923596734464,
-          "transactionTime": 1446559,
-          "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
-          "anchorFileHash": "hellow"
+          'transactionNumber': 6212923596734464,
+          'transactionTime': 1446559,
+          'transactionTimeHash': '000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd',
+          'anchorFileHash': 'hellow'
         },
         {
-          "transactionNumber": 6212923596734464,
-          "transactionTime": 1446559,
-          "transactionTimeHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe",
-          "anchorFileHash": "hellow"
-        },
+          'transactionNumber': 6212923596734464,
+          'transactionTime': 1446559,
+          'transactionTimeHash': '000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efe',
+          'anchorFileHash': 'hellow'
+        }
       ]
     };
 

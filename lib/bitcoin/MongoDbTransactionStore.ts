@@ -1,4 +1,4 @@
-import { ITransaction } from './Transaction';
+import { ITransaction } from '../Transaction';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 import { TransactionStore } from './TransactionStore';
 
