@@ -6,7 +6,7 @@ import Observer from '../lib/Observer';
 import OperationProcessor from '../lib/OperationProcessor';
 import { BlockchainClient } from '../lib/Blockchain';
 import { CasClient } from '../lib/Cas';
-import { InMemoryTransactionStore } from '../lib/TransactionStore';
+import { MockTransactionStore } from './mocks/MockTransactionStore';
 import { OperationStore } from '../lib/OperationStore';
 import { Response } from 'node-fetch';
 import { Readable } from 'readable-stream';
@@ -72,14 +72,14 @@ describe('Observer', async () => {
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri, mockNodeFetch);
 
     // Start the Observer.
-    const transactionStore = new InMemoryTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, 1);
-    const processedTransactions = transactionStore.getProcessedTransactions();
+    const transactionStore = new MockTransactionStore();
+    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const processedTransactions = transactionStore.getTransactions();
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until change is detected or max retries is reached.
     await retry(async _bail => {
-      const processedTransactionCount = transactionStore.getProcessedTransactions().length;
+      const processedTransactionCount = transactionStore.getTransactions().length;
       if (processedTransactionCount === 2) {
         return;
       }
@@ -162,12 +162,12 @@ describe('Observer', async () => {
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri, mockNodeFetch);
 
     // Process first set of transactions.
-    const transactionStore = new InMemoryTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, 1);
+    const transactionStore = new MockTransactionStore();
+    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.
-    const processedTransactions = transactionStore.getProcessedTransactions();
+    const processedTransactions = transactionStore.getTransactions();
     await retry(async _bail => {
       const processedTransactionCount = processedTransactions.length;
       if (processedTransactionCount === 4) {

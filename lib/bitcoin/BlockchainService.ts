@@ -1,5 +1,5 @@
-import MongoDbTransactionStore from './MongoDbTransactionStore';
-import RequestHandler from './RequestHandler';
+import MongoDbTransactionStore from '../MongoDbTransactionStore';
+import RequestHandler from './BlockchainRequestHandler';
 import TransactionNumber from './TransactionNumber';
 import { ITransaction } from '../Transaction';
 import { IBitcoinConfig } from './BitcoinConfig';
@@ -114,7 +114,7 @@ export default class BlockchainService {
 
         // check if the request succeeded; if yes, process transactions
         if (readResult.status === ResponseStatus.Succeeded) {
-          const readResultBody = readResult.body as any;
+          const readResultBody = readResult.body;
           const transactions: ITransaction[] = readResultBody['transactions'];
           moreTransactions = readResultBody['moreTransactions'];
           if (transactions.length > 0) {
@@ -127,7 +127,7 @@ export default class BlockchainService {
             console.info(`No new Sidetree transactions.`);
           }
         } else if (readResult.status === ResponseStatus.BadRequest) {
-          const readResultBody = readResult.body as any;
+          const readResultBody = readResult.body;
           const code = readResultBody['code'];
           if (code === 'invalid_transaction_number_or_time_hash') {
             console.info(`Detected blockchain reorganization`);
@@ -183,7 +183,7 @@ export default class BlockchainService {
       = await this.requestHandler.handleFirstValidRequest(Buffer.from(JSON.stringify(firstValidRequest)));
 
     if (bestKnownValidRecentTransaction.status === ResponseStatus.Succeeded) {
-      const bestKnownValidRecentTransactionBody = bestKnownValidRecentTransaction.body as any;
+      const bestKnownValidRecentTransactionBody = bestKnownValidRecentTransaction.body;
       const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransactionBody['transactionNumber'];
       console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
       await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
@@ -257,7 +257,7 @@ export default class BlockchainService {
       // verify the validity of since and transactionTimeHash
       const verifyResponse = await this.verifyTransactionTimeHashCached(sinceTransactionNumber, transactionTimeHash!);
       if (verifyResponse.status === ResponseStatus.Succeeded) {
-        const verifyResponseBody = verifyResponse.body as any;
+        const verifyResponseBody = verifyResponse.body;
 
         // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
         if (verifyResponseBody.match === false) {
@@ -322,7 +322,7 @@ export default class BlockchainService {
           };
         }
 
-        const verifyResponseBody = verifyResponse.body as any;
+        const verifyResponseBody = verifyResponse.body;
         // check if there was a match; if so return
         if (Boolean(verifyResponseBody['match']) === true) {
           return {

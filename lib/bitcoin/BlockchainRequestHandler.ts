@@ -6,7 +6,7 @@ import TransactionNumber from './TransactionNumber';
 /**
  * Sidetree Bitcoin request handler class
  */
-export default class RequestHandler {
+export default class BlockchainRequestHandler {
 
   /**
    * @param bitcoreSidetreeServiceUri URI for the blockchain service
@@ -211,7 +211,7 @@ export default class RequestHandler {
           };
         }
 
-        const verifyResponseBody = verifyResponse.body as any;
+        const verifyResponseBody = verifyResponse.body;
         // check if there was a match; if so return
         if (Boolean(verifyResponseBody['match']) === true) {
           return {
@@ -268,7 +268,7 @@ export default class RequestHandler {
     // verify the validity of since and transactionTimeHash
     const verifyResponse = await this.verifyTransactionTimeHash(sinceTransactionNumber, transactionTimeHash);
     if (verifyResponse.status === ResponseStatus.Succeeded) {
-      const verifyResponseBody = verifyResponse.body as any;
+      const verifyResponseBody = verifyResponse.body;
 
       // return HTTP 400 if the requested transactionNumber does not match the transactionTimeHash
       if (verifyResponseBody['match'] === false) {

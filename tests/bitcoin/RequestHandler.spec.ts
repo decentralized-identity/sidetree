@@ -1,4 +1,4 @@
-import RequestHandler from '../../lib/bitcoin/RequestHandler';
+import RequestHandler from '../../lib/bitcoin/BlockchainRequestHandler';
 import String from './util/String';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/BitcoinConfig';
