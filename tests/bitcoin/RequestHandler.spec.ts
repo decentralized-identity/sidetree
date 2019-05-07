@@ -2,7 +2,7 @@ import RequestHandler from '../../lib/bitcoin/BlockchainRequestHandler';
 import String from './util/String';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/BitcoinConfig';
-import { IResponse, ResponseStatus, Response } from '../../lib/Response';
+import { IResponse, ResponseStatus, Response } from '../../lib/core/Response';
 
 describe('RequestHandler', () => {
 

@@ -1,6 +1,6 @@
-import MongoDbUnresolvableTransactionStore from '../lib/MongoDbUnresolvableTransactionStore';
-import { IConfig } from '../lib/Config';
-import { ITransaction } from '../lib/Transaction';
+import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
+import { IConfig } from '../../lib/core/Config';
+import { ITransaction } from '../../lib/core/Transaction';
 import { MongoClient } from 'mongodb';
 
 /**

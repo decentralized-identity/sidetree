@@ -1,14 +1,14 @@
-import BatchFile from '../lib/BatchFile';
-import Cryptography from '../lib/util/Cryptography';
-import Document, { IDocument } from '../lib/util/Document';
-import MockCas from './mocks/MockCas';
-import MockOperationStore from './mocks/MockOperationStore';
-import OperationGenerator from './generators/OperationGenerator';
-import OperationProcessor from '../lib/OperationProcessor';
-import ProtocolParameters from '../lib/ProtocolParameters';
-import { Cas } from '../lib/Cas';
-import { OperationStore } from '../lib/OperationStore';
-import { Operation } from '../lib/Operation';
+import BatchFile from '../../lib/core/BatchFile';
+import Cryptography from '../../lib/core/util/Cryptography';
+import Document, { IDocument } from '../../lib/core/util/Document';
+import MockCas from '../mocks/MockCas';
+import MockOperationStore from '../mocks/MockOperationStore';
+import OperationGenerator from '../generators/OperationGenerator';
+import OperationProcessor from '../../lib/core/OperationProcessor';
+import ProtocolParameters from '../../lib/core/ProtocolParameters';
+import { Cas } from '../../lib/core/Cas';
+import { OperationStore } from '../../lib/core/OperationStore';
+import { Operation } from '../../lib/core/Operation';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -117,7 +117,7 @@ describe('OperationProcessor', async () => {
   ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   // Load the DID Document template.
-  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
   let cas = new MockCas();
   const config = require('../json/config-test.json');

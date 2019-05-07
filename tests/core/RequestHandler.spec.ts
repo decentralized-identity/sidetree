@@ -1,23 +1,23 @@
-import BatchFile from '../lib/BatchFile';
-import BatchWriter from '../lib/BatchWriter';
-import Cryptography from '../lib/util/Cryptography';
-import Did from '../lib/util/Did';
-import IDidPublicKey from '../lib/util/DidPublicKey';
-import Encoder from '../lib/Encoder';
-import MockBlockchain from '../tests/mocks/MockBlockchain';
-import MockCas from '../tests/mocks/MockCas';
-import MockOperationStore from './mocks/MockOperationStore';
-import Multihash from '../lib/Multihash';
-import OperationGenerator from './generators/OperationGenerator';
-import OperationProcessor from '../lib/OperationProcessor';
-import ProtocolParameters from '../lib/ProtocolParameters';
-import RequestHandler from '../lib/RequestHandler';
-import { Cas } from '../lib/Cas';
-import { OperationStore } from '../lib/OperationStore';
-import { IConfig } from '../lib/Config';
-import { IDocument } from '../lib/util/Document';
-import { Operation } from '../lib/Operation';
-import { Response } from '../lib/Response';
+import BatchFile from '../../lib/core/BatchFile';
+import BatchWriter from '../../lib/core/BatchWriter';
+import Cryptography from '../../lib/core/util/Cryptography';
+import Did from '../../lib/core/util/Did';
+import IDidPublicKey from '../../lib/core/util/DidPublicKey';
+import Encoder from '../../lib/core/Encoder';
+import MockBlockchain from '../mocks/MockBlockchain';
+import MockCas from '../mocks/MockCas';
+import MockOperationStore from '../mocks/MockOperationStore';
+import Multihash from '../../lib/core/Multihash';
+import OperationGenerator from '../generators/OperationGenerator';
+import OperationProcessor from '../../lib/core/OperationProcessor';
+import ProtocolParameters from '../../lib/core/ProtocolParameters';
+import RequestHandler from '../../lib/core/RequestHandler';
+import { Cas } from '../../lib/core/Cas';
+import { OperationStore } from '../../lib/core/OperationStore';
+import { IConfig } from '../../lib/core/Config';
+import { IDocument } from '../../lib/core/util/Document';
+import { Operation } from '../../lib/core/Operation';
+import { Response } from '../../lib/core/Response';
 
 describe('RequestHandler', () => {
   const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
@@ -31,7 +31,7 @@ describe('RequestHandler', () => {
   const didMethodName = config.didMethodName;
 
   // Load the DID Document template.
-  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
   const blockchain = new MockBlockchain();
   let cas: Cas;

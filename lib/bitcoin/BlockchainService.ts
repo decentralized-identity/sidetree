@@ -1,9 +1,9 @@
-import MongoDbTransactionStore from '../MongoDbTransactionStore';
+import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
 import RequestHandler from './BlockchainRequestHandler';
 import TransactionNumber from './TransactionNumber';
-import { ITransaction } from '../Transaction';
+import { ITransaction } from '../core/Transaction';
 import { IBitcoinConfig } from './BitcoinConfig';
-import { IResponse, ResponseStatus } from '../Response';
+import { IResponse, ResponseStatus } from '../core/Response';
 
 /**
  * The class that is instantiated when running a Sidetree blockchain service.

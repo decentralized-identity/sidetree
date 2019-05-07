@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Sidetree Core Service",
-            "program": "${workspaceFolder}/dist/src/server.js",
+            "program": "${workspaceFolder}/dist/src/core.js",
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]

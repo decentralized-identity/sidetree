@@ -1,8 +1,8 @@
-import MongoDbTransactionStore from '../lib/MongoDbTransactionStore';
-import { IConfig } from '../lib/Config';
-import { ITransaction } from '../lib/Transaction';
+import MongoDbTransactionStore from '../../lib/core/MongoDbTransactionStore';
+import { IConfig } from '../../lib/core/Config';
+import { ITransaction } from '../../lib/core/Transaction';
 import { MongoClient } from 'mongodb';
-import { TransactionStore } from '../lib/TransactionStore';
+import { TransactionStore } from '../../lib/core/TransactionStore';
 
 /**
  * Test if a MongoDB service is running at the specified url.

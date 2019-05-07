@@ -1,10 +1,10 @@
-import Cryptography from '../lib/util/Cryptography';
-import OperationGenerator from './generators/OperationGenerator';
-import ProtocolParameters from '../lib/ProtocolParameters';
-import { OperationStore } from '../lib/OperationStore';
-import { Operation } from '../lib/Operation';
+import Cryptography from '../../lib/core/util/Cryptography';
+import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
+import OperationGenerator from '../generators/OperationGenerator';
+import ProtocolParameters from '../../lib/core/ProtocolParameters';
+import { OperationStore } from '../../lib/core/OperationStore';
+import { Operation } from '../../lib/core/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
-import MongoDbOperationStore from '../lib/MongoDbOperationStore';
 import { MongoClient } from 'mongodb';
 
 /**
@@ -36,7 +36,7 @@ async function constructAnchoredCreateOperation (
   transactionNumber: number,
   transactionTime: number,
   operationIndex: number): Promise<Operation> {
-  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
   const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
   const operation = constructAnchoredOperation(operationBuffer, transactionNumber, transactionTime, operationIndex);
   return operation;

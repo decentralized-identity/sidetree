@@ -1,5 +1,5 @@
-import Cryptography from '../../lib/util/Cryptography';
-import MerkleTree from '../../lib/util/MerkleTree';
+import Cryptography from '../../../lib/core/util/Cryptography';
+import MerkleTree from '../../../lib/core/util/MerkleTree';
 
 describe('MerkleTree', () => {
 

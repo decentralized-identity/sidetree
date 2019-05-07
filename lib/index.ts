@@ -1,13 +1,13 @@
 // NOTE: Aliases to classes and interfaces are used for external consumption.
 
 // Core service exports.
-import SidetreeCore from './Core';
-import { IConfig as ISidetreeConfig } from './Config';
-import { IProtocolParameters as ISidetreeProtocolParameters } from './ProtocolParameters';
+import SidetreeCore from './core/Core';
+import { IConfig as ISidetreeConfig } from './core/Config';
+import { IProtocolParameters as ISidetreeProtocolParameters } from './core/ProtocolParameters';
 import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
-} from './Response';
+} from './core/Response';
 
 export {
   ISidetreeConfig,

@@ -2,7 +2,7 @@ import BlockchainService from '../../lib/bitcoin/BlockchainService';
 import String from './util/String';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/BitcoinConfig';
-import { ResponseStatus, Response } from '../../lib/Response';
+import { ResponseStatus, Response } from '../../lib/core/Response';
 
 import retry = require('async-retry');
 

@@ -1,5 +1,5 @@
-import { Operation } from '../../lib/Operation';
-import { OperationStore } from '../../lib/OperationStore';
+import { Operation } from '../../lib/core/Operation';
+import { OperationStore } from '../../lib/core/OperationStore';
 
 /**
  * Compare two operations returning -1, 0, 1 when the first operand
