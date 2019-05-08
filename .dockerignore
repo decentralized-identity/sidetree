@@ -4,3 +4,4 @@ tests
 nunitresults.xml
 .dockerignore
 Dockerfile
+docs

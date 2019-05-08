@@ -11,8 +11,8 @@ RUN apt-get update && \
 RUN wget https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64.deb
 RUN dpkg -i dumb-init_*.deb
 
-WORKDIR /app/bitcore-sidetree-node
-COPY ./docker/bitcore-sidetree ./
+WORKDIR /app/sidetree-bitcore
+COPY ./docker/sidetree-bitcore ./
 
 # Setup Node
 RUN npm config set package-lock false && npm install
@@ -45,10 +45,10 @@ ENV BITCOIN_NETWORK testnet
 ENV BITCOIN_PRIVATE_KEY_WIF ""
 ENV BITCOIN_FEE 10000
 
-EXPOSE 3001 3002 3232 9999 19999
+EXPOSE 3001
 
 HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl -f http://localhost:3001/insight/
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "./bitcore-node-entrypoint.sh"]
 
-VOLUME /app/bitcore-sidetree-node/data
+VOLUME /app/sidetree-bitcore/data

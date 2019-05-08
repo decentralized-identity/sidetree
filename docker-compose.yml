@@ -2,17 +2,33 @@
 
 version: '3.4'
 services:
-  bitcore-sidetree:
-    image: bitcore-sidetree:latest
+  sidetree-bitcore:
+    image: sidetree-bitcore:latest
     build:
       context: .
-      dockerfile: docker/bitcore-sidetree/Dockerfile
+      dockerfile: docker/sidetree-bitcore/Dockerfile
     ports:
       - 3001:3001
     volumes:
-      - bitcoin-data:/app/bitcore-sidetree/data
+      - bitcoin-data:/app/sidetree-bitcore/data
     environment:
       - BITCOIN_NETWORK=testnet
+
+  sidetree-bitcoin:
+    image: sidetree-bitcoin:latest
+    build:
+      context: .
+      dockerfile: docker/sidetree-bitcoin/Dockerfile
+    ports:
+      - 3009:3009
+
+  sidetree-core:
+    image: sidetree-core:latest
+    build:
+      context: .
+      dockerfile: docker/sidetree-core/Dockerfile
+    ports:
+      - 3000:3000
 
   mongo:
     image: mongo
