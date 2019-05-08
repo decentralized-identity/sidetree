@@ -3,6 +3,7 @@ import DownloadManager from './DownloadManager';
 import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from './MongoDbTransactionStore';
+import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import OperationProcessor from './OperationProcessor';
 import RequestHandler from './RequestHandler';
@@ -15,6 +16,7 @@ import { IConfig } from './Config';
  */
 export default class Core {
   private transactionStore: MongoDbTransactionStore;
+  private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
   private observer: Observer;
 
@@ -36,9 +38,15 @@ export default class Core {
     const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
-    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
-    this.observer = new Observer(blockchain, downloadManager, operationProcessor, this.transactionStore, config.observingIntervalInSeconds);
     this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config.didMethodName);
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
+    this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
+    this.observer = new Observer(blockchain,
+                                 downloadManager,
+                                 operationProcessor,
+                                 this.transactionStore,
+                                 this.unresolvableTransactionStore,
+                                 config.observingIntervalInSeconds);
 
     downloadManager.start();
     batchWriter.startPeriodicBatchWriting();
@@ -50,6 +58,7 @@ export default class Core {
    */
   public async initialize () {
     await this.transactionStore.initialize();
+    await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
     await this.observer.startPeriodicProcessing();
   }

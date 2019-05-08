@@ -1,8 +1,8 @@
 import * as fs from 'fs';
-import Cryptography from '../../lib/util/Cryptography';
-import Did from '../../lib/util/Did';
+import Cryptography from '../../lib/core/util/Cryptography';
+import Did from '../../lib/core/util/Did';
 import OperationGenerator from './OperationGenerator';
-import ProtocolParameters from '../../lib/ProtocolParameters';
+import ProtocolParameters from '../../lib/core/ProtocolParameters';
 
 /**
  * Class for generating files used for load testing using Vegeta.

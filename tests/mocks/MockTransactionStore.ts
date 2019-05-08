@@ -1,56 +1,9 @@
-import SortedArray from './util/SortedArray';
-import { ITransaction } from './Transaction';
+import SortedArray from '../../lib/core/util/SortedArray';
+import { ITransaction } from '../../lib/core/Transaction';
+import { TransactionStore } from '../../lib/core/TransactionStore';
+import { UnresolvableTransactionStore } from '../../lib/core/UnresolvableTransactionStore';
 
-/**
- * An abstraction for the persistence of transactions that have been processed.
- * Needed to avoidre-fetching and reprocessing of transactions when the Sidetree node crashes or restarts.
- */
-export interface TransactionStore {
-
-  /**
-   * Idempotent method that addes the given transaction to the list of processed transactions.
-   */
-  addProcessedTransaction (transaction: ITransaction): Promise<void>;
-
-  /**
-   * Gets the most recently processed transaction. Returns undefined if there is no processed transaction.
-   */
-  getLastTransaction (): Promise<ITransaction | undefined>;
-
-  /**
-   * Gets a list of exponentially-spaced processed transactions in reverse direction of the list of processed transactions
-   * where the first element in the returned list is the last transaction in the list of processed transactions.
-   */
-  getExponentiallySpacedTransactions (): Promise<ITransaction[]>;
-
-  /**
-   * Records the retry attempts of the given resolvable transaction.
-   */
-  recordUnresolvableTransactionFetchAttempt (transaction: ITransaction): Promise<void>;
-
-  /**
-   * Remove the given transaction from the list of unresolvable transactions.
-   * No-op if the transaction does not exist in the list of unresolvable transactions.
-   */
-  removeUnresolvableTransaction (transaction: ITransaction): Promise<void>;
-
-  /**
-   * Gets a list of unresolvable transactions due for retry processing.
-   * @param maxReturnCount
-   *   The maximum count of unresolvable transactions to return retry.
-   *   If not given, the implementation determines the number of unresolvable transactions to return.
-   */
-  getUnresolvableTransactionsDueForRetry (maxReturnCount?: number): Promise<ITransaction[]>;
-
-  /**
-   * Remove all processed transactions and unresolvable transactions with transaction number greater than the
-   * provided parameter.
-   * If `undefined` is given, remove all transactions.
-   */
-  removeTransactionsLaterThan (transactionNumber?: number): Promise<void>;
-}
-
-interface IUnresolvableTransaction {
+interface IUnresolvableTransactionInternal {
   transaction: ITransaction;
   firstFetchTime: number;
   retryAttempts: number;
@@ -60,11 +13,11 @@ interface IUnresolvableTransaction {
 /**
  * In-memory implementation of the `TransactionStore`.
  */
-export class InMemoryTransactionStore implements TransactionStore {
+export class MockTransactionStore implements TransactionStore, UnresolvableTransactionStore {
   private processedTransactions: ITransaction[] = [];
-  private unresolvableTransactions: Map<number, IUnresolvableTransaction> = new Map();
+  private unresolvableTransactions: Map<number, IUnresolvableTransactionInternal> = new Map();
 
-  async addProcessedTransaction (transaction: ITransaction): Promise<void> {
+  async addTransaction (transaction: ITransaction): Promise<void> {
     const lastTransaction = await this.getLastTransaction();
 
     // If the last transaction is later or equal to the transaction to add,
@@ -96,6 +49,14 @@ export class InMemoryTransactionStore implements TransactionStore {
       distance *= 2;
     }
     return exponentiallySpacedTransactions;
+  }
+
+  public async getTransaction (_transactionNumber: number): Promise<ITransaction | undefined> {
+    throw new Error('Not implemented.');
+  }
+
+  public async getTransactionsLaterThan (_transactionNumber: number | undefined, _max: number): Promise<ITransaction[]> {
+    throw new Error('Not implemented.');
   }
 
   async recordUnresolvableTransactionFetchAttempt (transaction: ITransaction): Promise<void> {
@@ -145,11 +106,8 @@ export class InMemoryTransactionStore implements TransactionStore {
     // If given `undefined`, remove all transactions.
     if (transactionNumber === undefined) {
       this.processedTransactions = [];
-      this.unresolvableTransactions = new Map();
       return;
     }
-
-    this.removeAllUnresolvableTransactionsGreaterThan(transactionNumber);
 
     // Locate the index of the given transaction using binary search.
     const compareTransactionAndTransactionNumber
@@ -166,18 +124,13 @@ export class InMemoryTransactionStore implements TransactionStore {
     this.processedTransactions.splice(bestKnownValidRecentProcessedTransactionIndex + 1);
   }
 
-  /**
-   * Gets the list of processed transactions.
-   * Mainly used for test purposes.
-   */
-  public getProcessedTransactions (): ITransaction[] {
-    return this.processedTransactions;
-  }
+  async removeUnresolvableTransactionsLaterThan (transactionNumber?: number): Promise<void> {
+    // If given `undefined`, remove all unresolvable transactions.
+    if (transactionNumber === undefined) {
+      this.unresolvableTransactions = new Map();
+      return;
+    }
 
-  /**
-   * Removes all the unresolved transaction that came later than the given transaction number.
-   */
-  private removeAllUnresolvableTransactionsGreaterThan (transactionNumber: number) {
     // Find all unresolvable transactions greater than the given transaction number.
     const invalidUnresolvableTransactionNumbers = [];
     for (const key of this.unresolvableTransactions.keys()) {
@@ -190,5 +143,13 @@ export class InMemoryTransactionStore implements TransactionStore {
     for (const key of invalidUnresolvableTransactionNumbers) {
       this.unresolvableTransactions.delete(key);
     }
+  }
+
+  /**
+   * Gets the list of transactions.
+   * Mainly used for test purposes.
+   */
+  public getTransactions (): ITransaction[] {
+    return this.processedTransactions;
   }
 }

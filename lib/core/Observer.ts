@@ -8,6 +8,7 @@ import { ErrorCode, SidetreeError } from './Error';
 import { IResolvedTransaction, ITransaction } from './Transaction';
 import { Operation } from './Operation';
 import { TransactionStore } from './TransactionStore';
+import { UnresolvableTransactionStore } from './UnresolvableTransactionStore';
 
 /**
  * The state of a transaction that is being processed.
@@ -51,6 +52,7 @@ export default class Observer {
     private downloadManager: DownloadManager,
     private operationProcessor: OperationProcessor,
     private transactionStore: TransactionStore,
+    private unresolvableTransactionStore: UnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
   }
 
@@ -184,7 +186,7 @@ export default class Observer {
    */
   private async processUnresolvableTransactions () {
     const endTimer = timeSpan();
-    const unresolvableTransactions = await this.transactionStore.getUnresolvableTransactionsDueForRetry();
+    const unresolvableTransactions = await this.unresolvableTransactionStore.getUnresolvableTransactionsDueForRetry();
     console.info(`Fetched ${unresolvableTransactions.length} unresolvable transactions to retry in ${endTimer.rounded()} ms.`);
 
     // Download and process each unresolvable transactions.
@@ -224,7 +226,7 @@ export default class Observer {
     let i = 0;
     while (i < this.transactionsUnderProcessing.length &&
           this.transactionsUnderProcessing[i].processingStatus === TransactionProcessingStatus.Processsed) {
-      await this.transactionStore.addProcessedTransaction(this.transactionsUnderProcessing[i].transaction);
+      await this.transactionStore.addTransaction(this.transactionsUnderProcessing[i].transaction);
       i++;
     }
 
@@ -296,10 +298,10 @@ export default class Observer {
 
       if (retryNeeded) {
         console.info(`Recording failed processing attempt for transaction '${transaction.transactionNumber}'...`);
-        await this.transactionStore.recordUnresolvableTransactionFetchAttempt(transaction);
+        await this.unresolvableTransactionStore.recordUnresolvableTransactionFetchAttempt(transaction);
       } else {
         console.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
-        await this.transactionStore.removeUnresolvableTransaction(transaction);
+        await this.unresolvableTransactionStore.removeUnresolvableTransaction(transaction);
       }
     }
   }
@@ -324,6 +326,7 @@ export default class Observer {
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
     // Reset the in-memory last known good Tranaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;

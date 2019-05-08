@@ -5,18 +5,18 @@
 import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
-import Core from '../lib/Core';
-import { IConfig } from '../lib/Config';
-import { IProtocolParameters } from '../lib/ProtocolParameters';
-import { IResponse, Response } from '../lib/Response';
+import Core from '../lib/core/Core';
+import { IConfig } from '../lib/core/Config';
+import { IProtocolParameters } from '../lib/core/ProtocolParameters';
+import { IResponse, Response } from '../lib/core/Response';
 
 /** Configuration used by this server. */
 interface IServerConfig extends IConfig {
   port: number;
 }
 
-const config: IServerConfig = require('../json/config.json');
-const versionsOfProtocolParameters: IProtocolParameters[] = require('../json/protocol-parameters.json');
+const config: IServerConfig = require('./core-config.json');
+const versionsOfProtocolParameters: IProtocolParameters[] = require('./core-protocol-parameters.json');
 
 const sidetreeCore = new Core(config, versionsOfProtocolParameters);
 const app = new Koa();

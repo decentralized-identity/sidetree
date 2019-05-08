@@ -1,4 +1,4 @@
-import ProtocolParameters from '../lib/ProtocolParameters';
+import ProtocolParameters from '../../lib/core/ProtocolParameters';
 
 describe('ProtocolParameters', () => {
   const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');

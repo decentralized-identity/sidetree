@@ -1,6 +1,6 @@
-import Encoder from '../../lib/Encoder';
-import Multihash from '../../lib/Multihash';
-import { Cas } from '../../lib/Cas';
+import Encoder from '../../lib/core/Encoder';
+import Multihash from '../../lib/core/Multihash';
+import { Cas } from '../../lib/core/Cas';
 
 /**
  * Implementation of a CAS class for testing.

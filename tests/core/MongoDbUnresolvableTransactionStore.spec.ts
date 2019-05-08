@@ -1,0 +1,196 @@
+import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
+import { IConfig } from '../../lib/core/Config';
+import { ITransaction } from '../../lib/core/Transaction';
+import { MongoClient } from 'mongodb';
+
+/**
+ * Test if a MongoDB service is running at the specified url.
+ */
+async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
+  try {
+    const client = await MongoClient.connect(serverUrl);
+    await client.close();
+  } catch (error) {
+    console.log('Mongoclient connect error: ' + error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Creates a MongoDbUnresolvableTransactionStore and initializes it.
+ */
+async function createUnresolvableTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbUnresolvableTransactionStore> {
+  const unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(transactionStoreUri, databaseName, 1);
+  await unresolvableTransactionStore.initialize();
+  return unresolvableTransactionStore;
+}
+
+/**
+ * Generates transactions where all the properties are initialized to the 1-based index of the transaction.
+ * e.g. First transaction will have all properties assigned as 1 or '1';
+ * @param count Number of transactions to generate.
+ */
+async function generateTransactions (count: number): Promise<ITransaction[]> {
+  const transactions: ITransaction[] = [];
+  for (let i = 1; i <= count; i++) {
+    const transaction: ITransaction = {
+      anchorFileHash: i.toString(),
+      transactionNumber: i,
+      transactionTime: i,
+      transactionTimeHash: i.toString()
+    };
+
+    transactions.push(transaction);
+  }
+
+  return transactions;
+}
+
+describe('MongoDbUnresolvableTransactionStore', async () => {
+  const config: IConfig = require('../json/config-test.json');
+  const databaseName = 'sidetree-test';
+
+  let store: MongoDbUnresolvableTransactionStore;
+
+  beforeEach(async () => {
+    if (!await isMongoServiceAvailable(config.mongoDbConnectionString)) {
+      pending('MongoDB service not available');
+    }
+
+    store = await createUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
+    await store.clearCollection();
+  });
+
+  it('should create collection needed on initialization if they do not exist.', async () => {
+    console.info(`Deleting collections...`);
+    const client = await MongoClient.connect(config.mongoDbConnectionString);
+    const db = client.db(databaseName);
+    await db.dropCollection(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName);
+
+    console.info(`Verify collections no longer exist.`);
+    let collections = await db.collections();
+    let collectionNames = collections.map(collection => collection.collectionName);
+    expect(collectionNames.includes(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName)).toBeFalsy();
+
+    console.info(`Trigger initialization.`);
+    await store.initialize();
+
+    console.info(`Verify collection exists now.`);
+    collections = await db.collections();
+    collectionNames = collections.map(collection => collection.collectionName);
+    expect(collectionNames.includes(MongoDbUnresolvableTransactionStore.unresolvableTransactionCollectionName)).toBeTruthy();
+  });
+
+  it('should record and update unresolvable transactions', async () => {
+    const transactionCount = 10;
+    const transactions = await generateTransactions(transactionCount);
+
+    // Simulate the first 3 transactions as unresolvable.
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[0]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[1]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[2]);
+    let unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(3);
+
+    // Simulate the first transaction as failing retry attempt again.
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[0]);
+    unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(3);
+    expect(unresolvableTransactions[0].retryAttempts).toEqual(1);
+  });
+
+  it('should be able to remove an existing unresolvable transactions', async () => {
+    const transactionCount = 10;
+    const transactions = await generateTransactions(transactionCount);
+
+    // Simulate the first 3 transactions as unresolvable.
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[0]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[1]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[2]);
+    let unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(3);
+
+    // Remove the 2nd unresolvable transaction.
+    await store.removeUnresolvableTransaction(transactions[1]);
+    unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(2);
+    // Expect that we can no longer find the originally 2nd unresolvable transaction.
+    const unresolvableTransactionNumbers = unresolvableTransactions.map(transaction => transaction.transactionNumber);
+    expect(unresolvableTransactionNumbers.includes(2)).toBeFalsy();
+  });
+
+  it('should be able to limit the number of unresolvable transactions returned for processing retry.', async () => {
+    const transactionCount = 10;
+    const transactions = await generateTransactions(transactionCount);
+
+    // Simulate the first 3 transactions as unresolvable.
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[0]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[1]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[2]);
+    let unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(3);
+
+    // Get only 2 unresolvable transactions due for retry.
+    const maxReturnCount = 2;
+    let unresolvableTransactionsDueForRetry = await store.getUnresolvableTransactionsDueForRetry(maxReturnCount);
+    expect(unresolvableTransactionsDueForRetry.length).toEqual(2);
+    // Simulate successful resolution of the 2 returend transactions and removing them from the store.
+    for (let transaction of unresolvableTransactionsDueForRetry) {
+      await store.removeUnresolvableTransaction(transaction);
+    }
+    unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(1);
+
+    // Get remaining 1 unresolvable transaction due for retry.
+    unresolvableTransactionsDueForRetry = await store.getUnresolvableTransactionsDueForRetry(maxReturnCount);
+    expect(unresolvableTransactionsDueForRetry.length).toEqual(1);
+    // Simulate successful resolution of the 1 returend transaction and removing it from the store.
+    for (let transaction of unresolvableTransactionsDueForRetry) {
+      await store.removeUnresolvableTransaction(transaction);
+    }
+    unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(0);
+  });
+
+  it('should be able to delete transactions greater than a given transaction time.', async () => {
+    const transactionCount = 10;
+    const transactions = await generateTransactions(transactionCount);
+
+    // Simulate the transactions 4, 5, 6 as unresolvable.
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[3]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[4]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[5]);
+
+    // Deleting all transactions that are later than transaction number 5.
+    await store.removeUnresolvableTransactionsLaterThan(5);
+
+    // Expecting only transaction 4 & 5 are unresolvable transactions.
+    const unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(2);
+    const unresolvableTransactionNumbers = unresolvableTransactions.map(transaction => transaction.transactionNumber);
+    expect(unresolvableTransactionNumbers.includes(4)).toBeTruthy();
+    expect(unresolvableTransactionNumbers.includes(5)).toBeTruthy();
+  });
+
+  it('should be able to delete all transactions.', async () => {
+    const transactionCount = 10;
+    const transactions = await generateTransactions(transactionCount);
+
+    // Simulate the transactions 4, 5, 6 as unresolvable.
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[3]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[4]);
+    await store.recordUnresolvableTransactionFetchAttempt(transactions[5]);
+
+    // Deleting all transactions by not passing any argument.
+    await store.removeUnresolvableTransactionsLaterThan();
+
+    const unresolvableTransactions = await store.getUnresolvableTransactions();
+    expect(unresolvableTransactions.length).toEqual(0);
+  });
+
+  it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
+    const store = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
+    expect(store.databaseName).toEqual(MongoDbUnresolvableTransactionStore.defaultDatabaseName);
+  });
+});

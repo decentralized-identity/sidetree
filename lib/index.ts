@@ -1,11 +1,13 @@
-// Creating aliases to classes and interfaces used for external consumption.
-import SidetreeCore from './Core';
-import { IConfig as ISidetreeConfig } from './Config';
-import { IProtocolParameters as ISidetreeProtocolParameters } from './ProtocolParameters';
+// NOTE: Aliases to classes and interfaces are used for external consumption.
+
+// Core service exports.
+import SidetreeCore from './core/Core';
+import { IConfig as ISidetreeConfig } from './core/Config';
+import { IProtocolParameters as ISidetreeProtocolParameters } from './core/ProtocolParameters';
 import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
-} from './Response';
+} from './core/Response';
 
 export {
   ISidetreeConfig,
@@ -13,4 +15,13 @@ export {
   ISidetreeResponse,
   SidetreeCore,
   SidetreeResponse
+};
+
+// Blockchain service exports.
+import SidetreeBitcoinService from './bitcoin/BlockchainService';
+import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/BitcoinConfig';
+
+export {
+  ISidetreeBitcoinConfig,
+  SidetreeBitcoinService
 };

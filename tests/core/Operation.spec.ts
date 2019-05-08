@@ -1,10 +1,10 @@
-import Cryptography from '../lib/util/Cryptography';
-import OperationGenerator from './generators/OperationGenerator';
-import { Operation } from '../lib/Operation';
+import Cryptography from '../../lib/core/util/Cryptography';
+import OperationGenerator from '../generators/OperationGenerator';
+import { Operation } from '../../lib/core/Operation';
 
 describe('Operation', async () => {
   // Load the DID Document template.
-  const didDocumentTemplate = require('./json/didDocumentTemplate.json');
+  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
   let createRequest: any;
 
