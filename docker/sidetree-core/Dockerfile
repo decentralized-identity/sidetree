@@ -56,6 +56,6 @@ ENV MONGODB_CONNECTION_STRING "mongodb://root:detault@mongo:27017/"
 
 EXPOSE 3000
 
-#HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl -f http://localhost:3001/insight/
+#HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl -f http://localhost:3000/insight/
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "./sidetree-core-entrypoint.sh"]

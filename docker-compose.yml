@@ -12,7 +12,7 @@ services:
     volumes:
       - bitcoin-data:/app/sidetree-bitcore/data
     environment:
-      - BITCOIN_NETWORK=testnet
+      BITCOIN_NETWORK: testnet
 
   sidetree-bitcoin:
     image: sidetree-bitcoin:latest
@@ -21,6 +21,11 @@ services:
       dockerfile: docker/sidetree-bitcoin/Dockerfile
     ports:
       - 3009:3009
+    environment:
+      MONGODB_CONNECTION_STRING: "mongodb://root:example@mongo:27017/"
+    depends_on:
+      - mongo
+
 
   sidetree-core:
     image: sidetree-core:latest
@@ -29,6 +34,12 @@ services:
       dockerfile: docker/sidetree-core/Dockerfile
     ports:
       - 3000:3000
+    environment:
+      MONGODB_CONNECTION_STRING: "mongodb://root:example@mongo:27017/"
+      BLOCKCHAIN_SERVICE_URI: "http://sidetree-bitcoin:3009"
+    depends_on:
+      - mongo
+      - sidetree-bitcoin
 
   mongo:
     image: mongo

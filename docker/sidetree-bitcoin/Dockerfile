@@ -56,6 +56,6 @@ ENV MONGODB_CONNECTION_STRING "mongodb://localhost:27017/"
 
 EXPOSE 3009
 
-#HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl -f http://localhost:3001/insight/
+HEALTHCHECK --interval=5s --timeout=5s --retries=10 CMD curl -f http://localhost:${SIDETREE_BITCOIN_PORT}/transactions/
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "./sidetree-bitcoin-entrypoint.sh"]
