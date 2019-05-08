@@ -1,4 +1,4 @@
-﻿{
+{
   "bitcoreSidetreeServiceUri": "[FILL THIS IN]",
   "sidetreeTransactionPrefix": "ion:",
   "bitcoinSidetreeGenesisBlockNumber": 1480000,
