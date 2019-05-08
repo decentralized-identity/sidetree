@@ -1,5 +1,5 @@
-import RequestHandler from '../src/RequestHandler';
-import { Response, ResponseStatus } from '../src/Response';
+import RequestHandler from '../../lib/ipfs/RequestHandler';
+import { Response, ResponseStatus } from '../../lib/core/Response';
 
 describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
@@ -31,7 +31,7 @@ describe('RequestHandler', () => {
       body: Buffer.from('dummyContent')
     };
     const testSidetreeHash: string = 'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw';
-    spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Buffer.from('dummyContent'));
+    spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Promise.resolve(Buffer.from('dummyContent')));
 
     const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, 10);
 
@@ -45,7 +45,7 @@ describe('RequestHandler', () => {
     };
 
     // Mock the IPFS storage layer to return a Base58 encoded multihash regardless of content written.
-    spyOn(requestHandler.ipfsStorage, 'write').and.returnValue('QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk');
+    spyOn(requestHandler.ipfsStorage, 'write').and.returnValue(Promise.resolve('QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk'));
     const mockSidetreeContent: Buffer = Buffer.from('dummyContent');
 
     const fetchedResponse = await requestHandler.handleWriteRequest(mockSidetreeContent);

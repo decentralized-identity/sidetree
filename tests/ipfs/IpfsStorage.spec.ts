@@ -1,5 +1,5 @@
 import * as IPFS from 'ipfs';
-import IpfsStorage from '../src/IpfsStorage';
+import IpfsStorage from '../../lib/ipfs/IpfsStorage';
 
 describe('IPFSStorage', () => {
   let ipfsStorage: IpfsStorage;
@@ -19,7 +19,7 @@ describe('IPFSStorage', () => {
       return mockIpfsContent;
     };
     spyOn(ipfsStorage.node, 'get').and.callFake(mockIpfsGet);
-    spyOn(ipfsStorage.node.pin, 'add').and.returnValue(true);
+    spyOn(ipfsStorage.node.pin, 'add').and.returnValue(Promise.resolve([true]));
 
     const expectedContent = Buffer.from('ipfs');
 
@@ -40,6 +40,7 @@ describe('IPFSStorage', () => {
       return mockSidetreeContent;
     };
     spyOn(ipfsStorage.node, 'add').and.callFake(mockIpfsWrite);
+    console.log('3');
 
     const expectedHash = 'Qm12345abc';
     const bufferContent = Buffer.from('ipfs');

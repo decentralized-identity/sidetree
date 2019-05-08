@@ -1,7 +1,7 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
-import { Response, ResponseStatus } from './Response';
-import { Timeout } from './lib/Timeout';
+import { Response, ResponseStatus } from '../core/Response';
+import { Timeout } from './Util/Timeout';
 const multihashes = require('multihashes');
 
 /**

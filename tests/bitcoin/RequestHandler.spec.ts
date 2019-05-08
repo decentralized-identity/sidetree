@@ -17,7 +17,7 @@ describe('RequestHandler', () => {
   beforeEach(async () => {
     // Make sure bitcored servie URL is valid before starting the tests.
     if (!String.isValidUrl(uri)) {
-      pending(`Test skipped: Bitcored URL '${uri}' in config-test.json is not a valid URL.`);
+      pending(`Test skipped: Bitcored URL '${uri}' in bitcoin-test.json is not a valid URL.`);
     }
   });
 
