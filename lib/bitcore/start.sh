@@ -55,6 +55,7 @@ if [[ ! -n "$mongoUrl" ]]; then
     sudo apt-get update
     sudo apt-get install -y mongodb-org
     sudo service mongod start
+    mongoUrl="localhost"
 else 
     echo -n "MongoDB Port (Default 27017): "
     read mongoPort
