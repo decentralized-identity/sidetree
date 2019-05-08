@@ -14,12 +14,14 @@ RUN dpkg -i dumb-init_*.deb
 WORKDIR /app/bitcore-sidetree-node
 COPY ./docker/bitcore-sidetree ./
 
-
 # Setup Node
 RUN npm config set package-lock false && npm install
 
 # Copy Sidetree Module
 COPY ./lib/bitcored-extension ./node_modules/sidetree
+
+# Install json to replace config via env variables.
+RUN npm install json -g
 
 # Purge Dependencies
 RUN apt-get purge -y \
@@ -38,10 +40,10 @@ RUN rm -rf \
   /tmp/* \
   /var/lib/apt/lists/*
 
-RUN ls -la
-
 # Runtime Things.
 ENV BITCOIN_NETWORK testnet
+ENV BITCOIN_PRIVATE_KEY_WIF ""
+ENV BITCOIN_FEE 10000
 
 EXPOSE 3001 3002 3232 9999 19999
 
