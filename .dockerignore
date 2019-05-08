@@ -2,3 +2,5 @@
 coverage
 tests
 nunitresults.xml
+.dockerignore
+Dockerfile
