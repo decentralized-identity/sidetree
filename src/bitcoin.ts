@@ -13,6 +13,7 @@ const config: ISidetreeBitcoinConfig = require('./bitcoin-config.json');
 const blockchainService = new SidetreeBitcoinService(config);
 
 const app = new Koa();
+const PORT = process.env.SIDETREE_BITCOIN_PORT || 3009;
 
 // Raw body parser.
 app.use(async (ctx, next) => {
@@ -63,7 +64,6 @@ app.use(router.routes())
 app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
-const port = 3009;
 
 // initialize the blockchain service and kick-off background tasks
 blockchainService.initialize()
@@ -71,8 +71,8 @@ blockchainService.initialize()
     return blockchainService.startPeriodicProcessing();
   })
   .then(() => {
-    app.listen(port, () => {
-      console.log(`Sidetree-Bitcoin node running on port: ${port}`);
+    app.listen(PORT, () => {
+      console.log(`Sidetree-Bitcoin node running on port: ${PORT}`);
     });
   })
   .catch((e) => {
