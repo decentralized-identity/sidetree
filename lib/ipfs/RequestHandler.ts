@@ -5,7 +5,7 @@ import { Timeout } from './Util/Timeout';
 const multihashes = require('multihashes');
 
 /**
- * Sidetree IPFS request handler class
+ * Sidetree IPFS request handler class.
  */
 export default class RequestHandler {
   /**
@@ -13,15 +13,19 @@ export default class RequestHandler {
    */
   public ipfsStorage: IpfsStorage;
 
-  public constructor (repo?: any) {
+  /**
+   * Constructs the Sidetree IPFS request handler.
+   * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
+   * @param repo Optional IPFS datastore implementation.
+   */
+  public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
     this.ipfsStorage = IpfsStorage.create(repo);
   }
   /**
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
-   * @param requestTimeoutInSeconds Timeout for fetch request.
    */
-  public async handleFetchRequest (base64urlEncodedMultihash: string, requestTimeoutInSeconds: number): Promise<IResponse> {
+  public async handleFetchRequest (base64urlEncodedMultihash: string): Promise<IResponse> {
     console.log(`Fetching '${base64urlEncodedMultihash}'...`);
 
     const multihashBuffer = base64url.toBuffer(base64urlEncodedMultihash);
@@ -39,7 +43,7 @@ export default class RequestHandler {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
       const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString);
 
-      const result = await Timeout.timeout(fetchPromsie, requestTimeoutInSeconds * 1000);
+      const result = await Timeout.timeout(fetchPromsie, this.fetchTimeoutInSeconds * 1000);
 
       if (result instanceof Error) {
         response = {

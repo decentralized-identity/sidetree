@@ -3,14 +3,17 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 
 import {
-  ISidetreeIpfsConfig,
   ISidetreeResponse,
   SidetreeIpfsService,
   SidetreeResponse
 } from '../lib/index';
 
-const config: ISidetreeIpfsConfig = require('./ipfs-config.json');
-const requestHandler = new SidetreeIpfsService();
+const config: {
+  port: number;
+  fetchTimeoutInSeconds: number;
+} = require('./ipfs-config.json');
+
+const requestHandler = new SidetreeIpfsService(config.fetchTimeoutInSeconds);
 const app = new Koa();
 
 // Raw body parser.
@@ -24,7 +27,7 @@ const router = new Router({
 });
 
 router.get('/:hash', async (ctx, _next) => {
-  const response = await requestHandler.handleFetchRequest(ctx.params.hash, config.RequestTimeoutInSeconds);
+  const response = await requestHandler.handleFetchRequest(ctx.params.hash);
   setKoaResponse(response, ctx.response, 'application/octet-stream');
 });
 

@@ -9,8 +9,14 @@ import {
   SidetreeResponse
 } from '../lib/index';
 
-const config: ISidetreeBitcoinConfig = require('./bitcoin-config.json');
+interface IBitcoinServiceConifg extends ISidetreeBitcoinConfig {
+  port: number;
+}
+
+const config: IBitcoinServiceConifg = require('./bitcoin-config.json');
 const blockchainService = new SidetreeBitcoinService(config);
+console.info('Sidetree bitcoin service configuration:');
+console.info(config);
 
 const app = new Koa();
 
@@ -63,7 +69,7 @@ app.use(router.routes())
 app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
-const port = 3009;
+const port = config.port;
 
 // initialize the blockchain service and kick-off background tasks
 blockchainService.initialize()
