@@ -9,13 +9,13 @@ import TransactionNumber from './TransactionNumber';
 export default class BlockchainRequestHandler {
 
   /**
-   * @param bitcoreSidetreeServiceUri URI for the blockchain service
+   * @param bitcoreExtensionUri URI for the bitcore exention
    * @param sidetreeTransactionPrefix prefix used to identify Sidetree transactions in Bitcoin's blockchain
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
    */
   public constructor (
-    public bitcoreSidetreeServiceUri: string,
+    public bitcoreExtensionUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
     public genesisTimeHash: string) {
@@ -63,7 +63,7 @@ export default class BlockchainRequestHandler {
     };
 
     const prefix = this.sidetreeTransactionPrefix;
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const requestParameters = {
       method: 'get'
     };
@@ -305,7 +305,7 @@ export default class BlockchainRequestHandler {
     }
 
     const prefix = this.sidetreeTransactionPrefix;
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const sidetreeTransaction = prefix + anchorFileHash;
     const queryString = '/anchor/';
 
@@ -386,7 +386,7 @@ export default class BlockchainRequestHandler {
    * @param hash Specifies the hash of the block the caller is interested in
    */
   public async handleBlockByHashRequest (hash: string): Promise<IResponse> {
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const queryString = '/blocks/' + hash;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
@@ -397,7 +397,7 @@ export default class BlockchainRequestHandler {
    * @param height Specifies the height of the block the caller is interested in
    */
   public async handleBlockByHeightRequest (height: number): Promise<IResponse> {
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const queryString = '/blocks/' + height;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
@@ -407,7 +407,7 @@ export default class BlockchainRequestHandler {
    * Returns the blockhash of the last block in the blockchain
    */
   public async handleLastBlockRequest (): Promise<IResponse> {
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const queryString = '/blocks/last';
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
