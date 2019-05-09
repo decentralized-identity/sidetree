@@ -1,10 +1,11 @@
 import { IResponse, ResponseStatus } from '../core/Response';
-import nodeFetch, { Response, FetchError } from 'node-fetch';
+import nodeFetch, { Response, RequestInit, FetchError } from 'node-fetch';
 import * as HttpStatus from 'http-status';
 import TransactionNumber from './TransactionNumber';
 import { ITransaction } from '../core/Transaction';
 import { Script } from 'bitcore-lib';
 import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
+import { Agent } from 'https';
 
 /**
  * Sidetree Bitcoin request handler class
@@ -13,9 +14,13 @@ export default class BlockchainRequestHandler {
 
   /** The bitcore path prefix for any api call */
   private apiPrefix: string;
+  /** HTTPS agent to use when making requests */
+  private agent: Agent;
+  /** Default GET parameters */
   private readonly BITCORE_GET_PARAMETERS = {
     method: 'get',
-    timeout: 1000
+    timeout: 1000,
+    agent: this.agent
   };
 
   /**
@@ -34,6 +39,55 @@ export default class BlockchainRequestHandler {
     public bitcoreBlockchain: string = 'BTC',
     public bitcoreNetwork: string = 'testnet') {
     this.apiPrefix = `/api/${this.bitcoreBlockchain}/${this.bitcoreNetwork}`;
+    this.agent = new Agent({
+      keepAlive: true
+    });
+  }
+
+  /**
+   * Calls node Fetch and retries the request on temporal errors
+   * @param uri URI to fetch
+   * @param requestParameters GET parameters to use
+   * @returns Response of the fetch
+   */
+  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined): Promise<Response> {
+    let retryCount = 0;
+    let timeout: number;
+    do {
+      timeout = 1000 + 1000 * 2 ** retryCount;
+      const params = Object.assign({}, this.BITCORE_GET_PARAMETERS, requestParameters, {
+        timeout
+      });
+      try {
+        return await nodeFetch(uri, params);
+      } catch (error) {
+        if (error instanceof FetchError) {
+          retryCount++;
+          switch (error.type) {
+            case 'request-timeout':
+              console.debug(`request timeout: ${uri}`);
+              await this.waitFor(Math.round(Math.random() * 1000 * 2 ** retryCount + 1000));
+              console.debug(`retrying request: ${uri}`);
+              continue;
+            case 'system':
+              if (error.code === 'EADDRINUSE') {
+                console.debug(`socket backoff: ${uri}`);
+                await this.waitFor(Math.round(Math.random() * 5000 + 5000));
+                console.debug(`retrying request: ${uri}`);
+                continue;
+              }
+          }
+        }
+        console.error(error);
+        throw error;
+      }
+    } while (true);
+  }
+
+  private async waitFor(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, milliseconds);
+    });
   }
 
   /**
@@ -56,7 +110,7 @@ export default class BlockchainRequestHandler {
     };
 
     // determine the block number that we wish to query
-    let blockNumber = TransactionNumber.getBlockNumber(sinceTransactionNumber);
+    let blockNumber = TransactionNumber.getBlockNumber(sinceTransactionNumber) + 1;
 
     // get the height of the tip of the blockchain
     let blockNumberTip = 0;
@@ -70,7 +124,7 @@ export default class BlockchainRequestHandler {
 
     do {
       // this is the number of blocks we will examine in one REST call
-      const blockBudget = 10;
+      const blockBudget = 0;
       let blockNumberEnd = blockNumber + blockBudget;
       if (blockNumberEnd > blockNumberTip) {
         blockNumberEnd = blockNumberTip;
@@ -93,7 +147,7 @@ export default class BlockchainRequestHandler {
       }
 
       // setup the block number for the next iteration
-      blockNumber = blockNumber + 1;
+      blockNumber = blockNumberEnd + 1;
     } while (blockNumber <= blockNumberTip);
 
     return defaultResponse;
@@ -109,56 +163,53 @@ export default class BlockchainRequestHandler {
   private async queryTransactionRange (blockNumber: number, blockNumberEnd: number, prefix: string):
     Promise<ITransaction[]> {
     console.debug(`Scanning blocks [${blockNumber}, ${blockNumberEnd}]`);
-    const transactions: ITransaction[] = [];
 
+    const transactionRequests: Promise<ITransaction[]>[] = [];
     for (let blockHeight = blockNumber; blockHeight <= blockNumberEnd; blockHeight++) {
-      const uri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx?blockHeight=${blockHeight}`;
+      transactionRequests.push((async (): Promise<ITransaction[]> => {
+        const transactions: ITransaction[] = [];
+        const uri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx?blockHeight=${blockHeight}`;
 
-      let content: Response;
-      let retry: boolean;
-      do {
-        retry = false;
-        try {
-          content = await nodeFetch(uri, this.BITCORE_GET_PARAMETERS);
-        } catch (error) {
-          if (error instanceof FetchError && error.type === 'request-timeout') {
-            retry = true;
-          } else {
-            console.error(error);
-            throw error;
+        const content = await this.fetchWithRetry(uri, this.BITCORE_GET_PARAMETERS);
+
+        const responseBodyString = await ReadableStreamUtils.readAll(content.body);
+        if (content.status === HttpStatus.OK) {
+          // array of objects with "txid"
+          const contentBody: Array<any> = JSON.parse(responseBodyString);
+          console.debug(`Scanning block ${blockHeight}: ${contentBody.length} transactions found`);
+          const anchorRequests: Promise<string[]>[] = [];
+          for (let transactionIndex = 0; transactionIndex < contentBody.length; transactionIndex++) {
+            const transaction = contentBody[transactionIndex];
+            anchorRequests.push(this.queryTransaction(transaction.txid, prefix));
           }
-        }
-      } while (retry);
-
-      const responseBodyString = await ReadableStreamUtils.readAll(content!.body);
-      if (content!.status === HttpStatus.OK) {
-        // array of objects with "txid"
-        const contentBody: Array<any> = JSON.parse(responseBodyString);
-        const anchorHashes: string[] = [];
-        console.debug(`Scanning block ${blockHeight}: ${contentBody.length} transactions found`);
-        for (let transactionIndex = 0; transactionIndex < contentBody.length; transactionIndex++) {
-          const transaction = contentBody[transactionIndex];
-          anchorHashes.push(...(await this.queryTransaction(transaction.txid, prefix)));
-        }
-        console.debug(`${anchorHashes.length} sidetree anchor hashes found.`);
-        if (anchorHashes.length > 0) {
-          // get the blockhash from any of the transactions
-          const blockHash = contentBody[0].blockHash;
-          anchorHashes.forEach((anchorHash, index) => {
-            transactions.push({
-              transactionTime: blockHeight,
-              transactionTimeHash: blockHash,
-              anchorFileHash: anchorHash,
-              transactionNumber: TransactionNumber.construct(blockHeight, index)
-            });
+          const anchorHashesReturned = await Promise.all(anchorRequests);
+          const anchorHashes = anchorHashesReturned.reduce((anchorHashes: string[], current: string[]): string[] => {
+            return anchorHashes.concat(current);
           });
+          console.debug(`Scanned block ${blockHeight}: ${anchorHashes.length} sidetree anchor hashes found`);
+          if (anchorHashes.length > 0) {
+            // get the blockhash from any of the transactions
+            const blockHash = contentBody[0].blockHash;
+            anchorHashes.forEach((anchorHash, index) => {
+              transactions.push({
+                transactionTime: blockHeight,
+                transactionTimeHash: blockHash,
+                anchorFileHash: anchorHash,
+                transactionNumber: TransactionNumber.construct(blockHeight, index)
+              });
+            });
+          }
+        } else {
+          console.error(`Failed to retrieve block ${blockHeight}: ${responseBodyString}`);
+          throw new Error(responseBodyString);
         }
-      } else {
-        console.error(`Failed to retrieve block ${blockHeight}: ${responseBodyString}`);
-        throw new Error(responseBodyString);
-      }
+        return transactions;
+      })());
     }
-    return transactions;
+    const transactions = await Promise.all(transactionRequests);
+    return transactions.reduce((transactions: ITransaction[], current: ITransaction[]): ITransaction[] => {
+      return transactions.concat(current);
+    });
   }
 
   /**
@@ -172,24 +223,10 @@ export default class BlockchainRequestHandler {
 
     const coinUri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx/${transaction}/coins`;
 
-    let transactionContent: Response;
-    let retry: boolean;
-    do {
-      retry = false;
-      try {
-        transactionContent = await nodeFetch(coinUri, this.BITCORE_GET_PARAMETERS);
-      } catch (error) {
-        if (error instanceof FetchError && error.type === 'request-timeout') {
-          retry = true;
-        } else {
-          console.error(error);
-          throw error;
-        }
-      }
-    } while (retry);
+    const transactionContent = await this.fetchWithRetry(coinUri, this.BITCORE_GET_PARAMETERS);
 
-    const coinsBodyString = await ReadableStreamUtils.readAll(transactionContent!.body);
-    if (transactionContent!.status === HttpStatus.OK) {
+    const coinsBodyString = await ReadableStreamUtils.readAll(transactionContent.body);
+    if (transactionContent.status === HttpStatus.OK) {
       const transactionCoins: any = JSON.parse(coinsBodyString);
       // object with "outputs" array
       const outputs = transactionCoins.outputs as Array<any>;
