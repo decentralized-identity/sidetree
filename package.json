@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Node.js implementation of the Sidetree protocol.",
   "repository": "https://github.com/decentralized-identity/sidetree-core",
   "license": "Apache-2.0",
