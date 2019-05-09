@@ -3,6 +3,8 @@
  */
 export interface IBitcoinConfig {
   bitcoreSidetreeServiceUri: string;
+  bitcoreBlockchain: 'BTC' | 'BCH' | 'ETH' | 'BAT' | undefined;
+  bitcoreNetwork: string | undefined;
   sidetreeTransactionPrefix: string;
   bitcoinSidetreeGenesisBlockNumber: number;
   bitcoinSidetreeGenesisBlockHash: string;

@@ -57,7 +57,9 @@ export default class BlockchainService {
       this.bitcoreSidetreeServiceUri,
       this.sidetreeTransactionPrefix,
       this.genesisTransactionNumber,
-      this.genesisTimeHash);
+      this.genesisTimeHash,
+      config.bitcoreBlockchain,
+      config.bitcoreNetwork);
   }
 
   /**

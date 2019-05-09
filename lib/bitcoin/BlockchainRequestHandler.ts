@@ -2,51 +2,34 @@ import { IResponse, ResponseStatus } from '../core/Response';
 import nodeFetch from 'node-fetch';
 import * as HttpStatus from 'http-status';
 import TransactionNumber from './TransactionNumber';
+import { ITransaction } from '../core/Transaction';
+import { Script } from 'bitcore-lib';
+import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
 
 /**
  * Sidetree Bitcoin request handler class
  */
 export default class BlockchainRequestHandler {
 
+  /** The bitcore path prefix for any api call */
+  private apiPrefix: string;
+
   /**
    * @param bitcoreSidetreeServiceUri URI for the blockchain service
    * @param sidetreeTransactionPrefix prefix used to identify Sidetree transactions in Bitcoin's blockchain
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
+   * @param bitcoreBlockchain the blockchain to use (BTC, BCH, ETH, etc.)
+   * @param bitcoreNetwork the blockchain network to query (mainnet, testnet, etc.)
    */
   public constructor (
     public bitcoreSidetreeServiceUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
-    public genesisTimeHash: string) {
-
-  }
-
-  /**
-   * Builds the list of transactions from the list of hashes in @param hashes
-   * @param blockNumber specifies the block number in which the hashes were found
-   * @param blockHash specifies the block hash of the above block number
-   * @param sinceTransactionNumber specifies the minimum transaction number the caller already knows
-   */
-  private buildTransactionsList (hashes: string[],
-    blockNumber: number,
-    blockHash: string,
-    sinceTransactionNumber: number) {
-
-    const transactions = [];
-    for (let j = 0; j < hashes.length; j++) {
-      const transactionNumber = TransactionNumber.construct(blockNumber, j);
-      if (transactionNumber > sinceTransactionNumber) {
-        transactions.push({
-          'transactionNumber': transactionNumber,
-          'transactionTime': blockNumber,
-          'transactionTimeHash': blockHash,
-          'anchorFileHash': hashes[j]
-        });
-      }
-    }
-
-    return transactions;
+    public genesisTimeHash: string,
+    public bitcoreBlockchain: string = 'BTC',
+    public bitcoreNetwork: string = 'testnet') {
+    this.apiPrefix = `/api/${this.bitcoreBlockchain}/${this.bitcoreNetwork}`;
   }
 
   /**
@@ -63,10 +46,6 @@ export default class BlockchainRequestHandler {
     };
 
     const prefix = this.sidetreeTransactionPrefix;
-    const baseUrl = this.bitcoreSidetreeServiceUri;
-    const requestParameters = {
-      method: 'get'
-    };
 
     const errorResponse = {
       status: ResponseStatus.ServerError
@@ -93,45 +72,20 @@ export default class BlockchainRequestHandler {
         blockNumberEnd = blockNumberTip;
       }
 
-      const queryString = '/transactionsRange/' + blockNumber + '/' + blockNumberEnd + '/' + prefix;
-      const uri = baseUrl + queryString;
-
       try {
-        const content = await nodeFetch(uri, requestParameters);
-        if (content.status !== HttpStatus.OK) {
-          return errorResponse;
-        }
+        const transactions = await this.queryTransactionRange(blockNumber, blockNumberEnd, prefix);
 
-        const responseBodyString = (content.body.read() as Buffer).toString();
-        const contentBody = JSON.parse(responseBodyString);
-
-        const blockHash = contentBody['blockHash'];
-        const hashes = contentBody['hashes'];
-
-        // check if we found any hashes
-        if (hashes.length > 0) {
-          const blockNumber = Number(contentBody['blockNumber']);
-          const moreTransactions = Boolean(contentBody['moreTransactions']);
-          const transactions = this.buildTransactionsList(hashes, blockNumber, blockHash, sinceTransactionNumber);
-
-          if (transactions.length > 0) {
-            return {
-              status: ResponseStatus.Succeeded,
-              body: {
-                'moreTransactions': moreTransactions,
-                'transactions': transactions
-              }
-            };
-          } else {
-            // else: we found anchor file hashes, but their transaction numbers aren't larger than sinceTransactionNumber
-            // check if there are more transactions; if not, return defaultResponse
-            if (!moreTransactions) {
-              return defaultResponse;
+        if (transactions.length > 0) {
+          return {
+            status: ResponseStatus.Succeeded,
+            body: {
+              'moreTransactions': true,
+              'transactions': transactions
             }
-          }
+          };
         } else {
           // set the block number to the block that was examined last
-          blockNumber = Number(contentBody['blockNumber']);
+          blockNumber = blockNumberEnd + 1;
         }
       } catch {
         return errorResponse;
@@ -142,6 +96,91 @@ export default class BlockchainRequestHandler {
     } while (blockNumber <= blockNumberTip);
 
     return defaultResponse;
+  }
+
+  /**
+   * 
+   * @param blockNumber Beginning block number of the query range
+   * @param blockNumberEnd Ending block number (inclusive) of the query range
+   * @param prefix Sidetree prefix to filter data by
+   * @returns Transactions within the block range
+   */
+  private async queryTransactionRange (blockNumber: number, blockNumberEnd: number, prefix: string):
+    Promise<ITransaction[]> {
+    const transactions: ITransaction[] = [];
+
+    const requestParameters = {
+      method: 'get'
+    };
+    for (let blockHeight = blockNumber; blockHeight <= blockNumberEnd; blockHeight++) {
+      const uri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx?blockHeight=${blockHeight}`;
+
+      const content = await nodeFetch(uri, requestParameters);
+
+      if (content.status === HttpStatus.OK) {
+        const responseBodyString = await ReadableStreamUtils.readAll(content.body);
+        // array of objects with "txid"
+        const contentBody: Array<any> = JSON.parse(responseBodyString);
+        const anchorHashes: string[] = [];
+        for (let transactionIndex = 0; transactionIndex < contentBody.length; transactionIndex++) {
+          const transaction = contentBody[transactionIndex];
+          anchorHashes.push(...(await this.queryTransaction(transaction.txid, prefix)));
+        }
+        if (anchorHashes.length > 0) {
+          // get the blockhash from any of the transactions
+          const blockHash = contentBody[0].blockHash;
+          anchorHashes.forEach((anchorHash, index) => {
+            transactions.push({
+              transactionTime: blockHeight,
+              transactionTimeHash: blockHash,
+              anchorFileHash: anchorHash,
+              transactionNumber: TransactionNumber.construct(blockHeight, index)
+            });
+          });
+        }
+      } else {
+        console.error(`Bitcore returned error: ${content.body}`);
+        throw new Error(content.statusText);
+      }
+    }
+    return transactions;
+  }
+
+  /**
+   * Given a bitcoin transaction Id, queries all output scripts for sidetree transactions using prefix
+   * @param transaction Bitcoin Transaction Id
+   * @param prefix Sidetree prefix to filter data by
+   * @returns Anchor file hashes within the transaction
+   */
+  private async queryTransaction (transaction: string, prefix: string): Promise<string[]> {
+    let hashes: string[] = [];
+    const requestParameters = {
+      method: 'get'
+    };
+    const coinUri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx/${transaction}/coins`;
+
+    const transactionContent = await nodeFetch(coinUri, requestParameters);
+
+    if (transactionContent.status === HttpStatus.OK) {
+      const coinsBodyString = await ReadableStreamUtils.readAll(transactionContent.body);
+      const transactionCoins: any = JSON.parse(coinsBodyString);
+      // object with "outputs" array
+      const outputs = transactionCoins.outputs as Array<any>;
+      for (let outputIndex = 0; outputIndex < outputs.length; outputIndex++) {
+        const scriptData = outputs[outputIndex].script as string;
+        const script = new Script(scriptData);
+        try {
+          const data = script.getData().toString();
+          if (data.startsWith(prefix)) {
+            hashes.push(data.slice(prefix.length));
+          }
+        } catch (error) {
+          // these are script parsing errors, and do not comply with sidetree standards
+          // so its safe to ignore
+        }
+      }
+    }
+    return hashes;
   }
 
   /**
@@ -359,13 +398,13 @@ export default class BlockchainRequestHandler {
       const content = await nodeFetch(uri, requestParameters);
 
       if (content.status === HttpStatus.OK) {
-        const responseBodyString = (content.body.read() as Buffer).toString();
+        const responseBodyString = await ReadableStreamUtils.readAll(content.body);
         const contentBody = JSON.parse(responseBodyString);
         return {
           status: ResponseStatus.Succeeded,
           body: {
-            'time': contentBody['blockNumber'],
-            'hash': contentBody['blockHash']
+            'time': contentBody['height'],
+            'hash': contentBody['hash']
           }
         };
       } else {
@@ -387,7 +426,7 @@ export default class BlockchainRequestHandler {
    */
   public async handleBlockByHashRequest (hash: string): Promise<IResponse> {
     const baseUrl = this.bitcoreSidetreeServiceUri;
-    const queryString = '/blocks/' + hash;
+    const queryString = `${this.apiPrefix}/block/${hash}`;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
   }
@@ -398,7 +437,7 @@ export default class BlockchainRequestHandler {
    */
   public async handleBlockByHeightRequest (height: number): Promise<IResponse> {
     const baseUrl = this.bitcoreSidetreeServiceUri;
-    const queryString = '/blocks/' + height;
+    const queryString = `${this.apiPrefix}/block/${height}`;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
   }
@@ -408,7 +447,7 @@ export default class BlockchainRequestHandler {
    */
   public async handleLastBlockRequest (): Promise<IResponse> {
     const baseUrl = this.bitcoreSidetreeServiceUri;
-    const queryString = '/blocks/last';
+    const queryString = `${this.apiPrefix}/block/tip`;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
   }
