@@ -99,7 +99,7 @@ export default class BlockchainRequestHandler {
   }
 
   /**
-   * 
+   *
    * @param blockNumber Beginning block number of the query range
    * @param blockNumberEnd Ending block number (inclusive) of the query range
    * @param prefix Sidetree prefix to filter data by
