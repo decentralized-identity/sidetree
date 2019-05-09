@@ -10,7 +10,7 @@ describe('RequestHandler', () => {
       init: false,
       start: false
     };
-    requestHandler = new RequestHandler(ipfsOptions);
+    requestHandler = new RequestHandler(10, ipfsOptions);
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
@@ -20,7 +20,7 @@ describe('RequestHandler', () => {
     };
 
     const testSidetreeHash: string = '123abc';
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, 10);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -33,7 +33,7 @@ describe('RequestHandler', () => {
     const testSidetreeHash: string = 'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw';
     spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Promise.resolve(Buffer.from('dummyContent')));
 
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, 10);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });

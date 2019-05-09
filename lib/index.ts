@@ -28,9 +28,7 @@ export {
 
 // IPFS service exports.
 import SidetreeIpfsService from './ipfs/RequestHandler';
-import { IIpfsConfig as ISidetreeIpfsConfig } from './ipfs/IpfsConfig';
 
 export {
-  ISidetreeIpfsConfig,
   SidetreeIpfsService
 };
