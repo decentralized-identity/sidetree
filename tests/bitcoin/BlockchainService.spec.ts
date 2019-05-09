@@ -46,7 +46,7 @@ describe('BlockchainService', () => {
     // Make sure bitcored servie URL is valid before starting the tests.
     if (!bitcoredServiceUrlIsValid) {
       // NOTE: `stopSpecOnExpectationFailure` must set to true in order for `beforeEach()` to not execute tests after `pending()` is called.
-      pending(`Test skipped: Bitcored URL '${config.bitcoreSidetreeServiceUri}' in config-test.json is not a valid URL.`);
+      pending(`Test skipped: Bitcored URL '${config.bitcoreSidetreeServiceUri}' in bitcoin-test.json is not a valid URL.`);
     }
   });
 
