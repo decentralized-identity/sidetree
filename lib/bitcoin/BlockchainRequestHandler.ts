@@ -1,5 +1,5 @@
 import { IResponse, ResponseStatus } from '../core/Response';
-import nodeFetch from 'node-fetch';
+import nodeFetch, { Response, FetchError } from 'node-fetch';
 import * as HttpStatus from 'http-status';
 import TransactionNumber from './TransactionNumber';
 import { ITransaction } from '../core/Transaction';
@@ -13,6 +13,10 @@ export default class BlockchainRequestHandler {
 
   /** The bitcore path prefix for any api call */
   private apiPrefix: string;
+  private readonly BITCORE_GET_PARAMETERS = {
+    method: 'get',
+    timeout: 1000
+  };
 
   /**
    * @param bitcoreSidetreeServiceUri URI for the blockchain service
@@ -66,7 +70,7 @@ export default class BlockchainRequestHandler {
 
     do {
       // this is the number of blocks we will examine in one REST call
-      const blockBudget = 100;
+      const blockBudget = 10;
       let blockNumberEnd = blockNumber + blockBudget;
       if (blockNumberEnd > blockNumberTip) {
         blockNumberEnd = blockNumberTip;
@@ -83,9 +87,6 @@ export default class BlockchainRequestHandler {
               'transactions': transactions
             }
           };
-        } else {
-          // set the block number to the block that was examined last
-          blockNumber = blockNumberEnd + 1;
         }
       } catch {
         return errorResponse;
@@ -107,25 +108,39 @@ export default class BlockchainRequestHandler {
    */
   private async queryTransactionRange (blockNumber: number, blockNumberEnd: number, prefix: string):
     Promise<ITransaction[]> {
+    console.debug(`Scanning blocks [${blockNumber}, ${blockNumberEnd}]`);
     const transactions: ITransaction[] = [];
 
-    const requestParameters = {
-      method: 'get'
-    };
     for (let blockHeight = blockNumber; blockHeight <= blockNumberEnd; blockHeight++) {
       const uri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx?blockHeight=${blockHeight}`;
 
-      const content = await nodeFetch(uri, requestParameters);
+      let content: Response;
+      let retry: boolean;
+      do {
+        retry = false;
+        try {
+          content = await nodeFetch(uri, this.BITCORE_GET_PARAMETERS);
+        } catch (error) {
+          if (error instanceof FetchError && error.type === 'request-timeout') {
+            retry = true;
+          } else {
+            console.error(error);
+            throw error;
+          }
+        }
+      } while (retry);
 
-      if (content.status === HttpStatus.OK) {
-        const responseBodyString = await ReadableStreamUtils.readAll(content.body);
+      const responseBodyString = await ReadableStreamUtils.readAll(content!.body);
+      if (content!.status === HttpStatus.OK) {
         // array of objects with "txid"
         const contentBody: Array<any> = JSON.parse(responseBodyString);
         const anchorHashes: string[] = [];
+        console.debug(`Scanning block ${blockHeight}: ${contentBody.length} transactions found`);
         for (let transactionIndex = 0; transactionIndex < contentBody.length; transactionIndex++) {
           const transaction = contentBody[transactionIndex];
           anchorHashes.push(...(await this.queryTransaction(transaction.txid, prefix)));
         }
+        console.debug(`${anchorHashes.length} sidetree anchor hashes found.`);
         if (anchorHashes.length > 0) {
           // get the blockhash from any of the transactions
           const blockHash = contentBody[0].blockHash;
@@ -139,8 +154,8 @@ export default class BlockchainRequestHandler {
           });
         }
       } else {
-        console.error(`Bitcore returned error: ${content.body}`);
-        throw new Error(content.statusText);
+        console.error(`Failed to retrieve block ${blockHeight}: ${responseBodyString}`);
+        throw new Error(responseBodyString);
       }
     }
     return transactions;
@@ -154,15 +169,27 @@ export default class BlockchainRequestHandler {
    */
   private async queryTransaction (transaction: string, prefix: string): Promise<string[]> {
     let hashes: string[] = [];
-    const requestParameters = {
-      method: 'get'
-    };
+
     const coinUri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx/${transaction}/coins`;
 
-    const transactionContent = await nodeFetch(coinUri, requestParameters);
+    let transactionContent: Response;
+    let retry: boolean;
+    do {
+      retry = false;
+      try {
+        transactionContent = await nodeFetch(coinUri, this.BITCORE_GET_PARAMETERS);
+      } catch (error) {
+        if (error instanceof FetchError && error.type === 'request-timeout') {
+          retry = true;
+        } else {
+          console.error(error);
+          throw error;
+        }
+      }
+    } while (retry);
 
-    if (transactionContent.status === HttpStatus.OK) {
-      const coinsBodyString = await ReadableStreamUtils.readAll(transactionContent.body);
+    const coinsBodyString = await ReadableStreamUtils.readAll(transactionContent!.body);
+    if (transactionContent!.status === HttpStatus.OK) {
       const transactionCoins: any = JSON.parse(coinsBodyString);
       // object with "outputs" array
       const outputs = transactionCoins.outputs as Array<any>;
@@ -179,6 +206,9 @@ export default class BlockchainRequestHandler {
           // so its safe to ignore
         }
       }
+    } else {
+      console.error(`Failed to retrieve coins for transaction ${transaction}: ${coinsBodyString}`);
+      throw new Error(coinsBodyString);
     }
     return hashes;
   }
@@ -390,12 +420,9 @@ export default class BlockchainRequestHandler {
    * Helper method that interacts with the back-end service at @param uri to fetch metadata about a block
    */
   private async handleBlockRequestHelper (uri: string): Promise<IResponse> {
-    const requestParameters = {
-      method: 'get'
-    };
 
     try {
-      const content = await nodeFetch(uri, requestParameters);
+      const content = await nodeFetch(uri, this.BITCORE_GET_PARAMETERS);
 
       if (content.status === HttpStatus.OK) {
         const responseBodyString = await ReadableStreamUtils.readAll(content.body);
