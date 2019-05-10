@@ -1,4 +1,4 @@
-Bitcore
+Bitcoin Full Node
 ===
 
 *Last Updated: May 10, 2019*
@@ -23,7 +23,7 @@ Bitcore is a Node.js based project. [Download](https://nodejs.org/en/download/) 
 
 Bitcoin peer
 ---
-You will need a trusted bitcoin network peer. You can point to any node, however Bitcore's stability will rely on this node. Below are instructions to install a [Bcoin bitcoin node](https://github.com/Bcoin-org/Bcoin). 
+You will need a trusted bitcoin network peer. ~~You can use any Bitcoin implementation so long as it supports http RPC~~ (There are a few proprietary BCoin calls being used for convinence. You can use any node once those have been refactored). Below are instructions to install a [Bcoin bitcoin node](https://github.com/Bcoin-org/Bcoin). 
 ### Bcoin
 Bcoin 
 Clone their repo
