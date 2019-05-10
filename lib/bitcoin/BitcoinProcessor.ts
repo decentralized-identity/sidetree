@@ -33,15 +33,15 @@ export default class BitcoinProcessor {
   private readonly transactionStore: MongoDbTransactionStore;
 
   /** Number of items to return per page */
-  public pageSize: number = 100;
+  public pageSize: number;
 
   public constructor (config: IBitcoinConfig) {
-    this.bcoinServiceUri = 'localhost:18331';
-    this.sidetreePrefix = 'ion:';
-    this.genesisTransactionNumber = TransactionNumber.construct(1480000, 0);
-    this.genesisTimeHash = '00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591';
-    this.transactionStore = new MongoDbTransactionStore('localhost', 'sidetree-bitcoin');
-    console.log(config);
+    this.bcoinServiceUri = config.bcoinExtensionUri;
+    this.sidetreePrefix = config.sidetreeTransactionPrefix;
+    this.genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
+    this.genesisTimeHash = config.genesisBlockHash;
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.pageSize = config.maxSidetreeTransactions;
   }
 
   /**
