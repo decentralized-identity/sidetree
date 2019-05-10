@@ -214,7 +214,7 @@ export default class BitcoinProcessor {
     const unspentOutputs = await this.getUnspentCoins(address);
 
     if (unspentOutputs.length === 0) {
-      console.error('FUND WALLET');
+      console.error(`Please Fund Wallet: ${address}`);
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
     }
 
