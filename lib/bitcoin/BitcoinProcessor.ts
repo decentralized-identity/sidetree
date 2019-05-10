@@ -40,7 +40,8 @@ export default class BitcoinProcessor {
     this.sidetreePrefix = 'ion:';
     this.genesisTransactionNumber = TransactionNumber.construct(1480000, 0);
     this.genesisTimeHash = '00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591';
-    this.transactionStore = new MongoDbTransactionStore('localhost', '');
+    this.transactionStore = new MongoDbTransactionStore('localhost', 'sidetree-bitcoin');
+    console.log(config);
   }
 
   /**
@@ -148,7 +149,7 @@ export default class BitcoinProcessor {
    * @param anchorFileHash The hash of a Sidetree anchor file
    */
   public async writeTransaction (anchorFileHash: string): Promise<void> {
-    throw new Error('not implemented');
+    throw new Error(`not implemented; cannot anchor ${anchorFileHash}`);
   }
 
   /**
