@@ -64,7 +64,7 @@ export default class BitcoinProcessor {
    * generates a private key in WIF format
    * @param network Which bitcoin network to generate this key for
    */
-  public static generatePrivateKey(network: 'mainnet' | 'livenet' | 'testnet' | undefined): string {
+  public static generatePrivateKey (network: 'mainnet' | 'livenet' | 'testnet' | undefined): string {
     let bitcoreNetwork: Networks.Network | undefined;
     switch (network) {
       case 'mainnet':
