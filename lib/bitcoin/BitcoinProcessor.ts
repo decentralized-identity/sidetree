@@ -56,8 +56,12 @@ export default class BitcoinProcessor {
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.pageSize = config.maxSidetreeTransactions;
     /// Bitcore has a type file error on PrivateKey
-    this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
     this.bitcoinFee = config.bitcoinFee;
+    try {
+      this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
+    } catch (error) {
+      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR, 'bitcoinWalletImportString: ' + error.message);
+    }
   }
 
   /**
