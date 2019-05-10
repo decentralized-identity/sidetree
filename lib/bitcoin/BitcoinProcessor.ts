@@ -48,6 +48,16 @@ export default class BitcoinProcessor {
   /** maximum number of request retries */
   public maxRetries = 3;
 
+  /** Number of seconds between transaction queries */
+  public pollPeriod = 60;
+
+  /** Last seen block height */
+  private lastBlockHeight = 0;
+  /** Last seen block hash */
+  private lastBlockHash = '';
+  /** Poll timeout identifier */
+  private pollTimeoutId: number | undefined;
+
   public constructor (config: IBitcoinConfig) {
     this.bitcoinExtensionUri = config.bitcoinExtensionUri;
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
@@ -94,7 +104,10 @@ export default class BitcoinProcessor {
     let startSyncBlockHeight = lastKnownTransaction ? lastKnownTransaction.transactionTime : TransactionNumber.getBlockNumber(this.genesisTransactionNumber);
     let startSyncBlockHash = lastKnownTransaction ? lastKnownTransaction.transactionTimeHash : this.genesisTimeHash;
     console.info(`Last known block ${startSyncBlockHeight} (${startSyncBlockHash})`);
-    await this.processTransactions(startSyncBlockHeight, startSyncBlockHash);
+    const syncedTo = await this.processTransactions(startSyncBlockHeight, startSyncBlockHash);
+    this.lastBlockHash = syncedTo.hash;
+    this.lastBlockHeight = syncedTo.height;
+    this.periodicPoll();
   }
 
   /**
@@ -267,12 +280,31 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * Will process transactions every interval seconds.
+   * @param interval Number of seconds between each query
+   */
+  private periodicPoll (interval: number = this.pollPeriod) {
+    if (this.pollTimeoutId) {
+      clearTimeout(this.pollTimeoutId);
+    }
+    this.processTransactions(this.lastBlockHeight, this.lastBlockHash).then((syncedTo) => {
+      this.lastBlockHash = syncedTo.hash;
+      this.lastBlockHeight = syncedTo.height;
+      this.pollTimeoutId = setTimeout(this.periodicPoll, 1000 * interval);
+    }).catch((error) => {
+      console.error(error);
+      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+    });
+  }
+
+  /**
    * Processes transactions from startBlock to endBlock or tip
    * @param startBlock The block height to begin from
    * @param startBlockHash The block hash to begin from
    * @param endBlock The blockheight to stop on (inclusive)
+   * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock: number, startBlockHash: string, endBlock?: number) {
+  private async processTransactions (startBlock: number, startBlockHash: string, endBlock?: number): Promise<{height: number, hash: string}> {
     const startValid = await this.verifyBlock(startBlock, startBlockHash);
     let beginBlock = startBlock;
     if (!startValid) {
@@ -288,6 +320,11 @@ export default class BitcoinProcessor {
     for (let blockHeight = beginBlock; blockHeight < endBlock; blockHeight++) {
       await this.processBlock(blockHeight);
     }
+    const hash = await this.processBlock(endBlock);
+    return {
+      hash,
+      height: endBlock
+    };
   }
 
   /**
@@ -364,8 +401,9 @@ export default class BitcoinProcessor {
   /**
    * Given a Bitcoin block height, processes that block for Sidetree transactions
    * @param block Block height to process
+   * @returns the block hash processed
    */
-  private async processBlock (block: number) {
+  private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
     const responseData = await this.bcoinFetch({
       method: 'getblockbyheight',
@@ -415,6 +453,7 @@ export default class BitcoinProcessor {
         }
       }
     }
+    return blockHash;
   }
 
   /**
