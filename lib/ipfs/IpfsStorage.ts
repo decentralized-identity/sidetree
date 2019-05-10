@@ -6,7 +6,7 @@ import * as IPFS from 'ipfs';
 export default class IpfsStorage {
 
   /**  IPFS node instance  */
-  public node: IPFS;
+  private node: IPFS;
   /**  IPFS Storage class object  */
   static ipfsStorageInstance: IpfsStorage;
 
