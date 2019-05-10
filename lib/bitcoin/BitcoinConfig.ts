@@ -2,7 +2,9 @@
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
 export interface IBitcoinConfig {
-  bcoinExtensionUri: string;
+  bitcoinExtensionUri: string;
+  bitcoinWalletImportString: string;
+  bitcoinFee: number;
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;
   genesisBlockHash: string;

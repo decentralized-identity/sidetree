@@ -6,6 +6,7 @@ import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
 import nodeFetch, { Response, FetchError } from 'node-fetch';
 import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
 import * as httpStatus from 'http-status';
+import { PrivateKey, Networks, Transaction, Script, Address } from 'bitcore-lib';
 
 /**
  * Object representing a blockchain time and hash
@@ -22,16 +23,21 @@ export interface IBlockchainTime {
  */
 export default class BitcoinProcessor {
 
-  /** URI for the bcoin service */
-  public readonly bcoinServiceUri: string;
+  /** URI for the bitcoin peer's RPC endpoint */
+  public readonly bitcoinExtensionUri: string;
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
+  /** Bitcoin transaction fee amount */
+  public readonly bitcoinFee: number;
   /** The first Sidetree transaction number in Bitcoin's blockchain. */
   public readonly genesisTransactionNumber: number;
   /** The corresponding time hash of genesis transaction number. */
   public readonly genesisTimeHash: string;
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
+
+  /** Wallet private key */
+  private readonly privateKey: PrivateKey;
 
   /** Number of items to return per page */
   public pageSize: number;
@@ -43,12 +49,35 @@ export default class BitcoinProcessor {
   public maxRetries = 3;
 
   public constructor (config: IBitcoinConfig) {
-    this.bcoinServiceUri = config.bcoinExtensionUri;
+    this.bitcoinExtensionUri = config.bitcoinExtensionUri;
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
     this.genesisTimeHash = config.genesisBlockHash;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.pageSize = config.maxSidetreeTransactions;
+    /// Bitcore has a type file error on PrivateKey
+    this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
+    this.bitcoinFee = config.bitcoinFee;
+  }
+
+  /**
+   * generates a private key in WIF format
+   * @param network Which bitcoin network to generate this key for
+   */
+  public static generatePrivateKey(network: 'mainnet' | 'livenet' | 'testnet' | undefined): string {
+    let bitcoreNetwork: Networks.Network | undefined;
+    switch (network) {
+      case 'mainnet':
+        bitcoreNetwork = Networks.mainnet;
+        break;
+      case 'livenet':
+        bitcoreNetwork = Networks.livenet;
+        break;
+      case 'testnet':
+        bitcoreNetwork = Networks.testnet;
+        break;
+    }
+    return new PrivateKey(undefined, bitcoreNetwork).toWIF();
   }
 
   /**
@@ -160,8 +189,77 @@ export default class BitcoinProcessor {
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorFileHash The hash of a Sidetree anchor file
    */
-  public async writeTransaction (anchorFileHash: string): Promise<void> {
-    throw new Error(`not implemented; cannot anchor ${anchorFileHash}`);
+  public async writeTransaction (anchorFileHash: string) {
+    console.info(`Anchoring file ${anchorFileHash}`);
+    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorFileHash}`;
+
+    const address = this.privateKey.toAddress();
+    const unspentOutputs = await this.getUnspentCoins(address);
+
+    if (unspentOutputs.length === 0) {
+      console.error('FUND WALLET');
+      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    const transaction = new Transaction();
+    transaction.from(unspentOutputs);
+    transaction.addOutput(new Transaction.Output({
+      script: Script.buildDataOut(sidetreeTransactionString),
+      satoshis: 0
+    }));
+    transaction.change(address);
+    transaction.fee(this.bitcoinFee);
+    transaction.sign(this.privateKey);
+
+    if (!await this.broadcastTransaction(transaction)) {
+      console.error(`Could not broadcast transaction ${transaction.toString()}`);
+      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Gets all unspent coins of a given address
+   * @param address Bitcoin address to get coins for
+   */
+  private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
+    const addressToSearch = address.toString();
+    const path = `/coin/address/${addressToSearch}`;
+    const fullPath = path.concat(this.bitcoinExtensionUri, path);
+    const response = await this.fetchWithRetry(fullPath);
+
+    const responseData = await ReadableStreamUtils.readAll(response.body);
+    if (response.status !== httpStatus.OK) {
+      const error = new SidetreeError(response.status, responseData);
+      console.error(`Fetch failed [${response.status}]: ${responseData}`);
+      throw error;
+    }
+
+    const responseJson = JSON.parse(responseData) as Array<any>;
+    const unspentTransactions = responseJson.map((coin) => {
+      return new Transaction.UnspentOutput({
+        txid: coin.hash,
+        vout: coin.index,
+        address: coin.address,
+        script: coin.script,
+        amount: coin.value
+      });
+    });
+    return unspentTransactions;
+  }
+
+  /**
+   * Broadcasts a transaction to the bitcoin network
+   * @param transaction Transaction to broadcast
+   */
+  private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
+    console.info('Boradcasting transaction');
+    const rawTransaction = transaction.serialize();
+
+    const response = await this.bcoinFetch({
+      tx: rawTransaction
+    }, '/broadcast');
+
+    return response.success;
   }
 
   /**
@@ -322,7 +420,7 @@ export default class BitcoinProcessor {
    * @returns response as an object
    */
   private async bcoinFetch (request: any, path: string = ''): Promise<any> {
-    const fullPath = path.concat(this.bcoinServiceUri, path);
+    const fullPath = path.concat(this.bitcoinExtensionUri, path);
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
