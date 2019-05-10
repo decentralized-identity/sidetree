@@ -7,17 +7,17 @@ import { IResponse, ResponseStatus, Response } from '../../lib/core/Response';
 describe('RequestHandler', () => {
 
   const config: IBitcoinConfig = require('./bitcoin-test.json');
-  const uri = config.bitcoreSidetreeServiceUri;
+  const uri = config.bitcoreExtensionUri;
   const prefix = config.sidetreeTransactionPrefix;
-  const genesisTransactionNumber = TransactionNumber.construct(config.bitcoinSidetreeGenesisBlockNumber, 0);
-  const genesisTimeHash = config.bitcoinSidetreeGenesisBlockHash;
+  const genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
+  const genesisTimeHash = config.genesisBlockHash;
 
   const requestHandler = new RequestHandler(uri, prefix, genesisTransactionNumber, genesisTimeHash);
 
   beforeEach(async () => {
     // Make sure bitcored servie URL is valid before starting the tests.
     if (!String.isValidUrl(uri)) {
-      pending(`Test skipped: Bitcored URL '${uri}' in config-test.json is not a valid URL.`);
+      pending(`Test skipped: Bitcored URL '${uri}' in bitcoin-test.json is not a valid URL.`);
     }
   });
 

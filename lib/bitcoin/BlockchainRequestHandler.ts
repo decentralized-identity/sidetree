@@ -24,7 +24,7 @@ export default class BlockchainRequestHandler {
   };
 
   /**
-   * @param bitcoreSidetreeServiceUri URI for the blockchain service
+   * @param bitcoreExtensionUri URI for the bitcore exention
    * @param sidetreeTransactionPrefix prefix used to identify Sidetree transactions in Bitcoin's blockchain
    * @param genesisTransactionNumber the first Sidetree transaction number in Bitcoin's blockchain
    * @param genesisTimeHash the corresponding timehash of genesis transaction number
@@ -32,7 +32,7 @@ export default class BlockchainRequestHandler {
    * @param bitcoreNetwork the blockchain network to query (mainnet, testnet, etc.)
    */
   public constructor (
-    public bitcoreSidetreeServiceUri: string,
+    public bitcoreExtensionUri: string,
     public sidetreeTransactionPrefix: string,
     public genesisTransactionNumber: number,
     public genesisTimeHash: string,
@@ -84,7 +84,7 @@ export default class BlockchainRequestHandler {
     } while (true);
   }
 
-  private async waitFor(milliseconds: number): Promise<void> {
+  private async waitFor (milliseconds: number): Promise<void> {
     return new Promise((resolve) => {
       setTimeout(resolve, milliseconds);
     });
@@ -168,7 +168,7 @@ export default class BlockchainRequestHandler {
     for (let blockHeight = blockNumber; blockHeight <= blockNumberEnd; blockHeight++) {
       transactionRequests.push((async (): Promise<ITransaction[]> => {
         const transactions: ITransaction[] = [];
-        const uri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx?blockHeight=${blockHeight}`;
+        const uri = `${this.bitcoreExtensionUri}${this.apiPrefix}/tx?blockHeight=${blockHeight}`;
 
         const content = await this.fetchWithRetry(uri, this.BITCORE_GET_PARAMETERS);
 
@@ -221,7 +221,7 @@ export default class BlockchainRequestHandler {
   private async queryTransaction (transaction: string, prefix: string): Promise<string[]> {
     let hashes: string[] = [];
 
-    const coinUri = `${this.bitcoreSidetreeServiceUri}${this.apiPrefix}/tx/${transaction}/coins`;
+    const coinUri = `${this.bitcoreExtensionUri}${this.apiPrefix}/tx/${transaction}/coins`;
 
     const transactionContent = await this.fetchWithRetry(coinUri, this.BITCORE_GET_PARAMETERS);
 
@@ -411,7 +411,7 @@ export default class BlockchainRequestHandler {
     }
 
     const prefix = this.sidetreeTransactionPrefix;
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const sidetreeTransaction = prefix + anchorFileHash;
     const queryString = '/anchor/';
 
@@ -489,7 +489,7 @@ export default class BlockchainRequestHandler {
    * @param hash Specifies the hash of the block the caller is interested in
    */
   public async handleBlockByHashRequest (hash: string): Promise<IResponse> {
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const queryString = `${this.apiPrefix}/block/${hash}`;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
@@ -500,7 +500,7 @@ export default class BlockchainRequestHandler {
    * @param height Specifies the height of the block the caller is interested in
    */
   public async handleBlockByHeightRequest (height: number): Promise<IResponse> {
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const queryString = `${this.apiPrefix}/block/${height}`;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);
@@ -510,7 +510,7 @@ export default class BlockchainRequestHandler {
    * Returns the blockhash of the last block in the blockchain
    */
   public async handleLastBlockRequest (): Promise<IResponse> {
-    const baseUrl = this.bitcoreSidetreeServiceUri;
+    const baseUrl = this.bitcoreExtensionUri;
     const queryString = `${this.apiPrefix}/block/tip`;
     const uri = baseUrl + queryString;
     return this.handleBlockRequestHelper(uri);

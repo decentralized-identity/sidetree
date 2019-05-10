@@ -32,7 +32,7 @@ export default class BlockchainService {
   private continuePeriodicProcessing = false;
 
   /** URI for the blockchain service. */
-  public bitcoreSidetreeServiceUri: string;
+  public bitcoreExtensionUri: string;
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public sidetreeTransactionPrefix: string;
   /** The first Sidetree transaction number in Bitcoin's blockchain. */
@@ -44,17 +44,17 @@ export default class BlockchainService {
   private maxSidetreeTransactions: number;
 
   public constructor (config: IBitcoinConfig) {
-    this.bitcoreSidetreeServiceUri = config.bitcoreSidetreeServiceUri;
+    this.bitcoreExtensionUri = config.bitcoreExtensionUri;
     this.sidetreeTransactionPrefix = config.sidetreeTransactionPrefix;
-    this.genesisTransactionNumber = TransactionNumber.construct(config.bitcoinSidetreeGenesisBlockNumber, 0);
-    this.genesisTimeHash = config.bitcoinSidetreeGenesisBlockHash;
-    this.pollingIntervalInSeconds = config.bitcoinPollingInternalSeconds;
+    this.genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
+    this.genesisTimeHash = config.genesisBlockHash;
+    this.pollingIntervalInSeconds = config.pollingInternalInSeconds;
     this.maxSidetreeTransactions = config.maxSidetreeTransactions;
 
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.requestHandler = new RequestHandler(
-      this.bitcoreSidetreeServiceUri,
+      this.bitcoreExtensionUri,
       this.sidetreeTransactionPrefix,
       this.genesisTransactionNumber,
       this.genesisTimeHash,
