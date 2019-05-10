@@ -3,8 +3,9 @@ import TransactionNumber from './TransactionNumber';
 import { ITransaction } from '../core/Transaction';
 import SidetreeError from '../core/util/SidetreeError';
 import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
-import nodeFetch from 'node-fetch';
+import nodeFetch, { Response, FetchError } from 'node-fetch';
 import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
+import * as httpStatus from 'http-status';
 
 /**
  * Object representing a blockchain time and hash
@@ -35,6 +36,12 @@ export default class BitcoinProcessor {
   /** Number of items to return per page */
   public pageSize: number;
 
+  /** request timeout in milliseconds */
+  public defaultTimeout = 300;
+
+  /** maximum number of request retries */
+  public maxRetries = 3;
+
   public constructor (config: IBitcoinConfig) {
     this.bcoinServiceUri = config.bcoinExtensionUri;
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
@@ -48,10 +55,12 @@ export default class BitcoinProcessor {
    * Initializes the Bitcoin processor
    */
   public async initialize () {
+    console.debug('Initializing TransactionStore');
     await this.transactionStore.initialize();
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
-    let startSyncBlockHeight = lastKnownTransaction ? lastKnownTransaction.transactionNumber : TransactionNumber.getBlockNumber(this.genesisTransactionNumber);
+    let startSyncBlockHeight = lastKnownTransaction ? lastKnownTransaction.transactionTime : TransactionNumber.getBlockNumber(this.genesisTransactionNumber);
     let startSyncBlockHash = lastKnownTransaction ? lastKnownTransaction.transactionTimeHash : this.genesisTimeHash;
+    console.info(`Last known block ${startSyncBlockHeight} (${startSyncBlockHash})`);
     await this.processTransactions(startSyncBlockHeight, startSyncBlockHash);
   }
 
@@ -61,6 +70,7 @@ export default class BitcoinProcessor {
    * @returns the current or associated blockchain time and blockchain hash
    */
   public async time (hash?: string): Promise<IBlockchainTime> {
+    console.info(`Getting time ${hash ? 'since' + hash : ''}`);
     let request: any;
     if (hash) {
       request = {
@@ -107,8 +117,10 @@ export default class BitcoinProcessor {
       since = this.genesisTransactionNumber;
       hash = this.genesisTimeHash;
     }
+    console.info(`Returning transactions since ${TransactionNumber.getBlockNumber(since)}`);
 
     if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
+      console.info('Requested transaction hash mismatched blockchain');
       throw new SidetreeError(httpStatus.BAD_REQUEST);
     }
 
@@ -164,9 +176,11 @@ export default class BitcoinProcessor {
     if (!startValid) {
       beginBlock = await this.revertBlockchainCache();
     }
-    if (!endBlock) {
+    if (endBlock === undefined) {
       endBlock = await this.getTip();
     }
+
+    console.info(`Processing transactions from ${startBlock} to ${endBlock}`);
 
     // You can parrallelize this so long as all processBlock's don't throw
     for (let blockHeight = beginBlock; blockHeight < endBlock; blockHeight++) {
@@ -179,6 +193,7 @@ export default class BitcoinProcessor {
    * @returns last valid block height before the fork
    */
   private async revertBlockchainCache (): Promise<number> {
+    console.info('Reverting transactions');
     while (await this.transactionStore.getTransactionsCount() > 0) {
       const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
@@ -195,13 +210,16 @@ export default class BitcoinProcessor {
         revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
       }
 
+      console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
       await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
 
       if (firstValidTransaction) {
+        console.info(`reverted Transactions to block ${firstValidTransaction.transactionTime}`);
         return firstValidTransaction.transactionTime;
       }
     }
     // there are no transactions stored.
+    console.info('Reverted all known transactions.');
     return TransactionNumber.getBlockNumber(this.genesisTransactionNumber);
   }
 
@@ -210,14 +228,12 @@ export default class BitcoinProcessor {
    * @returns the latest block number
    */
   private async getTip (): Promise<number> {
-    const request = JSON.stringify({
+    console.info('Getting tip block');
+    const request = {
       method: 'getblockcount'
-    });
-    const height = await nodeFetch(this.bcoinServiceUri, {
-      body: request,
-      method: 'post'
-    });
-    return JSON.parse(await ReadableStreamUtils.readAll(height.body));
+    };
+    const response = await this.bcoinFetch(request);
+    return response;
   }
 
   /**
@@ -227,6 +243,7 @@ export default class BitcoinProcessor {
    * @returns true if valid, false otherwise
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
+    console.info(`Verifying block ${height} (${hash})`);
     const responseData = await this.bcoinFetch({
       method: 'getblockbyheight',
       params: [
@@ -235,6 +252,8 @@ export default class BitcoinProcessor {
         false    // details (transaction details)
       ]
     });
+
+    console.debug(`Retrieved block ${responseData.height} (${responseData.hash})`);
 
     let actualHash: string = responseData.hash;
     return hash === actualHash;
@@ -245,6 +264,7 @@ export default class BitcoinProcessor {
    * @param block Block height to process
    */
   private async processBlock (block: number) {
+    console.info(`Processing block ${block}`);
     const responseData = await this.bcoinFetch({
       method: 'getblockbyheight',
       params: [
@@ -254,24 +274,31 @@ export default class BitcoinProcessor {
       ]
     });
 
-    const blockData = JSON.parse(responseData);
-    const transactions = blockData.result.tx as Array<any>;
-    const blockHash = blockData.result.hash;
+    const transactions = responseData.tx as Array<any>;
+    const blockHash = responseData.hash;
     let anchorFilePosition = 0;
+
+    // console.debug(`Block ${block} contains ${transactions.length} transactions`);
 
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
       // get the output coins in the transaction
+      if (!('vout' in transactions[transactionIndex])) {
+        // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
+        continue;
+      }
       const outputs = transactions[transactionIndex].vout as Array<any>;
       for (let outputIndex = 0; outputIndex < outputs.length; outputIndex++) {
         // grab the scripts
         const script = outputs[outputIndex].scriptPubKey;
+
+        // console.debug(`Checking transaction ${transactionIndex} output coin ${outputIndex}: ${JSON.stringify(script)}`);
         // check for returned data for sidetree prefix
-        const hexDataMatches = script.asm.match(/\s*OP_RETURN(.*)$/);
-        if (hexDataMatches.length === 0) {
+        const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+        if (!hexDataMatches || hexDataMatches.length === 0) {
           continue;
         }
-        const data = Buffer.from(hexDataMatches[0], 'hex').toString();
+        const data = Buffer.from(hexDataMatches[1], 'hex').toString();
         if (data.startsWith(this.sidetreePrefix)) {
           // we have found a sidetree transaction
           const sidetreeTransaction: ITransaction = {
@@ -280,6 +307,7 @@ export default class BitcoinProcessor {
             transactionTimeHash: blockHash,
             anchorFileHash: data.slice(this.sidetreePrefix.length)
           };
+          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTransaction)}`);
           anchorFilePosition++;
           await this.transactionStore.addTransaction(sidetreeTransaction);
         }
@@ -295,19 +323,76 @@ export default class BitcoinProcessor {
    */
   private async bcoinFetch (request: any, path: string = ''): Promise<any> {
     const fullPath = path.concat(this.bcoinServiceUri, path);
-    const response = await nodeFetch(fullPath, {
-      body: JSON.stringify(request),
+    const requestString = JSON.stringify(request);
+    // console.debug(`Fetching ${fullPath}`);
+    // console.debug(requestString);
+    const response = await this.fetchWithRetry(fullPath, {
+      body: requestString,
       method: 'post'
     });
 
     const responseData = await ReadableStreamUtils.readAll(response.body);
     if (response.status !== httpStatus.OK) {
       const error = new SidetreeError(response.status, responseData);
-      console.log(error);
+      console.error(`Fetch failed [${response.status}]: ${responseData}`);
       throw error;
     }
 
-    return JSON.parse(responseData);
+    const responseJson = JSON.parse(responseData);
+
+    if ('error' in responseJson && responseJson.error !== null) {
+      console.error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
+      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return responseJson.result;
+  }
+
+  /**
+   * Calls node Fetch and retries the request on temporal errors
+   * @param uri URI to fetch
+   * @param requestParameters GET parameters to use
+   * @returns Response of the fetch
+   */
+  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined): Promise<Response> {
+    let retryCount = 0;
+    let timeout: number;
+    do {
+      timeout = this.defaultTimeout * 2 ** retryCount;
+      const params = Object.assign({}, requestParameters, {
+        timeout
+      });
+      try {
+        return await nodeFetch(uri, params);
+      } catch (error) {
+        if (error instanceof FetchError) {
+          retryCount++;
+          if (retryCount >= this.maxRetries) {
+            console.debug('Max retries reached. Request failed.');
+            throw error;
+          }
+          switch (error.type) {
+            case 'request-timeout':
+              console.debug(`Request timeout (${retryCount})`);
+              await this.waitFor(Math.round(Math.random() * this.defaultTimeout + timeout));
+              console.debug('Retrying request');
+              continue;
+          }
+        }
+        console.error(error);
+        throw error;
+      }
+    } while (true);
+  }
+
+  /**
+   * Async timeout
+   * @param milliseconds Timeout in milliseconds
+   */
+  private async waitFor (milliseconds: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, milliseconds);
+    });
   }
 
 }

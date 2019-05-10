@@ -29,10 +29,10 @@ export default class BlockchainService {
    * Denotes if the periodic transaction processing should continue to occur.
    * Used mainly for test purposes.
    */
-  private continuePeriodicProcessing = false;
+  // private continuePeriodicProcessing = false;
 
   /** URI for the blockchain service. */
-  public bitcoreExtensionUri: string;
+  public bcoinExtensionUri: string;
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public sidetreeTransactionPrefix: string;
   /** The first Sidetree transaction number in Bitcoin's blockchain. */
@@ -40,26 +40,22 @@ export default class BlockchainService {
   /** The corresponding time hash of genesis transaction number. */
   public genesisTimeHash: string;
 
-  private pollingIntervalInSeconds: number;
   private maxSidetreeTransactions: number;
 
   public constructor (config: IBitcoinConfig) {
-    this.bitcoreExtensionUri = config.bitcoreExtensionUri;
+    this.bcoinExtensionUri = config.bcoinExtensionUri;
     this.sidetreeTransactionPrefix = config.sidetreeTransactionPrefix;
     this.genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
     this.genesisTimeHash = config.genesisBlockHash;
-    this.pollingIntervalInSeconds = config.pollingInternalInSeconds;
     this.maxSidetreeTransactions = config.maxSidetreeTransactions;
 
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.requestHandler = new RequestHandler(
-      this.bitcoreExtensionUri,
+      this.bcoinExtensionUri,
       this.sidetreeTransactionPrefix,
       this.genesisTransactionNumber,
-      this.genesisTimeHash,
-      config.bitcoreBlockchain,
-      config.bitcoreNetwork);
+      this.genesisTimeHash);
   }
 
   /**
@@ -78,22 +74,22 @@ export default class BlockchainService {
     this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
 
     console.info(`Starting periodic transactions polling.`);
-    setImmediate(async () => {
-      this.continuePeriodicProcessing = true;
+    // setImmediate(async () => {
+    //   this.continuePeriodicProcessing = true;
 
-      // tslint:disable-next-line:no-floating-promises - this.processTransactions() never throws.
-      this.processTransactions();
-    });
+    //   // tslint:disable-next-line:no-floating-promises - this.processTransactions() never throws.
+    //   this.processTransactions();
+    // });
   }
 
   /**
    * Stops periodic transaction processing.
    * Mainly used for test purposes.
    */
-  public stopPeriodicProcessing () {
-    console.info(`Stopped periodic transactions processing.`);
-    this.continuePeriodicProcessing = false;
-  }
+  // public stopPeriodicProcessing () {
+  //   console.info(`Stopped periodic transactions processing.`);
+  //   this.continuePeriodicProcessing = false;
+  // }
 
   /**
    * Processes new transactions if any, and then scehdules the next round of processing
@@ -151,10 +147,10 @@ export default class BlockchainService {
       console.error(`Encountered unhandled and possibly fatal error, must investigate and fix:`);
       console.error(error);
     } finally {
-      if (this.continuePeriodicProcessing) {
-        console.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
-        setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
-      }
+      // if (this.continuePeriodicProcessing) {
+      //   console.info(`Waiting for ${this.pollingIntervalInSeconds} seconds before fetching and processing transactions again.`);
+      //   setTimeout(async () => this.processTransactions(), this.pollingIntervalInSeconds * 1000);
+      // }
     }
   }
 

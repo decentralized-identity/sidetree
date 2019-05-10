@@ -69,13 +69,6 @@ export default class BlockchainRequestHandler {
               await this.waitFor(Math.round(Math.random() * 1000 * 2 ** retryCount + 1000));
               console.debug(`retrying request: ${uri}`);
               continue;
-            case 'system':
-              if (error.code === 'EADDRINUSE') {
-                console.debug(`socket backoff: ${uri}`);
-                await this.waitFor(Math.round(Math.random() * 5000 + 5000));
-                console.debug(`retrying request: ${uri}`);
-                continue;
-              }
           }
         }
         console.error(error);
