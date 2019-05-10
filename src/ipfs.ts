@@ -54,19 +54,19 @@ const server = app.listen(port, () => {
 
 // Listen for graceful termination
 process.on('SIGTERM', () => {
-  requestHandler.ipfsStorage.node.stop();
+  requestHandler.ipfsStorage.stop();
   process.exit();
 });
 process.on('SIGINT', () => {
-  requestHandler.ipfsStorage.node.stop();
+  requestHandler.ipfsStorage.stop();
   process.exit();
 });
 process.on('SIGHUP', () => {
-  requestHandler.ipfsStorage.node.stop();
+  requestHandler.ipfsStorage.stop();
   process.exit();
 });
 process.on('uncaughtException', () => {
-  requestHandler.ipfsStorage.node.stop();
+  requestHandler.ipfsStorage.stop();
   process.exit();
 });
 

@@ -53,4 +53,11 @@ export default class IpfsStorage {
     const files = await this.node.add(content);
     return files[0].hash;
   }
+
+  /**
+   * Stops this IPFS store.
+   */
+  public stop () {
+    this.node.stop();
+  }
 }
