@@ -7,7 +7,6 @@ import {
   SidetreeResponse,
   BitcoinProcessor
 } from '../lib/index';
-import SidetreeError from '../lib/core/util/SidetreeError';
 
 interface IBitcoinServiceConifg extends ISidetreeBitcoinConfig {
   port: number;
@@ -18,12 +17,9 @@ let blockchainService: BitcoinProcessor;
 try {
   blockchainService = new BitcoinProcessor(config);
 } catch (error) {
-  if (error instanceof SidetreeError) {
-    console.log('Invalid bitcoinWalletImportString. Consider using testnet key...');
-    console.log(BitcoinProcessor.generatePrivateKey('testnet'));
-    process.exit(1);
-  }
-  throw error;
+  console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
+  console.log(BitcoinProcessor.generatePrivateKey('testnet'));
+  process.exit(1);
 }
 console.info('Sidetree bitcoin service configuration:');
 console.info(config);

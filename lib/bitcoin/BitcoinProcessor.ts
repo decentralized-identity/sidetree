@@ -1,4 +1,4 @@
-import { IBitcoinConfig } from './BitcoinConfig';
+import { IBitcoinConfig } from './IBitcoinConfig';
 import TransactionNumber from './TransactionNumber';
 import { ITransaction } from '../core/Transaction';
 import SidetreeError from '../core/util/SidetreeError';
@@ -50,6 +50,9 @@ export default class BitcoinProcessor {
 
   /** Number of seconds between transaction queries */
   public pollPeriod = 60;
+
+  /** Days of notice before the wallet is depeleted of all funds */
+  public lowBalanceNoticeDays = 28;
 
   /** Last seen block height */
   private lastBlockHeight = 0;
@@ -213,8 +216,16 @@ export default class BitcoinProcessor {
     const address = this.privateKey.toAddress();
     const unspentOutputs = await this.getUnspentCoins(address);
 
-    if (unspentOutputs.length === 0) {
-      console.error(`Please Fund Wallet: ${address}`);
+    let totalSatoshis = unspentOutputs.reduce((total: number, coin: Transaction.UnspentOutput) => {
+      return total + coin.satoshis;
+    }, 0);
+
+    const lowBalanceAmount = this.lowBalanceNoticeDays * 24 * 6 * this.bitcoinFee;
+    if (totalSatoshis < lowBalanceAmount) {
+      console.error(`Please Fund your wallet. Address: ${address.toString()}`);
+    }
+    // cannot make the transaction
+    if (totalSatoshis < this.bitcoinFee) {
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -232,6 +243,7 @@ export default class BitcoinProcessor {
       console.error(`Could not broadcast transaction ${transaction.toString()}`);
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
     }
+    console.info(`Successfully submitted transaction ${transaction.id}`);
   }
 
   /**
@@ -240,6 +252,7 @@ export default class BitcoinProcessor {
    */
   private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
     const addressToSearch = address.toString();
+    console.info(`Getting unspent coins for ${addressToSearch}`);
     const path = `/coin/address/${addressToSearch}`;
     const fullPath = path.concat(this.bitcoinExtensionUri, path);
     const response = await this.fetchWithRetry(fullPath);
@@ -261,6 +274,7 @@ export default class BitcoinProcessor {
         amount: coin.value
       });
     });
+    console.info(`Returning ${unspentTransactions.length} coins`);
     return unspentTransactions;
   }
 
@@ -530,7 +544,7 @@ export default class BitcoinProcessor {
    * Async timeout
    * @param milliseconds Timeout in milliseconds
    */
-  private async waitFor (milliseconds: number): Promise<void> {
+  private async waitFor (milliseconds: number) {
     return new Promise((resolve) => {
       setTimeout(resolve, milliseconds);
     });
