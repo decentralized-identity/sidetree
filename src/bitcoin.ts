@@ -13,17 +13,6 @@ interface IBitcoinServiceConifg extends ISidetreeBitcoinConfig {
 }
 
 const config: IBitcoinServiceConifg = require('./bitcoin-config.json');
-let blockchainService: BitcoinProcessor;
-try {
-  blockchainService = new BitcoinProcessor(config);
-} catch (error) {
-  console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
-  console.log(BitcoinProcessor.generatePrivateKey('testnet'));
-  process.exit(1);
-}
-console.info('Sidetree bitcoin service configuration:');
-console.info(config);
-
 const app = new Koa();
 
 // Raw body parser.
@@ -49,12 +38,14 @@ router.get('/transactions', async (ctx, _next) => {
 });
 
 router.post('/transactions', async (ctx, _next) => {
-  const response = await blockchainService.writeTransaction(JSON.parse(ctx.body));
+  const anchorFileRequest = JSON.parse(ctx.body);
+  const response = await blockchainService.writeTransaction(anchorFileRequest.anchorFileHash);
   setKoaResponse(response, ctx.response);
 });
 
 router.post('/transactions/firstValid', async (ctx, _next) => {
-  const response = await blockchainService.firstValidTransaction(JSON.parse(ctx.body));
+  const transactionsObject = JSON.parse(ctx.body);
+  const response = await blockchainService.firstValidTransaction(transactionsObject.transactions);
   setKoaResponse(response, ctx.response);
 });
 
@@ -78,15 +69,26 @@ app.use((ctx, _next) => {
 const port = config.port;
 
 // initialize the blockchain service and kick-off background tasks
-blockchainService.initialize()
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`Sidetree-Bitcoin node running on port: ${port}`);
+let blockchainService: BitcoinProcessor;
+try {
+  blockchainService = new BitcoinProcessor(config);
+
+  blockchainService.initialize()
+    .then(() => {
+      app.listen(port, () => {
+        console.log(`Sidetree-Bitcoin node running on port: ${port}`);
+      });
+    })
+    .catch((error) => {
+      console.log(`Sidetree-Bitcoin node initialization failed with error ${JSON.stringify(error)}`);
     });
-  })
-  .catch((error) => {
-    console.log(`Sidetree-Bitcoin node initialization failed with error ${JSON.stringify(error)}`);
-  });
+} catch (error) {
+  console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
+  console.log(BitcoinProcessor.generatePrivateKey('testnet'));
+  process.exit(1);
+}
+console.info('Sidetree bitcoin service configuration:');
+console.info(config);
 
 /**
  * Sets the koa response according to the Sidetree response object given.

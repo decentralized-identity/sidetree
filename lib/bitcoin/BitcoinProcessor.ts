@@ -7,6 +7,7 @@ import nodeFetch, { Response, FetchError } from 'node-fetch';
 import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
 import * as httpStatus from 'http-status';
 import { PrivateKey, Networks, Transaction, Script, Address } from 'bitcore-lib';
+import { URL } from 'url';
 
 /**
  * Object representing a blockchain time and hash
@@ -222,10 +223,13 @@ export default class BitcoinProcessor {
 
     const lowBalanceAmount = this.lowBalanceNoticeDays * 24 * 6 * this.bitcoinFee;
     if (totalSatoshis < lowBalanceAmount) {
-      console.error(`Please Fund your wallet. Address: ${address.toString()}`);
+      const daysLeft = Math.floor(totalSatoshis / (24 * 6 * this.bitcoinFee));
+      console.error(`Low balance (${daysLeft} days remaining),\
+ please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis, Address: ${address.toString()}`);
     }
     // cannot make the transaction
     if (totalSatoshis < this.bitcoinFee) {
+      console.error(`Not enough satoshis to broadcast. Failed to broadcast anchor file ${anchorFileHash}`);
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -253,9 +257,10 @@ export default class BitcoinProcessor {
   private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
     const addressToSearch = address.toString();
     console.info(`Getting unspent coins for ${addressToSearch}`);
-    const path = `/coin/address/${addressToSearch}`;
-    const fullPath = path.concat(this.bitcoinExtensionUri, path);
-    const response = await this.fetchWithRetry(fullPath);
+    const requestPath = `/coin/address/${addressToSearch}`;
+
+    const fullPath = new URL(requestPath, this.bitcoinExtensionUri);
+    const response = await this.fetchWithRetry(fullPath.toString());
 
     const responseData = await ReadableStreamUtils.readAll(response.body);
     if (response.status !== httpStatus.OK) {
@@ -271,7 +276,7 @@ export default class BitcoinProcessor {
         vout: coin.index,
         address: coin.address,
         script: coin.script,
-        amount: coin.value
+        amount: coin.value * 0.00000001 // Satoshi amount
       });
     });
     console.info(`Returning ${unspentTransactions.length} coins`);
@@ -283,12 +288,23 @@ export default class BitcoinProcessor {
    * @param transaction Transaction to broadcast
    */
   private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
-    console.info('Boradcasting transaction');
     const rawTransaction = transaction.serialize();
-
-    const response = await this.bcoinFetch({
+    console.info(`Boradcasting transaction ${transaction.id}`);
+    const request = JSON.stringify({
       tx: rawTransaction
-    }, '/broadcast');
+    });
+    const fullPath = new URL('/broadcast', this.bitcoinExtensionUri);
+    const responseObject = await this.fetchWithRetry(fullPath.toString(), {
+      body: request,
+      method: 'post'
+    });
+    const responseData = await ReadableStreamUtils.readAll(responseObject.body);
+    if (responseObject.status !== httpStatus.OK) {
+      console.error(`Broadcast failure [${responseObject.status}]: ${responseData}`);
+      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    const response = JSON.parse(responseData);
 
     return response.success;
   }
@@ -304,7 +320,7 @@ export default class BitcoinProcessor {
     this.processTransactions(this.lastBlockHeight, this.lastBlockHash).then((syncedTo) => {
       this.lastBlockHash = syncedTo.hash;
       this.lastBlockHeight = syncedTo.height;
-      this.pollTimeoutId = setTimeout(this.periodicPoll, 1000 * interval);
+      this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval);
     }).catch((error) => {
       console.error(error);
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
@@ -335,6 +351,7 @@ export default class BitcoinProcessor {
       await this.processBlock(blockHeight);
     }
     const hash = await this.processBlock(endBlock);
+    console.info(`Finished processing blocks ${startBlock} to ${endBlock}`);
     return {
       hash,
       height: endBlock
@@ -476,12 +493,12 @@ export default class BitcoinProcessor {
    * @param path optional path extension
    * @returns response as an object
    */
-  private async bcoinFetch (request: any, path: string = ''): Promise<any> {
-    const fullPath = path.concat(this.bitcoinExtensionUri, path);
+  private async bcoinFetch (request: any, requestPath: string = ''): Promise<any> {
+    const fullPath = new URL(requestPath, this.bitcoinExtensionUri);
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    const response = await this.fetchWithRetry(fullPath, {
+    const response = await this.fetchWithRetry(fullPath.toString(), {
       body: requestString,
       method: 'post'
     });
