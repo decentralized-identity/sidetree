@@ -65,17 +65,21 @@ export default class BitcoinProcessor {
   public constructor (config: IBitcoinConfig) {
     this.bitcoinExtensionUri = config.bitcoinExtensionUri;
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
+    this.bitcoinFee = config.bitcoinFee;
     this.genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
     this.genesisTimeHash = config.genesisBlockHash;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
-    this.pageSize = config.maxSidetreeTransactions;
     /// Bitcore has a type file error on PrivateKey
-    this.bitcoinFee = config.bitcoinFee;
     try {
       this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
     } catch (error) {
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR, 'bitcoinWalletImportString: ' + error.message);
     }
+    this.pageSize = config.maxSidetreeTransactions;
+    this.defaultTimeout = config.defaultTimeoutInMilliseconds || 300;
+    this.maxRetries = config.maxRetries || 3;
+    this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
+    this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
   }
 
   /**
