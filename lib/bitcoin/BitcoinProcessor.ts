@@ -147,7 +147,7 @@ export default class BitcoinProcessor {
         ]
       };
     }
-    const response = await this.bcoinFetch(request);
+    const response = await this.rpcCall(request);
     return {
       hash: response.hash,
       time: response.height
@@ -406,7 +406,7 @@ export default class BitcoinProcessor {
     const request = {
       method: 'getblockcount'
     };
-    const response = await this.bcoinFetch(request);
+    const response = await this.rpcCall(request);
     return response;
   }
 
@@ -418,7 +418,7 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
-    const responseData = await this.bcoinFetch({
+    const responseData = await this.rpcCall({
       method: 'getblockbyheight',
       params: [
         height,  // height
@@ -440,7 +440,7 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
-    const responseData = await this.bcoinFetch({
+    const responseData = await this.rpcCall({
       method: 'getblockbyheight',
       params: [
         block,  // height
@@ -497,7 +497,7 @@ export default class BitcoinProcessor {
    * @param path optional path extension
    * @returns response as an object
    */
-  private async bcoinFetch (request: any, requestPath: string = ''): Promise<any> {
+  private async rpcCall (request: any, requestPath: string = ''): Promise<any> {
     const fullPath = new URL(requestPath, this.bitcoinExtensionUri);
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
