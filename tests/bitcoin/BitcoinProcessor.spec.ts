@@ -4,7 +4,8 @@ import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { PrivateKey, Transaction } from 'bitcore-lib';
 import { ITransaction } from '../../lib/core/Transaction';
 import * as httpStatus from 'http-status';
-// import * as nodeFetchPackage from 'node-fetch';
+import ReadableStreamUtils from '../../lib/core/util/ReadableStreamUtils';
+import * as nodeFetchPackage from 'node-fetch';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -37,7 +38,7 @@ describe('BitcoinProcessor', () => {
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
   let periodicPollSpy: jasmine.Spy;
-  // let fetchSpy: jasmine.Spy;
+  let fetchSpy: jasmine.Spy;
 
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
@@ -47,7 +48,7 @@ describe('BitcoinProcessor', () => {
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
-    // fetchSpy = spyOn(nodeFetchPackage, 'default');
+    fetchSpy = spyOn(nodeFetchPackage, 'default');
   });
 
   /**
@@ -373,19 +374,83 @@ describe('BitcoinProcessor', () => {
       expect(broadcastSpy).not.toHaveBeenCalled();
       expect(errorSpy).toHaveBeenCalledTimes(2);
     });
+
+    it('should fail if broadcastTransaction fails', async () => {
+      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
+      ]));
+      const hash = randomString();
+      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+        expect(transaction.getFee()).toEqual(testConfig.bitcoinFee);
+        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
+        return Promise.resolve(false);
+      });
+      try {
+        await bitcoinProcessor.writeTransaction(hash);
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+      }
+      expect(getCoinsSpy).toHaveBeenCalled();
+      expect(broadcastSpy).toHaveBeenCalled();
+    });
   });
 
   describe('getUnspentCoins', () => {
     it('should query for unspent output coins given an address', async () => {
-      throw new Error('not yet implemented');
+      const coin = generateUnspentCoin(testConfig.bitcoinWalletImportString, 1);
+      fetchSpy.and.callFake((uri: string) => {
+        expect(uri).toContain('/coin/address/');
+        return {
+          status: httpStatus.OK
+        };
+      });
+      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
+        {
+          hash: coin.txId,
+          index: coin.outputIndex,
+          address: coin.address,
+          script: coin.script,
+          value: coin.satoshis
+        }
+      ])));
+      const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
+      expect(actual[0].address).toEqual(coin.address);
+      expect(actual[0].txId).toEqual(coin.txId);
     });
 
     it('should throw if the request failed', async () => {
-      throw new Error('not yet implemented');
+      const coin = generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
+      fetchSpy.and.callFake((uri: string) => {
+        expect(uri).toContain('/coin/address/');
+        return {
+          status: httpStatus.BAD_REQUEST
+        };
+      });
+      const verifyCode = randomString();
+      spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve(verifyCode));
+      try {
+        await bitcoinProcessor['getUnspentCoins'](coin.address);
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toEqual(verifyCode);
+      }
     });
 
     it('should return empty if no coins were found', async () => {
-      throw new Error('not yet implemented');
+      const coin = generateUnspentCoin(testConfig.bitcoinWalletImportString, 1);
+      fetchSpy.and.callFake((uri: string) => {
+        expect(uri).toContain('/coin/address/');
+        return {
+          status: httpStatus.OK
+        };
+      });
+      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('[]'));
+      const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
+      expect(actual).toEqual([]);
     });
   });
 
