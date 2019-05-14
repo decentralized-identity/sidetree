@@ -7,5 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "license": "Apache-2.0",
-  "dependencies": {}
+  "dependencies": {
+    "bitcore-lib": "^v0.13.19"
+  }
 }

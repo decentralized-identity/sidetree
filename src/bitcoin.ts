@@ -71,7 +71,8 @@ app.use(router.routes())
 app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
-const port = config.port;
+
+const port = process.env.SIDETREE_BITCOIN_PORT || config.port;
 
 // initialize the blockchain service and kick-off background tasks
 blockchainService.initialize()
