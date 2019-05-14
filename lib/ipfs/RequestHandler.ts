@@ -55,7 +55,7 @@ export default class RequestHandler {
           status: ResponseStatus.Succeeded,
           body: result
         };
-        console.log(`Fetched '${base64urlEncodedMultihash}'.`);
+        console.log(`Fetched '${base64urlEncodedMultihash}' of size ${result.length} bytes.`);
       }
     } catch (err) {
       response = {

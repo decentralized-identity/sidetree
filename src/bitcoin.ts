@@ -9,7 +9,9 @@ import {
   SidetreeResponse
 } from '../lib/index';
 
+/** Bitcoin service configuration parameters */
 interface IBitcoinServiceConifg extends ISidetreeBitcoinConfig {
+  /** Port number used by the service. */
   port: number;
 }
 

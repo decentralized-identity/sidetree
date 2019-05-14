@@ -9,6 +9,17 @@ describe('IPFSStorage', () => {
   });
 
   it('should return the pinned content for the given hash.', async () => {
+
+    const mockContentStat: IPFS.ObjectStat = {
+      Hash: 'dummyHahs',
+      NumLinks: 0,
+      BlockSize: 1,
+      LinksSize: 0,
+      DataSize: 1024,
+      CumulativeSize: 1024
+    };
+    spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
+
     const mockIpfsContent: IPFS.Files[] = [
       {
         path: '/tmp/myfile.txt',
