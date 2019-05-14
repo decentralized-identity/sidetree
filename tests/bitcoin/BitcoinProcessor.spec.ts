@@ -678,6 +678,29 @@ describe('BitcoinProcessor', () => {
       expect(firstValid).toHaveBeenCalledTimes(2);
       expect(removeTransactions).toHaveBeenCalledTimes(2);
     });
+
+    it('should stop reverting if it has ran out of transactions', async () => {
+      let transactions = createTransactions(10);
+      const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
+        'getTransactionsCount').and.callFake(() => {
+          return Promise.resolve(transactions.length);
+        });
+      const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
+        'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
+      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.returnValue(Promise.resolve(undefined));
+      const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
+        'removeTransactionsLaterThan').and.callFake((transactionNumber: number) => {
+          expect(transactionNumber).toEqual(transactions[0].transactionNumber);
+          transactions = [];
+          return Promise.resolve();
+        });
+      const actual = await bitcoinProcessor['revertBlockchainCache']();
+      expect(actual).toEqual(testConfig.genesisBlockNumber);
+      expect(transactionCount).toHaveBeenCalled();
+      expect(exponentialTransactions).toHaveBeenCalled();
+      expect(firstValid).toHaveBeenCalled();
+      expect(removeTransactions).toHaveBeenCalled();
+    })
   });
 
   describe('getTip', () => {
