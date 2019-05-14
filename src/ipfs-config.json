@@ -1,0 +1,4 @@
+{
+  "port": 3003,
+  "fetchTimeoutInSeconds": "10"
+}

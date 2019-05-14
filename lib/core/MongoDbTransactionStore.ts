@@ -147,7 +147,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
    * Creates the `transaction` collection with indexes if it does not exists.
    * @returns The existing collection if exists, else the newly created collection.
    */
-  public static async createTransactionCollectionIfNotExist (db: Db): Promise<Collection<ITransaction>> {
+  private static async createTransactionCollectionIfNotExist (db: Db): Promise<Collection<ITransaction>> {
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 

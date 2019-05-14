@@ -25,3 +25,10 @@ export {
   ISidetreeBitcoinConfig,
   SidetreeBitcoinService
 };
+
+// IPFS service exports.
+import SidetreeIpfsService from './ipfs/RequestHandler';
+
+export {
+  SidetreeIpfsService
+};

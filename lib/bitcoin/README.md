@@ -62,7 +62,7 @@ Once Sidetree extension is running in bitcored correctly, we can now build and r
  1. Clone this repo and go to the root folder.
  1. Run `npm i` to install dependencies.
  1. Modify `json/config.json` accordingly. Some parameters of interest:
-    1. Update `bitcoreSidetreeServiceUri` to point to the bitcored service configured earlier:
+    1. Update `bitcoreExtensionUri` to point to the bitcored service configured earlier:
        e.g. 'http://127.0.0.1:3002/SidetreeBlockchainService/'
  1. Run `npm run build` to build the service.
  1. Run 'npm start` to start the service. 

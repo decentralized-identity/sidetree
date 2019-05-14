@@ -1,7 +1,8 @@
+.dockerignore
+.nyc_output
 .vscode
 coverage
-tests
-nunitresults.xml
-.dockerignore
-Dockerfile
 docs
+nunitresults.xml
+tests
+Dockerfile

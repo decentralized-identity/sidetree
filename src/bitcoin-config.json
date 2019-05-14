@@ -1,10 +1,11 @@
 {
-  "bitcoreSidetreeServiceUri": "[FILL THIS IN]",
-  "sidetreeTransactionPrefix": "ion:",
-  "bitcoinSidetreeGenesisBlockNumber": 1480000,
-  "bitcoinSidetreeGenesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
-  "bitcoinPollingInternalSeconds": 100,
+  "bitcoreExtensionUri": "[FILL THIS IN]",
+  "sidetreeTransactionPrefix": "sidetree:",
+  "genesisBlockNumber": 1480000,
+  "genesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
+  "pollingInternalInSeconds": 100,
   "databaseName": "sidetree-bitcoin",
   "maxSidetreeTransactions": 10,
-  "mongoDbConnectionString": "mongodb://localhost:27017/"
+  "mongoDbConnectionString": "mongodb://localhost:27017/",
+  "port": 3002
 }
