@@ -302,7 +302,7 @@ describe('BitcoinProcessor', () => {
   });
 
   // function specific to bitcoin coin operations
-  function generateBitcoinTransaction(satoshis?: number): Transaction {
+  function generateBitcoinTransaction (satoshis?: number): Transaction {
     const keyObject: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
     const address = keyObject.toAddress();
     const transaction = new Transaction();
@@ -359,15 +359,25 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async () => {
+      const coin = generateUnspentCoin(0);
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(0)
+        new Transaction.UnspentOutput({
+          txid: coin.txId,
+          vout: coin.outputIndex,
+          address: coin.address,
+          script: coin.script,
+          amount: 0
+        })
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
+      let acceptableErrorMessages = 0;
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
-        expect(message.includes('fund your wallet') || message.includes('Not enough satoshis')).toBeTruthy();
+        if (message.includes('fund your wallet') || message.includes('Not enough satoshis')) {
+          acceptableErrorMessages++;
+        }
       });
       try {
         await bitcoinProcessor.writeTransaction(hash);
@@ -377,7 +387,8 @@ describe('BitcoinProcessor', () => {
       }
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).not.toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalledTimes(2);
+      expect(errorSpy).toHaveBeenCalled();
+      expect(acceptableErrorMessages).toEqual(2);
     });
 
     it('should fail if broadcastTransaction fails', async () => {
@@ -461,15 +472,63 @@ describe('BitcoinProcessor', () => {
 
   describe('broadcastTransaction', () => {
     it('should serialize and broadcast a transaction', async () => {
-      throw new Error('not yet implemented');
+      const transaction = generateBitcoinTransaction();
+      // need to disable transaction serialization
+      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain('broadcast');
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body).tx).toEqual(transaction.toString());
+        return Promise.resolve({
+          status: httpStatus.OK
+        });
+      });
+      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
+        "success": "true"\
+      }'));
+      const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
+      expect(actual).toBeTruthy();
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
     });
 
     it('should throw if the request failed', async () => {
-      throw new Error('not yet implemented');
+      const transaction = generateBitcoinTransaction();
+      // need to disable transaction serialization
+      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain('broadcast');
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body).tx).toEqual(transaction.toString());
+        return Promise.resolve({
+          status: httpStatus.OK
+        });
+      });
+      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
+        "success": "true"\
+      }'));
+      const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
+      expect(actual).toBeTruthy();
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
     });
 
     it('should return false if the broadcast failed', async () => {
-      throw new Error('not yet implemented');
+      const transaction = generateBitcoinTransaction();
+      // need to disable transaction serialization
+      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
+      fetchSpy.and.returnValue(Promise.resolve({
+        status: httpStatus.BAD_REQUEST
+      }));
+      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve(''));
+      try {
+        await bitcoinProcessor['broadcastTransaction'](transaction);
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+      }
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
     });
   });
 
