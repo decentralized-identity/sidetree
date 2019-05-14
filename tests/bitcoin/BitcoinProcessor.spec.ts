@@ -570,20 +570,59 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('processTransactions', () => {
+
+    beforeEach(() => {
+      processTransactionsSpy.and.callThrough();
+    });
+
     it('should verify the start block', async () => {
-      throw new Error('not yet implemented');
+      const hash = randomString();
+      const start = randomNumber();
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
+      const actual = await bitcoinProcessor['processTransactions'](start, randomString(), start + 1);
+      expect(actual.hash).toEqual(hash);
+      expect(actual.height).toEqual(start + 1);
+      expect(verifySpy).toHaveBeenCalled();
+      expect(processMock).toHaveBeenCalled();
     });
 
     it('should begin a rollback if the start block failed to validate', async () => {
-      throw new Error('not yet implemented');
+      const hash = randomString();
+      const start = randomNumber() + 100;
+      const revertNumber = start - 100;
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
+      const revertSpy = spyOn(bitcoinProcessor, 'revertBlockchainCache' as any).and.returnValue(Promise.resolve(revertNumber));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
+      const actual = await bitcoinProcessor['processTransactions'](start, randomString(), start + 1);
+      expect(actual.height).toEqual(start + 1);
+      expect(actual.hash).toEqual(hash);
+      expect(verifySpy).toHaveBeenCalled();
+      expect(revertSpy).toHaveBeenCalled();
+      expect(processMock).toHaveBeenCalledWith(revertNumber);
+      expect(processMock).toHaveBeenCalledWith(start + 1);
     });
 
     it('should call processBlock on all blocks within range', async () => {
-      throw new Error('not yet implemented');
+      const hash = randomString();
+      const start = randomNumber();
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
+      await bitcoinProcessor['processTransactions'](start, randomString(), start + 9);
+      expect(verifySpy).toHaveBeenCalled();
+      expect(processMock).toHaveBeenCalledTimes(10);
     });
 
     it('should use the current tip if no end is specified', async () => {
-      throw new Error('not yet implemented');
+      const hash = randomString();
+      const start = randomNumber();
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+      const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(start + 1));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
+      await bitcoinProcessor['processTransactions'](start, randomString());
+      expect(verifySpy).toHaveBeenCalled();
+      expect(tipSpy).toHaveBeenCalled();
+      expect(processMock).toHaveBeenCalledTimes(2);
     });
   });
 
