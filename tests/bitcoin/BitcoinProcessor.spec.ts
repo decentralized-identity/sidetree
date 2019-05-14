@@ -3,6 +3,7 @@ import { BitcoinProcessor } from '../../lib';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { PrivateKey } from 'bitcore-lib';
 import { ITransaction } from '../../lib/core/Transaction';
+import * as httpStatus from 'http-status';
 // import * as nodeFetchPackage from 'node-fetch';
 
 function randomString (length: number = 16): string {
@@ -229,15 +230,40 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should fail if only given a block height', async () => {
-      throw new Error('not yet implemented');
+      try {
+        await bitcoinProcessor.transactions(randomNumber());
+        fail('expected to throw');
+      } catch (error) {
+        expect((error as any).status).toEqual(httpStatus.BAD_REQUEST);
+      }
     });
 
     it('should fail if the height and hash do not validate against the current blockchain', async () => {
-      throw new Error('not yet implemented');
+      const expectedHeight = randomNumber();
+      const expectedHash = randomString();
+      const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
+      try {
+        await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
+        fail('expected to throw');
+      } catch (error) {
+        expect((error as any).status).toEqual(httpStatus.BAD_REQUEST);
+      }
+      expect(verifyMock).toHaveBeenCalled();
     });
 
     it('should handle moreTransactions parameter according to the returned page size', async () => {
-      throw new Error('not yet implemented');
+      const expectedHeight = randomNumber();
+      const expectedHash = randomString();
+      const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+      const transactions = createTransactions(testConfig.maxSidetreeTransactions, expectedHeight);
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.returnValue(Promise.resolve(transactions));
+      const actual = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
+      expect(verifyMock).toHaveBeenCalled();
+      expect(laterThanMock).toHaveBeenCalled();
+      expect(actual.transactions).toEqual(transactions);
+      expect(actual.moreTransactions).toBeTruthy();
     });
   });
 
