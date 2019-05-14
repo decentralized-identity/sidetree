@@ -529,11 +529,43 @@ describe('BitcoinProcessor', () => {
 
   describe('periodicPoll', () => {
     it('should call processTransactions from its last known point', async () => {
-      throw new Error('not yet implemented');
+      const lastBlock = randomNumber();
+      const lastHash = randomString();
+      const nextBlock = randomNumber();
+      const nextHash = randomString();
+      bitcoinProcessor['lastBlockHeight'] = lastBlock;
+      bitcoinProcessor['lastBlockHash'] = lastHash;
+      processTransactionsSpy.and.callFake((height: number, hash: string) => {
+        expect(height).toEqual(lastBlock);
+        expect(hash).toEqual(lastHash);
+        return Promise.resolve({
+          hash: nextHash,
+          height: nextBlock
+        });
+      });
+      bitcoinProcessor['periodicPoll']();
+      // need to wait for the process call
+      setTimeout(() => {
+        expect(bitcoinProcessor['lastBlockHash']).toEqual(nextHash);
+        expect(bitcoinProcessor['lastBlockHeight']).toEqual(nextBlock);
+        expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
+        // clean up
+        clearTimeout(bitcoinProcessor['pollTimeoutId']);
+      }, 500);
     });
 
     it('should set a timeout to call itself', async () => {
-      throw new Error('not yet implemented');
+      processTransactionsSpy.and.returnValue(Promise.resolve({
+        hash: randomString(),
+        height: randomNumber()
+      }));
+      bitcoinProcessor['periodicPoll']();
+      // need to wait for the process call
+      setTimeout(() => {
+        expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
+        // clean up
+        clearTimeout(bitcoinProcessor['pollTimeoutId']);
+      }, 500);
     });
   });
 

@@ -323,7 +323,7 @@ export default class BitcoinProcessor {
     this.processTransactions(this.lastBlockHeight, this.lastBlockHash).then((syncedTo) => {
       this.lastBlockHash = syncedTo.hash;
       this.lastBlockHeight = syncedTo.height;
-      this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval);
+      this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
     }).catch((error) => {
       console.error(error);
       throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
