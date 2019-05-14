@@ -1,6 +1,9 @@
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { BitcoinProcessor } from '../../lib';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
+import { PrivateKey } from 'bitcore-lib';
+import { ITransaction } from '../../lib/core/Transaction';
+// import * as nodeFetchPackage from 'node-fetch';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -11,12 +14,87 @@ function randomNumber (max: number = 256): number {
 }
 
 describe('BitcoinProcessor', () => {
+
+  const testConfig: IBitcoinConfig = {
+    bitcoinExtensionUri: 'http://localhost:18331',
+    bitcoinFee: 0,
+    bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
+    databaseName: 'bitcoin-test',
+    defaultTimeoutInMilliseconds: 300,
+    genesisBlockHash: '00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591',
+    genesisBlockNumber: 1480000,
+    lowBalanceNoticeInDays: 28,
+    maxRetries: 3,
+    maxSidetreeTransactions: 100,
+    mongoDbConnectionString: 'mongodb://localhost:27017',
+    sidetreeTransactionPrefix: 'sidetree:',
+    transactionPollPeriodInSeconds: 60
+  }
+
+  let bitcoinProcessor: BitcoinProcessor;
+  let transactionStoreInitializeSpy: jasmine.Spy;
+  let transactionStoreLatestTransactionSpy: jasmine.Spy;
+  let processTransactionsSpy: jasmine.Spy;
+  let periodicPollSpy: jasmine.Spy;
+  // let fetchSpy: jasmine.Spy;
+
+  beforeEach(() => {
+    bitcoinProcessor = new BitcoinProcessor(testConfig);
+    transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
+    transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
+    transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
+    processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
+    processTransactionsSpy.and.returnValue(Promise.resolve({hash: 'IamAHash', height: 54321}));
+    periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
+    // fetchSpy = spyOn(nodeFetchPackage, 'default');
+  });
+
+  /**
+   * 
+   * @param method 
+   * @param params 
+   * @param returns 
+   * @param path 
+   */
+  function mockRpcCall (method: string, params: any[], returns: any, path?: string): jasmine.Spy {
+    return spyOn(bitcoinProcessor, 'rpcCall' as any).and.callFake((request: any, requestPath: string) => {
+      if (path) {
+        expect(requestPath).toEqual(path);
+      }
+      expect(request.method).toEqual(method);
+      if (request.params) {
+        expect(request.params).toEqual(params);
+      }
+      return Promise.resolve(returns);
+    });
+  }
+
+  function createTransactions (count?: number, height?: number): ITransaction[] {
+    const transactions: ITransaction[] = [];
+    if (!count) {
+      count = randomNumber(9) + 1;
+    }
+    if (!height) {
+      height = randomNumber();
+    }
+    const hash = randomString();
+    for (let i = 0; i < count; i++) {
+      transactions.push({
+        transactionNumber: TransactionNumber.construct(height, i),
+        transactionTime: height,
+        transactionTimeHash: hash,
+        anchorFileHash: randomString()
+      });
+    }
+    return transactions;
+  }
+
   describe('constructor', () => {
     it('should use appropriate config values', () => {
       const config: IBitcoinConfig = {
         bitcoinExtensionUri: randomString(),
         bitcoinFee: randomNumber(),
-        bitcoinWalletImportString: randomString(),
+        bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockHash: randomString(),
         genesisBlockNumber: randomNumber(),
@@ -47,41 +125,107 @@ describe('BitcoinProcessor', () => {
 
   describe('initialize', () => {
     it('should initialize the transactionStore', async () => {
-      throw new Error('not yet implemented');
+      expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
+      await bitcoinProcessor.initialize();
+      expect(transactionStoreInitializeSpy).toHaveBeenCalled();
     });
 
     it('should process all the blocks since its last known', async () => {
-      throw new Error('not yet implemented');
+      processTransactionsSpy.and.returnValue(Promise.resolve({
+        hash: 'latestHash',
+        height: 12345
+      }));
+      expect(processTransactionsSpy).not.toHaveBeenCalled();
+      await bitcoinProcessor.initialize();
+      expect(processTransactionsSpy).toHaveBeenCalled();
+
     });
 
     it('should begin to periodically poll for updates', async () => {
-      throw new Error('not yet implemented');
+      expect(periodicPollSpy).not.toHaveBeenCalled();
+      await bitcoinProcessor.initialize();
+      expect(periodicPollSpy).toHaveBeenCalled();
     });
   });
 
   describe('generatePrivateKey', () => {
     it('should construct a PrivateKey and export its WIF', () => {
-      throw new Error('not yet implemented');
+      const privateKey = BitcoinProcessor.generatePrivateKey('mainnet');
+      expect(privateKey).toBeDefined();
+      expect(typeof privateKey).toEqual('string');
+      expect(privateKey.length).toBeGreaterThan(0);
+      expect(() => {
+        (PrivateKey as any).fromWIF(privateKey);
+      }).not.toThrow();
     });
   });
 
   describe('time', () => {
     it('should get the current latest when given no hash', async () => {
-      throw new Error('not yet implemented');
+      const height = randomNumber();
+      const hash = randomString();
+      const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(height));
+      const spy = mockRpcCall('getblockbyheight', [height, true, false], { hash, height });
+      const actual = await bitcoinProcessor.time();
+      expect(actual.time).toEqual(height);
+      expect(actual.hash).toEqual(hash);
+      expect(tipSpy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalled();
     });
 
     it('should get the corresponding bitcoin height given a hash', async () => {
-      throw new Error('not yet implemented');
+      const height = randomNumber();
+      const hash = randomString();
+      const spy = mockRpcCall('getblock', [hash, true, false], { hash, height });
+      const actual = await bitcoinProcessor.time(hash);
+      expect(actual.time).toEqual(height);
+      expect(actual.hash).toEqual(hash);
+      expect(spy).toHaveBeenCalled();
     });
   });
 
   describe('transactions', () => {
     it('should get transactions since genesis limited by page size', async () => {
-      throw new Error('not yet implemented');
+      const expectedTransactionNumber = TransactionNumber.construct(testConfig.genesisBlockNumber, 0);
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number, hash: string) => {
+        expect(height).toEqual(testConfig.genesisBlockNumber);
+        expect(hash).toEqual(testConfig.genesisBlockHash);
+        return Promise.resolve(true);
+      });
+      const transactions = createTransactions();
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
+        expect(since).toEqual(expectedTransactionNumber);
+        expect(pages).toEqual(testConfig.maxSidetreeTransactions);
+        return Promise.resolve(transactions);
+      }));
+
+      const actual = await bitcoinProcessor.transactions();
+      expect(verifyMock).toHaveBeenCalled();
+      expect(laterThanMock).toHaveBeenCalled();
+      expect(actual.moreTransactions).toBeFalsy();
+      expect(actual.transactions).toEqual(transactions);
     });
 
     it('should get transactions since a specific block height and hash', async () => {
-      throw new Error('not yet implemented');
+      const expectedHeight = randomNumber();
+      const expectedHash = randomString();
+      const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number, hash: string) => {
+        expect(height).toEqual(expectedHeight);
+        expect(hash).toEqual(expectedHash);
+        return Promise.resolve(true);
+      });
+      const transactions = createTransactions(undefined, expectedHeight);
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number) => {
+        expect(since).toEqual(TransactionNumber.construct(expectedHeight, 0));
+        return Promise.resolve(transactions);
+      }));
+
+      const actual = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
+      expect(verifyMock).toHaveBeenCalled();
+      expect(laterThanMock).toHaveBeenCalled();
+      expect(actual.moreTransactions).toBeFalsy();
+      expect(actual.transactions).toEqual(transactions);
     });
 
     it('should fail if only given a block height', async () => {

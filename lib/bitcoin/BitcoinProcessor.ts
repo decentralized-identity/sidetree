@@ -135,7 +135,6 @@ export default class BitcoinProcessor {
           false // transaction details
         ]
       };
-
     } else {
       const tip = await this.getTip();
       request = {
