@@ -628,11 +628,55 @@ describe('BitcoinProcessor', () => {
 
   describe('revertBlockchainCache', () => {
     it('should exponentially revert transactions', async () => {
-      throw new Error('not yet implemented');
+      const transactions = createTransactions(10);
+      const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
+        'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
+      const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
+        'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
+      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: ITransaction[]) => {
+        expect(actualTransactions).toEqual(transactions);
+        return Promise.resolve(transactions[1]);
+      });
+      const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
+        'removeTransactionsLaterThan').and.callFake((transactionNumber: number) => {
+          expect(transactionNumber).toEqual(transactions[1].transactionNumber);
+          return Promise.resolve();
+        });
+      const actual = await bitcoinProcessor['revertBlockchainCache']();
+      expect(actual).toEqual(transactions[1].transactionTime);
+      expect(transactionCount).toHaveBeenCalled();
+      expect(exponentialTransactions).toHaveBeenCalled();
+      expect(firstValid).toHaveBeenCalled();
+      expect(removeTransactions).toHaveBeenCalled();
     });
 
     it('should continue to revert if the first exponential revert failed', async () => {
-      throw new Error('not yet implemented');
+      const transactions = createTransactions(10);
+      const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
+        'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
+      const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
+        'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
+      let validHasBeenCalledOnce = false;
+      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: ITransaction[]) => {
+        expect(actualTransactions).toEqual(transactions);
+        if (validHasBeenCalledOnce) {
+          return Promise.resolve(transactions[0]);
+        } else {
+          validHasBeenCalledOnce = true;
+          return Promise.resolve(undefined);
+        }
+      });
+      const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
+        'removeTransactionsLaterThan').and.callFake((transactionNumber: number) => {
+          expect(transactionNumber).toEqual(transactions[0].transactionNumber);
+          return Promise.resolve();
+        });
+      const actual = await bitcoinProcessor['revertBlockchainCache']();
+      expect(actual).toEqual(transactions[0].transactionTime);
+      expect(transactionCount).toHaveBeenCalledTimes(2);
+      expect(exponentialTransactions).toHaveBeenCalledTimes(2);
+      expect(firstValid).toHaveBeenCalledTimes(2);
+      expect(removeTransactions).toHaveBeenCalledTimes(2);
     });
   });
 
