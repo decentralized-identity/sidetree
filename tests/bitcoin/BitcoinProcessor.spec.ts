@@ -700,22 +700,36 @@ describe('BitcoinProcessor', () => {
       expect(exponentialTransactions).toHaveBeenCalled();
       expect(firstValid).toHaveBeenCalled();
       expect(removeTransactions).toHaveBeenCalled();
-    })
+    });
   });
 
   describe('getTip', () => {
     it('should return the latest block', async () => {
-      throw new Error('not yet implemented');
+      const height = randomNumber();
+      const mock = mockRpcCall('getblockcount', [], height);
+      const actual = await bitcoinProcessor['getTip']();
+      expect(actual).toEqual(height);
+      expect(mock).toHaveBeenCalled();
     });
   });
 
   describe('verifyBlock', () => {
     it('should return true if the hash matches given a block height', async () => {
-      throw new Error('not yet implemented');
+      const height = randomNumber();
+      const hash = randomString();
+      const mock = mockRpcCall('getblockbyheight', [height, true, false], { height, hash });
+      const actual = await bitcoinProcessor['verifyBlock'](height, hash);
+      expect(actual).toBeTruthy();
+      expect(mock).toHaveBeenCalled();
     });
 
     it('should return false if the hash does not match given a block height', async () => {
-      throw new Error('not yet implemented');
+      const height = randomNumber();
+      const hash = randomString();
+      const mock = mockRpcCall('getblockbyheight', [height, true, false], { height, hash: randomString() });
+      const actual = await bitcoinProcessor['verifyBlock'](height, hash);
+      expect(actual).toBeFalsy();
+      expect(mock).toHaveBeenCalled();
     });
   });
 
