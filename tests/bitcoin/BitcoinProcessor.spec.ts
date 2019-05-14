@@ -301,7 +301,7 @@ describe('BitcoinProcessor', () => {
   });
 
   // function specific to bitcoin coin operations
-  function generateUnspentCoin(privateKey: string, satoshis: number): Transaction.UnspentOutput {
+  function generateUnspentCoin (privateKey: string, satoshis: number): Transaction.UnspentOutput {
     const keyObject: PrivateKey = (PrivateKey as any).fromWIF(privateKey);
     const address = keyObject.toAddress();
     const transaction = new Transaction();
