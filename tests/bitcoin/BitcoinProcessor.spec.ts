@@ -302,16 +302,21 @@ describe('BitcoinProcessor', () => {
   });
 
   // function specific to bitcoin coin operations
-  function generateUnspentCoin (privateKey: string, satoshis: number): Transaction.UnspentOutput {
-    const keyObject: PrivateKey = (PrivateKey as any).fromWIF(privateKey);
+  function generateBitcoinTransaction(satoshis?: number): Transaction {
+    const keyObject: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
     const address = keyObject.toAddress();
     const transaction = new Transaction();
-    transaction.to(address, satoshis);
+    transaction.to(address, satoshis || 1);
     transaction.change(address);
+    return transaction;
+  }
+
+  function generateUnspentCoin (satoshis: number): Transaction.UnspentOutput {
+    const transaction = generateBitcoinTransaction(satoshis);
     return new Transaction.UnspentOutput({
       txid: transaction.id,
       vout: 0,
-      address,
+      address: transaction.outputs[0].script.getAddressInfo(),
       amount: transaction.outputs[0].satoshis * 0.00000001, // Satoshi amount
       script: transaction.outputs[0].script
     });
@@ -321,7 +326,7 @@ describe('BitcoinProcessor', () => {
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * testConfig.bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async () => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
+        generateUnspentCoin(lowLevelWarning + 1)
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
@@ -336,7 +341,7 @@ describe('BitcoinProcessor', () => {
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async () => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
+        generateUnspentCoin(lowLevelWarning - 1)
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
@@ -355,7 +360,7 @@ describe('BitcoinProcessor', () => {
 
     it('should fail if there are not enough satoshis to create a transaction', async () => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(testConfig.bitcoinWalletImportString, 0)
+        generateUnspentCoin(0)
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake(() => {
@@ -377,7 +382,7 @@ describe('BitcoinProcessor', () => {
 
     it('should fail if broadcastTransaction fails', async () => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
+        generateUnspentCoin(lowLevelWarning + 1)
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
@@ -397,7 +402,7 @@ describe('BitcoinProcessor', () => {
 
   describe('getUnspentCoins', () => {
     it('should query for unspent output coins given an address', async () => {
-      const coin = generateUnspentCoin(testConfig.bitcoinWalletImportString, 1);
+      const coin = generateUnspentCoin(1);
       fetchSpy.and.callFake((uri: string) => {
         expect(uri).toContain('/coin/address/');
         return {
@@ -421,7 +426,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should throw if the request failed', async () => {
-      const coin = generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
+      const coin = generateUnspentCoin(0);
       fetchSpy.and.callFake((uri: string) => {
         expect(uri).toContain('/coin/address/');
         return {
@@ -439,7 +444,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should return empty if no coins were found', async () => {
-      const coin = generateUnspentCoin(testConfig.bitcoinWalletImportString, 1);
+      const coin = generateUnspentCoin(1);
       fetchSpy.and.callFake((uri: string) => {
         expect(uri).toContain('/coin/address/');
         return {
