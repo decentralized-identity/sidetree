@@ -484,7 +484,7 @@ describe('BitcoinProcessor', () => {
         });
       });
       const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
-        "success": "true"\
+        "success": true\
       }'));
       const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
       expect(actual).toBeTruthy();
@@ -493,27 +493,6 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should throw if the request failed', async () => {
-      const transaction = generateBitcoinTransaction();
-      // need to disable transaction serialization
-      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
-      fetchSpy.and.callFake((uri: string, params: any) => {
-        expect(uri).toContain('broadcast');
-        expect(params.method).toEqual('post');
-        expect(JSON.parse(params.body).tx).toEqual(transaction.toString());
-        return Promise.resolve({
-          status: httpStatus.OK
-        });
-      });
-      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
-        "success": "true"\
-      }'));
-      const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
-      expect(actual).toBeTruthy();
-      expect(fetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
-    });
-
-    it('should return false if the broadcast failed', async () => {
       const transaction = generateBitcoinTransaction();
       // need to disable transaction serialization
       spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
@@ -527,6 +506,22 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
       }
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
+    });
+
+    it('should return false if the broadcast failed', async () => {
+      const transaction = generateBitcoinTransaction();
+      // need to disable transaction serialization
+      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
+      fetchSpy.and.returnValue(Promise.resolve({
+        status: httpStatus.OK
+      }));
+      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
+        "success": false\
+      }'));
+      const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
+      expect(actual).toBeFalsy();
       expect(fetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
     });
