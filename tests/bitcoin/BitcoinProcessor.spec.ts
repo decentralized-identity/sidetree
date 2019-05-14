@@ -1,7 +1,7 @@
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { BitcoinProcessor } from '../../lib';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
-import { PrivateKey } from 'bitcore-lib';
+import { PrivateKey, Transaction } from 'bitcore-lib';
 import { ITransaction } from '../../lib/core/Transaction';
 import * as httpStatus from 'http-status';
 // import * as nodeFetchPackage from 'node-fetch';
@@ -18,7 +18,7 @@ describe('BitcoinProcessor', () => {
 
   const testConfig: IBitcoinConfig = {
     bitcoinExtensionUri: 'http://localhost:18331',
-    bitcoinFee: 0,
+    bitcoinFee: 1,
     bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
     defaultTimeoutInMilliseconds: 300,
@@ -300,17 +300,78 @@ describe('BitcoinProcessor', () => {
     });
   });
 
+  // function specific to bitcoin coin operations
+  function generateUnspentCoin(privateKey: string, satoshis: number): Transaction.UnspentOutput {
+    const keyObject: PrivateKey = (PrivateKey as any).fromWIF(privateKey);
+    const address = keyObject.toAddress();
+    const transaction = new Transaction();
+    transaction.to(address, satoshis);
+    transaction.change(address);
+    return new Transaction.UnspentOutput({
+      txid: transaction.id,
+      vout: 0,
+      address,
+      amount: transaction.outputs[0].satoshis * 0.00000001, // Satoshi amount
+      script: transaction.outputs[0].script
+    });
+  }
+
   describe('writeTransaction', () => {
+    const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * testConfig.bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async () => {
-      throw new Error('not yet implemented');
+      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
+      ]));
+      const hash = randomString();
+      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+        expect(transaction.getFee()).toEqual(testConfig.bitcoinFee);
+        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
+        return Promise.resolve(true);
+      });
+      await bitcoinProcessor.writeTransaction(hash);
+      expect(getCoinsSpy).toHaveBeenCalled();
+      expect(broadcastSpy).toHaveBeenCalled();
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async () => {
-      throw new Error('not yet implemented');
+      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
+      ]));
+      const hash = randomString();
+      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+        expect(transaction.getFee()).toEqual(testConfig.bitcoinFee);
+        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
+        return Promise.resolve(true);
+      });
+      const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
+        expect(message).toContain('fund your wallet');
+      });
+      await bitcoinProcessor.writeTransaction(hash);
+      expect(getCoinsSpy).toHaveBeenCalled();
+      expect(broadcastSpy).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async () => {
-      throw new Error('not yet implemented');
+      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        generateUnspentCoin(testConfig.bitcoinWalletImportString, 0)
+      ]));
+      const hash = randomString();
+      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake(() => {
+        fail('writeTransaction should have stopped before calling broadcast');
+      });
+      const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
+        expect(message.includes('fund your wallet') || message.includes('Not enough satoshis')).toBeTruthy();
+      });
+      try {
+        await bitcoinProcessor.writeTransaction(hash);
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+      }
+      expect(getCoinsSpy).toHaveBeenCalled();
+      expect(broadcastSpy).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledTimes(2);
     });
   });
 
