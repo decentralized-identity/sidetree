@@ -29,7 +29,7 @@ describe('BitcoinProcessor', () => {
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
     transactionPollPeriodInSeconds: 60
-  }
+  };
 
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
@@ -44,17 +44,17 @@ describe('BitcoinProcessor', () => {
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
-    processTransactionsSpy.and.returnValue(Promise.resolve({hash: 'IamAHash', height: 54321}));
+    processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
     // fetchSpy = spyOn(nodeFetchPackage, 'default');
   });
 
   /**
-   * 
-   * @param method 
-   * @param params 
-   * @param returns 
-   * @param path 
+   *
+   * @param method
+   * @param params
+   * @param returns
+   * @param path
    */
   function mockRpcCall (method: string, params: any[], returns: any, path?: string): jasmine.Spy {
     return spyOn(bitcoinProcessor, 'rpcCall' as any).and.callFake((request: any, requestPath: string) => {
