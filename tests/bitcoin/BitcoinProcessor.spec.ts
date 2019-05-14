@@ -234,7 +234,7 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor.transactions(randomNumber());
         fail('expected to throw');
       } catch (error) {
-        expect((error as any).status).toEqual(httpStatus.BAD_REQUEST);
+        expect((error).status).toEqual(httpStatus.BAD_REQUEST);
       }
     });
 
@@ -247,7 +247,7 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
         fail('expected to throw');
       } catch (error) {
-        expect((error as any).status).toEqual(httpStatus.BAD_REQUEST);
+        expect((error).status).toEqual(httpStatus.BAD_REQUEST);
       }
       expect(verifyMock).toHaveBeenCalled();
     });
@@ -269,10 +269,34 @@ describe('BitcoinProcessor', () => {
 
   describe('firstValidTransaction', () => {
     it('should return the first of the valid transactions when given transactions out of order', async () => {
-      throw new Error('not yet implemented');
+      const transactions: ITransaction[] = [];
+      let heights: number[] = [];
+      const count = 10;
+      for (let i = 0; i < count; i++) {
+        const height = randomNumber();
+        heights.push(height);
+        transactions.push({
+          anchorFileHash: randomString(),
+          transactionNumber: TransactionNumber.construct(height, randomNumber()),
+          transactionTime: height,
+          transactionTimeHash: randomString()
+        });
+      }
+      heights = heights.sort((a, b) => a - b);
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {
+        expect(height).toEqual(heights.pop()!);
+        return Promise.resolve(heights.length === 0);
+      });
+      const actual = await bitcoinProcessor.firstValidTransaction(transactions);
+      expect(verifyMock).toHaveBeenCalledTimes(count);
+      expect(actual).toBeDefined();
     });
     it('should return undefined if no valid transactions are found', async () => {
-      throw new Error('not yet implemented');
+      const transactions = createTransactions();
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
+      const actual = await bitcoinProcessor.firstValidTransaction(transactions);
+      expect(actual).toBeUndefined();
+      expect(verifyMock).toHaveBeenCalled();
     });
   });
 
