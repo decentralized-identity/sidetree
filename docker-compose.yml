@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: docker/sidetree-bitcoin/Dockerfile
     ports:
-      - 3009:3009
+      - 3002:3002
     environment:
       MONGODB_CONNECTION_STRING: "mongodb://root:example@mongo:27017/"
     depends_on:
@@ -36,7 +36,7 @@ services:
       - 3000:3000
     environment:
       MONGODB_CONNECTION_STRING: "mongodb://root:example@mongo:27017/"
-      BLOCKCHAIN_SERVICE_URI: "http://sidetree-bitcoin:3009"
+      BLOCKCHAIN_SERVICE_URI: "http://sidetree-bitcoin:3002"
     depends_on:
       - mongo
       - sidetree-bitcoin

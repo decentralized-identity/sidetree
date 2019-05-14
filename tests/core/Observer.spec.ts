@@ -67,7 +67,7 @@ describe('Observer', async () => {
       'transactions': []
     };
     const mockNodeFetch = fetchMock.sandbox().getOnce('*', createReadableStreamResponse(initialTransactionFetchResponseBody))
-                                             .get('http://127.0.0.1:3009/transactions?since=2&transaction-time-hash=1000',
+                                             .get('http://127.0.0.1:3002/transactions?since=2&transaction-time-hash=1000',
                                                createReadableStreamResponse(subsequentTransactionFetchResponseBody));
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri, mockNodeFetch);
 
@@ -152,12 +152,12 @@ describe('Observer', async () => {
       'transactions': []
     };
     const mockNodeFetch = fetchMock.sandbox().getOnce('*', createReadableStreamResponse(initialTransactionFetchResponseBody))
-                                             .get('http://127.0.0.1:3009/transactions?since=3&transaction-time-hash=3000',
+                                             .get('http://127.0.0.1:3002/transactions?since=3&transaction-time-hash=3000',
                                                createReadableStreamResponse({ code: 'invalid_transaction_number_or_time_hash' }, 400))
                                              .post('*', createReadableStreamResponse(initialTransactionFetchResponseBody.transactions[0]))
-                                             .get('http://127.0.0.1:3009/transactions?since=1&transaction-time-hash=1000',
+                                             .get('http://127.0.0.1:3002/transactions?since=1&transaction-time-hash=1000',
                                                createReadableStreamResponse(transactionFetchResponseBodyAfterBlockReorg))
-                                             .get('http://127.0.0.1:3009/transactions?since=4&transaction-time-hash=4000',
+                                             .get('http://127.0.0.1:3002/transactions?since=4&transaction-time-hash=4000',
                                                createReadableStreamResponse(subsequentTransactionFetchResponseBody));
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri, mockNodeFetch);
 
