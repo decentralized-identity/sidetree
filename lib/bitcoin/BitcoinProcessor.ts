@@ -30,10 +30,8 @@ export default class BitcoinProcessor {
   public readonly sidetreePrefix: string;
   /** Bitcoin transaction fee amount */
   public readonly bitcoinFee: number;
-  /** The first Sidetree transaction number in Bitcoin's blockchain. */
-  public readonly genesisTransactionNumber: number;
-  /** The corresponding time hash of genesis transaction number. */
-  public readonly genesisTimeHash: string;
+  /** The first Sidetree block in Bitcoin's blockchain. */
+  public readonly genesisBlockNumber: number;
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
 
@@ -66,14 +64,13 @@ export default class BitcoinProcessor {
     this.bitcoinExtensionUri = config.bitcoinExtensionUri;
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.bitcoinFee = config.bitcoinFee;
-    this.genesisTransactionNumber = TransactionNumber.construct(config.genesisBlockNumber, 0);
-    this.genesisTimeHash = config.genesisBlockHash;
+    this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     /// Bitcore has a type file error on PrivateKey
     try {
       this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
     } catch (error) {
-      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR, 'bitcoinWalletImportString: ' + error.message);
+      throw new Error('bitcoinWalletImportString: ' + error.message);
     }
     this.pageSize = config.maxSidetreeTransactions;
     this.defaultTimeout = config.defaultTimeoutInMilliseconds || 300;
@@ -109,10 +106,13 @@ export default class BitcoinProcessor {
     console.debug('Initializing TransactionStore');
     await this.transactionStore.initialize();
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
-    let startSyncBlockHeight = lastKnownTransaction ? lastKnownTransaction.transactionTime : TransactionNumber.getBlockNumber(this.genesisTransactionNumber);
-    let startSyncBlockHash = lastKnownTransaction ? lastKnownTransaction.transactionTimeHash : this.genesisTimeHash;
-    console.info(`Last known block ${startSyncBlockHeight} (${startSyncBlockHash})`);
-    const syncedTo = await this.processTransactions(startSyncBlockHeight, startSyncBlockHash);
+    let syncedTo: {height: number, hash: string };
+    if (lastKnownTransaction) {
+      console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
+      syncedTo = await this.processTransactions(lastKnownTransaction.transactionTime, lastKnownTransaction.transactionTimeHash);
+    } else {
+      syncedTo = await this.processTransactions();
+    }
     this.lastBlockHash = syncedTo.hash;
     this.lastBlockHeight = syncedTo.height;
     this.periodicPoll();
@@ -165,18 +165,16 @@ export default class BitcoinProcessor {
   }> {
     if (since && !hash) {
       throw new SidetreeError(httpStatus.BAD_REQUEST);
+    } else if (since && hash) {
+      if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
+        console.info('Requested transactions hash mismatched blockchain');
+        throw new SidetreeError(httpStatus.BAD_REQUEST, 'invalid_transaction_number_or_time_hash');
+      }
+    } else {
+      since = TransactionNumber.construct(this.genesisBlockNumber, 0);
     }
-    if (!since || !hash) {
-      since = this.genesisTransactionNumber;
-      hash = this.genesisTimeHash;
-    }
+
     console.info(`Returning transactions since ${TransactionNumber.getBlockNumber(since)}`);
-
-    if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
-      console.info('Requested transaction hash mismatched blockchain');
-      throw new SidetreeError(httpStatus.BAD_REQUEST);
-    }
-
     const transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
 
     return {
@@ -232,8 +230,9 @@ export default class BitcoinProcessor {
     }
     // cannot make the transaction
     if (totalSatoshis < this.bitcoinFee) {
-      console.error(`Not enough satoshis to broadcast. Failed to broadcast anchor file ${anchorFileHash}`);
-      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+      const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor file ${anchorFileHash}`);
+      console.error(error);
+      throw error;
     }
 
     const transaction = new Transaction();
@@ -247,8 +246,9 @@ export default class BitcoinProcessor {
     transaction.sign(this.privateKey);
 
     if (!await this.broadcastTransaction(transaction)) {
-      console.error(`Could not broadcast transaction ${transaction.toString()}`);
-      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+      const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
+      console.error(error);
+      throw error;
     }
     console.info(`Successfully submitted transaction ${transaction.id}`);
   }
@@ -267,8 +267,8 @@ export default class BitcoinProcessor {
 
     const responseData = await ReadableStreamUtils.readAll(response.body);
     if (response.status !== httpStatus.OK) {
-      const error = new SidetreeError(response.status, responseData);
-      console.error(`Fetch failed [${response.status}]: ${responseData}`);
+      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
+      console.error(error);
       throw error;
     }
 
@@ -303,8 +303,9 @@ export default class BitcoinProcessor {
     });
     const responseData = await ReadableStreamUtils.readAll(responseObject.body);
     if (responseObject.status !== httpStatus.OK) {
-      console.error(`Broadcast failure [${responseObject.status}]: ${responseData}`);
-      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+      const error = new Error(`Broadcast failure [${responseObject.status}]: ${responseData}`);
+      console.error(error);
+      throw error;
     }
 
     const response = JSON.parse(responseData);
@@ -326,22 +327,29 @@ export default class BitcoinProcessor {
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
     }).catch((error) => {
       console.error(error);
-      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+      throw error;
     });
   }
 
   /**
-   * Processes transactions from startBlock to endBlock or tip
+   * Processes transactions from startBlock (or genesis) to endBlock (or tip)
    * @param startBlock The block height to begin from
    * @param startBlockHash The block hash to begin from
    * @param endBlock The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock: number, startBlockHash: string, endBlock?: number): Promise<{height: number, hash: string}> {
-    const startValid = await this.verifyBlock(startBlock, startBlockHash);
-    let beginBlock = startBlock;
-    if (!startValid) {
-      beginBlock = await this.revertBlockchainCache();
+  private async processTransactions (startBlock?: number, startBlockHash?: string, endBlock?: number): Promise<{height: number, hash: string}> {
+    let beginBlock: number;
+    if (startBlock && !startBlockHash) {
+      throw new Error('startBlockHash must be included if startBlock is specified');
+    } else if (startBlock && startBlockHash) {
+      const startValid = await this.verifyBlock(startBlock, startBlockHash);
+      beginBlock = startBlock;
+      if (!startValid) {
+        beginBlock = await this.revertBlockchainCache();
+      }
+    } else {
+      beginBlock = this.genesisBlockNumber;
     }
     if (endBlock === undefined) {
       endBlock = await this.getTip();
@@ -393,7 +401,7 @@ export default class BitcoinProcessor {
     }
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
-    return TransactionNumber.getBlockNumber(this.genesisTransactionNumber);
+    return this.genesisBlockNumber;
   }
 
   /**
@@ -508,16 +516,15 @@ export default class BitcoinProcessor {
 
     const responseData = await ReadableStreamUtils.readAll(response.body);
     if (response.status !== httpStatus.OK) {
-      const error = new SidetreeError(response.status, responseData);
       console.error(`Fetch failed [${response.status}]: ${responseData}`);
-      throw error;
+      throw new Error(responseData);
     }
 
     const responseJson = JSON.parse(responseData);
 
     if ('error' in responseJson && responseJson.error !== null) {
       console.error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
-      throw new SidetreeError(httpStatus.INTERNAL_SERVER_ERROR);
+      throw new Error(JSON.stringify(responseJson.error));
     }
 
     return responseJson.result;
@@ -541,16 +548,16 @@ export default class BitcoinProcessor {
         return await nodeFetch(uri, params);
       } catch (error) {
         if (error instanceof FetchError) {
-          retryCount++;
           if (retryCount >= this.maxRetries) {
             console.debug('Max retries reached. Request failed.');
             throw error;
           }
           switch (error.type) {
             case 'request-timeout':
-              console.debug(`Request timeout (${retryCount})`);
+              console.debug(`Request timeout (${retryCount}) waiting ${timeout}`);
               await this.waitFor(Math.round(Math.random() * this.defaultTimeout + timeout));
               console.debug('Retrying request');
+              retryCount++;
               continue;
           }
         }

@@ -23,7 +23,6 @@ describe('BitcoinProcessor', () => {
     bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
     defaultTimeoutInMilliseconds: 300,
-    genesisBlockHash: '00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591',
     genesisBlockNumber: 1480000,
     lowBalanceNoticeInDays: 28,
     maxRetries: 3,
@@ -48,6 +47,7 @@ describe('BitcoinProcessor', () => {
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
+    // this is always mocked to protect against actual calls to the bitcoin network
     fetchSpy = spyOn(nodeFetchPackage, 'default');
   });
 
@@ -98,7 +98,6 @@ describe('BitcoinProcessor', () => {
         bitcoinFee: randomNumber(),
         bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
         databaseName: randomString(),
-        genesisBlockHash: randomString(),
         genesisBlockNumber: randomNumber(),
         maxSidetreeTransactions: randomNumber(),
         mongoDbConnectionString: randomString(),
@@ -113,8 +112,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.bitcoinExtensionUri).toEqual(config.bitcoinExtensionUri);
       expect(bitcoinProcessor.bitcoinFee).toEqual(config.bitcoinFee);
       expect(bitcoinProcessor.defaultTimeout).toEqual(300);
-      expect(bitcoinProcessor.genesisTimeHash).toEqual(config.genesisBlockHash);
-      expect(TransactionNumber.getBlockNumber(bitcoinProcessor.genesisTransactionNumber)).toEqual(config.genesisBlockNumber);
+      expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect(bitcoinProcessor.maxRetries).toEqual(3);
       expect(bitcoinProcessor.pageSize).toEqual(config.maxSidetreeTransactions);
@@ -122,6 +120,31 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName!);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
+    });
+
+    it('should throw if the wallet import string is incorrect', () => {
+      const config: IBitcoinConfig = {
+        bitcoinExtensionUri: randomString(),
+        bitcoinFee: randomNumber(),
+        bitcoinWalletImportString: 'wrong!',
+        databaseName: randomString(),
+        genesisBlockNumber: randomNumber(),
+        maxSidetreeTransactions: randomNumber(),
+        mongoDbConnectionString: randomString(),
+        sidetreeTransactionPrefix: randomString(4),
+        lowBalanceNoticeInDays: undefined,
+        defaultTimeoutInMilliseconds: undefined,
+        maxRetries: undefined,
+        transactionPollPeriodInSeconds: undefined
+      };
+
+      try {
+        /* tslint:disable-next-line:no-unused-expression */
+        new BitcoinProcessor(config);
+        fail('expected to throw');
+      } catch (error) {
+        expect(error).toContain('bitcoinWalletImportString');
+      }
     });
   });
 
@@ -133,14 +156,29 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should process all the blocks since its last known', async () => {
-      processTransactionsSpy.and.returnValue(Promise.resolve({
-        hash: 'latestHash',
-        height: 12345
-      }));
+      const fromNumber = randomNumber();
+      const fromHash = randomString();
+      transactionStoreLatestTransactionSpy.and.returnValue(
+        Promise.resolve({
+          transactionNumber: randomNumber(),
+          transactionTime: fromNumber,
+          transactionTimeHash: fromHash,
+          anchorFileHash: randomString()
+        })
+      );
+      processTransactionsSpy.and.callFake((since: number, hash: string) => {
+        expect(since).toEqual(fromNumber);
+        expect(hash).toEqual(fromHash);
+        return Promise.resolve({
+          hash: 'latestHash',
+          height: 12345
+        });
+      });
       expect(processTransactionsSpy).not.toHaveBeenCalled();
+      expect(transactionStoreLatestTransactionSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(processTransactionsSpy).toHaveBeenCalled();
-
+      expect(transactionStoreLatestTransactionSpy).toHaveBeenCalled();
     });
 
     it('should begin to periodically poll for updates', async () => {
@@ -189,11 +227,7 @@ describe('BitcoinProcessor', () => {
   describe('transactions', () => {
     it('should get transactions since genesis limited by page size', async () => {
       const expectedTransactionNumber = TransactionNumber.construct(testConfig.genesisBlockNumber, 0);
-      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number, hash: string) => {
-        expect(height).toEqual(testConfig.genesisBlockNumber);
-        expect(hash).toEqual(testConfig.genesisBlockHash);
-        return Promise.resolve(true);
-      });
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       const transactions = createTransactions();
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
         expect(since).toEqual(expectedTransactionNumber);
@@ -202,7 +236,7 @@ describe('BitcoinProcessor', () => {
       }));
 
       const actual = await bitcoinProcessor.transactions();
-      expect(verifyMock).toHaveBeenCalled();
+      expect(verifyMock).not.toHaveBeenCalled();
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy();
       expect(actual.transactions).toEqual(transactions);
@@ -528,6 +562,10 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('periodicPoll', () => {
+    beforeEach(() => {
+      periodicPollSpy.and.callThrough();
+    });
+
     it('should call processTransactions from its last known point', async () => {
       const lastBlock = randomNumber();
       const lastHash = randomString();
@@ -623,6 +661,24 @@ describe('BitcoinProcessor', () => {
       expect(verifySpy).toHaveBeenCalled();
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should use genesis if no start is specified', async () => {
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
+      const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(randomString()));
+      await bitcoinProcessor['processTransactions']();
+      expect(verifySpy).not.toHaveBeenCalled();
+      expect(tipSpy).toHaveBeenCalled();
+      expect(processMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw if a start block is included but not a hash', async () => {
+      try {
+        await bitcoinProcessor['processTransactions'](randomNumber());
+      } catch (error) {
+        expect(error.message).toContain('startBlockHash');
+      }
     });
   });
 
@@ -841,38 +897,191 @@ describe('BitcoinProcessor', () => {
       expect(addTransaction).toHaveBeenCalled();
       expect(shouldFindIDs.length).toEqual(0);
     });
+
+    it('should work with transactions that contain no vout parameter', async () => {
+      const block = randomNumber();
+      const blockData = await generateBlock(block);
+      blockData.tx = blockData.tx.map((transaction: any) => {
+        return {
+          txid: transaction.id,
+          hash: transaction.id
+        };
+      });
+      const rpcMock = mockRpcCall('getblockbyheight', [block, true, true], blockData);
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
+        'addTransaction');
+      const actual = await bitcoinProcessor['processBlock'](block);
+      expect(actual).toEqual(blockData.hash);
+      expect(rpcMock).toHaveBeenCalled();
+      expect(addTransaction).not.toHaveBeenCalled();
+    })
   });
 
   describe('rpcCall', () => {
     it('should make a request and return the result', async () => {
-      throw new Error('not yet implemented');
+      const path = randomString();
+      const request: any = {};
+      const memberName = randomString();
+      const memberValue = randomString();
+      request[memberName] = memberValue;
+      const bodyIdentifier = randomNumber();
+      const result = randomString();
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain(testConfig.bitcoinExtensionUri);
+        expect(uri.endsWith(path)).toBeTruthy();
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
+        return Promise.resolve({
+          status: httpStatus.OK,
+          body: bodyIdentifier
+        });
+      });
+      const readUtilSpy = spyOn(ReadableStreamUtils, 'readAll').and.callFake((body: any) => {
+        expect(body).toEqual(bodyIdentifier);
+        return Promise.resolve(JSON.stringify({
+          result,
+          error: null,
+          id: null
+        }));
+      });
+      const actual = await bitcoinProcessor['rpcCall'](request, path);
+      expect(actual).toEqual(result);
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readUtilSpy).toHaveBeenCalled();
     });
     it('should throw if the request failed', async () => {
-      throw new Error('not yet implemented');
+      const request: any = {
+        'test': randomString()
+      };
+      const result = randomString();
+      const statusCode = randomNumber();
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain(testConfig.bitcoinExtensionUri);
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body).test).toEqual(request.test);
+        return Promise.resolve({
+          status: statusCode
+        });
+      });
+      const readUtilSpy = spyOn(ReadableStreamUtils, 'readAll').and.callFake(() => {
+        return Promise.resolve(result);
+      });
+      try {
+        await bitcoinProcessor['rpcCall'](request);
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toContain('fetch');
+        expect(error.message).toContain(statusCode.toString());
+        expect(error.message).toContain(result);
+      }
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readUtilSpy).toHaveBeenCalled();
     });
     it('should throw if the RPC call failed', async () => {
-      throw new Error('not yet implemented');
+      const request: any = {
+        'test': randomString()
+      };
+      const result = randomString();
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toContain(testConfig.bitcoinExtensionUri);
+        expect(params.method).toEqual('post');
+        expect(JSON.parse(params.body).test).toEqual(request.test);
+        return Promise.resolve({
+          status: httpStatus.OK
+        });
+      });
+      const readUtilSpy = spyOn(ReadableStreamUtils, 'readAll').and.callFake(() => {
+        return Promise.resolve(JSON.stringify({
+          result: null,
+          error: result,
+          id: null
+        }));
+      });
+      try {
+        await bitcoinProcessor['rpcCall'](request);
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toContain('RPC');
+        expect(error.message).toContain(result);
+      }
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readUtilSpy).toHaveBeenCalled();
     });
   });
 
   describe('fetchWithRetry', () => {
-    it('should fetch the URI with the given requestParameters', async () => {
-      throw new Error('not yet implemented');
+    it('should fetch the URI with the given requestParameters', async (done) => {
+      const path = randomString();
+      const request: any = {};
+      const memberName = randomString();
+      const memberValue = randomString();
+      request[memberName] = memberValue;
+      const result = randomNumber();
+      fetchSpy.and.callFake((uri: string, params: any) => {
+        expect(uri).toEqual(path);
+        expect(params[memberName]).toEqual(memberValue);
+        return Promise.resolve(result);
+      });
+      const actual = await bitcoinProcessor['fetchWithRetry'](path, request);
+      expect(actual as any).toEqual(result);
+      expect(fetchSpy).toHaveBeenCalled();
+      done();
     });
-    it('should retry with an extended time period if the request timed out', async () => {
-      throw new Error('not yet implemented');
+    it('should retry with an extended time period if the request timed out', async (done) => {
+      const requestId = randomString();
+      let timeout: number;
+      fetchSpy.and.callFake((_: any, params: any) => {
+        expect(params.headers.id).toEqual(requestId);
+        if (timeout) {
+          expect(params.timeout).toBeGreaterThan(timeout);
+          return Promise.resolve();
+        } else {
+          timeout = params.timeout;
+          return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+        }
+      });
+      await bitcoinProcessor['fetchWithRetry']('localhost', { headers: { id: requestId } });
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      done();
     });
-    it('should stop retrying after the max retry limit', async () => {
-      throw new Error('not yet implemented');
+    it('should stop retrying after the max retry limit', async (done) => {
+      fetchSpy.and.callFake((_: any, __: any) => {
+        return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+      });
+      try {
+        await bitcoinProcessor['fetchWithRetry']('localhost');
+      } catch (error) {
+        expect(error.message).toEqual('test');
+        expect(error.type).toEqual('request-timeout');
+      }
+      expect(fetchSpy).toHaveBeenCalledTimes(testConfig.maxRetries! + 1);
+      done();
     });
-    it('should throw non timeout errors immediately', async () => {
-      throw new Error('not yet implemented');
+    it('should throw non timeout errors immediately', async (done) => {
+      let timeout = true;
+      const result = randomString();
+      fetchSpy.and.callFake((_: any, __: any) => {
+        if (timeout) {
+          timeout = false;
+          return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+        } else {
+          return Promise.reject(new Error(result));
+        }
+      });
+      try {
+        await bitcoinProcessor['fetchWithRetry']('localhost');
+      } catch (error) {
+        expect(error.message).toEqual(result);
+      }
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      done();
     });
   });
 
   describe('waitFor', () => {
-    it('should return after the given amount of time', async () => {
-      throw new Error('not yet implemented');
-    });
+    it('should return after the given amount of time', async (done) => {
+      await bitcoinProcessor['waitFor'](400);
+      done();
+    }, 500);
   });
 });

@@ -8,7 +8,6 @@ export interface IBitcoinConfig {
   lowBalanceNoticeInDays: number | undefined;
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;
-  genesisBlockHash: string;
   mongoDbConnectionString: string;
   databaseName: string | undefined;
   maxSidetreeTransactions: number;
