@@ -273,8 +273,9 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
         expect(error.code).not.toEqual('invalid_transaction_number_or_time_hash');
+      } finally {
+        done();
       }
-      done();
     });
 
     it('should fail if the height and hash do not validate against the current blockchain', async (done) => {
@@ -288,9 +289,10 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
         expect(error.code).toEqual('invalid_transaction_number_or_time_hash');
+        expect(verifyMock).toHaveBeenCalled();
+      } finally {
+        done();
       }
-      expect(verifyMock).toHaveBeenCalled();
-      done();
     });
 
     it('should handle moreTransactions parameter according to the returned page size', async (done) => {
@@ -423,10 +425,11 @@ describe('BitcoinProcessor', () => {
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Not enough satoshis');
+        expect(getCoinsSpy).toHaveBeenCalled();
+        expect(broadcastSpy).not.toHaveBeenCalled();
+      } finally {
+        done();
       }
-      expect(getCoinsSpy).toHaveBeenCalled();
-      expect(broadcastSpy).not.toHaveBeenCalled();
-      done();
     });
 
     it('should fail if broadcastTransaction fails', async (done) => {
@@ -444,10 +447,11 @@ describe('BitcoinProcessor', () => {
         fail('should have failed');
       } catch (error) {
         expect(error.message).toContain('Could not broadcast');
+        expect(getCoinsSpy).toHaveBeenCalled();
+        expect(broadcastSpy).toHaveBeenCalled();
+      } finally {
+        done();
       }
-      expect(getCoinsSpy).toHaveBeenCalled();
-      expect(broadcastSpy).toHaveBeenCalled();
-      done();
     });
   });
 
@@ -492,8 +496,9 @@ describe('BitcoinProcessor', () => {
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain(verifyCode);
+      } finally {
+        done();
       }
-      done();
     });
 
     it('should return empty if no coins were found', async (done) => {
@@ -549,10 +554,11 @@ describe('BitcoinProcessor', () => {
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Broadcast failure');
+        expect(retryFetchSpy).toHaveBeenCalled();
+        expect(readStreamSpy).toHaveBeenCalled();
+      } finally {
+        done();
       }
-      expect(retryFetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
-      done();
     });
 
     it('should return false if the broadcast failed', async (done) => {
@@ -601,8 +607,8 @@ describe('BitcoinProcessor', () => {
         expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
         // clean up
         clearTimeout(bitcoinProcessor['pollTimeoutId']);
-      }, 500);
-      done();
+        done();
+      }, 300);
     });
 
     it('should set a timeout to call itself', async (done) => {
@@ -616,8 +622,8 @@ describe('BitcoinProcessor', () => {
         expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
         // clean up
         clearTimeout(bitcoinProcessor['pollTimeoutId']);
-      }, 500);
-      done();
+        done();
+      }, 300);
     });
   });
 
@@ -1003,10 +1009,11 @@ describe('BitcoinProcessor', () => {
         expect(error.message).toContain('Fetch');
         expect(error.message).toContain(statusCode.toString());
         expect(error.message).toContain(result);
+        expect(retryFetchSpy).toHaveBeenCalled();
+        expect(readUtilSpy).toHaveBeenCalled();
+      } finally {
+        done();
       }
-      expect(retryFetchSpy).toHaveBeenCalled();
-      expect(readUtilSpy).toHaveBeenCalled();
-      done();
     });
     it('should throw if the RPC call failed', async (done) => {
       const request: any = {
@@ -1034,10 +1041,11 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.message).toContain('RPC');
         expect(error.message).toContain(result);
+        expect(retryFetchSpy).toHaveBeenCalled();
+        expect(readUtilSpy).toHaveBeenCalled();
+      } finally {
+        done();
       }
-      expect(retryFetchSpy).toHaveBeenCalled();
-      expect(readUtilSpy).toHaveBeenCalled();
-      done();
     });
   });
 
@@ -1091,9 +1099,10 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.message).toEqual('test');
         expect(error.type).toEqual('request-timeout');
+        expect(fetchSpy).toHaveBeenCalledTimes(testConfig.maxRetries! + 1);
+      } finally {
+        done();
       }
-      expect(fetchSpy).toHaveBeenCalledTimes(testConfig.maxRetries! + 1);
-      done();
     });
     it('should throw non timeout errors immediately', async (done) => {
       let timeout = true;
@@ -1110,15 +1119,21 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor['fetchWithRetry']('localhost');
       } catch (error) {
         expect(error.message).toEqual(result);
+        expect(fetchSpy).toHaveBeenCalledTimes(2);
+      } finally {
+        done();
       }
-      expect(fetchSpy).toHaveBeenCalledTimes(2);
-      done();
     });
   });
 
   describe('waitFor', () => {
     it('should return after the given amount of time', async (done) => {
+      let approved = false;
+      setTimeout(() => {
+        approved = true;
+      }, 300);
       await bitcoinProcessor['waitFor'](400);
+      expect(approved).toBeTruthy();
       done();
     }, 500);
   });
