@@ -143,19 +143,20 @@ describe('BitcoinProcessor', () => {
         new BitcoinProcessor(config);
         fail('expected to throw');
       } catch (error) {
-        expect(error).toContain('bitcoinWalletImportString');
+        expect(error.message).toContain('bitcoinWalletImportString');
       }
     });
   });
 
   describe('initialize', () => {
-    it('should initialize the transactionStore', async () => {
+    it('should initialize the transactionStore', async (done) => {
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
+      done();
     });
 
-    it('should process all the blocks since its last known', async () => {
+    it('should process all the blocks since its last known', async (done) => {
       const fromNumber = randomNumber();
       const fromHash = randomString();
       transactionStoreLatestTransactionSpy.and.returnValue(
@@ -179,12 +180,14 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor.initialize();
       expect(processTransactionsSpy).toHaveBeenCalled();
       expect(transactionStoreLatestTransactionSpy).toHaveBeenCalled();
+      done();
     });
 
-    it('should begin to periodically poll for updates', async () => {
+    it('should begin to periodically poll for updates', async (done) => {
       expect(periodicPollSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(periodicPollSpy).toHaveBeenCalled();
+      done();
     });
   });
 
@@ -201,7 +204,7 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('time', () => {
-    it('should get the current latest when given no hash', async () => {
+    it('should get the current latest when given no hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
       const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(height));
@@ -211,9 +214,10 @@ describe('BitcoinProcessor', () => {
       expect(actual.hash).toEqual(hash);
       expect(tipSpy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalled();
+      done();
     });
 
-    it('should get the corresponding bitcoin height given a hash', async () => {
+    it('should get the corresponding bitcoin height given a hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
       const spy = mockRpcCall('getblock', [hash, true, false], { hash, height });
@@ -221,11 +225,12 @@ describe('BitcoinProcessor', () => {
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
       expect(spy).toHaveBeenCalled();
+      done();
     });
   });
 
   describe('transactions', () => {
-    it('should get transactions since genesis limited by page size', async () => {
+    it('should get transactions since genesis limited by page size', async (done) => {
       const expectedTransactionNumber = TransactionNumber.construct(testConfig.genesisBlockNumber, 0);
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       const transactions = createTransactions();
@@ -240,9 +245,10 @@ describe('BitcoinProcessor', () => {
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy();
       expect(actual.transactions).toEqual(transactions);
+      done();
     });
 
-    it('should get transactions since a specific block height and hash', async () => {
+    it('should get transactions since a specific block height and hash', async (done) => {
       const expectedHeight = randomNumber();
       const expectedHash = randomString();
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
@@ -262,18 +268,21 @@ describe('BitcoinProcessor', () => {
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy();
       expect(actual.transactions).toEqual(transactions);
+      done();
     });
 
-    it('should fail if only given a block height', async () => {
+    it('should fail if only given a block height', async (done) => {
       try {
         await bitcoinProcessor.transactions(randomNumber());
         fail('expected to throw');
       } catch (error) {
-        expect((error).status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).not.toEqual('invalid_transaction_number_or_time_hash');
       }
+      done();
     });
 
-    it('should fail if the height and hash do not validate against the current blockchain', async () => {
+    it('should fail if the height and hash do not validate against the current blockchain', async (done) => {
       const expectedHeight = randomNumber();
       const expectedHash = randomString();
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
@@ -282,12 +291,14 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
         fail('expected to throw');
       } catch (error) {
-        expect((error).status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).toEqual('invalid_transaction_number_or_time_hash');
       }
       expect(verifyMock).toHaveBeenCalled();
+      done();
     });
 
-    it('should handle moreTransactions parameter according to the returned page size', async () => {
+    it('should handle moreTransactions parameter according to the returned page size', async (done) => {
       const expectedHeight = randomNumber();
       const expectedHash = randomString();
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
@@ -299,11 +310,12 @@ describe('BitcoinProcessor', () => {
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.transactions).toEqual(transactions);
       expect(actual.moreTransactions).toBeTruthy();
+      done();
     });
   });
 
   describe('firstValidTransaction', () => {
-    it('should return the first of the valid transactions when given transactions out of order', async () => {
+    it('should return the first of the valid transactions when given transactions out of order', async (done) => {
       const transactions: ITransaction[] = [];
       let heights: number[] = [];
       const count = 10;
@@ -325,13 +337,15 @@ describe('BitcoinProcessor', () => {
       const actual = await bitcoinProcessor.firstValidTransaction(transactions);
       expect(verifyMock).toHaveBeenCalledTimes(count);
       expect(actual).toBeDefined();
+      done();
     });
-    it('should return undefined if no valid transactions are found', async () => {
+    it('should return undefined if no valid transactions are found', async (done) => {
       const transactions = createTransactions();
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
       const actual = await bitcoinProcessor.firstValidTransaction(transactions);
       expect(actual).toBeUndefined();
       expect(verifyMock).toHaveBeenCalled();
+      done();
     });
   });
 
@@ -358,7 +372,7 @@ describe('BitcoinProcessor', () => {
 
   describe('writeTransaction', () => {
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * testConfig.bitcoinFee;
-    it('should write a transaction if there are enough Satoshis', async () => {
+    it('should write a transaction if there are enough Satoshis', async (done) => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         generateUnspentCoin(lowLevelWarning + 1)
       ]));
@@ -371,9 +385,10 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor.writeTransaction(hash);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
+      done();
     });
 
-    it('should warn if the number of Satoshis are under the lowBalance calculation', async () => {
+    it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         generateUnspentCoin(lowLevelWarning - 1)
       ]));
@@ -390,9 +405,10 @@ describe('BitcoinProcessor', () => {
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
       expect(errorSpy).toHaveBeenCalled();
+      done();
     });
 
-    it('should fail if there are not enough satoshis to create a transaction', async () => {
+    it('should fail if there are not enough satoshis to create a transaction', async (done) => {
       const coin = generateUnspentCoin(0);
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         new Transaction.UnspentOutput({
@@ -407,25 +423,18 @@ describe('BitcoinProcessor', () => {
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
-      let acceptableErrorMessages = 0;
-      const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
-        if (message.includes('fund your wallet') || message.includes('Not enough satoshis')) {
-          acceptableErrorMessages++;
-        }
-      });
       try {
         await bitcoinProcessor.writeTransaction(hash);
         fail('should have thrown');
       } catch (error) {
-        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+        expect(error.message).toContain('Not enough satoshis');
       }
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).not.toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalled();
-      expect(acceptableErrorMessages).toEqual(2);
+      done();
     });
 
-    it('should fail if broadcastTransaction fails', async () => {
+    it('should fail if broadcastTransaction fails', async (done) => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         generateUnspentCoin(lowLevelWarning + 1)
       ]));
@@ -437,16 +446,18 @@ describe('BitcoinProcessor', () => {
       });
       try {
         await bitcoinProcessor.writeTransaction(hash);
+        fail('should have failed');
       } catch (error) {
-        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+        expect(error.message).toContain('Could not broadcast');
       }
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
+      done();
     });
   });
 
   describe('getUnspentCoins', () => {
-    it('should query for unspent output coins given an address', async () => {
+    it('should query for unspent output coins given an address', async (done) => {
       const coin = generateUnspentCoin(1);
       fetchSpy.and.callFake((uri: string) => {
         expect(uri).toContain('/coin/address/');
@@ -468,9 +479,10 @@ describe('BitcoinProcessor', () => {
       expect(readStreamSpy).toHaveBeenCalled();
       expect(actual[0].address).toEqual(coin.address);
       expect(actual[0].txId).toEqual(coin.txId);
+      done();
     });
 
-    it('should throw if the request failed', async () => {
+    it('should throw if the request failed', async (done) => {
       const coin = generateUnspentCoin(0);
       fetchSpy.and.callFake((uri: string) => {
         expect(uri).toContain('/coin/address/');
@@ -484,11 +496,12 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor['getUnspentCoins'](coin.address);
         fail('should have thrown');
       } catch (error) {
-        expect(error.message).toEqual(verifyCode);
+        expect(error.message).toContain(verifyCode);
       }
+      done();
     });
 
-    it('should return empty if no coins were found', async () => {
+    it('should return empty if no coins were found', async (done) => {
       const coin = generateUnspentCoin(1);
       fetchSpy.and.callFake((uri: string) => {
         expect(uri).toContain('/coin/address/');
@@ -501,11 +514,12 @@ describe('BitcoinProcessor', () => {
       expect(fetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
+      done();
     });
   });
 
   describe('broadcastTransaction', () => {
-    it('should serialize and broadcast a transaction', async () => {
+    it('should serialize and broadcast a transaction', async (done) => {
       const transaction = generateBitcoinTransaction();
       // need to disable transaction serialization
       spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
@@ -524,9 +538,10 @@ describe('BitcoinProcessor', () => {
       expect(actual).toBeTruthy();
       expect(fetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
+      done();
     });
 
-    it('should throw if the request failed', async () => {
+    it('should throw if the request failed', async (done) => {
       const transaction = generateBitcoinTransaction();
       // need to disable transaction serialization
       spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
@@ -538,13 +553,14 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor['broadcastTransaction'](transaction);
         fail('should have thrown');
       } catch (error) {
-        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+        expect(error.message).toContain('Broadcast failure');
       }
       expect(fetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
+      done();
     });
 
-    it('should return false if the broadcast failed', async () => {
+    it('should return false if the broadcast failed', async (done) => {
       const transaction = generateBitcoinTransaction();
       // need to disable transaction serialization
       spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
@@ -558,6 +574,7 @@ describe('BitcoinProcessor', () => {
       expect(actual).toBeFalsy();
       expect(fetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
+      done();
     });
   });
 
@@ -566,7 +583,7 @@ describe('BitcoinProcessor', () => {
       periodicPollSpy.and.callThrough();
     });
 
-    it('should call processTransactions from its last known point', async () => {
+    it('should call processTransactions from its last known point', async (done) => {
       const lastBlock = randomNumber();
       const lastHash = randomString();
       const nextBlock = randomNumber();
@@ -590,9 +607,10 @@ describe('BitcoinProcessor', () => {
         // clean up
         clearTimeout(bitcoinProcessor['pollTimeoutId']);
       }, 500);
+      done();
     });
 
-    it('should set a timeout to call itself', async () => {
+    it('should set a timeout to call itself', async (done) => {
       processTransactionsSpy.and.returnValue(Promise.resolve({
         hash: randomString(),
         height: randomNumber()
@@ -604,6 +622,7 @@ describe('BitcoinProcessor', () => {
         // clean up
         clearTimeout(bitcoinProcessor['pollTimeoutId']);
       }, 500);
+      done();
     });
   });
 
@@ -613,7 +632,7 @@ describe('BitcoinProcessor', () => {
       processTransactionsSpy.and.callThrough();
     });
 
-    it('should verify the start block', async () => {
+    it('should verify the start block', async (done) => {
       const hash = randomString();
       const start = randomNumber();
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
@@ -623,9 +642,10 @@ describe('BitcoinProcessor', () => {
       expect(actual.height).toEqual(start + 1);
       expect(verifySpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalled();
+      done();
     });
 
-    it('should begin a rollback if the start block failed to validate', async () => {
+    it('should begin a rollback if the start block failed to validate', async (done) => {
       const hash = randomString();
       const start = randomNumber() + 100;
       const revertNumber = start - 100;
@@ -639,9 +659,10 @@ describe('BitcoinProcessor', () => {
       expect(revertSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledWith(revertNumber);
       expect(processMock).toHaveBeenCalledWith(start + 1);
+      done();
     });
 
-    it('should call processBlock on all blocks within range', async () => {
+    it('should call processBlock on all blocks within range', async (done) => {
       const hash = randomString();
       const start = randomNumber();
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
@@ -649,9 +670,10 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor['processTransactions'](start, randomString(), start + 9);
       expect(verifySpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(10);
+      done();
     });
 
-    it('should use the current tip if no end is specified', async () => {
+    it('should use the current tip if no end is specified', async (done) => {
       const hash = randomString();
       const start = randomNumber();
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
@@ -661,9 +683,10 @@ describe('BitcoinProcessor', () => {
       expect(verifySpy).toHaveBeenCalled();
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
+      done();
     });
 
-    it('should use genesis if no start is specified', async () => {
+    it('should use genesis if no start is specified', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(randomString()));
@@ -671,19 +694,21 @@ describe('BitcoinProcessor', () => {
       expect(verifySpy).not.toHaveBeenCalled();
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
+      done();
     });
 
-    it('should throw if a start block is included but not a hash', async () => {
+    it('should throw if a start block is included but not a hash', async (done) => {
       try {
         await bitcoinProcessor['processTransactions'](randomNumber());
       } catch (error) {
         expect(error.message).toContain('startBlockHash');
       }
+      done();
     });
   });
 
   describe('revertBlockchainCache', () => {
-    it('should exponentially revert transactions', async () => {
+    it('should exponentially revert transactions', async (done) => {
       const transactions = createTransactions(10);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
         'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
@@ -704,9 +729,10 @@ describe('BitcoinProcessor', () => {
       expect(exponentialTransactions).toHaveBeenCalled();
       expect(firstValid).toHaveBeenCalled();
       expect(removeTransactions).toHaveBeenCalled();
+      done();
     });
 
-    it('should continue to revert if the first exponential revert failed', async () => {
+    it('should continue to revert if the first exponential revert failed', async (done) => {
       const transactions = createTransactions(10);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
         'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
@@ -733,9 +759,10 @@ describe('BitcoinProcessor', () => {
       expect(exponentialTransactions).toHaveBeenCalledTimes(2);
       expect(firstValid).toHaveBeenCalledTimes(2);
       expect(removeTransactions).toHaveBeenCalledTimes(2);
+      done();
     });
 
-    it('should stop reverting if it has ran out of transactions', async () => {
+    it('should stop reverting if it has ran out of transactions', async (done) => {
       let transactions = createTransactions(10);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
         'getTransactionsCount').and.callFake(() => {
@@ -756,36 +783,40 @@ describe('BitcoinProcessor', () => {
       expect(exponentialTransactions).toHaveBeenCalled();
       expect(firstValid).toHaveBeenCalled();
       expect(removeTransactions).toHaveBeenCalled();
+      done();
     });
   });
 
   describe('getTip', () => {
-    it('should return the latest block', async () => {
+    it('should return the latest block', async (done) => {
       const height = randomNumber();
       const mock = mockRpcCall('getblockcount', [], height);
       const actual = await bitcoinProcessor['getTip']();
       expect(actual).toEqual(height);
       expect(mock).toHaveBeenCalled();
+      done();
     });
   });
 
   describe('verifyBlock', () => {
-    it('should return true if the hash matches given a block height', async () => {
+    it('should return true if the hash matches given a block height', async (done) => {
       const height = randomNumber();
       const hash = randomString();
       const mock = mockRpcCall('getblockbyheight', [height, true, false], { height, hash });
       const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeTruthy();
       expect(mock).toHaveBeenCalled();
+      done();
     });
 
-    it('should return false if the hash does not match given a block height', async () => {
+    it('should return false if the hash does not match given a block height', async (done) => {
       const height = randomNumber();
       const hash = randomString();
       const mock = mockRpcCall('getblockbyheight', [height, true, false], { height, hash: randomString() });
       const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeFalsy();
       expect(mock).toHaveBeenCalled();
+      done();
     });
   });
 
@@ -838,7 +869,7 @@ describe('BitcoinProcessor', () => {
       };
     }
 
-    it('should review all transactions in a block and add them to the transactionStore', async () => {
+    it('should review all transactions in a block and add them to the transactionStore', async (done) => {
       const block = randomNumber();
       let shouldFindIDs: string[] = [];
       const blockData = await generateBlock(block, () => {
@@ -866,9 +897,10 @@ describe('BitcoinProcessor', () => {
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).toHaveBeenCalled();
       expect(shouldFindIDs.length).toEqual(0);
+      done();
     });
 
-    it('should ignore other data transactions', async () => {
+    it('should ignore other data transactions', async (done) => {
       const block = randomNumber();
       let shouldFindIDs: string[] = [];
       const blockData = await generateBlock(block, () => {
@@ -896,9 +928,10 @@ describe('BitcoinProcessor', () => {
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).toHaveBeenCalled();
       expect(shouldFindIDs.length).toEqual(0);
+      done();
     });
 
-    it('should work with transactions that contain no vout parameter', async () => {
+    it('should work with transactions that contain no vout parameter', async (done) => {
       const block = randomNumber();
       const blockData = await generateBlock(block);
       blockData.tx = blockData.tx.map((transaction: any) => {
@@ -914,11 +947,12 @@ describe('BitcoinProcessor', () => {
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).not.toHaveBeenCalled();
+      done();
     });
   });
 
   describe('rpcCall', () => {
-    it('should make a request and return the result', async () => {
+    it('should make a request and return the result', async (done) => {
       const path = randomString();
       const request: any = {};
       const memberName = randomString();
@@ -948,8 +982,9 @@ describe('BitcoinProcessor', () => {
       expect(actual).toEqual(result);
       expect(fetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
+      done();
     });
-    it('should throw if the request failed', async () => {
+    it('should throw if the request failed', async (done) => {
       const request: any = {
         'test': randomString()
       };
@@ -970,14 +1005,15 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor['rpcCall'](request);
         fail('should have thrown');
       } catch (error) {
-        expect(error.message).toContain('fetch');
+        expect(error.message).toContain('Fetch');
         expect(error.message).toContain(statusCode.toString());
         expect(error.message).toContain(result);
       }
       expect(fetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
+      done();
     });
-    it('should throw if the RPC call failed', async () => {
+    it('should throw if the RPC call failed', async (done) => {
       const request: any = {
         'test': randomString()
       };
@@ -1006,6 +1042,7 @@ describe('BitcoinProcessor', () => {
       }
       expect(fetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
+      done();
     });
   });
 

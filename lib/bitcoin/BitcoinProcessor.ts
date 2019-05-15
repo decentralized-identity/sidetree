@@ -516,15 +516,17 @@ export default class BitcoinProcessor {
 
     const responseData = await ReadableStreamUtils.readAll(response.body);
     if (response.status !== httpStatus.OK) {
-      console.error(`Fetch failed [${response.status}]: ${responseData}`);
-      throw new Error(responseData);
+      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
+      console.error(error);
+      throw error;
     }
 
     const responseJson = JSON.parse(responseData);
 
     if ('error' in responseJson && responseJson.error !== null) {
-      console.error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
-      throw new Error(JSON.stringify(responseJson.error));
+      const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
+      console.error(error);
+      throw error;
     }
 
     return responseJson.result;
@@ -554,10 +556,9 @@ export default class BitcoinProcessor {
           }
           switch (error.type) {
             case 'request-timeout':
-              console.debug(`Request timeout (${retryCount}) waiting ${timeout}`);
+              console.debug(`Request timeout (${retryCount})`);
               await this.waitFor(Math.round(Math.random() * this.defaultTimeout + timeout));
-              console.debug('Retrying request');
-              retryCount++;
+              console.debug(`Retrying request (${++retryCount})`);
               continue;
           }
         }
