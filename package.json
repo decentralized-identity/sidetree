@@ -1,6 +1,6 @@
 {
   "name": "@decentralized-identity/sidetree",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Node.js implementation of the Sidetree protocol.",
   "repository": "https://github.com/decentralized-identity/sidetree-core",
   "license": "Apache-2.0",
@@ -14,7 +14,7 @@
     "double-ended-queue": "2.1.0-0",
     "fast-json-patch": "2.1.0",
     "http-status": "1.3.2",
-    "ipfs": "0.34.4",
+    "ipfs": "0.35.0",
     "koa": "2.7.0",
     "koa-router": "7.4.0",
     "mongodb": "3.2.3",
@@ -56,7 +56,7 @@
   },
   "scripts": {
     "precommit": "npm run lint",
-    "build": "tsc && copyfiles \"./**/*.json\" dist -e \"./node_modules/**/*\"",
+    "build": "tsc && copyfiles \"src/**/*.json\" dist && copyfiles \"tests/**/*.json\" dist",
     "test": "jasmine-ts --config=./tests/jasmine.json",
     "cc": "npm run build && nyc jasmine --config=./tests/jasmine-cc.json",
     "lint": "tslint --fix --project .",

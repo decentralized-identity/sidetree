@@ -2,7 +2,7 @@
   "port": 3000,
   "didMethodName": "did:sidetree:",
   "contentAddressableStoreServiceUri": "http://127.0.0.1:3001/v1.0",
-  "blockchainServiceUri": "http://127.0.0.1:3009",
+  "blockchainServiceUri": "http://127.0.0.1:3002",
   "batchingIntervalInSeconds": 10,
   "observingIntervalInSeconds": 10,
   "maxConcurrentDownloads": 20,

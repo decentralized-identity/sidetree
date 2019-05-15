@@ -36,6 +36,25 @@ export default class IpfsStorage {
    * @returns The content of the given hash.
    */
   public async read (hash: string): Promise<Buffer> {
+    let objectData = undefined;
+    try {
+      objectData = await (this.node as any).object.stat(hash);
+
+    } catch (error) {
+      console.info(error);
+      return Buffer.from('');
+    }
+
+    if (objectData === undefined || objectData.CumulativeSize === undefined) {
+      return Buffer.from('');
+    }
+
+    // Temporary size check until issue 126 is addressed - https://github.com/decentralized-identity/sidetree/issues/126
+    if (objectData.CumulativeSize > 30000000) {
+      console.info(`Content size of ${objectData.CumulativeSize} bytes is greater than 30MB limit.`);
+      return Buffer.from('');
+    }
+
     // files.get fetches the content from network if not available in local repo and stores in cache which is garbage collectable
     const files = await this.node.get(hash);
 

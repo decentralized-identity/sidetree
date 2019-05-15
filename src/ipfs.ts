@@ -9,7 +9,9 @@ import {
 } from '../lib/index';
 
 const config: {
+  /** Port number used by the service. */
   port: number;
+  /** Timeout for fetch request. */
   fetchTimeoutInSeconds: number;
 } = require('./ipfs-config.json');
 

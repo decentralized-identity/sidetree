@@ -8,7 +8,9 @@ import {
   BitcoinProcessor
 } from '../lib/index';
 
+/** Bitcoin service configuration parameters */
 interface IBitcoinServiceConifg extends ISidetreeBitcoinConfig {
+  /** Port number used by the service. */
   port: number;
 }
 
@@ -66,7 +68,8 @@ app.use(router.routes())
 app.use((ctx, _next) => {
   ctx.response.status = 400;
 });
-const port = config.port;
+
+const port = process.env.SIDETREE_BITCOIN_PORT || config.port;
 
 // initialize the blockchain service and kick-off background tasks
 let blockchainService: BitcoinProcessor;
