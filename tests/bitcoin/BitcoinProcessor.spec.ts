@@ -914,7 +914,7 @@ describe('BitcoinProcessor', () => {
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).not.toHaveBeenCalled();
-    })
+    });
   });
 
   describe('rpcCall', () => {
