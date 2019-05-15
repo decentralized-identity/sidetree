@@ -1,0 +1,11 @@
+{
+  "bitcoinExtensionUri": "[FILL THIS IN]",
+  "bitcoinWalletImportString": "[FILL THIS IN]",
+  "bitcoinFee": 4000,
+  "sidetreeTransactionPrefix": "sidetree:",
+  "genesisBlockNumber": 1480000,
+  "databaseName": "sidetree-bitcoin",
+  "maxSidetreeTransactions": 10,
+  "mongoDbConnectionString": "mongodb://localhost:27017/",
+  "port": 3002
+}
