@@ -8,6 +8,3 @@ coverage/
 
 # sidetree-ipfs data folder
 sidetree-ipfs/
-
-# config files with secrets
-src/bitcoin-config.json
