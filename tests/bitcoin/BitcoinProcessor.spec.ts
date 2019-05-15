@@ -302,11 +302,11 @@ describe('BitcoinProcessor', () => {
   });
 
   // function specific to bitcoin coin operations
-  function generateBitcoinTransaction (satoshis?: number): Transaction {
-    const keyObject: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
+  function generateBitcoinTransaction (satoshis: number = 1, wif: string = testConfig.bitcoinWalletImportString): Transaction {
+    const keyObject: PrivateKey = (PrivateKey as any).fromWIF(wif);
     const address = keyObject.toAddress();
     const transaction = new Transaction();
-    transaction.to(address, satoshis || 1);
+    transaction.to(address, satoshis);
     transaction.change(address);
     return transaction;
   }
@@ -734,12 +734,112 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('processBlock', () => {
+
+    // creates a response object for Bitcoin
+    async function generateBlock (blockHeight: number, data?: () => string | undefined): Promise<any> {
+      const tx: any[] = [];
+      const count = randomNumber(100) + 10;
+      for (let i = 0; i < count; i++) {
+        const transaction = generateBitcoinTransaction(1, BitcoinProcessor.generatePrivateKey('testnet'));
+        // data generation
+        if (data) {
+          const hasData = data();
+          if (hasData) {
+            transaction.addData(Buffer.from(hasData));
+          }
+        }
+        const vout: any[] = [];
+        transaction.outputs.forEach((output, index) => {
+          vout.push({
+            value: output.satoshis,
+            n: index,
+            scriptPubKey: {
+              asm: output.script.toASM(),
+              hex: output.script.toHex(),
+              addresses: [
+                output.script.getAddressInfo()
+              ]
+            }
+          });
+        });
+
+        tx.push({
+          txid: transaction.id,
+          hash: transaction.id,
+          vin: [
+            { // every block in the mining reward because its easier and not verified by us
+              coinbase: randomString(),
+              sequence: randomNumber()
+            }
+          ],
+          vout
+        });
+      }
+      return {
+        hash: randomString(),
+        height: blockHeight,
+        tx
+      };
+    }
+
     it('should review all transactions in a block and add them to the transactionStore', async () => {
-      throw new Error('not yet implemented');
+      const block = randomNumber();
+      let shouldFindIDs: string[] = [];
+      const blockData = await generateBlock(block, () => {
+        if (Math.random() > 0.8) {
+          const id = randomString();
+          shouldFindIDs.push(id);
+          return testConfig.sidetreeTransactionPrefix + id;
+        }
+        return undefined;
+      });
+      const rpcMock = mockRpcCall('getblockbyheight', [block, true, true], blockData);
+      let seenTransactionNumbers: number[] = [];
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
+        'addTransaction').and.callFake((sidetreeTransaction: ITransaction) => {
+          expect(sidetreeTransaction.transactionTime).toEqual(block);
+          expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
+          expect(shouldFindIDs.includes(sidetreeTransaction.anchorFileHash)).toBeTruthy();
+          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorFileHash),1);
+          expect(seenTransactionNumbers.includes(sidetreeTransaction.transactionNumber)).toBeFalsy();
+          seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
+          return Promise.resolve(undefined);
+        });
+      const actual = await bitcoinProcessor['processBlock'](block);
+      expect(actual).toEqual(blockData.hash);
+      expect(rpcMock).toHaveBeenCalled();
+      expect(addTransaction).toHaveBeenCalled();
+      expect(shouldFindIDs.length).toEqual(0);
     });
 
     it('should ignore other data transactions', async () => {
-      throw new Error('not yet implemented');
+      const block = randomNumber();
+      let shouldFindIDs: string[] = [];
+      const blockData = await generateBlock(block, () => {
+        if (Math.random() > 0.8) {
+          const id = randomString();
+          shouldFindIDs.push(id);
+          return testConfig.sidetreeTransactionPrefix + id;
+        }
+        return randomString();
+      });
+      const rpcMock = mockRpcCall('getblockbyheight', [block, true, true], blockData);
+      let seenTransactionNumbers: number[] = [];
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
+        'addTransaction').and.callFake((sidetreeTransaction: ITransaction) => {
+          expect(sidetreeTransaction.transactionTime).toEqual(block);
+          expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
+          expect(shouldFindIDs.includes(sidetreeTransaction.anchorFileHash)).toBeTruthy();
+          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorFileHash),1);
+          expect(seenTransactionNumbers.includes(sidetreeTransaction.transactionNumber)).toBeFalsy();
+          seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
+          return Promise.resolve(undefined);
+        });
+      const actual = await bitcoinProcessor['processBlock'](block);
+      expect(actual).toEqual(blockData.hash);
+      expect(rpcMock).toHaveBeenCalled();
+      expect(addTransaction).toHaveBeenCalled();
+      expect(shouldFindIDs.length).toEqual(0);
     });
   });
 
