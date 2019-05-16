@@ -1,26 +1,24 @@
 import RequestHandler from '../../lib/ipfs/RequestHandler';
+import { FetchResultCode } from '../../lib/core/Cas';
 import { Response, ResponseStatus } from '../../lib/core/Response';
 
 describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
+  const maxFileSize = 20000000; // 20MB
+  const fetchTimeoutInSeconds = 1;
 
   beforeEach(() => {
-    const ipfsOptions = {
-      repo: 'sidetree-ipfs',
-      init: false,
-      start: false
-    };
-    requestHandler = new RequestHandler(10, ipfsOptions);
+    requestHandler = new RequestHandler(fetchTimeoutInSeconds);
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
     const expectedResponse: Response = {
       status: ResponseStatus.BadRequest,
-      body: { error: 'Invalid content Hash' }
+      body: { code: 'invalid_content_hash' }
     };
 
     const testSidetreeHash: string = '123abc';
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, maxFileSize);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -31,9 +29,9 @@ describe('RequestHandler', () => {
       body: Buffer.from('dummyContent')
     };
     const testSidetreeHash: string = 'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw';
-    spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Promise.resolve(Buffer.from('dummyContent')));
+    spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.Success, content: Buffer.from('dummyContent') }));
 
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash);
+    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, maxFileSize);
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });

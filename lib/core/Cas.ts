@@ -14,9 +14,30 @@ export interface Cas {
 
   /**
    * Reads the content of the given address in CAS.
-   * @returns The content of of the given address.
+   * @param maxSizeInBytes The maximum allowed size limit of the content.
+   * @returns The fetch result containg the content buffer if found.
+   *          The result `code` is set to `FetchResultCode.MaxSizeExceeded` if the content exceeds the specified max size.
    */
-  read (address: string): Promise<Buffer>;
+  read (address: string, maxSizeInBytes: number): Promise<FetchResult>;
+}
+
+/**
+ * Data structure representing an the result of a content fetch from the Content Addressable Storage.
+ */
+export interface FetchResult {
+  /** Return code for the fetch. */
+  code: FetchResultCode;
+  content?: Buffer;
+}
+
+/**
+ * Return code for a fetch.
+ */
+export enum FetchResultCode {
+  Success = 'success',
+  NotFound = 'content_not_found',
+  MaxSizeExceeded = 'content_exceeds_maximum_allowed_size',
+  NotAFile = 'content_not_a_file'
 }
 
 /**
@@ -57,14 +78,23 @@ export class CasClient implements Cas {
     return hash;
   }
 
-  public async read (address: string): Promise<Buffer> {
+  public async read (address: string, maxSizeInBytes: number): Promise<FetchResult> {
     // Fetch the resource.
-    const queryUri = `${this.uri}/${address}`;
+    const queryUri = `${this.uri}/${address}?max-size=${maxSizeInBytes}`;
     const response = await this.fetch(queryUri);
+    if (response.status === HttpStatus.NOT_FOUND) {
+      return { code: FetchResultCode.NotFound };
+    }
+
+    if (response.status === HttpStatus.BAD_REQUEST) {
+      return JSON.parse(response.body.read().toString());
+    }
+
     if (response.status !== HttpStatus.OK) {
-      console.error(`CAS read error response status: ${response.status}`);
-      console.error(`CAS read error body: ${response.body.read()}`);
-      throw new Error('Encountered an error reading content from CAS.');
+      console.info(`CAS '${address}' read response status: ${response.status}`);
+      console.info(`CAS '${address}' read error body: ${response.body.read()}`);
+      console.info(`Treating '${address}' read as not-found.`);
+      return { code: FetchResultCode.NotFound };
     }
 
     // Set callback for the 'readable' event to concatenate chunks of the readable stream.
@@ -88,6 +118,9 @@ export class CasClient implements Cas {
     // Wait until the response body read is completed.
     await readBody;
 
-    return Buffer.from(content);
+    return {
+      code: FetchResultCode.Success,
+      content: Buffer.from(content)
+    };
   }
 }

@@ -1,8 +1,8 @@
 {
   "bitcoreExtensionUri": "[FILL THIS IN]",
   "sidetreeTransactionPrefix": "sidetree:",
-  "genesisBlockNumber": 1480000,
-  "genesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
+  "genesisBlockNumber": 1500000,
+  "genesisBlockHash": "0000000000049a6b07f91975568dc96bb1aec1a24c6bdadb21eb17c9f1b7256f",
   "pollingInternalInSeconds": 100,
   "databaseName": "sidetree-bitcoin",
   "maxSidetreeTransactions": 10,
