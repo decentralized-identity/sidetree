@@ -550,9 +550,10 @@ The following illustrates the construction of the Merkle tree with an array of 7
 
 ## FAQs
 * Why introduce the concept of an _anchor file_? Why not just anchor the _batch file hash_ directly on blockchain?
+
   It would be ideal to be able to fetch metadata about the batched operations efficiently,
   without needing to download the entire batch file.
-  This design also opens up possibilities of other applications of the Sidetree protocol.
+  This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree protocol.
 
 * Why assign a _transaction number_ to invalid transactions?
 

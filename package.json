@@ -60,7 +60,8 @@
     "lint": "tslint --fix --project .",
     "start": "node dist/src/core.js",
     "bitcoin": "node dist/src/bitcoin.js",
-    "ipfs": "node dist/src/ipfs.js"
+    "ipfs": "node dist/src/ipfs.js",
+    "core": "node dist/src/core.js"
   },
   "nyc": {
     "all": true,

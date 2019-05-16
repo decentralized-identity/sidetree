@@ -35,10 +35,11 @@ describe('DownloadManager', async () => {
     const endTimer = timeSpan();
 
     // Queue 4 downloads.
-    void downloadManager.download(content1);
-    void downloadManager.download(content2);
-    void downloadManager.download(content3);
-    await downloadManager.download(content4);
+    const maxContentSizeInBytes = 20000000;
+    void downloadManager.download(content1, maxContentSizeInBytes);
+    void downloadManager.download(content2, maxContentSizeInBytes);
+    void downloadManager.download(content3, maxContentSizeInBytes);
+    await downloadManager.download(content4, maxContentSizeInBytes);
 
     // Since there is only 3 concurrent download lanes,
     // the 4th download would have to wait thus download time would be at least twice the time as the mock download time.

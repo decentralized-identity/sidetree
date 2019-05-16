@@ -265,7 +265,7 @@ HTTP/1.1 200 OK
 HTTP/1.1 400 Bad Request
 
 {
-  "Code": "invalid_transaction_number_or_time_hash"
+  "code": "invalid_transaction_number_or_time_hash"
 }
 ```
 
@@ -435,8 +435,16 @@ Read the content of a given address and return it in the response body as octet-
 
 #### Request path
 ```
-GET /<api-version>/<hash>
+GET /<api-version>/<hash>?max-size=<maximum-allowed-size>
 ```
+
+#### Request query parameters
+- `max-size`
+
+  Required.
+
+  If the content exceeds the specified maximum allowed size, `HTTP 400 Bad Request` with `content_exceeds_maximum_allowed_size` as the value for the `code` parameter in a JSON body is returned.
+
 
 #### Request example
 ```
@@ -453,6 +461,15 @@ GET /v1.0/QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
 HTTP/1.1 404 Not Found
 ```
 
+#### Response example - Content exceeds maximum allowed size
+
+```http
+HTTP/1.1 400 Bad Request
+
+{
+  "code": "content_exceeds_maximum_allowed_size"
+}
+```
 
 ### Write content
 Write content to CAS.

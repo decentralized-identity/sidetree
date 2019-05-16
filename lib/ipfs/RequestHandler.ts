@@ -1,5 +1,6 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
+import { FetchResultCode } from '../core/Cas';
 import { IResponse, ResponseStatus } from '../core/Response';
 import { Timeout } from './Util/Timeout';
 const multihashes = require('multihashes');
@@ -21,51 +22,70 @@ export default class RequestHandler {
   public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
     this.ipfsStorage = IpfsStorage.create(repo);
   }
+
   /**
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
    */
-  public async handleFetchRequest (base64urlEncodedMultihash: string): Promise<IResponse> {
-    console.log(`Fetching '${base64urlEncodedMultihash}'...`);
+  public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number): Promise<IResponse> {
+    console.log(`Handling fetch request for '${base64urlEncodedMultihash}'...`);
+
+    if (maxSizeInBytes === undefined) {
+      return {
+        status: ResponseStatus.BadRequest,
+        body: { code: 'max_size_query_param_not_specified' }
+      };
+    }
 
     const multihashBuffer = base64url.toBuffer(base64urlEncodedMultihash);
-    let response: IResponse;
     try {
       multihashes.validate(multihashBuffer);
     } catch {
       return {
         status: ResponseStatus.BadRequest,
-        body: { error: 'Invalid content Hash' }
+        body: { code: 'invalid_content_hash' }
       };
     }
 
     try {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
-      const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString);
+      const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString, maxSizeInBytes);
 
-      const result = await Timeout.timeout(fetchPromsie, this.fetchTimeoutInSeconds * 1000);
+      const fetchResult = await Timeout.timeout(fetchPromsie, this.fetchTimeoutInSeconds * 1000);
 
-      if (result instanceof Error) {
-        response = {
+      // Return not-found if fetch timed.
+      if (fetchResult instanceof Error) {
+        console.warn(`'${base64urlEncodedMultihash}' not found on IPFS.`);
+        return { status: ResponseStatus.NotFound };
+      }
+
+      if (fetchResult.code === FetchResultCode.MaxSizeExceeded ||
+        fetchResult.code === FetchResultCode.NotAFile) {
+        return {
+          status: ResponseStatus.BadRequest,
+          body: { code: fetchResult.code }
+        };
+      }
+
+      if (fetchResult.code === FetchResultCode.NotFound) {
+        return {
           status: ResponseStatus.NotFound
         };
-        console.warn(`'${base64urlEncodedMultihash}' not found on IPFS.`);
-      } else {
-        response = {
-          status: ResponseStatus.Succeeded,
-          body: result
-        };
-        console.log(`Fetched '${base64urlEncodedMultihash}' of size ${result.length} bytes.`);
       }
-    } catch (err) {
-      response = {
-        status: ResponseStatus.ServerError,
-        body: err.message
-      };
-      console.error(`Error fetching '${base64urlEncodedMultihash}': ${err}`);
-    }
 
-    return response;
+      // Else fetch was successful.
+      console.log(`Fetched '${base64urlEncodedMultihash}' of size ${fetchResult.content!.length} bytes.`);
+      return {
+        status: ResponseStatus.Succeeded,
+        body: fetchResult.content
+      };
+    } catch (error) {
+      console.error(`Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${error}`);
+      return {
+        status: ResponseStatus.ServerError,
+        body: error.message
+      };
+    }
   }
 
   /**
