@@ -171,7 +171,7 @@ describe('MongoDbOperationStore', async () => {
 
   it('should get a put create operation', async () => {
     const operation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    await operationStore.putBatch([operation]);
+    await operationStore.put([operation]);
     const returnedOperations = Array.from(await operationStore.get(operation.didUniqueSuffix!));
     checkEqualArray([operation], returnedOperations);
   });
@@ -182,7 +182,7 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
     const createVersion = createOperation.getOperationHash();
     const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
-    await operationStore.putBatch([updateOperation]);
+    await operationStore.put([updateOperation]);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray([updateOperation], returnedOperations);
   });
@@ -193,9 +193,9 @@ describe('MongoDbOperationStore', async () => {
     const didUniqueSuffix = createOperation.didUniqueSuffix!;
     const createVersion = createOperation.getOperationHash();
     const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
-    await operationStore.putBatch([updateOperation]);
+    await operationStore.put([updateOperation]);
     // duplicate operation
-    await operationStore.putBatch([updateOperation]);
+    await operationStore.put([updateOperation]);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray([updateOperation], returnedOperations);
   });
@@ -207,7 +207,7 @@ describe('MongoDbOperationStore', async () => {
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-    await operationStore.putBatch(batch);
+    await operationStore.put(batch);
 
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray(batch, returnedOperations);
@@ -223,7 +223,7 @@ describe('MongoDbOperationStore', async () => {
         // construct a batch with each operation duplicated.
     const batchWithDuplicates = batch.concat(batch);
 
-    await operationStore.putBatch(batchWithDuplicates);
+    await operationStore.put(batchWithDuplicates);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray(batch, returnedOperations);
   });
@@ -236,7 +236,7 @@ describe('MongoDbOperationStore', async () => {
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
 
-    await operationStore.putBatch(batch);
+    await operationStore.put(batch);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray(batch, returnedOperations);
 
@@ -252,7 +252,7 @@ describe('MongoDbOperationStore', async () => {
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-    await operationStore.putBatch(batch);
+    await operationStore.put(batch);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray(batch, returnedOperations);
 
@@ -270,7 +270,7 @@ describe('MongoDbOperationStore', async () => {
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-    await operationStore.putBatch(batch);
+    await operationStore.put(batch);
     let returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
     checkEqualArray(batch, returnedOperations);
 
@@ -292,7 +292,7 @@ describe('MongoDbOperationStore', async () => {
 
     // Insert operations in reverse transaction time order
     for (let i = batchSize - 1 ; i >= 0 ; i--) {
-      await operationStore.putBatch([batch[i]]);
+      await operationStore.put([batch[i]]);
     }
 
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));

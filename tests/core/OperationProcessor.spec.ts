@@ -141,7 +141,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
     // This is a poor man's version based on public key properties
@@ -152,12 +152,12 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore a duplicate create operation', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     // Create and process a duplicate create op
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     const duplicateCreateOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([duplicateCreateOp]);
+    await operationProcessor.process([duplicateCreateOp]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
@@ -171,7 +171,7 @@ describe('OperationProcessor', async () => {
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-    await operationProcessor.processBatch(ops);
+    await operationProcessor.process(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
@@ -182,7 +182,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
-      await operationProcessor.processBatch([ops[i]]);
+      await operationProcessor.process([ops[i]]);
     }
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
@@ -200,7 +200,7 @@ describe('OperationProcessor', async () => {
       operationStore = new MockOperationStore();
       operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
-      await operationProcessor.processBatch(permutedOps);
+      await operationProcessor.process(permutedOps);
       const didDocument = await operationProcessor.resolve(didUniqueSuffix);
       validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
     }
@@ -217,7 +217,7 @@ describe('OperationProcessor', async () => {
     const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
 
     // Trigger processing of the operation.
-    await operationProcessor.processBatch([createOperation]);
+    await operationProcessor.process([createOperation]);
     const didUniqueSuffix = createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
@@ -228,14 +228,14 @@ describe('OperationProcessor', async () => {
   it('should return undefined for deleted did', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-    await operationProcessor.processBatch(ops);
+    await operationProcessor.process(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
-    await operationProcessor.processBatch([deleteOperation]);
+    await operationProcessor.process([deleteOperation]);
 
     const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
@@ -252,7 +252,7 @@ describe('OperationProcessor', async () => {
     const createOperation = await addBatchFileOfOneOperationToCas(operationBuffer, cas, 1, 0, 0);
 
     // Trigger processing of the operation.
-    await operationProcessor.processBatch([createOperation]);
+    await operationProcessor.process([createOperation]);
     const didUniqueSuffix = createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
@@ -263,14 +263,14 @@ describe('OperationProcessor', async () => {
   it('should return undefined for deleted did', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-    await operationProcessor.processBatch(ops);
+    await operationProcessor.process(ops);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
-    await operationProcessor.processBatch([deleteOperation]);
+    await operationProcessor.process([deleteOperation]);
 
     const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
@@ -279,18 +279,18 @@ describe('OperationProcessor', async () => {
   it('should ignore delete operations of a non-existent did', async () => {
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([deleteOperation]);
+    await operationProcessor.process([deleteOperation]);
 
     const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
   });
 
   it('should ignore delete operations with invalid signing key id', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, 'InvalidKeyId', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([deleteOperation]);
+    await operationProcessor.process([deleteOperation]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
@@ -300,13 +300,13 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore delete operations with invalid signature', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     const deleteOperation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, '#key1', privateKey);
     deleteOperation.signature = 'InvalidSignature';
     const deleteOperationBuffer = Buffer.from(JSON.stringify(deleteOperation));
     const anchoredDeleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([anchoredDeleteOperation]);
+    await operationProcessor.process([anchoredDeleteOperation]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
@@ -321,7 +321,7 @@ describe('OperationProcessor', async () => {
 
     // elide i = 0, the create operation
     for (let i = 1 ; i < ops.length ; ++i) {
-      await operationProcessor.processBatch([ops[i]]);
+      await operationProcessor.process([ops[i]]);
     }
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
@@ -329,7 +329,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore update operation without a previous operation hash', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     const updatePayload = {
       didUniqueSuffix,
@@ -347,7 +347,7 @@ describe('OperationProcessor', async () => {
 
     const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([updateOp]);
+    await operationProcessor.process([updateOp]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
@@ -358,7 +358,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore update operation with an invalid key id', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     const updatePayload = {
       didUniqueSuffix,
@@ -373,7 +373,7 @@ describe('OperationProcessor', async () => {
     // Generate operation with an invalid key
     const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#InvalidKeyId', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([updateOp]);
+    await operationProcessor.process([updateOp]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
@@ -384,7 +384,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore update operation with an invalid signature', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     const updatePayload = {
       didUniqueSuffix,
@@ -401,7 +401,7 @@ describe('OperationProcessor', async () => {
     updateOperation.signature = 'InvalidSignature';
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperation));
     const anchoredUpdateOperation = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([anchoredUpdateOperation]);
+    await operationProcessor.process([anchoredUpdateOperation]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
@@ -412,7 +412,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should pick earlier of two conflicting updates', async () => {
-    await operationProcessor.processBatch([createOp!]);
+    await operationProcessor.process([createOp!]);
 
     const update1Payload = {
       didUniqueSuffix,
@@ -436,11 +436,11 @@ describe('OperationProcessor', async () => {
 
     const updateOperation2Buffer = await OperationGenerator.generateUpdateOperationBuffer(update2Payload, '#key1', privateKey);
     const updateOperation2 = await addBatchFileOfOneOperationToCas(updateOperation2Buffer, cas, 2, 2, 0);
-    await operationProcessor.processBatch([updateOperation2]);
+    await operationProcessor.process([updateOperation2]);
 
     const updateOperation1Buffer = await OperationGenerator.generateUpdateOperationBuffer(update1Payload, '#key1', privateKey);
     const updateOperation1 = await addBatchFileOfOneOperationToCas(updateOperation1Buffer, cas, 1, 1, 0);
-    await operationProcessor.processBatch([updateOperation1]);
+    await operationProcessor.process([updateOperation1]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
@@ -451,7 +451,7 @@ describe('OperationProcessor', async () => {
   it('should rollback all', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-    await operationProcessor.processBatch(ops);
+    await operationProcessor.process(ops);
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 

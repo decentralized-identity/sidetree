@@ -9,7 +9,7 @@ export interface OperationStore {
   /**
    * Store a batch of operations
    */
-  putBatch (operations: Array<Operation>): Promise<void>;
+  put (operations: Array<Operation>): Promise<void>;
 
   /**
    * Get an iterator that returns all operations with a given
