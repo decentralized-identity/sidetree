@@ -4,7 +4,6 @@ import * as Router from 'koa-router';
 import * as querystring from 'querystring';
 import {
   ISidetreeBitcoinConfig,
-  SidetreeResponse,
   SidetreeBitcoinProcessor
 } from '../lib/index';
 

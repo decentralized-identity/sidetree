@@ -2,7 +2,7 @@ import * as httpStatus from 'http-status';
 import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response } from 'node-fetch';
 import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
-import SidetreeError from '../core/util/SidetreeError';
+import SidetreeError, { StatusCode, Code } from '../core/util/SidetreeError';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
@@ -177,11 +177,11 @@ export default class BitcoinProcessor {
   }> {
     if ((since && !hash) ||
         (!since && hash)) {
-      throw new SidetreeError(httpStatus.BAD_REQUEST);
+      throw new SidetreeError(StatusCode.BadRequest);
     } else if (since && hash) {
       if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
         console.info('Requested transactions hash mismatched blockchain');
-        throw new SidetreeError(httpStatus.BAD_REQUEST, 'invalid_transaction_number_or_time_hash');
+        throw new SidetreeError(StatusCode.BadRequest, Code.InvalidHash);
       }
     } else {
       since = TransactionNumber.construct(this.genesisBlockNumber, 0);
