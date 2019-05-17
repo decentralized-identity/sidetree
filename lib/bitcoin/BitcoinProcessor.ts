@@ -20,18 +20,32 @@ export interface IBlockchainTime {
 }
 
 /**
+ * Data structure containing block height and hash.
+ */
+export interface IBlockInfo {
+  /** Block height. */
+  height: number;
+  /** Block hash. */
+  hash: string;
+}
+
+/**
  * Processor for Bitcoin REST API calls
  */
 export default class BitcoinProcessor {
 
   /** URI for the bitcoin peer's RPC endpoint */
   public readonly bitcoinExtensionUri: string;
+
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
+
   /** Bitcoin transaction fee amount */
   public readonly bitcoinFee: number;
+
   /** The first Sidetree block in Bitcoin's blockchain. */
   public readonly genesisBlockNumber: number;
+
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
 
@@ -42,21 +56,20 @@ export default class BitcoinProcessor {
   public pageSize: number;
 
   /** request timeout in milliseconds */
-  public defaultTimeout = 300;
+  public defaultTimeout: number;
 
   /** maximum number of request retries */
-  public maxRetries = 3;
+  public maxRetries: number;
 
   /** Number of seconds between transaction queries */
-  public pollPeriod = 60;
+  public pollPeriod: number;
 
   /** Days of notice before the wallet is depeleted of all funds */
-  public lowBalanceNoticeDays = 28;
+  public lowBalanceNoticeDays: number;
 
-  /** Last seen block height */
-  private lastBlockHeight = 0;
-  /** Last seen block hash */
-  private lastBlockHash = '';
+  /** Last seen block */
+  private lastSeenBlock: IBlockInfo | undefined;
+
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
 
@@ -70,7 +83,7 @@ export default class BitcoinProcessor {
     try {
       this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
     } catch (error) {
-      throw new Error('bitcoinWalletImportString: ' + error.message);
+      throw new Error(`Failed creating private key from '${config.bitcoinWalletImportString}': ${error.message}`);
     }
     this.pageSize = config.maxSidetreeTransactions;
     this.defaultTimeout = config.defaultTimeoutInMilliseconds || 300;
@@ -106,15 +119,13 @@ export default class BitcoinProcessor {
     console.debug('Initializing TransactionStore');
     await this.transactionStore.initialize();
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
-    let syncedTo: {height: number, hash: string };
     if (lastKnownTransaction) {
       console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
-      syncedTo = await this.processTransactions(lastKnownTransaction.transactionTime, lastKnownTransaction.transactionTimeHash);
+      this.lastSeenBlock = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
+      this.lastSeenBlock = await this.processTransactions(this.lastSeenBlock);
     } else {
-      syncedTo = await this.processTransactions();
+      this.lastSeenBlock = await this.processTransactions();
     }
-    this.lastBlockHash = syncedTo.hash;
-    this.lastBlockHeight = syncedTo.height;
     this.periodicPoll();
   }
 
@@ -321,9 +332,8 @@ export default class BitcoinProcessor {
     if (this.pollTimeoutId) {
       clearTimeout(this.pollTimeoutId);
     }
-    this.processTransactions(this.lastBlockHeight, this.lastBlockHash).then((syncedTo) => {
-      this.lastBlockHash = syncedTo.hash;
-      this.lastBlockHeight = syncedTo.height;
+    this.processTransactions(this.lastSeenBlock).then((syncedTo) => {
+      this.lastSeenBlock = syncedTo;
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
     }).catch((error) => {
       console.error(error);
@@ -333,23 +343,20 @@ export default class BitcoinProcessor {
 
   /**
    * Processes transactions from startBlock (or genesis) to endBlock (or tip)
-   * @param startBlock The block height to begin from
-   * @param startBlockHash The block hash to begin from
+   * @param startBlock The block to begin from
    * @param endBlock The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock?: number, startBlockHash?: string, endBlock?: number): Promise<{height: number, hash: string}> {
-    let beginBlock: number;
-    if (startBlock && !startBlockHash) {
-      throw new Error('startBlockHash must be included if startBlock is specified');
-    } else if (startBlock && startBlockHash) {
-      const startValid = await this.verifyBlock(startBlock, startBlockHash);
-      beginBlock = startBlock;
+  private async processTransactions (startBlock?: IBlockInfo, endBlock?: number): Promise<IBlockInfo> {
+    let beginBlockHeight: number;
+    if (startBlock) {
+      const startValid = await this.verifyBlock(startBlock.height, startBlock.hash);
+      beginBlockHeight = startBlock.height;
       if (!startValid) {
-        beginBlock = await this.revertBlockchainCache();
+        beginBlockHeight = await this.revertBlockchainCache();
       }
     } else {
-      beginBlock = this.genesisBlockNumber;
+      beginBlockHeight = this.genesisBlockNumber;
     }
     if (endBlock === undefined) {
       endBlock = await this.getTip();
@@ -358,7 +365,7 @@ export default class BitcoinProcessor {
     console.info(`Processing transactions from ${startBlock} to ${endBlock}`);
 
     // You can parrallelize this so long as all processBlock's don't throw
-    for (let blockHeight = beginBlock; blockHeight < endBlock; blockHeight++) {
+    for (let blockHeight = beginBlockHeight; blockHeight < endBlock; blockHeight++) {
       await this.processBlock(blockHeight);
     }
     const hash = await this.processBlock(endBlock);
