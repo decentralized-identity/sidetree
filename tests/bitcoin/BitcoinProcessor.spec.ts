@@ -230,11 +230,10 @@ describe('BitcoinProcessor', () => {
 
   describe('transactions', () => {
     it('should get transactions since genesis limited by page size', async (done) => {
-      const expectedTransactionNumber = TransactionNumber.construct(testConfig.genesisBlockNumber, 0);
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       const transactions = createTransactions();
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
-        expect(since).toEqual(expectedTransactionNumber);
+        expect(since).toBeUndefined();
         expect(pages).toEqual(testConfig.transactionFetchPageSize);
         return Promise.resolve(transactions);
       }));
