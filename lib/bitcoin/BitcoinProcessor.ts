@@ -163,7 +163,8 @@ export default class BitcoinProcessor {
     moreTransactions: boolean,
     transactions: ITransaction[]
   }> {
-    if (since && !hash) {
+    if ((since && !hash) ||
+        (!since && hash)) {
       throw new SidetreeError(httpStatus.BAD_REQUEST);
     } else if (since && hash) {
       if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {

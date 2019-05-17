@@ -100,7 +100,7 @@ console.info(config);
  * @param contentType Content type to be set for response, defaults to application/json
  */
 const setKoaResponse = (response: any, koaResponse: Koa.Response, contentType?: string) => {
-  koaResponse.status = SidetreeResponse.toHttpStatus(200);
+  koaResponse.status = 200;
   if (contentType) {
     koaResponse.set('Content-Type', contentType);
   } else {
