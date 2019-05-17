@@ -5,7 +5,7 @@
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1480000,
   "databaseName": "sidetree-bitcoin",
-  "maxSidetreeTransactions": 10,
+  "transactionFetchPageSize": 10,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
   "port": 3002
 }

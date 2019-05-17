@@ -10,7 +10,7 @@ export interface IBitcoinConfig {
   genesisBlockNumber: number;
   mongoDbConnectionString: string;
   databaseName: string | undefined;
-  maxSidetreeTransactions: number;
+  transactionFetchPageSize: number;
   defaultTimeoutInMilliseconds: number | undefined;
   maxRetries: number | undefined;
   transactionPollPeriodInSeconds: number | undefined;

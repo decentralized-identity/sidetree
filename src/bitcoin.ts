@@ -5,7 +5,7 @@ import * as querystring from 'querystring';
 import {
   ISidetreeBitcoinConfig,
   SidetreeResponse,
-  BitcoinProcessor
+  SidetreeBitcoinProcessor
 } from '../lib/index';
 
 /** Bitcoin service configuration parameters */
@@ -40,8 +40,8 @@ router.get('/transactions', async (ctx, _next) => {
 });
 
 router.post('/transactions', async (ctx, _next) => {
-  const anchorFileRequest = JSON.parse(ctx.body);
-  const response = await blockchainService.writeTransaction(anchorFileRequest.anchorFileHash);
+  const writeRequest = JSON.parse(ctx.body);
+  const response = await blockchainService.writeTransaction(writeRequest.anchorFileHash);
   setKoaResponse(response, ctx.response);
 });
 
@@ -72,9 +72,9 @@ app.use((ctx, _next) => {
 const port = process.env.SIDETREE_BITCOIN_PORT || config.port;
 
 // initialize the blockchain service and kick-off background tasks
-let blockchainService: BitcoinProcessor;
+let blockchainService: SidetreeBitcoinProcessor;
 try {
-  blockchainService = new BitcoinProcessor(config);
+  blockchainService = new SidetreeBitcoinProcessor(config);
 
   blockchainService.initialize()
     .then(() => {
@@ -87,7 +87,7 @@ try {
     });
 } catch (error) {
   console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
-  console.log(BitcoinProcessor.generatePrivateKey('testnet'));
+  console.log(SidetreeBitcoinProcessor.generatePrivateKey('testnet'));
   process.exit(1);
 }
 console.info('Sidetree bitcoin service configuration:');

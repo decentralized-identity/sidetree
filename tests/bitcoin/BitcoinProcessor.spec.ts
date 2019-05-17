@@ -1,5 +1,5 @@
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
-import { BitcoinProcessor } from '../../lib';
+import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { PrivateKey, Transaction } from 'bitcore-lib';
 import { ITransaction } from '../../lib/core/Transaction';
@@ -15,6 +15,10 @@ function randomNumber (max: number = 256): number {
   return Math.round(Math.random() * max);
 }
 
+function randomBlock (): IBlockInfo {
+  return { height: randomNumber(), hash: randomString() };
+}
+
 describe('BitcoinProcessor', () => {
 
   const testConfig: IBitcoinConfig = {
@@ -26,7 +30,7 @@ describe('BitcoinProcessor', () => {
     genesisBlockNumber: 1480000,
     lowBalanceNoticeInDays: 28,
     maxRetries: 3,
-    maxSidetreeTransactions: 100,
+    transactionFetchPageSize: 100,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
     transactionPollPeriodInSeconds: 60
@@ -94,7 +98,7 @@ describe('BitcoinProcessor', () => {
         bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
-        maxSidetreeTransactions: randomNumber(),
+        transactionFetchPageSize: randomNumber(),
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
@@ -110,7 +114,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect(bitcoinProcessor.maxRetries).toEqual(3);
-      expect(bitcoinProcessor.pageSize).toEqual(config.maxSidetreeTransactions);
+      expect(bitcoinProcessor.pageSize).toEqual(config.transactionFetchPageSize);
       expect(bitcoinProcessor.pollPeriod).toEqual(60);
       expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName!);
@@ -124,7 +128,7 @@ describe('BitcoinProcessor', () => {
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
-        maxSidetreeTransactions: randomNumber(),
+        transactionFetchPageSize: randomNumber(),
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
@@ -138,7 +142,7 @@ describe('BitcoinProcessor', () => {
         new BitcoinProcessor(config);
         fail('expected to throw');
       } catch (error) {
-        expect(error.message).toContain('bitcoinWalletImportString');
+        expect(error.message).toContain('Failed creating private key');
       }
     });
   });
@@ -162,9 +166,9 @@ describe('BitcoinProcessor', () => {
           anchorFileHash: randomString()
         })
       );
-      processTransactionsSpy.and.callFake((since: number, hash: string) => {
-        expect(since).toEqual(fromNumber);
-        expect(hash).toEqual(fromHash);
+      processTransactionsSpy.and.callFake((sinceBlock: IBlockInfo) => {
+        expect(sinceBlock.height).toEqual(fromNumber);
+        expect(sinceBlock.hash).toEqual(fromHash);
         return Promise.resolve({
           hash: 'latestHash',
           height: 12345
@@ -202,7 +206,7 @@ describe('BitcoinProcessor', () => {
     it('should get the current latest when given no hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(height));
+      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
       const spy = mockRpcCall('getblockbyheight', [height, true, false], { hash, height });
       const actual = await bitcoinProcessor.time();
       expect(actual.time).toEqual(height);
@@ -231,7 +235,7 @@ describe('BitcoinProcessor', () => {
       const transactions = createTransactions();
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
         expect(since).toEqual(expectedTransactionNumber);
-        expect(pages).toEqual(testConfig.maxSidetreeTransactions);
+        expect(pages).toEqual(testConfig.transactionFetchPageSize);
         return Promise.resolve(transactions);
       }));
 
@@ -300,7 +304,7 @@ describe('BitcoinProcessor', () => {
       const expectedHash = randomString();
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const transactions = createTransactions(testConfig.maxSidetreeTransactions, expectedHeight);
+      const transactions = createTransactions(testConfig.transactionFetchPageSize, expectedHeight);
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.returnValue(Promise.resolve(transactions));
       const actual = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
       expect(verifyMock).toHaveBeenCalled();
@@ -585,15 +589,13 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should call processTransactions from its last known point', async (done) => {
-      const lastBlock = randomNumber();
-      const lastHash = randomString();
+      const lastBlock = randomBlock();
       const nextBlock = randomNumber();
       const nextHash = randomString();
-      bitcoinProcessor['lastBlockHeight'] = lastBlock;
-      bitcoinProcessor['lastBlockHash'] = lastHash;
-      processTransactionsSpy.and.callFake((height: number, hash: string) => {
-        expect(height).toEqual(lastBlock);
-        expect(hash).toEqual(lastHash);
+      bitcoinProcessor['lastSeenBlock'] = lastBlock;
+      processTransactionsSpy.and.callFake((block: IBlockInfo) => {
+        expect(block.height).toEqual(lastBlock.height);
+        expect(block.hash).toEqual(lastBlock.hash);
         return Promise.resolve({
           hash: nextHash,
           height: nextBlock
@@ -602,8 +604,8 @@ describe('BitcoinProcessor', () => {
       bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {
-        expect(bitcoinProcessor['lastBlockHash']).toEqual(nextHash);
-        expect(bitcoinProcessor['lastBlockHeight']).toEqual(nextBlock);
+        expect(bitcoinProcessor['lastSeenBlock']!.hash).toEqual(nextHash);
+        expect(bitcoinProcessor['lastSeenBlock']!.height).toEqual(nextBlock);
         expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
         // clean up
         clearTimeout(bitcoinProcessor['pollTimeoutId']);
@@ -635,12 +637,12 @@ describe('BitcoinProcessor', () => {
 
     it('should verify the start block', async (done) => {
       const hash = randomString();
-      const start = randomNumber();
+      const startBlock = randomBlock();
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      const actual = await bitcoinProcessor['processTransactions'](start, randomString(), start + 1);
+      const actual = await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 1);
       expect(actual.hash).toEqual(hash);
-      expect(actual.height).toEqual(start + 1);
+      expect(actual.height).toEqual(startBlock.height + 1);
       expect(verifySpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalled();
       done();
@@ -649,11 +651,12 @@ describe('BitcoinProcessor', () => {
     it('should begin a rollback if the start block failed to validate', async (done) => {
       const hash = randomString();
       const start = randomNumber() + 100;
+      const startBlock = { height: start, hash: randomString() };
       const revertNumber = start - 100;
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
       const revertSpy = spyOn(bitcoinProcessor, 'revertBlockchainCache' as any).and.returnValue(Promise.resolve(revertNumber));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      const actual = await bitcoinProcessor['processTransactions'](start, randomString(), start + 1);
+      const actual = await bitcoinProcessor['processTransactions'](startBlock, start + 1);
       expect(actual.height).toEqual(start + 1);
       expect(actual.hash).toEqual(hash);
       expect(verifySpy).toHaveBeenCalled();
@@ -665,10 +668,10 @@ describe('BitcoinProcessor', () => {
 
     it('should call processBlock on all blocks within range', async (done) => {
       const hash = randomString();
-      const start = randomNumber();
+      const startBlock = randomBlock();
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      await bitcoinProcessor['processTransactions'](start, randomString(), start + 9);
+      await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 9);
       expect(verifySpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(10);
       done();
@@ -676,11 +679,11 @@ describe('BitcoinProcessor', () => {
 
     it('should use the current tip if no end is specified', async (done) => {
       const hash = randomString();
-      const start = randomNumber();
+      const startBlock = randomBlock();
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(start + 1));
+      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      await bitcoinProcessor['processTransactions'](start, randomString());
+      await bitcoinProcessor['processTransactions'](startBlock);
       expect(verifySpy).toHaveBeenCalled();
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
@@ -689,21 +692,12 @@ describe('BitcoinProcessor', () => {
 
     it('should use genesis if no start is specified', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const tipSpy = spyOn(bitcoinProcessor, 'getTip' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(randomString()));
       await bitcoinProcessor['processTransactions']();
       expect(verifySpy).not.toHaveBeenCalled();
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
-      done();
-    });
-
-    it('should throw if a start block is included but not a hash', async (done) => {
-      try {
-        await bitcoinProcessor['processTransactions'](randomNumber());
-      } catch (error) {
-        expect(error.message).toContain('startBlockHash');
-      }
       done();
     });
   });
@@ -792,7 +786,7 @@ describe('BitcoinProcessor', () => {
     it('should return the latest block', async (done) => {
       const height = randomNumber();
       const mock = mockRpcCall('getblockcount', [], height);
-      const actual = await bitcoinProcessor['getTip']();
+      const actual = await bitcoinProcessor['getCurrentBlockHeight']();
       expect(actual).toEqual(height);
       expect(mock).toHaveBeenCalled();
       done();
