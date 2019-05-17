@@ -169,7 +169,7 @@ export default class BitcoinProcessor {
    * Fetches Sidetree transactions in chronological order from since or genesis.
    * @param since A transaction number
    * @param hash The associated transaction time hash
-   * @returns Transactions since that blocktime
+   * @returns Transactions since given transaction number.
    */
   public async transactions (since?: number, hash?: string): Promise<{
     moreTransactions: boolean,
@@ -183,11 +183,9 @@ export default class BitcoinProcessor {
         console.info('Requested transactions hash mismatched blockchain');
         throw new SidetreeError(httpStatus.BAD_REQUEST, 'invalid_transaction_number_or_time_hash');
       }
-    } else {
-      since = TransactionNumber.construct(this.genesisBlockNumber, 0);
     }
 
-    console.info(`Returning transactions since ${TransactionNumber.getBlockNumber(since)}`);
+    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
     const transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
 
     return {
@@ -235,9 +233,10 @@ export default class BitcoinProcessor {
       return total + coin.satoshis;
     }, 0);
 
-    const lowBalanceAmount = this.lowBalanceNoticeDays * 24 * 6 * this.bitcoinFee;
+    const estimatedBitcoinWritesPerDay = 6 * 24;
+    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * this.bitcoinFee;
     if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (24 * 6 * this.bitcoinFee));
+      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * this.bitcoinFee));
       console.error(`Low balance (${daysLeft} days remaining),\
  please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis, Address: ${address.toString()}`);
     }
