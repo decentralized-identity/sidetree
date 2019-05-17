@@ -79,7 +79,7 @@ Edit your bitcoin-config.json
   "genesisBlockNumber": 1480000,
   "genesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
   "databaseName": "sidetree-bitcoin",
-  "maxSidetreeTransactions": 10,
+  "transactionFetchPageSize": 10,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
   "port": 3002
 }

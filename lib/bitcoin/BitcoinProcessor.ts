@@ -1,12 +1,12 @@
-import { IBitcoinConfig } from './IBitcoinConfig';
-import TransactionNumber from './TransactionNumber';
-import { ITransaction } from '../core/Transaction';
-import SidetreeError from '../core/util/SidetreeError';
-import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
-import nodeFetch, { Response, FetchError } from 'node-fetch';
-import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
 import * as httpStatus from 'http-status';
-import { PrivateKey, Networks, Transaction, Script, Address } from 'bitcore-lib';
+import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
+import nodeFetch, { FetchError, Response } from 'node-fetch';
+import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
+import SidetreeError from '../core/util/SidetreeError';
+import TransactionNumber from './TransactionNumber';
+import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { IBitcoinConfig } from './IBitcoinConfig';
+import { ITransaction } from '../core/Transaction';
 import { URL } from 'url';
 
 /**
@@ -85,7 +85,7 @@ export default class BitcoinProcessor {
     } catch (error) {
       throw new Error(`Failed creating private key from '${config.bitcoinWalletImportString}': ${error.message}`);
     }
-    this.pageSize = config.maxSidetreeTransactions;
+    this.pageSize = config.transactionFetchPageSize;
     this.defaultTimeout = config.defaultTimeoutInMilliseconds || 300;
     this.maxRetries = config.maxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
@@ -130,12 +130,13 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Gets the latest logical blockchain time.
-   * @param hash time blockchain time hash
-   * @returns the current or associated blockchain time and blockchain hash
+   * Gets the blockchain time of the given time hash.
+   * Gets the latest logical blockchain time if time hash is not given.
+   * @param hash Blockchain time hash.
+   * @returns the current or associated blockchain time of the given time hash.
    */
   public async time (hash?: string): Promise<IBlockchainTime> {
-    console.info(`Getting time ${hash ? 'since' + hash : ''}`);
+    console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     let request: any;
     if (hash) {
       request = {
@@ -147,11 +148,11 @@ export default class BitcoinProcessor {
         ]
       };
     } else {
-      const tip = await this.getTip();
+      const blockHeight = await this.getCurrentBlockHeight();
       request = {
         method: 'getblockbyheight',
         params: [
-          tip,  // height of the block
+          blockHeight,  // height of the block
           true, // block details
           false // transaction details
         ]
@@ -359,7 +360,7 @@ export default class BitcoinProcessor {
       beginBlockHeight = this.genesisBlockNumber;
     }
     if (endBlock === undefined) {
-      endBlock = await this.getTip();
+      endBlock = await this.getCurrentBlockHeight();
     }
 
     console.info(`Processing transactions from ${startBlock} to ${endBlock}`);
@@ -412,11 +413,11 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Gets the current Bitcoin tip height
+   * Gets the current Bitcoin block height
    * @returns the latest block number
    */
-  private async getTip (): Promise<number> {
-    console.info('Getting tip block');
+  private async getCurrentBlockHeight (): Promise<number> {
+    console.info('Getting current block height...');
     const request = {
       method: 'getblockcount'
     };

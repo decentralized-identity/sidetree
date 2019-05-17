@@ -5,6 +5,6 @@
   "genesisBlockHash": "000000000000ccea9893c38528fd9c96d984b430ba679c6dd6e2a46346865efd",
   "pollingInternalInSeconds": 100,
   "databaseName": "sidetree-test",
-  "maxSidetreeTransactions": 10,
+  "transactionFetchPageSize": 10,
   "mongoDbConnectionString": "mongodb://localhost:27017/"
 }
