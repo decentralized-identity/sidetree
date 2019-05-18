@@ -58,7 +58,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     let transactions = [];
 
     try {
-      // If given `undefined`, remove all transactions.
+      // If given `undefined`, return transactions from the start of sorted transactions.
       if (transactionNumber === undefined) {
         transactions = await this.transactionCollection!.find().limit(max).sort({ transactionNumber: 1 }).toArray();
       } else {

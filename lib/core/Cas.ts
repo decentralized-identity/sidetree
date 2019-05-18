@@ -1,6 +1,6 @@
 import * as HttpStatus from 'http-status';
 import nodeFetch from 'node-fetch';
-import ReadableStreamUtils from './util/ReadableStreamUtils';
+import ReadableStream from './util/ReadableStream';
 
 /**
  * Interface for accessing the underlying CAS (Content Addressable Store).
@@ -68,6 +68,6 @@ export class CasClient implements Cas {
       throw new Error('Encountered an error reading content from CAS.');
     }
 
-    return Buffer.from(await ReadableStreamUtils.readAll(response.body));
+    return Buffer.from(await ReadableStream.readAll(response.body));
   }
 }
