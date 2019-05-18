@@ -4,7 +4,7 @@ import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { PrivateKey, Transaction } from 'bitcore-lib';
 import { ITransaction } from '../../lib/core/Transaction';
 import * as httpStatus from 'http-status';
-import ReadableStreamUtils from '../../lib/core/util/ReadableStreamUtils';
+import ReadableStream from '../../lib/core/util/ReadableStream';
 import * as nodeFetchPackage from 'node-fetch';
 
 function randomString (length: number = 16): string {
@@ -467,7 +467,7 @@ describe('BitcoinProcessor', () => {
           status: httpStatus.OK
         };
       });
-      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
         {
           hash: coin.txId,
           index: coin.outputIndex,
@@ -493,7 +493,7 @@ describe('BitcoinProcessor', () => {
         };
       });
       const verifyCode = randomString();
-      spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve(verifyCode));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(verifyCode));
       try {
         await bitcoinProcessor['getUnspentCoins'](coin.address);
         fail('should have thrown');
@@ -512,7 +512,7 @@ describe('BitcoinProcessor', () => {
           status: httpStatus.OK
         };
       });
-      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('[]'));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve('[]'));
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
       expect(retryFetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
@@ -534,7 +534,7 @@ describe('BitcoinProcessor', () => {
           status: httpStatus.OK
         });
       });
-      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve('{\
         "success": true\
       }'));
       const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
@@ -551,7 +551,7 @@ describe('BitcoinProcessor', () => {
       retryFetchSpy.and.returnValue(Promise.resolve({
         status: httpStatus.BAD_REQUEST
       }));
-      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve(''));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(''));
       try {
         await bitcoinProcessor['broadcastTransaction'](transaction);
         fail('should have thrown');
@@ -571,7 +571,7 @@ describe('BitcoinProcessor', () => {
       retryFetchSpy.and.returnValue(Promise.resolve({
         status: httpStatus.OK
       }));
-      const readStreamSpy = spyOn(ReadableStreamUtils, 'readAll').and.returnValue(Promise.resolve('{\
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve('{\
         "success": false\
       }'));
       const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
@@ -703,7 +703,7 @@ describe('BitcoinProcessor', () => {
 
   describe('revertBlockchainCache', () => {
     it('should exponentially revert transactions', async (done) => {
-      const transactions = createTransactions(10);
+      const transactions = createTransactions(10).sort((a, b) => b.transactionNumber - a.transactionNumber);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
         'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
@@ -713,10 +713,7 @@ describe('BitcoinProcessor', () => {
         return Promise.resolve(transactions[1]);
       });
       const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
-        'removeTransactionsLaterThan').and.callFake((transactionNumber: number) => {
-          expect(transactionNumber).toEqual(transactions[1].transactionNumber);
-          return Promise.resolve();
-        });
+        'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual).toEqual(transactions[1].transactionTime);
       expect(transactionCount).toHaveBeenCalled();
@@ -727,7 +724,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should continue to revert if the first exponential revert failed', async (done) => {
-      const transactions = createTransactions(10);
+      const transactions = createTransactions(10).sort((a, b) => b.transactionNumber - a.transactionNumber);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
         'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
@@ -743,10 +740,7 @@ describe('BitcoinProcessor', () => {
         }
       });
       const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
-        'removeTransactionsLaterThan').and.callFake((transactionNumber: number) => {
-          expect(transactionNumber).toEqual(transactions[0].transactionNumber);
-          return Promise.resolve();
-        });
+        'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual).toEqual(transactions[0].transactionTime);
       expect(transactionCount).toHaveBeenCalledTimes(2);
@@ -964,7 +958,7 @@ describe('BitcoinProcessor', () => {
           body: bodyIdentifier
         });
       });
-      const readUtilSpy = spyOn(ReadableStreamUtils, 'readAll').and.callFake((body: any) => {
+      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
         expect(body).toEqual(bodyIdentifier);
         return Promise.resolve(JSON.stringify({
           result,
@@ -992,7 +986,7 @@ describe('BitcoinProcessor', () => {
           status: statusCode
         });
       });
-      const readUtilSpy = spyOn(ReadableStreamUtils, 'readAll').and.callFake(() => {
+      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
         return Promise.resolve(result);
       });
       try {
@@ -1021,7 +1015,7 @@ describe('BitcoinProcessor', () => {
           status: httpStatus.OK
         });
       });
-      const readUtilSpy = spyOn(ReadableStreamUtils, 'readAll').and.callFake(() => {
+      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
         return Promise.resolve(JSON.stringify({
           result: null,
           error: result,

@@ -17,8 +17,8 @@ export interface TransactionStore {
   getLastTransaction (): Promise<ITransaction | undefined>;
 
   /**
-   * Gets a list of exponentially-spaced processed transactions in reverse direction of the list of processed transactions
-   * where the first element in the returned list is the last transaction in the list of processed transactions.
+   * Gets a list of exponentially-spaced transactions in reverse chronological sorted order
+   * where the first element in the returned list is the chronologically last transaction in the store.
    */
   getExponentiallySpacedTransactions (): Promise<ITransaction[]>;
 

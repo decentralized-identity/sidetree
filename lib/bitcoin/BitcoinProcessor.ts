@@ -1,7 +1,7 @@
 import * as httpStatus from 'http-status';
 import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response } from 'node-fetch';
-import ReadableStreamUtils from '../core/util/ReadableStreamUtils';
+import ReadableStream from '../core/util/ReadableStream';
 import SidetreeError from '../core/util/SidetreeError';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -277,7 +277,7 @@ export default class BitcoinProcessor {
     const fullPath = new URL(requestPath, this.bitcoinExtensionUri);
     const response = await this.fetchWithRetry(fullPath.toString());
 
-    const responseData = await ReadableStreamUtils.readAll(response.body);
+    const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
       const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
       console.error(error);
@@ -313,7 +313,7 @@ export default class BitcoinProcessor {
       body: request,
       method: 'post'
     });
-    const responseData = await ReadableStreamUtils.readAll(responseObject.body);
+    const responseData = await ReadableStream.readAll(responseObject.body);
     if (responseObject.status !== httpStatus.OK) {
       const error = new Error(`Broadcast failure [${responseObject.status}]: ${responseData}`);
       console.error(error);
@@ -330,9 +330,11 @@ export default class BitcoinProcessor {
    * @param interval Number of seconds between each query
    */
   private periodicPoll (interval: number = this.pollPeriod) {
+    // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
     if (this.pollTimeoutId) {
       clearTimeout(this.pollTimeoutId);
     }
+
     this.processTransactions(this.lastSeenBlock).then((syncedTo) => {
       this.lastSeenBlock = syncedTo;
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
@@ -343,37 +345,36 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Processes transactions from startBlock (or genesis) to endBlock (or tip)
-   * @param startBlock The block to begin from
-   * @param endBlock The blockheight to stop on (inclusive)
+   * Processes transactions from startBlock (or genesis) to endBlockHeight (or tip)
+   * @param startBlock The block to begin from (inclusive)
+   * @param endBlockHeight The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock?: IBlockInfo, endBlock?: number): Promise<IBlockInfo> {
-    let beginBlockHeight: number;
+  private async processTransactions (startBlock?: IBlockInfo, endBlockHeight?: number): Promise<IBlockInfo> {
+    let startBlockHeight: number;
     if (startBlock) {
       const startValid = await this.verifyBlock(startBlock.height, startBlock.hash);
-      beginBlockHeight = startBlock.height;
+      startBlockHeight = startBlock.height;
       if (!startValid) {
-        beginBlockHeight = await this.revertBlockchainCache();
+        startBlockHeight = await this.revertBlockchainCache();
       }
     } else {
-      beginBlockHeight = this.genesisBlockNumber;
+      startBlockHeight = this.genesisBlockNumber;
     }
-    if (endBlock === undefined) {
-      endBlock = await this.getCurrentBlockHeight();
+    if (endBlockHeight === undefined) {
+      endBlockHeight = await this.getCurrentBlockHeight();
     }
 
-    console.info(`Processing transactions from ${startBlock} to ${endBlock}`);
+    console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
-    // You can parrallelize this so long as all processBlock's don't throw
-    for (let blockHeight = beginBlockHeight; blockHeight < endBlock; blockHeight++) {
+    for (let blockHeight = startBlockHeight; blockHeight < endBlockHeight; blockHeight++) {
       await this.processBlock(blockHeight);
     }
-    const hash = await this.processBlock(endBlock);
-    console.info(`Finished processing blocks ${startBlock} to ${endBlock}`);
+    const hash = await this.processBlock(endBlockHeight);
+    console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
     return {
       hash,
-      height: endBlock
+      height: endBlockHeight
     };
   }
 
@@ -383,6 +384,8 @@ export default class BitcoinProcessor {
    */
   private async revertBlockchainCache (): Promise<number> {
     console.info('Reverting transactions');
+
+    // Keep reverting transactions until a valid transaction is found.
     while (await this.transactionStore.getTransactionsCount() > 0) {
       const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
@@ -391,7 +394,8 @@ export default class BitcoinProcessor {
       let revertToTransactionNumber: number;
 
       if (firstValidTransaction) {
-        revertToTransactionNumber = firstValidTransaction.transactionNumber;
+        // The number that represents the theoritical last possible transaction written on `firstValidTransaction.transactionTime`.
+        revertToTransactionNumber = TransactionNumber.construct(firstValidTransaction.transactionTime + 1, 0) - 1;
       } else {
         const lowestHeight = exponentiallySpacedTransactions.reduce((height: number, transaction: ITransaction): number => {
           return height < transaction.transactionTime ? height : transaction.transactionTime;
@@ -402,10 +406,13 @@ export default class BitcoinProcessor {
       console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
       await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
 
+      // If we have reverted back to a valid transaction, rollback is complete.
       if (firstValidTransaction) {
         console.info(`reverted Transactions to block ${firstValidTransaction.transactionTime}`);
         return firstValidTransaction.transactionTime;
       }
+
+      // Else we repeat the process using the newly reduced list of trasactions.
     }
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
@@ -522,7 +529,7 @@ export default class BitcoinProcessor {
       method: 'post'
     });
 
-    const responseData = await ReadableStreamUtils.readAll(response.body);
+    const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
       const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
       console.error(error);
@@ -541,9 +548,9 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Calls node Fetch and retries the request on temporal errors
+   * Calls `nodeFetch` and retries with exponential back-off on `request-timeout` FetchError`.
    * @param uri URI to fetch
-   * @param requestParameters GET parameters to use
+   * @param requestParameters Request parameters to use
    * @returns Response of the fetch
    */
   private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined): Promise<Response> {
