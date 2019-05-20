@@ -102,7 +102,7 @@ export class CasClient implements Cas {
 
     return {
       code: FetchResultCode.Success,
-      content: Buffer.from(content);
+      content: Buffer.from(content)
     };
   }
 }
