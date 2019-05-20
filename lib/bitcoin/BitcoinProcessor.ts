@@ -567,7 +567,7 @@ export default class BitcoinProcessor {
           switch (error.type) {
             case 'request-timeout':
               console.debug(`Request timeout (${retryCount})`);
-              await this.waitFor(Math.round(Math.random() * this.defaultTimeout + timeout));
+              await this.waitFor(Math.round(timeout));
               console.debug(`Retrying request (${++retryCount})`);
               continue;
           }
