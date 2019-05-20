@@ -467,7 +467,6 @@ export default class BitcoinProcessor {
 
     const transactions = responseData.tx as Array<any>;
     const blockHash = responseData.hash;
-    let anchorFilePosition = 0;
 
     // console.debug(`Block ${block} contains ${transactions.length} transactions`);
 
@@ -493,13 +492,12 @@ export default class BitcoinProcessor {
         if (data.startsWith(this.sidetreePrefix)) {
           // we have found a sidetree transaction
           const sidetreeTransaction: ITransaction = {
-            transactionNumber: TransactionNumber.construct(block, anchorFilePosition),
+            transactionNumber: TransactionNumber.construct(block, transactionIndex),
             transactionTime: block,
             transactionTimeHash: blockHash,
             anchorFileHash: data.slice(this.sidetreePrefix.length)
           };
           console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTransaction)}`);
-          anchorFilePosition++;
           await this.transactionStore.addTransaction(sidetreeTransaction);
         }
       }
