@@ -315,7 +315,7 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('firstValidTransaction', () => {
-    it('should return the first of the valid transactions when given transactions out of order', async (done) => {
+    it('should return the first of the valid transactions', async (done) => {
       const transactions: ITransaction[] = [];
       let heights: number[] = [];
       const count = 10;
@@ -329,9 +329,8 @@ describe('BitcoinProcessor', () => {
           transactionTimeHash: randomString()
         });
       }
-      heights = heights.sort((a, b) => a - b);
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {
-        expect(height).toEqual(heights.pop()!);
+        expect(height).toEqual(heights.shift()!);
         return Promise.resolve(heights.length === 0);
       });
       const actual = await bitcoinProcessor.firstValidTransaction(transactions);
