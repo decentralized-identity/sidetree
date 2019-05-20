@@ -499,6 +499,8 @@ export default class BitcoinProcessor {
           };
           console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTransaction)}`);
           await this.transactionStore.addTransaction(sidetreeTransaction);
+          // stop processing future anchor files. Protocol defines only the first should be accepted.
+          break;
         }
       }
     }
