@@ -508,10 +508,10 @@ The following illustrates the construction of the Merkle tree with an array of 6
 * Receipt for [0] will be [B, H, I], and receipt for [5] will be [E, J].
 
 ```
-                          ROOT=H(K+J)
+                          ROOT=H(J+I)
                           /          \
                         /              \
-                J=H(H+I)                 \
+                J=H(G+H)                 \
               /        \                   \
             /            \                   \
       G=H(A+B)             H=H(C+D)          I=H(E+F)
