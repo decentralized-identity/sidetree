@@ -8,7 +8,7 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is a network consists of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
 
 ## Terminology
@@ -508,10 +508,10 @@ The following illustrates the construction of the Merkle tree with an array of 6
 * Receipt for [0] will be [B, H, I], and receipt for [5] will be [E, J].
 
 ```
-                          ROOT=H(K+J)
+                          ROOT=H(J+I)
                           /          \
                         /              \
-                J=H(H+I)                 \
+                J=H(G+H)                 \
               /        \                   \
             /            \                   \
       G=H(A+B)             H=H(C+D)          I=H(E+F)
@@ -550,9 +550,10 @@ The following illustrates the construction of the Merkle tree with an array of 7
 
 ## FAQs
 * Why introduce the concept of an _anchor file_? Why not just anchor the _batch file hash_ directly on blockchain?
+
   It would be ideal to be able to fetch metadata about the batched operations efficiently,
   without needing to download the entire batch file.
-  This design also opens up possibilities of other applications of the Sidetree protocol.
+  This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree protocol.
 
 * Why assign a _transaction number_ to invalid transactions?
 

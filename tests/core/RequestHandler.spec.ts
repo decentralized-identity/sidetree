@@ -82,7 +82,7 @@ describe('RequestHandler', () => {
       batchFileHash
     };
     const createOperation = Operation.create(createOperationBuffer, resolvedTransaction, 0);
-    await operationProcessor.processBatch([createOperation]);
+    await operationProcessor.process([createOperation]);
 
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
@@ -108,8 +108,9 @@ describe('RequestHandler', () => {
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verfiy that CAS was invoked to store the batch file.
-    const batchFileBuffer = await cas.read(batchFileHash);
-    const batchFile = JSON.parse(batchFileBuffer.toString());
+    const maxBatchFileSize = 20000000;
+    const fetchResult = await cas.read(batchFileHash, maxBatchFileSize);
+    const batchFile = JSON.parse(fetchResult.content!.toString());
     expect(batchFile.operations.length).toEqual(1);
   });
 

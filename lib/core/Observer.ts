@@ -2,9 +2,11 @@ import AnchorFile, { IAnchorFile } from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from './DownloadManager';
 import OperationProcessor from './OperationProcessor';
+import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
 import { ErrorCode, SidetreeError } from './Error';
+import { FetchResultCode } from './Cas';
 import { IResolvedTransaction, ITransaction } from './Transaction';
 import { Operation } from './Operation';
 import { TransactionStore } from './TransactionStore';
@@ -242,29 +244,51 @@ export default class Observer {
     let retryNeeded = false;
 
     try {
-      console.info(`Downloading anchor file '${transaction.anchorFileHash}'...`);
-      const anchorFileBuffer = await this.downloadManager.download(transaction.anchorFileHash);
+      // Get the protocol parameters
+      const protocolParameters = ProtocolParameters.get(transaction.transactionTime);
 
-      if (anchorFileBuffer === undefined) {
+      console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${protocolParameters.maxAnchorFileSizeInBytes}...`);
+      const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, protocolParameters.maxAnchorFileSizeInBytes);
+
+      // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
+      if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
+        console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${protocolParameters.maxAnchorFileSizeInBytes}...`);
+        return;
+      }
+
+      // If file cannot be found, mark it for retry later.
+      if (anchorFileFetchResult.code === FetchResultCode.NotFound) {
+        console.info(`Anchor file '${transaction.anchorFileHash}' not found, will try again later.`);
         retryNeeded = true;
         return;
       }
 
+      console.info(`Anchor file '${transaction.anchorFileHash}' of size ${anchorFileFetchResult.content!.length} downloaded.`);
       let anchorFile: IAnchorFile;
       try {
-        anchorFile = AnchorFile.parseAndValidate(anchorFileBuffer);
+        anchorFile = AnchorFile.parseAndValidate(anchorFileFetchResult.content!);
       } catch {
         console.info(`Anchor file '${transaction.anchorFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored...`);
         return;
       }
 
-      console.info(`Downloading batch file '${anchorFile.batchFileHash}'...`);
-      const batchFileBuffer = await this.downloadManager.download(anchorFile.batchFileHash);
+      console.info(`Downloading batch file '${anchorFile.batchFileHash}', max size limit ${protocolParameters.maxBatchFileSizeInBytes}...`);
+      const batchFileFetchResult = await this.downloadManager.download(anchorFile.batchFileHash, protocolParameters.maxBatchFileSizeInBytes);
 
-      if (batchFileBuffer === undefined) {
+      // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
+      if (batchFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
+        console.info(`Batch file '${anchorFile.batchFileHash}' exceeded max size limit ${protocolParameters.maxBatchFileSizeInBytes}...`);
+        return;
+      }
+
+      // If file cannot be found, mark it for retry later.
+      if (batchFileFetchResult.code === FetchResultCode.NotFound) {
+        console.info(`Batch file '${anchorFile.batchFileHash}' not found, will try again later.`);
         retryNeeded = true;
         return;
       }
+
+      console.info(`Batch file '${anchorFile.batchFileHash}' of size ${batchFileFetchResult.content!.length} downloaded.`);
 
       // Construct a resolved transaction from the original transaction object now that batch file is fetched.
       const resolvedTransaction: IResolvedTransaction = {
@@ -277,7 +301,7 @@ export default class Observer {
 
       let operations: Operation[];
       try {
-        operations = await BatchFile.parseAndValidate(batchFileBuffer, anchorFile, resolvedTransaction);
+        operations = await BatchFile.parseAndValidate(batchFileFetchResult.content!, anchorFile, resolvedTransaction);
       } catch {
         console.info(`Batch file '${anchorFile.batchFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored.`);
         return;
@@ -285,7 +309,7 @@ export default class Observer {
 
       // If the code reaches here, it means that the batch of operations is valid, process the operations.
       const endTimer = timeSpan();
-      await this.operationProcessor.processBatch(operations);
+      await this.operationProcessor.process(operations);
       console.info(`Processed batch '${anchorFile.batchFileHash}' of ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);

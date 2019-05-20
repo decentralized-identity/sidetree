@@ -17,8 +17,8 @@ export default class OperationProcessor {
    * Process a batch of operations. Simply store the operations in the
    * store.
    */
-  public async processBatch (operations: Array<Operation>): Promise<void> {
-    return this.operationStore.putBatch(operations);
+  public async process (operations: Array<Operation>): Promise<void> {
+    return this.operationStore.put(operations);
   }
 
   /**

@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Cas } from './Cas';
+import { Cas, FetchResult } from './Cas';
 
 /**
  * Interface containing information regarding each queued CAS download.
@@ -16,6 +16,11 @@ interface DownloadInfo {
   contentHash: string;
 
   /**
+   * The maximum allowed content size.
+   */
+  maxSizeInBytes: number;
+
+  /**
    * The resolve function that will be invoked by the download manager when download is completed
    * regarless if the download is successful or not.
    */
@@ -27,9 +32,9 @@ interface DownloadInfo {
   completed: boolean;
 
   /**
-   * Holds the content once the download is completed and successful; `undefined` otherwise.
+   * Holds the fetch result once the download is completed.
    */
-  content: Buffer | undefined;
+  fetchResult?: FetchResult;
 }
 
 /**
@@ -38,7 +43,7 @@ interface DownloadInfo {
 export default class DownloadManager {
   private pendingDownloads: DownloadInfo[] = [];
   private activeDownloads: Map<Buffer, DownloadInfo> = new Map();
-  private completedDownloads: Map<Buffer, Buffer | undefined> = new Map();
+  private completedDownloads: Map<Buffer, FetchResult> = new Map();
 
   /**
    * Constructs the download manager.
@@ -67,7 +72,7 @@ export default class DownloadManager {
       const completedDownloadHandles = [];
       for (const [downloadHandle, downloadInfo] of this.activeDownloads) {
         if (downloadInfo.completed) {
-          this.completedDownloads.set(downloadHandle, downloadInfo.content);
+          this.completedDownloads.set(downloadHandle, downloadInfo.fetchResult!);
           completedDownloadHandles.push(downloadHandle);
 
           // Resolve the promise associated with the download.
@@ -94,7 +99,7 @@ export default class DownloadManager {
         const downloadInfo = this.pendingDownloads[i];
 
         // Intentionally not awaiting on a download.
-        void this.downloadAsync(downloadInfo.contentHash, downloadInfo);
+        void this.downloadAsync(downloadInfo);
         this.activeDownloads.set(downloadInfo.handle, downloadInfo);
       }
 
@@ -111,35 +116,40 @@ export default class DownloadManager {
    * Downloads the content of the given content hash.
    * @param contentHash Hash of the content to be downloaded.
    */
-  public async download (contentHash: string): Promise<Buffer | undefined> {
+  public async download (contentHash: string, maxSizeInBytes: number): Promise<FetchResult> {
     const handle = crypto.randomBytes(32);
     const fetchPromise = new Promise(resolve => {
-      const downloadInfo = { handle, contentHash, resolve, completed: false, content: undefined };
+      const downloadInfo = { handle, contentHash, maxSizeInBytes, resolve, completed: false, content: undefined };
       this.pendingDownloads.push(downloadInfo);
     });
 
     await fetchPromise;
 
-    const content = this.completedDownloads.get(handle);
+    const fetchResult = this.completedDownloads.get(handle);
     this.completedDownloads.delete(handle);
 
-    return content;
+    return fetchResult!;
   }
 
   /**
    * The internal download method that gets called by the main download manager monitoring loop when download lanes are available to download content.
-   * @param downloadInfo The data structure used to signal to the main download manager monitoring loop when the requested download is completed.
+   * NOTE: This method MUST NEVER throw (more accurately: ALWAYS set downloadInfo.completed = true),
+   * else it will LEAK the available download lanes and in turn hang the Observer.
+   * @param downloadInfo Data structure containing `completed` flag and `fetchResult`,
+   *                     used to signal to the main download manager monitoring loop when the requested download is completed.
    */
-  private async downloadAsync (contentHash: string, downloadInfo: DownloadInfo): Promise<void> {
-    let fileBuffer;
+  private async downloadAsync (downloadInfo: DownloadInfo): Promise<void> {
+    let contentHash = '';
     try {
-      fileBuffer = await this.cas.read(contentHash);
-      console.info(`Downloaded content '${contentHash}'.}'.`);
-    } catch (error) {
-      console.info(`Failed downloading '${contentHash}: ${error}'.`);
-    }
+      contentHash = downloadInfo.contentHash;
 
-    downloadInfo.completed = true;
-    downloadInfo.content = fileBuffer;
+      const fetchResult = await this.cas.read(contentHash, downloadInfo.maxSizeInBytes);
+
+      downloadInfo.fetchResult = fetchResult;
+    } catch (error) {
+      console.error(`Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`);
+    } finally {
+      downloadInfo.completed = true;
+    }
   }
 }
