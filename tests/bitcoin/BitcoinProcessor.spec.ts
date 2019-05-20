@@ -600,6 +600,7 @@ describe('BitcoinProcessor', () => {
           height: nextBlock
         });
       });
+      /* tslint:disable-next-line */
       bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {
@@ -617,6 +618,7 @@ describe('BitcoinProcessor', () => {
         hash: randomString(),
         height: randomNumber()
       }));
+      /* tslint:disable-next-line */
       bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {

@@ -126,6 +126,8 @@ export default class BitcoinProcessor {
     } else {
       this.lastSeenBlock = await this.processTransactions();
     }
+    // disabling floating promise lint since periodicPoll should just float in the background event loop
+    /* tslint:disable-next-line:no-floating-promises */
     this.periodicPoll();
   }
 
@@ -195,20 +197,13 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Given a list of Sidetree transactions, returns the first transaction in the list that is valid.
+   * Given an ordered list of Sidetree transactions, returns the first transaction in the list that is valid.
    * @param transactions List of transactions to check
    * @returns The first valid transaction, or undefined if none are valid
    */
   public async firstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined> {
-    // sort so lower transaction numbers come first
-    const sortedTransactions = transactions.sort((aTransaction, bTransaction) => {
-      // <0  a comes before b
-      // >0  b comes before a
-      return aTransaction.transactionNumber - bTransaction.transactionNumber;
-    });
-
-    for (let index = sortedTransactions.length - 1; index >= 0; index--) {
-      const transaction = sortedTransactions[index];
+    for (let index = 0; index < transactions.length; index++) {
+      const transaction = transactions[index];
       const height = transaction.transactionTime;
       const hash = transaction.transactionTimeHash;
       if (await this.verifyBlock(height, hash)) {
@@ -329,19 +324,21 @@ export default class BitcoinProcessor {
    * Will process transactions every interval seconds.
    * @param interval Number of seconds between each query
    */
-  private periodicPoll (interval: number = this.pollPeriod) {
+  private async periodicPoll (interval: number = this.pollPeriod) {
     // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
     if (this.pollTimeoutId) {
       clearTimeout(this.pollTimeoutId);
     }
 
-    this.processTransactions(this.lastSeenBlock).then((syncedTo) => {
+    try {
+      const syncedTo = await this.processTransactions(this.lastSeenBlock);
       this.lastSeenBlock = syncedTo;
-      this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
-    }).catch((error) => {
+    } catch (error) {
       console.error(error);
       throw error;
-    });
+    } finally {
+      this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
+    }
   }
 
   /**
@@ -397,9 +394,7 @@ export default class BitcoinProcessor {
         // The number that represents the theoritical last possible transaction written on `firstValidTransaction.transactionTime`.
         revertToTransactionNumber = TransactionNumber.construct(firstValidTransaction.transactionTime + 1, 0) - 1;
       } else {
-        const lowestHeight = exponentiallySpacedTransactions.reduce((height: number, transaction: ITransaction): number => {
-          return height < transaction.transactionTime ? height : transaction.transactionTime;
-        }, exponentiallySpacedTransactions[0].transactionTime);
+        const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
         revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
       }
 
