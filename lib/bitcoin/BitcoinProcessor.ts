@@ -335,7 +335,6 @@ export default class BitcoinProcessor {
       this.lastSeenBlock = syncedTo;
     } catch (error) {
       console.error(error);
-      throw error;
     } finally {
       this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
     }
