@@ -21,7 +21,7 @@ echo "Installing prerequisite software"
 sudo snap install node --classic --channel=10
 if [ $? != 0 ]; then
     echo "Snapcraft failed, using apt..."
-    curl -sL https://deb.nodesource.com/setup_11.x | sudo -E bash -
+    curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
     sudo apt-get install -y nodejs
 fi
 
