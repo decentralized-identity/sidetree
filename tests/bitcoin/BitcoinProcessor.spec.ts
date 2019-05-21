@@ -650,19 +650,18 @@ describe('BitcoinProcessor', () => {
 
     it('should begin a rollback if the start block failed to validate', async (done) => {
       const hash = randomString();
-      const start = randomNumber() + 100;
-      const startBlock = { height: start, hash: randomString() };
-      const revertNumber = start - 100;
+      const startBlock = randomBlock(testConfig.genesisBlockNumber + 100);
+      const revertNumber = startBlock.height - 100;
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
       const revertSpy = spyOn(bitcoinProcessor, 'revertBlockchainCache' as any).and.returnValue(Promise.resolve(revertNumber));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      const actual = await bitcoinProcessor['processTransactions'](startBlock, start + 1);
-      expect(actual.height).toEqual(start + 1);
+      const actual = await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 1);
+      expect(actual.height).toEqual(startBlock.height + 1);
       expect(actual.hash).toEqual(hash);
       expect(verifySpy).toHaveBeenCalled();
       expect(revertSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledWith(revertNumber);
-      expect(processMock).toHaveBeenCalledWith(start + 1);
+      expect(processMock).toHaveBeenCalledWith(startBlock.height + 1);
       done();
     });
 
@@ -711,7 +710,7 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.message).toContain('before genesis');
         expect(verifySpy).toHaveBeenCalled();
-        expect(tipSpy).not.toHaveBeenCalled();
+        expect(tipSpy).toHaveBeenCalled();
         expect(processMock).not.toHaveBeenCalled();
       } finally {
         done();
