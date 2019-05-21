@@ -37,13 +37,18 @@ cd $dataDirectory
 git clone git://github.com/bcoin-org/bcoin.git
 cd bcoin
 npm install
+cd ..
 echo "
 network: testnet
-prefix: $dataDirectory/data/bcoin/
+prefix: $dataDirectory/data
 host: 127.0.0.1
 port: 18332
 http-port: 18331
 workers-size: 1
 index-address: true
-" > $dataDirectory/data/bcoin/bcoin.conf
-./bin/bcoin --config $dataDirectory/data/bcoin/bcoin.conf --daemon
+" > $dataDirectory/bcoin.conf
+echo "
+#!/bin/bash
+./bcoin/bin/bcoin --config $dataDirectory/bcoin.conf
+" > $dataDirectory/start.sh
+./bcoin/bin/bcoin --config $dataDirectory/bcoin.conf
