@@ -51,4 +51,5 @@ echo "
 #!/bin/bash
 ./bcoin/bin/bcoin --config $dataDirectory/bcoin.conf
 " > $dataDirectory/start.sh
+chmod u+x $dataDirectory/start.sh
 ./bcoin/bin/bcoin --config $dataDirectory/bcoin.conf
