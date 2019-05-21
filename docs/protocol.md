@@ -108,7 +108,7 @@ The _anchor file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded hash of the batch file.",
-  "didUniqueSuffixes": ["423sd246fg5v5v4c53ero451lh...", "..."],
+  "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."],
   "merkleRoot": "Encoded root hash of the Merkle tree constructed from the operations included in the batch file."
 }
 ```
