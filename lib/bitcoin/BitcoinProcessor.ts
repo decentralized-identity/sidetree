@@ -361,6 +361,10 @@ export default class BitcoinProcessor {
       endBlockHeight = await this.getCurrentBlockHeight();
     }
 
+    if (startBlockHeight < this.genesisBlockNumber || endBlockHeight < this.genesisBlockNumber) {
+      throw new Error('Cannot process Transactions before genesis');
+    }
+
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
     for (let blockHeight = startBlockHeight; blockHeight < endBlockHeight; blockHeight++) {

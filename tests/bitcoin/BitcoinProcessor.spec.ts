@@ -15,8 +15,8 @@ function randomNumber (max: number = 256): number {
   return Math.round(Math.random() * max);
 }
 
-function randomBlock (): IBlockInfo {
-  return { height: randomNumber(), hash: randomString() };
+function randomBlock (above: number = 0): IBlockInfo {
+  return { height: above + randomNumber(), hash: randomString() };
 }
 
 describe('BitcoinProcessor', () => {
@@ -637,7 +637,7 @@ describe('BitcoinProcessor', () => {
 
     it('should verify the start block', async (done) => {
       const hash = randomString();
-      const startBlock = randomBlock();
+      const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
       const actual = await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 1);
@@ -668,7 +668,7 @@ describe('BitcoinProcessor', () => {
 
     it('should call processBlock on all blocks within range', async (done) => {
       const hash = randomString();
-      const startBlock = randomBlock();
+      const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
       await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 9);
@@ -679,7 +679,7 @@ describe('BitcoinProcessor', () => {
 
     it('should use the current tip if no end is specified', async (done) => {
       const hash = randomString();
-      const startBlock = randomBlock();
+      const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
@@ -699,6 +699,40 @@ describe('BitcoinProcessor', () => {
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
       done();
+    });
+
+    it('should throw if asked to start processing before genesis', async (done) => {
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
+      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
+      try {
+        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString() });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toContain('before genesis');
+        expect(verifySpy).toHaveBeenCalled();
+        expect(tipSpy).not.toHaveBeenCalled();
+        expect(processMock).not.toHaveBeenCalled();
+      } finally {
+        done();
+      }
+    });
+
+    it('should throw if asked to process while the miners block height is below genesis', async (done) => {
+      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
+      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber - 1));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
+      try {
+        await bitcoinProcessor['processTransactions']();
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toContain('before genesis');
+        expect(verifySpy).not.toHaveBeenCalled();
+        expect(tipSpy).toHaveBeenCalled();
+        expect(processMock).not.toHaveBeenCalled();
+      } finally {
+        done();
+      }
     });
   });
 

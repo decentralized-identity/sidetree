@@ -83,6 +83,7 @@ try {
     })
     .catch((error) => {
       console.log(`Sidetree-Bitcoin node initialization failed with error ${JSON.stringify(error)}`);
+      process.exit(1);
     });
 } catch (error) {
   console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
