@@ -1,6 +1,6 @@
 {
-  "bitcoinExtensionUri": "[FILL THIS IN]",
-  "bitcoinWalletImportString": "[FILL THIS IN]",
+  "bitcoinExtensionUri": "http://localhost:18331/",
+  "bitcoinWalletImportString": "cQBMZuV1rdHZMM3LVBjspxJ1cSFVQrJTQUohfAi2Rj7bJQLcbYmN",
   "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1500000,

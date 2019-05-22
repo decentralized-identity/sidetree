@@ -82,7 +82,7 @@ try {
       });
     })
     .catch((error) => {
-      console.log(`Sidetree-Bitcoin node initialization failed with error ${JSON.stringify(error)}`);
+      console.error(`Sidetree-Bitcoin node initialization failed with error: ${error}`);
       process.exit(1);
     });
 } catch (error) {
