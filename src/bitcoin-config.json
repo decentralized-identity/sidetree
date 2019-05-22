@@ -1,11 +1,11 @@
 {
-  "bitcoinExtensionUri": "http://localhost:18331/",
-  "bitcoinWalletImportString": "cQBMZuV1rdHZMM3LVBjspxJ1cSFVQrJTQUohfAi2Rj7bJQLcbYmN",
+  "bitcoinPeerUri": "[FILL THIS IN!]",
+  "bitcoinWalletImportString": "[FILL THIS IN!]",
   "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1500000,
   "databaseName": "sidetree-bitcoin",
-  "transactionFetchPageSize": 10,
+  "transactionFetchPageSize": 100,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
   "port": 3002
 }

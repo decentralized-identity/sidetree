@@ -22,14 +22,14 @@ function randomBlock (above: number = 0): IBlockInfo {
 describe('BitcoinProcessor', () => {
 
   const testConfig: IBitcoinConfig = {
-    bitcoinExtensionUri: 'http://localhost:18331',
+    bitcoinPeerUri: 'http://localhost:18331',
     bitcoinFee: 1,
     bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
-    defaultTimeoutInMilliseconds: 300,
+    requestTimeoutInMilliseconds: 300,
     genesisBlockNumber: 1480000,
     lowBalanceNoticeInDays: 28,
-    maxRetries: 3,
+    requestMaxRetries: 3,
     transactionFetchPageSize: 100,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
@@ -93,7 +93,7 @@ describe('BitcoinProcessor', () => {
   describe('constructor', () => {
     it('should use appropriate config values', () => {
       const config: IBitcoinConfig = {
-        bitcoinExtensionUri: randomString(),
+        bitcoinPeerUri: randomString(),
         bitcoinFee: randomNumber(),
         bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
         databaseName: randomString(),
@@ -102,15 +102,15 @@ describe('BitcoinProcessor', () => {
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
-        defaultTimeoutInMilliseconds: undefined,
-        maxRetries: undefined,
+        requestTimeoutInMilliseconds: undefined,
+        requestMaxRetries: undefined,
         transactionPollPeriodInSeconds: undefined
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
-      expect(bitcoinProcessor.bitcoinExtensionUri).toEqual(config.bitcoinExtensionUri);
+      expect(bitcoinProcessor.bitcoinPeerUri).toEqual(config.bitcoinPeerUri);
       expect(bitcoinProcessor.bitcoinFee).toEqual(config.bitcoinFee);
-      expect(bitcoinProcessor.defaultTimeout).toEqual(300);
+      expect(bitcoinProcessor.requestTimeout).toEqual(300);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect(bitcoinProcessor.maxRetries).toEqual(3);
@@ -123,7 +123,7 @@ describe('BitcoinProcessor', () => {
 
     it('should throw if the wallet import string is incorrect', () => {
       const config: IBitcoinConfig = {
-        bitcoinExtensionUri: randomString(),
+        bitcoinPeerUri: randomString(),
         bitcoinFee: randomNumber(),
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
@@ -132,8 +132,8 @@ describe('BitcoinProcessor', () => {
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
-        defaultTimeoutInMilliseconds: undefined,
-        maxRetries: undefined,
+        requestTimeoutInMilliseconds: undefined,
+        requestMaxRetries: undefined,
         transactionPollPeriodInSeconds: undefined
       };
 
@@ -983,7 +983,7 @@ describe('BitcoinProcessor', () => {
       const bodyIdentifier = randomNumber();
       const result = randomString();
       retryFetchSpy.and.callFake((uri: string, params: any) => {
-        expect(uri).toContain(testConfig.bitcoinExtensionUri);
+        expect(uri).toContain(testConfig.bitcoinPeerUri);
         expect(uri.endsWith(path)).toBeTruthy();
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body)[memberName]).toEqual(memberValue);
@@ -1013,7 +1013,7 @@ describe('BitcoinProcessor', () => {
       const result = randomString();
       const statusCode = randomNumber();
       retryFetchSpy.and.callFake((uri: string, params: any) => {
-        expect(uri).toContain(testConfig.bitcoinExtensionUri);
+        expect(uri).toContain(testConfig.bitcoinPeerUri);
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body).test).toEqual(request.test);
         return Promise.resolve({
@@ -1042,7 +1042,7 @@ describe('BitcoinProcessor', () => {
       };
       const result = randomString();
       retryFetchSpy.and.callFake((uri: string, params: any) => {
-        expect(uri).toContain(testConfig.bitcoinExtensionUri);
+        expect(uri).toContain(testConfig.bitcoinPeerUri);
         expect(params.method).toEqual('post');
         expect(JSON.parse(params.body).test).toEqual(request.test);
         return Promise.resolve({
@@ -1120,7 +1120,7 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error.message).toEqual('test');
         expect(error.type).toEqual('request-timeout');
-        expect(fetchSpy).toHaveBeenCalledTimes(testConfig.maxRetries! + 1);
+        expect(fetchSpy).toHaveBeenCalledTimes(testConfig.requestMaxRetries! + 1);
       } finally {
         done();
       }

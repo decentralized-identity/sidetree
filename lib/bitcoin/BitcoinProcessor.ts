@@ -35,7 +35,7 @@ export interface IBlockInfo {
 export default class BitcoinProcessor {
 
   /** URI for the bitcoin peer's RPC endpoint */
-  public readonly bitcoinExtensionUri: string;
+  public readonly bitcoinPeerUri: string;
 
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
@@ -56,7 +56,7 @@ export default class BitcoinProcessor {
   public pageSize: number;
 
   /** request timeout in milliseconds */
-  public defaultTimeout: number;
+  public requestTimeout: number;
 
   /** maximum number of request retries */
   public maxRetries: number;
@@ -74,7 +74,7 @@ export default class BitcoinProcessor {
   private pollTimeoutId: number | undefined;
 
   public constructor (config: IBitcoinConfig) {
-    this.bitcoinExtensionUri = config.bitcoinExtensionUri;
+    this.bitcoinPeerUri = config.bitcoinPeerUri;
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.bitcoinFee = config.bitcoinFee;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -86,8 +86,8 @@ export default class BitcoinProcessor {
       throw new Error(`Failed creating private key from '${config.bitcoinWalletImportString}': ${error.message}`);
     }
     this.pageSize = config.transactionFetchPageSize;
-    this.defaultTimeout = config.defaultTimeoutInMilliseconds || 300;
-    this.maxRetries = config.maxRetries || 3;
+    this.requestTimeout = config.requestTimeoutInMilliseconds || 300;
+    this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
   }
@@ -269,7 +269,7 @@ export default class BitcoinProcessor {
     console.info(`Getting unspent coins for ${addressToSearch}`);
     const requestPath = `/coin/address/${addressToSearch}`;
 
-    const fullPath = new URL(requestPath, this.bitcoinExtensionUri);
+    const fullPath = new URL(requestPath, this.bitcoinPeerUri);
     const response = await this.fetchWithRetry(fullPath.toString());
 
     const responseData = await ReadableStream.readAll(response.body);
@@ -303,7 +303,7 @@ export default class BitcoinProcessor {
     const request = JSON.stringify({
       tx: rawTransaction
     });
-    const fullPath = new URL('/broadcast', this.bitcoinExtensionUri);
+    const fullPath = new URL('/broadcast', this.bitcoinPeerUri);
     const responseObject = await this.fetchWithRetry(fullPath.toString(), {
       body: request,
       method: 'post'
@@ -518,7 +518,7 @@ export default class BitcoinProcessor {
    * @returns response as an object
    */
   private async rpcCall (request: any, requestPath: string = ''): Promise<any> {
-    const fullPath = new URL(requestPath, this.bitcoinExtensionUri);
+    const fullPath = new URL(requestPath, this.bitcoinPeerUri);
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
@@ -555,7 +555,7 @@ export default class BitcoinProcessor {
     let retryCount = 0;
     let timeout: number;
     do {
-      timeout = this.defaultTimeout * 2 ** retryCount;
+      timeout = this.requestTimeout * 2 ** retryCount;
       const params = Object.assign({}, requestParameters, {
         timeout
       });

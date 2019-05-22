@@ -73,7 +73,7 @@ In the following configuration `bcoin.local` refers to your IP address, DNS addr
 Edit your bitcoin-config.json
 ```json
 {
-  "bitcoinExtensionUri": "http://bcoin.local:18331/",
+  "bitcoinPeerUri": "http://bcoin.local:18331/",
   "bitcoinWalletImportString": "[FILL THIS IN]",
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1480000,

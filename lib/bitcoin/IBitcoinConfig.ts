@@ -2,7 +2,7 @@
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
 export interface IBitcoinConfig {
-  bitcoinExtensionUri: string;
+  bitcoinPeerUri: string;
   bitcoinWalletImportString: string;
   bitcoinFee: number;
   lowBalanceNoticeInDays: number | undefined;
@@ -11,7 +11,7 @@ export interface IBitcoinConfig {
   mongoDbConnectionString: string;
   databaseName: string | undefined;
   transactionFetchPageSize: number;
-  defaultTimeoutInMilliseconds: number | undefined;
-  maxRetries: number | undefined;
+  requestTimeoutInMilliseconds: number | undefined;
+  requestMaxRetries: number | undefined;
   transactionPollPeriodInSeconds: number | undefined;
 }
