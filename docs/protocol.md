@@ -479,28 +479,12 @@ None.
 
 > TODO: API to be added which will impact delete API also.
 
-## Sidetree Operation Receipts
-Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations. Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2: a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees; then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
+## Merkle Root Hash Inclusion
+Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
 
-The inclusion of the Merkle root hash provides the opportunity for an operation to be assigned a concise receipt such that it can be cryptographically proven to be part of the batch. Sidetree uses the following JSON schema to represent a receipt:
+The main protocol does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire batch file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.
 
-```json
-{
-  "receipt": [
-    {
-      "hash": "A Merkle tree node hash.",
-      "side": "Must be 'left' or 'right', denotes the position of this hash."
-    },
-    ...
-  ]
-}
-```
-
-Where the first entry in ```receipt``` is the sibling of the operation hash in the Merkle tree; followed by the uncle, then the great uncle and so on.
-
-> NOTE: This scheme does __not__ include the root hash as the last entry of the receipt.
-
-> NOTE: Receipt array will be empty thus is optional if no batching occurs (i.e. a tree of one operation).
+Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2: a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees; then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
 
 ### Sidetree Operation Batching Examples
 The following illustrates the construction of the Merkle tree with an array of 6 operations:
@@ -546,6 +530,28 @@ The following illustrates the construction of the Merkle tree with an array of 7
     |         |         |         |         |         |         |
 [   0    ,    1    ,    2    ,    3    ,    4    ,    5    ,    6   ]
 ```
+
+### Operation Receipts
+
+While currently unused, Sidetree proposes the following JSON schema to represent a receipt:
+
+```json
+{
+  "receipt": [
+    {
+      "hash": "A Merkle tree node hash.",
+      "side": "Must be 'left' or 'right', denotes the position of this hash."
+    },
+    ...
+  ]
+}
+```
+
+Where the first entry in ```receipt``` is the sibling of the operation hash in the Merkle tree; followed by the uncle, then the great uncle and so on.
+
+> NOTE: This scheme does __not__ include the root hash as the last entry of the receipt.
+
+> NOTE: Receipt array will be empty thus is optional if no batching occurs (i.e. a tree of one operation).
 
 
 ## FAQs
