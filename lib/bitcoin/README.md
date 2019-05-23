@@ -1,68 +1,117 @@
-# sidetree-bitcoin
+Bitcoin Service
+===
 
-Blockchain-specific code for the Sidetree-based DID Method implementation on Bitcoin
+*Last Updated: May 10, 2019*
 
-## Getting started
+A [full bitcoin node](https://github.com/Bcoin-org/Bcoin#bcoin) is required by the the bitcoin sidetree implementation I.O.N. A [start script](./start.sh) in this repo will guide and install bitcore on an Ubuntu/Debian machine. The rest of this document details the steps taken by this script.
 
-Our reference implementation of the blockchain service is based on bitcored. Here is the list of instructions to deploy Sidetree's extension code along with the bitcored service:
+Prerequisite Software
+---
+### Node
+Bitcore is a Node.js based project. [Download](https://nodejs.org/en/download/) or [install](https://nodejs.org/en/download/package-manager/) for your system.
 
-- Install a Bitcored full node using instructions at [this link](https://github.com/bitpay/bitcore#bitcore). We reproduce their instructions below since we run bitcored with node v9 rather than v4:
 
-  - Install node version manager (NVM) by following instructions at [this link](https://github.com/creationix/nvm#install-script).
-  - Install node v9 by using: 
-     ```bash 
-     nvm install v9
-     ```
-  - Install Python, ZeroMQ, and Tools. On GNU/Debian distributions, do:
-    ```bash
-    apt-get install python libzmq3-dev build-essential
-    ```
-  - Install bitcore:
-    ```bash
-    npm install -g bitcore
-    ```
-  - Start bitcore (ignore --testnet for mainnet):
-    ```bash
-    bitcore create mynode --testnet
-    ```
+> Node-Gyp is used by bitcore for C++ compilation. It requires Python 2.7 and the appropriate `make` and c++ compiler.
+### Python 2.7 for Windows
+[Python 2.7 Downloads](https://www.python.org/download/releases/2.7/)
+### Python 2.7 for Linux
+`sudo apt-get install -y python`
+### C++ Compilers for Windows
+[Tools for Visual Studio {Current Year}](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)
+### C++ Compilers for Linux
+`sudo apt-get install -y gcc g++ make`
 
-- Clone this repository to folder `$(SIDETREE_BITCOIN_REPO)` and run the following:
-    ```bash
-      cd $(SIDETREE_BITCOIN_REPO)/bitcored-services/sidetree
-      npm install bitcore-lib
-    ```
+Bitcoin peer
+---
+You will need a trusted bitcoin network peer. ~~You can use any Bitcoin implementation so long as it supports http RPC~~ (There are a few proprietary BCoin calls being used for convinence. You can use any node once those have been refactored). Below are instructions to install a [Bcoin bitcoin node](https://github.com/Bcoin-org/Bcoin). 
+### Bcoin
+Bcoin 
+Clone their repo
+```bash
+git clone git://github.com/bcoin-org/bcoin.git
+```
+Install Bcoin dependencies:
+```bash
+npm install
+```
+Write a configuration file for your node (`bcoin.conf`):
+```yaml
+network: testnet
+prefix: {{ DATA DIRECTORY HERE }}
+host: 127.0.0.1
+port: 18332
+http-port: 18331
+workers-size: 1
+index-address: true
+```
+Start Bcoin:
+```bash
+./bin/bcoin --config {{ CONFIG FILEPATH HERE }} --daemon
+```
 
-- Install insight UI:
-  ```bash
-  cd $(BITCORE_DIR)
-  bitcore install insight-api insight-ui
-  ```
+> You may wish to remove `--daemon` on first start up to ensure your configuration is taking affect, and wait to start the bitcoin service until fully synced.
 
-- Add a private key from a Bitcoin wallet to `$(SIDETREE_BITCOIN_REPO)/bitcored-services/sidetree/config.json`
+Configure Bitcoin Service
+---
 
-- Suppose that we install bitcored to `$(BITCORE_DIR)` on `$(NODE_IP)`, use the following instructions to add Sidetree's blockchain service:
+Grab the IP or DNS of the machine where you installed Bcoin:
 
-   ```bash
-      cd $(BITCORE_DIR)/node_modules
-      ln -s $(SIDETREE_BITCOIN_REPO)/bitcored-services/sidetree
-      add the string "sidetree" to the services array in $BITCORE_DIR/bitcore-node.json
-    ```
+Windows users:
+```cmd
+ipconfig
+```
 
-- Start the `bitcored` daemon by running:
+Linux users:
+```bash
+ifconfig
+```
 
-   ```bash
-    cd $(BITCORE_DIR)
-    bitcored
-   ```
+If you installed Bcoin locally, `localhost` will do.
 
-- Verify that the bitcored installation was successful by pointing the browser to: `http://$(NODE_IP):3001/insight/`
+In the following configuration `bcoin.local` refers to your IP address, DNS address, or `localhost`.
 
-Once Sidetree extension is running in bitcored correctly, we can now build and run the Sidetree blockchain service that will be talking to our Sidetree extension running in bitcored:
+Edit your bitcoin-config.json
+```json
+{
+  "bitcoinPeerUri": "http://bcoin.local:18331/",
+  "bitcoinWalletImportString": "[FILL THIS IN]",
+  "sidetreeTransactionPrefix": "sidetree:",
+  "genesisBlockNumber": 1480000,
+  "genesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
+  "databaseName": "sidetree-bitcoin",
+  "transactionFetchPageSize": 10,
+  "mongoDbConnectionString": "mongodb://localhost:27017/",
+  "port": 3002
+}
+```
 
- 1. Clone this repo and go to the root folder.
- 1. Run `npm i` to install dependencies.
- 1. Modify `json/config.json` accordingly. Some parameters of interest:
-    1. Update `bitcoreExtensionUri` to point to the bitcored service configured earlier:
-       e.g. 'http://127.0.0.1:3002/SidetreeBlockchainService/'
- 1. Run `npm run build` to build the service.
- 1. Run 'npm start` to start the service. 
+If you are on mainnet or already have a bitcoin testnet private key, please put the
+[Wallet Import Format](https://en.bitcoin.it/wiki/Wallet_import_format)(WIF) string in the `bitcoinWalletImportString`
+parameter.
+
+If you are running the bitcoin sample service **FOR TESTNET**, starting it now will result in an error:
+```bash
+$ npm run bitcoin
+
+> @decentralized-identity/sidetree@0.1.9 bitcoin
+> node dist/src/bitcoin.js
+
+Missing bitcoinWalletImportString. Consider using...
+cQhzURdWoezaxFEiupBJcPWKmpvR3fZCtscDZnwdvsg7jJeXzHY6
+npm ERR! errno 1
+npm ERR! @decentralized-identity/sidetree@0.1.9 bitcoin: `node dist/src/bitcoin.js`
+npm ERR! Exit status 1
+```
+
+Please note the `cQhzURdWoezaxFEiupBJcPWKmpvR3fZCtscDZnwdvsg7jJeXzHY6`. This sample is designed to return
+a WIF string as a suggestion to generating one. Copy this string and paste it in the value for `bitcoinWalletImportString`.
+
+You should now be able to run the sample. The bitcoin service will take around 5 minutes to syncronize from genesis, during this time it will not respond to requests.
+
+On the first attempt to write to Bitcoin, you will see the error:
+```bash
+Please Fund Wallet: my8HhaAqfCiRufQKdT7CBRKUDsArL7ijRT
+```
+
+Please go online to a testnet [faucet](https://en.bitcoin.it/wiki/Bitcoin_faucet) and fund the given address.
+You will have to perform this action periodically, depending on your wallet funds.

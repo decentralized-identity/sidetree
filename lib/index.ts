@@ -18,12 +18,12 @@ export {
 };
 
 // Blockchain service exports.
-import SidetreeBitcoinService from './bitcoin/BlockchainService';
-import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/BitcoinConfig';
+import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
+import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/IBitcoinConfig';
 
 export {
   ISidetreeBitcoinConfig,
-  SidetreeBitcoinService
+  SidetreeBitcoinProcessor
 };
 
 // IPFS service exports.

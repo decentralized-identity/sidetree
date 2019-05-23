@@ -1,11 +1,11 @@
 {
-  "bitcoreExtensionUri": "[FILL THIS IN]",
+  "bitcoinPeerUri": "[FILL THIS IN!]",
+  "bitcoinWalletImportString": "[FILL THIS IN!]",
+  "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1500000,
-  "genesisBlockHash": "0000000000049a6b07f91975568dc96bb1aec1a24c6bdadb21eb17c9f1b7256f",
-  "pollingInternalInSeconds": 100,
   "databaseName": "sidetree-bitcoin",
-  "maxSidetreeTransactions": 10,
+  "transactionFetchPageSize": 100,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
   "port": 3002
 }

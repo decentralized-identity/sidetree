@@ -5,8 +5,8 @@ json -I -f ./dist/src/bitcoin-config.json -e "this.sidetreeTransactionPrefix=\"$
 json -I -f ./dist/src/bitcoin-config.json -e "this.bitcoinSidetreeGenesisBlockNumber=\"${BITCOIN_SIDETREE_GENESIS_BLOCK_NUMBER}\""
 json -I -f ./dist/src/bitcoin-config.json -e "this.bitcoinSidetreeGenesisBlockHash=\"${BITCOIN_SIDETREE_GENESIS_BLOCK_HASH}\""
 json -I -f ./dist/src/bitcoin-config.json -e "this.bitcoinPollingInternalSeconds=\"${BITCOIN_POLLING_INTERNAL_SECONDS}\""
-json -I -f ./dist/src/bitcoin-config.json -e "this.databaseName=\"${BITCOIN_SIDETREE_DATA_BASE_NAME}\""
-json -I -f ./dist/src/bitcoin-config.json -e "this.maxSidetreeTransactions=\"${MAX_SIDETREE_TRANSACTIONS}\""
+json -I -f ./dist/src/bitcoin-config.json -e "this.databaseName=\"${BITCOIN_SIDETREE_DATABASE_NAME}\""
+json -I -f ./dist/src/bitcoin-config.json -e "this.transactionFetchPageSize=\"${TRANSACTION_FETCH_PAGE_SIZE}\""
 json -I -f ./dist/src/bitcoin-config.json -e "this.mongoDbConnectionString=\"${MONGODB_CONNECTION_STRING}\""
 
 

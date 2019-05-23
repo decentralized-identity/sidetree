@@ -1,5 +1,6 @@
 import * as HttpStatus from 'http-status';
 import nodeFetch from 'node-fetch';
+import ReadableStream from './util/ReadableStream';
 
 /**
  * Interface for accessing the underlying CAS (Content Addressable Store).
@@ -97,26 +98,7 @@ export class CasClient implements Cas {
       return { code: FetchResultCode.NotFound };
     }
 
-    // Set callback for the 'readable' event to concatenate chunks of the readable stream.
-    let content: string = '';
-    response.body.on('readable', () => {
-      // NOTE: Cast to any is to work-around incorrect TS definition for read() where
-      // `null` should be a possible return type but is not defined in @types/node: 10.12.18.
-      let chunk = response.body.read() as any;
-      while (chunk !== null) {
-        content += chunk;
-        chunk = response.body.read();
-      }
-    });
-
-    // Create a promise to wrap the successful/failed read events.
-    const readBody = new Promise((resolve, reject) => {
-      response.body.on('end', resolve);
-      response.body.on('error', reject);
-    });
-
-    // Wait until the response body read is completed.
-    await readBody;
+    const content = await ReadableStream.readAll(response.body);
 
     return {
       code: FetchResultCode.Success,
