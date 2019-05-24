@@ -1,17 +1,17 @@
-Bitcoin Service
+Sidetree Bitcoin Service
 ===
 
-*Last Updated: May 10, 2019*
+*Last Updated: May 23, 2019*
 
-A [full bitcoin node](https://github.com/Bcoin-org/Bcoin#bcoin) is required by the the bitcoin sidetree implementation I.O.N. A [start script](./start.sh) in this repo will guide and install bitcore on an Ubuntu/Debian machine. The rest of this document details the steps taken by this script.
+A [full bitcoin node](https://github.com/Bcoin-org/Bcoin#bcoin) is required by the the Sidetree Bitcoin microservice implementation. You can run the [start script](./start.sh) in this repo, which will guide and install `bcoin` on an Ubuntu/Debian machine. The rest of this document details the steps taken by this script.
 
 Prerequisite Software
 ---
 ### Node
-Bitcore is a Node.js based project. [Download](https://nodejs.org/en/download/) or [install](https://nodejs.org/en/download/package-manager/) for your system.
+`bcoin` is a Node.js based project. [Download](https://nodejs.org/en/download/) or [install](https://nodejs.org/en/download/package-manager/) for your system.
 
 
-> Node-Gyp is used by bitcore for C++ compilation. It requires Python 2.7 and the appropriate `make` and c++ compiler.
+> Node-Gyp is used by bcoin for C++ compilation. It requires Python 2.7 and the appropriate `make` and c++ compiler.
 ### Python 2.7 for Windows
 [Python 2.7 Downloads](https://www.python.org/download/releases/2.7/)
 ### Python 2.7 for Linux
