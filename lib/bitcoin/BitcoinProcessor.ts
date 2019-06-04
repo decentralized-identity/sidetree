@@ -183,7 +183,7 @@ export default class BitcoinProcessor {
     } else if (since && hash) {
       if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
         console.info('Requested transactions hash mismatched blockchain');
-        throw new SidetreeError(StatusCode.BadRequest, Code.InvalidHash, JSON.stringify({ code: Code.InvalidHash }));
+        throw new SidetreeError(StatusCode.BadRequest, Code.InvalidHash);
       }
     }
 
