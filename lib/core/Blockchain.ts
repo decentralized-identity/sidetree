@@ -1,6 +1,7 @@
 import * as HttpStatus from 'http-status';
 import IBlockchainTime from './BlockchainTime';
 import nodeFetch from 'node-fetch';
+import ReadableStream from './util/ReadableStream';
 import { ErrorCode, SidetreeError } from './Error';
 import { ITransaction } from './Transaction';
 
@@ -98,7 +99,7 @@ export class BlockchainClient implements Blockchain {
     const response = await this.fetch(readUri);
     console.info(`Fetch response: ${response.status}'.`);
 
-    const responseBodyString = (response.body.read() as Buffer).toString();
+    const responseBodyString = await ReadableStream.readAll(response.body);
     const responseBody = JSON.parse(responseBodyString);
 
     if (response.status === HttpStatus.BAD_REQUEST &&
