@@ -3,7 +3,6 @@ import IBlockchainTime from './BlockchainTime';
 import nodeFetch from 'node-fetch';
 import { ErrorCode, SidetreeError } from './Error';
 import { ITransaction } from './Transaction';
-import ReadableStream from './util/ReadableStream';
 
 /**
  * Interface to access the underlying blockchain.
@@ -99,7 +98,7 @@ export class BlockchainClient implements Blockchain {
     const response = await this.fetch(readUri);
     console.info(`Fetch response: ${response.status}'.`);
 
-    const responseBodyString = await ReadableStream.readAll(response.body);
+    const responseBodyString = (response.body.read() as Buffer).toString();
     const responseBody = JSON.parse(responseBodyString);
 
     if (response.status === HttpStatus.BAD_REQUEST &&
