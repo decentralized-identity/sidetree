@@ -116,7 +116,7 @@ export class BlockchainClient implements Blockchain {
   }
 
   public async getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined> {
-    const bodyString = JSON.stringify(transactions);
+    const bodyString = JSON.stringify({ transactions });
     const requestParameters = {
       method: 'post',
       body: Buffer.from(bodyString),
