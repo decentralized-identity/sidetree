@@ -116,13 +116,17 @@ export class BlockchainClient implements Blockchain {
   }
 
   public async getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined> {
+    const bodyString = JSON.stringify(transactions);
     const requestParameters = {
       method: 'post',
-      body: Buffer.from(JSON.stringify(transactions)),
+      body: Buffer.from(bodyString),
       headers: { 'Content-Type': 'application/json' }
     };
 
     const firstValidTransactionUri = `${this.transactionsUri}/firstValid`;
+
+    console.info(`Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`);
+
     const response = await this.fetch(firstValidTransactionUri, requestParameters);
 
     if (response.status === HttpStatus.NOT_FOUND) {
