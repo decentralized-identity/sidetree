@@ -21,8 +21,16 @@ export default class SidetreeError extends Error {
     }
   }
 
+  /** Koa property used to determine if the error message should be returned */
+  public get expose (): boolean {
+    return this.code !== undefined;
+  }
+
   constructor (public readonly responseCode: StatusCode, public readonly code?: Code, message?: string) {
     super(message);
+    if (code !== undefined) {
+      this.message = JSON.stringify({ code });
+    }
 
     // NOTE: Extending 'Error' breaks prototype chain since TypeScript 2.1.
     // The following line restores prototype chain.
