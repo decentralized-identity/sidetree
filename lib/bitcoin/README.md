@@ -73,13 +73,13 @@ In the following configuration `bcoin.local` refers to your IP address, DNS addr
 Edit your bitcoin-config.json
 ```json
 {
-  "bitcoinPeerUri": "http://bcoin.local:18331/",
-  "bitcoinWalletImportString": "[FILL THIS IN]",
+  "bitcoinPeerUri": "[FILL THIS IN!]",
+  "bitcoinWalletImportString": "[FILL THIS IN!]",
+  "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
-  "genesisBlockNumber": 1480000,
-  "genesisBlockHash": "00000000000001571bc6faf951aeeb5edcbbd9fd3390be23f8ee7ccc2060d591",
+  "genesisBlockNumber": 1500000,
   "databaseName": "sidetree-bitcoin",
-  "transactionFetchPageSize": 10,
+  "transactionFetchPageSize": 100,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
   "port": 3002
 }
