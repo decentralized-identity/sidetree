@@ -50,15 +50,7 @@ export class BlockchainClient implements Blockchain {
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private timeUri: string; // e.g. https://127.0.0.1/time
 
-  /**
-   * @param fetchFunction A fetch function compatible with node-fetch's fetch, mainly for mocked fetch for test purposes.
-   *                      Typed 'any' unfortunately because it is non-trivial to merge the types defined in @types/fetch-mock with types in @types/node-fetch.
-   */
-  public constructor (public uri: string, fetchFunction?: any) {
-    if (fetchFunction) {
-      this.fetch = fetchFunction;
-    }
-
+  public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
   }

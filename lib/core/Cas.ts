@@ -23,7 +23,7 @@ export interface Cas {
 }
 
 /**
- * Data structure representing an the result of a content fetch from the Content Addressable Storage.
+ * Data structure representing the result of a content fetch from the Content Addressable Storage.
  */
 export interface FetchResult {
   /** Return code for the fetch. */
@@ -48,15 +48,7 @@ export class CasClient implements Cas {
 
   private fetch = nodeFetch;
 
-  /**
-   * @param fetchFunction A fetch function compatible with node-fetch's fetch, mainly for mocked fetch for test purposes.
-   *                      Typed 'any' unfortunately because it is non-trivial to merge the types defined in @types/fetch-mock with types in @types/node-fetch.
-   */
-  public constructor (public uri: string, fetchFunction?: any) {
-    if (fetchFunction) {
-      this.fetch = fetchFunction;
-    }
-  }
+  public constructor (public uri: string) { }
 
   /**
    * TODO: consider using multi-hash format.
