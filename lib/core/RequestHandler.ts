@@ -91,6 +91,7 @@ export default class RequestHandler {
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
   public async handleResolveRequest (didOrDidDocument: string): Promise<IResponse> {
+    console.log(`Handling resolution request for: ${didOrDidDocument}...`);
     if (!didOrDidDocument.startsWith(this.didMethodName)) {
       return {
         status: ResponseStatus.BadRequest
