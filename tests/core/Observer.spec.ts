@@ -5,9 +5,10 @@ import Observer from '../../lib/core/Observer';
 import OperationProcessor from '../../lib/core/OperationProcessor';
 import { BlockchainClient } from '../../lib/core/Blockchain';
 import { CasClient, FetchResultCode } from '../../lib/core/Cas';
+import { ErrorCode } from '../../lib/core/util/RequestError';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { OperationStore } from '../../lib/core/OperationStore';
-import { SidetreeError, ErrorCode } from '../../lib/core/Error';
+import { SidetreeError } from '../../lib/core/Error';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');

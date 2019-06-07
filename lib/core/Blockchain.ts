@@ -2,8 +2,9 @@ import * as HttpStatus from 'http-status';
 import IBlockchainTime from './BlockchainTime';
 import nodeFetch from 'node-fetch';
 import ReadableStream from './util/ReadableStream';
-import { ErrorCode, SidetreeError } from './Error';
+import { ErrorCode } from './util/RequestError';
 import { ITransaction } from './Transaction';
+import { SidetreeError } from './Error';
 
 /**
  * Interface to access the underlying blockchain.
@@ -95,7 +96,7 @@ export class BlockchainClient implements Blockchain {
     const responseBody = JSON.parse(responseBodyString);
 
     if (response.status === HttpStatus.BAD_REQUEST &&
-        responseBody.code === 'invalid_transaction_number_or_time_hash') {
+        responseBody.code === ErrorCode.InvalidTransactionNumberOrTimeHash) {
       throw new SidetreeError(ErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 

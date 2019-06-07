@@ -10,10 +10,10 @@ interface IResponse {
  * Possible Sidetree response status.
  */
 enum ResponseStatus {
-  BadRequest,
-  NotFound,
-  ServerError,
-  Succeeded
+  BadRequest = 'bad-request',
+  NotFound = 'not-found',
+  ServerError = 'server-error',
+  Succeeded = 'succeeded'
 }
 
 /**
@@ -31,6 +31,7 @@ export default class Response {
         return 400;
       case ResponseStatus.NotFound:
         return 404;
+      case ResponseStatus.ServerError:
       default:
         return 500;
     }

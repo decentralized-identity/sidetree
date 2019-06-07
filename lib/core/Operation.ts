@@ -12,10 +12,10 @@ import { IResolvedTransaction } from './Transaction';
  * Sidetree operation types.
  */
 enum OperationType {
-  Create,
-  Update,
-  Delete,
-  Recover
+  Create = 'create',
+  Update = 'update',
+  Delete = 'delete',
+  Recover = 'recover'
 }
 
 /**
@@ -278,7 +278,7 @@ class Operation {
       }
 
       if (!payloadSchemaIsValid) {
-        console.info(`${OperationType[operationType]} payload failed schema validation: ${decodedPayloadJson}`);
+        console.info(`${operationType} payload failed schema validation: ${decodedPayloadJson}`);
         return undefined;
       }
 

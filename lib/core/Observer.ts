@@ -5,10 +5,11 @@ import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
-import { ErrorCode, SidetreeError } from './Error';
+import { ErrorCode } from './util/RequestError';
 import { FetchResultCode } from './Cas';
 import { IResolvedTransaction, ITransaction } from './Transaction';
 import { Operation } from './Operation';
+import { SidetreeError } from './Error';
 import { TransactionStore } from './TransactionStore';
 import { UnresolvableTransactionStore } from './UnresolvableTransactionStore';
 
@@ -16,8 +17,8 @@ import { UnresolvableTransactionStore } from './UnresolvableTransactionStore';
  * The state of a transaction that is being processed.
  */
 enum TransactionProcessingStatus {
-  Pending,
-  Processsed
+  Pending = 'pending',
+  Processsed = 'processed'
 }
 
 /**
@@ -108,7 +109,7 @@ export default class Observer {
           console.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
         } catch (error) {
           // If block reorganization (temporary fork) has happened.
-          if (error instanceof SidetreeError && error.errorCode === ErrorCode.InvalidTransactionNumberOrTimeHash) {
+          if (error instanceof SidetreeError && error.code === ErrorCode.InvalidTransactionNumberOrTimeHash) {
             console.info(`Block reorganization detected.`);
             blockReorganizationDetected = true;
             moreTransactions = true;
