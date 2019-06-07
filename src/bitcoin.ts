@@ -13,6 +13,38 @@ interface IBitcoinServiceConifg extends ISidetreeBitcoinConfig {
   port: number;
 }
 
+/**
+ * Handles the request using the given request handler then assigns the returned value as the body.
+ * NOTE: The value of this method is really the unified handling of errors thrown.
+ * @param requestHandler Request handler.
+ * @param koaResponse Response object to update.
+ */
+async function handleRequestAndSetKoaResponse (requestHandler: () => Promise<any>, koaResponse: Koa.Response) {
+  try {
+    const responseBody = await requestHandler();
+    koaResponse.status = 200;
+    koaResponse.set('Content-Type', 'application/json');
+
+    if (responseBody) {
+      koaResponse.body = JSON.stringify(responseBody);
+    } else {
+      // Need to set the body explicitly, otherwise Koa will return HTTP 204
+      koaResponse.body = '';
+    }
+  } catch (error) {
+    console.error(error);
+    if ('status' in error) {
+      koaResponse.status = error.status;
+    }
+
+    if ('code' in error) {
+      koaResponse.body = JSON.stringify({
+        code: error.code
+      });
+    }
+  }
+}
+
 const config: IBitcoinServiceConifg = require('./bitcoin-config.json');
 const app = new Koa();
 
@@ -25,39 +57,40 @@ app.use(async (ctx, next) => {
 const router = new Router();
 
 router.get('/transactions', async (ctx, _next) => {
-
   const params = querystring.parse(ctx.querystring);
+
+  let requestHandler;
   if ('since' in params && 'transaction-time-hash' in params) {
     const since = Number(params['since']);
     const transactionTimeHash = String(params['transaction-time-hash']);
-    const response = await blockchainService.transactions(since, transactionTimeHash);
-    setKoaResponse(response, ctx.response);
+    requestHandler = () => blockchainService.transactions(since, transactionTimeHash);
   } else {
-    const response = await blockchainService.transactions();
-    setKoaResponse(response, ctx.response);
+    requestHandler = () => blockchainService.transactions();
   }
+
+  await handleRequestAndSetKoaResponse(requestHandler, ctx.response);
 });
 
 router.post('/transactions', async (ctx, _next) => {
   const writeRequest = JSON.parse(ctx.body);
-  const response = await blockchainService.writeTransaction(writeRequest.anchorFileHash);
-  setKoaResponse(response, ctx.response);
+  const requestHandler = () => blockchainService.writeTransaction(writeRequest.anchorFileHash);
+  await handleRequestAndSetKoaResponse(requestHandler, ctx.response);
 });
 
 router.post('/transactions/firstValid', async (ctx, _next) => {
   const transactionsObject = JSON.parse(ctx.body);
-  const response = await blockchainService.firstValidTransaction(transactionsObject.transactions);
-  setKoaResponse(response, ctx.response);
+  const requestHandler = () => blockchainService.firstValidTransaction(transactionsObject.transactions);
+  await handleRequestAndSetKoaResponse(requestHandler, ctx.response);
 });
 
 router.get('/time', async (ctx, _next) => {
-  const response = await blockchainService.time();
-  setKoaResponse(response, ctx.response);
+  const requestHandler = () => blockchainService.time();
+  await handleRequestAndSetKoaResponse(requestHandler, ctx.response);
 });
 
 router.get('/time/:hash', async (ctx, _next) => {
-  const response = await blockchainService.time(ctx.params.hash);
-  setKoaResponse(response, ctx.response);
+  const requestHandler = () => blockchainService.time(ctx.params.hash);
+  await handleRequestAndSetKoaResponse(requestHandler, ctx.response);
 });
 
 app.use(router.routes())
@@ -71,13 +104,18 @@ app.use((ctx, _next) => {
 const port = process.env.SIDETREE_BITCOIN_PORT || config.port;
 
 // initialize the blockchain service and kick-off background tasks
+let server: any;
 let blockchainService: SidetreeBitcoinProcessor;
 try {
   blockchainService = new SidetreeBitcoinProcessor(config);
 
-  blockchainService.initialize()
+  // SIDETREE_TEST_MODE enables unit testing of this file by bypassing blockchain service initialization.
+  if (process.env.SIDETREE_TEST_MODE === 'true') {
+    server = app.listen(port);
+  } else {
+    blockchainService.initialize()
     .then(() => {
-      app.listen(port, () => {
+      server = app.listen(port, () => {
         console.log(`Sidetree-Bitcoin node running on port: ${port}`);
       });
     })
@@ -85,6 +123,7 @@ try {
       console.error(`Sidetree-Bitcoin node initialization failed with error: ${error}`);
       process.exit(1);
     });
+  }
 } catch (error) {
   console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
   console.log(SidetreeBitcoinProcessor.generatePrivateKey('testnet'));
@@ -93,18 +132,7 @@ try {
 console.info('Sidetree bitcoin service configuration:');
 console.info(config);
 
-/**
- * Sets the koa response according to the Sidetree response object given.
- * @param response Response object fetched from request handler.
- * @param koaResponse Koa Response object to be filled
- * @param contentType Content type to be set for response, defaults to application/json
- */
-const setKoaResponse = (response: any, koaResponse: Koa.Response, contentType?: string) => {
-  koaResponse.status = 200;
-  if (contentType) {
-    koaResponse.set('Content-Type', contentType);
-  } else {
-    koaResponse.set('Content-Type', 'application/json');
-  }
-  koaResponse.body = response ? JSON.stringify(response) : '';
+export {
+  server,
+  blockchainService
 };
