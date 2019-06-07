@@ -6,6 +6,7 @@ import { ITransaction } from '../../lib/core/Transaction';
 import * as httpStatus from 'http-status';
 import ReadableStream from '../../lib/core/util/ReadableStream';
 import * as nodeFetchPackage from 'node-fetch';
+import { ErrorCode } from '../../lib/core/util/RequestError';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -275,7 +276,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).not.toEqual('invalid_transaction_number_or_time_hash');
+        expect(error.code).not.toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
       } finally {
         done();
       }
@@ -291,7 +292,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual('invalid_transaction_number_or_time_hash');
+        expect(error.code).toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
         expect(verifyMock).toHaveBeenCalled();
       } finally {
         done();
