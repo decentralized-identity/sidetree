@@ -14,7 +14,7 @@ describe('RequestHandler', () => {
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
     const expectedResponse: Response = {
       status: ResponseStatus.BadRequest,
-      body: { code: 'invalid_content_hash' }
+      body: { code: FetchResultCode.InvalidHash }
     };
 
     const testSidetreeHash: string = '123abc';

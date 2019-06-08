@@ -43,7 +43,7 @@ export default class RequestHandler {
     } catch {
       return {
         status: ResponseStatus.BadRequest,
-        body: { code: 'invalid_content_hash' }
+        body: { code: FetchResultCode.InvalidHash }
       };
     }
 
