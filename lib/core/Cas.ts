@@ -38,7 +38,8 @@ export enum FetchResultCode {
   Success = 'success',
   NotFound = 'content_not_found',
   MaxSizeExceeded = 'content_exceeds_maximum_allowed_size',
-  NotAFile = 'content_not_a_file'
+  NotAFile = 'content_not_a_file',
+  InvalidHash = 'content_hash_invalid'
 }
 
 /**
@@ -62,11 +63,17 @@ export class CasClient implements Cas {
     const response = await this.fetch(this.uri, requestParameters);
     if (response.status !== HttpStatus.OK) {
       console.error(`CAS write error response status: ${response.status}`);
-      console.error(`CAS write error body: ${response.body.read()}`);
+
+      if (response.body) {
+        const errorBody = await ReadableStream.readAll(response.body);
+        console.error(`CAS write error body: ${errorBody}`);
+      }
+
       throw new Error('Encountered an error writing content to CAS.');
     }
 
-    const hash = JSON.parse(response.body.read().toString()).hash;
+    const bodyString = await ReadableStream.readAll(response.body);
+    const hash = JSON.parse(bodyString).hash;
 
     return hash;
   }
@@ -80,13 +87,19 @@ export class CasClient implements Cas {
     }
 
     if (response.status === HttpStatus.BAD_REQUEST) {
-      return JSON.parse(response.body.read().toString());
+      const errorBody = await ReadableStream.readAll(response.body);
+      return JSON.parse(errorBody);
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.info(`CAS '${address}' read response status: ${response.status}`);
-      console.info(`CAS '${address}' read error body: ${response.body.read()}`);
-      console.info(`Treating '${address}' read as not-found.`);
+      console.error(`CAS '${address}' read response status: ${response.status}`);
+
+      if (response.body) {
+        const errorBody = await ReadableStream.readAll(response.body);
+        console.error(`CAS '${address}' read error body: ${errorBody}`);
+      }
+
+      console.error(`Treating '${address}' read as not-found, but should investigate.`);
       return { code: FetchResultCode.NotFound };
     }
 

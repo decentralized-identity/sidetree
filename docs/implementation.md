@@ -471,6 +471,26 @@ HTTP/1.1 400 Bad Request
 }
 ```
 
+#### Response example - Content not a file
+
+```http
+HTTP/1.1 400 Bad Request
+
+{
+  "code": "content_not_a_file"
+}
+```
+
+#### Response example - Content hash is invalid
+
+```http
+HTTP/1.1 400 Bad Request
+
+{
+  "code": "content_hash_invalid"
+}
+```
+
 ### Write content
 Write content to CAS.
 

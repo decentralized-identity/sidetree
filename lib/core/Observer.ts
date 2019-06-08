@@ -251,9 +251,21 @@ export default class Observer {
       console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${protocolParameters.maxAnchorFileSizeInBytes}...`);
       const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, protocolParameters.maxAnchorFileSizeInBytes);
 
+      // No thing to process if the file hash is invalid. No retry needed.
+      if (anchorFileFetchResult.code === FetchResultCode.InvalidHash) {
+        console.info(`Anchor file '${transaction.anchorFileHash}' is not a valid hash.`);
+        return;
+      }
+
       // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
       if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-        console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${protocolParameters.maxAnchorFileSizeInBytes}...`);
+        console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${protocolParameters.maxAnchorFileSizeInBytes}.`);
+        return;
+      }
+
+      // Content for hash exists but is not a file. No retry needed.
+      if (anchorFileFetchResult.code === FetchResultCode.NotAFile) {
+        console.info(`Anchor file hash '${transaction.anchorFileHash}' points to a content that is not a file.`);
         return;
       }
 
@@ -276,9 +288,21 @@ export default class Observer {
       console.info(`Downloading batch file '${anchorFile.batchFileHash}', max size limit ${protocolParameters.maxBatchFileSizeInBytes}...`);
       const batchFileFetchResult = await this.downloadManager.download(anchorFile.batchFileHash, protocolParameters.maxBatchFileSizeInBytes);
 
+      // No thing to process if the file hash is invalid. No retry needed.
+      if (batchFileFetchResult.code === FetchResultCode.InvalidHash) {
+        console.info(`Batch file '${anchorFile.batchFileHash}' is not a valid hash.`);
+        return;
+      }
+
       // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
       if (batchFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
         console.info(`Batch file '${anchorFile.batchFileHash}' exceeded max size limit ${protocolParameters.maxBatchFileSizeInBytes}...`);
+        return;
+      }
+
+      // Content for hash exists but is not a file. No retry needed.
+      if (batchFileFetchResult.code === FetchResultCode.NotAFile) {
+        console.info(`Batch file hash '${anchorFile.batchFileHash}' points to a content that is not a file.`);
         return;
       }
 
