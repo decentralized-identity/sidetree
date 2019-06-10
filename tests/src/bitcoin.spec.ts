@@ -1,5 +1,6 @@
-// MUST set this environment variable before `blockchainService` and `server` are imported.
+// MUST set these environment variables before `blockchainService` and `server` are imported.
 process.env.SIDETREE_TEST_MODE = 'true';
+process.env.SIDETREE_BITCOIN_CONFIG_FILE_PATH = '../tests/json/bitcoin-config-test.json';
 
 import * as supertest from 'supertest';
 import RequestError, { ErrorCode } from '../../lib/core/util/RequestError';

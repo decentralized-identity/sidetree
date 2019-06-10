@@ -45,7 +45,8 @@ async function handleRequestAndSetKoaResponse (requestHandler: () => Promise<any
   }
 }
 
-const config: IBitcoinServiceConifg = require('./bitcoin-config.json');
+const configFilePath = process.env.SIDETREE_BITCOIN_CONFIG_FILE_PATH || './bitcoin-config.json';
+const config: IBitcoinServiceConifg = require(configFilePath);
 const app = new Koa();
 
 // Raw body parser.
@@ -125,7 +126,7 @@ try {
     });
   }
 } catch (error) {
-  console.log('Is bitcoinWalletImportString valid? Consider using testnet key...');
+  console.log('Is bitcoinWalletImportString valid? Consider using testnet key generated below:');
   console.log(SidetreeBitcoinProcessor.generatePrivateKey('testnet'));
   process.exit(1);
 }
