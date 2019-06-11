@@ -1,6 +1,7 @@
 import Encoder from '../../lib/core/Encoder';
 import Multihash from '../../lib/core/Multihash';
-import { Cas, FetchResult, FetchResultCode } from '../../lib/core/Cas';
+import { Cas, FetchResult } from '../../lib/core/Cas';
+import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 /**
  * Implementation of a CAS class for testing.

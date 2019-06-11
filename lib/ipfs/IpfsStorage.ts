@@ -1,5 +1,6 @@
 import * as IPFS from 'ipfs';
-import { FetchResult, FetchResultCode } from '../core/Cas';
+import { FetchResult } from '../core/Cas';
+import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
  * Class that implements the IPFS Storage functionality.

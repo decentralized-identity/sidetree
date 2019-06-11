@@ -1,6 +1,7 @@
 import * as HttpStatus from 'http-status';
 import nodeFetch from 'node-fetch';
 import ReadableStream from './util/ReadableStream';
+import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
  * Interface for accessing the underlying CAS (Content Addressable Store).
@@ -29,17 +30,6 @@ export interface FetchResult {
   /** Return code for the fetch. */
   code: FetchResultCode;
   content?: Buffer;
-}
-
-/**
- * Return code for a fetch.
- */
-export enum FetchResultCode {
-  Success = 'success',
-  NotFound = 'content_not_found',
-  MaxSizeExceeded = 'content_exceeds_maximum_allowed_size',
-  NotAFile = 'content_not_a_file',
-  InvalidHash = 'content_hash_invalid'
 }
 
 /**

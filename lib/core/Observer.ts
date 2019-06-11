@@ -6,7 +6,7 @@ import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
 import { ErrorCode } from './util/RequestError';
-import { FetchResultCode } from './Cas';
+import { FetchResultCode } from '../common/FetchResultCode';
 import { IResolvedTransaction, ITransaction } from './Transaction';
 import { Operation } from './Operation';
 import { SidetreeError } from './Error';
