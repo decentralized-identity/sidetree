@@ -1,6 +1,6 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
-import { FetchResultCode } from '../core/Cas';
+import { FetchResultCode } from '../common/FetchResultCode';
 import { IResponse, ResponseStatus } from '../core/Response';
 import { Timeout } from './Util/Timeout';
 const multihashes = require('multihashes');
@@ -33,7 +33,7 @@ export default class RequestHandler {
     if (maxSizeInBytes === undefined) {
       return {
         status: ResponseStatus.BadRequest,
-        body: { code: 'max_size_query_param_not_specified' }
+        body: { code: FetchResultCode.MaxSizeNotSpecified }
       };
     }
 

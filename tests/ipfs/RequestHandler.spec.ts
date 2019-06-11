@@ -1,5 +1,5 @@
 import RequestHandler from '../../lib/ipfs/RequestHandler';
-import { FetchResultCode } from '../../lib/core/Cas';
+import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { Response, ResponseStatus } from '../../lib/core/Response';
 
 describe('RequestHandler', () => {

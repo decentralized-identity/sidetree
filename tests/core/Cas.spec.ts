@@ -1,5 +1,6 @@
 import ReadableStream from '../../lib/core/util/ReadableStream';
-import { CasClient, FetchResultCode } from '../../lib/core/Cas';
+import { CasClient } from '../../lib/core/Cas';
+import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 describe('Cas', async () => {
   it('should return file hash of the content written.', async () => {
