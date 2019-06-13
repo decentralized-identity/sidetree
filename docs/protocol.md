@@ -166,7 +166,7 @@ Sidetree protocol requires the specification by the DID owner of dedicated crypt
 The most basic recovery operation, most often used to regain control after loss or theft of a controlling device/key,  is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current DID Document.
 
 ## Sidetree REST API
-A _Sidetree node_ exposes a set of REST API that enables the creation of new DIDs and their initial state, subsequent DID Document updates, and DID Document resolutions. This section defines the `v1.0` version of the Sidetree REST API.
+A _Sidetree node_ exposes a set of REST API that enables the creation of new DIDs and their initial state, subsequent DID Document updates, and DID Document resolutions.
 
 
 ### Response HTTP status codes
@@ -198,7 +198,7 @@ An encoded _original DID Document_ must be supplied as the request payload, see 
 
 #### Request path
 ```http
-POST /<api-version>/ HTTP/1.1
+POST / HTTP/1.1
 ```
 
 #### Request headers
@@ -242,7 +242,7 @@ POST /<api-version>/ HTTP/1.1
 
 #### Request example
 ```http
-POST /v1.0/ HTTP/1.1
+POST / HTTP/1.1
 
 {
   "header": {
@@ -305,7 +305,7 @@ Two types of string can be passed in the URI:
 
 #### Request path
 ```http
-GET /<api-version>/<did-or-method-name-prefixed-encoded-original-did-document> HTTP/1.1
+GET /<did-or-method-name-prefixed-encoded-original-did-document> HTTP/1.1
 ```
 
 #### Request headers
@@ -316,12 +316,12 @@ None.
 
 #### Request example - DID
 ```http
-GET /v1.0/did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A HTTP/1.1
+GET /did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A HTTP/1.1
 ```
 
 #### Request example - Method name prefixed, encoded original DID Document
 ```http
-GET /v1.0/did:sidetree:ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ HTTP/1.1
+GET /did:sidetree:ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ HTTP/1.1
 ```
 
 #### Response body schema
@@ -355,7 +355,7 @@ The API to update a DID Document.
 
 #### Request path
 ```http
-POST /<api-version>/ HTTP/1.1
+POST / HTTP/1.1
 ```
 
 #### Request headers
@@ -401,7 +401,7 @@ POST /<api-version>/ HTTP/1.1
 
 #### Request example
 ```http
-POST /v1.0/ HTTP/1.1
+POST / HTTP/1.1
 
 {
   "header": {
@@ -423,7 +423,7 @@ The API to delete a given DID.
 
 #### Request path
 ```
-POST /<api-version>/
+POST /
 ```
 
 #### Request headers
@@ -460,7 +460,7 @@ POST /<api-version>/
 
 #### Request example
 ```http
-POST /v1.0/ HTTP/1.1
+POST / HTTP/1.1
 {
   "header": {
     "operation": "delete",
