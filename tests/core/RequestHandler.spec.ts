@@ -1,8 +1,9 @@
 import BatchFile from '../../lib/core/BatchFile';
 import BatchWriter from '../../lib/core/BatchWriter';
 import Cryptography from '../../lib/core/util/Cryptography';
-import Did from '../../lib/core/util/Did';
-import IDidPublicKey from '../../lib/core/util/DidPublicKey';
+import Did from '../../lib/core/Did';
+import IConfig from '../../lib/core/IConfig';
+import IDidPublicKey from '../../lib/core/IDidPublicKey';
 import Encoder from '../../lib/core/Encoder';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
@@ -14,10 +15,9 @@ import ProtocolParameters from '../../lib/core/ProtocolParameters';
 import RequestHandler from '../../lib/core/RequestHandler';
 import { Cas } from '../../lib/core/Cas';
 import { OperationStore } from '../../lib/core/OperationStore';
-import { IConfig } from '../../lib/core/Config';
-import { IDocument } from '../../lib/core/util/Document';
+import { IDocument } from '../../lib/core/Document';
 import { Operation } from '../../lib/core/Operation';
-import { Response } from '../../lib/core/Response';
+import { Response } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {
   const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');

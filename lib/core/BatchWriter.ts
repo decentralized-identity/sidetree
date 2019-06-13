@@ -1,6 +1,6 @@
 import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
-import Did from './util/Did';
+import Did from './Did';
 import Encoder from './Encoder';
 import MerkleTree from './util/MerkleTree';
 import ProtocolParameters from './ProtocolParameters';

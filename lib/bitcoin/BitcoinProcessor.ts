@@ -1,13 +1,14 @@
 import * as httpStatus from 'http-status';
-import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
+import ErrorCode from '../common/ErrorCode';
+import ITransaction from '../common/ITransaction';
+import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response } from 'node-fetch';
-import ReadableStream from '../core/util/ReadableStream';
-import RequestError, { ErrorCode } from '../core/util/RequestError';
+import ReadableStream from '../common/ReadableStream';
+import RequestError from './RequestError';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
-import { ITransaction } from '../core/Transaction';
-import { ResponseStatus } from '../core/Response';
+import { ResponseStatus } from '../common/Response';
 import { URL } from 'url';
 
 /**

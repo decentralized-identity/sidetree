@@ -1,5 +1,5 @@
+import ITransaction from '../../lib/common/ITransaction';
 import SortedArray from '../../lib/core/util/SortedArray';
-import { ITransaction } from '../../lib/core/Transaction';
 import { TransactionStore } from '../../lib/core/TransactionStore';
 import { UnresolvableTransactionStore } from '../../lib/core/UnresolvableTransactionStore';
 

@@ -1,6 +1,6 @@
 import RequestHandler from '../../lib/ipfs/RequestHandler';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
-import { Response, ResponseStatus } from '../../lib/core/Response';
+import { Response, ResponseStatus } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {
   let requestHandler: RequestHandler;

@@ -1,4 +1,4 @@
-import { ITransaction } from './Transaction';
+import ITransaction from '../common/ITransaction';
 
 /**
  * An abstraction for the persistence of Sidetree transactions.

@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import IDidPublicKey from './DidPublicKey';
+import IDidPublicKey from '../IDidPublicKey';
 import Encoder from '../Encoder';
 import { EcPrivateKey, PrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 const secp256k1 = require('secp256k1');

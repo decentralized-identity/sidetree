@@ -1,6 +1,7 @@
 import * as HttpStatus from 'http-status';
+import IFetchResult from '../common/IFetchResult';
 import nodeFetch from 'node-fetch';
-import ReadableStream from './util/ReadableStream';
+import ReadableStream from '../common/ReadableStream';
 import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
@@ -20,16 +21,7 @@ export interface Cas {
    * @returns The fetch result containg the content buffer if found.
    *          The result `code` is set to `FetchResultCode.MaxSizeExceeded` if the content exceeds the specified max size.
    */
-  read (address: string, maxSizeInBytes: number): Promise<FetchResult>;
-}
-
-/**
- * Data structure representing the result of a content fetch from the Content Addressable Storage.
- */
-export interface FetchResult {
-  /** Return code for the fetch. */
-  code: FetchResultCode;
-  content?: Buffer;
+  read (address: string, maxSizeInBytes: number): Promise<IFetchResult>;
 }
 
 /**
@@ -68,7 +60,7 @@ export class CasClient implements Cas {
     return hash;
   }
 
-  public async read (address: string, maxSizeInBytes: number): Promise<FetchResult> {
+  public async read (address: string, maxSizeInBytes: number): Promise<IFetchResult> {
     // Fetch the resource.
     const queryUri = `${this.uri}/${address}?max-size=${maxSizeInBytes}`;
     const response = await this.fetch(queryUri);

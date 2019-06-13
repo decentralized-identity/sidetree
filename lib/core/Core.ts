@@ -1,15 +1,15 @@
 import BatchWriter from './BatchWriter';
 import DownloadManager from './DownloadManager';
-import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
+import IConfig from './IConfig';
 import MongoDbOperationStore from './MongoDbOperationStore';
-import MongoDbTransactionStore from './MongoDbTransactionStore';
+import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import OperationProcessor from './OperationProcessor';
+import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import RequestHandler from './RequestHandler';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
-import { IConfig } from './Config';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
