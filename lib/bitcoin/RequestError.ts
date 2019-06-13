@@ -1,4 +1,5 @@
-import Response, { ResponseStatus } from '../Response';
+import ErrorCode from '../common/ErrorCode';
+import Response, { ResponseStatus } from '../common/Response';
 
 /**
  * Error class used as a response to external requests.
@@ -25,11 +26,4 @@ export default class RequestError extends Error {
     // The following line restores prototype chain.
     Object.setPrototypeOf(this, new.target.prototype);
   }
-}
-
-/**
- * Error codes to include with the response body.
- */
-export enum ErrorCode {
-  InvalidTransactionNumberOrTimeHash = 'invalid_transaction_number_or_time_hash'
 }

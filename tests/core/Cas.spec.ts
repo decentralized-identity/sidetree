@@ -1,4 +1,4 @@
-import ReadableStream from '../../lib/core/util/ReadableStream';
+import ReadableStream from '../../lib/common/ReadableStream';
 import { CasClient } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 

@@ -1,13 +1,14 @@
 import AnchorFile, { IAnchorFile } from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from './DownloadManager';
+import ErrorCode from '../common/ErrorCode';
+import IResolvedTransaction from './IResolvedTransaction';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
-import { ErrorCode } from './util/RequestError';
 import { FetchResultCode } from '../common/FetchResultCode';
-import { IResolvedTransaction, ITransaction } from './Transaction';
+import ITransaction from '../common/ITransaction';
 import { Operation } from './Operation';
 import { SidetreeError } from './Error';
 import { TransactionStore } from './TransactionStore';

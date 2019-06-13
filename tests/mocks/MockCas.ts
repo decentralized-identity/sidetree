@@ -1,6 +1,7 @@
 import Encoder from '../../lib/core/Encoder';
+import IFetchResult from '../../lib/common/IFetchResult';
 import Multihash from '../../lib/core/Multihash';
-import { Cas, FetchResult } from '../../lib/core/Cas';
+import { Cas } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 /**
@@ -36,7 +37,7 @@ export default class MockCas implements Cas {
     return encodedHash;
   }
 
-  public async read (address: string, _maxSizeInBytes: number): Promise<FetchResult> {
+  public async read (address: string, _maxSizeInBytes: number): Promise<IFetchResult> {
     // Wait for configured time before returning.
     await new Promise(resolve => setTimeout(resolve, this.mockSecondsTakenForEachCasFetch * 1000));
 

@@ -1,7 +1,7 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
 import { FetchResultCode } from '../common/FetchResultCode';
-import { IResponse, ResponseStatus } from '../core/Response';
+import { IResponse, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
 const multihashes = require('multihashes');
 

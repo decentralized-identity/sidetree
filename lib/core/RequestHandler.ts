@@ -1,13 +1,13 @@
 import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
-import Did from './util/Did';
-import Document from './util/Document';
+import Did from './Did';
+import Document from './Document';
 import Multihash from './Multihash';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import { Blockchain } from './Blockchain';
 import { Operation, OperationType } from './Operation';
-import { IResponse, ResponseStatus } from './Response';
+import { IResponse, ResponseStatus } from '../common/Response';
 
 /**
  * Sidetree operation request handler.

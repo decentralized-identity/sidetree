@@ -1,5 +1,5 @@
 import Did from './Did';
-import Encoder from '../Encoder';
+import Encoder from './Encoder';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
 /**

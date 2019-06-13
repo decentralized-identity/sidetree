@@ -1,12 +1,12 @@
-import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
+import ErrorCode from '../../lib/common/ErrorCode';
+import ITransaction from '../../lib/common/ITransaction';
+import ReadableStream from '../../lib/common/ReadableStream';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
+import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { PrivateKey, Transaction } from 'bitcore-lib';
-import { ITransaction } from '../../lib/core/Transaction';
 import * as httpStatus from 'http-status';
-import ReadableStream from '../../lib/core/util/ReadableStream';
 import * as nodeFetchPackage from 'node-fetch';
-import { ErrorCode } from '../../lib/core/util/RequestError';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);

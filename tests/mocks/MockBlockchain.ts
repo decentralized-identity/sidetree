@@ -1,5 +1,5 @@
-import IBlockchainTime from '../../lib/core/BlockchainTime';
-import { ITransaction } from '../../lib/core/Transaction';
+import IBlockchainTime from '../../lib/core/IBlockchainTime';
+import ITransaction from '../../lib/common/ITransaction';
 import { Blockchain } from '../../lib/core/Blockchain';
 
 /**
