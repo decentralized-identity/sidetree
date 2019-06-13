@@ -39,16 +39,15 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 ## Sidetree Protocol Versioning & Parameters
 Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define the logical _blockchain time_ in which the new rules and parameter values will take effect. All subsequent transactions will adhere to the same rules and parameter values until a newer protocol version is defined.
 
-The following lists the parameters of each version of the Sidetree protocol.
+The following lists the parameters configurable by each version of the Sidetree protocol.
 
-### v1.0
-| Parameter                | Value            |
-|--------------------------|------------------|
-| Starting blockchain time | 500000 (bitcoin) |
-| Hash algorithm           | SHA256           |
-| Maximum batch size       | 10000            |
-| Maximum operation size   | 2 KB             |
-
+| Protocol Parameter       | Description                                                                    |
+|--------------------------|--------------------------------------------------------------------------------|
+| Hash algorithm           | The hash algorithm for computation such as for DID generation.                 |
+| Maximum anchor file size | The maximum compressed anchor file size.                                       |
+| Maximum batch file size  | The maximum compressed batch file size.                                        |
+| Maximum operation size   | The maximum unpressed operation size.                                          |
+| Maximum operation count  | The maximum number of operations per batch.                                    |
 
 ## Sidetree Operations
 
