@@ -103,13 +103,9 @@ Gets the latest logical blockchain time. This API allows the Observer and Batch 
 
 A _blockchain time hash_ **must not** be predictable/pre-computable, a canonical implementation would be to use the _block number_ as the time and the _block hash_ as the _time hash_. It is intentional that the concepts related to _blockchain blocks_ are  hidden from the layers above.
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
 #### Request path
 ```
-GET /<api-version>/time
+GET /time
 ```
 
 #### Request headers
@@ -120,7 +116,7 @@ None.
 
 #### Request example
 ```
-Get /v1.0/time
+Get /time
 ```
 
 #### Response body schema
@@ -144,13 +140,9 @@ Get /v1.0/time
 ### Get blockchain time by hash
 Gets the time identified by the time hash.
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
 #### Request path
 ```
-GET /<api-version>/time/<time-hash>
+GET /time/<time-hash>
 ```
 
 #### Request headers
@@ -161,7 +153,7 @@ None.
 
 #### Request example
 ```
-Get /v1.0/time/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
+Get /time/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
 ```
 
 #### Response body schema
@@ -187,13 +179,9 @@ Fetches Sidetree transactions in chronological order.
 
 > Note: The call may not to return all Sidetree transactions in one batch, in which case the caller can use the transaction number of the last transaction in the returned batch to fetch subsequent transactions.
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
 #### Request path
 ```
-GET /<api-version>/transactions?since=<transaction-number>&transaction-time-hash=<transaction-time-hash>
+GET /transactions?since=<transaction-number>&transaction-time-hash=<transaction-time-hash>
 ```
 
 #### Request headers
@@ -217,7 +205,7 @@ None.
 
 #### Request example
 ```
-GET /v1.0/transactions?since=170&transaction-time-hash=00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253
+GET /transactions?since=170&transaction-time-hash=00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253
 ```
 
 #### Response body schema
@@ -273,13 +261,10 @@ HTTP/1.1 400 Bad Request
 ### Get first valid Sidetree transaction
 Given a list of Sidetree transactions, returns the first transaction in the list that is valid. Returns 404 NOT FOUND if none of the given transactions are valid. This API is primarily used by the Sidetree core library to determine a transaction that can be used as a marker in time to reprocess transactions in the event of a block reorganization (temporary fork).
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
 
 #### Request path
 ```http
-POST /<api-version>/transactions/firstValid HTTP/1.1
+POST /transactions/firstValid HTTP/1.1
 ```
 
 #### Request headers
@@ -304,7 +289,7 @@ POST /<api-version>/transactions/firstValid HTTP/1.1
 
 #### Request example
 ```http
-POST /v1.0/transactions/firstValid HTTP/1.1
+POST /transactions/firstValid HTTP/1.1
 Content-Type: application/json
 
 {
@@ -374,13 +359,10 @@ HTTP/1.1 404 NOT FOUND
 ### Write a Sidetree transaction
 Writes a Sidetree transaction to the underlying blockchain.
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
 
 #### Request path
 ```
-POST /<api-version>/transactions
+POST /transactions
 ```
 
 #### Request headers
@@ -397,7 +379,7 @@ POST /<api-version>/transactions
 
 #### Request example
 ```http
-POST /v1.0/transactions HTTP/1.1
+POST /transactions HTTP/1.1
 
 {
   "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
@@ -429,13 +411,9 @@ All hashes used in the API are encoded multihash as specified by the Sidetree pr
 ### Read content
 Read the content of a given address and return it in the response body as octet-stream.
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
 #### Request path
 ```
-GET /<api-version>/<hash>?max-size=<maximum-allowed-size>
+GET /<hash>?max-size=<maximum-allowed-size>
 ```
 
 #### Request query parameters
@@ -448,7 +426,7 @@ GET /<api-version>/<hash>?max-size=<maximum-allowed-size>
 
 #### Request example
 ```
-GET /v1.0/QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
+GET /QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
 ```
 #### Response headers
 | Name                  | Value                  |
@@ -494,13 +472,9 @@ HTTP/1.1 400 Bad Request
 ### Write content
 Write content to CAS.
 
-|                     |      |
-| ------------------- | ---- |
-| Minimum API version | v1.0 |
-
 #### Request path
 ```
-POST /<api-version>/
+POST /
 ```
 
 #### Request headers
