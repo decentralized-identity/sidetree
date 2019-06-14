@@ -119,6 +119,17 @@ export default class BitcoinProcessor {
   public async initialize () {
     console.debug('Initializing TransactionStore');
     await this.transactionStore.initialize();
+    console.debug(`Configuring bitcoin peer to Watch address ${this.privateKey.toAddress()}. This can take up to 10 minutes.`);
+    const request = {
+      method: 'importpubkey',
+      params: [
+        this.privateKey.toPublicKey().toBuffer().toString('hex'),
+        'sidetree',
+        true
+      ]
+    };
+    await this.rpcCall(request);
+    console.debug('Synchronizing blocks for sidetree transactions...');
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
     if (lastKnownTransaction) {
       console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
@@ -140,27 +151,24 @@ export default class BitcoinProcessor {
    */
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
-    let request: any;
-    if (hash) {
-      request = {
-        method: 'getblock',
-        params: [
-          hash, // hash of the block
-          true, // block details
-          false // transaction details
-        ]
-      };
-    } else {
+    if (!hash) {
       const blockHeight = await this.getCurrentBlockHeight();
-      request = {
-        method: 'getblockbyheight',
+      const hashRequest = {
+        method: 'getblockhash',
         params: [
-          blockHeight,  // height of the block
-          true, // block details
-          false // transaction details
+          blockHeight // height of the block
         ]
       };
+      hash = await this.rpcCall(hashRequest);
     }
+    const request = {
+      method: 'getblock',
+      params: [
+        hash, // hash of the block
+        true, // block details
+        false // transaction details
+      ]
+    };
     const response = await this.rpcCall(request);
     return {
       hash: response.hash,
@@ -268,27 +276,18 @@ export default class BitcoinProcessor {
   private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
     const addressToSearch = address.toString();
     console.info(`Getting unspent coins for ${addressToSearch}`);
-    const requestPath = `/coin/address/${addressToSearch}`;
+    const request = {
+      method: 'listunspent',
+      params: [
+        null,
+        null,
+        [addressToSearch]
+      ]
+    };
+    const response: Array<any> = await this.rpcCall(request);
 
-    const fullPath = new URL(requestPath, this.bitcoinPeerUri);
-    const response = await this.fetchWithRetry(fullPath.toString());
-
-    const responseData = await ReadableStream.readAll(response.body);
-    if (response.status !== httpStatus.OK) {
-      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      console.error(error);
-      throw error;
-    }
-
-    const responseJson = JSON.parse(responseData) as Array<any>;
-    const unspentTransactions = responseJson.map((coin) => {
-      return new Transaction.UnspentOutput({
-        txid: coin.hash,
-        vout: coin.index,
-        address: coin.address,
-        script: coin.script,
-        amount: coin.value * 0.00000001 // Satoshi amount
-      });
+    const unspentTransactions = response.map((coin) => {
+      return new Transaction.UnspentOutput(coin);
     });
     console.info(`Returning ${unspentTransactions.length} coins`);
     return unspentTransactions;
@@ -301,24 +300,15 @@ export default class BitcoinProcessor {
   private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
     const rawTransaction = transaction.serialize();
     console.info(`Boradcasting transaction ${transaction.id}`);
-    const request = JSON.stringify({
-      tx: rawTransaction
-    });
-    const fullPath = new URL('/broadcast', this.bitcoinPeerUri);
-    const responseObject = await this.fetchWithRetry(fullPath.toString(), {
-      body: request,
-      method: 'post'
-    });
-    const responseData = await ReadableStream.readAll(responseObject.body);
-    if (responseObject.status !== httpStatus.OK) {
-      const error = new Error(`Broadcast failure [${responseObject.status}]: ${responseData}`);
-      console.error(error);
-      throw error;
-    }
+    const request = {
+      method: 'sendrawtransaction',
+      params: [
+        rawTransaction
+      ]
+    };
+    const response = await this.rpcCall(request);
 
-    const response = JSON.parse(responseData);
-
-    return response.success;
+    return response.length > 0;
   }
 
   /**
