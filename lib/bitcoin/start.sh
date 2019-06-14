@@ -30,26 +30,44 @@ fi
 # └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
 sudo apt-get install gcc g++ make git -y
 
-# ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
-# ┆ Install bcoin as a peer2peer peer ┆
-# └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+# ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+# ┆ Install bitcoin as a peer2peer peer ┆
+# └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+sudo snap install bitcoin-core
+if [ $? != 0 ]; then
+    echo "Snapcraft failed, using apt..."
+    cd $dataDirectory
+    wget https://bitcoincore.org/bin/bitcoin-core-0.18.0/bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
+    if [ $? != 0 ]; then
+        echo "Failed to download bitcoin client. Please visit https://bitcoincore.org/en/download/ and download the client manually"
+        exit 1
+    fi
+    tar -xzf ./bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
+fi
+
+# ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
+# ┆ Generate an RPC password ┆
+# └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+if [[ -e /dev/urandom ]]; then
+    password=$(head -c 64 /dev/urandom | base64 -)
+else
+    password=$(head -c 64 /dev/random | base64 -)
+fi
+
 cd $dataDirectory
-git clone git://github.com/bcoin-org/bcoin.git
-cd bcoin
-npm install
-cd ..
 echo "
-network: testnet
-prefix: $dataDirectory/data
-host: 127.0.0.1
-port: 18332
-http-port: 18331
-workers-size: 1
-index-address: true
-" > $dataDirectory/bcoin.conf
+testnet=1
+server=1
+rpcuser=admin
+rpcpassword=$password
+" > $dataDirectory/bitcoin.conf
+
+echo "Your RPC username is 'admin'"
+echo "Your RPC password is '$password'"
+
 echo "
 #!/bin/bash
-./bcoin/bin/bcoin --config $dataDirectory/bcoin.conf
+./bitcoin-0.18.0/bin/bitcoind -datadir$dataDirectory
 " > $dataDirectory/start.sh
 chmod u+x $dataDirectory/start.sh
-./bcoin/bin/bcoin --config $dataDirectory/bcoin.conf
+./bitcoin-0.18.0/bin/bitcoind -datadir$dataDirectory/bcoin.conf
