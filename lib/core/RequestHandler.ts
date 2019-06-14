@@ -25,6 +25,7 @@ export default class RequestHandler {
    * Handles an operation request.
    */
   public async handleOperationRequest (request: Buffer): Promise<IResponse> {
+    console.info(`Handling operation request of size ${request.length} bytes...`);
     // Get the protocol version according to current blockchain time to validate the operation request.
     const currentTime = await this.blockchain.getLatestTime();
     const protocolParameters = ProtocolParameters.get(currentTime.time);
@@ -40,7 +41,7 @@ export default class RequestHandler {
       // Parse request into a Operation.
       operation = Operation.create(request);
     } catch (error) {
-      console.error(`Bad request: ${error}`);
+      console.info(`Bad request: ${error}`);
 
       return {
         status: ResponseStatus.BadRequest
@@ -48,6 +49,8 @@ export default class RequestHandler {
     }
 
     try {
+      console.info(`Operation type: ${operation.type}`);
+
       // Passed common operation validation, hand off to specific operation handler.
       let response: IResponse;
       switch (operation.type) {
