@@ -38,6 +38,9 @@ export default class BitcoinProcessor {
   /** URI for the bitcoin peer's RPC endpoint */
   public readonly bitcoinPeerUri: string;
 
+  /** Bitcoin peer's RPC basic authorization credentials */
+  public readonly bitcoinAuthorization: string;
+
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
 
@@ -76,6 +79,7 @@ export default class BitcoinProcessor {
 
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
+    this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.bitcoinFee = config.bitcoinFee;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -523,7 +527,10 @@ export default class BitcoinProcessor {
     console.debug(`Sending jRPC request id: ${request.id}`);
     const response = await this.fetchWithRetry(fullPath.toString(), {
       body: requestString,
-      method: 'post'
+      method: 'post',
+      headers: {
+        Authorization: `Basic ${this.bitcoinAuthorization}`
+      }
     });
 
     const responseData = await ReadableStream.readAll(response.body);

@@ -3,6 +3,8 @@
  */
 export interface IBitcoinConfig {
   bitcoinPeerUri: string;
+  bitcoinRpcUsername: string;
+  bitcoinRpcPassword: string;
   bitcoinWalletImportString: string;
   bitcoinFee: number;
   lowBalanceNoticeInDays: number | undefined;
