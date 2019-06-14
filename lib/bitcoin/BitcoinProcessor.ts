@@ -1,6 +1,6 @@
 import * as httpStatus from 'http-status';
 import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
-import nodeFetch, { FetchError, Response } from 'node-fetch';
+import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../core/util/ReadableStream';
 import RequestError, { ErrorCode } from '../core/util/RequestError';
 import TransactionNumber from './TransactionNumber';
