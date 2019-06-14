@@ -213,7 +213,7 @@ export default class BitcoinProcessor {
         transactionTimeHash: transaction.transactionTimeHash,
         anchorFileHash: transaction.anchorFileHash
       } as ITransaction;
-    })
+    });
 
     return {
       transactions,
