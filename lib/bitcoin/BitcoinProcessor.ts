@@ -204,7 +204,16 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
-    const transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+    let transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+    // filter the results to only return transactions, and not internal data
+    transactions = transactions.map((transaction) => {
+      return {
+        transactionNumber: transaction.transactionNumber,
+        transactionTime: transaction.transactionTime,
+        transactionTimeHash: transaction.transactionTimeHash,
+        anchorFileHash: transaction.anchorFileHash
+      } as ITransaction;
+    })
 
     return {
       transactions,
@@ -465,11 +474,11 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
-    const hash = this.getBlockHash(block);
+    const hash = await this.getBlockHash(block);
     const responseData = await this.rpcCall({
       method: 'getblock',
       params: [
-        hash,  // height
+        hash,  // hash
         2      // block and transaction information
       ]
     });
