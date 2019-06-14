@@ -123,16 +123,22 @@ export default class BitcoinProcessor {
   public async initialize () {
     console.debug('Initializing TransactionStore');
     await this.transactionStore.initialize();
-    console.debug(`Configuring bitcoin peer to Watch address ${this.privateKey.toAddress()}. This can take up to 10 minutes.`);
-    const request = {
-      method: 'importpubkey',
-      params: [
-        this.privateKey.toPublicKey().toBuffer().toString('hex'),
-        'sidetree',
-        true
-      ]
-    };
-    await this.rpcCall(request, undefined, false);
+    const address = this.privateKey.toAddress();
+    console.debug(`Checking if bitcoin contains a wallet for ${address}`);
+    if (!this.walletExists(address.toString())) {
+      console.debug(`Configuring bitcoin peer to Watch address ${this.privateKey.toAddress()}. This can take up to 10 minutes.`);
+      const request = {
+        method: 'importpubkey',
+        params: [
+          this.privateKey.toPublicKey().toBuffer().toString('hex'),
+          'sidetree',
+          true
+        ]
+      };
+      await this.rpcCall(request, undefined, false);
+    } else {
+      console.debug('Wallet found.');
+    }
     console.debug('Synchronizing blocks for sidetree transactions...');
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
     if (lastKnownTransaction) {
@@ -508,6 +514,24 @@ export default class BitcoinProcessor {
       }
     }
     return blockHash;
+  }
+
+  /**
+   * Checks if the bitcoin peer has a wallet open for a given address
+   * @param address The bitcoin address to check
+   * @returns true if a wallet exists, false otherwise.
+   */
+  private async walletExists (address: string): Promise<boolean> {
+    console.info(`Checking if bitcoin wallet for ${address} exists`);
+    const request = {
+      method: 'getaddressinfo',
+      params: [
+        address
+      ]
+    };
+
+    const response = await this.rpcCall(request);
+    return response.labels.length > 0 || response.iswatchonly;
   }
 
   /**
