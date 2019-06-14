@@ -153,20 +153,17 @@ export default class BitcoinProcessor {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
       const blockHeight = await this.getCurrentBlockHeight();
-      const hashRequest = {
-        method: 'getblockhash',
-        params: [
-          blockHeight // height of the block
-        ]
+      hash = await this.getBlockHash(blockHeight);
+      return {
+        time: blockHeight,
+        hash
       };
-      hash = await this.rpcCall(hashRequest);
     }
     const request = {
       method: 'getblock',
       params: [
         hash, // hash of the block
-        true, // block details
-        false // transaction details
+        1 // 1 = block information
       ]
     };
     const response = await this.rpcCall(request);
@@ -267,6 +264,22 @@ export default class BitcoinProcessor {
       throw error;
     }
     console.info(`Successfully submitted transaction ${transaction.id}`);
+  }
+
+  /**
+   * Gets the best hash for a given block height
+   * @param height The height to get a hash for
+   * @returns the block hash
+   */
+  private async getBlockHash (height: number): Promise<string> {
+    console.info(`Getting hash for block ${height}`);
+    const hashRequest = {
+      method: 'getblockhash',
+      params: [
+        height // height of the block
+      ]
+    };
+    return this.rpcCall(hashRequest);
   }
 
   /**
@@ -429,19 +442,10 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
-    const responseData = await this.rpcCall({
-      method: 'getblockbyheight',
-      params: [
-        height,  // height
-        true,   // verbose (block details)
-        false    // details (transaction details)
-      ]
-    });
+    const responseData = await this.getBlockHash(height);
 
-    console.debug(`Retrieved block ${responseData.height} (${responseData.hash})`);
-
-    let actualHash: string = responseData.hash;
-    return hash === actualHash;
+    console.debug(`Retrieved block ${height} (${responseData})`);
+    return hash === responseData;
   }
 
   /**
@@ -451,12 +455,12 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
+    const hash = this.getBlockHash(block);
     const responseData = await this.rpcCall({
-      method: 'getblockbyheight',
+      method: 'getblock',
       params: [
-        block,  // height
-        true,   // verbose (block details)
-        true    // details (transaction details)
+        hash,  // height
+        2      // block and transaction information
       ]
     });
 
@@ -509,10 +513,14 @@ export default class BitcoinProcessor {
    * @returns response as an object
    */
   private async rpcCall (request: any, requestPath: string = ''): Promise<any> {
+    // append some standard jrpc parameters
+    request['jsonrpc'] = '1.0';
+    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
     const fullPath = new URL(requestPath, this.bitcoinPeerUri);
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
+    console.debug(`Sending jRPC request id: ${request.id}`);
     const response = await this.fetchWithRetry(fullPath.toString(), {
       body: requestString,
       method: 'post'
