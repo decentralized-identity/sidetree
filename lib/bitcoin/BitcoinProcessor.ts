@@ -132,7 +132,7 @@ export default class BitcoinProcessor {
         true
       ]
     };
-    await this.rpcCall(request);
+    await this.rpcCall(request, undefined, false);
     console.debug('Synchronizing blocks for sidetree transactions...');
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
     if (lastKnownTransaction) {
@@ -516,7 +516,7 @@ export default class BitcoinProcessor {
    * @param path optional path extension
    * @returns response as an object
    */
-  private async rpcCall (request: any, requestPath: string = ''): Promise<any> {
+  private async rpcCall (request: any, requestPath: string = '', timeout: boolean = true): Promise<any> {
     // append some standard jrpc parameters
     request['jsonrpc'] = '1.0';
     request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
@@ -531,7 +531,7 @@ export default class BitcoinProcessor {
       headers: {
         Authorization: `Basic ${this.bitcoinAuthorization}`
       }
-    });
+    }, timeout);
 
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
@@ -555,16 +555,20 @@ export default class BitcoinProcessor {
    * Calls `nodeFetch` and retries with exponential back-off on `request-timeout` FetchError`.
    * @param uri URI to fetch
    * @param requestParameters Request parameters to use
+   * @param setTimeout True to set a timeout on the request, and retry if times out, false to wait indefinitely.
    * @returns Response of the fetch
    */
-  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined): Promise<Response> {
+  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined, setTimeout: boolean = true): Promise<Response> {
     let retryCount = 0;
     let timeout: number;
     do {
       timeout = this.requestTimeout * 2 ** retryCount;
-      const params = Object.assign({}, requestParameters, {
-        timeout
-      });
+      let params = Object.assign({}, requestParameters);
+      if (setTimeout) {
+        params = Object.assign(params, {
+          timeout
+        });
+      }
       try {
         return await nodeFetch(uri, params);
       } catch (error) {

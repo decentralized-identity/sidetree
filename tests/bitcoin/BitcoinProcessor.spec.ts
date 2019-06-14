@@ -23,7 +23,9 @@ function randomBlock (above: number = 0): IBlockInfo {
 describe('BitcoinProcessor', () => {
 
   const testConfig: IBitcoinConfig = {
-    bitcoinPeerUri: 'http://localhost:18331',
+    bitcoinPeerUri: 'http://localhost:18332',
+    bitcoinRpcUsername: '',
+    bitcoinRpcPassword: '',
     bitcoinFee: 1,
     bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
@@ -96,6 +98,8 @@ describe('BitcoinProcessor', () => {
       const config: IBitcoinConfig = {
         bitcoinPeerUri: randomString(),
         bitcoinFee: randomNumber(),
+        bitcoinRpcUsername: '',
+        bitcoinRpcPassword: '',
         bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
@@ -125,6 +129,8 @@ describe('BitcoinProcessor', () => {
     it('should throw if the wallet import string is incorrect', () => {
       const config: IBitcoinConfig = {
         bitcoinPeerUri: randomString(),
+        bitcoinRpcUsername: '',
+        bitcoinRpcPassword: '',
         bitcoinFee: randomNumber(),
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
