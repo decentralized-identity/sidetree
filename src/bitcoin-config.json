@@ -1,5 +1,7 @@
 {
   "bitcoinPeerUri": "[FILL THIS IN!]",
+  "bitcoinRpcUsername": "[FILL THIS IN!]",
+  "bitcoinRpcPassword": "[FILL THIS IN!]",
   "bitcoinWalletImportString": "[FILL THIS IN!]",
   "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
