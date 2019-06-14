@@ -49,9 +49,9 @@ fi
 # ┆ Generate an RPC password ┆
 # └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
 if [[ -e /dev/urandom ]]; then
-    password=$(head -c 64 /dev/urandom | base64 -)
+    password=$(head -c 32 /dev/urandom | base64 -)
 else
-    password=$(head -c 64 /dev/random | base64 -)
+    password=$(head -c 32 /dev/random | base64 -)
 fi
 
 cd $dataDirectory
