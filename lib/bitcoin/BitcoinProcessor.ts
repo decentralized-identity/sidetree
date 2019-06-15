@@ -282,40 +282,40 @@ export default class BitcoinProcessor {
     }
 
     const transactions = JSON.parse(responseData) as Array<any>;
-    
+
     // Generate all transaction outputs (txos)
-    let txos: {[txid: string] : any; } = {};  // transaction outputs dictionary
-    for (let i=0; i < transactions.length; i++) {
+    let txos: {[txid: string]: any; } = {};  // transaction outputs dictionary
+    for (let i = 0; i < transactions.length; i++) {
       let txid = transactions[i].hash;
       let confirmations = transactions[i].confirmations;
       let outputs = transactions[i].outputs;
-      for (let j=0; j < outputs.length; j++) {
+      for (let j = 0; j < outputs.length; j++) {
         if (outputs[j].address === address) {
-          txos[txid] = {"txid": txid, "vout": j, "address": outputs[j].address, "account": "",
-          "script": outputs[j].script, "amount": outputs[j].value * 0.00000001,
-          "confirmations": confirmations, "spendable": true, "solvable": true};
-        };
-      };
-    };
-    
+          txos[txid] = {'txid': txid, 'vout': j, 'address': outputs[j].address, 'account': '',
+            'script': outputs[j].script, 'amount': outputs[j].value * 0.00000001,
+            'confirmations': confirmations, 'spendable': true, 'solvable': true};
+        }
+      }
+    }
+
     // Flag all spent transaction outputs (set txo.spendable to false)
-    for (let i=0; i < transactions.length; i++) {
+    for (let i = 0; i < transactions.length; i++) {
       let inputs = transactions[i].inputs;
-      for (let j=0; j < inputs.length; j++) {
+      for (let j = 0; j < inputs.length; j++) {
         if ((inputs[j].prevout.hash in txos)) {
           txos[inputs[j].prevout.hash].spendable = false;
-        };
-      };
-    };
-    
+        }
+      }
+    }
+
     // Retrieve all unspent transaction outputs (tx.spendable === true)
     let utxos = [];
     for (let txid in txos) {
       if (txos[txid].spendable === true) {
         utxos.push(txos[txid]);
-      };
-    };
-    
+      }
+    }
+
     // Generate bitcore UnspentOutput array from utxos array
     const unspentCoins = utxos.map((coin) => {
       return new Transaction.UnspentOutput({
@@ -326,9 +326,9 @@ export default class BitcoinProcessor {
         amount: coin.amount
       });
     });
-    
+
     console.info(`Returning ${unspentCoins.length} coins`);
-    
+
     return unspentCoins;
   }
 
