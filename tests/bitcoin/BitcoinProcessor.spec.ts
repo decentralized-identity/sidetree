@@ -24,8 +24,8 @@ describe('BitcoinProcessor', () => {
 
   const testConfig: IBitcoinConfig = {
     bitcoinPeerUri: 'http://localhost:18332',
-    bitcoinRpcUsername: '',
-    bitcoinRpcPassword: '',
+    bitcoinRpcUsername: 'admin',
+    bitcoinRpcPassword: '123456789',
     bitcoinFee: 1,
     bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
@@ -38,6 +38,8 @@ describe('BitcoinProcessor', () => {
     sidetreeTransactionPrefix: 'sidetree:',
     transactionPollPeriodInSeconds: 60
   };
+
+  const privateKey: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
 
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
@@ -98,8 +100,8 @@ describe('BitcoinProcessor', () => {
       const config: IBitcoinConfig = {
         bitcoinPeerUri: randomString(),
         bitcoinFee: randomNumber(),
-        bitcoinRpcUsername: '',
-        bitcoinRpcPassword: '',
+        bitcoinRpcUsername: 'admin',
+        bitcoinRpcPassword: 'password123',
         bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
@@ -114,6 +116,7 @@ describe('BitcoinProcessor', () => {
 
       const bitcoinProcessor = new BitcoinProcessor(config);
       expect(bitcoinProcessor.bitcoinPeerUri).toEqual(config.bitcoinPeerUri);
+      expect(bitcoinProcessor.bitcoinAuthorization).toEqual(Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64'));
       expect(bitcoinProcessor.bitcoinFee).toEqual(config.bitcoinFee);
       expect(bitcoinProcessor.requestTimeout).toEqual(300);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
@@ -129,8 +132,8 @@ describe('BitcoinProcessor', () => {
     it('should throw if the wallet import string is incorrect', () => {
       const config: IBitcoinConfig = {
         bitcoinPeerUri: randomString(),
-        bitcoinRpcUsername: '',
-        bitcoinRpcPassword: '',
+        bitcoinRpcUsername: 'admin',
+        bitcoinRpcPassword: '1234',
         bitcoinFee: randomNumber(),
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
@@ -155,7 +158,15 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('initialize', () => {
+
+    let walletExistsSpy: jasmine.Spy;
+
+    beforeEach(async () => {
+      walletExistsSpy = spyOn(bitcoinProcessor, 'walletExists' as any);
+    });
+
     it('should initialize the transactionStore', async (done) => {
+      walletExistsSpy.and.returnValue(Promise.resolve(true));
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
@@ -163,6 +174,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should process all the blocks since its last known', async (done) => {
+      walletExistsSpy.and.returnValue(Promise.resolve(true));
       const fromNumber = randomNumber();
       const fromHash = randomString();
       transactionStoreLatestTransactionSpy.and.returnValue(
@@ -190,10 +202,20 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should begin to periodically poll for updates', async (done) => {
+      walletExistsSpy.and.returnValue(Promise.resolve(true));
       expect(periodicPollSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(periodicPollSpy).toHaveBeenCalled();
       done();
+    });
+
+    it('should import key if the wallet does not exist', async () => {
+      walletExistsSpy.and.returnValue(Promise.resolve(false));
+      const publicKeyHex = privateKey.toPublicKey().toBuffer().toString('hex');
+      const importSpy = mockRpcCall('importpubkey', [publicKeyHex, 'sidetree', true], undefined);
+      await bitcoinProcessor.initialize();
+      expect(walletExistsSpy).toHaveBeenCalled();
+      expect(importSpy).toHaveBeenCalled();
     });
   });
 
@@ -214,11 +236,13 @@ describe('BitcoinProcessor', () => {
       const height = randomNumber();
       const hash = randomString();
       const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
-      const spy = mockRpcCall('getblockbyheight', [height, true, false], { hash, height });
+      const hashSpy = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
+      const spy = mockRpcCall('getblock', [hash, 1], { hash, height });
       const actual = await bitcoinProcessor.time();
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
       expect(tipSpy).toHaveBeenCalled();
+      expect(hashSpy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalled();
       done();
     });
@@ -226,10 +250,12 @@ describe('BitcoinProcessor', () => {
     it('should get the corresponding bitcoin height given a hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
+      const hashSpy = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
       const spy = mockRpcCall('getblock', [hash, true, false], { hash, height });
       const actual = await bitcoinProcessor.time(hash);
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
+      expect(hashSpy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalled();
       done();
     });
@@ -467,13 +493,8 @@ describe('BitcoinProcessor', () => {
   describe('getUnspentCoins', () => {
     it('should query for unspent output coins given an address', async (done) => {
       const coin = generateUnspentCoin(1);
-      retryFetchSpy.and.callFake((uri: string) => {
-        expect(uri).toContain('/coin/address/');
-        return {
-          status: httpStatus.OK
-        };
-      });
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
+
+      const coinSpy = mockRpcCall('listunspent', [undefined, undefined, coin.address], [
         {
           hash: coin.txId,
           index: coin.outputIndex,
@@ -481,10 +502,9 @@ describe('BitcoinProcessor', () => {
           script: coin.script,
           value: coin.satoshis
         }
-      ])));
+      ]);
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
-      expect(retryFetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
+      expect(coinSpy).toHaveBeenCalled();
       expect(actual[0].address).toEqual(coin.address);
       expect(actual[0].txId).toEqual(coin.txId);
       done();
