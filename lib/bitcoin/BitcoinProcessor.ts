@@ -269,7 +269,7 @@ export default class BitcoinProcessor {
   private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
     const addressToSearch = address.toString();
     console.info(`Getting unspent coins for ${addressToSearch}`);
-    const requestPath = `/coin/address/${addressToSearch}`;
+    const requestPath = `/tx/address/${addressToSearch}`;
 
     const fullPath = new URL(requestPath, this.bitcoinPeerUri);
     const response = await this.fetchWithRetry(fullPath.toString());
@@ -281,18 +281,55 @@ export default class BitcoinProcessor {
       throw error;
     }
 
-    const responseJson = JSON.parse(responseData) as Array<any>;
-    const unspentTransactions = responseJson.map((coin) => {
-      return new Transaction.UnspentOutput({
-        txid: coin.hash,
-        vout: coin.index,
-        address: coin.address,
-        script: coin.script,
-        amount: coin.value * 0.00000001 // Satoshi amount
-      });
+    const transactions = JSON.parse(responseData) as Array<any>;
+    
+    // Generate all transaction outputs (txos)
+    let txos = {};  // transaction outputs dictionary
+    for (let i=0; i < transactions.length; i++) {
+        let txid = transactions[i].hash;
+        let confirmations = transactions[i].confirmations;
+        let outputs = transactions[i].outputs;
+        for (let j=0; j < outputs.length; j++) {
+            if (outputs[j].address == address) {
+                txos[txid] = {"txid": txid, "vout": j, "address": outputs[j].address, "account": "",
+                "script": outputs[j].script, "amount": outputs[j].value * 0.00000001,
+                "confirmations": confirmations, "spendable": true, "solvable": true};
+            };
+        };
+    };
+    
+    // Flag all spent transaction outputs (set txo.spendable to false)
+    for (let i=0; i < transactions.length; i++) {
+        let inputs = transactions[i].inputs;
+        for (let j=0; j < inputs.length; j++) {
+            if ((inputs[j].prevout.hash in txos)) {
+                txos[inputs[j].prevout.hash].spendable = false;
+            };
+        };
+    };
+    
+    // Retrieve all unspent transaction outputs (tx.spendable === true)
+    let utxos = [];
+    for (let txid in txos) {
+        if (txos[txid].spendable === true) {
+            utxos.push(txos[txid]);
+        };
+    };
+    
+    // Generate bitcore UnspentOutput array from utxos array
+    const unspentCoins = utxos.map((coin) => {
+        return new bitcore_lib_1.Transaction.UnspentOutput({
+            txid: coin.txid,
+            vout: coin.vout,
+            address: coin.address,
+            script: coin.script,
+            amount: coin.amount
+        });
     });
-    console.info(`Returning ${unspentTransactions.length} coins`);
-    return unspentTransactions;
+    
+    console.info(`Returning ${unspentCoins.length} coins`);
+    
+    return unspentCoins;
   }
 
   /**
@@ -301,7 +338,7 @@ export default class BitcoinProcessor {
    */
   private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
     const rawTransaction = transaction.serialize();
-    console.info(`Boradcasting transaction ${transaction.id}`);
+    console.info(`Broadcasting transaction ${transaction.id}`);
     const request = JSON.stringify({
       tx: rawTransaction
     });
