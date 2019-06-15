@@ -284,7 +284,7 @@ export default class BitcoinProcessor {
     const transactions = JSON.parse(responseData) as Array<any>;
     
     // Generate all transaction outputs (txos)
-    let txos: {[txid: string] : any; };  // transaction outputs dictionary
+    let txos: {[txid: string] : any; } = {};  // transaction outputs dictionary
     for (let i=0; i < transactions.length; i++) {
         let txid = transactions[i].hash;
         let confirmations = transactions[i].confirmations;
