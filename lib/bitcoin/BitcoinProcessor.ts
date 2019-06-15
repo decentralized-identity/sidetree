@@ -291,9 +291,9 @@ export default class BitcoinProcessor {
       let outputs = transactions[i].outputs;
       for (let j=0; j < outputs.length; j++) {
         if (outputs[j].address === address) {
-              txos[txid] = {"txid": txid, "vout": j, "address": outputs[j].address, "account": "",
-              "script": outputs[j].script, "amount": outputs[j].value * 0.00000001,
-              "confirmations": confirmations, "spendable": true, "solvable": true};
+          txos[txid] = {"txid": txid, "vout": j, "address": outputs[j].address, "account": "",
+          "script": outputs[j].script, "amount": outputs[j].value * 0.00000001,
+          "confirmations": confirmations, "spendable": true, "solvable": true};
         };
       };
     };
@@ -303,7 +303,7 @@ export default class BitcoinProcessor {
       let inputs = transactions[i].inputs;
       for (let j=0; j < inputs.length; j++) {
         if ((inputs[j].prevout.hash in txos)) {
-            txos[inputs[j].prevout.hash].spendable = false;
+          txos[inputs[j].prevout.hash].spendable = false;
         };
       };
     };
@@ -312,7 +312,7 @@ export default class BitcoinProcessor {
     let utxos = [];
     for (let txid in txos) {
       if (txos[txid].spendable === true) {
-          utxos.push(txos[txid]);
+        utxos.push(txos[txid]);
       };
     };
     
