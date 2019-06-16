@@ -267,6 +267,8 @@ export default class BitcoinProcessor {
    * @param address Bitcoin address to get coins for
    */
   private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
+    
+    // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
     const addressToSearch = address.toString();
     console.info(`Getting unspent coins for ${addressToSearch}`);
     const requestPath = `/tx/address/${addressToSearch}`;
@@ -290,7 +292,7 @@ export default class BitcoinProcessor {
       let confirmations = transactions[i].confirmations;
       let outputs = transactions[i].outputs;
       for (let j = 0; j < outputs.length; j++) {
-        if (outputs[j].address === address) {
+        if (outputs[j].address === addressToSearch) {
           txos[txid] = {'txid': txid, 'vout': j, 'address': outputs[j].address, 'account': '',
             'script': outputs[j].script, 'amount': outputs[j].value * 0.00000001,
             'confirmations': confirmations, 'spendable': true, 'solvable': true};
