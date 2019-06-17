@@ -475,7 +475,7 @@ describe('BitcoinProcessor', () => {
             {
               value: coin.satoshis,
               script: coin.script,
-              address: coin.address
+              address: coin.address.toString()
             }
           ],
           confirmations: 0
