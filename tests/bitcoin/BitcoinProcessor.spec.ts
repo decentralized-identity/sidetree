@@ -412,8 +412,8 @@ describe('BitcoinProcessor', () => {
       const coin = generateUnspentCoin(0);
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         new Transaction.UnspentOutput({
-          txid: coin.txId,
-          vout: coin.outputIndex,
+          txid: coin.txid,
+          vout: coin.vout,
           address: coin.address,
           script: coin.script,
           amount: 0
@@ -469,18 +469,23 @@ describe('BitcoinProcessor', () => {
       });
       const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
         {
-          hash: coin.txId,
-          index: coin.outputIndex,
-          address: coin.address,
-          script: coin.script,
-          value: coin.satoshis
+          "hash": coin.txid,
+          "inputs": [],
+          "outputs": [
+            {
+              "value": coin.amount * 100000000,
+              "script": coin.script,
+              "address": coin.address
+            }
+          ],
+          "confirmations": 0
         }
       ])));
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
       expect(retryFetchSpy).toHaveBeenCalled();
       expect(readStreamSpy).toHaveBeenCalled();
       expect(actual[0].address).toEqual(coin.address);
-      expect(actual[0].txId).toEqual(coin.txId);
+      expect(actual[0].txid).toEqual(coin.txid);
       done();
     });
 
