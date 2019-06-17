@@ -469,16 +469,16 @@ describe('BitcoinProcessor', () => {
       });
       const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
         {
-          "hash": coin.txId,
-          "inputs": [],
-          "outputs": [
+          hash: coin.txId,
+          inputs: [],
+          outputs: [
             {
-              "value": coin.satoshis,
-              "script": coin.script,
-              "address": coin.address
+              value: coin.satoshis,
+              script: coin.script,
+              address: coin.address
             }
           ],
-          "confirmations": 0
+          confirmations: 0
         }
       ])));
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
