@@ -462,7 +462,7 @@ describe('BitcoinProcessor', () => {
     it('should query for unspent output coins given an address', async (done) => {
       const coin = generateUnspentCoin(1);
       retryFetchSpy.and.callFake((uri: string) => {
-        expect(uri).toContain('/coin/address/');
+        expect(uri).toContain('/tx/address/');
         return {
           status: httpStatus.OK
         };
@@ -470,10 +470,15 @@ describe('BitcoinProcessor', () => {
       const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify([
         {
           hash: coin.txId,
-          index: coin.outputIndex,
-          address: coin.address,
-          script: coin.script,
-          value: coin.satoshis
+          inputs: [],
+          outputs: [
+            {
+              value: coin.satoshis,
+              script: coin.script,
+              address: coin.address.toString()
+            }
+          ],
+          confirmations: 0
         }
       ])));
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
@@ -487,7 +492,7 @@ describe('BitcoinProcessor', () => {
     it('should throw if the request failed', async (done) => {
       const coin = generateUnspentCoin(0);
       retryFetchSpy.and.callFake((uri: string) => {
-        expect(uri).toContain('/coin/address/');
+        expect(uri).toContain('/tx/address/');
         return {
           status: httpStatus.BAD_REQUEST
         };
@@ -507,7 +512,7 @@ describe('BitcoinProcessor', () => {
     it('should return empty if no coins were found', async (done) => {
       const coin = generateUnspentCoin(1);
       retryFetchSpy.and.callFake((uri: string) => {
-        expect(uri).toContain('/coin/address/');
+        expect(uri).toContain('/tx/address/');
         return {
           status: httpStatus.OK
         };
