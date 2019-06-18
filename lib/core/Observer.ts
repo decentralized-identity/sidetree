@@ -61,7 +61,7 @@ export default class Observer {
   }
 
   /**
-   * The function that starts the periodic polling and processing of Sidetree operations.
+   * The method that starts the periodic polling and processing of Sidetree operations.
    */
   public async startPeriodicProcessing () {
     // Initialize the last known transaction before starting processing.
@@ -249,7 +249,7 @@ export default class Observer {
       // Get the protocol parameters
       const protocolParameters = ProtocolParameters.get(transaction.transactionTime);
 
-      console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${protocolParameters.maxAnchorFileSizeInBytes}...`);
+      console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${protocolParameters.maxAnchorFileSizeInBytes} bytes...`);
       const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, protocolParameters.maxAnchorFileSizeInBytes);
 
       // No thing to process if the file hash is invalid. No retry needed.
@@ -260,7 +260,7 @@ export default class Observer {
 
       // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
       if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-        console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${protocolParameters.maxAnchorFileSizeInBytes}.`);
+        console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${protocolParameters.maxAnchorFileSizeInBytes} bytes.`);
         return;
       }
 
@@ -277,7 +277,7 @@ export default class Observer {
         return;
       }
 
-      console.info(`Anchor file '${transaction.anchorFileHash}' of size ${anchorFileFetchResult.content!.length} downloaded.`);
+      console.info(`Anchor file '${transaction.anchorFileHash}' of size ${anchorFileFetchResult.content!.length} bytes downloaded.`);
       let anchorFile: IAnchorFile;
       try {
         anchorFile = AnchorFile.parseAndValidate(anchorFileFetchResult.content!);

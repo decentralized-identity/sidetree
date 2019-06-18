@@ -29,7 +29,7 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 router.post('/', async (ctx, _next) => {
-  const response = await sidetreeCore.requestHandler.handleOperationRequest(ctx.body);
+  const response = sidetreeCore.requestHandler.handleOperationRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 

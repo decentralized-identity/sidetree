@@ -24,7 +24,7 @@ function constructAnchoredOperation (
     batchFileHash: 'unused'
   };
 
-  return Operation.create(opBuf, resolvedTransaction, operationIndex);
+  return Operation.createAnchoredOperation(opBuf, resolvedTransaction, operationIndex);
 }
 
 /**
@@ -113,7 +113,7 @@ async function createOperationStore (mongoDbConnectionString: string): Promise<O
 }
 
 async function createBatchOfUpdateOperations (createOperation: Operation, batchSize: number, privateKey: string): Promise<Operation[]> {
-  const didUniqueSuffix = createOperation.didUniqueSuffix!;
+  const didUniqueSuffix = createOperation.didUniqueSuffix;
   const batch = new Array<Operation>(createOperation);
   for (let i = 1; i < batchSize ; i++) {
     const previousOperation = batch[i - 1];
@@ -172,14 +172,14 @@ describe('MongoDbOperationStore', async () => {
   it('should get a put create operation', async () => {
     const operation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     await operationStore.put([operation]);
-    const returnedOperations = Array.from(await operationStore.get(operation.didUniqueSuffix!));
+    const returnedOperations = Array.from(await operationStore.get(operation.didUniqueSuffix));
     checkEqualArray([operation], returnedOperations);
   });
 
   it('should get a put update operation', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
     const createVersion = createOperation.getOperationHash();
     const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
     await operationStore.put([updateOperation]);
@@ -190,7 +190,7 @@ describe('MongoDbOperationStore', async () => {
   it('should ignore duplicate updates', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
     const createVersion = createOperation.getOperationHash();
     const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0, 1);
     await operationStore.put([updateOperation]);
@@ -203,7 +203,7 @@ describe('MongoDbOperationStore', async () => {
   it('should get all operations in a batch put', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
@@ -216,7 +216,7 @@ describe('MongoDbOperationStore', async () => {
   it('should get all operations in a batch put with duplicates', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
@@ -231,7 +231,7 @@ describe('MongoDbOperationStore', async () => {
   it('should delete all', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
@@ -248,7 +248,7 @@ describe('MongoDbOperationStore', async () => {
   it('should delete operations with timestamp filter', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
@@ -266,7 +266,7 @@ describe('MongoDbOperationStore', async () => {
   it('should remember operations after stop/restart', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
@@ -285,7 +285,7 @@ describe('MongoDbOperationStore', async () => {
   it('should get all operations in transaction time order', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
-    const didUniqueSuffix = createOperation.didUniqueSuffix!;
+    const didUniqueSuffix = createOperation.didUniqueSuffix;
 
     const batchSize = 10;
     const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);

@@ -48,10 +48,10 @@ export default class MockBlockchain implements Blockchain {
   }
 
   private latestTime?: IBlockchainTime = { time: 500000, hash: 'dummyHash' };
-  public async getLatestTime (): Promise<IBlockchainTime> {
+
+  public get approximateTime (): IBlockchainTime {
     return this.latestTime!;
   }
-
   /**
    * Hardcodes the latest time to be returned.
    */

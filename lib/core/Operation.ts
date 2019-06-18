@@ -56,10 +56,15 @@ class Operation {
    * Delete and Recover operations don't have this number.
    */
   public readonly operationNumber?: Number;
+
+  /**
+   * The unique suffix of the DID of the DID document to be created/updated.
+   * If this is a create operation waiting to be anchored, a DID unique suffix will be generated based on the current blockchain time.
+   */
+  public readonly didUniqueSuffix: string;
+
   /** The encoded operation payload. */
   public readonly encodedPayload: string;
-  /** The unique suffix of the DID of the DID document to be created/updated. */
-  public readonly didUniqueSuffix?: string;
   /** The type of operation. */
   public readonly type: OperationType;
   /** The hash of the previous operation - undefined for DID create operation */
@@ -82,15 +87,24 @@ class Operation {
    *                            The transactoinTimeHash is ignored by the constructor.
    * @param operationIndex The operation index this operation was assigned to in the batch.
    *                       If given, resolvedTransaction must be given else error will be thrown.
+   * @param estimatedAnchorTime Estimated anchor time for this opeartion to be used for generating the theoretical DID unique suffix.
+   *                            This parameter and `resolvedTransaction` must be mutually exclusively specified.
    */
   private constructor (
     operationBuffer: Buffer,
     resolvedTransaction?: IResolvedTransaction,
-    operationIndex?: number) {
+    operationIndex?: number,
+    private estimatedAnchorTime?: number) {
+    // resolvedTransaction and estimatedAnchorTime must be mutually exclusively specified.
+    if ((resolvedTransaction === undefined && estimatedAnchorTime === undefined) ||
+        (resolvedTransaction !== undefined && estimatedAnchorTime !== undefined)) {
+      throw new Error('Param resolvedTransaction and estimatedAnchorTime must be mutually exclusively specified.');
+    }
+
     // resolvedTransaction and operationIndex must both be defined or undefined at the same time.
     if (!((resolvedTransaction === undefined && operationIndex === undefined) ||
           (resolvedTransaction !== undefined && operationIndex !== undefined))) {
-      throw new Error('Param transactionNumber and operationIndex must both be defined or undefined.');
+      throw new Error('Param resolvedTransaction and operationIndex must both be defined or undefined.');
     }
 
     // Properties of an operation in a resolved transaction.
@@ -122,9 +136,7 @@ class Operation {
     switch (this.type) {
       case OperationType.Create:
         this.operationNumber = 0;
-        if (this.transactionTime !== undefined) {
-          this.didUniqueSuffix = this.getOperationHash();
-        }
+        this.didUniqueSuffix = this.getOperationHash();
         break;
       case OperationType.Update:
         this.operationNumber = decodedPayload.operationNumber;
@@ -141,16 +153,25 @@ class Operation {
   }
 
   /**
-   * Creates an Operation if the given operation buffer passes schema validation, throws error otherwise.
+   * Creates an Operation that has been anchored on the blockchain.
    * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
    * @param operationIndex The operation index this operation was assigned to in the batch.
    *                       If given, resolvedTransaction must be given else error will be thrown.
+   * @throws Error if given operation buffer fails any validation.
    */
-  public static create (
+  public static createAnchoredOperation (
     operationBuffer: Buffer,
-    resolvedTransaction?: IResolvedTransaction,
-    operationIndex?: number): Operation {
+    resolvedTransaction: IResolvedTransaction,
+    operationIndex: number): Operation {
     return new Operation(operationBuffer, resolvedTransaction, operationIndex);
+  }
+
+  /**
+   * Creates an Operation that has not been anchored on the blockchain.
+   * @throws Error if given operation buffer fails any validation.
+   */
+  public static createUnanchoredOperation (operationBuffer: Buffer, estimatedAnchorTime: number) {
+    return new Operation(operationBuffer, undefined, undefined, estimatedAnchorTime);
   }
 
   /**
@@ -182,12 +203,13 @@ class Operation {
    * Gets a cryptographic hash of the operation payload.
    */
   public getOperationHash (): string {
-    if (this.transactionTime === undefined) {
-      throw new Error(`Transaction time not given but needed for hash algorithm selection.`);
-    }
-
     // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-    const protocol = ProtocolParameters.get(this.transactionTime);
+    let protocol;
+    if (this.transactionTime === undefined) {
+      protocol = ProtocolParameters.get(this.estimatedAnchorTime!);
+    } else {
+      protocol = ProtocolParameters.get(this.transactionTime);
+    }
 
     const encodedOperationPayloadBuffer = Buffer.from(this.encodedPayload);
     const multihash = Multihash.hash(encodedOperationPayloadBuffer, protocol.hashAlgorithmInMultihashCode);

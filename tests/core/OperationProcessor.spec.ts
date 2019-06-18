@@ -32,7 +32,7 @@ async function addBatchFileOfOneOperationToCas (
     batchFileHash: batchFileAddress
   };
 
-  const op = Operation.create(opBuf, resolvedTransaction, operationIndex);
+  const op = Operation.createAnchoredOperation(opBuf, resolvedTransaction, operationIndex);
   return op;
 }
 
