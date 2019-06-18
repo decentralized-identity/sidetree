@@ -125,7 +125,7 @@ export default class BitcoinProcessor {
     await this.transactionStore.initialize();
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
-    if (!this.walletExists(address.toString())) {
+    if (!await this.walletExists(address.toString())) {
       console.debug(`Configuring bitcoin peer to Watch address ${this.privateKey.toAddress()}. This can take up to 10 minutes.`);
       const request = {
         method: 'importpubkey',

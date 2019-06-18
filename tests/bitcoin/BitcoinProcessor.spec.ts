@@ -243,19 +243,21 @@ describe('BitcoinProcessor', () => {
       expect(actual.hash).toEqual(hash);
       expect(tipSpy).toHaveBeenCalled();
       expect(hashSpy).toHaveBeenCalled();
-      expect(spy).toHaveBeenCalled();
+      expect(spy).not.toHaveBeenCalled();
       done();
     });
 
     it('should get the corresponding bitcoin height given a hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
+      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
       const hashSpy = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
-      const spy = mockRpcCall('getblock', [hash, true, false], { hash, height });
+      const spy = mockRpcCall('getblock', [hash, 1], { hash, height });
       const actual = await bitcoinProcessor.time(hash);
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
-      expect(hashSpy).toHaveBeenCalled();
+      expect(tipSpy).not.toHaveBeenCalled();
+      expect(hashSpy).not.toHaveBeenCalled();
       expect(spy).toHaveBeenCalled();
       done();
     });
@@ -494,13 +496,13 @@ describe('BitcoinProcessor', () => {
     it('should query for unspent output coins given an address', async (done) => {
       const coin = generateUnspentCoin(1);
 
-      const coinSpy = mockRpcCall('listunspent', [undefined, undefined, coin.address], [
+      const coinSpy = mockRpcCall('listunspent', [null, null, [coin.address.toString()]], [
         {
-          hash: coin.txId,
-          index: coin.outputIndex,
+          txId: coin.txId,
+          outputIndex: coin.outputIndex,
           address: coin.address,
           script: coin.script,
-          value: coin.satoshis
+          satoshis: coin.satoshis
         }
       ]);
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
@@ -510,38 +512,11 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should throw if the request failed', async (done) => {
-      const coin = generateUnspentCoin(0);
-      retryFetchSpy.and.callFake((uri: string) => {
-        expect(uri).toContain('/coin/address/');
-        return {
-          status: httpStatus.BAD_REQUEST
-        };
-      });
-      const verifyCode = randomString();
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(verifyCode));
-      try {
-        await bitcoinProcessor['getUnspentCoins'](coin.address);
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain(verifyCode);
-      } finally {
-        done();
-      }
-    });
-
     it('should return empty if no coins were found', async (done) => {
       const coin = generateUnspentCoin(1);
-      retryFetchSpy.and.callFake((uri: string) => {
-        expect(uri).toContain('/coin/address/');
-        return {
-          status: httpStatus.OK
-        };
-      });
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve('[]'));
+      const coinSpy = mockRpcCall('listunspent', [null, null, [coin.address.toString()]], []);
       const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
-      expect(retryFetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
+      expect(coinSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
       done();
     });
