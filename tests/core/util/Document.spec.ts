@@ -1,4 +1,4 @@
-import Document from '../../../lib/core/util/Document';
+import Document from '../../../lib/core/Document';
 import Encoder from '../../../lib/core/Encoder';
 
 describe('Document', () => {

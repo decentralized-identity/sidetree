@@ -1,5 +1,5 @@
-import Encoder from '../Encoder';
-import Multihash from '../Multihash';
+import Encoder from './Encoder';
+import Multihash from './Multihash';
 
 /**
  * Class containing reusable DID related operations.

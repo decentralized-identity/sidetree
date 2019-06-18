@@ -1,6 +1,6 @@
 import BatchFile from '../../lib/core/BatchFile';
 import Cryptography from '../../lib/core/util/Cryptography';
-import Document, { IDocument } from '../../lib/core/util/Document';
+import Document, { IDocument } from '../../lib/core/Document';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';

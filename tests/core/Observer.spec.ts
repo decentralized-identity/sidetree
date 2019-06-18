@@ -1,11 +1,11 @@
 import * as retry from 'async-retry';
 import DownloadManager from '../../lib/core/DownloadManager';
+import ErrorCode from '../../lib/common/ErrorCode';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
 import OperationProcessor from '../../lib/core/OperationProcessor';
 import { BlockchainClient } from '../../lib/core/Blockchain';
 import { CasClient } from '../../lib/core/Cas';
-import { ErrorCode } from '../../lib/core/util/RequestError';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { OperationStore } from '../../lib/core/OperationStore';

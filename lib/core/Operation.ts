@@ -1,12 +1,12 @@
 import Cryptography from './util/Cryptography';
-import Document, { IDocument } from './util/Document';
+import Document, { IDocument } from './Document';
 import Encoder from './Encoder';
+import IResolvedTransaction from './IResolvedTransaction';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
-import { IResolvedTransaction } from './Transaction';
 
 /**
  * Sidetree operation types.

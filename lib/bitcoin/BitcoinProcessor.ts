@@ -1,13 +1,14 @@
 import * as httpStatus from 'http-status';
-import MongoDbTransactionStore from '../core/MongoDbTransactionStore';
+import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import ReadableStream from '../core/util/ReadableStream';
-import RequestError, { ErrorCode } from '../core/util/RequestError';
+import ErrorCode from '../common/ErrorCode';
+import ITransaction from '../common/ITransaction';
+import ReadableStream from '../common/ReadableStream';
+import RequestError from './RequestError';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
-import { ITransaction } from '../core/Transaction';
-import { ResponseStatus } from '../core/Response';
+import { ResponseStatus } from '../common/Response';
 import { URL } from 'url';
 
 /**
@@ -306,6 +307,8 @@ export default class BitcoinProcessor {
    * @param address Bitcoin address to get coins for
    */
   private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
+
+    // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
     const addressToSearch = address.toString();
     console.info(`Getting unspent coins for ${addressToSearch}`);
     const request = {
@@ -321,7 +324,9 @@ export default class BitcoinProcessor {
     const unspentTransactions = response.map((coin) => {
       return new Transaction.UnspentOutput(coin);
     });
+
     console.info(`Returning ${unspentTransactions.length} coins`);
+
     return unspentTransactions;
   }
 
@@ -331,7 +336,7 @@ export default class BitcoinProcessor {
    */
   private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
     const rawTransaction = transaction.serialize();
-    console.info(`Boradcasting transaction ${transaction.id}`);
+    console.info(`Broadcasting transaction ${transaction.id}`);
     const request = {
       method: 'sendrawtransaction',
       params: [

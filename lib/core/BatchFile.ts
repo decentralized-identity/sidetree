@@ -1,9 +1,9 @@
 import Encoder from './Encoder';
+import IResolvedTransaction from './IResolvedTransaction';
 import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { IAnchorFile } from './AnchorFile';
-import { IResolvedTransaction } from './Transaction';
 import { Operation } from './Operation';
 
 /**

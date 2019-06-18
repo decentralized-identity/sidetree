@@ -1,7 +1,7 @@
 ﻿/**
  * Defines all the configuration parameters needed to initialize Sidetree Core.
  */
-export interface IConfig {
+export default interface IConfig {
   batchingIntervalInSeconds: number;
   blockchainServiceUri: string;
   contentAddressableStoreServiceUri: string;

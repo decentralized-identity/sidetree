@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import Cryptography from '../../lib/core/util/Cryptography';
-import Did from '../../lib/core/util/Did';
+import Did from '../../lib/core/Did';
 import OperationGenerator from './OperationGenerator';
 import ProtocolParameters from '../../lib/core/ProtocolParameters';
 

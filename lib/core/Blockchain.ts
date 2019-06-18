@@ -1,9 +1,9 @@
 import * as HttpStatus from 'http-status';
-import IBlockchainTime from './BlockchainTime';
+import ErrorCode from '../common/ErrorCode';
+import IBlockchainTime from './IBlockchainTime';
+import ITransaction from '../common/ITransaction';
 import nodeFetch from 'node-fetch';
-import ReadableStream from './util/ReadableStream';
-import { ErrorCode } from './util/RequestError';
-import { ITransaction } from './Transaction';
+import ReadableStream from '../common/ReadableStream';
 import { SidetreeError } from './Error';
 
 /**

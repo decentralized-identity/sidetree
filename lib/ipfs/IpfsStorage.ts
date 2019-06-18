@@ -1,5 +1,5 @@
 import * as IPFS from 'ipfs';
-import { FetchResult } from '../core/Cas';
+import IFetchResult from '../common/IFetchResult';
 import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
@@ -41,7 +41,7 @@ export default class IpfsStorage {
    *          The result `code` is set to `FetchResultCode.MaxSizeExceeded` if the content exceeds the specified max size.
    *          The result `code` is set to `FetchResultCode.NotAFile` if the content being downloaded is not a file (e.g. a directory).
    */
-  public async read (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
+  public async read (hash: string, maxSizeInBytes: number): Promise<IFetchResult> {
     // If we hit error attempting to fetch the content metadata, return not-found.
     let contentMetadata = undefined;
     try {
@@ -82,11 +82,11 @@ export default class IpfsStorage {
    * Fetch the content from IPFS.
    * This method also allows easy mocking in tests.
    */
-  private async fetchContent (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
+  private async fetchContent (hash: string, maxSizeInBytes: number): Promise<IFetchResult> {
     // files.getReadableStream() fetches the content from network if not available in local repo and stores in cache which will be garbage collectable.
     const readableStream = await (this.node as any).getReadableStream(hash);
 
-    let fetchResult: FetchResult = { code: FetchResultCode.Success };
+    let fetchResult: IFetchResult = { code: FetchResultCode.Success };
     let bufferChunks: Buffer[] = [];
     let currentContentSize = 0;
     let resolveFunction: any;

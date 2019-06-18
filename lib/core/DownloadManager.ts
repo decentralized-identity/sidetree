@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
-import { Cas, FetchResult } from './Cas';
+import IFetchResult from '../common/IFetchResult';
+import { Cas } from './Cas';
 
 /**
  * Interface containing information regarding each queued CAS download.
@@ -34,7 +35,7 @@ interface DownloadInfo {
   /**
    * Holds the fetch result once the download is completed.
    */
-  fetchResult?: FetchResult;
+  fetchResult?: IFetchResult;
 }
 
 /**
@@ -43,7 +44,7 @@ interface DownloadInfo {
 export default class DownloadManager {
   private pendingDownloads: DownloadInfo[] = [];
   private activeDownloads: Map<Buffer, DownloadInfo> = new Map();
-  private completedDownloads: Map<Buffer, FetchResult> = new Map();
+  private completedDownloads: Map<Buffer, IFetchResult> = new Map();
 
   /**
    * Constructs the download manager.
@@ -116,7 +117,7 @@ export default class DownloadManager {
    * Downloads the content of the given content hash.
    * @param contentHash Hash of the content to be downloaded.
    */
-  public async download (contentHash: string, maxSizeInBytes: number): Promise<FetchResult> {
+  public async download (contentHash: string, maxSizeInBytes: number): Promise<IFetchResult> {
     const handle = crypto.randomBytes(32);
     const fetchPromise = new Promise(resolve => {
       const downloadInfo = { handle, contentHash, maxSizeInBytes, resolve, completed: false, content: undefined };

@@ -1,4 +1,4 @@
-import Document, { IDocument } from './util/Document';
+import Document, { IDocument } from './Document';
 import ProtocolParameters from './ProtocolParameters';
 import { Operation, OperationType } from './Operation';
 import { OperationStore } from './OperationStore';
@@ -39,6 +39,7 @@ export default class OperationProcessor {
    * the operation chain while checking validity.
    */
   public async resolve (didUniqueSuffix: string): Promise<IDocument | undefined> {
+    console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
     let didDocument: IDocument | undefined;
     let previousOperation: Operation | undefined;
 
@@ -56,6 +57,10 @@ export default class OperationProcessor {
         if (operation.type === OperationType.Delete) {
           break;
         }
+      } else {
+        const batchFileHash = operation.batchFileHash;
+        const operationIndex = operation.operationIndex;
+        console.info(`Ignored invalid operation for unique suffix '${didUniqueSuffix}' in batch file '${batchFileHash}' operation index ${operationIndex}.`);
       }
     }
 
