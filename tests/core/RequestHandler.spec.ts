@@ -66,7 +66,7 @@ describe('RequestHandler', () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
-    await requestHandler.handleOperationRequest(createOperationBuffer);
+    requestHandler.handleOperationRequest(createOperationBuffer);
     await batchWriter.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
@@ -81,15 +81,15 @@ describe('RequestHandler', () => {
       anchorFileHash: 'NOT_NEEDED',
       batchFileHash
     };
-    const createOperation = Operation.create(createOperationBuffer, resolvedTransaction, 0);
+    const createOperation = Operation.createAnchoredOperation(createOperationBuffer, resolvedTransaction, 0);
     await operationProcessor.process([createOperation]);
 
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
-    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
+    const response = requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
-    const currentBlockchainTime = await blockchain.getLatestTime();
+    const currentBlockchainTime = blockchain.approximateTime;
     const currentHashingAlgorithm = ProtocolParameters.get(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
     didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createOperation.encodedPayload, currentHashingAlgorithm);
     did = didMethodName + didUniqueSuffix;
@@ -124,7 +124,7 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(blockchainTime);
 
     const createRequest = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
-    const response = await requestHandler.handleOperationRequest(createRequest);
+    const response = requestHandler.handleOperationRequest(createRequest);
     const httpStatus = Response.toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
@@ -148,7 +148,7 @@ describe('RequestHandler', () => {
       publicKey: [publicKey]
     };
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
-    const currentBlockchainTime = await blockchain.getLatestTime();
+    const currentBlockchainTime = blockchain.approximateTime;
     const hashAlgorithmInMultihashCode = ProtocolParameters.get(currentBlockchainTime.time).hashAlgorithmInMultihashCode;
     const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
     const expectedDid = didMethodName + Encoder.encode(documentHash);
@@ -177,14 +177,19 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
+    // write operation batch to prevent the violation of 1 operation per DID per batch rule.
+    await batchWriter.writeOperationBatch();
     const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
-    const response = await requestHandler.handleOperationRequest(request);
+    const response = requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
   });
 
   it('should respond with HTTP 200 when an update operation rquest is successful.', async () => {
+    // write operation batch to prevent the violation of 1 operation per DID per batch rule.
+    await batchWriter.writeOperationBatch();
+
     // Create a request that will delete the 2nd public key.
     const jsonPatch = [{
       op: 'remove',
@@ -200,7 +205,7 @@ describe('RequestHandler', () => {
     };
 
     const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);
-    const response = await requestHandler.handleOperationRequest(request);
+    const response = requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);

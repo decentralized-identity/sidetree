@@ -75,15 +75,15 @@ export default class BatchFile {
 
       let operation;
       try {
-        operation = Operation.create(operationBuffer, resolvedTransaction, operationIndex);
+        operation = Operation.createAnchoredOperation(operationBuffer, resolvedTransaction, operationIndex);
       } catch (error) {
         console.info(`Unable to create an Operation object with '${operationBuffer}': ${error}`);
         throw error;
       }
 
       const didUniqueSuffixesInAnchorFile = anchorFile.didUniqueSuffixes[operationIndex];
-      if (operation.didUniqueSuffix! !== didUniqueSuffixesInAnchorFile) {
-        console.info(`Operation ${operationIndex}'s DID unique suffix '${operation.didUniqueSuffix!}' ` +
+      if (operation.didUniqueSuffix !== didUniqueSuffixesInAnchorFile) {
+        console.info(`Operation ${operationIndex}'s DID unique suffix '${operation.didUniqueSuffix}' ` +
                      `is not the same as '${didUniqueSuffixesInAnchorFile}' seen in anchor file.`);
       }
 

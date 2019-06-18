@@ -18,7 +18,9 @@ export default class Core {
   private transactionStore: MongoDbTransactionStore;
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
+  private blockchain: BlockchainClient;
   private observer: Observer;
+  private batchWriter: BatchWriter;
 
   /**
    * Operation and resolve request handler.
@@ -32,16 +34,16 @@ export default class Core {
     ProtocolParameters.initialize(versionsOfProtocolParameters);
 
     // Component dependency initialization & injection.
-    const blockchain = new BlockchainClient(config.blockchainServiceUri);
+    this.blockchain = new BlockchainClient(config.blockchainServiceUri);
     const cas = new CasClient(config.contentAddressableStoreServiceUri);
     const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
-    const batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
+    this.batchWriter = new BatchWriter(this.blockchain, cas, config.batchingIntervalInSeconds);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
-    this.requestHandler = new RequestHandler(operationProcessor, blockchain, batchWriter, config.didMethodName);
+    this.requestHandler = new RequestHandler(operationProcessor, this.blockchain, this.batchWriter, config.didMethodName);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    this.observer = new Observer(blockchain,
+    this.observer = new Observer(this.blockchain,
                                  downloadManager,
                                  operationProcessor,
                                  this.transactionStore,
@@ -49,7 +51,6 @@ export default class Core {
                                  config.observingIntervalInSeconds);
 
     downloadManager.start();
-    batchWriter.startPeriodicBatchWriting();
   }
 
   /**
@@ -60,6 +61,10 @@ export default class Core {
     await this.transactionStore.initialize();
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
+    await this.blockchain.initialize();
+
     await this.observer.startPeriodicProcessing();
+    this.batchWriter.startPeriodicBatchWriting();
+    this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
   }
 }

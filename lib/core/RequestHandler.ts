@@ -2,12 +2,14 @@ import BatchWriter from './BatchWriter';
 import Encoder from './Encoder';
 import Did from './Did';
 import Document from './Document';
+import ErrorCode from '../common/ErrorCode';
 import Multihash from './Multihash';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import { Blockchain } from './Blockchain';
-import { Operation, OperationType } from './Operation';
 import { IResponse, ResponseStatus } from '../common/Response';
+import { Operation, OperationType } from './Operation';
+import { SidetreeError } from './Error';
 
 /**
  * Sidetree operation request handler.
@@ -24,10 +26,10 @@ export default class RequestHandler {
   /**
    * Handles an operation request.
    */
-  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
+  public handleOperationRequest (request: Buffer): IResponse {
     console.info(`Handling operation request of size ${request.length} bytes...`);
     // Get the protocol version according to current blockchain time to validate the operation request.
-    const currentTime = await this.blockchain.getLatestTime();
+    const currentTime = this.blockchain.approximateTime;
     const protocolParameters = ProtocolParameters.get(currentTime.time);
 
     // Perform common validation for any write request and parse it into an `Operation`.
@@ -35,27 +37,43 @@ export default class RequestHandler {
     try {
       // Validate operation request size.
       if (request.length > protocolParameters.maxOperationByteSize) {
-        throw new Error(`Operation byte size of ${request.length} exceeded limit of ${protocolParameters.maxOperationByteSize}`);
+        const errorMessage = `Operation byte size of ${request.length} exceeded limit of ${protocolParameters.maxOperationByteSize}`;
+        console.info(errorMessage);
+        throw new SidetreeError(ErrorCode.OperationExceedsMaximumSize, errorMessage);
       }
 
-      // Parse request into a Operation.
-      operation = Operation.create(request);
-    } catch (error) {
-      console.info(`Bad request: ${error}`);
+      // Parse request into an Operation.
+      operation = Operation.createUnanchoredOperation(request, currentTime.time);
 
+      // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
+      if (this.batchWriter.hasOperationQueuedFor(operation.didUniqueSuffix)) {
+        throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
+      }
+    } catch (error) {
+      // Give meaningful/specific error code and message when possible.
+      if (error instanceof SidetreeError) {
+        console.info(`Bad request: ${error.code}`);
+        return {
+          status: ResponseStatus.BadRequest,
+          body: { code: error.code, message: error.message }
+        };
+      }
+
+      // Else we give a generic bad request response.
+      console.info(`Bad request: ${error}`);
       return {
         status: ResponseStatus.BadRequest
       };
     }
 
     try {
-      console.info(`Operation type: ${operation.type}`);
+      console.info(`Operation type: '${operation.type}', DID unique suffix: '${operation.didUniqueSuffix}'`);
 
       // Passed common operation validation, hand off to specific operation handler.
       let response: IResponse;
       switch (operation.type) {
         case OperationType.Create:
-          response = await this.handleCreateOperation(operation);
+          response = this.handleCreateOperation(operation);
           break;
         case OperationType.Update:
           response = {
@@ -80,7 +98,18 @@ export default class RequestHandler {
       }
 
       return response;
-    } catch {
+    } catch (error) {
+      // Give meaningful/specific error code and message when possible.
+      if (error instanceof SidetreeError) {
+        console.info(`Unexpected error: ${error.code} ${error.message}`);
+        return {
+          status: ResponseStatus.ServerError,
+          body: { code: error.code, message: error.message }
+        };
+      }
+
+      // Else we give a generic bad request response.
+      console.info(`Unexpected error: ${error}`);
       return {
         status: ResponseStatus.ServerError
       };
@@ -140,7 +169,7 @@ export default class RequestHandler {
 
   private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<IResponse> {
     // Get the protocol version according to current blockchain time.
-    const currentTime = await this.blockchain.getLatestTime();
+    const currentTime = this.blockchain.approximateTime;
     const protocolVersion = ProtocolParameters.get(currentTime.time);
     const currentHashAlgorithm = protocolVersion.hashAlgorithmInMultihashCode;
 
@@ -150,6 +179,7 @@ export default class RequestHandler {
       return { status: ResponseStatus.BadRequest };
     }
 
+    // Currently assumes that resolution with full DID document occurs only near initial bootstrapping.
     const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(encodedDidDocument, currentHashAlgorithm);
 
     // Attempt to resolve the DID.
@@ -175,9 +205,9 @@ export default class RequestHandler {
   /**
    * Handles create operation.
    */
-  public async handleCreateOperation (operation: Operation): Promise<IResponse> {
+  public handleCreateOperation (operation: Operation): IResponse {
     // Get the protocol version according to current blockchain time.
-    const currentTime = await this.blockchain.getLatestTime();
+    const currentTime = this.blockchain.approximateTime;
     const protocolVersion = ProtocolParameters.get(currentTime.time);
 
     // Validate that the given encoded DID Document is a valid original document.

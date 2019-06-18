@@ -3,7 +3,7 @@ import BatchFile from './BatchFile';
 import Did from './Did';
 import Encoder from './Encoder';
 import MerkleTree from './util/MerkleTree';
-import ProtocolParameters from './ProtocolParameters';
+import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
 import { Cas } from './Cas';
@@ -48,6 +48,19 @@ export default class BatchWriter {
   }
 
   /**
+   * Checks to see if there is already an operation queued for the given DID unique suffix.
+   */
+  public hasOperationQueuedFor (didUniqueSuffix: string): boolean {
+    const operations = this.operations.toArray();
+    for (let i = 0; i < operations.length; i++) {
+      if (operations[i].didUniqueSuffix === didUniqueSuffix) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Processes the operations in the queue.
    */
   public async writeOperationBatch () {
@@ -63,7 +76,7 @@ export default class BatchWriter {
       this.processing = true;
 
       // Get the batch of operations to be anchored on the blockchain.
-      const batch = await this.getBatch();
+      const batch = this.getBatch();
       console.info('Batch size = ' + batch.length);
 
       // Do nothing if there is nothing to batch together.
@@ -84,7 +97,7 @@ export default class BatchWriter {
       const encodedMerkleRoot = Encoder.encode(merkleRoot);
 
       // Construct the DID unique suffixes of each operation to be included in the anchor file.
-      const didUniqueSuffixes = await this.getDidUniqueSuffixes(batch);
+      const didUniqueSuffixes = this.getDidUniqueSuffixes(batch);
 
       // Construct the 'anchor file'.
       const anchorFile = {
@@ -117,16 +130,15 @@ export default class BatchWriter {
    * If number of pending operations is greater than the Sidetree protocol's maximum allowed number per batch,
    * then the maximum allowed number of operation is returned.
    */
-  private async getBatch (): Promise<Operation[]> {
+  private getBatch (): Operation[] {
     const batch = new Array<Operation>();
 
     // Get the protocol version according to current blockchain time to decide on the batch size limit to enforce.
-    const currentTime = await this.blockchain.getLatestTime();
-    const protocol = ProtocolParameters.get(currentTime.time);
+    const protocolParameters = this.getCurrentProtocolParameters();
 
     // Keep adding operations to the batch until there are no operations left or max batch size is reached.
     let operation = this.operations.shift();
-    while (operation !== undefined && batch.length < protocol.maxOperationsPerBatch) {
+    while (operation !== undefined && batch.length < protocolParameters.maxOperationsPerBatch) {
       batch.push(operation);
       operation = this.operations.shift();
     }
@@ -137,23 +149,28 @@ export default class BatchWriter {
   /**
    * Returns the DID unique suffix of each operation given in the same order.
    */
-  private async getDidUniqueSuffixes (operations: Operation[]) {
+  private getDidUniqueSuffixes (operations: Operation[]): string[] {
     const didUniquesuffixes = new Array<string>(operations.length);
 
     // Get the protocol version according to current blockchain time to decide on hashing algorithm to use for DID unique suffix computation.
-    const currentTime = await this.blockchain.getLatestTime();
-    const protocol = ProtocolParameters.get(currentTime.time);
+    const protocolParameters = this.getCurrentProtocolParameters();
 
     for (let i = 0; i < operations.length; i++) {
       const operation = operations[i];
 
       if (operation.type === OperationType.Create) {
-        didUniquesuffixes[i] = Did.getUniqueSuffixFromEncodeDidDocument(operation.encodedPayload, protocol.hashAlgorithmInMultihashCode);
+        didUniquesuffixes[i] = Did.getUniqueSuffixFromEncodeDidDocument(operation.encodedPayload, protocolParameters.hashAlgorithmInMultihashCode);
       } else {
-        didUniquesuffixes[i] = operation.didUniqueSuffix!;
+        didUniquesuffixes[i] = operation.didUniqueSuffix;
       }
     }
 
     return didUniquesuffixes;
+  }
+
+  private getCurrentProtocolParameters (): IProtocolParameters {
+    const currentTime = this.blockchain.approximateTime;
+    const protocolParameters = ProtocolParameters.get(currentTime.time);
+    return protocolParameters;
   }
 }

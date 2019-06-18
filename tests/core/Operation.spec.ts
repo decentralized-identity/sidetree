@@ -18,20 +18,20 @@ describe('Operation', async () => {
     createRequest.dummyProperty = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+    expect(() => { Operation.createUnanchoredOperation(requestWithUnknownProperty, 1500000); }).toThrowError();
   });
 
   it('should throw error if more than one type of payload is found when parsing request.', async () => {
     createRequest.updatePayload = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+    expect(() => { Operation.createUnanchoredOperation(requestWithUnknownProperty, 1500000); }).toThrowError();
   });
 
   it('should throw error if signature is not found when parsing request.', async () => {
     delete createRequest.signature;
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+    expect(() => { Operation.createUnanchoredOperation(requestWithUnknownProperty, 1500000); }).toThrowError();
   });
 });

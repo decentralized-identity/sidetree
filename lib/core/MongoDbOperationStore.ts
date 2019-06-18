@@ -110,7 +110,7 @@ export default class MongoDbOperationStore implements OperationStore {
    */
   private static convertToMongoOperation (operation: Operation): IMongoOperation {
     return {
-      didUniqueSuffix: operation.didUniqueSuffix!,
+      didUniqueSuffix: operation.didUniqueSuffix,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
       opIndex: operation.operationIndex!,
       transactionNumber: Long.fromNumber(operation.transactionNumber!),
@@ -127,7 +127,7 @@ export default class MongoDbOperationStore implements OperationStore {
    * hence the type 'any' for mongoOperation.
    */
   private static convertToOperation (mongoOperation: any): Operation {
-    return Operation.create(
+    return Operation.createAnchoredOperation(
       mongoOperation.operationBufferBsonBinary.buffer,
       {
         transactionNumber: mongoOperation.transactionNumber,

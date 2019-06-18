@@ -35,15 +35,21 @@ export interface Blockchain {
   getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined>;
 
   /**
-   * Gets the latest blockchain time.
+   * Gets the approximate latest time synchronously without requiring to make network call.
+   * Useful for cases where high performance is desired and hgih accuracy is not required.
    */
-  getLatestTime (): Promise<IBlockchainTime>;
+  approximateTime: IBlockchainTime;
 }
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
  */
 export class BlockchainClient implements Blockchain {
+
+  /** Interval for refreshing the cached blockchain time. */
+  static readonly cachedBlockchainTimeRefreshInSeconds = 60;
+  /** Used for caching the blockchain time to avoid excessive time fetching over network. */
+  private cachedBlockchainTime: IBlockchainTime;
 
   private fetch = nodeFetch;
 
@@ -54,6 +60,22 @@ export class BlockchainClient implements Blockchain {
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
+
+    this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
+  }
+
+  /**
+   * Initializes the blockchain client by initializing the cached blockchain time.
+   */
+  public async initialize () {
+    await this.getLatestTime();
+  }
+
+  /**
+   * The function that starts periodically anchoring operation batches to blockchain.
+   */
+  public startPeriodicCachedBlockchainTimeRefresh () {
+    setInterval(async () => this.getLatestTime(), BlockchainClient.cachedBlockchainTimeRefreshInSeconds * 1000);
   }
 
   public async write (anchorFileHash: string): Promise<void> {
@@ -133,17 +155,34 @@ export class BlockchainClient implements Blockchain {
     return transaction;
   }
 
-  // TODO: Issue #161: Consider caching since this will be invoked for every operation and resolution requests.
-  public async getLatestTime (): Promise<IBlockchainTime> {
-    const response = await this.fetch(this.timeUri);
+  public get approximateTime (): IBlockchainTime {
+    return this.cachedBlockchainTime;
+  }
 
-    if (response.status !== HttpStatus.OK) {
-      throw new Error('Encountered an error fetching latest time from blockchain.');
+  /**
+   * Gets the latest blockchain time and updates the cached time.
+   */
+  private async getLatestTime (): Promise<IBlockchainTime> {
+    try {
+      console.info(`Refreshing cached blockchain time...`);
+      const response = await this.fetch(this.timeUri);
+      const responseBodyString = (response.body.read() as Buffer).toString();
+
+      if (response.status !== HttpStatus.OK) {
+        const errorMessage = `Encountered an error fetching latest time from blockchain: ${responseBodyString}`;
+        throw new Error(errorMessage);
+      }
+
+      const responseBody = JSON.parse(responseBodyString);
+
+      // Update the cached blockchain time everytime blockchain time is fetched over the network,
+      this.cachedBlockchainTime = responseBody;
+
+      console.info(`Refreshed blockchain time: ${responseBodyString}`);
+      return responseBody;
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
-
-    const responseBodyString = (response.body.read() as Buffer).toString();
-    const responseBody = JSON.parse(responseBodyString);
-
-    return responseBody;
   }
 }
