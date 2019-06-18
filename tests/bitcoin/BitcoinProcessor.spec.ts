@@ -501,7 +501,7 @@ describe('BitcoinProcessor', () => {
       expect(actual).toEqual(hash);
       expect(spy).toHaveBeenCalled();
     });
-  })
+  });
 
   describe('getUnspentCoins', () => {
     it('should query for unspent output coins given an address', async (done) => {
