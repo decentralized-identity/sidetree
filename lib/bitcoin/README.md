@@ -1,25 +1,9 @@
 Sidetree Bitcoin Service
 ===
 
-*Last Updated: June 14, 2019*
+*Last Updated: June 18, 2019*
 
-A [full bitcoin node](https://bitcoincore.org/en/download/) is required by the the Sidetree Bitcoin microservice implementation. You can run the [start script](./start.sh) in this repo, which will guide and install `bitcoind` on an Ubuntu/Debian machine. The rest of this document details the steps taken by this script.
-
-Prerequisite Software
----
-### Node
-`bitcoin-service` is a Node.js based project. [Download](https://nodejs.org/en/download/) or [install](https://nodejs.org/en/download/package-manager/) for your system.
-
-
-> Node-Gyp is used by low level cryptography for C++ compilation. It requires Python 2.7 and the appropriate `make` and c++ compiler.
-### Python 2.7 for Windows
-[Python 2.7 Downloads](https://www.python.org/download/releases/2.7/)
-### Python 2.7 for Linux
-`sudo apt-get install -y python`
-### C++ Compilers for Windows
-[Tools for Visual Studio {Current Year}](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)
-### C++ Compilers for Linux
-`sudo apt-get install -y gcc g++ make`
+A [full bitcoin node](https://bitcoincore.org/en/download/) is required by the the Sidetree Bitcoin microservice implementation. You can run the [install script](./install.sh) in this repo, which will guide and install `bitcoind`. The rest of this document details the steps taken by this script.
 
 Bitcoin peer
 ---
@@ -65,12 +49,12 @@ ifconfig
 
 If you installed Bitcoin locally, `localhost` will do.
 
-In the following configuration `bcoin.local` refers to your IP address, DNS address, or `localhost` of the Bitcoin peer.
+In the following configuration `bitcoin.local` refers to your IP address, DNS address, or `localhost` of the Bitcoin peer.
 
 Edit your bitcoin-config.json
 ```json
 {
-  "bitcoinPeerUri": "bcoin.local:18332",
+  "bitcoinPeerUri": "bitcoin.local:18332",
   "bitcoinRpcUsername": "{{YOUR USERNAME}}",
   "bitcoinRpcPassword": "{{YOUR PASSWORD}}",
   "bitcoinWalletImportString": "[FILL THIS IN!]",

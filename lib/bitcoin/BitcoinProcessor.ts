@@ -40,7 +40,7 @@ export default class BitcoinProcessor {
   public readonly bitcoinPeerUri: string;
 
   /** Bitcoin peer's RPC basic authorization credentials */
-  public readonly bitcoinAuthorization: string;
+  public readonly bitcoinAuthorization?: string;
 
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
@@ -80,7 +80,9 @@ export default class BitcoinProcessor {
 
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
-    this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
+    if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
+      this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
+    }
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.bitcoinFee = config.bitcoinFee;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -563,13 +565,16 @@ export default class BitcoinProcessor {
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
     console.debug(`Sending jRPC request id: ${request.id}`);
-    const response = await this.fetchWithRetry(fullPath.toString(), {
+    const requestOptions: RequestInit = {
       body: requestString,
-      method: 'post',
-      headers: {
+      method: 'post'
+    };
+    if (this.bitcoinAuthorization) {
+      requestOptions.headers = {
         Authorization: `Basic ${this.bitcoinAuthorization}`
-      }
-    }, timeout);
+      };
+    }
+    const response = await this.fetchWithRetry(fullPath.toString(), requestOptions, timeout);
 
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {

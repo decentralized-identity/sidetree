@@ -14,28 +14,14 @@ if [[ ! -w $dataDirectory ]]; then
     exit 1
 fi
 
-echo "Installing prerequisite software"
-# ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
-# ┆ Install Node v.10 ┆
-# └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-sudo snap install node --classic --channel=10
-if [ $? != 0 ]; then
-    echo "Snapcraft failed, using apt..."
-    curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-fi
-
-# ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
-# ┆ Install build essentials and git ┆
-# └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-sudo apt-get install gcc g++ make git -y
-
 # ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
 # ┆ Install bitcoin as a peer2peer peer ┆
 # └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+snapCraftInstall=1
 sudo snap install bitcoin-core
 if [ $? != 0 ]; then
     echo "Snapcraft failed, using apt..."
+    snapCraftInstall=0
     cd $dataDirectory
     wget https://bitcoincore.org/bin/bitcoin-core-0.18.0/bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
     if [ $? != 0 ]; then
@@ -43,6 +29,7 @@ if [ $? != 0 ]; then
         exit 1
     fi
     tar -xzf ./bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
+    rm ./bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
 fi
 
 # ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐
@@ -54,7 +41,6 @@ else
     password=$(head -c 32 /dev/random | base64 -)
 fi
 
-cd $dataDirectory
 echo "
 testnet=1
 server=1
@@ -62,12 +48,37 @@ rpcuser=admin
 rpcpassword=$password
 " > $dataDirectory/bitcoin.conf
 
+
+if [[ $snapCraftInstall == 0 ]]; then
+    echo "
+    #!/bin/bash
+    ./bitcoin-0.18.0/bin/bitcoind -datadir=$dataDirectory
+    " > $dataDirectory/start.sh
+else
+    echo "
+    #!/bin/bash
+    bitcoind -datadir=$dataDirectory
+    " > $dataDirectory/start.sh
+fi;
+chmod u+x $dataDirectory/start.sh
+
+echo "╭───────────────────╮"
+echo "│ Install complete! │"
+echo "╰───────────────────╯"
 echo "Your RPC username is 'admin'"
 echo "Your RPC password is '$password'"
-
+echo "Please use this for your bitcoin-config.json"
 echo "
-#!/bin/bash
-./bitcoin-0.18.0/bin/bitcoind -datadir$dataDirectory
-" > $dataDirectory/start.sh
-chmod u+x $dataDirectory/start.sh
-./bitcoin-0.18.0/bin/bitcoind -datadir$dataDirectory/bcoin.conf
+{
+  \"bitcoinPeerUri\": \"http://localhost:18332\",
+  \"bitcoinRpcUsername\": \"admin\",``
+  \"bitcoinRpcPassword\": \"$password\",
+  \"bitcoinWalletImportString\": \"[FILL THIS IN!]\",
+  \"bitcoinFee\": 4000,
+  \"sidetreeTransactionPrefix\": \"sidetree:\",
+  \"genesisBlockNumber\": 1500000,
+  \"databaseName\": \"sidetree-bitcoin\",
+  \"transactionFetchPageSize\": 100,
+  \"mongoDbConnectionString\": \"mongodb://localhost:27017/\",
+  \"port\": 3002
+}"
