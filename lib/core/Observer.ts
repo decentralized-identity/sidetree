@@ -280,9 +280,19 @@ export default class Observer {
       console.info(`Anchor file '${transaction.anchorFileHash}' of size ${anchorFileFetchResult.content!.length} bytes downloaded.`);
       let anchorFile: IAnchorFile;
       try {
-        anchorFile = AnchorFile.parseAndValidate(anchorFileFetchResult.content!);
-      } catch {
-        console.info(`Anchor file '${transaction.anchorFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored...`);
+        const maxOperationsPerBatch = protocolParameters.maxOperationsPerBatch;
+        const hashAlgorithmInMultihashCode = protocolParameters.hashAlgorithmInMultihashCode;
+        anchorFile = AnchorFile.parseAndValidate(anchorFileFetchResult.content!, maxOperationsPerBatch, hashAlgorithmInMultihashCode);
+      } catch (error) {
+        // Give meaningful/specific error code and message when possible.
+        if (error instanceof SidetreeError) {
+          console.info(`Invalid anchor file: ${error}`);
+          console.info(`Anchor file '${transaction.anchorFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored...`);
+        } else {
+          console.error(`Unexpected error processing anchor file, MUST investigate and fix: ${error}`);
+          retryNeeded = true;
+        }
+
         return;
       }
 
@@ -328,7 +338,8 @@ export default class Observer {
       let operations: Operation[];
       try {
         operations = await BatchFile.parseAndValidate(batchFileFetchResult.content!, anchorFile, resolvedTransaction);
-      } catch {
+      } catch (error) {
+        console.info(error);
         console.info(`Batch file '${anchorFile.batchFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored.`);
         return;
       }
