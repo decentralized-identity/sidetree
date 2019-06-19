@@ -1,6 +1,8 @@
 import * as retry from 'async-retry';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/common/ErrorCode';
+import IFetchResult from '../../lib/common/IFetchResult';
+import ITransaction from '../../lib/common/ITransaction';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
 import OperationProcessor from '../../lib/core/OperationProcessor';
@@ -10,6 +12,8 @@ import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { OperationStore } from '../../lib/core/OperationStore';
 import { SidetreeError } from '../../lib/core/Error';
+import { IAnchorFile } from '../../lib/core/AnchorFile';
+import { IBatchFile } from '../../lib/core/BatchFile';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -103,6 +107,111 @@ describe('Observer', async () => {
     expect(processedTransactions[0].anchorFileHash).toEqual('1stTransaction');
     expect(processedTransactions[1].anchorFileHash).toEqual('2ndTransaction');
   });
+
+  it('should process a valid operation batch successfully.', async () => {
+    // Prepare the mock response from the DownloadManager.
+    const anchorFile: IAnchorFile = {
+      batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+      didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
+      merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+    };
+    const anchoreFileFetchResult: IFetchResult = {
+      code: FetchResultCode.Success,
+      content: Buffer.from(JSON.stringify(anchorFile))
+    };
+    const batchFile: IBatchFile = {
+      /* tslint:disable */
+      operations: [
+        'eyJwYXlsb2FkIjoiZXlKamNtVmhkR1ZrSWpvaU1qQXhPUzB3TmkweE5GUXlNam94TkRvME5pNDVORE5hSWl3aVFHTnZiblJsZUhRaU9pSm9kSFJ3Y3pvdkwzY3phV1F1YjNKbkwyUnBaQzkyTVNJc0luQjFZbXhwWTB0bGVTSTZXM3NpYVdRaU9pSWphMlY1TVNJc0luUjVjR1VpT2lKVFpXTndNalUyYXpGV1pYSnBabWxqWVhScGIyNUxaWGt5TURFNElpd2ljSFZpYkdsalMyVjVTbmRySWpwN0ltdHBaQ0k2SWlOclpYa3hJaXdpYTNSNUlqb2lSVU1pTENKaGJHY2lPaUpGVXpJMU5rc2lMQ0pqY25ZaU9pSlFMVEkxTmtzaUxDSjRJam9pTjFGWFRVUjFkRmh3UkdodFVFcHhPWGxDWmxNMmVWVmpaMmxQVDJWTWIxVmplazVPVW5Wd1ZEZElNQ0lzSW5raU9pSnRNVVJIVWpCMldEZHNXRlZLTWtwcU1WQmtNRU5yZWxneFVuSkxiVmhuZERSNk5tMUZUV0Y1ZDNCSkluMTlYWDAiLCJzaWduYXR1cmUiOiJNRVVDSUNnWXk3TmRuRDhZVmhsTXhqaWFJVW11d3VhRHliM2xjNVAzZFVPSlpmVUpBaUVBMGtNbi03anFuaFQtMm5RVk52YldXRmk1NkNDajMweEVZRWxDNmFCMXVRayIsInByb3RlY3RlZCI6ImUzMCIsImhlYWRlciI6eyJvcGVyYXRpb24iOiJjcmVhdGUiLCJwcm9vZk9mV29yayI6IiIsImtpZCI6IiNrZXkxIiwiYWxnIjoiRVMyNTZLIn19',
+        'eyJwYXlsb2FkIjoiZXlKamNtVmhkR1ZrSWpvaU1qQXhPUzB3TmkweE5GUXlNam95TVRveE55NDVOalphSWl3aVFHTnZiblJsZUhRaU9pSm9kSFJ3Y3pvdkwzY3phV1F1YjNKbkwyUnBaQzkyTVNJc0luQjFZbXhwWTB0bGVTSTZXM3NpYVdRaU9pSWphMlY1TVNJc0luUjVjR1VpT2lKVFpXTndNalUyYXpGV1pYSnBabWxqWVhScGIyNUxaWGt5TURFNElpd2ljSFZpYkdsalMyVjVTbmRySWpwN0ltdHBaQ0k2SWlOclpYa3hJaXdpYTNSNUlqb2lSVU1pTENKaGJHY2lPaUpGVXpJMU5rc2lMQ0pqY25ZaU9pSlFMVEkxTmtzaUxDSjRJam9pTjFGWFRVUjFkRmh3UkdodFVFcHhPWGxDWmxNMmVWVmpaMmxQVDJWTWIxVmplazVPVW5Wd1ZEZElNQ0lzSW5raU9pSnRNVVJIVWpCMldEZHNXRlZLTWtwcU1WQmtNRU5yZWxneFVuSkxiVmhuZERSNk5tMUZUV0Y1ZDNCSkluMTlYWDAiLCJzaWduYXR1cmUiOiJNRVFDSUQ3bjd5Rkk2Smc0aHpKcl9taTY2NjM1X2pPV0RGZnBucmRzMXA4X1ZWRDhBaUFzTEkwTC13WFpUdEhBNExXX0FDZlVBS1N1SEdwYWJhNXVxZXZTQTJkempRIiwicHJvdGVjdGVkIjoiZTMwIiwiaGVhZGVyIjp7Im9wZXJhdGlvbiI6ImNyZWF0ZSIsInByb29mT2ZXb3JrIjoiIiwia2lkIjoiI2tleTEiLCJhbGciOiJFUzI1NksifX0'
+      ]
+      /* tslint:enable */
+    };
+    const batchFileFetchResult: IFetchResult = {
+      code: FetchResultCode.Success,
+      content: Buffer.from(JSON.stringify(batchFile))
+    };
+
+    const mockDownloadFunction = async (hash: string) => {
+      if (hash === 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw') {
+        return anchoreFileFetchResult;
+      } else if (hash === 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA') {
+        return batchFileFetchResult;
+      } else {
+        throw new Error('Test failed, unexpected hash given');
+      }
+    };
+    spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
+
+    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+    const transactionStore = new MockTransactionStore();
+    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+
+    const mockTransaction: ITransaction = {
+      transactionNumber: 1,
+      transactionTime: 1000000,
+      transactionTimeHash: '1000',
+      anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
+    };
+    const transactionUnderProcessing = {
+      transaction: mockTransaction,
+      processingStatus: 'pending'
+    };
+    await (observer as any).downloadThenProcessBatchAsync(mockTransaction, transactionUnderProcessing);
+
+    const iterableOperations1 = await operationStore.get('EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A');
+    const operationArray1 = [...iterableOperations1];
+    expect(operationArray1.length).toEqual(1);
+
+    const iterableOperations2 = await operationStore.get('EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow');
+    const operationArray2 = [...iterableOperations2];
+    expect(operationArray2.length).toEqual(1);
+  });
+
+  // Testing invalid anchor file scenarios:
+  const invalidAnchorFileTestsInput = [
+    [FetchResultCode.MaxSizeExceeded, 'exceeded max size limit'],
+    [FetchResultCode.NotAFile, 'is not a file'],
+    [FetchResultCode.InvalidHash, 'is not a valid hash']
+  ];
+  for (let tuple of invalidAnchorFileTestsInput) {
+    const mockFetchReturnCode = tuple[0];
+    const expectedConsoleLogSubstring = tuple[1];
+
+    it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
+      const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+      const transactionStore = new MockTransactionStore();
+      const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+
+      spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
+
+      let expectedConsoleLogDetected = false;
+      spyOn(global.console, 'info').and.callFake((message: string) => {
+        if (message.includes(expectedConsoleLogSubstring)) {
+          expectedConsoleLogDetected = true;
+        }
+      });
+
+      spyOn(transactionStore, 'removeUnresolvableTransaction');
+      spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
+
+      const mockTransaction: ITransaction = {
+        transactionNumber: 1,
+        transactionTime: 1000000,
+        transactionTimeHash: '1000',
+        anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
+      };
+      const transactionUnderProcessing = {
+        transaction: mockTransaction,
+        processingStatus: 'pending'
+      };
+      await (observer as any).downloadThenProcessBatchAsync(mockTransaction, transactionUnderProcessing);
+
+      expect(expectedConsoleLogDetected).toBeTruthy();
+      expect(transactionStore.removeUnresolvableTransaction).toHaveBeenCalled();
+      expect(transactionStore.recordUnresolvableTransactionFetchAttempt).not.toHaveBeenCalled();
+    });
+  }
 
   it('should detect and handle block reorganization correctly.', async () => {
     // Prepare the mock response from blockchain service.
