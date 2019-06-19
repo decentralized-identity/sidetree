@@ -27,12 +27,31 @@ export default class Multihash {
   }
 
   /**
-   * Checks to see if the given hash is multihash formatted in one of the given accepted hash algorithms.
+   * Encodes the given hash into a multihash with the specified hashing algorithm.
+   */
+  public static encode (hash: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
+    return multihashes.encode(hash, hashAlgorithmInMultihashCode);
+  }
+
+  /**
+   * Checks if the given hash is multihash formatted in one of the given accepted hash algorithms.
    */
   public static isSupportedHash (hash: Buffer, acceptedHashAlgorithms: number[]): boolean {
     try {
       const multihash = multihashes.decode(hash);
       return (acceptedHashAlgorithms.indexOf(multihash.code) >= 0);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Checks if the given hash is a multihash with the expected hashing algorithm.
+   */
+  public static isValidHash (hash: Buffer, expectedHashAlgorithmInMultihashCode: number) {
+    try {
+      const multihash = multihashes.decode(hash);
+      return (multihash.code === expectedHashAlgorithmInMultihashCode);
     } catch {
       return false;
     }

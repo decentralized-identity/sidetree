@@ -3,6 +3,7 @@ import BatchFile from './BatchFile';
 import Did from './Did';
 import Encoder from './Encoder';
 import MerkleTree from './util/MerkleTree';
+import Multihash from './Multihash';
 import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
@@ -94,7 +95,8 @@ export default class BatchWriter {
 
       // Compute the Merkle root hash.
       const merkleRoot = MerkleTree.create(operationBuffers).rootHash;
-      const encodedMerkleRoot = Encoder.encode(merkleRoot);
+      const merkleRootAsMultihash = Multihash.encode(merkleRoot, 18);
+      const encodedMerkleRoot = Encoder.encode(merkleRootAsMultihash);
 
       // Construct the DID unique suffixes of each operation to be included in the anchor file.
       const didUniqueSuffixes = this.getDidUniqueSuffixes(batch);
