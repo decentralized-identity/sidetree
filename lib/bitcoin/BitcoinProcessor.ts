@@ -129,7 +129,7 @@ export default class BitcoinProcessor {
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
     if (!await this.walletExists(address.toString())) {
-      console.debug(`Configuring bitcoin peer to Watch address ${this.privateKey.toAddress()}. This can take up to 10 minutes.`);
+      console.debug(`Configuring bitcoin peer to watch address ${address}. This can take up to 10 minutes.`);
       const request = {
         method: 'importpubkey',
         params: [
@@ -289,7 +289,7 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Gets the best hash for a given block height
+   * Gets the block hash for a given block height
    * @param height The height to get a hash for
    * @returns the block hash
    */
