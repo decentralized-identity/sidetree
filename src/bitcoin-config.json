@@ -1,5 +1,7 @@
 {
-  "bitcoinPeerUri": "[FILL THIS IN!]",
+  "bitcoinPeerUri": "http://localhost:18332",
+  "bitcoinRpcUsername": "",
+  "bitcoinRpcPassword": "",
   "bitcoinWalletImportString": "[FILL THIS IN!]",
   "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",

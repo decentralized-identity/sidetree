@@ -1,60 +1,41 @@
 Sidetree Bitcoin Service
 ===
 
-*Last Updated: May 23, 2019*
+*Last Updated: June 18, 2019*
 
-A [full bitcoin node](https://github.com/Bcoin-org/Bcoin#bcoin) is required by the the Sidetree Bitcoin microservice implementation. You can run the [start script](./start.sh) in this repo, which will guide and install `bcoin` on an Ubuntu/Debian machine. The rest of this document details the steps taken by this script.
-
-Prerequisite Software
----
-### Node
-`bcoin` is a Node.js based project. [Download](https://nodejs.org/en/download/) or [install](https://nodejs.org/en/download/package-manager/) for your system.
-
-
-> Node-Gyp is used by bcoin for C++ compilation. It requires Python 2.7 and the appropriate `make` and c++ compiler.
-### Python 2.7 for Windows
-[Python 2.7 Downloads](https://www.python.org/download/releases/2.7/)
-### Python 2.7 for Linux
-`sudo apt-get install -y python`
-### C++ Compilers for Windows
-[Tools for Visual Studio {Current Year}](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019)
-### C++ Compilers for Linux
-`sudo apt-get install -y gcc g++ make`
+A [full bitcoin node](https://bitcoincore.org/en/download/) is required by the the Sidetree Bitcoin microservice implementation. You can run the [install script](./install.sh) in this repo, which will guide and install `bitcoind`. The rest of this document details the steps taken by this script.
 
 Bitcoin peer
 ---
-You will need a trusted bitcoin network peer. ~~You can use any Bitcoin implementation so long as it supports http RPC~~ (There are a few proprietary BCoin calls being used for convinence. You can use any node once those have been refactored). Below are instructions to install a [Bcoin bitcoin node](https://github.com/Bcoin-org/Bcoin). 
-### Bcoin
-Bcoin 
-Clone their repo
+You will need a trusted bitcoin network peer. You can use any Bitcoin implementation so long as it supports [the standard jRPC calls](https://bitcoincore.org/en/doc/0.18.0/). Below are instructions to install a [Satoshi bitcoin client](https://bitcoincore.org/en/download/). 
+
+Download the tarball
 ```bash
-git clone git://github.com/bcoin-org/bcoin.git
-```
-Install Bcoin dependencies:
-```bash
-npm install
-```
-Write a configuration file for your node (`bcoin.conf`):
-```yaml
-network: testnet
-prefix: {{ DATA DIRECTORY HERE }}
-host: 127.0.0.1
-port: 18332
-http-port: 18331
-workers-size: 1
-index-address: true
-```
-Start Bcoin:
-```bash
-./bin/bcoin --config {{ CONFIG FILEPATH HERE }} --daemon
+wget https://bitcoincore.org/bin/bitcoin-core-0.18.0/bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
 ```
 
-> You may wish to remove `--daemon` on first start up to ensure your configuration is taking affect, and wait to start the bitcoin service until fully synced.
+Extract the files
+```
+tar -xzf ./bitcoin-0.18.0-x86_64-linux-gnu.tar.gz
+```
+
+Write a configuration file named `bitcoin.conf` for your node in the root of your data folder:
+```yaml
+testnet=1
+server=1
+rpcuser={{YOUR USERNAME}}
+rpcpassword={{YOUR PASSWORD}}
+```
+
+Start bitcoin
+```bash
+./bitcoin-0.18.0/bin/bitcoind -datadir={{YOUR DATA DIRECTORY HERE}}
+```
 
 Configure Bitcoin Service
 ---
 
-Grab the IP or DNS of the machine where you installed Bcoin:
+Grab the IP or DNS of the machine where you installed your Bitcoin peer:
 
 Windows users:
 ```cmd
@@ -66,14 +47,16 @@ Linux users:
 ifconfig
 ```
 
-If you installed Bcoin locally, `localhost` will do.
+If you installed Bitcoin locally, `localhost` will do.
 
-In the following configuration `bcoin.local` refers to your IP address, DNS address, or `localhost`.
+In the following configuration `bitcoin.local` refers to your IP address, DNS address, or `localhost` of the Bitcoin peer.
 
 Edit your bitcoin-config.json
 ```json
 {
-  "bitcoinPeerUri": "[FILL THIS IN!]",
+  "bitcoinPeerUri": "bitcoin.local:18332",
+  "bitcoinRpcUsername": "{{YOUR USERNAME}}",
+  "bitcoinRpcPassword": "{{YOUR PASSWORD}}",
   "bitcoinWalletImportString": "[FILL THIS IN!]",
   "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
@@ -84,6 +67,8 @@ Edit your bitcoin-config.json
   "port": 3002
 }
 ```
+
+> Note: 18332 is the RPC port for bitcoin testnet. If you are running on mainnet, the port should be 8332.
 
 If you are on mainnet or already have a bitcoin testnet private key, please put the
 [Wallet Import Format](https://en.bitcoin.it/wiki/Wallet_import_format)(WIF) string in the `bitcoinWalletImportString`

@@ -1,8 +1,8 @@
 import * as httpStatus from 'http-status';
+import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
+import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ErrorCode from '../common/ErrorCode';
 import ITransaction from '../common/ITransaction';
-import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import nodeFetch, { FetchError, Response } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import TransactionNumber from './TransactionNumber';
@@ -38,6 +38,9 @@ export default class BitcoinProcessor {
 
   /** URI for the bitcoin peer's RPC endpoint */
   public readonly bitcoinPeerUri: string;
+
+  /** Bitcoin peer's RPC basic authorization credentials */
+  public readonly bitcoinAuthorization?: string;
 
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
@@ -77,6 +80,9 @@ export default class BitcoinProcessor {
 
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
+    if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
+      this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
+    }
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.bitcoinFee = config.bitcoinFee;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -120,6 +126,23 @@ export default class BitcoinProcessor {
   public async initialize () {
     console.debug('Initializing TransactionStore');
     await this.transactionStore.initialize();
+    const address = this.privateKey.toAddress();
+    console.debug(`Checking if bitcoin contains a wallet for ${address}`);
+    if (!await this.walletExists(address.toString())) {
+      console.debug(`Configuring bitcoin peer to watch address ${address}. This can take up to 10 minutes.`);
+      const request = {
+        method: 'importpubkey',
+        params: [
+          this.privateKey.toPublicKey().toBuffer().toString('hex'),
+          'sidetree',
+          true
+        ]
+      };
+      await this.rpcCall(request, undefined, false);
+    } else {
+      console.debug('Wallet found.');
+    }
+    console.debug('Synchronizing blocks for sidetree transactions...');
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
     if (lastKnownTransaction) {
       console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
@@ -141,27 +164,21 @@ export default class BitcoinProcessor {
    */
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
-    let request: any;
-    if (hash) {
-      request = {
-        method: 'getblock',
-        params: [
-          hash, // hash of the block
-          true, // block details
-          false // transaction details
-        ]
-      };
-    } else {
+    if (!hash) {
       const blockHeight = await this.getCurrentBlockHeight();
-      request = {
-        method: 'getblockbyheight',
-        params: [
-          blockHeight,  // height of the block
-          true, // block details
-          false // transaction details
-        ]
+      hash = await this.getBlockHash(blockHeight);
+      return {
+        time: blockHeight,
+        hash
       };
     }
+    const request = {
+      method: 'getblock',
+      params: [
+        hash, // hash of the block
+        1 // 1 = block information
+      ]
+    };
     const response = await this.rpcCall(request);
     return {
       hash: response.hash,
@@ -190,7 +207,16 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
-    const transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+    let transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+    // filter the results to only return transactions, and not internal data
+    transactions = transactions.map((transaction) => {
+      return {
+        transactionNumber: transaction.transactionNumber,
+        transactionTime: transaction.transactionTime,
+        transactionTimeHash: transaction.transactionTimeHash,
+        anchorFileHash: transaction.anchorFileHash
+      } as ITransaction;
+    });
 
     return {
       transactions,
@@ -263,6 +289,22 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * Gets the block hash for a given block height
+   * @param height The height to get a hash for
+   * @returns the block hash
+   */
+  private async getBlockHash (height: number): Promise<string> {
+    console.info(`Getting hash for block ${height}`);
+    const hashRequest = {
+      method: 'getblockhash',
+      params: [
+        height // height of the block
+      ]
+    };
+    return this.rpcCall(hashRequest);
+  }
+
+  /**
    * Gets all unspent coins of a given address
    * @param address Bitcoin address to get coins for
    */
@@ -271,67 +313,23 @@ export default class BitcoinProcessor {
     // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
     const addressToSearch = address.toString();
     console.info(`Getting unspent coins for ${addressToSearch}`);
-    const requestPath = `/tx/address/${addressToSearch}`;
+    const request = {
+      method: 'listunspent',
+      params: [
+        null,
+        null,
+        [addressToSearch]
+      ]
+    };
+    const response: Array<any> = await this.rpcCall(request);
 
-    const fullPath = new URL(requestPath, this.bitcoinPeerUri);
-    const response = await this.fetchWithRetry(fullPath.toString());
-
-    const responseData = await ReadableStream.readAll(response.body);
-    if (response.status !== httpStatus.OK) {
-      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      console.error(error);
-      throw error;
-    }
-
-    const transactions = JSON.parse(responseData) as Array<any>;
-
-    // Generate all transaction outputs (txos)
-    let txos: {[txid: string]: any; } = {};  // transaction outputs dictionary
-    for (let i = 0; i < transactions.length; i++) {
-      let txid = transactions[i].hash;
-      let confirmations = transactions[i].confirmations;
-      let outputs = transactions[i].outputs;
-      for (let j = 0; j < outputs.length; j++) {
-        if (outputs[j].address === addressToSearch) {
-          txos[txid] = {'txid': txid, 'vout': j, 'address': outputs[j].address, 'account': '',
-            'script': outputs[j].script, 'amount': outputs[j].value * 0.00000001,
-            'confirmations': confirmations, 'spendable': true, 'solvable': true};
-        }
-      }
-    }
-
-    // Flag all spent transaction outputs (set txo.spendable to false)
-    for (let i = 0; i < transactions.length; i++) {
-      let inputs = transactions[i].inputs;
-      for (let j = 0; j < inputs.length; j++) {
-        if ((inputs[j].prevout.hash in txos)) {
-          txos[inputs[j].prevout.hash].spendable = false;
-        }
-      }
-    }
-
-    // Retrieve all unspent transaction outputs (tx.spendable === true)
-    let utxos = [];
-    for (let txid in txos) {
-      if (txos[txid].spendable === true) {
-        utxos.push(txos[txid]);
-      }
-    }
-
-    // Generate bitcore UnspentOutput array from utxos array
-    const unspentCoins = utxos.map((coin) => {
-      return new Transaction.UnspentOutput({
-        txid: coin.txid,
-        vout: coin.vout,
-        address: coin.address,
-        script: coin.script,
-        amount: coin.amount
-      });
+    const unspentTransactions = response.map((coin) => {
+      return new Transaction.UnspentOutput(coin);
     });
 
-    console.info(`Returning ${unspentCoins.length} coins`);
+    console.info(`Returning ${unspentTransactions.length} coins`);
 
-    return unspentCoins;
+    return unspentTransactions;
   }
 
   /**
@@ -341,24 +339,15 @@ export default class BitcoinProcessor {
   private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
     const rawTransaction = transaction.serialize();
     console.info(`Broadcasting transaction ${transaction.id}`);
-    const request = JSON.stringify({
-      tx: rawTransaction
-    });
-    const fullPath = new URL('/broadcast', this.bitcoinPeerUri);
-    const responseObject = await this.fetchWithRetry(fullPath.toString(), {
-      body: request,
-      method: 'post'
-    });
-    const responseData = await ReadableStream.readAll(responseObject.body);
-    if (responseObject.status !== httpStatus.OK) {
-      const error = new Error(`Broadcast failure [${responseObject.status}]: ${responseData}`);
-      console.error(error);
-      throw error;
-    }
+    const request = {
+      method: 'sendrawtransaction',
+      params: [
+        rawTransaction
+      ]
+    };
+    const response = await this.rpcCall(request);
 
-    const response = JSON.parse(responseData);
-
-    return response.success;
+    return response.length > 0;
   }
 
   /**
@@ -479,19 +468,10 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
-    const responseData = await this.rpcCall({
-      method: 'getblockbyheight',
-      params: [
-        height,  // height
-        true,   // verbose (block details)
-        false    // details (transaction details)
-      ]
-    });
+    const responseData = await this.getBlockHash(height);
 
-    console.debug(`Retrieved block ${responseData.height} (${responseData.hash})`);
-
-    let actualHash: string = responseData.hash;
-    return hash === actualHash;
+    console.debug(`Retrieved block ${height} (${responseData})`);
+    return hash === responseData;
   }
 
   /**
@@ -501,12 +481,12 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
+    const hash = await this.getBlockHash(block);
     const responseData = await this.rpcCall({
-      method: 'getblockbyheight',
+      method: 'getblock',
       params: [
-        block,  // height
-        true,   // verbose (block details)
-        true    // details (transaction details)
+        hash,  // hash
+        2      // block and transaction information
       ]
     });
 
@@ -553,20 +533,48 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * Checks if the bitcoin peer has a wallet open for a given address
+   * @param address The bitcoin address to check
+   * @returns true if a wallet exists, false otherwise.
+   */
+  private async walletExists (address: string): Promise<boolean> {
+    console.info(`Checking if bitcoin wallet for ${address} exists`);
+    const request = {
+      method: 'getaddressinfo',
+      params: [
+        address
+      ]
+    };
+
+    const response = await this.rpcCall(request);
+    return response.labels.length > 0 || response.iswatchonly;
+  }
+
+  /**
    * performs an RPC call given a request
    * @param request RPC request parameters as an object
    * @param path optional path extension
    * @returns response as an object
    */
-  private async rpcCall (request: any, requestPath: string = ''): Promise<any> {
+  private async rpcCall (request: any, requestPath: string = '', timeout: boolean = true): Promise<any> {
+    // append some standard jrpc parameters
+    request['jsonrpc'] = '1.0';
+    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
     const fullPath = new URL(requestPath, this.bitcoinPeerUri);
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    const response = await this.fetchWithRetry(fullPath.toString(), {
+    console.debug(`Sending jRPC request id: ${request.id}`);
+    const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'
-    });
+    };
+    if (this.bitcoinAuthorization) {
+      requestOptions.headers = {
+        Authorization: `Basic ${this.bitcoinAuthorization}`
+      };
+    }
+    const response = await this.fetchWithRetry(fullPath.toString(), requestOptions, timeout);
 
     const responseData = await ReadableStream.readAll(response.body);
     if (response.status !== httpStatus.OK) {
@@ -590,16 +598,20 @@ export default class BitcoinProcessor {
    * Calls `nodeFetch` and retries with exponential back-off on `request-timeout` FetchError`.
    * @param uri URI to fetch
    * @param requestParameters Request parameters to use
+   * @param setTimeout True to set a timeout on the request, and retry if times out, false to wait indefinitely.
    * @returns Response of the fetch
    */
-  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined): Promise<Response> {
+  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined, setTimeout: boolean = true): Promise<Response> {
     let retryCount = 0;
     let timeout: number;
     do {
       timeout = this.requestTimeout * 2 ** retryCount;
-      const params = Object.assign({}, requestParameters, {
-        timeout
-      });
+      let params = Object.assign({}, requestParameters);
+      if (setTimeout) {
+        params = Object.assign(params, {
+          timeout
+        });
+      }
       try {
         return await nodeFetch(uri, params);
       } catch (error) {
