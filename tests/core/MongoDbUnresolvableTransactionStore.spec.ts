@@ -1,4 +1,4 @@
-import IConfig from '../../lib/core/IConfig';
+import IConfig from '../../lib/core/interfaces/IConfig';
 import ITransaction from '../../lib/common/ITransaction';
 import MongoDb from '../common/MongoDb';
 import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';

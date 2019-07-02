@@ -5,9 +5,9 @@ import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/OperationProcessor';
+import OperationStore from '../../lib/core/interfaces/OperationStore';
 import ProtocolParameters from '../../lib/core/ProtocolParameters';
 import { Cas } from '../../lib/core/Cas';
-import { OperationStore } from '../../lib/core/OperationStore';
 import { Operation } from '../../lib/core/Operation';
 
 /**

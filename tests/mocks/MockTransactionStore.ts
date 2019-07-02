@@ -1,7 +1,7 @@
 import ITransaction from '../../lib/common/ITransaction';
 import SortedArray from '../../lib/core/util/SortedArray';
-import { TransactionStore } from '../../lib/core/TransactionStore';
-import { UnresolvableTransactionStore } from '../../lib/core/UnresolvableTransactionStore';
+import TransactionStore from '../../lib/core/interfaces/TransactionStore';
+import UnresolvableTransactionStore from '../../lib/core/interfaces/UnresolvableTransactionStore';
 
 interface IUnresolvableTransactionInternal {
   transaction: ITransaction;

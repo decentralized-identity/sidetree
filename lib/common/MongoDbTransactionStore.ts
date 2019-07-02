@@ -1,6 +1,6 @@
 import ITransaction from './ITransaction';
+import TransactionStore from '../core/interfaces/TransactionStore';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
-import { TransactionStore } from '../core/TransactionStore';
 
 /**
  * Implementation of TransactionStore that stores the transaction data in a MongoDB database.

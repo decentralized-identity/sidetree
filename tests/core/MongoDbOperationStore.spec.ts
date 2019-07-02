@@ -2,8 +2,8 @@ import Cryptography from '../../lib/core/util/Cryptography';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
+import OperationStore from '../../lib/core/interfaces/OperationStore';
 import ProtocolParameters from '../../lib/core/ProtocolParameters';
-import { OperationStore } from '../../lib/core/OperationStore';
 import { Operation } from '../../lib/core/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 

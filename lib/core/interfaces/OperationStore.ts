@@ -1,10 +1,10 @@
-import { Operation } from './Operation';
+import { Operation } from '../Operation';
 
 /**
  * An abstraction of a complete store for operations exposing methods to
  * put and get operations.
  */
-export interface OperationStore {
+export default interface OperationStore {
 
   /**
    * Store a batch of operations

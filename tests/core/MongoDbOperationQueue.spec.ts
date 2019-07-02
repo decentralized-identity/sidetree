@@ -1,8 +1,8 @@
 import ErrorCode from '../../lib/common/ErrorCode';
-import IConfig from '../../lib/core/IConfig';
+import IConfig from '../../lib/core/interfaces/IConfig';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationQueue from '../../lib/core/MongoDbOperationQueue';
-import OperationQueue from '../../lib/core/OperationQueue';
+import OperationQueue from '../../lib/core/interfaces/OperationQueue';
 import { SidetreeError } from '../../lib/core/Error';
 
 /**

@@ -2,17 +2,17 @@ import AnchorFile, { IAnchorFile } from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from './DownloadManager';
 import ErrorCode from '../common/ErrorCode';
-import IResolvedTransaction from './IResolvedTransaction';
+import IResolvedTransaction from './interfaces/IResolvedTransaction';
+import ITransaction from '../common/ITransaction';
 import OperationProcessor from './OperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
+import TransactionStore from './interfaces/TransactionStore';
+import UnresolvableTransactionStore from './interfaces/UnresolvableTransactionStore';
 import { Blockchain } from './Blockchain';
 import { FetchResultCode } from '../common/FetchResultCode';
-import ITransaction from '../common/ITransaction';
 import { Operation } from './Operation';
 import { SidetreeError } from './Error';
-import { TransactionStore } from './TransactionStore';
-import { UnresolvableTransactionStore } from './UnresolvableTransactionStore';
 
 /**
  * The state of a transaction that is being processed.

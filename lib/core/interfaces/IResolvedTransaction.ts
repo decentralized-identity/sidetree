@@ -1,4 +1,4 @@
-import ITransaction from '../common/ITransaction';
+import ITransaction from '../../common/ITransaction';
 
 /**
  * Defines a resolved Sidetree transaction.

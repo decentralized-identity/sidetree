@@ -1,6 +1,6 @@
 import BatchWriter from './BatchWriter';
 import DownloadManager from './DownloadManager';
-import IConfig from './IConfig';
+import IConfig from './interfaces/IConfig';
 import MongoDbOperationQueue from './MongoDbOperationQueue';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';

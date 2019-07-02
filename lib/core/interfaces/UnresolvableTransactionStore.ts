@@ -1,10 +1,10 @@
-import ITransaction from '../common/ITransaction';
+import ITransaction from '../../common/ITransaction';
 
 /**
  * An abstraction for the persistence of Sidetree transactions.
  * Used to avoid re-fetching and reprocessing of transactions when the Sidetree node crashes or restarts.
  */
-export interface UnresolvableTransactionStore {
+export default interface UnresolvableTransactionStore {
   /**
    * Records the retry attempts of the given resolvable transaction.
    */
