@@ -1,21 +1,8 @@
 import IConfig from '../../lib/core/IConfig';
 import ITransaction from '../../lib/common/ITransaction';
+import MongoDb from '../common/MongoDb';
 import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
 import { MongoClient } from 'mongodb';
-
-/**
- * Test if a MongoDB service is running at the specified url.
- */
-async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
-  try {
-    const client = await MongoClient.connect(serverUrl);
-    await client.close();
-  } catch (error) {
-    console.log('Mongoclient connect error: ' + error);
-    return false;
-  }
-  return true;
-}
 
 /**
  * Creates a MongoDbUnresolvableTransactionStore and initializes it.
@@ -51,14 +38,20 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
   const config: IConfig = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
+  let mongoServiceAvailable = false;
   let store: MongoDbUnresolvableTransactionStore;
+  beforeAll(async () => {
+    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    if (mongoServiceAvailable) {
+      store = await createUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
+    }
+  });
 
   beforeEach(async () => {
-    if (!await isMongoServiceAvailable(config.mongoDbConnectionString)) {
+    if (!mongoServiceAvailable) {
       pending('MongoDB service not available');
     }
 
-    store = await createUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
     await store.clearCollection();
   });
 

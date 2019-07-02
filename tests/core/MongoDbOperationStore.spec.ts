@@ -1,11 +1,11 @@
 import Cryptography from '../../lib/core/util/Cryptography';
+import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import ProtocolParameters from '../../lib/core/ProtocolParameters';
 import { OperationStore } from '../../lib/core/OperationStore';
 import { Operation } from '../../lib/core/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
-import { MongoClient } from 'mongodb';
 
 /**
  * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
@@ -74,37 +74,8 @@ async function constructAnchoredUpdateOperation (
   return constructAnchoredOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
 }
 
-/**
- * Test if a mongo service is running at the specified url
- */
-async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
-  try {
-    const client = await MongoClient.connect(serverUrl);
-    await client.close();
-  } catch (error) {
-    return false;
-  }
-  return true;
-}
-
 const databaseName = 'sidetree-test';
 const operationCollectionName = 'operations-test';
-
-/**
- * Clear a mongo collection - used to remove test state.
- */
-async function removeMongoCollection (serverUrl: string) {
-  const client = await MongoClient.connect(serverUrl);
-  const db = client.db(databaseName);
-  const collections = await db.collections();
-  const collectionNames = collections.map(collection => collection.collectionName);
-
-  // If the operation collection exists drop it
-  if (collectionNames.includes(operationCollectionName)) {
-    const collection = db.collection(operationCollectionName);
-    await collection.drop();
-  }
-}
 
 async function createOperationStore (mongoDbConnectionString: string): Promise<OperationStore> {
   const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName, operationCollectionName);
@@ -112,16 +83,19 @@ async function createOperationStore (mongoDbConnectionString: string): Promise<O
   return operationStore;
 }
 
-async function createBatchOfUpdateOperations (createOperation: Operation, batchSize: number, privateKey: string): Promise<Operation[]> {
+/**
+ * Constructs an operation chain from the given create opeartion.
+ */
+async function createOperationChain (createOperation: Operation, chainLength: number, privateKey: string): Promise<Operation[]> {
   const didUniqueSuffix = createOperation.didUniqueSuffix;
-  const batch = new Array<Operation>(createOperation);
-  for (let i = 1; i < batchSize ; i++) {
-    const previousOperation = batch[i - 1];
+  const chain = new Array<Operation>(createOperation);
+  for (let i = 1; i < chainLength ; i++) {
+    const previousOperation = chain[i - 1];
     const previousVersion = previousOperation.getOperationHash();
     const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0, i);
-    batch.push(operation);
+    chain.push(operation);
   }
-  return batch;
+  return chain;
 }
 
 // Check if two operations are equal
@@ -157,16 +131,22 @@ describe('MongoDbOperationStore', async () => {
   let privateKey: string;
   const config = require('../json/config-test.json');
 
-  beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
+  let mongoServiceAvailable = false;
+  beforeAll(async () => {
+    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    if (mongoServiceAvailable) {
+      operationStore = await createOperationStore(config.mongoDbConnectionString);
+    }
+  });
 
-    if (!await isMongoServiceAvailable(config.mongoDbConnectionString)) {
+  beforeEach(async () => {
+    if (!mongoServiceAvailable) {
       pending('MongoDB service not available');
     }
 
-    await removeMongoCollection(config.mongoDbConnectionString);
+    await operationStore.delete();
 
-    operationStore = await createOperationStore(config.mongoDbConnectionString);
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
   });
 
   it('should get a put create operation', async () => {
@@ -205,12 +185,12 @@ describe('MongoDbOperationStore', async () => {
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
 
-    const batchSize = 10;
-    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-    await operationStore.put(batch);
+    const chainSize = 10;
+    const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
+    await operationStore.put(operationChain);
 
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
   });
 
   it('should get all operations in a batch put with duplicates', async () => {
@@ -218,14 +198,14 @@ describe('MongoDbOperationStore', async () => {
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
 
-    const batchSize = 10;
-    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-        // construct a batch with each operation duplicated.
-    const batchWithDuplicates = batch.concat(batch);
+    const chainSize = 10;
+    const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
+    // construct an operation chain with duplicated operations
+    const batchWithDuplicates = operationChain.concat(operationChain);
 
     await operationStore.put(batchWithDuplicates);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
   });
 
   it('should delete all', async () => {
@@ -233,12 +213,12 @@ describe('MongoDbOperationStore', async () => {
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
 
-    const batchSize = 10;
-    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
+    const chainSize = 10;
+    const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
 
-    await operationStore.put(batch);
+    await operationStore.put(operationChain);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
 
     await operationStore.delete();
     const returnedOperationsAfterRollback = Array.from(await operationStore.get(didUniqueSuffix));
@@ -250,17 +230,17 @@ describe('MongoDbOperationStore', async () => {
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
 
-    const batchSize = 10;
-    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-    await operationStore.put(batch);
+    const chainSize = 10;
+    const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
+    await operationStore.put(operationChain);
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
 
-    const rollbackTime = batchSize / 2;
+    const rollbackTime = chainSize / 2;
     await operationStore.delete(rollbackTime);
     const returnedOperationsAfterRollback = Array.from(await operationStore.get(didUniqueSuffix));
     // Returned operations should be equal to the first rollbackTime + 1 operations in the batch
-    checkEqualArray(batch.slice(0, rollbackTime + 1), returnedOperationsAfterRollback);
+    checkEqualArray(operationChain.slice(0, rollbackTime + 1), returnedOperationsAfterRollback);
   });
 
   it('should remember operations after stop/restart', async () => {
@@ -268,18 +248,18 @@ describe('MongoDbOperationStore', async () => {
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
 
-    const batchSize = 10;
-    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
-    await operationStore.put(batch);
+    const chainSize = 10;
+    const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
+    await operationStore.put(operationChain);
     let returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
 
     // Create another instance of the operation store
     operationStore = await createOperationStore(config.mongoDbConnectionString);
 
     // Check if we have all the previously put operations
     returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
   });
 
   it('should get all operations in transaction time order', async () => {
@@ -287,15 +267,15 @@ describe('MongoDbOperationStore', async () => {
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
 
-    const batchSize = 10;
-    const batch = await createBatchOfUpdateOperations(createOperation, batchSize, privateKey);
+    const chainSize = 10;
+    const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
 
     // Insert operations in reverse transaction time order
-    for (let i = batchSize - 1 ; i >= 0 ; i--) {
-      await operationStore.put([batch[i]]);
+    for (let i = chainSize - 1 ; i >= 0 ; i--) {
+      await operationStore.put([operationChain[i]]);
     }
 
     const returnedOperations = Array.from(await operationStore.get(didUniqueSuffix));
-    checkEqualArray(batch, returnedOperations);
+    checkEqualArray(operationChain, returnedOperations);
   });
 });

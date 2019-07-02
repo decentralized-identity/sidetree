@@ -34,32 +34,10 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Jasmine-ts - All tests",
-            "program": "${workspaceFolder}/node_modules/jasmine-ts/lib/index.js",
-            "env": {
-            "JASMINE_CONFIG_PATH": "${workspaceFolder}/tests/jasmine.json"
-            },
-            "console": "internalConsole"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Jasmine-ts - Current file",
-            "program": "${workspaceFolder}/node_modules/jasmine-ts/lib/index.js",
-            "args": ["${file}"],
-            "env": {
-            "JASMINE_CONFIG_PATH": "${workspaceFolder}/tests/jasmine.json"
-            },
-            "console": "internalConsole"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Jasmine - Current file",
+            "name": "Jasmine Tests",
             "program": "${workspaceFolder}/node_modules/jasmine/bin/jasmine.js",
-            "args": ["${file}"],
             "env": {
-            "JASMINE_CONFIG_PATH": "${workspaceFolder}/tests/jasmine-cc.json"
+            "JASMINE_CONFIG_PATH": "${workspaceFolder}/tests/jasmine.json"
             },
             "console": "internalConsole"
         }

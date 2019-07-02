@@ -1,22 +1,9 @@
 import IConfig from '../../lib/core/IConfig';
 import ITransaction from '../../lib/common/ITransaction';
+import MongoDb from '../common/MongoDb';
 import MongoDbTransactionStore from '../../lib/common/MongoDbTransactionStore';
 import { MongoClient } from 'mongodb';
 import { TransactionStore } from '../../lib/core/TransactionStore';
-
-/**
- * Test if a MongoDB service is running at the specified url.
- */
-async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
-  try {
-    const client = await MongoClient.connect(serverUrl);
-    await client.close();
-  } catch (error) {
-    console.log('Mongoclient connect error: ' + error);
-    return false;
-  }
-  return true;
-}
 
 /**
  * Creates a MongoDbTransactionStore and initializes it.
@@ -55,14 +42,20 @@ describe('MongoDbTransactionStore', async () => {
   const config: IConfig = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
+  let mongoServiceAvailable: boolean | undefined;
   let transactionStore: MongoDbTransactionStore;
+  beforeAll(async () => {
+    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    if (mongoServiceAvailable) {
+      transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
+    }
+  });
 
   beforeEach(async () => {
-    if (!await isMongoServiceAvailable(config.mongoDbConnectionString)) {
+    if (!mongoServiceAvailable) {
       pending('MongoDB service not available');
     }
 
-    transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
     await transactionStore.clearCollection();
   });
 
