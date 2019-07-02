@@ -1,9 +1,9 @@
-import * as Deque from 'double-ended-queue';
 import BatchFile from './BatchFile';
 import Did from './Did';
 import Encoder from './Encoder';
 import MerkleTree from './util/MerkleTree';
 import Multihash from './Multihash';
+import OperationQueue from './OperationQueue';
 import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
@@ -14,8 +14,6 @@ import { Operation, OperationType } from './Operation';
  * Class that performs periodic writing of batches of Sidetree operations to CAS and blockchain.
  */
 export default class BatchWriter {
-  private operations: Deque<Operation> = new Deque<Operation>();
-
   /**
    * Flag indicating if this Batch Writer is currently processing a batch of operations.
    */
@@ -24,21 +22,15 @@ export default class BatchWriter {
   public constructor (
     private blockchain: Blockchain,
     private cas: Cas,
-    private batchingIntervalInSeconds: number) {
+    private batchingIntervalInSeconds: number,
+    private operationQueue: OperationQueue) {
   }
 
   /**
    * Adds the given operation to a queue to be batched and anchored on blockchain.
    */
-  public add (operation: Operation) {
-    this.operations.push(operation);
-  }
-
-  /**
-   * Returns the current operation queue length.
-   */
-  public getOperationQueueLength (): number {
-    return this.operations.length;
+  public async add (operation: Operation) {
+    await this.operationQueue.enqueue(operation.didUniqueSuffix, operation.operationBuffer);
   }
 
   /**
@@ -51,14 +43,8 @@ export default class BatchWriter {
   /**
    * Checks to see if there is already an operation queued for the given DID unique suffix.
    */
-  public hasOperationQueuedFor (didUniqueSuffix: string): boolean {
-    const operations = this.operations.toArray();
-    for (let i = 0; i < operations.length; i++) {
-      if (operations[i].didUniqueSuffix === didUniqueSuffix) {
-        return true;
-      }
-    }
-    return false;
+  public async hasOperationQueuedFor (didUniqueSuffix: string): Promise<boolean> {
+    return this.operationQueue.contains(didUniqueSuffix);
   }
 
   /**
@@ -72,12 +58,19 @@ export default class BatchWriter {
       return;
     }
 
+    let batchWritingSucceeded = true;
+    let batch: Operation[] = [];
     try {
       console.info('Start operation batch writing...');
       this.processing = true;
 
+      // Get the protocol version according to current blockchain time to decide on the batch size limit to enforce.
+      const protocolParameters = this.getCurrentProtocolParameters();
+
       // Get the batch of operations to be anchored on the blockchain.
-      const batch = this.getBatch();
+      const currentTime = this.blockchain.approximateTime;
+      const operationBuffers = await this.operationQueue.peek(protocolParameters.maxOperationsPerBatch);
+      batch = operationBuffers.map((buffer) => Operation.createUnanchoredOperation(buffer, currentTime.time));
       console.info('Batch size = ' + batch.length);
 
       // Do nothing if there is nothing to batch together.
@@ -86,7 +79,6 @@ export default class BatchWriter {
       }
 
       // Create the batch file buffer from the operation batch.
-      const operationBuffers = batch.map(operation => operation.operationBuffer);
       const batchFileBuffer = BatchFile.fromOperationBuffers(operationBuffers);
 
       // Write the 'batch file' to content addressable store.
@@ -116,36 +108,19 @@ export default class BatchWriter {
       // Anchor the 'anchor file hash' on blockchain.
       await this.blockchain.write(anchorFileAddress);
     } catch (error) {
+      batchWritingSucceeded = false;
       console.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       console.error(error);
     } finally {
       this.processing = false;
 
+      // Remove written operations from queue if batch writing is successful.
+      if (batchWritingSucceeded) {
+        await this.operationQueue.dequeue(batch.length);
+      }
+
       console.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
     }
-  }
-
-  /**
-   * Gets a batch of operations to be anchored on the blockchain.
-   * Validation is performed according to Sidetree protocol to ensure that the batch will be considered valid by observing nodes.
-   * Operations that failed validation are discarded.
-   * If number of pending operations is greater than the Sidetree protocol's maximum allowed number per batch,
-   * then the maximum allowed number of operation is returned.
-   */
-  private getBatch (): Operation[] {
-    const batch = new Array<Operation>();
-
-    // Get the protocol version according to current blockchain time to decide on the batch size limit to enforce.
-    const protocolParameters = this.getCurrentProtocolParameters();
-
-    // Keep adding operations to the batch until there are no operations left or max batch size is reached.
-    let operation = this.operations.shift();
-    while (operation !== undefined && batch.length < protocolParameters.maxOperationsPerBatch) {
-      batch.push(operation);
-      operation = this.operations.shift();
-    }
-
-    return batch;
   }
 
   /**

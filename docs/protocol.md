@@ -106,9 +106,9 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFileHash": "Encoded hash of the batch file.",
+  "batchFileHash": "Encoded multihash of the batch file.",
   "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."],
-  "merkleRoot": "Encoded root hash of the Merkle tree constructed from the operations included in the batch file."
+  "merkleRoot": "Encoded multihash of the root of the Merkle tree constructed from the operations included in the batch file."
 }
 ```
 > NOTE: See [Sidetree Operation Receipts](#Sidetree-Operation-Receipts) section on purpose and construction of the `merkleRoot`.
@@ -145,11 +145,19 @@ Sidetree protocol defines the following two mechanisms to enable scaling, while 
 ## Sidetree Transaction Processing
 A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increasing by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
 
-1. The corresponding _anchor file_ must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
-1. The corresponding _batch file_ must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
-1. The operation batch size must not exceed the maximum size specified by the protocol.
+1. _Anchor file_ validation rules:
+   1. The anchor file must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
+   1. The anchor file fetched from CAS must not exceed the maximum allowed anchor file size.
+   1. Must use the hashing algorithm specified by the protocol.
+   1. All DID unique suffixes specified in the anchor file must be unique.
+1. _Batch file_ validation rules:
+   1. The batch file must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
+   1. The batch file fetched from CAS must not exceed the maximum allowed batch file size.
+   1. Must use the hashing algorithm specified by the protocol.
+   1. DID unique suffixes found in the batch file must match DID unique suffixes found in anchor file exactly and in same order.
+   1. The operation batch size must not exceed the maximum size specified by the protocol.
 1. The transaction must meet the proof-of-fee requirements defined by the protocol.
-1. Every operation batched in the same transaction must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
+1. Every operation in the batch file must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
 
    1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
 
@@ -157,7 +165,7 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 
    1. Must use the hashing algorithm specified by the protocol.
 
-> NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the its _anchor file_ and _batch file_ become available.
+> NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the _anchor file_ or _batch file_ becomes available.
 
 ## DID Deletion and Recovery
 Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
