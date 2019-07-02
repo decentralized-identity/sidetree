@@ -1,23 +1,9 @@
 import ErrorCode from '../../lib/common/ErrorCode';
 import IConfig from '../../lib/core/IConfig';
+import MongoDb from '../common/MongoDb';
 import MongoDbOperationQueue from '../../lib/core/MongoDbOperationQueue';
 import OperationQueue from '../../lib/core/OperationQueue';
-import { MongoClient } from 'mongodb';
 import { SidetreeError } from '../../lib/core/Error';
-
-/**
- * Test if a MongoDB service is running at the specified url.
- */
-async function isMongoServiceAvailable (serverUrl: string): Promise<boolean> {
-  try {
-    const client = await MongoClient.connect(serverUrl);
-    await client.close();
-  } catch (error) {
-    console.log('Mongoclient connect error: ' + error);
-    return false;
-  }
-  return true;
-}
 
 /**
  * Creates a MongoDbOperationQueue and initializes it.
@@ -52,8 +38,10 @@ describe('MongoDbOperationQueue', async () => {
   let mongoServiceAvailable = false;
   let operationQueue: MongoDbOperationQueue;
   beforeAll(async () => {
-    mongoServiceAvailable = await isMongoServiceAvailable(config.mongoDbConnectionString);
-    operationQueue = await createOperationQueue(config.mongoDbConnectionString, databaseName);
+    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    if (mongoServiceAvailable) {
+      operationQueue = await createOperationQueue(config.mongoDbConnectionString, databaseName);
+    }
   });
 
   beforeEach(async () => {
