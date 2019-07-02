@@ -1,7 +1,7 @@
 import Cryptography from './util/Cryptography';
 import Document, { IDocument } from './Document';
 import Encoder from './Encoder';
-import IResolvedTransaction from './IResolvedTransaction';
+import IResolvedTransaction from './interfaces/IResolvedTransaction';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { applyPatch } from 'fast-json-patch';

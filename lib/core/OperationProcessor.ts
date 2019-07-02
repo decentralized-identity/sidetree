@@ -1,7 +1,7 @@
 import Document, { IDocument } from './Document';
+import OperationStore from './interfaces/OperationStore';
 import ProtocolParameters from './ProtocolParameters';
 import { Operation, OperationType } from './Operation';
-import { OperationStore } from './OperationStore';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore

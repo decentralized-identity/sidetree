@@ -1,6 +1,6 @@
 import * as HttpStatus from 'http-status';
 import ErrorCode from '../common/ErrorCode';
-import IBlockchainTime from './IBlockchainTime';
+import IBlockchainTime from './interfaces/IBlockchainTime';
 import ITransaction from '../common/ITransaction';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';

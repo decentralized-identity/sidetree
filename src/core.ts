@@ -6,7 +6,7 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from '../lib/core/Core';
-import IConfig from '../lib/core/IConfig';
+import IConfig from '../lib/core/interfaces/IConfig';
 import { IProtocolParameters } from '../lib/core/ProtocolParameters';
 import { IResponse, Response } from '../lib/common/Response';
 

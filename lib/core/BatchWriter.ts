@@ -3,7 +3,7 @@ import Did from './Did';
 import Encoder from './Encoder';
 import MerkleTree from './util/MerkleTree';
 import Multihash from './Multihash';
-import OperationQueue from './OperationQueue';
+import OperationQueue from './interfaces/OperationQueue';
 import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';

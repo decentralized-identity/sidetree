@@ -1,9 +1,9 @@
-import IConfig from '../../lib/core/IConfig';
+import IConfig from '../../lib/core/interfaces/IConfig';
 import ITransaction from '../../lib/common/ITransaction';
 import MongoDb from '../common/MongoDb';
 import MongoDbTransactionStore from '../../lib/common/MongoDbTransactionStore';
+import TransactionStore from '../../lib/core/interfaces/TransactionStore';
 import { MongoClient } from 'mongodb';
-import { TransactionStore } from '../../lib/core/TransactionStore';
 
 /**
  * Creates a MongoDbTransactionStore and initializes it.

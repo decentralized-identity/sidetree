@@ -1,5 +1,5 @@
 import Encoder from './Encoder';
-import IResolvedTransaction from './IResolvedTransaction';
+import IResolvedTransaction from './interfaces/IResolvedTransaction';
 import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');

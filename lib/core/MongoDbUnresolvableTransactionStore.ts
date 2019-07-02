@@ -1,6 +1,6 @@
 import ITransaction from '../common/ITransaction';
+import UnresolvableTransactionStore from './interfaces/UnresolvableTransactionStore';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
-import { UnresolvableTransactionStore } from './UnresolvableTransactionStore';
 
 interface IUnresolvableTransaction extends ITransaction {
   firstFetchTime: number;

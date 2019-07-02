@@ -1,4 +1,4 @@
-import IDidPublicKey from '../../lib/core/IDidPublicKey';
+import IDidPublicKey from '../../lib/core/interfaces/IDidPublicKey';
 import Encoder from '../../lib/core/Encoder';
 import { IOperation, Operation } from '../../lib/core/Operation';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';

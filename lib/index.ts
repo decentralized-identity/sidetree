@@ -2,7 +2,7 @@
 
 // Core service exports.
 import SidetreeCore from './core/Core';
-import ISidetreeConfig from './core/IConfig';
+import ISidetreeConfig from './core/interfaces/IConfig';
 import { IProtocolParameters as ISidetreeProtocolParameters } from './core/ProtocolParameters';
 import {
   IResponse as ISidetreeResponse,

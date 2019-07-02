@@ -1,5 +1,5 @@
 import ErrorCode from '../common/ErrorCode';
-import OperationQueue from './OperationQueue';
+import OperationQueue from './interfaces/OperationQueue';
 import { Binary, Collection, MongoClient, Db } from 'mongodb';
 import { SidetreeError } from './Error';
 

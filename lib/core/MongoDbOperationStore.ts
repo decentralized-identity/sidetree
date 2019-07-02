@@ -1,6 +1,6 @@
+import OperationStore from './interfaces/OperationStore';
 import { Binary, Collection, Long, MongoClient } from 'mongodb';
 import { Operation } from './Operation';
-import { OperationStore } from './OperationStore';
 
 /**
  * Sidetree operation stored in MongoDb.

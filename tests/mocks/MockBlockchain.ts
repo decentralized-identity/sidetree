@@ -1,4 +1,4 @@
-import IBlockchainTime from '../../lib/core/IBlockchainTime';
+import IBlockchainTime from '../../lib/core/interfaces/IBlockchainTime';
 import ITransaction from '../../lib/common/ITransaction';
 import { Blockchain } from '../../lib/core/Blockchain';
 

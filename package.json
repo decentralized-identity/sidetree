@@ -70,6 +70,10 @@
     "include": [
       "dist/lib/**"
     ],
+    "exclude": [
+      "dist/lib/**/interfaces/**",
+      "dist/lib/**/I[A-Z]**"
+    ],
     "reporter": [
       "text",
       "cobertura",

@@ -1,4 +1,4 @@
-import OperationQueue from '../../lib/core/OperationQueue';
+import OperationQueue from '../../lib/core/interfaces/OperationQueue';
 
 /**
  * A mock in-memory operation queue used by the Batch Writer.
