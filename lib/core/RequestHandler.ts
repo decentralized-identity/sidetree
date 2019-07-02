@@ -26,7 +26,7 @@ export default class RequestHandler {
   /**
    * Handles an operation request.
    */
-  public handleOperationRequest (request: Buffer): IResponse {
+  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
     console.info(`Handling operation request of size ${request.length} bytes...`);
     // Get the protocol version according to current blockchain time to validate the operation request.
     const currentTime = this.blockchain.approximateTime;
@@ -46,7 +46,7 @@ export default class RequestHandler {
       operation = Operation.createUnanchoredOperation(request, currentTime.time);
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
-      if (this.batchWriter.hasOperationQueuedFor(operation.didUniqueSuffix)) {
+      if (await this.batchWriter.hasOperationQueuedFor(operation.didUniqueSuffix)) {
         throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
       }
     } catch (error) {
@@ -94,7 +94,7 @@ export default class RequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        this.batchWriter.add(operation);
+        await this.batchWriter.add(operation);
       }
 
       return response;

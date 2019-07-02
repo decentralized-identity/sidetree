@@ -7,6 +7,7 @@ import IDidPublicKey from '../../lib/core/IDidPublicKey';
 import Encoder from '../../lib/core/Encoder';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
+import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Multihash from '../../lib/core/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -48,8 +49,9 @@ describe('RequestHandler', () => {
 
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
+    const operationQueue = new MockOperationQueue();
     cas = new MockCas();
-    batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds);
+    batchWriter = new BatchWriter(blockchain, cas, config.batchingIntervalInSeconds, operationQueue);
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
 
@@ -66,7 +68,7 @@ describe('RequestHandler', () => {
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
-    requestHandler.handleOperationRequest(createOperationBuffer);
+    await requestHandler.handleOperationRequest(createOperationBuffer);
     await batchWriter.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
@@ -86,7 +88,7 @@ describe('RequestHandler', () => {
 
     // NOTE: this is a repeated step already done in beforeEach(),
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
-    const response = requestHandler.handleOperationRequest(createOperationBuffer);
+    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     const currentBlockchainTime = blockchain.approximateTime;
@@ -101,10 +103,8 @@ describe('RequestHandler', () => {
 
   it('should handle create operation request.', async () => {
     const blockchainWriteSpy = spyOn(blockchain, 'write');
-    expect(batchWriter.getOperationQueueLength()).toEqual(1);
 
     await batchWriter.writeOperationBatch();
-    expect(batchWriter.getOperationQueueLength()).toEqual(0);
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verfiy that CAS was invoked to store the batch file.
@@ -124,7 +124,7 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(blockchainTime);
 
     const createRequest = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
-    const response = requestHandler.handleOperationRequest(createRequest);
+    const response = await requestHandler.handleOperationRequest(createRequest);
     const httpStatus = Response.toHttpStatus(response.status);
 
     // TODO: more validations needed as implementation becomes more complete.
@@ -180,7 +180,7 @@ describe('RequestHandler', () => {
     // write operation batch to prevent the violation of 1 operation per DID per batch rule.
     await batchWriter.writeOperationBatch();
     const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
-    const response = requestHandler.handleOperationRequest(request);
+    const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
@@ -205,7 +205,7 @@ describe('RequestHandler', () => {
     };
 
     const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);
-    const response = requestHandler.handleOperationRequest(request);
+    const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
