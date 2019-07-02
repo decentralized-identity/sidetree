@@ -72,10 +72,7 @@ A valid _original DID Document_ must be a valid generic DID Document that adhere
 1. The document must contain at least 1 entry in the `publicKey` array property.
 1. The `id` property of a `publickey` element must be specified and be a fragment (e.g. `#key1`).
 1. Can have `service` property.
-1. `serviceEndpoint` property of each element inside the `service` array must:
-   1. Contain a `@context` property with value `schema.identity.foundation/hub`.
-   1. Contain a `@type` property with value `UserServiceEndpoint`.
-   1. Contain at least one element in an `instance` property typed as an array of strings.
+1. If an Identity Hub `serviceEndpoint` is desired, an entry must exist in the `service` array that conforms to the Identity Hub Service Endpoint descriptor schema.
 
 See [DID Create API](#original-did-document-example) section for an example of an original DID Document.
 
