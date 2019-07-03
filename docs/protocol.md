@@ -443,7 +443,7 @@ POST /
     "kid": "ID of the key used to sign the delete payload.",
     "alg": "ES256K"
   },
-  "payload": "Encoded update payload JSON object define by the schema below.",
+  "payload": "Encoded delete payload JSON object define by the schema below.",
   "signature": "Encoded signature."
 }
 ```
