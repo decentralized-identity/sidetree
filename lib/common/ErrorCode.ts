@@ -18,6 +18,7 @@ enum ErrorCode {
   AnchorFileNotJson = 'anchor_file_not_json',
   BatchWriterAlreadyHasOperationForDid = 'batch_writer_already_has_operation_for_did',
   InvalidTransactionNumberOrTimeHash = 'invalid_transaction_number_or_time_hash',
+  OperationBufferNotWellFormed = 'operation_buffer_not_well_formed',
   OperationExceedsMaximumSize = 'operation_exceeds_maximum_size',
   QueueingMultipleOperationsPerDidNotAllowed = 'queueing_multiple_operations_per_did_not_allowed'
 }
