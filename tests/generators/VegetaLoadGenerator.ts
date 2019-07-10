@@ -17,12 +17,13 @@ export default class VegetaLoadGenerator {
    * @param uniqueDidCount The number of unique DID to be generated.
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
+   * @param blockchainTime The simulated blockchain time used to calculate the DID unique suffix.
    */
-  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
-    const versionsOfProtocolParameters = require('../../../json/protocol-parameters-test.json');
+  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string, blockchainTime: number) {
+    const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
     ProtocolParameters.initialize(versionsOfProtocolParameters);
 
-    const didDocumentTemplate = require('../../../tests/json/didDocumentTemplate.json');
+    const didDocumentTemplate = require('../json/didDocumentTemplate.json');
     const keyId = '#key1';
 
     // Make directories needed by the request generator.
@@ -42,7 +43,7 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
       // Compute the DID unique suffix from the generated Create payload.
-      const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createPayload, ProtocolParameters.get(1000000).hashAlgorithmInMultihashCode);
+      const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createPayload, ProtocolParameters.get(blockchainTime).hashAlgorithmInMultihashCode);
 
       // Generate an Update payload.
       const updatePayload = {
