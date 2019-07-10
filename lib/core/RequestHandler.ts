@@ -53,6 +53,7 @@ export default class RequestHandler {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
         console.info(`Bad request: ${error.code}`);
+        console.info(`Error message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }

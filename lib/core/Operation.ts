@@ -1,12 +1,14 @@
 import Cryptography from './util/Cryptography';
 import Document, { IDocument } from './Document';
 import Encoder from './Encoder';
+import ErrorCode from '../common/ErrorCode';
 import IResolvedTransaction from './interfaces/IResolvedTransaction';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+import { SidetreeError } from './Error';
 
 /**
  * Sidetree operation types.
@@ -122,7 +124,7 @@ class Operation {
     // Ensure that the operation is well-formed.
     const wellFormedResult = Operation.isWellFormed(operation);
     if (wellFormedResult === undefined) {
-      throw new Error(`Operation buffer is not well-formed: ${operationJson}`);
+      throw new SidetreeError(ErrorCode.OperationBufferNotWellFormed, `Operation buffer is not well-formed: ${operationJson}`);
     }
 
     // Initialize common operation properties.
