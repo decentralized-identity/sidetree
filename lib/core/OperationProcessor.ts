@@ -126,12 +126,7 @@ export default class OperationProcessor {
         return [false, currentDidDocument];
       }
 
-      // Any non-create needs a previous operation hash  ...
-      if (!operation.previousOperationHash) {
-        return [false, currentDidDocument];
-      }
-
-      // ... that should match the hash of the latest valid operation (previousOperation)
+      // Any non-create needs a previous operation hash that should match the hash of the latest valid operation (previousOperation)
       if (operation.previousOperationHash !== previousOperation.getOperationHash()) {
         return [false, currentDidDocument];
       }

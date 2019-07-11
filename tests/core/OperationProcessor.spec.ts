@@ -328,35 +328,6 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeUndefined();
   });
 
-  it('should ignore update operation without a previous operation hash', async () => {
-    await operationProcessor.process([createOp!]);
-
-    const updatePayload = {
-      didUniqueSuffix,
-      patch: [{
-        op: 'replace',
-        path: '/publicKey/1',
-        value: {
-          id: '#key2',
-          type: 'RsaVerificationKey2018',
-          owner: 'did:sidetree:updateid1',
-          publicKeyPem: process.hrtime() // Some dummy value that's not used.
-        }
-      }]
-    };
-
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
-    const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
-    await operationProcessor.process([updateOp]);
-
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
-
-    expect(didDocument).toBeDefined();
-    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
-    expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined(); // if update above went through, the owner would be defined
-  });
-
   it('should ignore update operation with an invalid key id', async () => {
     await operationProcessor.process([createOp!]);
 

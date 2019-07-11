@@ -25,6 +25,10 @@ enum ErrorCode {
   OperationHeaderMissingOrIncorrectOperation = 'operation_header_missing_or_incorrect_operation',
   OperationMissingOrIncorrectPayload = 'operation_missing_or_incorrect_payload',
   OperationMissingOrIncorrectSignature = 'operation_missing_or_incorrect_signature',
+  OperationUpdatePayloadDidUniqueSuffixInvalid = 'operation_update_payload_did_unique_suffix_invalid',
+  OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType = 'operation_update_payload_missing_or_invalid_did_unique_suffix_type',
+  OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType = 'operation_update_payload_missing_or_invalid_previous_operation_hash_type',
+  OperationUpdatePayloadMissingOrUnknownProperty = 'operation_update_missing_or_unknown_property',
   QueueingMultipleOperationsPerDidNotAllowed = 'queueing_multiple_operations_per_did_not_allowed'
 }
 
