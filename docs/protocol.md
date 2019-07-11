@@ -149,10 +149,9 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
    1. All DID unique suffixes specified in the anchor file must be unique.
 1. _Batch file_ validation rules:
    1. The batch file must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
-   1. The batch file fetched from CAS must not exceed the maximum allowed batch file size.
+   1. The batch file must not exceed the maximum allowed batch file size.
    1. Must use the hashing algorithm specified by the protocol.
    1. DID unique suffixes found in the batch file must match DID unique suffixes found in anchor file exactly and in same order.
-   1. The operation batch size must not exceed the maximum size specified by the protocol.
 1. The transaction must meet the proof-of-fee requirements defined by the protocol.
 1. Every operation in the batch file must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
 

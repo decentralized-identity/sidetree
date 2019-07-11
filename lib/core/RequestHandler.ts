@@ -74,7 +74,12 @@ export default class RequestHandler {
       let response: IResponse;
       switch (operation.type) {
         case OperationType.Create:
-          response = this.handleCreateOperation(operation);
+          const didDocument = Document.from(operation.encodedPayload, this.didMethodName, protocolParameters.hashAlgorithmInMultihashCode);
+
+          response = {
+            status: ResponseStatus.Succeeded,
+            body: didDocument
+          };
           break;
         case OperationType.Update:
           response = {
@@ -200,29 +205,6 @@ export default class RequestHandler {
     return {
       status: ResponseStatus.Succeeded,
       body: constructedDidDocument
-    };
-  }
-
-  /**
-   * Handles create operation.
-   */
-  public handleCreateOperation (operation: Operation): IResponse {
-    // Get the protocol version according to current blockchain time.
-    const currentTime = this.blockchain.approximateTime;
-    const protocolVersion = ProtocolParameters.get(currentTime.time);
-
-    // Validate that the given encoded DID Document is a valid original document.
-    const isValidOriginalDocument = Document.isEncodedStringValidOriginalDocument(operation.encodedPayload, protocolVersion.maxOperationByteSize);
-    if (!isValidOriginalDocument) {
-      return { status: ResponseStatus.BadRequest };
-    }
-
-    // Construct real DID document and return it.
-    const didDocument = Document.from(operation.encodedPayload, this.didMethodName, protocolVersion.hashAlgorithmInMultihashCode);
-
-    return {
-      status: ResponseStatus.Succeeded,
-      body: didDocument
     };
   }
 }

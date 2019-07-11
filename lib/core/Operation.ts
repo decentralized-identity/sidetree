@@ -122,13 +122,9 @@ class Operation {
     const operation = JSON.parse(operationJson);
 
     // Ensure that the operation is well-formed.
-    const wellFormedResult = Operation.isWellFormed(operation);
-    if (wellFormedResult === undefined) {
-      throw new SidetreeError(ErrorCode.OperationBufferNotWellFormed, `Operation buffer is not well-formed: ${operationJson}`);
-    }
+    const [operationType, decodedPayload] = Operation.parseAndValidateOperation(operation);
 
     // Initialize common operation properties.
-    const [operationType, decodedPayload] = wellFormedResult;
     this.type = operationType;
     this.signingKeyId = operation.header.kid;
     this.encodedPayload = operation.payload;
@@ -251,66 +247,60 @@ class Operation {
   }
 
   /**
-   * Verifies if the given operation object is well-formed.
-   * NOTE: Well-formed validation does not include signature verification.
-   * @returns [operation type, decoded payload json object] if given operation is well-formed, returns undefined otherwise.
+   * Parses and validates the given operation object object.
+   * NOTE: Operation validation does not include signature verification.
+   * @returns [operation type, decoded payload json object] if given operation is valid, returns undefined otherwise.
    */
-  private static isWellFormed (operation: any): [OperationType, any] | undefined {
-    try {
-      // Must contain 'header' property and 'header' property must contain a string 'kid' property.
-      if (typeof operation.header.kid !== 'string') {
-        return undefined;
-      }
-
-      // 'header' property must contain 'alg' property with value 'ES256k'.
-      if (operation.header.alg !== 'ES256K') {
-        return undefined;
-      }
-
-      // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
-      const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
-      if (typeof operation.header.operation !== 'string' ||
-          !allowedOperations.has(operation.header.operation)) {
-        return undefined;
-      }
-
-      // Must contain string 'payload' property.
-      if (typeof operation.payload !== 'string') {
-        return undefined;
-      }
-
-      // Must contain string 'signature' property.
-      if (typeof operation.signature !== 'string') {
-        return undefined;
-      }
-
-      // Get the operation type.
-      const operationType = Operation.getOperationType(operation);
-
-      // Decode the encoded operation string.
-      const decodedPayloadJson = Encoder.decodeAsString(operation.payload);
-      const decodedPayload = JSON.parse(decodedPayloadJson);
-
-      // Verify operation specific payload schema.
-      let payloadSchemaIsValid;
-      switch (operationType) {
-        case OperationType.Create:
-          payloadSchemaIsValid = Document.isObjectValidOriginalDocument(decodedPayload);
-          break;
-        default:
-          payloadSchemaIsValid = true;
-      }
-
-      if (!payloadSchemaIsValid) {
-        console.info(`${operationType} payload failed schema validation: ${decodedPayloadJson}`);
-        return undefined;
-      }
-
-      return [operationType, decodedPayload];
-    } catch (error) {
-      console.info(`Operation failed schema validation: ${JSON.stringify(operation)}`);
-      return undefined;
+  private static parseAndValidateOperation (operation: any): [OperationType, any] {
+    // Must contain 'header' property and 'header' property must contain a string 'kid' property.
+    if (typeof operation.header.kid !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationHeaderMissingKid);
     }
+
+    // 'header' property must contain 'alg' property with value 'ES256k'.
+    if (operation.header.alg !== 'ES256K') {
+      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectAlg);
+    }
+
+    // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
+    const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
+    if (typeof operation.header.operation !== 'string' ||
+        !allowedOperations.has(operation.header.operation)) {
+      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectOperation);
+    }
+
+    // Must contain string 'payload' property.
+    if (typeof operation.payload !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationMissingOrIncorrectPayload);
+    }
+
+    // Must contain string 'signature' property.
+    if (typeof operation.signature !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationMissingOrIncorrectSignature);
+    }
+
+    // Get the operation type.
+    const operationType = Operation.getOperationType(operation);
+
+    // Decode the encoded operation string.
+    const decodedPayloadJson = Encoder.decodeAsString(operation.payload);
+    const decodedPayload = JSON.parse(decodedPayloadJson);
+
+    // Verify operation specific payload schema.
+    switch (operationType) {
+      case OperationType.Create:
+        const validDocument = Document.isObjectValidOriginalDocument(decodedPayload);
+        if (!validDocument) {
+          throw new SidetreeError(ErrorCode.OperationCreateInvalidDidDocument);
+        }
+        break;
+      case OperationType.Update:
+      case OperationType.Delete:
+      case OperationType.Recover:
+      default:
+    }
+
+    return [operationType, decodedPayload];
   }
 }
 

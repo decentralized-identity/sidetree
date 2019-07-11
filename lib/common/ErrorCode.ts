@@ -18,8 +18,13 @@ enum ErrorCode {
   AnchorFileNotJson = 'anchor_file_not_json',
   BatchWriterAlreadyHasOperationForDid = 'batch_writer_already_has_operation_for_did',
   InvalidTransactionNumberOrTimeHash = 'invalid_transaction_number_or_time_hash',
-  OperationBufferNotWellFormed = 'operation_buffer_not_well_formed',
+  OperationCreateInvalidDidDocument = 'operation_create_invalid_did_document',
   OperationExceedsMaximumSize = 'operation_exceeds_maximum_size',
+  OperationHeaderMissingKid = 'operation_header_missing_kid',
+  OperationHeaderMissingOrIncorrectAlg = 'operation_header_missing_or_incorrect_alg',
+  OperationHeaderMissingOrIncorrectOperation = 'operation_header_missing_or_incorrect_operation',
+  OperationMissingOrIncorrectPayload = 'operation_missing_or_incorrect_payload',
+  OperationMissingOrIncorrectSignature = 'operation_missing_or_incorrect_signature',
   QueueingMultipleOperationsPerDidNotAllowed = 'queueing_multiple_operations_per_did_not_allowed'
 }
 
