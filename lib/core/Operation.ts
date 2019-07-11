@@ -249,7 +249,7 @@ class Operation {
   /**
    * Parses and validates the given operation object object.
    * NOTE: Operation validation does not include signature verification.
-   * @returns [operation type, decoded payload json object] if given operation is valid, returns undefined otherwise.
+   * @returns [operation type, decoded payload json object] if given operation is valid, Error is thrown otherwise.
    */
   private static parseAndValidateOperation (operation: any): [OperationType, any] {
     // Must contain 'header' property and 'header' property must contain a string 'kid' property.
@@ -295,12 +295,44 @@ class Operation {
         }
         break;
       case OperationType.Update:
+        Operation.validateUpdatePayload(decodedPayload);
+        break;
       case OperationType.Delete:
       case OperationType.Recover:
       default:
     }
 
     return [operationType, decodedPayload];
+  }
+
+  /**
+   * Validates the schema given update operation payload.
+   * @throws Error if given operation payload fails validation.
+   */
+  public static validateUpdatePayload (payload: any) {
+    const payloadProperties = Object.keys(payload);
+    if (payloadProperties.length !== 3) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
+    }
+
+    if (typeof payload.didUniqueSuffix !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType);
+    }
+
+    if (typeof payload.previousOperationHash !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
+    }
+
+    const supportedHashAlgorithms = ProtocolParameters.getSupportedHashAlgorithms();
+    const uniqueSuffixBuffer = Encoder.decodeAsBuffer(payload.didUniqueSuffix);
+    if (!Multihash.isSupportedHash(uniqueSuffixBuffer, supportedHashAlgorithms)) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadDidUniqueSuffixInvalid, `'${payload.didUniqueSuffix}' is an unuspported multihash.`);
+    }
+
+    const previousOperationHashBuffer = Encoder.decodeAsBuffer(payload.previousOperationHash);
+    if (!Multihash.isSupportedHash(previousOperationHashBuffer, supportedHashAlgorithms)) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadDidUniqueSuffixInvalid, `'${payload.previousOperationHash}' is an unuspported multihash`);
+    }
   }
 }
 
