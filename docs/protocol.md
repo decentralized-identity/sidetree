@@ -383,7 +383,6 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID",
-  "operationNumber": "The number incremented from the last change version number. 1 if first change.",
   "previousOperationHash": "The hash of the previous operation made to the DID Document.",
   "patch": "An RFC 6902 JSON patch to the current DID Document",
 }
@@ -393,7 +392,6 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-  "operationNumber": 12,
   "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
   "patch": [{
     "op": "remove",
