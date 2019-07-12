@@ -54,12 +54,6 @@ class Operation {
   public readonly operationBuffer: Buffer;
 
   /**
-   * The incremental number of each update made to the same DID Document.
-   * Delete and Recover operations don't have this number.
-   */
-  public readonly operationNumber?: Number;
-
-  /**
    * The unique suffix of the DID of the DID document to be created/updated.
    * If this is a create operation waiting to be anchored, a DID unique suffix will be generated based on the current blockchain time.
    */
@@ -133,11 +127,9 @@ class Operation {
     // Initialize operation specific properties.
     switch (this.type) {
       case OperationType.Create:
-        this.operationNumber = 0;
         this.didUniqueSuffix = this.getOperationHash();
         break;
       case OperationType.Update:
-        this.operationNumber = decodedPayload.operationNumber;
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.previousOperationHash = decodedPayload.previousOperationHash;
         this.patch = decodedPayload.patch;
