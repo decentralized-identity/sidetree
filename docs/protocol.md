@@ -398,8 +398,7 @@ POST / HTTP/1.1
     {
       "id": "A string that begins with '#'.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Only present if type is Secp256k1VerificationKey2018.",
-      "publicKeyPem": "Only present if type RsaVerificationKey2018 is used."
+      "publicKeyHex": "Only present if type is Secp256k1VerificationKey2018, else any property can be used.",
     }
   ]
 }
@@ -457,8 +456,8 @@ Example:
   "action": "add-service-endpoints",
   "serviceType": "IdentityHub",
   "serviceEndpoints": [
-    "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-    "did:sidetree:QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+    "did:sidetree:EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA",
+    "did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A"
   ]
 }
 ```
@@ -480,8 +479,8 @@ Example:
   "action": "remove-service-endpoints",
   "serviceType": "IdentityHub",
   "serviceEndpoints": [
-    "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-    "did:sidetree:QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+    "did:sidetree:EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA",
+    "did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A"
   ]
 }
 ```
@@ -490,8 +489,8 @@ Example:
 #### Update payload example
 ```json
 {
-  "didUniqueSuffix": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-  "previousOperationHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
+  "didUniqueSuffix": "EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A",
+  "previousOperationHash": "EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A",
   "patches": [
     {
       "action": "add-public-keys",
@@ -512,8 +511,8 @@ Example:
       "action": "remove-service-endpoints",
       "serviceType": "IdentityHub",
       "serviceEndpoints": [
-        "did:sidetree:QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-        "did:sidetree:QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+        "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
+        "did:sidetree:EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg"
       ]
     }
   ]

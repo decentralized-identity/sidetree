@@ -26,9 +26,21 @@ enum ErrorCode {
   OperationMissingOrIncorrectPayload = 'operation_missing_or_incorrect_payload',
   OperationMissingOrIncorrectSignature = 'operation_missing_or_incorrect_signature',
   OperationUpdatePayloadDidUniqueSuffixInvalid = 'operation_update_payload_did_unique_suffix_invalid',
+  OperationUpdatePayloadPreviousOperationHashInvalid = 'operation_update_payload_previous_operation_hash_invalid',
   OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType = 'operation_update_payload_missing_or_invalid_did_unique_suffix_type',
   OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType = 'operation_update_payload_missing_or_invalid_previous_operation_hash_type',
   OperationUpdatePayloadMissingOrUnknownProperty = 'operation_update_missing_or_unknown_property',
+  OperationUpdatePatchesNotArray = 'operation_update_patches_not_array',
+  OperationUpdatePatchMissingOrUnknownAction = 'operation_update_patch_missing_or_unknown_action',
+  OperationUpdatePatchMissingOrUnknownProperty = 'operation_update_patch_missing_or_unknown_property',
+  OperationUpdatePatchPublicKeyHexMissingOrIncorrect = 'operation_update_patch_public_key_hex_missing_or_incorrect',
+  OperationUpdatePatchPublicKeyIdNotString = 'operation_update_path_public_key_id_not_string',
+  OperationUpdatePatchPublicKeyMissingOrUnknownProperty = 'operation_update_patch_public_key_missing_or_unknown_property',
+  OperationUpdatePatchPublicKeysNotArray = 'operation_update_patch_public_keys_not_array',
+  OperationUpdatePatchPublicKeyTypeMissingOrUnknown = 'operation_update_patch_public_key_type_missing_or_unknown',
+  OperationUpdatePatchServiceEndpointNotDid = 'operation_update_patch_service_endpoint_not_did',
+  OperationUpdatePatchServiceEndpointsNotArray = 'operation_update_patch_service_endpoints_not_array',
+  OperationUpdatePatchServiceTypeMissingOrUnknown = 'operation_update_patch_service_type_missing_or_unknown',
   QueueingMultipleOperationsPerDidNotAllowed = 'queueing_multiple_operations_per_did_not_allowed'
 }
 

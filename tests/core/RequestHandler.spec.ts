@@ -191,16 +191,18 @@ describe('RequestHandler', () => {
     await batchWriter.writeOperationBatch();
 
     // Create a request that will delete the 2nd public key.
-    const jsonPatch = [{
-      op: 'remove',
-      path: '/publicKey/1'
-    }];
+    const patches = [
+      {
+        action: 'remove-public-keys',
+        publicKeys: ['#key1', '#key2']
+      }
+    ];
 
     // Construct update payload.
     const updatePayload = {
       didUniqueSuffix,
-      patch: jsonPatch,
-      previousOperationHash: didUniqueSuffix
+      previousOperationHash: didUniqueSuffix,
+      patches
     };
 
     const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);

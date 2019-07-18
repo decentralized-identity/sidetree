@@ -52,11 +52,18 @@ async function createUpdateSequence (
     const updatePayload = {
       didUniqueSuffix,
       previousOperationHash: mostRecentVersion,
-      patch: [{
-        op: 'replace',
-        path: '/service/0/serviceEndpoint/instance/0',
-        value: 'did:sidetree:updateid' + i
-      }]
+      patches: [
+        {
+          action: 'remove-service-endpoints',
+          serviceType: 'IdentityHub',
+          serviceEndpoints: ['did:sidetree:value' + (i - 1)]
+        },
+        {
+          action: 'add-service-endpoints',
+          serviceType: 'IdentityHub',
+          serviceEndpoints: ['did:sidetree:value' + i]
+        }
+      ]
     };
 
     const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
@@ -109,7 +116,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDidDocumentAfterUpdates (didDocument: IDocument | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
-  expect(didDocument!.service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:updateid' + (numberOfUpdates - 1));
+  expect(didDocument!.service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -166,6 +173,32 @@ describe('OperationProcessor', async () => {
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
     expect(publicKey2!.owner).toBeUndefined();
+  });
+
+  it('should process update to remove a public key correctly', async () => {
+    await operationProcessor.process([createOp!]);
+
+    const updatePayload = {
+      didUniqueSuffix,
+      previousOperationHash: createOp!.getOperationHash(),
+      patches: [
+        {
+          action: 'remove-public-keys',
+          publicKeys: ['#key2']
+        }
+      ]
+    };
+
+    // Generate operation with an invalid key
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
+    const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
+    await operationProcessor.process([updateOp]);
+
+    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+
+    expect(didDocument).toBeDefined();
+    const key2 = Document.getPublicKey(didDocument!, '#key2');
+    expect(key2).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
   it('should process updates correctly', async () => {
@@ -328,30 +361,36 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeUndefined();
   });
 
-  it('should ignore update operation with an invalid key id', async () => {
+  it('should ignore update operation signed with an unresolvable key', async () => {
     await operationProcessor.process([createOp!]);
 
     const updatePayload = {
       didUniqueSuffix,
       previousOperationHash: createOp!.getOperationHash(),
-      patch: [{
-        op: 'replace',
-        path: '/service/0/serviceEndpoint/instance/0',
-        value: 'did:sidetree:updateid1'
-      }]
+      patches: [
+        {
+          action: 'add-public-keys',
+          publicKeys: [
+            {
+              id: '#new-key',
+              type: 'Secp256k1VerificationKey2018',
+              publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
+            }
+          ]
+        }
+      ]
     };
 
     // Generate operation with an invalid key
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#InvalidKeyId', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#UnresolvableKey', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
     await operationProcessor.process([updateOp]);
 
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
-    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
-    expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined(); // if update above went through, the owner would be defined
+    const newKey = Document.getPublicKey(didDocument!, 'new-key');
+    expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
   it('should ignore update operation with an invalid signature', async () => {
@@ -360,11 +399,18 @@ describe('OperationProcessor', async () => {
     const updatePayload = {
       didUniqueSuffix,
       previousOperationHash: createOp!.getOperationHash(),
-      patch: [{
-        op: 'replace',
-        path: '/service/0/serviceEndpoint/instance/0',
-        value: 'did:sidetree:updateid1'
-      }]
+      patches: [
+        {
+          action: 'add-public-keys',
+          publicKeys: [
+            {
+              id: '#new-key',
+              type: 'Secp256k1VerificationKey2018',
+              publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
+            }
+          ]
+        }
+      ]
     };
 
     // Generate operation with an invalid key
@@ -377,9 +423,8 @@ describe('OperationProcessor', async () => {
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
-    const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
-    expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined(); // if update above went through, the owner would be defined
+    const newKey = Document.getPublicKey(didDocument!, 'new-key');
+    expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
   it('should pick earlier of two conflicting updates', async () => {
@@ -388,21 +433,35 @@ describe('OperationProcessor', async () => {
     const update1Payload = {
       didUniqueSuffix,
       previousOperationHash: createOp!.getOperationHash(),
-      patch: [{
-        op: 'replace',
-        path: '/service/0/serviceEndpoint/instance/0',
-        value: 'did:sidetree:updateid1'
-      }]
+      patches: [
+        {
+          action: 'add-public-keys',
+          publicKeys: [
+            {
+              id: '#new-key1',
+              type: 'Secp256k1VerificationKey2018',
+              publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
+            }
+          ]
+        }
+      ]
     };
 
     const update2Payload = {
       didUniqueSuffix,
       previousOperationHash: createOp!.getOperationHash(),
-      patch: [{
-        op: 'replace',
-        path: '/service/0/serviceEndpoint/instance/0',
-        value: 'did:sidetree:updateid2'
-      }]
+      patches: [
+        {
+          action: 'add-public-keys',
+          publicKeys: [
+            {
+              id: '#new-key2',
+              type: 'Secp256k1VerificationKey2018',
+              publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
+            }
+          ]
+        }
+      ]
     };
 
     const updateOperation2Buffer = await OperationGenerator.generateUpdateOperationBuffer(update2Payload, '#key1', privateKey);
@@ -416,7 +475,8 @@ describe('OperationProcessor', async () => {
     const didDocument = await operationProcessor.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
-    expect((didDocument! as any).service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:updateid1');
+    expect(didDocument!.publicKey.length).toEqual(3);
+    expect(didDocument!.publicKey[2].id).toEqual('#new-key1');
   });
 
   it('should rollback all', async () => {

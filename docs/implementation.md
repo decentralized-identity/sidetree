@@ -81,7 +81,7 @@ The primary goals for the _Observer_ are to:
 1. Allow horizontal scaling for high DID resolution throughput.
 1. Allow sharing of the processed data structure by multiple Sidetree nodes to minimize redundant computation.
 
-The above goals lead to a design where minimal processing of the operations at the time of ingestion and defers the heavy processing such as signature validation and JSON patch to the time of DID resolution.
+The above goals lead to a design where minimal processing of the operations at the time of ingestion and defers the heavy processing such as signature validation to the time of DID resolution.
 
 ### Blockchain REST API
 The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.

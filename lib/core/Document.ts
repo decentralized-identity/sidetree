@@ -8,20 +8,20 @@ import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 export interface IDocument {
   '@context': string;
   id: string;
-  publicKey: [{
+  publicKey: {
     id: string,
     type: string,
     publicKeyJwk?: object
     publicKeyHex?: object
-  }];
-  service: [{
+  }[];
+  service: {
     type: string,
     serviceEndpoint: {
       '@context': string;
       '@type': string;
-      instance: [string]
+      instance: string[]
     }
-  }];
+  }[];
 }
 
 /**

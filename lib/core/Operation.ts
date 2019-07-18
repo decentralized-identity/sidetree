@@ -1,11 +1,11 @@
 import Cryptography from './util/Cryptography';
+import Did from './Did';
 import Document, { IDocument } from './Document';
 import Encoder from './Encoder';
 import ErrorCode from '../common/ErrorCode';
 import IResolvedTransaction from './interfaces/IResolvedTransaction';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
-import { applyPatch } from 'fast-json-patch';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { SidetreeError } from './Error';
@@ -73,8 +73,8 @@ class Operation {
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument?: IDocument;
 
-  /** Patch to the DID Document, only applicable to update operations, undefined otherwise. */
-  public readonly patch?: any[];
+  /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
+  public readonly patches?: any[];
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
@@ -132,7 +132,7 @@ class Operation {
       case OperationType.Update:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.previousOperationHash = decodedPayload.previousOperationHash;
-        this.patch = decodedPayload.patch;
+        this.patches = decodedPayload.patches;
         break;
       case OperationType.Delete:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
@@ -208,16 +208,82 @@ class Operation {
   }
 
   /**
-   * Applies the given JSON Patch to the specified DID Document.
-   * NOTE: a new instance of the DidDocument is returned, the original instance is not modified.
-   * @returns The resultant DID Document.
+   * Applies the given patches in order to the given DID Document.
+   * NOTE: Assumes no schema validation is needed.
    */
-  public static applyJsonPatchToDidDocument (didDocument: IDocument, jsonPatch: any[]): IDocument {
-    const validatePatchOperation = true;
-    const mutateOriginalContent = false;
-    const updatedDidDocument = applyPatch(didDocument, jsonPatch, validatePatchOperation, mutateOriginalContent);
+  public static applyPatchesToDidDocument (didDocument: IDocument, patches: any[]) {
+    // Loop through and apply all patches.
+    for (let patch of patches) {
+      Operation.applyPatchToDidDocument(didDocument, patch);
+    }
+  }
 
-    return updatedDidDocument.newDocument;
+  /**
+   * Applies the given patch to the given DID Document.
+   */
+  private static applyPatchToDidDocument (didDocument: IDocument, patch: any) {
+    if (patch.action === 'add-public-keys') {
+      const publicKeySet = new Set(didDocument.publicKey.map(key => key.id));
+
+      // Loop through all given public keys and add them if they don't exist already.
+      for (let publicKey of patch.publicKeys) {
+        if (!publicKeySet.has(publicKey)) {
+          didDocument.publicKey.push(publicKey);
+        }
+      }
+    } else if (patch.action === 'remove-public-keys') {
+      const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
+
+      // Loop through all given public key IDs and add them from the existing public key set.
+      for (let publicKey of patch.publicKeys) {
+        publicKeyMap.delete(publicKey);
+      }
+
+      didDocument.publicKey = [...publicKeyMap.values()];
+    } else if (patch.action === 'add-service-endpoints') {
+      // Find the service of the given service type.
+      let service = didDocument.service.find(service => service.type === patch.serviceType);
+
+      // If service not found, create a new service element and add it to the property.
+      if (service === undefined) {
+        service = {
+          type: patch.serviceType,
+          serviceEndpoint: {
+            '@context': 'schema.identity.foundation/hub',
+            '@type': 'UserServiceEndpoint',
+            instance: patch.serviceEndpoints
+          }
+        };
+
+        didDocument.service.push(service);
+      } else {
+        // Else we add to the eixsting service element.
+
+        const serviceEndpointSet = new Set(service.serviceEndpoint.instance);
+
+        // Loop through all given service endpoints and add them if they don't exist already.
+        for (let serviceEndpoint of patch.serviceEndpoints) {
+          if (!serviceEndpointSet.has(serviceEndpoint)) {
+            service.serviceEndpoint.instance.push(serviceEndpoint);
+          }
+        }
+      }
+    } else if (patch.action === 'remove-service-endpoints') {
+      let service = didDocument.service.find(service => service.type === patch.serviceType);
+
+      if (service === undefined) {
+        return;
+      }
+
+      const serviceEndpointSet = new Set(service.serviceEndpoint.instance);
+
+      // Loop through all given public key IDs and add them from the existing public key set.
+      for (let serviceEndpoint of patch.serviceEndpoints) {
+        serviceEndpointSet.delete(serviceEndpoint);
+      }
+
+      service.serviceEndpoint.instance = [...serviceEndpointSet];
+    }
   }
 
   /**
@@ -323,7 +389,112 @@ class Operation {
 
     const previousOperationHashBuffer = Encoder.decodeAsBuffer(payload.previousOperationHash);
     if (!Multihash.isSupportedHash(previousOperationHashBuffer, supportedHashAlgorithms)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadDidUniqueSuffixInvalid, `'${payload.previousOperationHash}' is an unuspported multihash`);
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadPreviousOperationHashInvalid, `'${payload.previousOperationHash}' is an unuspported multihash`);
+    }
+
+    // Validate schema of every patch to be applied.
+    Operation.validateUpdatePatches(payload.patches);
+  }
+
+  private static validateUpdatePatches (patches: any) {
+    if (!Array.isArray(patches)) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchesNotArray);
+    }
+
+    for (let patch of patches) {
+      Operation.validateUpdatePatch(patch);
+    }
+  }
+
+  private static validateUpdatePatch (patch: any) {
+    const action = patch.action;
+    switch (action) {
+      case 'add-public-keys':
+        Operation.validateAddPublicKeysPatch(patch);
+        break;
+      case 'remove-public-keys':
+        Operation.validateRemovePublicKeysPatch(patch);
+        break;
+      case 'add-service-endpoints':
+        Operation.validateServiceEndpointsPatch(patch);
+        break;
+      case 'remove-service-endpoints':
+        Operation.validateServiceEndpointsPatch(patch);
+        break;
+      default:
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownAction);
+    }
+  }
+
+  private static validateAddPublicKeysPatch (patch: any) {
+    const patchProperties = Object.keys(patch);
+    if (patchProperties.length !== 2) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
+    }
+
+    if (!Array.isArray(patch.publicKeys)) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeysNotArray);
+    }
+
+    for (let publicKey of patch.publicKeys) {
+      const publicKeyProperties = Object.keys(publicKey);
+      if (publicKeyProperties.length !== 3) {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyMissingOrUnknownProperty);
+      }
+
+      if (typeof publicKey.id !== 'string') {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+      }
+
+      if (publicKey.type === 'Secp256k1VerificationKey2018') {
+        if (typeof publicKey.publicKeyHex !== 'string') {
+          throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyHexMissingOrIncorrect);
+        }
+      } else if (publicKey.type !== 'RsaVerificationKey2018') {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyTypeMissingOrUnknown);
+      }
+    }
+  }
+
+  private static validateRemovePublicKeysPatch (patch: any) {
+    const patchProperties = Object.keys(patch);
+    if (patchProperties.length !== 2) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
+    }
+
+    if (!Array.isArray(patch.publicKeys)) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeysNotArray);
+    }
+
+    for (let publicKeyId of patch.publicKeys) {
+      if (typeof publicKeyId !== 'string') {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+      }
+    }
+  }
+
+  /**
+   * Validates update patch for either adding or removing service endpoints.
+   */
+  private static validateServiceEndpointsPatch (patch: any) {
+    const patchProperties = Object.keys(patch);
+    if (patchProperties.length !== 3) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
+    }
+
+    if (patch.serviceType !== 'IdentityHub') {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceTypeMissingOrUnknown);
+    }
+
+    if (!Array.isArray(patch.serviceEndpoints)) {
+      throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointsNotArray);
+    }
+
+    for (let serviceEndpoint of patch.serviceEndpoints) {
+      if (typeof serviceEndpoint !== 'string' ||
+          !Did.isDid(serviceEndpoint)) {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotDid);
+      }
     }
   }
 }

@@ -25,11 +25,22 @@ export default class Did {
   }
 
   /**
-   * Gets the unique portion of the DID. e.g. "did:sidetree:12345" -> "12345"
+   * Checks to see if the given string is a valid generic DID.
    */
-  public static getUniqueSuffix (did: string): string {
-    const lastColonIndex = did.lastIndexOf(':');
-    const uniqueSuffix = did.substring(lastColonIndex + 1);
-    return uniqueSuffix;
+  public static isDid (did: string): boolean {
+    if (!did.startsWith('did:')) {
+      return false;
+    }
+
+    const uniqueSuffixWithMethodName = did.substring(4); // e.g. 'sidetree:abc'
+    const indexOfColonChar = uniqueSuffixWithMethodName.indexOf(':');
+
+    // ':' must exists and not be the first or last character.
+    if (indexOfColonChar <= 0 ||
+        indexOfColonChar === (uniqueSuffixWithMethodName.length - 1)) {
+      return false;
+    }
+
+    return true;
   }
 }
