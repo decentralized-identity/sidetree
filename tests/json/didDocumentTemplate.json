@@ -28,8 +28,7 @@
         "@context": "schema.identity.foundation/hub",
         "@type": "UserServiceEndpoint",
         "instance": [
-          "did:sidetree:456",
-          "did:sidetree:789"
+          "did:sidetree:value0"
         ]
       }
     }
