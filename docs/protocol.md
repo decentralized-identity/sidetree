@@ -398,7 +398,7 @@ POST / HTTP/1.1
     {
       "id": "A string that begins with '#'.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Only present if type is Secp256k1VerificationKey2018, else any property can be used.",
+      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else any property can be used.",
     }
   ]
 }

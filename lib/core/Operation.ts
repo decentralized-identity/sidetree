@@ -447,7 +447,9 @@ class Operation {
       }
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {
-        if (typeof publicKey.publicKeyHex !== 'string') {
+        // The key must be in compressed bitcoin-key format.
+        if (typeof publicKey.publicKeyHex !== 'string' ||
+            publicKey.publicKeyHex.length !== 66) {
           throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyHexMissingOrIncorrect);
         }
       } else if (publicKey.type !== 'RsaVerificationKey2018') {
