@@ -1,7 +1,7 @@
 import Cryptography from '../../lib/core/util/Cryptography';
+import ErrorCode from '../../lib/common/ErrorCode';
 import OperationGenerator from '../generators/OperationGenerator';
 import { Operation } from '../../lib/core/Operation';
-import ErrorCode from '../../lib/common/ErrorCode';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('Operation', async () => {
@@ -207,7 +207,7 @@ describe('Operation', async () => {
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 
-    it('should throw error if any of the service endpoints in the add-service-endpoints patch is not a string.', async () => {
+    it('should throw error if any of the service endpoints in the add-service-endpoints patch is not a valid DID.', async () => {
       const updatePayload = generateUpdatePayloadForPublicKeys();
       updatePayload.patches[2].serviceEndpoints![0] = 'invalidDidFormat';
 
