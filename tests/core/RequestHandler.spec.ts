@@ -127,7 +127,6 @@ describe('RequestHandler', () => {
     const response = await requestHandler.handleOperationRequest(createRequest);
     const httpStatus = Response.toHttpStatus(response.status);
 
-    // TODO: more validations needed as implementation becomes more complete.
     expect(httpStatus).toEqual(400);
   });
 

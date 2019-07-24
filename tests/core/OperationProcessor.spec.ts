@@ -140,7 +140,7 @@ describe('OperationProcessor', async () => {
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config.didMethodName, operationStore); // TODO: add a clear method to avoid double initialization.
+    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
