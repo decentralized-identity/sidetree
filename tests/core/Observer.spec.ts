@@ -14,6 +14,7 @@ import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
 import { IAnchorFile } from '../../lib/core/AnchorFile';
 import { IBatchFile } from '../../lib/core/BatchFile';
+import VersionManager from '../../lib/core/VersionManager';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -82,8 +83,9 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
     // Start the Observer.
+    const versionManager = new VersionManager(downloadManager, operationStore);
     const transactionStore = new MockTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
     const processedTransactions = transactionStore.getTransactions();
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
@@ -143,9 +145,10 @@ describe('Observer', async () => {
     };
     spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
 
+    const versionManager = new VersionManager(downloadManager, operationStore);
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
     const transactionStore = new MockTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
 
     const mockTransaction: ITransaction = {
       transactionNumber: 1,
@@ -157,7 +160,7 @@ describe('Observer', async () => {
       transaction: mockTransaction,
       processingStatus: 'pending'
     };
-    await (observer as any).downloadThenProcessBatchAsync(mockTransaction, transactionUnderProcessing);
+    await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
     const iterableOperations1 = await operationStore.get('EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A');
     const operationArray1 = [...iterableOperations1];
@@ -179,9 +182,10 @@ describe('Observer', async () => {
     const expectedConsoleLogSubstring = tuple[1];
 
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
+      const versionManager = new VersionManager(downloadManager, operationStore);
       const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
       const transactionStore = new MockTransactionStore();
-      const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+      const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
 
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
@@ -205,7 +209,7 @@ describe('Observer', async () => {
         transaction: mockTransaction,
         processingStatus: 'pending'
       };
-      await (observer as any).downloadThenProcessBatchAsync(mockTransaction, transactionUnderProcessing);
+      await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
       expect(expectedConsoleLogDetected).toBeTruthy();
       expect(transactionStore.removeUnresolvableTransaction).toHaveBeenCalled();
@@ -292,7 +296,8 @@ describe('Observer', async () => {
 
     // Process first set of transactions.
     const transactionStore = new MockTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const versionManager = new VersionManager(downloadManager, operationStore);
+    const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.

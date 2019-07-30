@@ -13,15 +13,16 @@ export default class OperationProcessor {
 
   public constructor (private didMethodName: string, private operationStore: OperationStore) { }
 
-  /**
-   * Process a batch of operations. Simply store the operations in the
-   * store.
-   */
-  public async process (operations: Array<Operation>): Promise<void> {
-    return this.operationStore.put(operations);
-  }
+  // /**
+  //  * Process a batch of operations. Simply store the operations in the
+  //  * store.
+  //  */
+  // public async process (operations: Array<Operation>): Promise<void> {
+  //   return this.operationStore.put(operations);
+  // }
 
   /**
+   * NOTE: this maybe the only method left after refactoring, thus class renaming is likely.
    * Remove all previously processed operations with transactionNumber
    * greater than the provided transaction number. Relies on
    * OperationStore.delete that implements this functionality.

@@ -11,6 +11,7 @@ import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import RequestHandler from './RequestHandler';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
+import VersionManager from './VersionManager';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -42,11 +43,13 @@ export default class Core {
     this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString);
     this.batchWriter = new BatchWriter(this.blockchain, cas, config.batchingIntervalInSeconds, this.operationQueue);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
+    const versionManager = new VersionManager(downloadManager, this.operationStore);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
     this.requestHandler = new RequestHandler(operationProcessor, this.blockchain, this.batchWriter, config.didMethodName);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    this.observer = new Observer(this.blockchain,
+    this.observer = new Observer(versionManager,
+                                 this.blockchain,
                                  downloadManager,
                                  operationProcessor,
                                  this.transactionStore,
