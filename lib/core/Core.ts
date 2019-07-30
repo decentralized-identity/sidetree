@@ -7,11 +7,10 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import OperationProcessor from './OperationProcessor';
-import ProtocolParameters, { IProtocolParameters } from './ProtocolParameters';
 import RequestHandler from './RequestHandler';
+import VersionManager, { IProtocolVersion } from './VersionManager';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
-import VersionManager from './VersionManager';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -21,6 +20,7 @@ export default class Core {
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
   private operationQueue: MongoDbOperationQueue;
+  private versionManager: VersionManager;
   private blockchain: BlockchainClient;
   private observer: Observer;
   private batchWriter: BatchWriter;
@@ -33,9 +33,7 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: IConfig, versionsOfProtocolParameters: IProtocolParameters[]) {
-    ProtocolParameters.initialize(versionsOfProtocolParameters);
-
+  public constructor (config: IConfig, protocolVersions: IProtocolVersion[]) {
     // Component dependency initialization & injection.
     this.blockchain = new BlockchainClient(config.blockchainServiceUri);
     const cas = new CasClient(config.contentAddressableStoreServiceUri);
@@ -43,12 +41,12 @@ export default class Core {
     this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString);
     this.batchWriter = new BatchWriter(this.blockchain, cas, config.batchingIntervalInSeconds, this.operationQueue);
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
-    const versionManager = new VersionManager(downloadManager, this.operationStore);
+    this.versionManager = new VersionManager(protocolVersions, downloadManager, this.operationStore);
     const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
     this.requestHandler = new RequestHandler(operationProcessor, this.blockchain, this.batchWriter, config.didMethodName);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    this.observer = new Observer(versionManager,
+    this.observer = new Observer(this.versionManager,
                                  this.blockchain,
                                  downloadManager,
                                  operationProcessor,
@@ -69,6 +67,7 @@ export default class Core {
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
     await this.blockchain.initialize();
+    await this.versionManager.initialize();
 
     await this.observer.startPeriodicProcessing();
     this.batchWriter.startPeriodicBatchWriting();

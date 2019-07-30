@@ -7,7 +7,7 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from '../lib/core/Core';
 import IConfig from '../lib/core/interfaces/IConfig';
-import { IProtocolParameters } from '../lib/core/ProtocolParameters';
+import { IProtocolVersion } from '../lib/core/VersionManager';
 import { IResponse, Response } from '../lib/common/Response';
 
 /** Configuration used by this server. */
@@ -16,9 +16,9 @@ interface IServerConfig extends IConfig {
 }
 
 const config: IServerConfig = require('./core-config.json');
-const versionsOfProtocolParameters: IProtocolParameters[] = require('./core-protocol-parameters.json');
+const protocolVersions: IProtocolVersion[] = require('./core-protocol-versioning.json');
 
-const sidetreeCore = new Core(config, versionsOfProtocolParameters);
+const sidetreeCore = new Core(config, protocolVersions);
 const app = new Koa();
 
 // Raw body parser.

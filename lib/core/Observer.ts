@@ -230,7 +230,7 @@ export default class Observer {
     let transactionProcessedSuccessfully;
 
     try {
-      const transactionProcessor: TransactionProcessor = await this.versionManager.getTransactionProcessor(transaction.transactionTime);
+      const transactionProcessor: TransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
       transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);

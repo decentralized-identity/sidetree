@@ -7,6 +7,7 @@ import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
 import OperationProcessor from '../../lib/core/OperationProcessor';
 import OperationStore from '../../lib/core/interfaces/OperationStore';
+import VersionManager, { IProtocolVersion } from '../../lib/core/VersionManager';
 import { BlockchainClient } from '../../lib/core/Blockchain';
 import { CasClient } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
@@ -14,11 +15,11 @@ import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
 import { IAnchorFile } from '../../lib/core/AnchorFile';
 import { IBatchFile } from '../../lib/core/BatchFile';
-import VersionManager from '../../lib/core/VersionManager';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
+  let versionManager: VersionManager;
   let casClient;
   let downloadManager: DownloadManager;
   let operationProcessor: OperationProcessor;
@@ -37,6 +38,10 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
+
+    const protocolVersions: IProtocolVersion[] = require('../json/core-protocol-versioning-test.json');
+    versionManager = new VersionManager(protocolVersions, downloadManager, operationStore);
+    await versionManager.initialize();
 
     downloadManager.start();
   });
@@ -83,7 +88,6 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
     // Start the Observer.
-    const versionManager = new VersionManager(downloadManager, operationStore);
     const transactionStore = new MockTransactionStore();
     const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
     const processedTransactions = transactionStore.getTransactions();
@@ -145,7 +149,6 @@ describe('Observer', async () => {
     };
     spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
 
-    const versionManager = new VersionManager(downloadManager, operationStore);
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
     const transactionStore = new MockTransactionStore();
     const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
@@ -182,7 +185,6 @@ describe('Observer', async () => {
     const expectedConsoleLogSubstring = tuple[1];
 
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
-      const versionManager = new VersionManager(downloadManager, operationStore);
       const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
       const transactionStore = new MockTransactionStore();
       const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
@@ -296,7 +298,6 @@ describe('Observer', async () => {
 
     // Process first set of transactions.
     const transactionStore = new MockTransactionStore();
-    const versionManager = new VersionManager(downloadManager, operationStore);
     const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
