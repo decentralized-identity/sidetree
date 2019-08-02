@@ -1,12 +1,12 @@
-import BatchFile from '../../lib/core/BatchFile';
+import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Cryptography from '../../lib/core/util/Cryptography';
 import Document, { IDocument } from '../../lib/core/Document';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
-import OperationProcessor from '../../lib/core/OperationProcessor';
+import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationStore from '../../lib/core/interfaces/OperationStore';
-import ProtocolParameters from '../../lib/core/ProtocolParameters';
+import Resolver from '../../lib/core/Resolver';
 import { Cas } from '../../lib/core/Cas';
 import { Operation } from '../../lib/core/Operation';
 
@@ -32,7 +32,7 @@ async function addBatchFileOfOneOperationToCas (
     batchFileHash: batchFileAddress
   };
 
-  const op = Operation.createAnchoredOperation(opBuf, resolvedTransaction, operationIndex);
+  const op = Operation.createAnchoredOperation(opBuf, (_number) => 18, resolvedTransaction, operationIndex, [18]);
   return op;
 }
 
@@ -120,15 +120,12 @@ function validateDidDocumentAfterUpdates (didDocument: IDocument | undefined, nu
 }
 
 describe('OperationProcessor', async () => {
-  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
-  ProtocolParameters.initialize(versionsOfProtocolParameters);
-
   // Load the DID Document template.
   const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
   let cas = new MockCas();
   const config = require('../json/config-test.json');
-  let operationProcessor: OperationProcessor;
+  let resolver: Resolver;
   let operationStore: OperationStore;
   let createOp: Operation | undefined;
   let publicKey: any;
@@ -140,7 +137,7 @@ describe('OperationProcessor', async () => {
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
+    resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -149,7 +146,7 @@ describe('OperationProcessor', async () => {
 
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationStore.put([createOp!]);
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
 
     // This is a poor man's version based on public key properties
     expect(didDocument).toBeDefined();
@@ -166,7 +163,7 @@ describe('OperationProcessor', async () => {
     const duplicateCreateOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([duplicateCreateOp]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
 
     // This is a poor man's version based on public key properties
     expect(didDocument).toBeDefined();
@@ -194,7 +191,7 @@ describe('OperationProcessor', async () => {
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([updateOp]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
     const key2 = Document.getPublicKey(didDocument!, '#key2');
@@ -206,7 +203,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
   });
 
@@ -217,7 +214,7 @@ describe('OperationProcessor', async () => {
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
     }
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
   });
 
@@ -231,10 +228,10 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
-      operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
+      resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationStore.put(permutedOps);
-      const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+      const didDocument = await resolver.resolve(didUniqueSuffix);
       validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
     }
   });
@@ -254,7 +251,7 @@ describe('OperationProcessor', async () => {
     const didUniqueSuffix = createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
   });
 
@@ -263,14 +260,14 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
     await operationStore.put([deleteOperation]);
 
-    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocumentAfterDelete = await resolver.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
   });
 
@@ -289,7 +286,7 @@ describe('OperationProcessor', async () => {
     const didUniqueSuffix = createOperation.getOperationHash();
 
     // Attempt to resolve the DID and validate the outcome.
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
   });
 
@@ -298,14 +295,14 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
     await operationStore.put([deleteOperation]);
 
-    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocumentAfterDelete = await resolver.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
   });
 
@@ -314,7 +311,7 @@ describe('OperationProcessor', async () => {
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([deleteOperation]);
 
-    const didDocumentAfterDelete = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocumentAfterDelete = await resolver.resolve(didUniqueSuffix);
     expect(didDocumentAfterDelete).toBeUndefined();
   });
 
@@ -325,7 +322,7 @@ describe('OperationProcessor', async () => {
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([deleteOperation]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
@@ -341,7 +338,7 @@ describe('OperationProcessor', async () => {
     const anchoredDeleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([anchoredDeleteOperation]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument!, 'key2');
     expect(publicKey2).toBeDefined();
@@ -357,7 +354,7 @@ describe('OperationProcessor', async () => {
       await operationStore.put([ops[i]]);
     }
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     expect(didDocument).toBeUndefined();
   });
 
@@ -386,7 +383,7 @@ describe('OperationProcessor', async () => {
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([updateOp]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
     const newKey = Document.getPublicKey(didDocument!, 'new-key');
@@ -420,7 +417,7 @@ describe('OperationProcessor', async () => {
     const anchoredUpdateOperation = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([anchoredUpdateOperation]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
     const newKey = Document.getPublicKey(didDocument!, 'new-key');
@@ -472,7 +469,7 @@ describe('OperationProcessor', async () => {
     const updateOperation1 = await addBatchFileOfOneOperationToCas(updateOperation1Buffer, cas, 1, 1, 0);
     await operationStore.put([updateOperation1]);
 
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
 
     expect(didDocument).toBeDefined();
     expect(didDocument!.publicKey.length).toEqual(3);
@@ -483,12 +480,12 @@ describe('OperationProcessor', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
-    const didDocument = await operationProcessor.resolve(didUniqueSuffix);
+    const didDocument = await resolver.resolve(didUniqueSuffix);
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     // rollback
-    await operationProcessor.rollback();
-    const didDocumentAfterRollback = await operationProcessor.resolve(didUniqueSuffix);
+    await operationStore.delete();
+    const didDocumentAfterRollback = await resolver.resolve(didUniqueSuffix);
     expect(didDocumentAfterRollback).toBeUndefined();
   });
 });

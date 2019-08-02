@@ -2,12 +2,11 @@ import DownloadManager from './DownloadManager';
 import ErrorCode from '../common/ErrorCode';
 import ITransaction from '../common/ITransaction';
 import ITransactionUnderProcessing, { TransactionProcessingStatus } from './interfaces/ITransactionUnderProcessing';
-import OperationProcessor from './OperationProcessor';
 import timeSpan = require('time-span');
 import TransactionProcessor from './interfaces/TransactionProcessor';
 import TransactionStore from './interfaces/TransactionStore';
 import UnresolvableTransactionStore from './interfaces/UnresolvableTransactionStore';
-import VersionManager from './VersionManager';
+import OperationStore from './interfaces/OperationStore';
 import { Blockchain } from './Blockchain';
 import { SidetreeError } from './Error';
 
@@ -33,10 +32,12 @@ export default class Observer {
   private lastKnownTransaction: ITransaction | undefined;
 
   public constructor (
-    private versionManager: VersionManager,
+    private allSupportedHashAlgorithms: number[],
+    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
+    private getTransactionProcessor: (blockchainTime: number) => TransactionProcessor,
     private blockchain: Blockchain,
     private downloadManager: DownloadManager,
-    private operationProcessor: OperationProcessor,
+    private operationStore: OperationStore,
     private transactionStore: TransactionStore,
     private unresolvableTransactionStore: UnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
@@ -230,8 +231,9 @@ export default class Observer {
     let transactionProcessedSuccessfully;
 
     try {
-      const transactionProcessor: TransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
-      transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
+      const transactionProcessor: TransactionProcessor = this.getTransactionProcessor(transaction.transactionTime);
+      transactionProcessedSuccessfully = await transactionProcessor.processTransaction(
+        transaction, this.allSupportedHashAlgorithms, this.getHashAlgorithmInMultihashCode);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
       console.error(error);
@@ -267,7 +269,7 @@ export default class Observer {
 
     // Revert all processed operations that came after the best known valid recent transaction.
     console.info('Reverting operations...');
-    await this.operationProcessor.rollback(bestKnownValidRecentTransactionNumber);
+    await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);

@@ -35,7 +35,12 @@ export default class MongoDbOperationStore implements OperationStore {
    */
   private readonly operationCollectionName: string;
 
-  constructor (private serverUrl: string, databaseName?: string, operationCollectionName?: string) {
+  constructor (
+    private serverUrl: string,
+    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
+    databaseName?: string,
+    operationCollectionName?: string
+  ) {
     this.databaseName = databaseName ? databaseName : 'sidetree';
     this.operationCollectionName = operationCollectionName ? operationCollectionName : 'operations';
   }
@@ -88,7 +93,7 @@ export default class MongoDbOperationStore implements OperationStore {
    */
   public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
     const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
-    return mongoOperations.map(MongoDbOperationStore.convertToOperation);
+    return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToOperation(operation, this.getHashAlgorithmInMultihashCode); });
   }
 
   /**
@@ -126,9 +131,10 @@ export default class MongoDbOperationStore implements OperationStore {
    * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
    * hence the type 'any' for mongoOperation.
    */
-  private static convertToOperation (mongoOperation: any): Operation {
+  private static convertToOperation (mongoOperation: any, getHashAlgorithmInMultihashCode: (blockchainTime: number) => number): Operation {
     return Operation.createAnchoredOperation(
       mongoOperation.operationBufferBsonBinary.buffer,
+      getHashAlgorithmInMultihashCode,
       {
         transactionNumber: mongoOperation.transactionNumber,
         transactionTime: mongoOperation.transactionTime,

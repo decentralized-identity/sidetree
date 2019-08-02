@@ -5,25 +5,27 @@ import IFetchResult from '../../lib/common/IFetchResult';
 import ITransaction from '../../lib/common/ITransaction';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
-import OperationProcessor from '../../lib/core/OperationProcessor';
 import OperationStore from '../../lib/core/interfaces/OperationStore';
-import VersionManager, { IProtocolVersion } from '../../lib/core/VersionManager';
+import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { BlockchainClient } from '../../lib/core/Blockchain';
 import { CasClient } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
 import { IAnchorFile } from '../../lib/core/AnchorFile';
-import { IBatchFile } from '../../lib/core/BatchFile';
+import { IBatchFile } from '../../lib/core/versions/latest/BatchFile';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
-  let versionManager: VersionManager;
+  let allSupportedHashAlgorithms = [18];
+  let getHashAlgorithmInMultihashCode = (_blockchainTime: number) => 18;
+  let getTransactionProcessor: (blockchainTime: number) => TransactionProcessor;
+
   let casClient;
   let downloadManager: DownloadManager;
-  let operationProcessor: OperationProcessor;
   let operationStore: OperationStore;
+  let transactionStore: MockTransactionStore;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
@@ -35,15 +37,12 @@ describe('Observer', async () => {
     // Setting the CAS to always return 404.
     spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
 
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
-
-    const protocolVersions: IProtocolVersion[] = require('../json/core-protocol-versioning-test.json');
-    versionManager = new VersionManager(protocolVersions, downloadManager, operationStore);
-    await versionManager.initialize();
-
+    transactionStore = new MockTransactionStore();
+    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
+
+    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(downloadManager, operationStore);
   });
 
   afterAll(() => {
@@ -88,8 +87,18 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
     // Start the Observer.
-    const transactionStore = new MockTransactionStore();
-    const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(
+      allSupportedHashAlgorithms,
+      getHashAlgorithmInMultihashCode,
+      getTransactionProcessor,
+      blockchainClient,
+      downloadManager,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
     const processedTransactions = transactionStore.getTransactions();
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
@@ -150,8 +159,17 @@ describe('Observer', async () => {
     spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
 
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
-    const transactionStore = new MockTransactionStore();
-    const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(
+      allSupportedHashAlgorithms,
+      getHashAlgorithmInMultihashCode,
+      getTransactionProcessor,
+      blockchainClient,
+      downloadManager,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
 
     const mockTransaction: ITransaction = {
       transactionNumber: 1,
@@ -186,8 +204,17 @@ describe('Observer', async () => {
 
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
       const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
-      const transactionStore = new MockTransactionStore();
-      const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+      const observer = new Observer(
+        allSupportedHashAlgorithms,
+        getHashAlgorithmInMultihashCode,
+        getTransactionProcessor,
+        blockchainClient,
+        downloadManager,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
 
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
@@ -297,8 +324,18 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
 
     // Process first set of transactions.
-    const transactionStore = new MockTransactionStore();
-    const observer = new Observer(versionManager, blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(
+      allSupportedHashAlgorithms,
+      getHashAlgorithmInMultihashCode,
+      getTransactionProcessor,
+      blockchainClient,
+      downloadManager,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.

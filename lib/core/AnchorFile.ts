@@ -1,7 +1,6 @@
 import Encoder from './Encoder';
 import ErrorCode from '../common/ErrorCode';
 import Multihash from './Multihash';
-import ProtocolParameters from './ProtocolParameters';
 import { SidetreeError } from './Error';
 
 /**
@@ -18,10 +17,18 @@ export interface IAnchorFile {
  */
 export default class AnchorFile {
   /**
+   * TODO: remove hashAlgorithmInMultihashCode and load directed from protocol-parameters.json.
    * Parses and validates the given anchor file buffer.
+   * @param hashAlgorithmInMultihashCode The hash algorithm to use to validate the transaction files.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as DID strings.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number, hashAlgorithmInMultihashCode: number): IAnchorFile {
+  public static parseAndValidate (
+    anchorFileBuffer: Buffer,
+    maxOperationsPerBatch: number,
+    hashAlgorithmInMultihashCode: number,
+    allSupportedHashAlgorithms: number[]): IAnchorFile {
+
     let anchorFile;
     try {
       anchorFile = JSON.parse(anchorFileBuffer.toString());
@@ -80,14 +87,13 @@ export default class AnchorFile {
     }
 
     // Verify each entry in DID unique suffixes.
-    const supportedHashAlgorithms = ProtocolParameters.getSupportedHashAlgorithms();
     for (let uniqueSuffix of anchorFile.didUniqueSuffixes) {
       if (typeof uniqueSuffix !== 'string') {
         throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString);
       }
 
       const uniqueSuffixBuffer = Encoder.decodeAsBuffer(uniqueSuffix);
-      if (!Multihash.isSupportedHash(uniqueSuffixBuffer, supportedHashAlgorithms)) {
+      if (!Multihash.isSupportedHash(uniqueSuffixBuffer, allSupportedHashAlgorithms)) {
         throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryInvalid, `Unique suffix '${uniqueSuffix}' is invalid.`);
       }
     }

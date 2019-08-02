@@ -3,7 +3,6 @@ import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationStore from '../../lib/core/interfaces/OperationStore';
-import ProtocolParameters from '../../lib/core/ProtocolParameters';
 import { Operation } from '../../lib/core/Operation';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
@@ -24,7 +23,7 @@ function constructAnchoredOperation (
     batchFileHash: 'unused'
   };
 
-  return Operation.createAnchoredOperation(opBuf, resolvedTransaction, operationIndex);
+  return Operation.createAnchoredOperation(opBuf, (_number) => 18, resolvedTransaction, operationIndex);
 }
 
 /**
@@ -79,7 +78,7 @@ const databaseName = 'sidetree-test';
 const operationCollectionName = 'operations-test';
 
 async function createOperationStore (mongoDbConnectionString: string): Promise<OperationStore> {
-  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, databaseName, operationCollectionName);
+  const operationStore = new MongoDbOperationStore(mongoDbConnectionString, (_blockchainTime) => 18, databaseName, operationCollectionName);
   await operationStore.initialize();
   return operationStore;
 }
@@ -124,8 +123,6 @@ function checkEqualArray (putOperations: Operation[], gotOperations: Operation[]
 }
 
 describe('MongoDbOperationStore', async () => {
-  const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
-  ProtocolParameters.initialize(versionsOfProtocolParameters);
 
   let operationStore: OperationStore;
   let publicKey: DidPublicKey;

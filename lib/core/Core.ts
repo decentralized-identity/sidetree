@@ -1,4 +1,4 @@
-import BatchWriter from './BatchWriter';
+import BatchScheduler from './BatchScheduler';
 import DownloadManager from './DownloadManager';
 import IConfig from './interfaces/IConfig';
 import MongoDbOperationQueue from './MongoDbOperationQueue';
@@ -6,11 +6,10 @@ import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
-import OperationProcessor from './OperationProcessor';
-import RequestHandler from './RequestHandler';
 import VersionManager, { IProtocolVersion } from './VersionManager';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
+import { IResponse } from '../common/Response';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -23,12 +22,7 @@ export default class Core {
   private versionManager: VersionManager;
   private blockchain: BlockchainClient;
   private observer: Observer;
-  private batchWriter: BatchWriter;
-
-  /**
-   * Operation and resolve request handler.
-   */
-  public requestHandler: RequestHandler;
+  private batchScheduler: BatchScheduler;
 
   /**
    * Core constructor.
@@ -39,20 +33,26 @@ export default class Core {
     const cas = new CasClient(config.contentAddressableStoreServiceUri);
     const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
     this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString);
-    this.batchWriter = new BatchWriter(this.blockchain, cas, config.batchingIntervalInSeconds, this.operationQueue);
-    this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
-    this.versionManager = new VersionManager(protocolVersions, downloadManager, this.operationStore);
-    const operationProcessor = new OperationProcessor(config.didMethodName, this.operationStore);
-    this.requestHandler = new RequestHandler(operationProcessor, this.blockchain, this.batchWriter, config.didMethodName);
+    this.versionManager = new VersionManager(config, protocolVersions, downloadManager);
+    this.batchScheduler = new BatchScheduler(
+      (blockchainTime) => this.versionManager.getBatchWriter(blockchainTime), this.blockchain, config.batchingIntervalInSeconds);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    this.observer = new Observer(this.versionManager,
-                                 this.blockchain,
-                                 downloadManager,
-                                 operationProcessor,
-                                 this.transactionStore,
-                                 this.unresolvableTransactionStore,
-                                 config.observingIntervalInSeconds);
+    this.operationStore = new MongoDbOperationStore(
+      config.mongoDbConnectionString,
+      (blockchainTime) => this.versionManager.getHashAlgorithmInMultihashCode(blockchainTime)
+    );
+    this.observer = new Observer(
+      this.versionManager.getSupportedHashAlgorithms(),
+      (blockchainTime) => this.versionManager.getHashAlgorithmInMultihashCode(blockchainTime),
+      (blockchainTime) => this.versionManager.getTransactionProcessor(blockchainTime),
+      this.blockchain,
+      downloadManager,
+      this.operationStore,
+      this.transactionStore,
+      this.unresolvableTransactionStore,
+      config.observingIntervalInSeconds
+    );
 
     downloadManager.start();
   }
@@ -70,7 +70,30 @@ export default class Core {
     await this.versionManager.initialize();
 
     await this.observer.startPeriodicProcessing();
-    this.batchWriter.startPeriodicBatchWriting();
+    this.batchScheduler.startPeriodicBatchWriting();
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
+  }
+
+  /**
+   * Handles an operation request.
+   */
+  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
+    const currentTime = this.blockchain.approximateTime;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
+    const response = requestHandler.handleOperationRequest(request);
+    return response;
+  }
+
+  /**
+   * Handles resolve operation.
+   * @param didOrDidDocument Can either be:
+   *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
+   *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
+   */
+  public async handleResolveRequest (didOrDidDocument: string): Promise<IResponse> {
+    const currentTime = this.blockchain.approximateTime;
+    const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
+    const response = requestHandler.handleResolveRequest(didOrDidDocument);
+    return response;
   }
 }

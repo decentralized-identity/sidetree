@@ -5,9 +5,10 @@ import { SidetreeError } from '../../lib/core/Error';
 describe('AnchorFile', async () => {
   describe('parseAndValidate()', async () => {
     const hashAlgorithmInMultihashCode = 18;
+    const allSupportedHashAlgorithms = [hashAlgorithmInMultihashCode];
 
     it('should throw if buffer given is not valid JSON.', async () => {
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from('NotJsonString'), 1, hashAlgorithmInMultihashCode);
+      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from('NotJsonString'), 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileNotJson));
     });
 
@@ -18,7 +19,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
     });
 
@@ -28,7 +30,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileBatchFileHashMissing));
     });
 
@@ -38,7 +41,8 @@ describe('AnchorFile', async () => {
         // didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A'], // Intentionally kept to show what is missing.
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing));
     });
 
@@ -48,7 +52,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
         // merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' // Intentionally kept to show what is missing.
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileMerkleRootMissing));
     });
 
@@ -58,7 +63,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileBatchFileHashNotString));
     });
 
@@ -70,7 +76,8 @@ describe('AnchorFile', async () => {
       };
       const hashAlgorithmInMultihashCode = 18;
       try {
-        AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+        const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+        AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       } catch (error) {
         expect(error.code).toEqual(ErrorCode.AnchorFileBatchFileHashUnsupported);
       }
@@ -82,7 +89,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
         merkleRoot: 12345
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileMerkleRootNotString));
     });
 
@@ -93,7 +101,8 @@ describe('AnchorFile', async () => {
         merkleRoot: 'InvalidHash'
       };
       try {
-        AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+        const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+        AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       } catch (error) {
         expect(error.code).toEqual(ErrorCode.AnchorFileMerkleRootUnsupported);
       }
@@ -105,7 +114,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: 'IncorrectType',
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesNotArray));
     });
 
@@ -115,7 +125,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileExceededMaxOperationCount));
     });
 
@@ -125,7 +136,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A'],
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 2, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 2, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesHasDuplicates));
     });
 
@@ -135,7 +147,8 @@ describe('AnchorFile', async () => {
         didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 12345],
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
-      const parseAndValidate = () => AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 2, hashAlgorithmInMultihashCode);
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+      const parseAndValidate = () => AnchorFile.parseAndValidate(anchorFileBuffer, 2, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       expect(parseAndValidate).toThrow(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString));
     });
 
@@ -146,7 +159,8 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       try {
-        AnchorFile.parseAndValidate(Buffer.from(JSON.stringify(anchoreFile)), 1, hashAlgorithmInMultihashCode);
+        const anchorFileBuffer = Buffer.from(JSON.stringify(anchoreFile));
+        AnchorFile.parseAndValidate(anchorFileBuffer, 1, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
       } catch (error) {
         expect(error.code).toEqual(ErrorCode.AnchorFileDidUniqueSuffixEntryInvalid);
       }

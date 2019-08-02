@@ -29,12 +29,12 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 router.post('/', async (ctx, _next) => {
-  const response = await sidetreeCore.requestHandler.handleOperationRequest(ctx.body);
+  const response = await sidetreeCore.handleOperationRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 
 router.get('/:didOrDidDocument', async (ctx, _next) => {
-  const response = await sidetreeCore.requestHandler.handleResolveRequest(ctx.params.didOrDidDocument);
+  const response = await sidetreeCore.handleResolveRequest(ctx.params.didOrDidDocument);
   setKoaResponse(response, ctx.response);
 });
 

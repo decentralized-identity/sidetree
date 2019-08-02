@@ -5,7 +5,6 @@ import Encoder from './Encoder';
 import ErrorCode from '../common/ErrorCode';
 import IResolvedTransaction from './interfaces/IResolvedTransaction';
 import Multihash from './Multihash';
-import ProtocolParameters from './ProtocolParameters';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { SidetreeError } from './Error';
@@ -78,6 +77,8 @@ class Operation {
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
+   *                                   Optional parameter. Hash integrity will not be checked if not supplied.
    * @param resolvedTransaction The transaction operation this opeartion was batched within.
    *                            If given, operationIndex must be given else error will be thrown.
    *                            The transactoinTimeHash is ignored by the constructor.
@@ -88,6 +89,8 @@ class Operation {
    */
   private constructor (
     operationBuffer: Buffer,
+    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
+    allSupportedHashAlgorithms?: number[],
     resolvedTransaction?: IResolvedTransaction,
     operationIndex?: number,
     private estimatedAnchorTime?: number) {
@@ -116,7 +119,7 @@ class Operation {
     const operation = JSON.parse(operationJson);
 
     // Ensure that the operation is well-formed.
-    const [operationType, decodedPayload] = Operation.parseAndValidateOperation(operation);
+    const [operationType, decodedPayload] = Operation.parseAndValidateOperation(operation, allSupportedHashAlgorithms);
 
     // Initialize common operation properties.
     this.type = operationType;
@@ -147,21 +150,30 @@ class Operation {
    * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
    * @param operationIndex The operation index this operation was assigned to in the batch.
    *                       If given, resolvedTransaction must be given else error will be thrown.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
+   *                                   Optional parameter for when creating instances from operation store, in which case validation was already done.
    * @throws Error if given operation buffer fails any validation.
    */
   public static createAnchoredOperation (
     operationBuffer: Buffer,
+    getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
     resolvedTransaction: IResolvedTransaction,
-    operationIndex: number): Operation {
-    return new Operation(operationBuffer, resolvedTransaction, operationIndex);
+    operationIndex: number,
+    allSupportedHashAlgorithms?: number[]): Operation {
+    return new Operation(operationBuffer, getHashAlgorithmInMultihashCode, allSupportedHashAlgorithms, resolvedTransaction, operationIndex);
   }
 
   /**
    * Creates an Operation that has not been anchored on the blockchain.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
    * @throws Error if given operation buffer fails any validation.
    */
-  public static createUnanchoredOperation (operationBuffer: Buffer, estimatedAnchorTime: number) {
-    return new Operation(operationBuffer, undefined, undefined, estimatedAnchorTime);
+  public static createUnanchoredOperation (
+    operationBuffer: Buffer,
+    getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
+    estimatedAnchorTime: number,
+    allSupportedHashAlgorithms: number[]) {
+    return new Operation(operationBuffer, getHashAlgorithmInMultihashCode, allSupportedHashAlgorithms, undefined, undefined, estimatedAnchorTime);
   }
 
   /**
@@ -194,15 +206,15 @@ class Operation {
    */
   public getOperationHash (): string {
     // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-    let protocol;
+    let hashAlgorithmInMultihashCode;
     if (this.transactionTime === undefined) {
-      protocol = ProtocolParameters.get(this.estimatedAnchorTime!);
+      hashAlgorithmInMultihashCode = this.getHashAlgorithmInMultihashCode(this.estimatedAnchorTime!);
     } else {
-      protocol = ProtocolParameters.get(this.transactionTime);
+      hashAlgorithmInMultihashCode = this.getHashAlgorithmInMultihashCode(this.transactionTime);
     }
 
     const encodedOperationPayloadBuffer = Buffer.from(this.encodedPayload);
-    const multihash = Multihash.hash(encodedOperationPayloadBuffer, protocol.hashAlgorithmInMultihashCode);
+    const multihash = Multihash.hash(encodedOperationPayloadBuffer, hashAlgorithmInMultihashCode);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }
@@ -307,9 +319,10 @@ class Operation {
   /**
    * Parses and validates the given operation object object.
    * NOTE: Operation validation does not include signature verification.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
    * @returns [operation type, decoded payload json object] if given operation is valid, Error is thrown otherwise.
    */
-  private static parseAndValidateOperation (operation: any): [OperationType, any] {
+  private static parseAndValidateOperation (operation: any, allSupportedHashAlgorithms?: number[]): [OperationType, any] {
     // Must contain 'header' property and 'header' property must contain a string 'kid' property.
     if (typeof operation.header.kid !== 'string') {
       throw new SidetreeError(ErrorCode.OperationHeaderMissingKid);
@@ -353,7 +366,7 @@ class Operation {
         }
         break;
       case OperationType.Update:
-        Operation.validateUpdatePayload(decodedPayload);
+        Operation.validateUpdatePayload(decodedPayload, allSupportedHashAlgorithms);
         break;
       case OperationType.Delete:
       case OperationType.Recover:
@@ -365,9 +378,10 @@ class Operation {
 
   /**
    * Validates the schema given update operation payload.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as DID strings.
    * @throws Error if given operation payload fails validation.
    */
-  public static validateUpdatePayload (payload: any) {
+  public static validateUpdatePayload (payload: any, allSupportedHashAlgorithms?: number[]) {
     const payloadProperties = Object.keys(payload);
     if (payloadProperties.length !== 3) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
@@ -381,14 +395,13 @@ class Operation {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
     }
 
-    const supportedHashAlgorithms = ProtocolParameters.getSupportedHashAlgorithms();
     const uniqueSuffixBuffer = Encoder.decodeAsBuffer(payload.didUniqueSuffix);
-    if (!Multihash.isSupportedHash(uniqueSuffixBuffer, supportedHashAlgorithms)) {
+    if (allSupportedHashAlgorithms !== undefined && !Multihash.isSupportedHash(uniqueSuffixBuffer, allSupportedHashAlgorithms)) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadDidUniqueSuffixInvalid, `'${payload.didUniqueSuffix}' is an unuspported multihash.`);
     }
 
     const previousOperationHashBuffer = Encoder.decodeAsBuffer(payload.previousOperationHash);
-    if (!Multihash.isSupportedHash(previousOperationHashBuffer, supportedHashAlgorithms)) {
+    if (allSupportedHashAlgorithms !== undefined && !Multihash.isSupportedHash(previousOperationHashBuffer, allSupportedHashAlgorithms)) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadPreviousOperationHashInvalid, `'${payload.previousOperationHash}' is an unuspported multihash`);
     }
 

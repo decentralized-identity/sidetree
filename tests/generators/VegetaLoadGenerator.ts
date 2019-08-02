@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import Cryptography from '../../lib/core/util/Cryptography';
 import Did from '../../lib/core/Did';
 import OperationGenerator from './OperationGenerator';
-import ProtocolParameters from '../../lib/core/ProtocolParameters';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -17,12 +16,9 @@ export default class VegetaLoadGenerator {
    * @param uniqueDidCount The number of unique DID to be generated.
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
-   * @param blockchainTime The simulated blockchain time used to calculate the DID unique suffix.
+   * @param hashAlgorithmInMultihashCode The hash algorithm in Multihash code in DEC (not in HEX).
    */
-  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string, blockchainTime: number) {
-    const versionsOfProtocolParameters = require('../json/protocol-parameters-test.json');
-    ProtocolParameters.initialize(versionsOfProtocolParameters);
-
+  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string, hashAlgorithmInMultihashCode: number) {
     const didDocumentTemplate = require('../json/didDocumentTemplate.json');
     const keyId = '#key1';
 
@@ -43,7 +39,7 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
       // Compute the DID unique suffix from the generated Create payload.
-      const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createPayload, ProtocolParameters.get(blockchainTime).hashAlgorithmInMultihashCode);
+      const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createPayload, hashAlgorithmInMultihashCode);
 
       // Generate an Update payload.
       const updatePayload = {

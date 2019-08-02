@@ -1,10 +1,10 @@
-import Encoder from './Encoder';
-import IResolvedTransaction from './interfaces/IResolvedTransaction';
-import JsonAsync from './util/JsonAsync';
+import Encoder from '../../Encoder';
+import IResolvedTransaction from '../../interfaces/IResolvedTransaction';
+import JsonAsync from '../../util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
-import { IAnchorFile } from './AnchorFile';
-import { Operation } from './Operation';
+import { IAnchorFile } from '../../AnchorFile';
+import { Operation } from '../../Operation';
 
 /**
  * Defines Batch File structure.
@@ -20,9 +20,16 @@ export interface IBatchFile {
 export default class BatchFile {
   /**
    * Parses and validates the given batch file buffer and all the operations within it.
+   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as DID strings.
    * @throws Error if failed parsing or validation.
    */
-  public static async parseAndValidate (batchFileBuffer: Buffer, anchorFile: IAnchorFile, resolvedTransaction: IResolvedTransaction): Promise<Operation[]> {
+  public static async parseAndValidate (
+    batchFileBuffer: Buffer,
+    anchorFile: IAnchorFile,
+    resolvedTransaction: IResolvedTransaction,
+    allSupportedHashAlgorithms: number[],
+    getHashAlgorithmInMultihashCode: (blockchainTime: number) => number): Promise<Operation[]> {
+
     let endTimer = timeSpan();
     const batchFileObject = await JsonAsync.parse(batchFileBuffer);
     console.info(`Parsed batch file ${anchorFile.batchFileHash} in ${endTimer.rounded()} ms.`);
@@ -51,9 +58,8 @@ export default class BatchFile {
     const batchSize = batchFile.operations.length;
 
     // Verify the number of operations does not exceed the maximum allowed limit.
-    const protocol = ProtocolParameters.get(resolvedTransaction.transactionTime);
-    if (batchSize > protocol.maxOperationsPerBatch) {
-      throw Error(`Batch size of ${batchSize} operations exceeds the allowed limit of ${protocol.maxOperationsPerBatch}.`);
+    if (batchSize > ProtocolParameters.maxOperationsPerBatch) {
+      throw Error(`Batch size of ${batchSize} operations exceeds the allowed limit of ${ProtocolParameters.maxOperationsPerBatch}.`);
     }
 
     // Verify that the batch size count matches that of the anchor file.
@@ -69,13 +75,14 @@ export default class BatchFile {
       const operationBuffer = Encoder.decodeAsBuffer(encodedOperation);
 
       // Verify size of each operation does not exceed the maximum allowed limit.
-      if (operationBuffer.length > protocol.maxOperationByteSize) {
-        throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${protocol.maxOperationByteSize} bytes.`);
+      if (operationBuffer.length > ProtocolParameters.maxOperationByteSize) {
+        throw Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationByteSize} bytes.`);
       }
 
       let operation;
       try {
-        operation = Operation.createAnchoredOperation(operationBuffer, resolvedTransaction, operationIndex);
+        operation = Operation.createAnchoredOperation(
+          operationBuffer, getHashAlgorithmInMultihashCode, resolvedTransaction, operationIndex, allSupportedHashAlgorithms);
       } catch (error) {
         console.info(`Unable to create an Operation object with '${operationBuffer}': ${error}`);
         throw error;
