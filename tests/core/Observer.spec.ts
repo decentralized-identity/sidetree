@@ -42,7 +42,7 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
 
-    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(downloadManager, operationStore);
+    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(allSupportedHashAlgorithms, downloadManager, operationStore);
   });
 
   afterAll(() => {
@@ -88,7 +88,6 @@ describe('Observer', async () => {
 
     // Start the Observer.
     const observer = new Observer(
-      allSupportedHashAlgorithms,
       getHashAlgorithmInMultihashCode,
       getTransactionProcessor,
       blockchainClient,
@@ -160,7 +159,6 @@ describe('Observer', async () => {
 
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
     const observer = new Observer(
-      allSupportedHashAlgorithms,
       getHashAlgorithmInMultihashCode,
       getTransactionProcessor,
       blockchainClient,
@@ -205,7 +203,6 @@ describe('Observer', async () => {
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
       const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
       const observer = new Observer(
-        allSupportedHashAlgorithms,
         getHashAlgorithmInMultihashCode,
         getTransactionProcessor,
         blockchainClient,
@@ -325,7 +322,6 @@ describe('Observer', async () => {
 
     // Process first set of transactions.
     const observer = new Observer(
-      allSupportedHashAlgorithms,
       getHashAlgorithmInMultihashCode,
       getTransactionProcessor,
       blockchainClient,

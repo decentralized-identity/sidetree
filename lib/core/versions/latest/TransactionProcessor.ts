@@ -15,11 +15,10 @@ import { SidetreeError } from '../../Error';
  * The latest implementation of the `TransactionProcessor`.
  */
 export default class TransactionProcessorLatest implements TransactionProcessor {
-  public constructor (private downloadManager: DownloadManager, private operationStore: OperationStore) { }
+  public constructor (private allSupportedHashAlgorithms: number [], private downloadManager: DownloadManager, private operationStore: OperationStore) { }
 
   public async processTransaction (
     transaction: ITransaction,
-    allSupportedHashAlgorithms: number [],
     getHashAlgorithmInMultihashCode: (blockchainTime: number) => number): Promise<boolean> {
     console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${protocolParameters.maxAnchorFileSizeInBytes} bytes...`);
     const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, protocolParameters.maxAnchorFileSizeInBytes);
@@ -59,7 +58,12 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
     try {
       const maxOperationsPerBatch = protocolParameters.maxOperationsPerBatch;
       const hashAlgorithmInMultihashCode = protocolParameters.hashAlgorithmInMultihashCode;
-      anchorFile = AnchorFile.parseAndValidate(anchorFileFetchResult.content!, maxOperationsPerBatch, hashAlgorithmInMultihashCode, allSupportedHashAlgorithms);
+      anchorFile = AnchorFile.parseAndValidate(
+        anchorFileFetchResult.content!,
+        maxOperationsPerBatch,
+        hashAlgorithmInMultihashCode,
+        this.allSupportedHashAlgorithms
+      );
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
@@ -119,7 +123,7 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
     let operations: Operation[];
     try {
       operations = await BatchFile.parseAndValidate(
-        batchFileFetchResult.content!, anchorFile, resolvedTransaction, allSupportedHashAlgorithms, getHashAlgorithmInMultihashCode);
+        batchFileFetchResult.content!, anchorFile, resolvedTransaction, this.allSupportedHashAlgorithms, getHashAlgorithmInMultihashCode);
     } catch (error) {
       console.info(error);
       console.info(`Batch file '${anchorFile.batchFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored.`);

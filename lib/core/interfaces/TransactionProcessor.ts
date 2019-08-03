@@ -13,7 +13,6 @@ export default interface TransactionProcessor {
    */
   processTransaction (
     transaction: ITransaction,
-    allSupportedHashAlgorithms: number [],
     getHashAlgorithmInMultihashCode: (blockchainTime: number) => number
   ): Promise<boolean>;
 }

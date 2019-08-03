@@ -43,7 +43,6 @@ export default class Core {
       (blockchainTime) => this.versionManager.getHashAlgorithmInMultihashCode(blockchainTime)
     );
     this.observer = new Observer(
-      this.versionManager.getSupportedHashAlgorithms(),
       (blockchainTime) => this.versionManager.getHashAlgorithmInMultihashCode(blockchainTime),
       (blockchainTime) => this.versionManager.getTransactionProcessor(blockchainTime),
       this.blockchain,

@@ -58,9 +58,15 @@ export default class VersionManager {
 
     // TODO: Need to revisit these to also move them into versioned codebase.
     const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString);
+    await operationQueue.initialize();
+
     const operationStore = new MongoDbOperationStore(
       this.config.mongoDbConnectionString, (blockchainTime) => this.getHashAlgorithmInMultihashCode(blockchainTime));
+    await operationStore.initialize();
+
     const blockchain = new BlockchainClient(this.config.blockchainServiceUri);
+    await blockchain.initialize();
+
     const cas = new CasClient(this.config.contentAddressableStoreServiceUri);
     const resolver = new Resolver((blockchainTime) => this.getOperationProcessor(blockchainTime), operationStore);
 
@@ -92,7 +98,7 @@ export default class VersionManager {
 
       /* tslint:disable-next-line */
       const TransactionProcessor = (await import(`./versions/${version}/TransactionProcessor`)).default;
-      const transactionProcessor = new TransactionProcessor(this.downloadManager, operationStore);
+      const transactionProcessor = new TransactionProcessor(this.allSupportedHashAlgorithms, this.downloadManager, operationStore);
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */

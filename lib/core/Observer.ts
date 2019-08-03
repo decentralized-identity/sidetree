@@ -32,7 +32,6 @@ export default class Observer {
   private lastKnownTransaction: ITransaction | undefined;
 
   public constructor (
-    private allSupportedHashAlgorithms: number[],
     private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
     private getTransactionProcessor: (blockchainTime: number) => TransactionProcessor,
     private blockchain: Blockchain,
@@ -232,8 +231,7 @@ export default class Observer {
 
     try {
       const transactionProcessor: TransactionProcessor = this.getTransactionProcessor(transaction.transactionTime);
-      transactionProcessedSuccessfully = await transactionProcessor.processTransaction(
-        transaction, this.allSupportedHashAlgorithms, this.getHashAlgorithmInMultihashCode);
+      transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction, this.getHashAlgorithmInMultihashCode);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
       console.error(error);
