@@ -1,39 +1,37 @@
 import BatchFile from './BatchFile';
-import BatchWriter from '../../interfaces/BatchWriter';
-import Did from '../../Did';
-import Encoder from '../../Encoder';
-import MerkleTree from '../../util/MerkleTree';
-import Multihash from '../../Multihash';
-import OperationQueue from '../../interfaces/OperationQueue';
+import Encoder from './Encoder';
+import IBatchWriter from '../../interfaces/IBatchWriter';
+import IOperationQueue from './interfaces/IOperationQueue';
+import MerkleTree from './util/MerkleTree';
+import Multihash from './Multihash';
+import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import { Blockchain } from '../../Blockchain';
 import { Cas } from '../../Cas';
-import { Operation, OperationType } from '../../Operation';
 
 /**
- * The latest implementation of the `TransactionProcessor`.
+ * Implementation of the `TransactionProcessor`.
  */
-export default class BatchWriterLatest implements BatchWriter {
+export default class BatchWriter implements IBatchWriter {
   public constructor (
-    private operationQueue: OperationQueue,
+    private operationQueue: IOperationQueue,
     private blockchain: Blockchain,
-    private cas: Cas,
-    private allSupportedHashAlgorithms: number[],
-    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number) { }
+    private cas: Cas) { }
 
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.
-    const currentTime = this.blockchain.approximateTime;
     const operationBuffers = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
-    const batch = operationBuffers.map(
-      (buffer) => Operation.createUnanchoredOperation(buffer, this.getHashAlgorithmInMultihashCode, currentTime.time, this.allSupportedHashAlgorithms)
-    );
-    console.info('Batch size = ' + batch.length);
+
+    console.info('Batch size = ' + operationBuffers.length);
 
     // Do nothing if there is nothing to batch together.
-    if (batch.length === 0) {
+    if (operationBuffers.length === 0) {
       return;
     }
+
+    const batch = operationBuffers.map(
+      (buffer) => Operation.create(buffer)
+    );
 
     // Create the batch file buffer from the operation batch.
     const batchFileBuffer = BatchFile.fromOperationBuffers(operationBuffers);
@@ -48,7 +46,7 @@ export default class BatchWriterLatest implements BatchWriter {
     const encodedMerkleRoot = Encoder.encode(merkleRootAsMultihash);
 
     // Construct the DID unique suffixes of each operation to be included in the anchor file.
-    const didUniqueSuffixes = this.getDidUniqueSuffixes(batch);
+    const didUniqueSuffixes = batch.map(operation => operation.didUniqueSuffix);
 
     // Construct the 'anchor file'.
     const anchorFile = {
@@ -67,23 +65,5 @@ export default class BatchWriterLatest implements BatchWriter {
 
     // Remove written operations from queue if batch writing is successful.
     await this.operationQueue.dequeue(batch.length);
-  }
-
-  /**
-   * Returns the DID unique suffix of each operation given in the same order.
-   */
-  private getDidUniqueSuffixes (operations: Operation[]): string[] {
-    const didUniquesuffixes = new Array<string>(operations.length);
-    for (let i = 0; i < operations.length; i++) {
-      const operation = operations[i];
-
-      if (operation.type === OperationType.Create) {
-        didUniquesuffixes[i] = Did.getUniqueSuffixFromEncodeDidDocument(operation.encodedPayload, ProtocolParameters.hashAlgorithmInMultihashCode);
-      } else {
-        didUniquesuffixes[i] = operation.didUniqueSuffix;
-      }
-    }
-
-    return didUniquesuffixes;
   }
 }

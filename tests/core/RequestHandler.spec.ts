@@ -1,24 +1,25 @@
+import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
-import Cryptography from '../../lib/core/util/Cryptography';
-import Did from '../../lib/core/Did';
-import IConfig from '../../lib/core/interfaces/IConfig';
-import IDidPublicKey from '../../lib/core/interfaces/IDidPublicKey';
-import Encoder from '../../lib/core/Encoder';
+import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import Did from '../../lib/core/versions/latest/Did';
+import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import Config from '../../lib/core/models/Config';
+import Encoder from '../../lib/core/versions/latest/Encoder';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
-import Multihash from '../../lib/core/Multihash';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
-import Resolver from '../../lib/core/Resolver';
+import Resolver from '../../lib/core/versions/latest/Resolver';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
-import OperationStore from '../../lib/core/interfaces/OperationStore';
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import { Cas } from '../../lib/core/Cas';
-import { IDocument } from '../../lib/core/Document';
-import { Operation } from '../../lib/core/Operation';
 import { Response } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {
@@ -26,7 +27,7 @@ describe('RequestHandler', () => {
   console.info = () => { return; };
   console.error = () => { return; };
 
-  const config: IConfig = require('../json/config-test.json');
+  const config: Config = require('../json/config-test.json');
   const didMethodName = config.didMethodName;
 
   // Load the DID Document template.
@@ -35,11 +36,11 @@ describe('RequestHandler', () => {
   const blockchain = new MockBlockchain();
   let cas: Cas;
   let batchScheduler: BatchScheduler;
-  let operationStore: OperationStore;
+  let operationStore: IOperationStore;
   let resolver: Resolver;
   let requestHandler: RequestHandler;
 
-  let publicKey: IDidPublicKey;
+  let publicKey: DidPublicKeyModel;
   let privateKey: any;
   let did: string; // This DID is created at the beginning of every test.
   let didUniqueSuffix: string;
@@ -48,22 +49,19 @@ describe('RequestHandler', () => {
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
     const allSupportedHashAlgorithms = [18];
-    const getHashAlgorithmInMultihashCode = (_blockchainTime: number) => 18;
     const operationQueue = new MockOperationQueue();
 
     cas = new MockCas();
-    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, allSupportedHashAlgorithms, getHashAlgorithmInMultihashCode);
+    const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
 
     operationStore = new MockOperationStore();
     resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
     batchScheduler = new BatchScheduler((_blockchainTime) => batchWriter, blockchain, config.batchingIntervalInSeconds);
     requestHandler = new RequestHandler(
       resolver,
-      blockchain,
       operationQueue,
       didMethodName,
-      allSupportedHashAlgorithms,
-      getHashAlgorithmInMultihashCode
+      allSupportedHashAlgorithms
     );
 
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
@@ -85,21 +83,13 @@ describe('RequestHandler', () => {
     batchFileHash = MockCas.getAddress(batchBuffer);
 
     // Now force Operation Processor to process the create operation.
-    const resolvedTransaction = {
+    const anchoredOperationModel: AnchoredOperationModel = {
       transactionNumber: 1,
       transactionTime: 1,
-      transactionTimeHash: 'NOT_NEEDED',
-      anchorFileHash: 'NOT_NEEDED',
-      batchFileHash
+      operationBuffer: createOperationBuffer,
+      operationIndex: 0
     };
-    const createOperation = Operation.createAnchoredOperation(
-      createOperationBuffer,
-      getHashAlgorithmInMultihashCode,
-      resolvedTransaction,
-      0,
-      allSupportedHashAlgorithms
-    );
-
+    const createOperation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
     await operationStore.put([createOperation]);
 
     // NOTE: this is a repeated step already done in beforeEach(),
@@ -113,7 +103,7 @@ describe('RequestHandler', () => {
 
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as IDocument).id).toEqual(did);
+    expect((response.body as DocumentModel).id).toEqual(did);
   });
 
   it('should handle create operation request.', async () => {

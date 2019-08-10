@@ -1,15 +1,14 @@
-import Encoder from '../../Encoder';
-import Did from '../../Did';
-import Document from '../../Document';
+import Encoder from './Encoder';
+import Did from './Did';
+import Document from './Document';
 import ErrorCode from '../../../common/ErrorCode';
+import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/RequestHandler';
-import Multihash from '../../Multihash';
-import OperationQueue from '../../interfaces/OperationQueue';
+import Multihash from './Multihash';
+import Operation, { OperationType } from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import Resolver from '../../Resolver';
-import { Blockchain } from '../../Blockchain';
+import Resolver from './Resolver';
 import { IResponse, ResponseStatus } from '../../../common/Response';
-import { Operation, OperationType } from '../../Operation';
 import { SidetreeError } from '../../Error';
 
 /**
@@ -19,11 +18,9 @@ export default class RequestHandler implements IRequestHandler {
 
   public constructor (
     private resolver: Resolver,
-    private blockchain: Blockchain,
-    private operationQueue: OperationQueue,
+    private operationQueue: IOperationQueue,
     private didMethodName: string,
-    private allSupportedHashAlgorithms: number[],
-    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number) { }
+    private allSupportedHashAlgorithms: number[]) { }
 
   /**
    * Handles an operation request.
@@ -42,8 +39,7 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       // Parse request into an Operation.
-      const currentTime = this.blockchain.approximateTime;
-      operation = Operation.createUnanchoredOperation(request, this.getHashAlgorithmInMultihashCode, currentTime.time, this.allSupportedHashAlgorithms);
+      operation = Operation.create(request);
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
       if (await this.operationQueue.contains(operation.didUniqueSuffix)) {

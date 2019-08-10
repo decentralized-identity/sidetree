@@ -1,4 +1,4 @@
-import IConfig from '../../lib/core/interfaces/IConfig';
+import Config from '../../lib/core/models/Config';
 import ITransaction from '../../lib/common/ITransaction';
 import MongoDb from '../common/MongoDb';
 import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
@@ -35,7 +35,7 @@ async function generateTransactions (count: number): Promise<ITransaction[]> {
 }
 
 describe('MongoDbUnresolvableTransactionStore', async () => {
-  const config: IConfig = require('../json/config-test.json');
+  const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable = false;

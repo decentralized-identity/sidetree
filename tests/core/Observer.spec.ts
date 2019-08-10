@@ -1,30 +1,28 @@
 import * as retry from 'async-retry';
+import AnchorFile from '../../lib/core/versions/latest/models/AnchorFileModel';
+import BatchFile from '../../lib/core/versions/latest/models/BatchFileModel';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/common/ErrorCode';
 import IFetchResult from '../../lib/common/IFetchResult';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import ITransaction from '../../lib/common/ITransaction';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
-import OperationStore from '../../lib/core/interfaces/OperationStore';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { BlockchainClient } from '../../lib/core/Blockchain';
 import { CasClient } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
-import { IAnchorFile } from '../../lib/core/AnchorFile';
-import { IBatchFile } from '../../lib/core/versions/latest/BatchFile';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
-  let allSupportedHashAlgorithms = [18];
-  let getHashAlgorithmInMultihashCode = (_blockchainTime: number) => 18;
   let getTransactionProcessor: (blockchainTime: number) => TransactionProcessor;
 
   let casClient;
   let downloadManager: DownloadManager;
-  let operationStore: OperationStore;
+  let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -42,7 +40,7 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
 
-    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(allSupportedHashAlgorithms, downloadManager, operationStore);
+    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(downloadManager, operationStore);
   });
 
   afterAll(() => {
@@ -88,10 +86,9 @@ describe('Observer', async () => {
 
     // Start the Observer.
     const observer = new Observer(
-      getHashAlgorithmInMultihashCode,
       getTransactionProcessor,
       blockchainClient,
-      downloadManager,
+      config.maxConcurrentDownloads,
       operationStore,
       transactionStore,
       transactionStore,
@@ -124,7 +121,7 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const anchorFile: IAnchorFile = {
+    const anchorFile: AnchorFile = {
       batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
       didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
       merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
@@ -133,7 +130,7 @@ describe('Observer', async () => {
       code: FetchResultCode.Success,
       content: Buffer.from(JSON.stringify(anchorFile))
     };
-    const batchFile: IBatchFile = {
+    const batchFile: BatchFile = {
       /* tslint:disable */
       operations: [
         'eyJwYXlsb2FkIjoiZXlKamNtVmhkR1ZrSWpvaU1qQXhPUzB3TmkweE5GUXlNam94TkRvME5pNDVORE5hSWl3aVFHTnZiblJsZUhRaU9pSm9kSFJ3Y3pvdkwzY3phV1F1YjNKbkwyUnBaQzkyTVNJc0luQjFZbXhwWTB0bGVTSTZXM3NpYVdRaU9pSWphMlY1TVNJc0luUjVjR1VpT2lKVFpXTndNalUyYXpGV1pYSnBabWxqWVhScGIyNUxaWGt5TURFNElpd2ljSFZpYkdsalMyVjVTbmRySWpwN0ltdHBaQ0k2SWlOclpYa3hJaXdpYTNSNUlqb2lSVU1pTENKaGJHY2lPaUpGVXpJMU5rc2lMQ0pqY25ZaU9pSlFMVEkxTmtzaUxDSjRJam9pTjFGWFRVUjFkRmh3UkdodFVFcHhPWGxDWmxNMmVWVmpaMmxQVDJWTWIxVmplazVPVW5Wd1ZEZElNQ0lzSW5raU9pSnRNVVJIVWpCMldEZHNXRlZLTWtwcU1WQmtNRU5yZWxneFVuSkxiVmhuZERSNk5tMUZUV0Y1ZDNCSkluMTlYWDAiLCJzaWduYXR1cmUiOiJNRVVDSUNnWXk3TmRuRDhZVmhsTXhqaWFJVW11d3VhRHliM2xjNVAzZFVPSlpmVUpBaUVBMGtNbi03anFuaFQtMm5RVk52YldXRmk1NkNDajMweEVZRWxDNmFCMXVRayIsInByb3RlY3RlZCI6ImUzMCIsImhlYWRlciI6eyJvcGVyYXRpb24iOiJjcmVhdGUiLCJwcm9vZk9mV29yayI6IiIsImtpZCI6IiNrZXkxIiwiYWxnIjoiRVMyNTZLIn19',
@@ -159,10 +156,9 @@ describe('Observer', async () => {
 
     const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
     const observer = new Observer(
-      getHashAlgorithmInMultihashCode,
       getTransactionProcessor,
       blockchainClient,
-      downloadManager,
+      config.maxConcurrentDownloads,
       operationStore,
       transactionStore,
       transactionStore,
@@ -181,12 +177,10 @@ describe('Observer', async () => {
     };
     await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
-    const iterableOperations1 = await operationStore.get('EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A');
-    const operationArray1 = [...iterableOperations1];
+    const operationArray1 = await operationStore.get('EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A');
     expect(operationArray1.length).toEqual(1);
 
-    const iterableOperations2 = await operationStore.get('EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow');
-    const operationArray2 = [...iterableOperations2];
+    const operationArray2 = await operationStore.get('EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow');
     expect(operationArray2.length).toEqual(1);
   });
 
@@ -203,10 +197,9 @@ describe('Observer', async () => {
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
       const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
       const observer = new Observer(
-        getHashAlgorithmInMultihashCode,
         getTransactionProcessor,
         blockchainClient,
-        downloadManager,
+        config.maxConcurrentDownloads,
         operationStore,
         transactionStore,
         transactionStore,
@@ -322,10 +315,9 @@ describe('Observer', async () => {
 
     // Process first set of transactions.
     const observer = new Observer(
-      getHashAlgorithmInMultihashCode,
       getTransactionProcessor,
       blockchainClient,
-      downloadManager,
+      config.maxConcurrentDownloads,
       operationStore,
       transactionStore,
       transactionStore,

@@ -1,6 +1,6 @@
-import Encoder from '../../lib/core/Encoder';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import IFetchResult from '../../lib/common/IFetchResult';
-import Multihash from '../../lib/core/Multihash';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import { Cas } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 

@@ -1,6 +1,7 @@
-import OperationStore from './interfaces/OperationStore';
+import AnchoredOperationModel from './models/AnchoredOperationModel';
+import IOperationStore from './interfaces/IOperationStore';
+import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
 import { Binary, Collection, Long, MongoClient } from 'mongodb';
-import { Operation } from './Operation';
 
 /**
  * Sidetree operation stored in MongoDb.
@@ -15,14 +16,13 @@ interface IMongoOperation {
   opIndex: number;
   transactionNumber: Long;
   transactionTime: number;
-  batchFileHash: string;
 }
 
 /**
  * Implementation of OperationStore that stores the operation data in
  * a MongoDB database.
  */
-export default class MongoDbOperationStore implements OperationStore {
+export default class MongoDbOperationStore implements IOperationStore {
   private collection: Collection<any> | undefined;
 
   /**
@@ -37,7 +37,6 @@ export default class MongoDbOperationStore implements OperationStore {
 
   constructor (
     private serverUrl: string,
-    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
     databaseName?: string,
     operationCollectionName?: string
   ) {
@@ -68,7 +67,7 @@ export default class MongoDbOperationStore implements OperationStore {
   /**
    * Implement OperationStore.put
    */
-  public async put (operations: Array<Operation>): Promise<void> {
+  public async put (operations: NamedAnchoredOperationModel[]): Promise<void> {
     let batch = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
@@ -91,9 +90,9 @@ export default class MongoDbOperationStore implements OperationStore {
    * didUniqueSuffix ordered by (transactionNumber, operationIndex)
    * ascending.
    */
-  public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
+  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
     const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
-    return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToOperation(operation, this.getHashAlgorithmInMultihashCode); });
+    return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 
   /**
@@ -113,14 +112,13 @@ export default class MongoDbOperationStore implements OperationStore {
    * that can be stored on MongoDb. The IMongoOperation object has sufficient
    * information to reconstruct the original operation.
    */
-  private static convertToMongoOperation (operation: Operation): IMongoOperation {
+  private static convertToMongoOperation (operation: NamedAnchoredOperationModel): IMongoOperation {
     return {
       didUniqueSuffix: operation.didUniqueSuffix,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
-      opIndex: operation.operationIndex!,
-      transactionNumber: Long.fromNumber(operation.transactionNumber!),
-      transactionTime: operation.transactionTime!,
-      batchFileHash: operation.batchFileHash!
+      opIndex: operation.operationIndex,
+      transactionNumber: Long.fromNumber(operation.transactionNumber),
+      transactionTime: operation.transactionTime
     };
   }
 
@@ -131,18 +129,12 @@ export default class MongoDbOperationStore implements OperationStore {
    * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
    * hence the type 'any' for mongoOperation.
    */
-  private static convertToOperation (mongoOperation: any, getHashAlgorithmInMultihashCode: (blockchainTime: number) => number): Operation {
-    return Operation.createAnchoredOperation(
-      mongoOperation.operationBufferBsonBinary.buffer,
-      getHashAlgorithmInMultihashCode,
-      {
-        transactionNumber: mongoOperation.transactionNumber,
-        transactionTime: mongoOperation.transactionTime,
-        transactionTimeHash: 'unavailable',
-        anchorFileHash: 'unavailable',
-        batchFileHash: mongoOperation.batchFileHash
-      },
-      mongoOperation.opIndex
-    );
+  private static convertToAnchoredOperationModel (mongoOperation: any): AnchoredOperationModel {
+    return {
+      operationBuffer: mongoOperation.operationBufferBsonBinary.buffer,
+      operationIndex: mongoOperation.opIndex,
+      transactionNumber: mongoOperation.transactionNumber,
+      transactionTime: mongoOperation.transactionTime
+    };
   }
 }

@@ -71,6 +71,7 @@
     ],
     "exclude": [
       "dist/lib/**/interfaces/**",
+      "dist/lib/**/models/**",
       "dist/lib/**/I[A-Z]**"
     ],
     "reporter": [

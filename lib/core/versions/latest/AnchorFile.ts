@@ -1,33 +1,19 @@
+import AnchorFileModel from './models/AnchorFileModel';
 import Encoder from './Encoder';
-import ErrorCode from '../common/ErrorCode';
+import ErrorCode from '../../../common/ErrorCode';
 import Multihash from './Multihash';
-import { SidetreeError } from './Error';
-
-/**
- * Defines Anchor File structure.
- */
-export interface IAnchorFile {
-  batchFileHash: string;
-  merkleRoot: string;
-  didUniqueSuffixes: string[];
-}
+import ProtocolParameters from './ProtocolParameters';
+import { SidetreeError } from '../../Error';
 
 /**
  * Class containing Anchor File related operations.
  */
 export default class AnchorFile {
   /**
-   * TODO: remove hashAlgorithmInMultihashCode and load directed from protocol-parameters.json.
    * Parses and validates the given anchor file buffer.
-   * @param hashAlgorithmInMultihashCode The hash algorithm to use to validate the transaction files.
-   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as DID strings.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static parseAndValidate (
-    anchorFileBuffer: Buffer,
-    maxOperationsPerBatch: number,
-    hashAlgorithmInMultihashCode: number,
-    allSupportedHashAlgorithms: number[]): IAnchorFile {
+  public static parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): AnchorFileModel {
 
     let anchorFile;
     try {
@@ -59,7 +45,7 @@ export default class AnchorFile {
     }
 
     const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.batchFileHash);
-    if (!Multihash.isValidHash(didUniqueSuffixBuffer, hashAlgorithmInMultihashCode)) {
+    if (!Multihash.isValidHash(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
       throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashUnsupported, `Batch file hash '${anchorFile.batchFileHash}' is unsupported.`);
     }
 
@@ -69,7 +55,7 @@ export default class AnchorFile {
     }
 
     const merkleRootBuffer = Encoder.decodeAsBuffer(anchorFile.merkleRoot);
-    if (!Multihash.isValidHash(merkleRootBuffer, hashAlgorithmInMultihashCode)) {
+    if (!Multihash.isValidHash(merkleRootBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
       throw new SidetreeError(ErrorCode.AnchorFileMerkleRootUnsupported, `Merkle root '${anchorFile.merkleRoot}' is unsupported.`);
     }
 
@@ -92,9 +78,9 @@ export default class AnchorFile {
         throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString);
       }
 
-      const uniqueSuffixBuffer = Encoder.decodeAsBuffer(uniqueSuffix);
-      if (!Multihash.isSupportedHash(uniqueSuffixBuffer, allSupportedHashAlgorithms)) {
-        throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryInvalid, `Unique suffix '${uniqueSuffix}' is invalid.`);
+      const maxEncodedHashStringLength = ProtocolParameters.maxEncodedHashStringLength;
+      if (uniqueSuffix.length > maxEncodedHashStringLength) {
+        throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixTooLong, `Unique suffix '${uniqueSuffix}' exceeds length of ${maxEncodedHashStringLength}.`);
       }
     }
 

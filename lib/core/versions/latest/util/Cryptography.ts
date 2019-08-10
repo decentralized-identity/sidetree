@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import IDidPublicKey from '../interfaces/IDidPublicKey';
+import DidPublicKeyModel from '../models/DidPublicKeyModel';
 import Encoder from '../Encoder';
 import { EcPrivateKey, PrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 const secp256k1 = require('secp256k1');
@@ -17,10 +17,10 @@ export default class Cryptography {
 
   /**
    * Generates a random pair of SECP256K1 public-private key-pair in JWK format.
-   * NOTE: The public key returned is wrapped as a IDidPublicKey for convenient usage.
+   * NOTE: The public key returned is wrapped as a DidPublicKeyModel for convenient usage.
    * @returns Public key, followed by private key.
    */
-  public static async generateKeyPairJwk (keyId: string): Promise<[IDidPublicKey, PrivateKey]> {
+  public static async generateKeyPairJwk (keyId: string): Promise<[DidPublicKeyModel, PrivateKey]> {
     const privateKeyJwk = await EcPrivateKey.generatePrivateKey(keyId);
     const publicKeyJwk = privateKeyJwk.getPublicKey();
     const didPublicKey = {
@@ -36,7 +36,7 @@ export default class Cryptography {
    * Generates a random pair of SECP256K1 public-private key-pair in HEX format.
    * @returns Public key, followed by private key.
    */
-  public static async generateKeyPairHex (keyId: string): Promise<[IDidPublicKey, string]> {
+  public static async generateKeyPairHex (keyId: string): Promise<[DidPublicKeyModel, string]> {
     let privateKeyBuffer;
     do {
       privateKeyBuffer = crypto.randomBytes(32);
@@ -85,7 +85,7 @@ export default class Cryptography {
    * @param publicKey The public key to be used for verification.
    * @returns true if signature is successfully verified, false otherwise.
    */
-  public static async verifySignature (content: string, encodedSignature: string, publicKey: IDidPublicKey): Promise<boolean> {
+  public static async verifySignature (content: string, encodedSignature: string, publicKey: DidPublicKeyModel): Promise<boolean> {
     try {
       if (publicKey.type !== 'Secp256k1VerificationKey2018') {
         return false;

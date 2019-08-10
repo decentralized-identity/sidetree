@@ -2,14 +2,14 @@
 
 // Core service exports.
 import SidetreeCore from './core/Core';
-import ISidetreeConfig from './core/interfaces/IConfig';
+import SidetreeConfig from './core/models/Config';
 import {
   IResponse as ISidetreeResponse,
   Response as SidetreeResponse
 } from './common/Response';
 
 export {
-  ISidetreeConfig,
+  SidetreeConfig,
   ISidetreeResponse,
   SidetreeCore,
   SidetreeResponse

@@ -1,27 +1,25 @@
-import AnchorFile, { IAnchorFile } from '../../AnchorFile';
+import AnchorFileModel from './models/AnchorFileModel';
+import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from '../../DownloadManager';
-import TransactionProcessor from '../../interfaces/TransactionProcessor';
-import IResolvedTransaction from '../../interfaces/IResolvedTransaction';
+import IOperationStore from '../../interfaces/IOperationStore';
 import ITransaction from '../../../common/ITransaction';
-import OperationStore from '../../interfaces/OperationStore';
-import protocolParameters from './ProtocolParameters';
+import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
+import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
+import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
 import { FetchResultCode } from '../../../common/FetchResultCode';
-import { Operation } from '../../Operation';
 import { SidetreeError } from '../../Error';
 
 /**
- * The latest implementation of the `TransactionProcessor`.
+ * Implementation of the `ITransactionProcessor`.
  */
-export default class TransactionProcessorLatest implements TransactionProcessor {
-  public constructor (private allSupportedHashAlgorithms: number [], private downloadManager: DownloadManager, private operationStore: OperationStore) { }
+export default class TransactionProcessor implements ITransactionProcessor {
+  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
 
-  public async processTransaction (
-    transaction: ITransaction,
-    getHashAlgorithmInMultihashCode: (blockchainTime: number) => number): Promise<boolean> {
-    console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${protocolParameters.maxAnchorFileSizeInBytes} bytes...`);
-    const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, protocolParameters.maxAnchorFileSizeInBytes);
+  public async processTransaction (transaction: ITransaction): Promise<boolean> {
+    console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
+    const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
 
     // No thing to process if the file hash is invalid. No retry needed.
     if (anchorFileFetchResult.code === FetchResultCode.InvalidHash) {
@@ -31,7 +29,7 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
 
     // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
     if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-      console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${protocolParameters.maxAnchorFileSizeInBytes} bytes.`);
+      console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes.`);
       return true;
     }
 
@@ -54,15 +52,12 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
     }
 
     console.info(`Anchor file '${transaction.anchorFileHash}' of size ${anchorFileFetchResult.content!.length} bytes downloaded.`);
-    let anchorFile: IAnchorFile;
+    let anchorFile: AnchorFileModel;
     try {
-      const maxOperationsPerBatch = protocolParameters.maxOperationsPerBatch;
-      const hashAlgorithmInMultihashCode = protocolParameters.hashAlgorithmInMultihashCode;
+      const maxOperationsPerBatch = ProtocolParameters.maxOperationsPerBatch;
       anchorFile = AnchorFile.parseAndValidate(
         anchorFileFetchResult.content!,
-        maxOperationsPerBatch,
-        hashAlgorithmInMultihashCode,
-        this.allSupportedHashAlgorithms
+        maxOperationsPerBatch
       );
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
@@ -76,8 +71,8 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
       }
     }
 
-    console.info(`Downloading batch file '${anchorFile.batchFileHash}', max size limit ${protocolParameters.maxBatchFileSizeInBytes}...`);
-    const batchFileFetchResult = await this.downloadManager.download(anchorFile.batchFileHash, protocolParameters.maxBatchFileSizeInBytes);
+    console.info(`Downloading batch file '${anchorFile.batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
+    const batchFileFetchResult = await this.downloadManager.download(anchorFile.batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
 
     // Nothing to process if the file hash is invalid. No retry needed.
     if (batchFileFetchResult.code === FetchResultCode.InvalidHash) {
@@ -87,7 +82,7 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
 
     // Nothing to process if the file size exceeds protocol specified size limit, no retry needed either.
     if (batchFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-      console.info(`Batch file '${anchorFile.batchFileHash}' exceeded max size limit ${protocolParameters.maxBatchFileSizeInBytes}...`);
+      console.info(`Batch file '${anchorFile.batchFileHash}' exceeded max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
       return true;
     }
 
@@ -111,19 +106,9 @@ export default class TransactionProcessorLatest implements TransactionProcessor 
 
     console.info(`Batch file '${anchorFile.batchFileHash}' of size ${batchFileFetchResult.content!.length} downloaded.`);
 
-    // Construct a resolved transaction from the original transaction object now that batch file is fetched.
-    const resolvedTransaction: IResolvedTransaction = {
-      transactionNumber: transaction.transactionNumber,
-      transactionTime: transaction.transactionTime,
-      transactionTimeHash: transaction.transactionTimeHash,
-      anchorFileHash: transaction.anchorFileHash,
-      batchFileHash: anchorFile.batchFileHash
-    };
-
-    let operations: Operation[];
+    let operations: NamedAnchoredOperationModel[];
     try {
-      operations = await BatchFile.parseAndValidate(
-        batchFileFetchResult.content!, anchorFile, resolvedTransaction, this.allSupportedHashAlgorithms, getHashAlgorithmInMultihashCode);
+      operations = await BatchFile.parseAndValidate(batchFileFetchResult.content!, anchorFile, transaction.transactionNumber, transaction.transactionTime);
     } catch (error) {
       console.info(error);
       console.info(`Batch file '${anchorFile.batchFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored.`);

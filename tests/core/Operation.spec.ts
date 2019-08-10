@@ -1,7 +1,7 @@
-import Cryptography from '../../lib/core/util/Cryptography';
+import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import ErrorCode from '../../lib/common/ErrorCode';
+import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
-import { Operation } from '../../lib/core/Operation';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('Operation', async () => {
@@ -20,21 +20,21 @@ describe('Operation', async () => {
     createRequest.dummyProperty = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { Operation.createUnanchoredOperation(requestWithUnknownProperty, (_number) => 18, 1500000, [18]); }).toThrowError();
+    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
   });
 
   it('should throw error if more than one type of payload is found when parsing request.', async () => {
     createRequest.updatePayload = '123';
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { Operation.createUnanchoredOperation(requestWithUnknownProperty, (_number) => 18, 1500000, [18]); }).toThrowError();
+    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
   });
 
   it('should throw error if signature is not found when parsing request.', async () => {
     delete createRequest.signature;
     const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
 
-    expect(() => { Operation.createUnanchoredOperation(requestWithUnknownProperty, (_number) => 18, 1500000, [18]); }).toThrowError();
+    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
   });
 
   describe('Update payload', async () => {
@@ -59,38 +59,6 @@ describe('Operation', async () => {
 
       const expectedError = new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
-    });
-
-    it('should throw error if didUniqueSuffix is not a valid multihash string.', async () => {
-      const updatePayload = generateUpdatePayloadForPublicKeys();
-      updatePayload.didUniqueSuffix = 'invalidHash';
-
-      try {
-        Operation.validateUpdatePayload(updatePayload);
-      } catch (error) {
-        if (error instanceof SidetreeError &&
-            error.code === ErrorCode.OperationUpdatePayloadDidUniqueSuffixInvalid) {
-          return; // Expected Sidetree error.
-        } else {
-          throw error; // Unexpected error, throw to fail the test.
-        }
-      }
-    });
-
-    it('should throw error if previousOperationHash is not a valid multihash string.', async () => {
-      const updatePayload = generateUpdatePayloadForPublicKeys();
-      updatePayload.previousOperationHash = 'invalidHash';
-
-      try {
-        Operation.validateUpdatePayload(updatePayload);
-      } catch (error) {
-        if (error instanceof SidetreeError &&
-            error.code === ErrorCode.OperationUpdatePayloadPreviousOperationHashInvalid) {
-          return; // Expected Sidetree error.
-        } else {
-          throw error; // Unexpected error, throw to fail the test.
-        }
-      }
     });
 
     it('should throw error if `patches` is not an array.', async () => {

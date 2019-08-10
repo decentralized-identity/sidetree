@@ -1,28 +1,7 @@
 import Did from './Did';
+import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
-
-/**
- * Defines DID Document data structure used by Sidetree for basic type safety checks.
- */
-export interface IDocument {
-  '@context': string;
-  id: string;
-  publicKey: {
-    id: string,
-    type: string,
-    publicKeyJwk?: object
-    publicKeyHex?: object
-  }[];
-  service: {
-    type: string,
-    serviceEndpoint: {
-      '@context': string;
-      '@type': string;
-      instance: string[]
-    }
-  }[];
-}
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
@@ -33,7 +12,7 @@ export default class Document {
    * Creates a DID Document with a valid Sidetree DID from an encoded original DID Document.
    * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
    */
-  public static from (encodedOriginalDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): IDocument | undefined {
+  public static from (encodedOriginalDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): DocumentModel | undefined {
     // Compute the hash of the DID Document in the create payload as the DID
     const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
 
@@ -206,7 +185,7 @@ export default class Document {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (didDocument: IDocument, keyId: string): DidPublicKey | undefined {
+  public static getPublicKey (didDocument: DocumentModel, keyId: string): DidPublicKey | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 

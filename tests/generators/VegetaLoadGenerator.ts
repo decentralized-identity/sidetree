@@ -1,6 +1,6 @@
 import * as fs from 'fs';
-import Cryptography from '../../lib/core/util/Cryptography';
-import Did from '../../lib/core/Did';
+import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import Did from '../../lib/core/versions/latest/Did';
 import OperationGenerator from './OperationGenerator';
 
 /**

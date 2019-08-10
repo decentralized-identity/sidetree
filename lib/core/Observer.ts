@@ -1,12 +1,11 @@
-import DownloadManager from './DownloadManager';
 import ErrorCode from '../common/ErrorCode';
+import IOperationStore from './interfaces/IOperationStore';
 import ITransaction from '../common/ITransaction';
+import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionUnderProcessing, { TransactionProcessingStatus } from './interfaces/ITransactionUnderProcessing';
 import timeSpan = require('time-span');
-import TransactionProcessor from './interfaces/TransactionProcessor';
 import TransactionStore from './interfaces/TransactionStore';
 import UnresolvableTransactionStore from './interfaces/UnresolvableTransactionStore';
-import OperationStore from './interfaces/OperationStore';
 import { Blockchain } from './Blockchain';
 import { SidetreeError } from './Error';
 
@@ -32,11 +31,10 @@ export default class Observer {
   private lastKnownTransaction: ITransaction | undefined;
 
   public constructor (
-    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
-    private getTransactionProcessor: (blockchainTime: number) => TransactionProcessor,
+    private getTransactionProcessor: (blockchainTime: number) => ITransactionProcessor,
     private blockchain: Blockchain,
-    private downloadManager: DownloadManager,
-    private operationStore: OperationStore,
+    private maxConcurrentDownloads: number,
+    private operationStore: IOperationStore,
     private transactionStore: TransactionStore,
     private unresolvableTransactionStore: UnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
@@ -129,7 +127,7 @@ export default class Observer {
           // We hold off from fetching more transactions if the list of transactions under processing gets too long.
           // We will wait for count of transaction being processed to fall to the maximum allowed concurrent downloads
           // before attempting further transaction fetches.
-          await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.downloadManager.maxConcurrentDownloads);
+          await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(this.maxConcurrentDownloads);
         }
 
         // Update the last known transaction.
@@ -230,8 +228,8 @@ export default class Observer {
     let transactionProcessedSuccessfully;
 
     try {
-      const transactionProcessor: TransactionProcessor = this.getTransactionProcessor(transaction.transactionTime);
-      transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction, this.getHashAlgorithmInMultihashCode);
+      const transactionProcessor: ITransactionProcessor = this.getTransactionProcessor(transaction.transactionTime);
+      transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
       console.error(error);

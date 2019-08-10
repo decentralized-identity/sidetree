@@ -6,7 +6,7 @@ const multihashes = require('multihashes');
  */
 export default class Multihash {
   /**
-   * Hashes the content using the hashing algorithm specified by the latest protocol version.
+   * Hashes the content using the hashing algorithm specified.
    */
   public static hash (content: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
     const hashAlgorithm = hashAlgorithmInMultihashCode;

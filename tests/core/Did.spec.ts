@@ -1,4 +1,4 @@
-import Did from '../../lib/core/Did';
+import Did from '../../lib/core/versions/latest/Did';
 
 describe('DID', async () => {
   it('isDid() should return false if DID method is not in the DID.', async () => {

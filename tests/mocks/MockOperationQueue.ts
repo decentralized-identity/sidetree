@@ -1,9 +1,9 @@
-import OperationQueue from '../../lib/core/interfaces/OperationQueue';
+import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
 
 /**
  * A mock in-memory operation queue used by the Batch Writer.
  */
-export default class MockOperationQueue implements OperationQueue {
+export default class MockOperationQueue implements IOperationQueue {
   private latestTimestamp = 0;
   private operations: Map<string, [number, Buffer]> = new Map();
 

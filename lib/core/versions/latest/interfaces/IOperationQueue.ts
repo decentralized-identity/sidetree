@@ -1,7 +1,7 @@
 /**
  * An abstraction of a queue of operations used by the Batch Writer.
  */
-export default interface OperationQueue {
+export default interface IOperationQueue {
 
   /**
    * Places an operation at the tail of the queue.

@@ -1,34 +1,24 @@
 import Cryptography from './util/Cryptography';
 import Did from './Did';
-import Document, { IDocument } from './Document';
+import Document from './Document';
+import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
-import ErrorCode from '../common/ErrorCode';
-import IResolvedTransaction from './interfaces/IResolvedTransaction';
+import ErrorCode from '../../../common/ErrorCode';
 import Multihash from './Multihash';
+import OperationModel from './models/OperationModel';
+import ProtocolParameters from './ProtocolParameters';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
-import { SidetreeError } from './Error';
+import { SidetreeError } from '../../Error';
 
 /**
  * Sidetree operation types.
  */
-enum OperationType {
+export enum OperationType {
   Create = 'create',
   Update = 'update',
   Delete = 'delete',
   Recover = 'recover'
-}
-
-/**
- * Defines operation request data structure for basic type safety checks.
- */
-interface IOperation {
-  header: {
-    operation: string,
-    kid: string
-  };
-  payload: string;
-  signature: string;
 }
 
 /**
@@ -39,16 +29,7 @@ interface IOperation {
  * 1. No subclassing of specific operations. The intention here is to keep the hierarchy flat, as most properties are common.
  * 2. Factory method to hide constructor in case subclassing becomes useful in the future. Most often a good practice anyway.
  */
-class Operation {
-  /** The logical blockchain time that this opeartion was anchored on the blockchain */
-  public readonly transactionTime?: number;
-  /** The transaction number of the transaction this operation was batched within. */
-  public readonly transactionNumber?: number;
-  /** The index this operation was assigned to in the batch. */
-  public readonly operationIndex?: number;
-  /** The hash of the batch file this operation belongs to */
-  public readonly batchFileHash?: string;
-
+export default class Operation {
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
 
@@ -58,6 +39,8 @@ class Operation {
    */
   public readonly didUniqueSuffix: string;
 
+  /** Hash of the operation based on the encoded payload string. */
+  public readonly operationHash: string;
   /** The encoded operation payload. */
   public readonly encodedPayload: string;
   /** The type of operation. */
@@ -70,48 +53,16 @@ class Operation {
   public readonly signature: string;
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
-  public readonly didDocument?: IDocument;
+  public readonly didDocument?: DocumentModel;
 
   /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
   public readonly patches?: any[];
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
-   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
-   *                                   Optional parameter. Hash integrity will not be checked if not supplied.
-   * @param resolvedTransaction The transaction operation this opeartion was batched within.
-   *                            If given, operationIndex must be given else error will be thrown.
-   *                            The transactoinTimeHash is ignored by the constructor.
-   * @param operationIndex The operation index this operation was assigned to in the batch.
-   *                       If given, resolvedTransaction must be given else error will be thrown.
-   * @param estimatedAnchorTime Estimated anchor time for this opeartion to be used for generating the theoretical DID unique suffix.
-   *                            This parameter and `resolvedTransaction` must be mutually exclusively specified.
+   * NOTE: Would love to mark this constructor private to prevent direct calls, but need it to be public for `AnchoredOperation` to inherit from.
    */
-  private constructor (
-    operationBuffer: Buffer,
-    private getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
-    allSupportedHashAlgorithms?: number[],
-    resolvedTransaction?: IResolvedTransaction,
-    operationIndex?: number,
-    private estimatedAnchorTime?: number) {
-    // resolvedTransaction and estimatedAnchorTime must be mutually exclusively specified.
-    if ((resolvedTransaction === undefined && estimatedAnchorTime === undefined) ||
-        (resolvedTransaction !== undefined && estimatedAnchorTime !== undefined)) {
-      throw new Error('Param resolvedTransaction and estimatedAnchorTime must be mutually exclusively specified.');
-    }
-
-    // resolvedTransaction and operationIndex must both be defined or undefined at the same time.
-    if (!((resolvedTransaction === undefined && operationIndex === undefined) ||
-          (resolvedTransaction !== undefined && operationIndex !== undefined))) {
-      throw new Error('Param resolvedTransaction and operationIndex must both be defined or undefined.');
-    }
-
-    // Properties of an operation in a resolved transaction.
-    this.transactionTime = resolvedTransaction ? resolvedTransaction.transactionTime : undefined;
-    this.transactionNumber = resolvedTransaction ? resolvedTransaction.transactionNumber : undefined;
-    this.batchFileHash = resolvedTransaction ? resolvedTransaction.batchFileHash : undefined;
-
-    this.operationIndex = operationIndex;
+  public constructor (operationBuffer: Buffer) {
     this.operationBuffer = operationBuffer;
 
     // Parse request buffer into a JS object.
@@ -119,18 +70,19 @@ class Operation {
     const operation = JSON.parse(operationJson);
 
     // Ensure that the operation is well-formed.
-    const [operationType, decodedPayload] = Operation.parseAndValidateOperation(operation, allSupportedHashAlgorithms);
+    const [operationType, decodedPayload] = Operation.parseAndValidateOperation(operation);
 
     // Initialize common operation properties.
     this.type = operationType;
     this.signingKeyId = operation.header.kid;
     this.encodedPayload = operation.payload;
     this.signature = operation.signature;
+    this.operationHash = Operation.computeHash(this.encodedPayload);
 
     // Initialize operation specific properties.
     switch (this.type) {
       case OperationType.Create:
-        this.didUniqueSuffix = this.getOperationHash();
+        this.didUniqueSuffix = this.operationHash;
         break;
       case OperationType.Update:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
@@ -146,34 +98,11 @@ class Operation {
   }
 
   /**
-   * Creates an Operation that has been anchored on the blockchain.
-   * @param resolvedTransaction The transaction operation was batched within. If given, operationIndex must be given else error will be thrown.
-   * @param operationIndex The operation index this operation was assigned to in the batch.
-   *                       If given, resolvedTransaction must be given else error will be thrown.
-   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
-   *                                   Optional parameter for when creating instances from operation store, in which case validation was already done.
-   * @throws Error if given operation buffer fails any validation.
-   */
-  public static createAnchoredOperation (
-    operationBuffer: Buffer,
-    getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
-    resolvedTransaction: IResolvedTransaction,
-    operationIndex: number,
-    allSupportedHashAlgorithms?: number[]): Operation {
-    return new Operation(operationBuffer, getHashAlgorithmInMultihashCode, allSupportedHashAlgorithms, resolvedTransaction, operationIndex);
-  }
-
-  /**
    * Creates an Operation that has not been anchored on the blockchain.
-   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
    * @throws Error if given operation buffer fails any validation.
    */
-  public static createUnanchoredOperation (
-    operationBuffer: Buffer,
-    getHashAlgorithmInMultihashCode: (blockchainTime: number) => number,
-    estimatedAnchorTime: number,
-    allSupportedHashAlgorithms: number[]) {
-    return new Operation(operationBuffer, getHashAlgorithmInMultihashCode, allSupportedHashAlgorithms, undefined, undefined, estimatedAnchorTime);
+  public static create (operationBuffer: Buffer) {
+    return new Operation(operationBuffer);
   }
 
   /**
@@ -202,18 +131,11 @@ class Operation {
   }
 
   /**
-   * Gets a cryptographic hash of the operation payload.
+   * Computes the cryptographic multihash of the given string.
    */
-  public getOperationHash (): string {
-    // Get the protocol version according to the transaction time to decide on the hashing algorithm used for the DID.
-    let hashAlgorithmInMultihashCode;
-    if (this.transactionTime === undefined) {
-      hashAlgorithmInMultihashCode = this.getHashAlgorithmInMultihashCode(this.estimatedAnchorTime!);
-    } else {
-      hashAlgorithmInMultihashCode = this.getHashAlgorithmInMultihashCode(this.transactionTime);
-    }
-
-    const encodedOperationPayloadBuffer = Buffer.from(this.encodedPayload);
+  private static computeHash (dataString: string): string {
+    const hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
+    const encodedOperationPayloadBuffer = Buffer.from(dataString);
     const multihash = Multihash.hash(encodedOperationPayloadBuffer, hashAlgorithmInMultihashCode);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
@@ -223,7 +145,7 @@ class Operation {
    * Applies the given patches in order to the given DID Document.
    * NOTE: Assumes no schema validation is needed.
    */
-  public static applyPatchesToDidDocument (didDocument: IDocument, patches: any[]) {
+  public static applyPatchesToDidDocument (didDocument: DocumentModel, patches: any[]) {
     // Loop through and apply all patches.
     for (let patch of patches) {
       Operation.applyPatchToDidDocument(didDocument, patch);
@@ -233,7 +155,7 @@ class Operation {
   /**
    * Applies the given patch to the given DID Document.
    */
-  private static applyPatchToDidDocument (didDocument: IDocument, patch: any) {
+  private static applyPatchToDidDocument (didDocument: DocumentModel, patch: any) {
     if (patch.action === 'add-public-keys') {
       const publicKeySet = new Set(didDocument.publicKey.map(key => key.id));
 
@@ -301,7 +223,7 @@ class Operation {
   /**
    * Gets the operation type given an operation object.
    */
-  private static getOperationType (operation: IOperation): OperationType {
+  private static getOperationType (operation: OperationModel): OperationType {
     switch (operation.header.operation) {
       case 'create':
         return OperationType.Create;
@@ -319,10 +241,9 @@ class Operation {
   /**
    * Parses and validates the given operation object object.
    * NOTE: Operation validation does not include signature verification.
-   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as previous Operation hash.
    * @returns [operation type, decoded payload json object] if given operation is valid, Error is thrown otherwise.
    */
-  private static parseAndValidateOperation (operation: any, allSupportedHashAlgorithms?: number[]): [OperationType, any] {
+  private static parseAndValidateOperation (operation: any): [OperationType, any] {
     // Must contain 'header' property and 'header' property must contain a string 'kid' property.
     if (typeof operation.header.kid !== 'string') {
       throw new SidetreeError(ErrorCode.OperationHeaderMissingKid);
@@ -366,7 +287,7 @@ class Operation {
         }
         break;
       case OperationType.Update:
-        Operation.validateUpdatePayload(decodedPayload, allSupportedHashAlgorithms);
+        Operation.validateUpdatePayload(decodedPayload);
         break;
       case OperationType.Delete:
       case OperationType.Recover:
@@ -378,10 +299,9 @@ class Operation {
 
   /**
    * Validates the schema given update operation payload.
-   * @param allSupportedHashAlgorithms All the hash algorithms used across protocol versions, needed for validations such as DID strings.
    * @throws Error if given operation payload fails validation.
    */
-  public static validateUpdatePayload (payload: any, allSupportedHashAlgorithms?: number[]) {
+  public static validateUpdatePayload (payload: any) {
     const payloadProperties = Object.keys(payload);
     if (payloadProperties.length !== 3) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
@@ -393,16 +313,6 @@ class Operation {
 
     if (typeof payload.previousOperationHash !== 'string') {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
-    }
-
-    const uniqueSuffixBuffer = Encoder.decodeAsBuffer(payload.didUniqueSuffix);
-    if (allSupportedHashAlgorithms !== undefined && !Multihash.isSupportedHash(uniqueSuffixBuffer, allSupportedHashAlgorithms)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadDidUniqueSuffixInvalid, `'${payload.didUniqueSuffix}' is an unuspported multihash.`);
-    }
-
-    const previousOperationHashBuffer = Encoder.decodeAsBuffer(payload.previousOperationHash);
-    if (allSupportedHashAlgorithms !== undefined && !Multihash.isSupportedHash(previousOperationHashBuffer, allSupportedHashAlgorithms)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadPreviousOperationHashInvalid, `'${payload.previousOperationHash}' is an unuspported multihash`);
     }
 
     // Validate schema of every patch to be applied.
@@ -513,5 +423,3 @@ class Operation {
     }
   }
 }
-
-export { IOperation, OperationType, Operation };

@@ -1,8 +1,8 @@
 import ErrorCode from '../../lib/common/ErrorCode';
-import IConfig from '../../lib/core/interfaces/IConfig';
+import Config from '../../lib/core/models/Config';
+import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
 import MongoDb from '../common/MongoDb';
-import MongoDbOperationQueue from '../../lib/core/MongoDbOperationQueue';
-import OperationQueue from '../../lib/core/interfaces/OperationQueue';
+import MongoDbOperationQueue from '../../lib/core/versions/latest/MongoDbOperationQueue';
 import { SidetreeError } from '../../lib/core/Error';
 
 /**
@@ -18,7 +18,7 @@ async function createOperationQueue (transactionStoreUri: string, databaseName: 
  * Generates the given count of operations and queues them in the given operation queue.
  * e.g. The DID unique suffix will start from '1', '2', '3'... and buffer will be generated from the DID unique suffix.
  */
-async function generateAndQueueOperations (operationQueue: OperationQueue, count: number): Promise<{ didUniqueSuffix: string, operationBuffer: Buffer }[]> {
+async function generateAndQueueOperations (operationQueue: IOperationQueue, count: number): Promise<{ didUniqueSuffix: string, operationBuffer: Buffer }[]> {
   const operations: { didUniqueSuffix: string, operationBuffer: Buffer }[] = [];
   for (let i = 1; i <= count; i++) {
     const didUniqueSuffix = i.toString();
@@ -32,7 +32,7 @@ async function generateAndQueueOperations (operationQueue: OperationQueue, count
 }
 
 describe('MongoDbOperationQueue', async () => {
-  const config: IConfig = require('../json/config-test.json');
+  const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable = false;

@@ -6,12 +6,12 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from '../lib/core/Core';
-import IConfig from '../lib/core/interfaces/IConfig';
+import Config from '../lib/core/models/Config';
 import { IProtocolVersion } from '../lib/core/VersionManager';
 import { IResponse, Response } from '../lib/common/Response';
 
 /** Configuration used by this server. */
-interface IServerConfig extends IConfig {
+interface IServerConfig extends Config {
   port: number;
 }
 

@@ -1,4 +1,4 @@
-import BatchWriter from './interfaces/BatchWriter';
+import IBatchWriter from './interfaces/IBatchWriter';
 import timeSpan = require('time-span');
 import { Blockchain } from './Blockchain';
 
@@ -12,7 +12,7 @@ export default class BatchScheduler {
   private processing: boolean = false;
 
   public constructor (
-    private getBatchWriter: (blockchainTime: number) => BatchWriter,
+    private getBatchWriter: (blockchainTime: number) => IBatchWriter,
     private blockchain: Blockchain,
     private batchingIntervalInSeconds: number) {
   }

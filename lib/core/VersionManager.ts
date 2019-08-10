@@ -1,13 +1,12 @@
-import BatchWriter from './interfaces/BatchWriter';
 import DownloadManager from './DownloadManager';
-import IConfig from './interfaces/IConfig';
+import IBatchWriter from './interfaces/IBatchWriter';
+import IConfig from './models/Config';
 import IOperationProcessor from './interfaces/IOperationProcessor';
+import IOperationStore from './interfaces/IOperationStore';
+import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import IVersionInfo from './interfaces/IVersionInfo';
-import MongoDbOperationQueue from './MongoDbOperationQueue';
-import MongoDbOperationStore from './MongoDbOperationStore';
 import RequestHandler from './interfaces/RequestHandler';
-import Resolver from './Resolver';
-import TransactionProcessor from './interfaces/TransactionProcessor';
+import Resolver from './versions/latest/Resolver';
 import { BlockchainClient } from './Blockchain';
 import { CasClient } from './Cas';
 
@@ -27,19 +26,18 @@ export default class VersionManager {
   // Reverse sorted protocol versions. ie. latest version first.
   private protocolVersionsReverseSorted: IProtocolVersion[];
 
-  private batchWriters: Map<string, BatchWriter>;
+  private batchWriters: Map<string, IBatchWriter>;
   private operationProcessors: Map<string, IOperationProcessor>;
   private requestHandlers: Map<string, RequestHandler>;
-  private transactionProcessors: Map<string, TransactionProcessor>;
+  private transactionProcessors: Map<string, ITransactionProcessor>;
   private versionInfos: Map<string, IVersionInfo>;
-
-  // Cached list of supported hash algorithms.
-  private allSupportedHashAlgorithms: number[] = [];
 
   public constructor (
     private config: IConfig,
     protocolVersions: IProtocolVersion[],
-    private downloadManager: DownloadManager) {
+    private downloadManager: DownloadManager,
+    private operationStore: IOperationStore
+  ) {
 
     // Reverse sort protocol versions.
     this.protocolVersionsReverseSorted = protocolVersions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
@@ -57,18 +55,11 @@ export default class VersionManager {
   public async initialize () {
 
     // TODO: Need to revisit these to also move them into versioned codebase.
-    const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString);
-    await operationQueue.initialize();
-
-    const operationStore = new MongoDbOperationStore(
-      this.config.mongoDbConnectionString, (blockchainTime) => this.getHashAlgorithmInMultihashCode(blockchainTime));
-    await operationStore.initialize();
-
     const blockchain = new BlockchainClient(this.config.blockchainServiceUri);
     await blockchain.initialize();
 
     const cas = new CasClient(this.config.contentAddressableStoreServiceUri);
-    const resolver = new Resolver((blockchainTime) => this.getOperationProcessor(blockchainTime), operationStore);
+    const resolver = new Resolver((blockchainTime) => this.getOperationProcessor(blockchainTime), this.operationStore);
 
     // Load all the metadata on all protocol versions first because instantiation of other components will need it.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
@@ -81,8 +72,8 @@ export default class VersionManager {
     }
 
     // Get and cache supported hash algorithms.
-    this.allSupportedHashAlgorithms = Array.from(this.versionInfos.values(), value => value.hashAlgorithmInMultihashCode);
-    this.allSupportedHashAlgorithms = Array.from(new Set(this.allSupportedHashAlgorithms)); // This line removes duplicates.
+    let allSupportedHashAlgorithms = Array.from(this.versionInfos.values(), value => value.hashAlgorithmInMultihashCode);
+    allSupportedHashAlgorithms = Array.from(new Set(allSupportedHashAlgorithms)); // This line removes duplicates.
 
     // Instantiate rest of the protocol components.
     // NOTE: In principal each version of the interface implemtnations can have different constructors,
@@ -92,19 +83,23 @@ export default class VersionManager {
       const version = protocolVersion.version;
 
       /* tslint:disable-next-line */
+      const MongoDbOperationQueue = (await import(`./versions/${version}/MongoDbOperationQueue`)).default;
+      const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString);
+      await operationQueue.initialize();
+
+      /* tslint:disable-next-line */
       const VersionInfo = (await import(`./versions/${version}/VersionInfo`)).default;
       const versionInfo = new VersionInfo();
       this.transactionProcessors.set(version, versionInfo);
 
       /* tslint:disable-next-line */
       const TransactionProcessor = (await import(`./versions/${version}/TransactionProcessor`)).default;
-      const transactionProcessor = new TransactionProcessor(this.allSupportedHashAlgorithms, this.downloadManager, operationStore);
+      const transactionProcessor = new TransactionProcessor(this.downloadManager, this.operationStore);
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */
       const BatchWriter = (await import(`./versions/${version}/BatchWriter`)).default;
-      const batchWriter = new BatchWriter(
-        operationQueue, blockchain, cas, this.allSupportedHashAlgorithms, (blockchainTime: number) => this.getHashAlgorithmInMultihashCode(blockchainTime));
+      const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
       this.batchWriters.set(version, batchWriter);
 
       /* tslint:disable-next-line */
@@ -114,21 +109,15 @@ export default class VersionManager {
 
       /* tslint:disable-next-line */
       const RequestHandler = (await import(`./versions/${version}/RequestHandler`)).default;
-      const requestHandler = new RequestHandler(resolver, blockchain, operationQueue, this.config.didMethodName, this.allSupportedHashAlgorithms);
+      const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName, allSupportedHashAlgorithms);
       this.requestHandlers.set(version, requestHandler);
     }
   }
-  /**
-   * Gets the list of hash algorithms supported across all versions of the protocol.
-   */
-  public getSupportedHashAlgorithms (): number[] {
-    return this.allSupportedHashAlgorithms;
-  }
 
   /**
-   * Gets the corresponding version of the `BatchWriter` based on the given blockchain time.
+   * Gets the corresponding version of the `IBatchWriter` based on the given blockchain time.
    */
-  public getBatchWriter (blockchainTime: number): BatchWriter {
+  public getBatchWriter (blockchainTime: number): IBatchWriter {
     const version = this.getVersionString(blockchainTime);
     const batchWriter = this.batchWriters.get(version);
 
@@ -184,7 +173,7 @@ export default class VersionManager {
   /**
    * Gets the corresponding version of the `TransactionProcessor` based on the given blockchain time.
    */
-  public getTransactionProcessor (blockchainTime: number): TransactionProcessor {
+  public getTransactionProcessor (blockchainTime: number): ITransactionProcessor {
     const version = this.getVersionString(blockchainTime);
     const transactionProcessor = this.transactionProcessors.get(version);
 

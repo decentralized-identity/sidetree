@@ -1,7 +1,6 @@
 import BatchScheduler from './BatchScheduler';
 import DownloadManager from './DownloadManager';
-import IConfig from './interfaces/IConfig';
-import MongoDbOperationQueue from './MongoDbOperationQueue';
+import IConfig from './models/Config';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
@@ -18,7 +17,6 @@ export default class Core {
   private transactionStore: MongoDbTransactionStore;
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
-  private operationQueue: MongoDbOperationQueue;
   private versionManager: VersionManager;
   private blockchain: BlockchainClient;
   private observer: Observer;
@@ -29,24 +27,19 @@ export default class Core {
    */
   public constructor (config: IConfig, protocolVersions: IProtocolVersion[]) {
     // Component dependency initialization & injection.
+    this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
     this.blockchain = new BlockchainClient(config.blockchainServiceUri);
     const cas = new CasClient(config.contentAddressableStoreServiceUri);
     const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
-    this.operationQueue = new MongoDbOperationQueue(config.mongoDbConnectionString);
-    this.versionManager = new VersionManager(config, protocolVersions, downloadManager);
+    this.versionManager = new VersionManager(config, protocolVersions, downloadManager, this.operationStore);
     this.batchScheduler = new BatchScheduler(
       (blockchainTime) => this.versionManager.getBatchWriter(blockchainTime), this.blockchain, config.batchingIntervalInSeconds);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
-    this.operationStore = new MongoDbOperationStore(
-      config.mongoDbConnectionString,
-      (blockchainTime) => this.versionManager.getHashAlgorithmInMultihashCode(blockchainTime)
-    );
     this.observer = new Observer(
-      (blockchainTime) => this.versionManager.getHashAlgorithmInMultihashCode(blockchainTime),
       (blockchainTime) => this.versionManager.getTransactionProcessor(blockchainTime),
       this.blockchain,
-      downloadManager,
+      config.maxConcurrentDownloads,
       this.operationStore,
       this.transactionStore,
       this.unresolvableTransactionStore,
@@ -61,7 +54,6 @@ export default class Core {
    * The method starts the Observer and Batch Writer.
    */
   public async initialize () {
-    await this.operationQueue.initialize();
     await this.transactionStore.initialize();
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();

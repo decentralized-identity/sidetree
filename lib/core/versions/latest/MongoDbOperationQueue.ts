@@ -1,7 +1,7 @@
-import ErrorCode from '../common/ErrorCode';
-import OperationQueue from './interfaces/OperationQueue';
+import ErrorCode from '../../../common/ErrorCode';
+import IOperationQueue from './interfaces/IOperationQueue';
 import { Binary, Collection, MongoClient, Db } from 'mongodb';
-import { SidetreeError } from './Error';
+import { SidetreeError } from '../../Error';
 
 /**
  * Sidetree operation stored in MongoDb.
@@ -18,7 +18,7 @@ interface IMongoQueuedOperation {
 /**
  * Operation queue used by the Batch Writer implemented using MongoDB.
  */
-export default class MongoDbOperationQueue implements OperationQueue {
+export default class MongoDbOperationQueue implements IOperationQueue {
   /** Collection name for queued operations. */
   public static readonly collectionName: string = 'queued-operations';
 
