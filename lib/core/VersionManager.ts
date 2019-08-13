@@ -1,14 +1,14 @@
 import DownloadManager from './DownloadManager';
 import IBatchWriter from './interfaces/IBatchWriter';
-import IConfig from './models/Config';
+import IBlockchain from './interfaces/IBlockchain';
+import ICas from './interfaces/ICas';
+import Config from './models/Config';
 import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
+import IRequestHandler from './interfaces/IRequestHandler';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
-import IVersionInfo from './interfaces/IVersionInfo';
-import RequestHandler from './interfaces/RequestHandler';
-import Resolver from './versions/latest/Resolver';
-import { BlockchainClient } from './Blockchain';
-import { CasClient } from './Cas';
+import ProtocolVersionMetadata from './models/ProtocolVersionMetadata';
+import Resolver from './Resolver';
 
 /**
  * Defines a protocol version and its starting blockchain time.
@@ -28,15 +28,13 @@ export default class VersionManager {
 
   private batchWriters: Map<string, IBatchWriter>;
   private operationProcessors: Map<string, IOperationProcessor>;
-  private requestHandlers: Map<string, RequestHandler>;
+  private requestHandlers: Map<string, IRequestHandler>;
   private transactionProcessors: Map<string, ITransactionProcessor>;
-  private versionInfos: Map<string, IVersionInfo>;
+  private protocolVersionMetadatas: Map<string, ProtocolVersionMetadata>;
 
   public constructor (
-    private config: IConfig,
-    protocolVersions: IProtocolVersion[],
-    private downloadManager: DownloadManager,
-    private operationStore: IOperationStore
+    private config: Config,
+    protocolVersions: IProtocolVersion[]
   ) {
 
     // Reverse sort protocol versions.
@@ -46,33 +44,29 @@ export default class VersionManager {
     this.operationProcessors = new Map();
     this.requestHandlers = new Map();
     this.transactionProcessors = new Map();
-    this.versionInfos = new Map();
+    this.protocolVersionMetadatas = new Map();
   }
 
   /**
    * Loads all the versions of the protocol codebase.
    */
-  public async initialize () {
-
-    // TODO: Need to revisit these to also move them into versioned codebase.
-    const blockchain = new BlockchainClient(this.config.blockchainServiceUri);
-    await blockchain.initialize();
-
-    const cas = new CasClient(this.config.contentAddressableStoreServiceUri);
-    const resolver = new Resolver((blockchainTime) => this.getOperationProcessor(blockchainTime), this.operationStore);
+  public async initialize (
+    blockchain: IBlockchain,
+    cas: ICas,
+    downloadManager: DownloadManager,
+    operationStore: IOperationStore,
+    resolver: Resolver
+  ) {
 
     // Load all the metadata on all protocol versions first because instantiation of other components will need it.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
       const version = protocolVersion.version;
-
-      /* tslint:disable-next-line */
-      const VersionInfo = (await import(`./versions/${version}/VersionInfo`)).default;
-      const versionInfo = new VersionInfo();
-      this.versionInfos.set(version, versionInfo);
+      const protocolVersionMetadata = (await import(`./versions/${version}/ProtocolVersionMetadata`)).default;
+      this.protocolVersionMetadatas.set(version, protocolVersionMetadata);
     }
 
     // Get and cache supported hash algorithms.
-    let allSupportedHashAlgorithms = Array.from(this.versionInfos.values(), value => value.hashAlgorithmInMultihashCode);
+    let allSupportedHashAlgorithms = Array.from(this.protocolVersionMetadatas.values(), value => value.hashAlgorithmInMultihashCode);
     allSupportedHashAlgorithms = Array.from(new Set(allSupportedHashAlgorithms)); // This line removes duplicates.
 
     // Instantiate rest of the protocol components.
@@ -88,13 +82,8 @@ export default class VersionManager {
       await operationQueue.initialize();
 
       /* tslint:disable-next-line */
-      const VersionInfo = (await import(`./versions/${version}/VersionInfo`)).default;
-      const versionInfo = new VersionInfo();
-      this.transactionProcessors.set(version, versionInfo);
-
-      /* tslint:disable-next-line */
       const TransactionProcessor = (await import(`./versions/${version}/TransactionProcessor`)).default;
-      const transactionProcessor = new TransactionProcessor(this.downloadManager, this.operationStore);
+      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */
@@ -129,20 +118,6 @@ export default class VersionManager {
   }
 
   /**
-   * Gets the hash algorithm used based on the given blockchain time.
-   */
-  public getHashAlgorithmInMultihashCode (blockchainTime: number): number {
-    const version = this.getVersionString(blockchainTime);
-    const versionInfo = this.versionInfos.get(version);
-
-    if (versionInfo === undefined) {
-      throw new Error(`Unabled to find hash algorithm for the given blockchain time ${blockchainTime}, investigate and fix.`);
-    }
-
-    return versionInfo.hashAlgorithmInMultihashCode;
-  }
-
-  /**
    * Gets the corresponding version of the `IOperationProcessor` based on the given blockchain time.
    */
   public getOperationProcessor (blockchainTime: number): IOperationProcessor {
@@ -159,7 +134,7 @@ export default class VersionManager {
   /**
    * Gets the corresponding version of the `IRequestHandler` based on the given blockchain time.
    */
-  public getRequestHandler (blockchainTime: number): RequestHandler {
+  public getRequestHandler (blockchainTime: number): IRequestHandler {
     const version = this.getVersionString(blockchainTime);
     const requestHandler = this.requestHandlers.get(version);
 

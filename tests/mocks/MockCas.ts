@@ -1,14 +1,14 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
-import IFetchResult from '../../lib/common/IFetchResult';
+import FetchResult from '../../lib/common/models/FetchResult';
+import ICas from '../../lib/core/interfaces/ICas';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-import { Cas } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 /**
  * Implementation of a CAS class for testing.
  * Simply using a hash map to store all the content by hash.
  */
-export default class MockCas implements Cas {
+export default class MockCas implements ICas {
   /** A Map that stores the given content. */
   private storage: Map<string, Buffer> = new Map();
 
@@ -37,7 +37,7 @@ export default class MockCas implements Cas {
     return encodedHash;
   }
 
-  public async read (address: string, _maxSizeInBytes: number): Promise<IFetchResult> {
+  public async read (address: string, _maxSizeInBytes: number): Promise<FetchResult> {
     // Wait for configured time before returning.
     await new Promise(resolve => setTimeout(resolve, this.mockSecondsTakenForEachCasFetch * 1000));
 

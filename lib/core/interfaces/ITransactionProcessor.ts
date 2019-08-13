@@ -1,4 +1,4 @@
-import ITransaction from '../../common/ITransaction';
+import TransactionModel from '../../common/models/TransactionModel';
 
 /**
  * Interface that defines a class that can process transactions fetched from blockchain.
@@ -10,5 +10,5 @@ export default interface ITransactionProcessor {
    * @param transaction Transaction to process.
    * @returns true if the transaction is processed successfully (no retry required), false otherwise (retry required).
    */
-  processTransaction (transaction: ITransaction): Promise<boolean>;
+  processTransaction (transaction: TransactionModel): Promise<boolean>;
 }

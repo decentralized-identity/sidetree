@@ -1,12 +1,12 @@
-import ErrorCode from '../common/ErrorCode';
+import IBlockchain from './interfaces/IBlockchain';
 import IOperationStore from './interfaces/IOperationStore';
-import ITransaction from '../common/ITransaction';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
-import ITransactionUnderProcessing, { TransactionProcessingStatus } from './interfaces/ITransactionUnderProcessing';
+import ITransactionStore from './interfaces/ITransactionStore';
+import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
+import SharedErrorCode from '../common/SharedErrorCode';
 import timeSpan = require('time-span');
-import TransactionStore from './interfaces/TransactionStore';
-import UnresolvableTransactionStore from './interfaces/UnresolvableTransactionStore';
-import { Blockchain } from './Blockchain';
+import TransactionModel from '../common/models/TransactionModel';
+import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
 
 /**
@@ -23,20 +23,20 @@ export default class Observer {
   /**
    * The list of transactions that are being downloaded or processed.
    */
-  private transactionsUnderProcessing: ITransactionUnderProcessing[] = [];
+  private transactionsUnderProcessing: TransactionUnderProcessingModel[] = [];
 
   /**
    * This is the transaction that is used as a timestamp to fetch newer transaction.
    */
-  private lastKnownTransaction: ITransaction | undefined;
+  private lastKnownTransaction: TransactionModel | undefined;
 
   public constructor (
     private getTransactionProcessor: (blockchainTime: number) => ITransactionProcessor,
-    private blockchain: Blockchain,
+    private blockchain: IBlockchain,
     private maxConcurrentDownloads: number,
     private operationStore: IOperationStore,
-    private transactionStore: TransactionStore,
-    private unresolvableTransactionStore: UnresolvableTransactionStore,
+    private transactionStore: ITransactionStore,
+    private unresolvableTransactionStore: IUnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
   }
 
@@ -90,7 +90,7 @@ export default class Observer {
           console.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
         } catch (error) {
           // If block reorganization (temporary fork) has happened.
-          if (error instanceof SidetreeError && error.code === ErrorCode.InvalidTransactionNumberOrTimeHash) {
+          if (error instanceof SidetreeError && error.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {
             console.info(`Block reorganization detected.`);
             blockReorganizationDetected = true;
             moreTransactions = true;
@@ -224,7 +224,7 @@ export default class Observer {
    * The transaction processing generically involves first downloading DID operation data from CAS (Content Addressable Storage),
    * then storing the operations indexed/grouped by DIDs in the persistent operation DB.
    */
-  private async processTransaction (transaction: ITransaction, transactionUnderProcessing: ITransactionUnderProcessing) {
+  private async processTransaction (transaction: TransactionModel, transactionUnderProcessing: TransactionUnderProcessingModel) {
     let transactionProcessedSuccessfully;
 
     try {

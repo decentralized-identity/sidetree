@@ -1,5 +1,5 @@
 // import VersionManager from '../../lib/core/VersionManager';
-// import { TransactionProcessingStatus } from '../../lib/core/interfaces/ITransactionUnderProcessing';
+// import { TransactionProcessingStatus } from '../../lib/core/interfaces/TransactionUnderProcessingModel';
 
 describe('VersionManager', () => {
   it('should fetch right Transaction Processor given the transaction time.', async () => {

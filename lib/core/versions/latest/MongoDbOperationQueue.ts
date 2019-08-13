@@ -1,4 +1,4 @@
-import ErrorCode from '../../../common/ErrorCode';
+import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import { Binary, Collection, MongoClient, Db } from 'mongodb';
 import { SidetreeError } from '../../Error';

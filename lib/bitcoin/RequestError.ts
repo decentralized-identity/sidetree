@@ -1,4 +1,3 @@
-import ErrorCode from '../common/ErrorCode';
 import Response, { ResponseStatus } from '../common/Response';
 
 /**
@@ -19,7 +18,7 @@ export default class RequestError extends Error {
     return this.code !== undefined;
   }
 
-  constructor (public readonly responseCode: ResponseStatus, public readonly code?: ErrorCode) {
+  constructor (public readonly responseCode: ResponseStatus, public readonly code?: string) {
     super(code ? JSON.stringify({ code }) : undefined);
 
     // NOTE: Extending 'Error' breaks prototype chain since TypeScript 2.1.

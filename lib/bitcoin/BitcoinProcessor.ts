@@ -1,10 +1,10 @@
 import * as httpStatus from 'http-status';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import ErrorCode from '../common/ErrorCode';
-import ITransaction from '../common/ITransaction';
+import ErrorCode from '../common/SharedErrorCode';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
+import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
@@ -124,7 +124,7 @@ export default class BitcoinProcessor {
    * Initializes the Bitcoin processor
    */
   public async initialize () {
-    console.debug('Initializing TransactionStore');
+    console.debug('Initializing ITransactionStore');
     await this.transactionStore.initialize();
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
@@ -194,7 +194,7 @@ export default class BitcoinProcessor {
    */
   public async transactions (since?: number, hash?: string): Promise<{
     moreTransactions: boolean,
-    transactions: ITransaction[]
+    transactions: TransactionModel[]
   }> {
     if ((since && !hash) ||
         (!since && hash)) {
@@ -215,7 +215,7 @@ export default class BitcoinProcessor {
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
         anchorFileHash: transaction.anchorFileHash
-      } as ITransaction;
+      } as TransactionModel;
     });
 
     return {
@@ -229,7 +229,7 @@ export default class BitcoinProcessor {
    * @param transactions List of transactions to check
    * @returns The first valid transaction, or undefined if none are valid
    */
-  public async firstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined> {
+  public async firstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
     for (let index = 0; index < transactions.length; index++) {
       const transaction = transactions[index];
       const height = transaction.transactionTime;
@@ -516,7 +516,7 @@ export default class BitcoinProcessor {
         const data = Buffer.from(hexDataMatches[1], 'hex').toString();
         if (data.startsWith(this.sidetreePrefix)) {
           // we have found a sidetree transaction
-          const sidetreeTransaction: ITransaction = {
+          const sidetreeTransaction: TransactionModel = {
             transactionNumber: TransactionNumber.construct(block, transactionIndex),
             transactionTime: block,
             transactionTimeHash: blockHash,

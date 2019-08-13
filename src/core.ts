@@ -8,7 +8,7 @@ import * as Router from 'koa-router';
 import Core from '../lib/core/Core';
 import Config from '../lib/core/models/Config';
 import { IProtocolVersion } from '../lib/core/VersionManager';
-import { IResponse, Response } from '../lib/common/Response';
+import { Response, ResponseModel } from '../lib/common/Response';
 
 /** Configuration used by this server. */
 interface IServerConfig extends Config {
@@ -60,7 +60,7 @@ sidetreeCore.initialize()
 /**
  * Sets the koa response according to the Sidetree response object given.
  */
-const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
+const setKoaResponse = (response: ResponseModel, koaResponse: Koa.Response) => {
   koaResponse.status = Response.toHttpStatus(response.status);
 
   if (response.body) {

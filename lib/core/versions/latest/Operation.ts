@@ -3,7 +3,7 @@ import Did from './Did';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
-import ErrorCode from '../../../common/ErrorCode';
+import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import ProtocolParameters from './ProtocolParameters';

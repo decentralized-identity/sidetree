@@ -1,16 +1,16 @@
 import * as retry from 'async-retry';
-import AnchorFile from '../../lib/core/versions/latest/models/AnchorFileModel';
-import BatchFile from '../../lib/core/versions/latest/models/BatchFileModel';
+import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
+import BatchFileModel from '../../lib/core/versions/latest/models/BatchFileModel';
+import Blockchain from '../../lib/core/Blockchain';
+import Cas from '../../lib/core/Cas';
 import DownloadManager from '../../lib/core/DownloadManager';
-import ErrorCode from '../../lib/common/ErrorCode';
-import IFetchResult from '../../lib/common/IFetchResult';
+import ErrorCode from '../../lib/common/SharedErrorCode';
+import FetchResult from '../../lib/common/models/FetchResult';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import ITransaction from '../../lib/common/ITransaction';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
-import { BlockchainClient } from '../../lib/core/Blockchain';
-import { CasClient } from '../../lib/core/Cas';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
@@ -30,7 +30,7 @@ describe('Observer', async () => {
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
-    casClient = new CasClient(config.contentAddressableStoreServiceUri);
+    casClient = new Cas(config.contentAddressableStoreServiceUri);
 
     // Setting the CAS to always return 404.
     spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
@@ -71,7 +71,7 @@ describe('Observer', async () => {
       'transactions': []
     };
 
-    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
@@ -121,16 +121,16 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const anchorFile: AnchorFile = {
+    const anchorFile: AnchorFileModel = {
       batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
       didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
       merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
     };
-    const anchoreFileFetchResult: IFetchResult = {
+    const anchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: Buffer.from(JSON.stringify(anchorFile))
     };
-    const batchFile: BatchFile = {
+    const batchFile: BatchFileModel = {
       /* tslint:disable */
       operations: [
         'eyJwYXlsb2FkIjoiZXlKamNtVmhkR1ZrSWpvaU1qQXhPUzB3TmkweE5GUXlNam94TkRvME5pNDVORE5hSWl3aVFHTnZiblJsZUhRaU9pSm9kSFJ3Y3pvdkwzY3phV1F1YjNKbkwyUnBaQzkyTVNJc0luQjFZbXhwWTB0bGVTSTZXM3NpYVdRaU9pSWphMlY1TVNJc0luUjVjR1VpT2lKVFpXTndNalUyYXpGV1pYSnBabWxqWVhScGIyNUxaWGt5TURFNElpd2ljSFZpYkdsalMyVjVTbmRySWpwN0ltdHBaQ0k2SWlOclpYa3hJaXdpYTNSNUlqb2lSVU1pTENKaGJHY2lPaUpGVXpJMU5rc2lMQ0pqY25ZaU9pSlFMVEkxTmtzaUxDSjRJam9pTjFGWFRVUjFkRmh3UkdodFVFcHhPWGxDWmxNMmVWVmpaMmxQVDJWTWIxVmplazVPVW5Wd1ZEZElNQ0lzSW5raU9pSnRNVVJIVWpCMldEZHNXRlZLTWtwcU1WQmtNRU5yZWxneFVuSkxiVmhuZERSNk5tMUZUV0Y1ZDNCSkluMTlYWDAiLCJzaWduYXR1cmUiOiJNRVVDSUNnWXk3TmRuRDhZVmhsTXhqaWFJVW11d3VhRHliM2xjNVAzZFVPSlpmVUpBaUVBMGtNbi03anFuaFQtMm5RVk52YldXRmk1NkNDajMweEVZRWxDNmFCMXVRayIsInByb3RlY3RlZCI6ImUzMCIsImhlYWRlciI6eyJvcGVyYXRpb24iOiJjcmVhdGUiLCJwcm9vZk9mV29yayI6IiIsImtpZCI6IiNrZXkxIiwiYWxnIjoiRVMyNTZLIn19',
@@ -138,7 +138,7 @@ describe('Observer', async () => {
       ]
       /* tslint:enable */
     };
-    const batchFileFetchResult: IFetchResult = {
+    const batchFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: Buffer.from(JSON.stringify(batchFile))
     };
@@ -154,7 +154,7 @@ describe('Observer', async () => {
     };
     spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
 
-    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
     const observer = new Observer(
       getTransactionProcessor,
       blockchainClient,
@@ -165,7 +165,7 @@ describe('Observer', async () => {
       1
     );
 
-    const mockTransaction: ITransaction = {
+    const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
       transactionTimeHash: '1000',
@@ -195,7 +195,7 @@ describe('Observer', async () => {
     const expectedConsoleLogSubstring = tuple[1];
 
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
-      const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
       const observer = new Observer(
         getTransactionProcessor,
         blockchainClient,
@@ -218,7 +218,7 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
-      const mockTransaction: ITransaction = {
+      const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
         transactionTimeHash: '1000',
@@ -290,7 +290,7 @@ describe('Observer', async () => {
       'transactions': []
     };
 
-    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {

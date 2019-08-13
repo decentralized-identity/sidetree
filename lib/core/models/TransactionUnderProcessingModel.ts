@@ -1,4 +1,4 @@
-import ITransaction from '../../common/ITransaction';
+import TransactionModel from '../../common/models/TransactionModel';
 
 /**
  * The state of a transaction that is being processed.
@@ -11,7 +11,7 @@ export enum TransactionProcessingStatus {
 /**
  * Data structure for holding a transaction that is being processed and its state.
  */
-export default interface ITransactionUnderProcessing {
-  transaction: ITransaction;
+export default interface TransactionUnderProcessingModel {
+  transaction: TransactionModel;
   processingStatus: TransactionProcessingStatus;
 }

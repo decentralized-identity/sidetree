@@ -1,5 +1,5 @@
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
-import ErrorCode from '../../lib/common/ErrorCode';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('AnchorFile', async () => {

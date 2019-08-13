@@ -1,10 +1,10 @@
-import ITransaction from '../../lib/common/ITransaction';
+import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
+import IUnresolvableTransactionStore from '../../lib/core/interfaces/IUnresolvableTransactionStore';
 import SortedArray from '../../lib/core/versions/latest/util/SortedArray';
-import TransactionStore from '../../lib/core/interfaces/TransactionStore';
-import UnresolvableTransactionStore from '../../lib/core/interfaces/UnresolvableTransactionStore';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 
 interface IUnresolvableTransactionInternal {
-  transaction: ITransaction;
+  transaction: TransactionModel;
   firstFetchTime: number;
   retryAttempts: number;
   nextRetryTime: number;
@@ -13,11 +13,11 @@ interface IUnresolvableTransactionInternal {
 /**
  * In-memory implementation of the `TransactionStore`.
  */
-export class MockTransactionStore implements TransactionStore, UnresolvableTransactionStore {
-  private processedTransactions: ITransaction[] = [];
+export class MockTransactionStore implements ITransactionStore, IUnresolvableTransactionStore {
+  private processedTransactions: TransactionModel[] = [];
   private unresolvableTransactions: Map<number, IUnresolvableTransactionInternal> = new Map();
 
-  async addTransaction (transaction: ITransaction): Promise<void> {
+  async addTransaction (transaction: TransactionModel): Promise<void> {
     const lastTransaction = await this.getLastTransaction();
 
     // If the last transaction is later or equal to the transaction to add,
@@ -29,7 +29,7 @@ export class MockTransactionStore implements TransactionStore, UnresolvableTrans
     this.processedTransactions.push(transaction);
   }
 
-  async getLastTransaction (): Promise<ITransaction | undefined> {
+  async getLastTransaction (): Promise<TransactionModel | undefined> {
     if (this.processedTransactions.length === 0) {
       return undefined;
     }
@@ -39,8 +39,8 @@ export class MockTransactionStore implements TransactionStore, UnresolvableTrans
     return lastProcessedTransaction;
   }
 
-  async getExponentiallySpacedTransactions (): Promise<ITransaction[]> {
-    const exponentiallySpacedTransactions: ITransaction[] = [];
+  async getExponentiallySpacedTransactions (): Promise<TransactionModel[]> {
+    const exponentiallySpacedTransactions: TransactionModel[] = [];
     let index = this.processedTransactions.length - 1;
     let distance = 1;
     while (index >= 0) {
@@ -51,15 +51,15 @@ export class MockTransactionStore implements TransactionStore, UnresolvableTrans
     return exponentiallySpacedTransactions;
   }
 
-  public async getTransaction (_transactionNumber: number): Promise<ITransaction | undefined> {
+  public async getTransaction (_transactionNumber: number): Promise<TransactionModel | undefined> {
     throw new Error('Not implemented.');
   }
 
-  public async getTransactionsLaterThan (_transactionNumber: number | undefined, _max: number): Promise<ITransaction[]> {
+  public async getTransactionsLaterThan (_transactionNumber: number | undefined, _max: number): Promise<TransactionModel[]> {
     throw new Error('Not implemented.');
   }
 
-  async recordUnresolvableTransactionFetchAttempt (transaction: ITransaction): Promise<void> {
+  async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
     const unresolvableTransaction = this.unresolvableTransactions.get(transaction.transactionNumber);
 
     if (unresolvableTransaction === undefined) {
@@ -83,11 +83,11 @@ export class MockTransactionStore implements TransactionStore, UnresolvableTrans
     }
   }
 
-  async removeUnresolvableTransaction (transaction: ITransaction): Promise<void> {
+  async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
     this.unresolvableTransactions.delete(transaction.transactionNumber);
   }
 
-  async getUnresolvableTransactionsDueForRetry (): Promise<ITransaction[]> {
+  async getUnresolvableTransactionsDueForRetry (): Promise<TransactionModel[]> {
     const now = Date.now();
     const unresolvableTransactionsToRetry = [];
 
@@ -111,7 +111,7 @@ export class MockTransactionStore implements TransactionStore, UnresolvableTrans
 
     // Locate the index of the given transaction using binary search.
     const compareTransactionAndTransactionNumber
-      = (transaction: ITransaction, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
+      = (transaction: TransactionModel, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
     const bestKnownValidRecentProcessedTransactionIndex
       = SortedArray.binarySearch(this.processedTransactions, transactionNumber, compareTransactionAndTransactionNumber);
 
@@ -149,7 +149,7 @@ export class MockTransactionStore implements TransactionStore, UnresolvableTrans
    * Gets the list of transactions.
    * Mainly used for test purposes.
    */
-  public getTransactions (): ITransaction[] {
+  public getTransactions (): TransactionModel[] {
     return this.processedTransactions;
   }
 }

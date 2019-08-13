@@ -1,8 +1,8 @@
-import IConfig from '../../lib/core/models/Config';
-import ITransaction from '../../lib/common/ITransaction';
+import Config from '../../lib/core/models/Config';
+import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
 import MongoDb from '../common/MongoDb';
 import MongoDbTransactionStore from '../../lib/common/MongoDbTransactionStore';
-import TransactionStore from '../../lib/core/interfaces/TransactionStore';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 import { MongoClient } from 'mongodb';
 
 /**
@@ -20,10 +20,10 @@ async function createTransactionStore (transactionStoreUri: string, databaseName
  * @param transactionStore The transaction store to store the generated transactions.
  * @param count Number of transactions to generate and store.
  */
-async function generateAndStoreTransactions (transactionStore: TransactionStore, count: number): Promise<ITransaction[]> {
-  const transactions: ITransaction[] = [];
+async function generateAndStoreTransactions (transactionStore: ITransactionStore, count: number): Promise<TransactionModel[]> {
+  const transactions: TransactionModel[] = [];
   for (let i = 1; i <= count; i++) {
-    const transaction: ITransaction = {
+    const transaction: TransactionModel = {
       anchorFileHash: i.toString(),
       transactionNumber: i,
       transactionTime: i,
@@ -39,7 +39,7 @@ async function generateAndStoreTransactions (transactionStore: TransactionStore,
 }
 
 describe('MongoDbTransactionStore', async () => {
-  const config: IConfig = require('../json/config-test.json');
+  const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable: boolean | undefined;

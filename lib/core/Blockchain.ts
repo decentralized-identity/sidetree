@@ -1,55 +1,21 @@
 import * as HttpStatus from 'http-status';
-import ErrorCode from '../common/ErrorCode';
-import IBlockchainTime from './interfaces/IBlockchainTime';
-import ITransaction from '../common/ITransaction';
+import BlockchainTimeModel from './models/BlockchainTimeModel';
+import ErrorCode from '../common/SharedErrorCode';
+import IBlockchain from './interfaces/IBlockchain';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
+import TransactionModel from '../common/models/TransactionModel';
 import { SidetreeError } from './Error';
-
-/**
- * Interface to access the underlying blockchain.
- * This interface is mainly useful for creating a mock Blockchain for testing purposes.
- */
-export interface Blockchain {
-  /**
-   * Writes the anchor file hash as a transaction to blockchain.
-   */
-  write (anchorFileHash: string): Promise<void>;
-
-  /**
-   * Gets Sidetree transactions in chronological order.
-   * The function call may not return all known transactions, moreTransaction indicates if there are more transactions to be fetched.
-   * When sinceTransactionNumber is not given, Sidetree transactions starting from inception will be returned.
-   * When sinceTransactionNumber is given, only Sidetree transaction after the given transaction will be returned.
-   * @param sinceTransactionNumber A valid Sidetree transaction number.
-   * @param transactionTimeHash The hash associated with the anchored time of the transaction number given.
-   *                            Required if and only if sinceTransactionNumber is provided.
-   * @throws SidetreeError with ErrorCode.InvalidTransactionNumberOrTimeHash if a potential block reorganization is detected.
-   */
-  read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: ITransaction[] }>;
-
-  /**
-   * Given a list of Sidetree transaction in any order, iterate through the list and return the first transaction that is valid.
-   * @param transactions List of potentially valid transactions.
-   */
-  getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined>;
-
-  /**
-   * Gets the approximate latest time synchronously without requiring to make network call.
-   * Useful for cases where high performance is desired and hgih accuracy is not required.
-   */
-  approximateTime: IBlockchainTime;
-}
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
  */
-export class BlockchainClient implements Blockchain {
+export default class Blockchain implements IBlockchain {
 
   /** Interval for refreshing the cached blockchain time. */
   static readonly cachedBlockchainTimeRefreshInSeconds = 60;
   /** Used for caching the blockchain time to avoid excessive time fetching over network. */
-  private cachedBlockchainTime: IBlockchainTime;
+  private cachedBlockchainTime: BlockchainTimeModel;
 
   private fetch = nodeFetch;
 
@@ -75,7 +41,7 @@ export class BlockchainClient implements Blockchain {
    * The function that starts periodically anchoring operation batches to blockchain.
    */
   public startPeriodicCachedBlockchainTimeRefresh () {
-    setInterval(async () => this.getLatestTime(), BlockchainClient.cachedBlockchainTimeRefreshInSeconds * 1000);
+    setInterval(async () => this.getLatestTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
   }
 
   public async write (anchorFileHash: string): Promise<void> {
@@ -97,7 +63,7 @@ export class BlockchainClient implements Blockchain {
     }
   }
 
-  public async read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: ITransaction[]}> {
+  public async read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: TransactionModel[]}> {
     if ((sinceTransactionNumber !== undefined && transactionTimeHash === undefined) ||
         (sinceTransactionNumber === undefined && transactionTimeHash !== undefined)) {
       throw new Error('Transaction number and time hash must both be given or not given at the same time.');
@@ -131,7 +97,7 @@ export class BlockchainClient implements Blockchain {
     return responseBody;
   }
 
-  public async getFirstValidTransaction (transactions: ITransaction[]): Promise<ITransaction | undefined> {
+  public async getFirstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
     const bodyString = JSON.stringify({ transactions });
     const requestParameters = {
       method: 'post',
@@ -155,14 +121,14 @@ export class BlockchainClient implements Blockchain {
     return transaction;
   }
 
-  public get approximateTime (): IBlockchainTime {
+  public get approximateTime (): BlockchainTimeModel {
     return this.cachedBlockchainTime;
   }
 
   /**
    * Gets the latest blockchain time and updates the cached time.
    */
-  private async getLatestTime (): Promise<IBlockchainTime> {
+  private async getLatestTime (): Promise<BlockchainTimeModel> {
     try {
       console.info(`Refreshing cached blockchain time...`);
       const response = await this.fetch(this.timeUri);

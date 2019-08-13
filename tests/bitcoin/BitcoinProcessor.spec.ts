@@ -1,7 +1,7 @@
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
-import ErrorCode from '../../lib/common/ErrorCode';
-import ITransaction from '../../lib/common/ITransaction';
+import ErrorCode from '../../lib/common/SharedErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { PrivateKey, Transaction } from 'bitcore-lib';
@@ -75,8 +75,8 @@ describe('BitcoinProcessor', () => {
     });
   }
 
-  function createTransactions (count?: number, height?: number): ITransaction[] {
-    const transactions: ITransaction[] = [];
+  function createTransactions (count?: number, height?: number): TransactionModel[] {
+    const transactions: TransactionModel[] = [];
     if (!count) {
       count = randomNumber(9) + 1;
     }
@@ -351,7 +351,7 @@ describe('BitcoinProcessor', () => {
 
   describe('firstValidTransaction', () => {
     it('should return the first of the valid transactions', async (done) => {
-      const transactions: ITransaction[] = [];
+      const transactions: TransactionModel[] = [];
       let heights: number[] = [];
       const count = 10;
       for (let i = 0; i < count; i++) {
@@ -735,7 +735,7 @@ describe('BitcoinProcessor', () => {
         'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
-      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: ITransaction[]) => {
+      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: TransactionModel[]) => {
         expect(actualTransactions).toEqual(transactions);
         return Promise.resolve(transactions[1]);
       });
@@ -757,7 +757,7 @@ describe('BitcoinProcessor', () => {
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
       let validHasBeenCalledOnce = false;
-      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: ITransaction[]) => {
+      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: TransactionModel[]) => {
         expect(actualTransactions).toEqual(transactions);
         if (validHasBeenCalledOnce) {
           return Promise.resolve(transactions[0]);
@@ -900,7 +900,7 @@ describe('BitcoinProcessor', () => {
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       let seenTransactionNumbers: number[] = [];
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
-        'addTransaction').and.callFake((sidetreeTransaction: ITransaction) => {
+        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
           expect(sidetreeTransaction.transactionTime).toEqual(block);
           expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
           expect(shouldFindIDs.includes(sidetreeTransaction.anchorFileHash)).toBeTruthy();
@@ -933,7 +933,7 @@ describe('BitcoinProcessor', () => {
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       let seenTransactionNumbers: number[] = [];
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
-        'addTransaction').and.callFake((sidetreeTransaction: ITransaction) => {
+        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
           expect(sidetreeTransaction.transactionTime).toEqual(block);
           expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
           expect(shouldFindIDs.includes(sidetreeTransaction.anchorFileHash)).toBeTruthy();

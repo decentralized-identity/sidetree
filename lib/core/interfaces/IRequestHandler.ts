@@ -1,13 +1,13 @@
-import { IResponse } from '../../common/Response';
+import { ResponseModel } from '../../common/Response';
 
 /**
  * Interface that defines a class that handle requests.
  */
-export default interface RequestHandler {
+export default interface IRequestHandler {
   /**
    * Handles an operation request.
    */
-  handleOperationRequest (request: Buffer): Promise<IResponse>;
+  handleOperationRequest (request: Buffer): Promise<ResponseModel>;
 
   /**
    * Handles resolve operation.
@@ -15,5 +15,5 @@ export default interface RequestHandler {
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  handleResolveRequest (didOrDidDocument: string): Promise<IResponse>;
+  handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel>;
 }

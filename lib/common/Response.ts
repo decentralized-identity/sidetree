@@ -1,7 +1,7 @@
 /**
  * Defines a Sidetree response object.
  */
-interface IResponse {
+interface ResponseModel {
   status: ResponseStatus;
   body?: any;
 }
@@ -38,4 +38,4 @@ export default class Response {
   }
 }
 
-export { IResponse, Response, ResponseStatus };
+export { Response, ResponseModel, ResponseStatus };

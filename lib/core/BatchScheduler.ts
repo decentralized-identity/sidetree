@@ -1,6 +1,6 @@
 import IBatchWriter from './interfaces/IBatchWriter';
+import IBlockchain from './interfaces/IBlockchain';
 import timeSpan = require('time-span');
-import { Blockchain } from './Blockchain';
 
 /**
  * Class that performs periodic writing of batches of Sidetree operations to CAS and blockchain.
@@ -13,7 +13,7 @@ export default class BatchScheduler {
 
   public constructor (
     private getBatchWriter: (blockchainTime: number) => IBatchWriter,
-    private blockchain: Blockchain,
+    private blockchain: IBlockchain,
     private batchingIntervalInSeconds: number) {
   }
 

@@ -9,6 +9,7 @@ import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKe
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
+import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
@@ -16,10 +17,9 @@ import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
-import Resolver from '../../lib/core/versions/latest/Resolver';
+import Resolver from '../../lib/core/Resolver';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
-import { Cas } from '../../lib/core/Cas';
 import { Response } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {
@@ -34,7 +34,7 @@ describe('RequestHandler', () => {
   const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
   const blockchain = new MockBlockchain();
-  let cas: Cas;
+  let cas: ICas;
   let batchScheduler: BatchScheduler;
   let operationStore: IOperationStore;
   let resolver: Resolver;

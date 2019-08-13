@@ -3,11 +3,11 @@ import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from '../../DownloadManager';
 import IOperationStore from '../../interfaces/IOperationStore';
-import ITransaction from '../../../common/ITransaction';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
 import timeSpan = require('time-span');
+import TransactionModel from '../../../common/models/TransactionModel';
 import { FetchResultCode } from '../../../common/FetchResultCode';
 import { SidetreeError } from '../../Error';
 
@@ -17,7 +17,7 @@ import { SidetreeError } from '../../Error';
 export default class TransactionProcessor implements ITransactionProcessor {
   public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
 
-  public async processTransaction (transaction: ITransaction): Promise<boolean> {
+  public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
     const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
 

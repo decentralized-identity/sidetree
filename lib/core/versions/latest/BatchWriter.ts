@@ -1,13 +1,13 @@
 import BatchFile from './BatchFile';
+import ICas from '../../interfaces/ICas';
 import Encoder from './Encoder';
 import IBatchWriter from '../../interfaces/IBatchWriter';
+import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
 import MerkleTree from './util/MerkleTree';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import { Blockchain } from '../../Blockchain';
-import { Cas } from '../../Cas';
 
 /**
  * Implementation of the `TransactionProcessor`.
@@ -15,8 +15,8 @@ import { Cas } from '../../Cas';
 export default class BatchWriter implements IBatchWriter {
   public constructor (
     private operationQueue: IOperationQueue,
-    private blockchain: Blockchain,
-    private cas: Cas) { }
+    private blockchain: IBlockchain,
+    private cas: ICas) { }
 
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.

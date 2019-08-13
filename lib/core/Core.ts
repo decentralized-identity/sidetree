@@ -1,14 +1,15 @@
 import BatchScheduler from './BatchScheduler';
+import Blockchain from './Blockchain';
+import Cas from './Cas';
 import DownloadManager from './DownloadManager';
-import IConfig from './models/Config';
+import Config from './models/Config';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
+import Resolver from './Resolver';
 import VersionManager, { IProtocolVersion } from './VersionManager';
-import { BlockchainClient } from './Blockchain';
-import { CasClient } from './Cas';
-import { IResponse } from '../common/Response';
+import { ResponseModel } from '../common/Response';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -18,20 +19,24 @@ export default class Core {
   private unresolvableTransactionStore: MongoDbUnresolvableTransactionStore;
   private operationStore: MongoDbOperationStore;
   private versionManager: VersionManager;
-  private blockchain: BlockchainClient;
+  private blockchain: Blockchain;
+  private cas: Cas;
+  private downloadManager: DownloadManager;
   private observer: Observer;
   private batchScheduler: BatchScheduler;
+  private resolver: Resolver;
 
   /**
    * Core constructor.
    */
-  public constructor (config: IConfig, protocolVersions: IProtocolVersion[]) {
-    // Component dependency initialization & injection.
+  public constructor (config: Config, protocolVersions: IProtocolVersion[]) {
+    // Component dependency construction & injection.
+    this.versionManager = new VersionManager(config, protocolVersions); // `VersionManager` is first constructed component.
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
-    this.blockchain = new BlockchainClient(config.blockchainServiceUri);
-    const cas = new CasClient(config.contentAddressableStoreServiceUri);
-    const downloadManager = new DownloadManager(config.maxConcurrentDownloads, cas);
-    this.versionManager = new VersionManager(config, protocolVersions, downloadManager, this.operationStore);
+    this.blockchain = new Blockchain(config.blockchainServiceUri);
+    this.cas = new Cas(config.contentAddressableStoreServiceUri);
+    this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
+    this.resolver = new Resolver((blockchainTime) => this.versionManager.getOperationProcessor(blockchainTime), this.operationStore);
     this.batchScheduler = new BatchScheduler(
       (blockchainTime) => this.versionManager.getBatchWriter(blockchainTime), this.blockchain, config.batchingIntervalInSeconds);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
@@ -46,7 +51,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    downloadManager.start();
+    this.downloadManager.start();
   }
 
   /**
@@ -58,7 +63,13 @@ export default class Core {
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
     await this.blockchain.initialize();
-    await this.versionManager.initialize();
+    await this.versionManager.initialize(
+      this.blockchain,
+      this.cas,
+      this.downloadManager,
+      this.operationStore,
+      this.resolver
+    ); // `VersionManager` is last initialized component.
 
     await this.observer.startPeriodicProcessing();
     this.batchScheduler.startPeriodicBatchWriting();
@@ -68,7 +79,7 @@ export default class Core {
   /**
    * Handles an operation request.
    */
-  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
+  public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
     const currentTime = this.blockchain.approximateTime;
     const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
     const response = requestHandler.handleOperationRequest(request);
@@ -81,7 +92,7 @@ export default class Core {
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  public async handleResolveRequest (didOrDidDocument: string): Promise<IResponse> {
+  public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
     const currentTime = this.blockchain.approximateTime;
     const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);

@@ -1,5 +1,5 @@
-import ErrorCode from '../../lib/common/ErrorCode';
 import Config from '../../lib/core/models/Config';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationQueue from '../../lib/core/versions/latest/MongoDbOperationQueue';

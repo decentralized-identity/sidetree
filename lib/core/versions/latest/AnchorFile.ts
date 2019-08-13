@@ -1,6 +1,6 @@
 import AnchorFileModel from './models/AnchorFileModel';
 import Encoder from './Encoder';
-import ErrorCode from '../../../common/ErrorCode';
+import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { SidetreeError } from '../../Error';

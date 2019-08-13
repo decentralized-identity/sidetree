@@ -1,14 +1,14 @@
 import Encoder from './Encoder';
 import Did from './Did';
 import Document from './Document';
-import ErrorCode from '../../../common/ErrorCode';
+import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
-import IRequestHandler from '../../interfaces/RequestHandler';
+import IRequestHandler from '../../interfaces/IRequestHandler';
 import Multihash from './Multihash';
 import Operation, { OperationType } from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import Resolver from './Resolver';
-import { IResponse, ResponseStatus } from '../../../common/Response';
+import Resolver from '../../Resolver';
+import { ResponseModel, ResponseStatus } from '../../../common/Response';
 import { SidetreeError } from '../../Error';
 
 /**
@@ -25,7 +25,7 @@ export default class RequestHandler implements IRequestHandler {
   /**
    * Handles an operation request.
    */
-  public async handleOperationRequest (request: Buffer): Promise<IResponse> {
+  public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
     console.info(`Handling operation request of size ${request.length} bytes...`);
 
     // Perform common validation for any write request and parse it into an `Operation`.
@@ -67,7 +67,7 @@ export default class RequestHandler implements IRequestHandler {
       console.info(`Operation type: '${operation.type}', DID unique suffix: '${operation.didUniqueSuffix}'`);
 
       // Passed common operation validation, hand off to specific operation handler.
-      let response: IResponse;
+      let response: ResponseModel;
       switch (operation.type) {
         case OperationType.Create:
           const didDocument = Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode);
@@ -124,7 +124,7 @@ export default class RequestHandler implements IRequestHandler {
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  public async handleResolveRequest (didOrDidDocument: string): Promise<IResponse> {
+  public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
     console.log(`Handling resolution request for: ${didOrDidDocument}...`);
     if (!didOrDidDocument.startsWith(this.didMethodName)) {
       return {
@@ -152,7 +152,7 @@ export default class RequestHandler implements IRequestHandler {
     }
   }
 
-  private async handleResolveRequestWithDid (did: string): Promise<IResponse> {
+  private async handleResolveRequestWithDid (did: string): Promise<ResponseModel> {
     const didUniqueSuffix = did.substring(this.didMethodName.length);
     const didDocument = await this.resolver.resolve(didUniqueSuffix);
 
@@ -168,7 +168,7 @@ export default class RequestHandler implements IRequestHandler {
     };
   }
 
-  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<IResponse> {
+  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<ResponseModel> {
     // TODO: Issue #256 - Revisit resolution using Initial DID Document, currently assumes this versions protocol parameters.
     const currentHashAlgorithm = ProtocolParameters.hashAlgorithmInMultihashCode;
 

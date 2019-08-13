@@ -1,5 +1,5 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import ErrorCode from '../../lib/common/ErrorCode';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import { SidetreeError } from '../../lib/core/Error';

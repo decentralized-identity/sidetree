@@ -1,13 +1,13 @@
+import ICas from '../../lib/core/interfaces/ICas';
 import DownloadManager from '../../lib/core/DownloadManager';
 import MockCas from '../mocks/MockCas';
 import timeSpan = require('time-span');
-import { Cas } from '../../lib/core/Cas';
 
 describe('DownloadManager', async () => {
   const maxConcurrentDownloads = 3;
   const mockSecondsTakenForEachCasFetch = 2;
 
-  let cas: Cas;
+  let cas: ICas;
   let downloadManager: DownloadManager;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;

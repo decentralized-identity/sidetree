@@ -1,11 +1,13 @@
-import IOperationProcessor from '../../interfaces/IOperationProcessor';
-import IOperationStore from '../../interfaces/IOperationStore';
+import IOperationProcessor from './interfaces/IOperationProcessor';
+import IOperationStore from './interfaces/IOperationStore';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore
  * that might, e.g., use a backend database for persistence.
  * All 'processing' is deferred to resolve time, with process()
  * simply storing the operation in the store.
+ *
+ * NOTE: Resolver needs to be versioned because it depends on `VersionManager` being constructed to fetch the versioned operation processor.
  */
 export default class Resolver {
 

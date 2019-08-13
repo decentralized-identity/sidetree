@@ -4,13 +4,13 @@ import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
-import Resolver from '../../lib/core/versions/latest/Resolver';
-import { Cas } from '../../lib/core/Cas';
+import Resolver from '../../lib/core/Resolver';
 
 /**
  * Creates a batch file with single operation given operation buffer,
@@ -19,7 +19,7 @@ import { Cas } from '../../lib/core/Cas';
  */
 async function addBatchFileOfOneOperationToCas (
   operationBuffer: Buffer,
-  cas: Cas,
+  cas: ICas,
   transactionNumber: number,
   transactionTime: number,
   operationIndex: number): Promise<AnchoredOperation> {
@@ -42,7 +42,7 @@ async function addBatchFileOfOneOperationToCas (
 async function createUpdateSequence (
   didUniqueSuffix: string,
   createOp: AnchoredOperation,
-  cas: Cas,
+  cas: ICas,
   numberOfUpdates:
   number,
   privateKey: any): Promise<AnchoredOperation[]> {
