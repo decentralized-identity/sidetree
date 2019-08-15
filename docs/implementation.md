@@ -20,59 +20,6 @@ A light node is a node that retains the ability to independently resolve DIDs wi
 
 > NOTE: Light node support is in development, with release of a supporting node implementation in May 2019.
 
-## Operation Processor
-
-The Operation Processor holds most of the state of a Sidetree node. It is a singleton class with the following methods for DID Document state update and retrieval.
-
-### Process
-
-This is the core method to update the state of a DID Document:
-
-```javascript
-public process (transactionNumber: number, operationIndex: number, operation: Operation)
-```
-The `operation` is a JSON object representing a create, update, or a delete operation. Recall from the protocol description that the hash of this object is the *operation hash*, which represents the version of the document produced as the result of this operation.
-
-The `transactionNumber` and `operationIndex` parameters together provides a deterministic ordering of all operations. The `transactionNumber` is a monotonically increasing number (need NOT be by 1) that identifies a Sidetree transaction. The `operationIndex` is the index of this operation amongst all the operations batched within the same Sidetree transaction.
-
-> Note: `transactionNumber` and `operationIndex` are explicitly called out as parameters for the `process` method for clarity. They may be embedded within the `operation` parameter in actual implementation.
-
-Under normal processing, the _observer_ would process operations in chronological order. However the implementation accepts `process` calls with out-of-ordered operations. This is used to handle delays and out-of-orderedness introduced by the CAS layer.
-
-It is useful to view the operations as producing a collection of version *chains* one per DID. Each create operation introduces a new chain and each update operation adds an edge to an existing chain. There could be holes in the chain if some historical update is missing - as noted above, this could be caused due to CAS delays.
-
-When two update operations reference the same (prior) version of a DID Document, the cache removes from consideration the later of the two operations and all operations directly and indirectly referencing the removed operation. This ensures that the document versions of a particular DID form a chain without any forks. For illustration, assume we have recorded four operations for a particular DID producing the following chain:
-```
-v0 -> v1 -> v2 -> v3
-```
-If we find an earlier update operation `v0 -> v4`, the new chain for the DID would be:
-```
-v0 -> v4
-```
-
-In the above description, *earlier* and *later* refer to the logical time of the operation derived from the position of the operation in the blockchain.
-
-
-### Rollback
-
-This method is used to handle rollbacks (forks) in the blockchain.
-
-```javascript
-public rollback (transactionNumber: number)
-```
-
-The effect of this method is to delete the effects of any operation included in a transaction with a transaction number greater than or equal to the _transactionNumber_ provided.
-
-### Resolve
-
-The resolve method returns the latest document for a given DID.
-
-
-## Batch Writer
-The Batch Writer batches pending (Create, Update, Delete and Recover) operations and anchors them on the blockchain at a periodic interval.
-
-The batching interval can specified by the `batchingIntervalInSeconds` configuration parameter.
-
 ## Observer
 
 The _Observer_ watches the public blockchain to identify Sidetree operations, then parses the operations into data structures that can be used for efficient DID resolutions.
@@ -81,7 +28,7 @@ The primary goals for the _Observer_ are to:
 1. Allow horizontal scaling for high DID resolution throughput.
 1. Allow sharing of the processed data structure by multiple Sidetree nodes to minimize redundant computation.
 
-The above goals lead to a design where minimal processing of the operations at the time of ingestion and defers the heavy processing such as signature validation to the time of DID resolution.
+The above goals lead to the design decision of minimal processing of the operations at the time of ingestion, and deferring the heavy processing such as signature validations to the time of DID resolution.
 
 ## Versioning
 As the Sidetree protocol evolves, existing nodes executing an earlier version of the protocol need to upgrade to execute the newer version of the protocol while remaining backward compatible to processing of prior transactions and operations.
@@ -111,7 +58,7 @@ Protocol versioning configuration file example:
 ]
 ```
 
-![Architecture diagram](./diagrams/versioning.png)
+![Versioning diagram](./diagrams/versioning.png)
 
 ### Orchestration Layer
 There are a number of top-level components (classes) that orchestrate the execution of multiple versions of protocol simultaneously at runtime. These components are intended to be independent from version specific changes. Since code in this orchestration layer need to be compatible with all protocol versions, the orchestration layer should be kept as thin as possible.
