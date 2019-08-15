@@ -83,7 +83,59 @@ The primary goals for the _Observer_ are to:
 
 The above goals lead to a design where minimal processing of the operations at the time of ingestion and defers the heavy processing such as signature validation to the time of DID resolution.
 
-### Blockchain REST API
+## Versioning
+As the Sidetree protocol evolves, existing nodes executing an earlier version of the protocol need to upgrade to execute the newer version of the protocol while remaining backward compatible to processing of prior transactions and operations.
+
+### Protocol Versioning Configuration
+The implementation exposes a JSON configuration file with the following schema for specifiying protocol version progressions:
+```json
+[
+  {
+    "startingBlockchainTime": "An inslusive number that indicates the time this version takes effect.",
+    "version": "The name of the folder that contains all the code specific to this protocol version."
+  }
+]
+```
+
+Protocol versioning configuration file example:
+```json
+[
+  {
+    "startingBlockchainTime": 1500000,
+    "version": "0.4.0"
+  },
+  {
+    "startingBlockchainTime": 2000000,
+    "version": "0.5.0"
+  }
+]
+```
+
+![Architecture diagram](./diagrams/versioning.png)
+
+### Orchestration Layer
+There are a number of top-level components (classes) that orchestrate the execution of multiple versions of protocol simultaneously at runtime. These components are intended to be independent from version specific changes. Since code in this orchestration layer need to be compatible with all protocol versions, the orchestration layer should be kept as thin as possible.
+
+- Version Manager - This component handles construction and fetching of implementations of protocol versions as needed.
+- Batch Scheduler - This component schedules the writing of new operation batches.
+- Observer - This component observes the incoming Sidetree transactions and processes them.
+- Resolver - This component resolves a DID resolution request.
+
+The orchestration layer cannot depend on any code that is protocol version specific, this means its dependencies must either be external or be part of the orchestration layer itself, such dependencies include:
+- Blockchain Client
+- CAS (Content Addressable Storage) Client
+- MongoDB Transaction Store
+- MongoDB Operation Store
+
+### Protocol Version Specific Components
+The orchestration layer requires implementation of following interfaces per potocol version:
+- `IBatchWriter` - Performs operation batching, batch writing to CAS, and transaction writing to blockchain. Used by the _Batch Scheduler_.
+- `ITransactionProcessor` - Used by the _Observer_ to perform processing of a transaction written in a particular protocol version.
+- `IOperationProcessor` - Used by the _Resolver_ to apply an operation written in a particular protocol version.
+- `IRequestHandler` - Handles REST API requests.
+
+
+## Blockchain REST API
 The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
 ### Response HTTP status codes
@@ -392,7 +444,7 @@ None.
 
 
 
-## CAS REST API Interface
+## CAS REST API
 The CAS (content addressable storage) REST API interface aims to abstract the underlying Sidetree storage away from the main protocol logic. This allows the CAS to be updated or even replaced if needed without affecting the core protocol logic. Conversely, the interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same CAS.
 
 All hashes used in the API are encoded multihash as specified by the Sidetree protocol.
