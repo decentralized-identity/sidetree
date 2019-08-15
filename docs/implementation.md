@@ -34,11 +34,11 @@ The above goals lead to the design decision of minimal processing of the operati
 As the Sidetree protocol evolves, existing nodes executing an earlier version of the protocol need to upgrade to execute the newer version of the protocol while remaining backward compatible to processing of prior transactions and operations.
 
 ### Protocol Versioning Configuration
-The implementation exposes a JSON configuration file with the following schema for specifiying protocol version progressions:
+The implementation exposes a JSON configuration file with the following schema for specifying protocol version progressions:
 ```json
 [
   {
-    "startingBlockchainTime": "An inslusive number that indicates the time this version takes effect.",
+    "startingBlockchainTime": "An inclusive number that indicates the time this version takes effect.",
     "version": "The name of the folder that contains all the code specific to this protocol version."
   }
 ]
@@ -75,7 +75,7 @@ The orchestration layer cannot depend on any code that is protocol version speci
 - MongoDB Operation Store
 
 ### Protocol Version Specific Components
-The orchestration layer requires implementation of following interfaces per potocol version:
+The orchestration layer requires implementation of following interfaces per protocol version:
 - `IBatchWriter` - Performs operation batching, batch writing to CAS, and transaction writing to blockchain. Used by the _Batch Scheduler_.
 - `ITransactionProcessor` - Used by the _Observer_ to perform processing of a transaction written in a particular protocol version.
 - `IOperationProcessor` - Used by the _Resolver_ to apply an operation written in a particular protocol version.
