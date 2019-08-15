@@ -1,11 +1,11 @@
-import ITransaction from './ITransaction';
-import TransactionStore from '../core/interfaces/TransactionStore';
+import ITransactionStore from '../core/interfaces/ITransactionStore';
+import TransactionModel from './models/TransactionModel';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 
 /**
- * Implementation of TransactionStore that stores the transaction data in a MongoDB database.
+ * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.
  */
-export default class MongoDbTransactionStore implements TransactionStore {
+export default class MongoDbTransactionStore implements ITransactionStore {
   /** Default database name used if not specified in constructor. */
   public static readonly defaultDatabaseName: string = 'sidetree';
   /** Collection name for transactions. */
@@ -44,7 +44,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     return transactionCount;
   }
 
-  public async getTransaction (transactionNumber: number): Promise<ITransaction | undefined> {
+  public async getTransaction (transactionNumber: number): Promise<TransactionModel | undefined> {
     const transactions = await this.transactionCollection!.find({ transactionNumber: Long.fromNumber(transactionNumber) }).toArray();
     if (transactions.length === 0) {
       return undefined;
@@ -54,7 +54,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     return transaction;
   }
 
-  public async getTransactionsLaterThan (transactionNumber: number | undefined, max: number): Promise<ITransaction[]> {
+  public async getTransactionsLaterThan (transactionNumber: number | undefined, max: number): Promise<TransactionModel[]> {
     let transactions = [];
 
     try {
@@ -82,7 +82,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     this.transactionCollection = await MongoDbTransactionStore.createTransactionCollectionIfNotExist(this.db!);
   }
 
-  async addTransaction (transaction: ITransaction): Promise<void> {
+  async addTransaction (transaction: TransactionModel): Promise<void> {
     try {
       const transactionInMongoDb = {
         anchorFileHash: transaction.anchorFileHash,
@@ -100,7 +100,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
     }
   }
 
-  async getLastTransaction (): Promise<ITransaction | undefined> {
+  async getLastTransaction (): Promise<TransactionModel | undefined> {
     const lastTransactions = await this.transactionCollection!.find().limit(1).sort({ transactionNumber: -1 }).toArray();
     if (lastTransactions.length === 0) {
       return undefined;
@@ -110,8 +110,8 @@ export default class MongoDbTransactionStore implements TransactionStore {
     return lastProcessedTransaction;
   }
 
-  async getExponentiallySpacedTransactions (): Promise<ITransaction[]> {
-    const exponentiallySpacedTransactions: ITransaction[] = [];
+  async getExponentiallySpacedTransactions (): Promise<TransactionModel[]> {
+    const exponentiallySpacedTransactions: TransactionModel[] = [];
     const allTransactions = await this.transactionCollection!.find().sort({ transactionNumber: 1 }).toArray();
 
     let index = allTransactions.length - 1;
@@ -138,7 +138,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
    * Gets the list of processed transactions.
    * Mainly used for test purposes.
    */
-  public async getTransactions (): Promise<ITransaction[]> {
+  public async getTransactions (): Promise<TransactionModel[]> {
     const transactions = await this.transactionCollection!.find().sort({ transactionNumber: 1 }).toArray();
     return transactions;
   }
@@ -147,7 +147,7 @@ export default class MongoDbTransactionStore implements TransactionStore {
    * Creates the `transaction` collection with indexes if it does not exists.
    * @returns The existing collection if exists, else the newly created collection.
    */
-  private static async createTransactionCollectionIfNotExist (db: Db): Promise<Collection<ITransaction>> {
+  private static async createTransactionCollectionIfNotExist (db: Db): Promise<Collection<TransactionModel>> {
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 

@@ -1,7 +1,7 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
 import { FetchResultCode } from '../common/FetchResultCode';
-import { IResponse, ResponseStatus } from '../common/Response';
+import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
 const multihashes = require('multihashes');
 
@@ -27,7 +27,7 @@ export default class RequestHandler {
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
    */
-  public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number): Promise<IResponse> {
+  public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number): Promise<ResponseModel> {
     console.log(`Handling fetch request for '${base64urlEncodedMultihash}'...`);
 
     if (maxSizeInBytes === undefined) {
@@ -92,10 +92,10 @@ export default class RequestHandler {
    * Handles sidetree content write request
    * @param content Sidetree content to write into CAS storage
    */
-  public async handleWriteRequest (content: Buffer): Promise<IResponse> {
+  public async handleWriteRequest (content: Buffer): Promise<ResponseModel> {
     console.log(`Writing content of ${content.length} bytes...`);
 
-    let response: IResponse;
+    let response: ResponseModel;
     let base64urlEncodedMultihash;
     try {
       const base58EncodedMultihashString = await this.ipfsStorage.write(content);

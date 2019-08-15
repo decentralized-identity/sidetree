@@ -6,19 +6,19 @@ import * as getRawBody from 'raw-body';
 import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from '../lib/core/Core';
-import IConfig from '../lib/core/interfaces/IConfig';
-import { IProtocolParameters } from '../lib/core/ProtocolParameters';
-import { IResponse, Response } from '../lib/common/Response';
+import Config from '../lib/core/models/Config';
+import { IProtocolVersion } from '../lib/core/VersionManager';
+import { Response, ResponseModel } from '../lib/common/Response';
 
 /** Configuration used by this server. */
-interface IServerConfig extends IConfig {
+interface IServerConfig extends Config {
   port: number;
 }
 
 const config: IServerConfig = require('./core-config.json');
-const versionsOfProtocolParameters: IProtocolParameters[] = require('./core-protocol-parameters.json');
+const protocolVersions: IProtocolVersion[] = require('./core-protocol-versioning.json');
 
-const sidetreeCore = new Core(config, versionsOfProtocolParameters);
+const sidetreeCore = new Core(config, protocolVersions);
 const app = new Koa();
 
 // Raw body parser.
@@ -29,12 +29,12 @@ app.use(async (ctx, next) => {
 
 const router = new Router();
 router.post('/', async (ctx, _next) => {
-  const response = await sidetreeCore.requestHandler.handleOperationRequest(ctx.body);
+  const response = await sidetreeCore.handleOperationRequest(ctx.body);
   setKoaResponse(response, ctx.response);
 });
 
 router.get('/:didOrDidDocument', async (ctx, _next) => {
-  const response = await sidetreeCore.requestHandler.handleResolveRequest(ctx.params.didOrDidDocument);
+  const response = await sidetreeCore.handleResolveRequest(ctx.params.didOrDidDocument);
   setKoaResponse(response, ctx.response);
 });
 
@@ -60,7 +60,7 @@ sidetreeCore.initialize()
 /**
  * Sets the koa response according to the Sidetree response object given.
  */
-const setKoaResponse = (response: IResponse, koaResponse: Koa.Response) => {
+const setKoaResponse = (response: ResponseModel, koaResponse: Koa.Response) => {
   koaResponse.status = Response.toHttpStatus(response.status);
 
   if (response.body) {

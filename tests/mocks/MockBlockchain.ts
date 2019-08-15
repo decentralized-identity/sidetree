@@ -1,11 +1,11 @@
-import IBlockchainTime from '../../lib/core/interfaces/IBlockchainTime';
-import ITransaction from '../../lib/common/ITransaction';
-import { Blockchain } from '../../lib/core/Blockchain';
+import BlockchainTimeModel from '../../lib/core/models/BlockchainTimeModel';
+import IBlockchain from '../../lib/core/interfaces/IBlockchain';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 
 /**
  * Mock Blockchain class for testing.
  */
-export default class MockBlockchain implements Blockchain {
+export default class MockBlockchain implements IBlockchain {
   /** Stores each hash given in write() method. */
   hashes: string[] = [];
 
@@ -13,7 +13,7 @@ export default class MockBlockchain implements Blockchain {
     this.hashes.push(anchorFileHash);
   }
 
-  public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: ITransaction[] }> {
+  public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: TransactionModel[] }> {
     if (sinceTransactionNumber === undefined) {
       sinceTransactionNumber = -1;
     }
@@ -24,7 +24,7 @@ export default class MockBlockchain implements Blockchain {
       moreTransactions = true;
     }
 
-    const transactions: ITransaction[] = [];
+    const transactions: TransactionModel[] = [];
     if (this.hashes.length > 0 &&
       sinceTransactionNumber < this.hashes.length - 1) {
       const hashIndex = sinceTransactionNumber + 1;
@@ -43,19 +43,19 @@ export default class MockBlockchain implements Blockchain {
     };
   }
 
-  public async getFirstValidTransaction (_transactions: ITransaction[]): Promise<ITransaction | undefined> {
+  public async getFirstValidTransaction (_transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
     return undefined;
   }
 
-  private latestTime?: IBlockchainTime = { time: 500000, hash: 'dummyHash' };
+  private latestTime?: BlockchainTimeModel = { time: 500000, hash: 'dummyHash' };
 
-  public get approximateTime (): IBlockchainTime {
+  public get approximateTime (): BlockchainTimeModel {
     return this.latestTime!;
   }
   /**
    * Hardcodes the latest time to be returned.
    */
-  public setLatestTime (time: IBlockchainTime) {
+  public setLatestTime (time: BlockchainTimeModel) {
     this.latestTime = time;
   }
 }

@@ -2,19 +2,17 @@
 
 // Core service exports.
 import SidetreeCore from './core/Core';
-import ISidetreeConfig from './core/interfaces/IConfig';
-import { IProtocolParameters as ISidetreeProtocolParameters } from './core/ProtocolParameters';
+import SidetreeConfig from './core/models/Config';
 import {
-  IResponse as ISidetreeResponse,
+  ResponseModel as SidetreeResponseModel,
   Response as SidetreeResponse
 } from './common/Response';
 
 export {
-  ISidetreeConfig,
-  ISidetreeProtocolParameters,
-  ISidetreeResponse,
+  SidetreeConfig,
   SidetreeCore,
-  SidetreeResponse
+  SidetreeResponse,
+  SidetreeResponseModel
 };
 
 // Blockchain service exports.

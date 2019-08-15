@@ -1,43 +1,46 @@
 import * as retry from 'async-retry';
+import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
+import BatchFileModel from '../../lib/core/versions/latest/models/BatchFileModel';
+import Blockchain from '../../lib/core/Blockchain';
+import Cas from '../../lib/core/Cas';
 import DownloadManager from '../../lib/core/DownloadManager';
-import ErrorCode from '../../lib/common/ErrorCode';
-import IFetchResult from '../../lib/common/IFetchResult';
-import ITransaction from '../../lib/common/ITransaction';
+import ErrorCode from '../../lib/common/SharedErrorCode';
+import FetchResult from '../../lib/common/models/FetchResult';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
-import OperationProcessor from '../../lib/core/OperationProcessor';
-import OperationStore from '../../lib/core/interfaces/OperationStore';
-import { BlockchainClient } from '../../lib/core/Blockchain';
-import { CasClient } from '../../lib/core/Cas';
+import TransactionModel from '../../lib/common/models/TransactionModel';
+import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
-import { IAnchorFile } from '../../lib/core/AnchorFile';
-import { IBatchFile } from '../../lib/core/BatchFile';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
+  let getTransactionProcessor: (blockchainTime: number) => TransactionProcessor;
+
   let casClient;
   let downloadManager: DownloadManager;
-  let operationProcessor: OperationProcessor;
-  let operationStore: OperationStore;
+  let operationStore: IOperationStore;
+  let transactionStore: MockTransactionStore;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
-    casClient = new CasClient(config.contentAddressableStoreServiceUri);
+    casClient = new Cas(config.contentAddressableStoreServiceUri);
 
     // Setting the CAS to always return 404.
     spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
 
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     operationStore = new MockOperationStore();
-    operationProcessor = new OperationProcessor(config.didMethodName, operationStore);
-
+    transactionStore = new MockTransactionStore();
+    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
+
+    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(downloadManager, operationStore);
   });
 
   afterAll(() => {
@@ -68,7 +71,7 @@ describe('Observer', async () => {
       'transactions': []
     };
 
-    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
@@ -82,8 +85,16 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
     // Start the Observer.
-    const transactionStore = new MockTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(
+      getTransactionProcessor,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
     const processedTransactions = transactionStore.getTransactions();
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
@@ -110,16 +121,16 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const anchorFile: IAnchorFile = {
+    const anchorFile: AnchorFileModel = {
       batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
       didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
       merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
     };
-    const anchoreFileFetchResult: IFetchResult = {
+    const anchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: Buffer.from(JSON.stringify(anchorFile))
     };
-    const batchFile: IBatchFile = {
+    const batchFile: BatchFileModel = {
       /* tslint:disable */
       operations: [
         'eyJwYXlsb2FkIjoiZXlKamNtVmhkR1ZrSWpvaU1qQXhPUzB3TmkweE5GUXlNam94TkRvME5pNDVORE5hSWl3aVFHTnZiblJsZUhRaU9pSm9kSFJ3Y3pvdkwzY3phV1F1YjNKbkwyUnBaQzkyTVNJc0luQjFZbXhwWTB0bGVTSTZXM3NpYVdRaU9pSWphMlY1TVNJc0luUjVjR1VpT2lKVFpXTndNalUyYXpGV1pYSnBabWxqWVhScGIyNUxaWGt5TURFNElpd2ljSFZpYkdsalMyVjVTbmRySWpwN0ltdHBaQ0k2SWlOclpYa3hJaXdpYTNSNUlqb2lSVU1pTENKaGJHY2lPaUpGVXpJMU5rc2lMQ0pqY25ZaU9pSlFMVEkxTmtzaUxDSjRJam9pTjFGWFRVUjFkRmh3UkdodFVFcHhPWGxDWmxNMmVWVmpaMmxQVDJWTWIxVmplazVPVW5Wd1ZEZElNQ0lzSW5raU9pSnRNVVJIVWpCMldEZHNXRlZLTWtwcU1WQmtNRU5yZWxneFVuSkxiVmhuZERSNk5tMUZUV0Y1ZDNCSkluMTlYWDAiLCJzaWduYXR1cmUiOiJNRVVDSUNnWXk3TmRuRDhZVmhsTXhqaWFJVW11d3VhRHliM2xjNVAzZFVPSlpmVUpBaUVBMGtNbi03anFuaFQtMm5RVk52YldXRmk1NkNDajMweEVZRWxDNmFCMXVRayIsInByb3RlY3RlZCI6ImUzMCIsImhlYWRlciI6eyJvcGVyYXRpb24iOiJjcmVhdGUiLCJwcm9vZk9mV29yayI6IiIsImtpZCI6IiNrZXkxIiwiYWxnIjoiRVMyNTZLIn19',
@@ -127,7 +138,7 @@ describe('Observer', async () => {
       ]
       /* tslint:enable */
     };
-    const batchFileFetchResult: IFetchResult = {
+    const batchFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: Buffer.from(JSON.stringify(batchFile))
     };
@@ -143,11 +154,18 @@ describe('Observer', async () => {
     };
     spyOn(downloadManager, 'download').and.callFake(mockDownloadFunction);
 
-    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
-    const transactionStore = new MockTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
+    const observer = new Observer(
+      getTransactionProcessor,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
 
-    const mockTransaction: ITransaction = {
+    const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
       transactionTimeHash: '1000',
@@ -157,14 +175,12 @@ describe('Observer', async () => {
       transaction: mockTransaction,
       processingStatus: 'pending'
     };
-    await (observer as any).downloadThenProcessBatchAsync(mockTransaction, transactionUnderProcessing);
+    await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
-    const iterableOperations1 = await operationStore.get('EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A');
-    const operationArray1 = [...iterableOperations1];
+    const operationArray1 = await operationStore.get('EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A');
     expect(operationArray1.length).toEqual(1);
 
-    const iterableOperations2 = await operationStore.get('EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow');
-    const operationArray2 = [...iterableOperations2];
+    const operationArray2 = await operationStore.get('EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow');
     expect(operationArray2.length).toEqual(1);
   });
 
@@ -179,9 +195,16 @@ describe('Observer', async () => {
     const expectedConsoleLogSubstring = tuple[1];
 
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
-      const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
-      const transactionStore = new MockTransactionStore();
-      const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+      const blockchainClient = new Blockchain(config.blockchainServiceUri);
+      const observer = new Observer(
+        getTransactionProcessor,
+        blockchainClient,
+        config.maxConcurrentDownloads,
+        operationStore,
+        transactionStore,
+        transactionStore,
+        1
+      );
 
       spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
 
@@ -195,7 +218,7 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
-      const mockTransaction: ITransaction = {
+      const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
         transactionTimeHash: '1000',
@@ -205,7 +228,7 @@ describe('Observer', async () => {
         transaction: mockTransaction,
         processingStatus: 'pending'
       };
-      await (observer as any).downloadThenProcessBatchAsync(mockTransaction, transactionUnderProcessing);
+      await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
       expect(expectedConsoleLogDetected).toBeTruthy();
       expect(transactionStore.removeUnresolvableTransaction).toHaveBeenCalled();
@@ -267,7 +290,7 @@ describe('Observer', async () => {
       'transactions': []
     };
 
-    const blockchainClient = new BlockchainClient(config.blockchainServiceUri);
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
@@ -291,8 +314,16 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
 
     // Process first set of transactions.
-    const transactionStore = new MockTransactionStore();
-    const observer = new Observer(blockchainClient, downloadManager, operationProcessor, transactionStore, transactionStore, 1);
+    const observer = new Observer(
+      getTransactionProcessor,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.

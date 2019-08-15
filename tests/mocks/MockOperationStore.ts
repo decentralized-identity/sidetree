@@ -1,19 +1,20 @@
-import OperationStore from '../../lib/core/interfaces/OperationStore';
-import { Operation } from '../../lib/core/Operation';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 
 /**
  * Compare two operations returning -1, 0, 1 when the first operand
  * is less than, equal, and greater than the second, respectively.
  * Used to sort operations by blockchain 'time' order.
  */
-function compareOperation (op1: Operation, op2: Operation): number {
-  if (op1.transactionNumber! < op2.transactionNumber!) {
+function compareOperation (op1: AnchoredOperationModel, op2: AnchoredOperationModel): number {
+  if (op1.transactionNumber < op2.transactionNumber) {
     return -1;
-  } else if (op1.transactionNumber! > op2.transactionNumber!) {
+  } else if (op1.transactionNumber > op2.transactionNumber) {
     return 1;
-  } else if (op1.operationIndex! < op2.operationIndex!) {
+  } else if (op1.operationIndex < op2.operationIndex) {
     return -1;
-  } else if (op1.operationIndex! > op2.operationIndex!) {
+  } else if (op1.operationIndex > op2.operationIndex) {
     return 1;
   }
 
@@ -23,34 +24,30 @@ function compareOperation (op1: Operation, op2: Operation): number {
 /**
  * A simple in-memory implementation of operation store.
  */
-export default class MockOperationStore implements OperationStore {
+export default class MockOperationStore implements IOperationStore {
   // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
-  private readonly didToOperations: Map<string, Array<Operation>> = new Map();
+  private readonly didToOperations: Map<string, AnchoredOperationModel[]> = new Map();
 
   // Map DID unique suffixes to a boolean indicating if the operations array for the DID is sorted
   // or not.
   private readonly didUpdatedSinceLastSort: Map<string, boolean> = new Map();
 
-  private readonly emptyOperationsArray: Array<Operation> = new Array();
-
   /**
    * Inserts an operation into the in-memory store.
    */
-  private async insert (operation: Operation): Promise<void> {
-    const didUniqueSuffix = operation.didUniqueSuffix;
-
-    this.ensureDidEntriesExist(didUniqueSuffix);
+  private async insert (operation: NamedAnchoredOperationModel): Promise<void> {
+    this.ensureDidContainerExist(operation.didUniqueSuffix);
     // Append the operation to the operation array for the did ...
-    this.didToOperations.get(didUniqueSuffix)!.push(operation);
+    this.didToOperations.get(operation.didUniqueSuffix)!.push(operation);
     // ... which leaves the array unsorted, so we record this fact
-    this.didUpdatedSinceLastSort.set(didUniqueSuffix, true);
+    this.didUpdatedSinceLastSort.set(operation.didUniqueSuffix, true);
   }
 
   /**
    * Implements OperationStore.put()
    */
-  public async put (operations: Array<Operation>): Promise<void> {
+  public async put (operations: NamedAnchoredOperationModel[]): Promise<void> {
     for (const operation of operations) {
       await this.insert(operation);
     }
@@ -61,11 +58,11 @@ export default class MockOperationStore implements OperationStore {
    * Get an iterator that returns all operations with a given
    * didUniqueSuffix ordered by (transactionNumber, operationIndex).
    */
-  public async get (didUniqueSuffix: string): Promise<Iterable<Operation>> {
+  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
     let didOps = this.didToOperations.get(didUniqueSuffix);
 
     if (!didOps) {
-      return this.emptyOperationsArray;
+      return [];
     }
 
     const updatedSinceLastSort = this.didUpdatedSinceLastSort.get(didUniqueSuffix)!;
@@ -104,11 +101,11 @@ export default class MockOperationStore implements OperationStore {
    * Remove operations. A simple linear scan + filter that leaves the
    * original order intact for non-filters operations.
    */
-  private static removeOperations (operations: Array<Operation>, transactionNumber: number) {
+  private static removeOperations (operations: AnchoredOperationModel[], transactionNumber: number) {
     let writeIndex = 0;
 
     for (let i = 0 ; i < operations.length ; i++) {
-      if (operations[i].transactionNumber! <= transactionNumber) {
+      if (operations[i].transactionNumber <= transactionNumber) {
         operations[writeIndex++] = operations[i];
       }
     }
@@ -118,9 +115,9 @@ export default class MockOperationStore implements OperationStore {
     }
   }
 
-  private ensureDidEntriesExist (did: string) {
+  private ensureDidContainerExist (did: string) {
     if (this.didToOperations.get(did) === undefined) {
-      this.didToOperations.set(did, new Array<Operation>());
+      this.didToOperations.set(did, new Array<AnchoredOperationModel>());
       this.didUpdatedSinceLastSort.set(did, false);
     }
   }

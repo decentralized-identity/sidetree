@@ -53,7 +53,7 @@
   },
   "scripts": {
     "precommit": "npm run lint",
-    "build": "tsc && copyfiles \"src/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist",
+    "build": "tsc && copyfiles \"src/**/*.json\" dist && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist",
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
     "lint": "tslint --fix --project .",
     "start": "node dist/src/core.js",
@@ -71,6 +71,7 @@
     ],
     "exclude": [
       "dist/lib/**/interfaces/**",
+      "dist/lib/**/models/**",
       "dist/lib/**/I[A-Z]**"
     ],
     "reporter": [

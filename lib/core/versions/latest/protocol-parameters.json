@@ -1,0 +1,8 @@
+{
+  "hashAlgorithmInMultihashCode": 18,
+  "maxAnchorFileSizeInBytes": 1000000,
+  "maxBatchFileSizeInBytes": 20000000,
+  "maxEncodedHashStringLength": 100,
+  "maxOperationByteSize": 10000,
+  "maxOperationsPerBatch": 10000
+}

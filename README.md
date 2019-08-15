@@ -12,9 +12,12 @@ See the [implementation document](docs/implementation.md) for the detailed descr
 
 1. Must pass `npm run test`.
 1. Must pass `npm run lint`.
-1. Must and only prefix the name of a "data structure interface" (interface that is without methods and act purely as data holders) with an `I`.
-1. Must and only export a class as a default export if the class name matches the file name.
-1. Must sort imports.
+1. Prefix an interface that require implementation with `I`. e.g. `ITransactionProcessor`.
+1. Suffix a data-holder interface (without definition of methods) with `Model`. e.g. `TransactionModel`.
+1. Use default export if class/interface name matches the file name.
+1. Sort imports.
 
 ## Docker
-The Sidetree components are also available via docker containers. Please see the [docker document](docs/docker.md) to find out details on building and running.
+> NOTE: 2019-08-13: docker-compose out-of-date, needs to be udpated.
+
+The Sidetree components are available via docker containers . Please see the [docker document](docs/docker.md) to find out details on building and running.

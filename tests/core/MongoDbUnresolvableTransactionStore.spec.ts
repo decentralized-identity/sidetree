@@ -1,13 +1,13 @@
-import IConfig from '../../lib/core/interfaces/IConfig';
-import ITransaction from '../../lib/common/ITransaction';
+import Config from '../../lib/core/models/Config';
 import MongoDb from '../common/MongoDb';
 import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 import { MongoClient } from 'mongodb';
 
 /**
  * Creates a MongoDbUnresolvableTransactionStore and initializes it.
  */
-async function createUnresolvableTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbUnresolvableTransactionStore> {
+async function createIUnresolvableTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbUnresolvableTransactionStore> {
   const unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(transactionStoreUri, databaseName, 1);
   await unresolvableTransactionStore.initialize();
   return unresolvableTransactionStore;
@@ -18,10 +18,10 @@ async function createUnresolvableTransactionStore (transactionStoreUri: string, 
  * e.g. First transaction will have all properties assigned as 1 or '1';
  * @param count Number of transactions to generate.
  */
-async function generateTransactions (count: number): Promise<ITransaction[]> {
-  const transactions: ITransaction[] = [];
+async function generateTransactions (count: number): Promise<TransactionModel[]> {
+  const transactions: TransactionModel[] = [];
   for (let i = 1; i <= count; i++) {
-    const transaction: ITransaction = {
+    const transaction: TransactionModel = {
       anchorFileHash: i.toString(),
       transactionNumber: i,
       transactionTime: i,
@@ -35,7 +35,7 @@ async function generateTransactions (count: number): Promise<ITransaction[]> {
 }
 
 describe('MongoDbUnresolvableTransactionStore', async () => {
-  const config: IConfig = require('../json/config-test.json');
+  const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable = false;
@@ -43,7 +43,7 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
   beforeAll(async () => {
     mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
     if (mongoServiceAvailable) {
-      store = await createUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
+      store = await createIUnresolvableTransactionStore(config.mongoDbConnectionString, databaseName);
     }
   });
 

@@ -1,17 +1,17 @@
-import ITransaction from '../common/ITransaction';
-import UnresolvableTransactionStore from './interfaces/UnresolvableTransactionStore';
+import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
+import TransactionModel from '../common/models/TransactionModel';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 
-interface IUnresolvableTransaction extends ITransaction {
+interface IUnresolvableTransaction extends TransactionModel {
   firstFetchTime: number;
   retryAttempts: number;
   nextRetryTime: number;
 }
 
 /**
- * Implementation of TransactionStore that stores the transaction data in a MongoDB database.
+ * Implementation of `IIUnresolvableTransactionStore` that stores the transaction data in a MongoDB database.
  */
-export default class MongoDbUnresolvableTransactionStore implements UnresolvableTransactionStore {
+export default class MongoDbUnresolvableTransactionStore implements IUnresolvableTransactionStore {
   /** Default database name used if not specified in constructor. */
   public static readonly defaultDatabaseName: string = 'sidetree';
   /** Collection name for unresolvable transactions. */
@@ -56,7 +56,7 @@ export default class MongoDbUnresolvableTransactionStore implements Unresolvable
     this.unresolvableTransactionCollection = await MongoDbUnresolvableTransactionStore.createUnresolvableTransactionCollectionIfNotExist(this.db!);
   }
 
-  async recordUnresolvableTransactionFetchAttempt (transaction: ITransaction): Promise<void> {
+  async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
     // Try to get the unresolvable transaction from store.
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
@@ -94,13 +94,13 @@ export default class MongoDbUnresolvableTransactionStore implements Unresolvable
     }
   }
 
-  async removeUnresolvableTransaction (transaction: ITransaction): Promise<void> {
+  async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
     const transactionTime = transaction.transactionTime;
     const transactionNumber = transaction.transactionNumber;
     await this.unresolvableTransactionCollection!.deleteOne({ transactionTime, transactionNumber: Long.fromNumber(transactionNumber) });
   }
 
-  async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<ITransaction[]> {
+  async getUnresolvableTransactionsDueForRetry (maximumReturnCount?: number): Promise<TransactionModel[]> {
     // Override the return count if it is specified.
     let returnCount = this.maximumUnresolvableTransactionReturnCount;
     if (maximumReturnCount !== undefined) {

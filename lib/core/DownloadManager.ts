@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
-import IFetchResult from '../common/IFetchResult';
-import { Cas } from './Cas';
+import FetchResult from '../common/models/FetchResult';
+import ICas from './interfaces/ICas';
 
 /**
  * Interface containing information regarding each queued CAS download.
@@ -35,7 +35,7 @@ interface DownloadInfo {
   /**
    * Holds the fetch result once the download is completed.
    */
-  fetchResult?: IFetchResult;
+  fetchResult?: FetchResult;
 }
 
 /**
@@ -44,7 +44,7 @@ interface DownloadInfo {
 export default class DownloadManager {
   private pendingDownloads: DownloadInfo[] = [];
   private activeDownloads: Map<Buffer, DownloadInfo> = new Map();
-  private completedDownloads: Map<Buffer, IFetchResult> = new Map();
+  private completedDownloads: Map<Buffer, FetchResult> = new Map();
 
   /**
    * Constructs the download manager.
@@ -52,7 +52,7 @@ export default class DownloadManager {
    */
   public constructor (
     public maxConcurrentDownloads: number,
-    private cas: Cas) {
+    private cas: ICas) {
 
     // If maximum concurrent CAS download count is NaN, set it to a default value.
     if (isNaN(maxConcurrentDownloads)) {
@@ -117,7 +117,7 @@ export default class DownloadManager {
    * Downloads the content of the given content hash.
    * @param contentHash Hash of the content to be downloaded.
    */
-  public async download (contentHash: string, maxSizeInBytes: number): Promise<IFetchResult> {
+  public async download (contentHash: string, maxSizeInBytes: number): Promise<FetchResult> {
     const handle = crypto.randomBytes(32);
     const fetchPromise = new Promise(resolve => {
       const downloadInfo = { handle, contentHash, maxSizeInBytes, resolve, completed: false, content: undefined };
