@@ -18,40 +18,43 @@ export default class TransactionProcessor implements ITransactionProcessor {
   public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
-    console.info(`Downloading anchor file '${transaction.anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
-    const anchorFileFetchResult = await this.downloadManager.download(transaction.anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
+    // The anchor string in this protocol version is just the anchor file hash.
+    const anchorFileHash = transaction.anchorString;
+
+    console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
+    const anchorFileFetchResult = await this.downloadManager.download(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
 
     // No thing to process if the file hash is invalid. No retry needed.
     if (anchorFileFetchResult.code === FetchResultCode.InvalidHash) {
-      console.info(`Anchor file '${transaction.anchorFileHash}' is not a valid hash.`);
+      console.info(`Anchor file '${anchorFileHash}' is not a valid hash.`);
       return true;
     }
 
     // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
     if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-      console.info(`Anchor file '${transaction.anchorFileHash}' exceeded max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes.`);
+      console.info(`Anchor file '${anchorFileHash}' exceeded max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes.`);
       return true;
     }
 
     // Content for hash exists but is not a file. No retry needed.
     if (anchorFileFetchResult.code === FetchResultCode.NotAFile) {
-      console.info(`Anchor file hash '${transaction.anchorFileHash}' points to a content that is not a file.`);
+      console.info(`Anchor file hash '${anchorFileHash}' points to a content that is not a file.`);
       return true;
     }
 
     // If Content Addressable Storage is not reachable, mark the transaction for retry later.
     if (anchorFileFetchResult.code === FetchResultCode.CasNotReachable) {
-      console.info(`CAS not reachable for anchor file '${transaction.anchorFileHash}', will try again later.`);
+      console.info(`CAS not reachable for anchor file '${anchorFileHash}', will try again later.`);
       return false;
     }
 
     // If file cannot be found, mark it for retry later.
     if (anchorFileFetchResult.code === FetchResultCode.NotFound) {
-      console.info(`Anchor file '${transaction.anchorFileHash}' not found, will try again later.`);
+      console.info(`Anchor file '${anchorFileHash}' not found, will try again later.`);
       return false;
     }
 
-    console.info(`Anchor file '${transaction.anchorFileHash}' of size ${anchorFileFetchResult.content!.length} bytes downloaded.`);
+    console.info(`Anchor file '${anchorFileHash}' of size ${anchorFileFetchResult.content!.length} bytes downloaded.`);
     let anchorFile: AnchorFileModel;
     try {
       const maxOperationsPerBatch = ProtocolParameters.maxOperationsPerBatch;
@@ -63,7 +66,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
         console.info(`Invalid anchor file: ${error}`);
-        console.info(`Anchor file '${transaction.anchorFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored...`);
+        console.info(`Anchor file '${anchorFileHash}' failed parsing/validation, transaction '${transaction.transactionNumber}' ignored...`);
         return true;
       } else {
         console.error(`Unexpected error processing anchor file, MUST investigate and fix: ${error}`);

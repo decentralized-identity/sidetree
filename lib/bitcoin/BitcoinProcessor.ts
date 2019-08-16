@@ -214,8 +214,8 @@ export default class BitcoinProcessor {
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
-        anchorFileHash: transaction.anchorFileHash
-      } as TransactionModel;
+        anchorString: transaction.anchorString
+      };
     });
 
     return {
@@ -243,11 +243,11 @@ export default class BitcoinProcessor {
 
   /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
-   * @param anchorFileHash The hash of a Sidetree anchor file
+   * @param anchorString The string to be written as part of the transaction.
    */
-  public async writeTransaction (anchorFileHash: string) {
-    console.info(`Anchoring file ${anchorFileHash}`);
-    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorFileHash}`;
+  public async writeTransaction (anchorString: string) {
+    console.info(`Anchoring string ${anchorString}`);
+    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
     const address = this.privateKey.toAddress();
     const unspentOutputs = await this.getUnspentCoins(address);
@@ -265,7 +265,7 @@ export default class BitcoinProcessor {
     }
     // cannot make the transaction
     if (totalSatoshis < this.bitcoinFee) {
-      const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor file ${anchorFileHash}`);
+      const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
       throw error;
     }
@@ -520,11 +520,11 @@ export default class BitcoinProcessor {
             transactionNumber: TransactionNumber.construct(block, transactionIndex),
             transactionTime: block,
             transactionTimeHash: blockHash,
-            anchorFileHash: data.slice(this.sidetreePrefix.length)
+            anchorString: data.slice(this.sidetreePrefix.length)
           };
           console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTransaction)}`);
           await this.transactionStore.addTransaction(sidetreeTransaction);
-          // stop processing future anchor files. Protocol defines only the first should be accepted.
+          // stop processing future anchor strings. Protocol defines only the first should be accepted.
           break;
         }
       }

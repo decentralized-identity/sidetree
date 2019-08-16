@@ -7,9 +7,9 @@ import TransactionModel from '../../common/models/TransactionModel';
  */
 export default interface IBlockchain {
   /**
-   * Writes the anchor file hash as a transaction to blockchain.
+   * Writes a Sidtree transaction with the given anchor string to blockchain.
    */
-  write (anchorFileHash: string): Promise<void>;
+  write (anchorString: string): Promise<void>;
   /**
    * Gets Sidetree transactions in chronological order.
    * The function call may not return all known transactions, moreTransaction indicates if there are more transactions to be fetched.

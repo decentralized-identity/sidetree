@@ -72,7 +72,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
       const newUnresolvableTransaction = {
         transactionTime,
         transactionNumber: Long.fromNumber(transactionNumber),
-        anchorFileHash: transaction.anchorFileHash,
+        anchorString: transaction.anchorString,
         transactionTimeHash: transaction.transactionTimeHash,
         firstFetchTime: Date.now(),
         retryAttempts: 0,
@@ -84,9 +84,10 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
       const retryAttempts = unresolvableTransaction.retryAttempts + 1;
 
       // Exponentially delay the retry the more attempts are done in the past.
+      const anchorString = transaction.anchorString;
       const requiredElapsedTimeSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * this.exponentialDelayFactorInMilliseconds;
       const requiredElapsedTimeInSeconds = requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
-      console.info(`Required elapsed time before retry for anchor file ${transaction.anchorFileHash} is now ${requiredElapsedTimeInSeconds} seconds.`);
+      console.info(`Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`);
       const nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
 
       const searchFilter = { transactionTime, transactionNumber: Long.fromNumber(transactionNumber) };

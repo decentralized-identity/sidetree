@@ -56,13 +56,13 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorFileHash': '1stTransaction'
+          'anchorString': '1stTransaction'
         },
         {
           'transactionNumber': 2,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorFileHash': '2ndTransaction'
+          'anchorString': '2ndTransaction'
         }
       ]
     };
@@ -115,8 +115,8 @@ describe('Observer', async () => {
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
 
-    expect(processedTransactions[0].anchorFileHash).toEqual('1stTransaction');
-    expect(processedTransactions[1].anchorFileHash).toEqual('2ndTransaction');
+    expect(processedTransactions[0].anchorString).toEqual('1stTransaction');
+    expect(processedTransactions[1].anchorString).toEqual('2ndTransaction');
   });
 
   it('should process a valid operation batch successfully.', async () => {
@@ -169,7 +169,7 @@ describe('Observer', async () => {
       transactionNumber: 1,
       transactionTime: 1000000,
       transactionTimeHash: '1000',
-      anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
+      anchorString: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
     };
     const transactionUnderProcessing = {
       transaction: mockTransaction,
@@ -222,7 +222,7 @@ describe('Observer', async () => {
         transactionNumber: 1,
         transactionTime: 1000000,
         transactionTimeHash: '1000',
-        anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
+        anchorString: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
       };
       const transactionUnderProcessing = {
         transaction: mockTransaction,
@@ -245,19 +245,19 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorFileHash': '1stTransaction'
+          'anchorString': '1stTransaction'
         },
         {
           'transactionNumber': 2,
           'transactionTime': 2000,
           'transactionTimeHash': '2000',
-          'anchorFileHash': '2ndTransaction'
+          'anchorString': '2ndTransaction'
         },
         {
           'transactionNumber': 3,
           'transactionTime': 3000,
           'transactionTimeHash': '3000',
-          'anchorFileHash': '3rdTransaction'
+          'anchorString': '3rdTransaction'
         }
       ]
     };
@@ -269,19 +269,19 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 2001,
           'transactionTimeHash': '2001',
-          'anchorFileHash': '2ndTransactionNew'
+          'anchorString': '2ndTransactionNew'
         },
         {
           'transactionNumber': 3,
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
-          'anchorFileHash': '3rdTransactionNew'
+          'anchorString': '3rdTransactionNew'
         },
         {
           'transactionNumber': 4,
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
-          'anchorFileHash': '4thTransaction'
+          'anchorString': '4thTransaction'
         }
       ]
     };
@@ -342,8 +342,8 @@ describe('Observer', async () => {
       maxTimeout: 1000 // milliseconds
     });
 
-    expect(processedTransactions[1].anchorFileHash).toEqual('2ndTransactionNew');
-    expect(processedTransactions[2].anchorFileHash).toEqual('3rdTransactionNew');
-    expect(processedTransactions[3].anchorFileHash).toEqual('4thTransaction');
+    expect(processedTransactions[1].anchorString).toEqual('2ndTransactionNew');
+    expect(processedTransactions[2].anchorString).toEqual('3rdTransactionNew');
+    expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
   });
 });

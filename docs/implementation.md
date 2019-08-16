@@ -16,9 +16,9 @@ A full node offers the largest set of features and highest resolution performanc
 
 ### Light Node
 
-A light node is a node that retains the ability to independently resolve DIDs without relying on a trusted party or trusted assertions by other nodes, while minimizing the amount of bandwidth and data required to do so. Light nodes run a copy of the target system's node (e.g. a blockchain) and fetch all minimal _anchor file_ data required to create an independent mapping that enables just-in-time resolution of DIDs.
+A light node is a node that retains the ability to independently resolve DIDs without relying on a trusted party or trusted assertions by other nodes, while minimizing the amount of bandwidth and data required to do so. Light nodes run a copy of the target system's blockchain node and fetch only minimal Sidetree data required to create an independent lookup table that enables just-in-time resolution of DIDs.
 
-> NOTE: Light node support is in development, with release of a supporting node implementation in May 2019.
+> NOTE: Light node support is in development.
 
 ## Observer
 
@@ -216,7 +216,7 @@ GET /transactions?since=170&transaction-time-hash=00000000000000000000100158f474
       "transactionNumber": "A monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction.",
       "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
       "transactionTimeHash": "The hash associated with the transaction time.",
-      "anchorFileHash": "Hash of the anchor file of this transaction."
+      "anchorString": "The string written to the blockchain for this transaction."
     },
     ...
   ]
@@ -234,13 +234,13 @@ HTTP/1.1 200 OK
       "transactionNumber": 89,
       "transactionTime": 545236,
       "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
-      "anchorFileHash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
+      "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
     },
     {
       "transactionNumber": 100,
       "transactionTime": 545236,
       "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
-      "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+      "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
     }
   ]
 }
@@ -279,7 +279,7 @@ POST /transactions/firstValid HTTP/1.1
       "transactionNumber": "The transaction to be validated.",
       "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
       "transactionTimeHash": "The hash associated with the transaction time.",
-      "anchorFileHash": "Hash of the anchor file of this transaction."
+      "anchorString": "The string written to the blockchain for this transaction."
     },
     ...
   ]
@@ -297,31 +297,31 @@ Content-Type: application/json
       "transactionNumber": 19,
       "transactionTime": 545236,
       "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
-      "anchorFileHash": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg"
+      "anchorString": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg"
     },
     {
       "transactionNumber": 18,
       "transactionTime": 545236,
       "transactionTimeHash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
-      "anchorFileHash": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb"
+      "anchorString": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb"
     },
     {
       "transactionNumber": 16,
       "transactionTime": 545200,
       "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
-      "anchorFileHash": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
+      "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
     },
     {
       "transactionNumber": 12,
       "transactionTime": 545003,
       "transactionTimeHash": "0000000000000000001e002080595267fe034d370897b7b506d119ad29da1541",
-      "anchorFileHash": "Qmss3gKdm9uU9YLx3MPRHQTcUq1CR1Xv9Zpdu7EBG9Pk9Y"
+      "anchorString": "Qmss3gKdm9uU9YLx3MPRHQTcUq1CR1Xv9Zpdu7EBG9Pk9Y"
     },
     {
       "transactionNumber": 4,
       "transactionTime": 544939,
       "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
-      "anchorFileHash": "QmdcDrVPWy3ZXoZcuvFq7fDVqatks22MMqPAxDqXsZzGhy"
+      "anchorString": "QmdcDrVPWy3ZXoZcuvFq7fDVqatks22MMqPAxDqXsZzGhy"
     }
   ]
 }
@@ -333,7 +333,7 @@ Content-Type: application/json
   "transactionNumber": "The transaction number of the first valid transaction in the given list",
   "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
   "transactionTimeHash": "The hash associated with the transaction time.",
-  "anchorFileHash": "Hash of the anchor file of this transaction."
+  "anchorString": "The string written to the blockchain for this transaction."
 }
 ```
 
@@ -345,7 +345,7 @@ HTTP/1.1 200 OK
   "transactionNumber": 16,
   "transactionTime": 545200,
   "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
-  "anchorFileHash": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
+  "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK"
 }
 ```
 
@@ -372,7 +372,7 @@ POST /transactions
 #### Request body schema
 ```json
 {
-  "anchorFileHash": "The hash of a Sidetree anchor file."
+  "anchorString": "The string to be written to the blockchain for this transaction."
 }
 ```
 
@@ -381,7 +381,7 @@ POST /transactions
 POST /transactions HTTP/1.1
 
 {
-  "anchorFileHash": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+  "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
 }
 ```
 

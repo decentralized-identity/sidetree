@@ -6,7 +6,7 @@ import TransactionModel from '../../common/models/TransactionModel';
  */
 export default interface IUnresolvableTransactionStore {
   /**
-   * Records the retry attempts of the given resolvable transaction.
+   * Records the retry attempts of the given unresolvable transaction.
    */
   recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void>;
 

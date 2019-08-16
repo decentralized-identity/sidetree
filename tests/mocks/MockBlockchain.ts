@@ -9,8 +9,8 @@ export default class MockBlockchain implements IBlockchain {
   /** Stores each hash given in write() method. */
   hashes: string[] = [];
 
-  public async write (anchorFileHash: string): Promise<void> {
-    this.hashes.push(anchorFileHash);
+  public async write (anchorString: string): Promise<void> {
+    this.hashes.push(anchorString);
   }
 
   public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: TransactionModel[] }> {
@@ -32,7 +32,7 @@ export default class MockBlockchain implements IBlockchain {
         transactionNumber: hashIndex,
         transactionTime: hashIndex,
         transactionTimeHash: this.hashes[hashIndex],
-        anchorFileHash: this.hashes[hashIndex]
+        anchorString: this.hashes[hashIndex]
       };
       transactions.push(transaction);
     }

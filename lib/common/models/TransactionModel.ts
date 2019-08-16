@@ -5,5 +5,5 @@ export default interface TransactionModel {
   transactionNumber: number;
   transactionTime: number;
   transactionTimeHash: string;
-  anchorFileHash: string;
+  anchorString: string;
 }

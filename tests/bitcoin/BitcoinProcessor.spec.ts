@@ -89,7 +89,7 @@ describe('BitcoinProcessor', () => {
         transactionNumber: TransactionNumber.construct(height, i),
         transactionTime: height,
         transactionTimeHash: hash,
-        anchorFileHash: randomString()
+        anchorString: randomString()
       });
     }
     return transactions;
@@ -182,7 +182,7 @@ describe('BitcoinProcessor', () => {
           transactionNumber: randomNumber(),
           transactionTime: fromNumber,
           transactionTimeHash: fromHash,
-          anchorFileHash: randomString()
+          anchorString: randomString()
         })
       );
       processTransactionsSpy.and.callFake((sinceBlock: IBlockInfo) => {
@@ -358,7 +358,7 @@ describe('BitcoinProcessor', () => {
         const height = randomNumber();
         heights.push(height);
         transactions.push({
-          anchorFileHash: randomString(),
+          anchorString: randomString(),
           transactionNumber: TransactionNumber.construct(height, randomNumber()),
           transactionTime: height,
           transactionTimeHash: randomString()
@@ -903,8 +903,8 @@ describe('BitcoinProcessor', () => {
         'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
           expect(sidetreeTransaction.transactionTime).toEqual(block);
           expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
-          expect(shouldFindIDs.includes(sidetreeTransaction.anchorFileHash)).toBeTruthy();
-          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorFileHash),1);
+          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
+          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
           expect(seenTransactionNumbers.includes(sidetreeTransaction.transactionNumber)).toBeFalsy();
           seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
           return Promise.resolve(undefined);
@@ -936,8 +936,8 @@ describe('BitcoinProcessor', () => {
         'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
           expect(sidetreeTransaction.transactionTime).toEqual(block);
           expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
-          expect(shouldFindIDs.includes(sidetreeTransaction.anchorFileHash)).toBeTruthy();
-          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorFileHash),1);
+          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
+          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
           expect(seenTransactionNumbers.includes(sidetreeTransaction.transactionNumber)).toBeFalsy();
           seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
           return Promise.resolve(undefined);
