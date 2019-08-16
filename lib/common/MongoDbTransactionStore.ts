@@ -85,8 +85,8 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   async addTransaction (transaction: TransactionModel): Promise<void> {
     try {
       const transactionInMongoDb = {
-        anchorFileHash: transaction.anchorFileHash,
-        // Force `transactionNumber` to be Int64 in MondoDB.
+        anchorString: transaction.anchorString,
+        // NOTE: MUST force `transactionNumber` to be Int64 in MondoDB.
         transactionNumber: Long.fromNumber(transaction.transactionNumber),
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash

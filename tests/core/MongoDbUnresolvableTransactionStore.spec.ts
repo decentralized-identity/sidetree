@@ -22,7 +22,7 @@ async function generateTransactions (count: number): Promise<TransactionModel[]>
   const transactions: TransactionModel[] = [];
   for (let i = 1; i <= count; i++) {
     const transaction: TransactionModel = {
-      anchorFileHash: i.toString(),
+      anchorString: i.toString(),
       transactionNumber: i,
       transactionTime: i,
       transactionTimeHash: i.toString()

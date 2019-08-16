@@ -44,14 +44,14 @@ export default class Blockchain implements IBlockchain {
     setInterval(async () => this.getLatestTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
   }
 
-  public async write (anchorFileHash: string): Promise<void> {
-    const anchorFileHashObject = {
-      anchorFileHash: anchorFileHash
+  public async write (anchorString: string): Promise<void> {
+    const anchorStringObject = {
+      anchorString
     };
 
     const requestParameters = {
       method: 'post',
-      body: Buffer.from(JSON.stringify(anchorFileHashObject)),
+      body: Buffer.from(JSON.stringify(anchorStringObject)),
       headers: { 'Content-Type': 'application/json' }
     };
     const response = await this.fetch(this.transactionsUri, requestParameters);
@@ -59,7 +59,7 @@ export default class Blockchain implements IBlockchain {
     if (response.status !== HttpStatus.OK) {
       console.error(`Blockchain write error response status: ${response.status}`);
       console.error(`Blockchain write error body: ${response.body.read()}`);
-      throw new Error('Encountered an error writing anchor file hash to blockchain.');
+      throw new Error('Encountered an error writing anchor string to blockchain.');
     }
   }
 
