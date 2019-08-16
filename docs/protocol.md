@@ -37,17 +37,18 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 
 
 ## Sidetree Protocol Versioning & Parameters
-Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define the logical _blockchain time_ in which the new rules and parameter values will take effect. All subsequent transactions will adhere to the same rules and parameter values until a newer protocol version is defined.
+Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define its protocol rules and parameters, and the logical _blockchain time_ in which the new rules and parameters will take effect. All subsequent transactions will adhere to the same rules and parameters until a newer protocol version is defined.
 
-The following lists the parameters configurable by each version of the Sidetree protocol.
+The following lists the parameters used by this version of the Sidetree protocol:
 
-| Protocol Parameter       | Description                                                                    |
-|--------------------------|--------------------------------------------------------------------------------|
-| Hash algorithm           | The hash algorithm for computation such as for DID generation.                 |
-| Maximum anchor file size | The maximum compressed anchor file size.                                       |
-| Maximum batch file size  | The maximum compressed batch file size.                                        |
-| Maximum operation size   | The maximum unpressed operation size.                                          |
-| Maximum operation count  | The maximum number of operations per batch.                                    |
+| Protocol Parameter          | Description                                                                    | Value      |
+|-----------------------------|--------------------------------------------------------------------------------| ---------: |
+| Hash algorithm              | The hash algorithm for computation such as for DID generation.                 |     SHA256 |
+| Maximum anchor file size    | The maximum compressed anchor file size.                                       |       1 MB |
+| Maximum batch file size     | The maximum compressed batch file size.                                        |      20 MB |
+| Maximum encoded hash length | The maximum accepted string length of an encoded hash.                         |        100 |
+| Maximum operation size      | The maximum uncompressed operation size.                                       |      2 000 |
+| Maximum operation count     | The maximum number of operations per batch.                                    |     10 000 |
 
 ## Sidetree Operations
 
