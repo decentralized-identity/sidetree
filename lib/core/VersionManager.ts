@@ -13,7 +13,7 @@ import Resolver from './Resolver';
 /**
  * Defines a protocol version and its starting blockchain time.
  */
-export interface IProtocolVersion {
+export interface ProtocolVersionModel {
   /** The inclusive starting logical blockchain time that this protocol applies to. */
   startingBlockchainTime: number;
   version: string;
@@ -24,7 +24,7 @@ export interface IProtocolVersion {
  */
 export default class VersionManager {
   // Reverse sorted protocol versions. ie. latest version first.
-  private protocolVersionsReverseSorted: IProtocolVersion[];
+  private protocolVersionsReverseSorted: ProtocolVersionModel[];
 
   private batchWriters: Map<string, IBatchWriter>;
   private operationProcessors: Map<string, IOperationProcessor>;
@@ -34,7 +34,7 @@ export default class VersionManager {
 
   public constructor (
     private config: Config,
-    protocolVersions: IProtocolVersion[]
+    protocolVersions: ProtocolVersionModel[]
   ) {
 
     // Reverse sort protocol versions.

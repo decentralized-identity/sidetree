@@ -128,27 +128,22 @@ export default class Blockchain implements IBlockchain {
   /**
    * Gets the latest blockchain time and updates the cached time.
    */
-  private async getLatestTime (): Promise<BlockchainTimeModel> {
-    try {
-      console.info(`Refreshing cached blockchain time...`);
-      const response = await this.fetch(this.timeUri);
-      const responseBodyString = (response.body.read() as Buffer).toString();
+  public async getLatestTime (): Promise<BlockchainTimeModel> {
+    console.info(`Refreshing cached blockchain time...`);
+    const response = await this.fetch(this.timeUri);
+    const responseBodyString = (response.body.read() as Buffer).toString();
 
-      if (response.status !== HttpStatus.OK) {
-        const errorMessage = `Encountered an error fetching latest time from blockchain: ${responseBodyString}`;
-        throw new Error(errorMessage);
-      }
-
-      const responseBody = JSON.parse(responseBodyString);
-
-      // Update the cached blockchain time everytime blockchain time is fetched over the network,
-      this.cachedBlockchainTime = responseBody;
-
-      console.info(`Refreshed blockchain time: ${responseBodyString}`);
-      return responseBody;
-    } catch (error) {
-      console.error(error);
-      throw error;
+    if (response.status !== HttpStatus.OK) {
+      const errorMessage = `Encountered an error fetching latest time from blockchain: ${responseBodyString}`;
+      throw new Error(errorMessage);
     }
+
+    const responseBody = JSON.parse(responseBodyString);
+
+    // Update the cached blockchain time everytime blockchain time is fetched over the network,
+    this.cachedBlockchainTime = responseBody;
+
+    console.info(`Refreshed blockchain time: ${responseBodyString}`);
+    return responseBody;
   }
 }

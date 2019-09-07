@@ -79,6 +79,51 @@ describe('MongoDbTransactionStore', async () => {
     expect(collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)).toBeTruthy();
   });
 
+  it('should be able to fetch the count of transactions.', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    const actualTransactionCount = await transactionStore.getTransactionsCount();
+    expect(actualTransactionCount).toEqual(transactionCount);
+  });
+
+  it('should be able to fetch transaction by transaction number.', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    const transaction = await transactionStore.getTransaction(2);
+    expect(transaction!.transactionTime).toEqual(2);
+  });
+
+  it('should return undefined if unable to find transaction of the given transaction number.', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    const transaction = await transactionStore.getTransaction(4);
+    expect(transaction).toBeUndefined();
+  });
+
+  it('should be able to fetch transactions later than a given transaction number.', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    const transactions = await transactionStore.getTransactionsLaterThan(1, 100);
+    expect(transactions.length).toEqual(2);
+    expect(transactions[0].transactionNumber).toEqual(2);
+    expect(transactions[1].transactionNumber).toEqual(3);
+  });
+
+  it('should fetch transactions from the start if transaction number is not given.', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    const transactions = await transactionStore.getTransactionsLaterThan(undefined, 100);
+    expect(transactions.length).toEqual(3);
+    expect(transactions[0].transactionNumber).toEqual(1);
+    expect(transactions[1].transactionNumber).toEqual(2);
+    expect(transactions[2].transactionNumber).toEqual(3);
+  });
+
   it('should not store duplicated transactions.', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);

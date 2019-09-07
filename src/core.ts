@@ -7,16 +7,16 @@ import * as Koa from 'koa';
 import * as Router from 'koa-router';
 import Core from '../lib/core/Core';
 import Config from '../lib/core/models/Config';
-import { IProtocolVersion } from '../lib/core/VersionManager';
+import { ProtocolVersionModel } from '../lib/core/VersionManager';
 import { Response, ResponseModel } from '../lib/common/Response';
 
 /** Configuration used by this server. */
-interface IServerConfig extends Config {
+interface ServerConfig extends Config {
   port: number;
 }
 
-const config: IServerConfig = require('./core-config.json');
-const protocolVersions: IProtocolVersion[] = require('./core-protocol-versioning.json');
+const config: ServerConfig = require('./core-config.json');
+const protocolVersions: ProtocolVersionModel[] = require('./core-protocol-versioning.json');
 
 const sidetreeCore = new Core(config, protocolVersions);
 const app = new Koa();

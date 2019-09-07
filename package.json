@@ -34,7 +34,6 @@
     "@types/mongodb": "3.1.23",
     "@types/node": "11.13.4",
     "@types/node-fetch": "2.3.2",
-    "@types/readable-stream": "2.3.0",
     "@types/supertest": "2.0.7",
     "@types/time-span": "2.0.0",
     "async-retry": "1.2.3",
@@ -44,7 +43,6 @@
     "jasmine-reporters": "2.3.2",
     "jasmine-spec-reporter": "4.2.1",
     "nyc": "13.3.0",
-    "readable-stream": "3.3.0",
     "supertest": "4.0.2",
     "ts-node": "8.3.0",
     "tslint": "5.11.0",
@@ -72,7 +70,7 @@
     "exclude": [
       "dist/lib/**/interfaces/**",
       "dist/lib/**/models/**",
-      "dist/lib/**/I[A-Z]**"
+      "dist/lib/core/versions/[0-9]**/**"
     ],
     "reporter": [
       "text",
