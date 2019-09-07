@@ -7,9 +7,10 @@ import timeSpan = require('time-span');
  */
 export default class BatchScheduler {
   /**
-   * Flag indicating if this Batch Writer is currently processing a batch of operations.
+   * Denotes if the periodic batch writing should continue to occur.
+   * Used mainly for test purposes.
    */
-  private processing: boolean = false;
+  private continuePeriodicBatchWriting = false;
 
   public constructor (
     private getBatchWriter: (blockchainTime: number) => IBatchWriter,
@@ -21,7 +22,17 @@ export default class BatchScheduler {
    * The function that starts periodically anchoring operation batches to blockchain.
    */
   public startPeriodicBatchWriting () {
-    setInterval(async () => this.writeOperationBatch(), this.batchingIntervalInSeconds * 1000);
+    this.continuePeriodicBatchWriting = true;
+    setImmediate(async () => this.writeOperationBatch());
+  }
+
+  /**
+   * Stops periodic batch writing.
+   * Mainly used for test purposes.
+   */
+  public stopPeriodicBatchWriting () {
+    console.info(`Stopped periodic batch writing.`);
+    this.continuePeriodicBatchWriting = false;
   }
 
   /**
@@ -30,14 +41,8 @@ export default class BatchScheduler {
   public async writeOperationBatch () {
     const endTimer = timeSpan(); // For calcuating time taken to write operations.
 
-    // Wait until the next interval if the Batch Writer is still processing a batch.
-    if (this.processing) {
-      return;
-    }
-
     try {
       console.info('Start operation batch writing...');
-      this.processing = true;
 
       // Get the correct version of the `BatchWriter`.
       const currentTime = this.blockchain.approximateTime.time;
@@ -48,9 +53,12 @@ export default class BatchScheduler {
       console.error('Unexpected and unhandled error during batch writing, investigate and fix:');
       console.error(error);
     } finally {
-      this.processing = false;
-
       console.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
+
+      if (this.continuePeriodicBatchWriting) {
+        console.info(`Waiting for ${this.batchingIntervalInSeconds} seconds before writing another batch.`);
+        setTimeout(async () => this.writeOperationBatch(), this.batchingIntervalInSeconds * 1000);
+      }
     }
   }
 }

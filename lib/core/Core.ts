@@ -8,7 +8,7 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import Resolver from './Resolver';
-import VersionManager, { IProtocolVersion } from './VersionManager';
+import VersionManager, { ProtocolVersionModel } from './VersionManager';
 import { ResponseModel } from '../common/Response';
 
 /**
@@ -29,7 +29,7 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: Config, protocolVersions: IProtocolVersion[]) {
+  public constructor (config: Config, protocolVersions: ProtocolVersionModel[]) {
     // Component dependency construction & injection.
     this.versionManager = new VersionManager(config, protocolVersions); // `VersionManager` is first constructed component.
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);

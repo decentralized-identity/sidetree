@@ -28,7 +28,7 @@ export default class TransactionNumber {
   /**
    * Returns the position component of transactionNumber
    */
-  public getPosition (transactionNumber: number) {
+  public static getPosition (transactionNumber: number) {
     const mask = 2 ** TransactionNumber.bitWidth - 1;
     return (transactionNumber & mask);
   }
