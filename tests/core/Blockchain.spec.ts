@@ -1,8 +1,8 @@
 import Blockchain from '../../lib/core/Blockchain';
+import CoreErrorCode from '../../lib/core/CoreErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-// import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 describe('Blockchain', async () => {
   describe('read()', async () => {
@@ -75,8 +75,13 @@ describe('Blockchain', async () => {
 
       try {
         await blockchainClient.read(1, 'Unused transaction hash.');
-      } catch {
+      } catch (error) {
         // Throwing error is the expected case.
+
+        if (error.code !== CoreErrorCode.BlockchainReadResponseNotOk) {
+          fail();
+        }
+
         return;
       }
 
@@ -87,8 +92,13 @@ describe('Blockchain', async () => {
       const blockchainClient = new Blockchain('Unused URI');
       try {
         await blockchainClient.read(1, undefined);
-      } catch {
+      } catch (error) {
         // Throwing error is the expected case.
+
+        if (error.code !== CoreErrorCode.BlockchainReadInvalidArguments) {
+          fail();
+        }
+
         return;
       }
 
@@ -109,8 +119,13 @@ describe('Blockchain', async () => {
 
       try {
         await blockchainClient.write('Unused anchor string.');
-      } catch {
+      } catch (error) {
         // Throwing error is the expected case.
+
+        if (error.code !== CoreErrorCode.BlockchainWriteResponseNotOk) {
+          fail();
+        }
+
         return;
       }
 
@@ -216,8 +231,13 @@ describe('Blockchain', async () => {
 
       try {
         await blockchainClient.getLatestTime();
-      } catch {
+      } catch (error) {
         // Throwing error is the expected case.
+
+        if (error.code !== CoreErrorCode.BlockchainGetLatestTimeResponseNotOk) {
+          fail();
+        }
+
         return;
       }
 
