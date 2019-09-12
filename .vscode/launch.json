@@ -7,33 +7,6 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Sidetree Core Service",
-            "program": "${workspaceFolder}/dist/src/core.js",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Sidetree Bitcoin Service",
-            "program": "${workspaceFolder}/dist/src/bitcoin.js",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Sidetree IPFS Service",
-            "program": "${workspaceFolder}/dist/src/ipfs.js",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
-        },
-        {
-            "type": "node",
-            "request": "launch",
             "name": "Jasmine Tests",
             "program": "${workspaceFolder}/node_modules/jasmine/bin/jasmine.js",
             "env": {
