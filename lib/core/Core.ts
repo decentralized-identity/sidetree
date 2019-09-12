@@ -10,6 +10,8 @@ import Observer from './Observer';
 import Resolver from './Resolver';
 import VersionManager, { ProtocolVersionModel } from './VersionManager';
 import { ResponseModel } from '../common/Response';
+import PackageVersion from '../common/PackageVersion';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -97,5 +99,9 @@ export default class Core {
     const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;
+  }
+
+  public async handleGetVersionRequest(): Promise<ServiceVersionModel> {
+    return PackageVersion.getPackageVersion();
   }
 }
