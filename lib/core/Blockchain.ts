@@ -19,6 +19,8 @@ export default class Blockchain implements IBlockchain {
   /** Used for caching the blockchain time to avoid excessive time fetching over network. */
   private cachedBlockchainTime: BlockchainTimeModel;
 
+  private cachedVersionModel: ServiceVersionModel;
+
   private fetch = nodeFetch;
 
   /** URI that handles transaction operations. */
@@ -34,6 +36,7 @@ export default class Blockchain implements IBlockchain {
     this.versionUri = `${uri}/version`;
 
     this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
+    this.cachedVersionModel = { name: "", version: "" };
   }
 
   /**
@@ -41,6 +44,7 @@ export default class Blockchain implements IBlockchain {
    */
   public async initialize () {
     await this.getLatestTime();
+    this.cachedVersionModel = await this.getServiceVersion();
   }
 
   /**
@@ -130,20 +134,12 @@ export default class Blockchain implements IBlockchain {
     return transaction;
   }
 
-  /**
-   * Gets the version information by making the REST API call.
-   */
-  public async getServiceVersion() : Promise<ServiceVersionModel> {
-    const response = await this.fetch(this.versionUri);
-
-    const responseBodyString = (response.body.read() as Buffer).toString();
-    const versionInfo = JSON.parse(responseBodyString);
-
-    return versionInfo;
-  }
-
   public get approximateTime (): BlockchainTimeModel {
     return this.cachedBlockchainTime;
+  }
+
+  public get cachedVersion(): ServiceVersionModel {
+    return this.cachedVersionModel;
   }
 
   /**
@@ -166,5 +162,17 @@ export default class Blockchain implements IBlockchain {
 
     console.info(`Refreshed blockchain time: ${responseBodyString}`);
     return responseBody;
+  }
+
+  /**
+   * Gets the version information by making the REST API call.
+   */
+  private async getServiceVersion() : Promise<ServiceVersionModel> {
+    const response = await this.fetch(this.versionUri);
+
+    const responseBodyString = (response.body.read() as Buffer).toString();
+    const versionInfo = JSON.parse(responseBodyString);
+
+    return versionInfo;
   }
 }

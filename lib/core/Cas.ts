@@ -15,8 +15,15 @@ export default class Cas implements ICas {
 
   private versionUri: string // e.g. https://127.0.0.1/version
 
+  private cachedVersionModel: ServiceVersionModel;
+
   public constructor (public uri: string) { 
     this.versionUri = `${uri}/version`;
+    this.cachedVersionModel = { name: "", version: "" };
+  }
+
+  public async initialize() {
+    this.cachedVersionModel = await this.getServiceVersion();
   }
 
   public async write (content: Buffer): Promise<string> {
@@ -85,10 +92,14 @@ export default class Cas implements ICas {
     }
   }
 
+  public get cachedVersion(): ServiceVersionModel {
+    return this.cachedVersionModel;
+  }
+
   /**
    * Gets the version information by making the REST API call.
    */
-  public async getServiceVersion() : Promise<ServiceVersionModel> {
+  private async getServiceVersion() : Promise<ServiceVersionModel> {
     const response = await this.fetch(this.versionUri);
 
     const responseBodyString = (response.body.read() as Buffer).toString();

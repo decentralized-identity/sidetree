@@ -66,6 +66,7 @@ export default class Core {
     await this.unresolvableTransactionStore.initialize();
     await this.operationStore.initialize();
     await this.blockchain.initialize();
+    await this.cas.initialize();
     await this.versionManager.initialize(
       this.blockchain,
       this.cas,
@@ -108,8 +109,8 @@ export default class Core {
   public async handleGetVersionRequest(): Promise<ResponseModel> {
     var responses = [
       this.serviceInfo.getServiceVersion(),
-      await this.blockchain.getServiceVersion(),
-      await this.cas.getServiceVersion() 
+      await this.blockchain.cachedVersion,
+      await this.cas.cachedVersion 
     ];
 
     return {
