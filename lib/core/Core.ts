@@ -10,7 +10,7 @@ import Observer from './Observer';
 import Resolver from './Resolver';
 import VersionManager, { ProtocolVersionModel } from './VersionManager';
 import { ResponseModel, ResponseStatus } from '../common/Response';
-import PackageVersion from '../common/PackageVersion';
+import ServiceInfo from '../common/ServiceInfo';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -26,8 +26,7 @@ export default class Core {
   private observer: Observer;
   private batchScheduler: BatchScheduler;
   private resolver: Resolver;
-  
-  private serviceName: string;
+  private serviceInfo: ServiceInfo;
 
   /**
    * Core constructor.
@@ -54,7 +53,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.serviceName = "sidetree-core";
+    this.serviceInfo = new ServiceInfo("core");
     this.downloadManager.start();
   }
 
@@ -108,7 +107,7 @@ export default class Core {
    */
   public async handleGetVersionRequest(): Promise<ResponseModel> {
     var responses = [
-      PackageVersion.getPackageVersion(this.serviceName),
+      this.serviceInfo.getServiceVersion(),
       await this.blockchain.getServiceVersion(),
       await this.cas.getServiceVersion() 
     ];

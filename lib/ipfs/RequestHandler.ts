@@ -3,7 +3,7 @@ import IpfsStorage from './IpfsStorage';
 import { FetchResultCode } from '../common/FetchResultCode';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
-import PackageVersion from '../common/PackageVersion';
+import ServiceInfo from '../common/ServiceInfo';
 const multihashes = require('multihashes');
 
 /**
@@ -15,8 +15,7 @@ export default class RequestHandler {
    */
   public ipfsStorage: IpfsStorage;
 
-  /** The service name used for versioning */
-  private serviceName: string;
+  private serviceInfo: ServiceInfo;
 
   /**
    * Constructs the Sidetree IPFS request handler.
@@ -25,7 +24,7 @@ export default class RequestHandler {
    */
   public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
     this.ipfsStorage = IpfsStorage.create(repo);
-    this.serviceName = "sidetree-ipfs"
+    this.serviceInfo = new ServiceInfo("ipfs");
   }
 
   /**
@@ -127,7 +126,7 @@ export default class RequestHandler {
    * Handles the get version request.
    */
   public async handleGetVersionRequest(): Promise<ResponseModel> {
-    var body = JSON.stringify(PackageVersion.getPackageVersion(this.serviceName));
+    var body = JSON.stringify(this.serviceInfo.getServiceVersion());
 
     return {
       status : ResponseStatus.Succeeded,

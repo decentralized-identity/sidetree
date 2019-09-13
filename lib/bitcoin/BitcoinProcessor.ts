@@ -10,7 +10,7 @@ import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib'
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 import { URL } from 'url';
-import PackageVersion from '../common/PackageVersion';
+import ServiceInfo from '../common/ServiceInfo';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
@@ -80,8 +80,7 @@ export default class BitcoinProcessor {
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
 
-  /** The name of the service used for versioning  */
-  private serviceName: string;
+  private serviceInfo: ServiceInfo;
 
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
@@ -103,7 +102,7 @@ export default class BitcoinProcessor {
     this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
-    this.serviceName = "sidetree-bitcoin";
+    this.serviceInfo = new ServiceInfo("bitcoin");
   }
 
   /**
@@ -298,7 +297,7 @@ export default class BitcoinProcessor {
    * Handles the get version operation.
    */
   public async handleGetVersionRequest(): Promise<ServiceVersionModel> {
-    return PackageVersion.getPackageVersion(this.serviceName);
+    return this.serviceInfo.getServiceVersion();
   }
 
   /**
