@@ -4,6 +4,7 @@ import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { FetchResultCode } from '../common/FetchResultCode';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
  * Class that communicates with the underlying CAS using REST API defined by the protocol document.
@@ -12,7 +13,11 @@ export default class Cas implements ICas {
 
   private fetch = nodeFetch;
 
-  public constructor (public uri: string) { }
+  private versionUri: string // e.g. https://127.0.0.1/version
+
+  public constructor (public uri: string) { 
+    this.versionUri = `${uri}/version`;
+  }
 
   public async write (content: Buffer): Promise<string> {
     const requestParameters = {
@@ -78,5 +83,17 @@ export default class Cas implements ICas {
       // Else throw
       throw error;
     }
+  }
+
+  /**
+   * Gets the version information by making the REST API call.
+   */
+  public async getServiceVersion() : Promise<ServiceVersionModel> {
+    const response = await this.fetch(this.versionUri);
+
+    const responseBodyString = (response.body.read() as Buffer).toString();
+    const versionInfo = JSON.parse(responseBodyString);
+
+    return versionInfo;
   }
 }

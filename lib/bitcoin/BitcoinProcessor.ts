@@ -10,6 +10,8 @@ import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib'
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 import { URL } from 'url';
+import PackageVersion from '../common/PackageVersion';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
  * Object representing a blockchain time and hash
@@ -78,6 +80,9 @@ export default class BitcoinProcessor {
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
 
+  /** The name of the service used for versioning  */
+  private serviceName: string;
+
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
     if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
@@ -98,6 +103,7 @@ export default class BitcoinProcessor {
     this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
+    this.serviceName = "sidetree-bitcoin";
   }
 
   /**
@@ -286,6 +292,13 @@ export default class BitcoinProcessor {
       throw error;
     }
     console.info(`Successfully submitted transaction ${transaction.id}`);
+  }
+
+   /**
+   * Handles the get version operation.
+   */
+  public async handleGetVersionRequest(): Promise<ServiceVersionModel> {
+    return PackageVersion.getPackageVersion(this.serviceName);
   }
 
   /**

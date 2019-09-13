@@ -7,6 +7,7 @@ import ReadableStream from '../common/ReadableStream';
 import SharedErrorCode from '../common/SharedErrorCode';
 import TransactionModel from '../common/models/TransactionModel';
 import { SidetreeError } from './Error';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
@@ -23,10 +24,14 @@ export default class Blockchain implements IBlockchain {
   /** URI that handles transaction operations. */
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private timeUri: string; // e.g. https://127.0.0.1/time
+  
+  /** Other URIs */
+  private versionUri: string // e.g. https://127.0.0.1/version
 
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
+    this.versionUri = `${uri}/version`;
 
     this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
   }
@@ -123,6 +128,18 @@ export default class Blockchain implements IBlockchain {
     const transaction = JSON.parse(responseBodyString);
 
     return transaction;
+  }
+
+  /**
+   * Gets the version information by making the REST API call.
+   */
+  public async getServiceVersion() : Promise<ServiceVersionModel> {
+    const response = await this.fetch(this.versionUri);
+
+    const responseBodyString = (response.body.read() as Buffer).toString();
+    const versionInfo = JSON.parse(responseBodyString);
+
+    return versionInfo;
   }
 
   public get approximateTime (): BlockchainTimeModel {

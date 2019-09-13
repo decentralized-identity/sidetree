@@ -9,9 +9,8 @@ import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactio
 import Observer from './Observer';
 import Resolver from './Resolver';
 import VersionManager, { ProtocolVersionModel } from './VersionManager';
-import { ResponseModel } from '../common/Response';
+import { ResponseModel, ResponseStatus } from '../common/Response';
 import PackageVersion from '../common/PackageVersion';
-import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -27,6 +26,8 @@ export default class Core {
   private observer: Observer;
   private batchScheduler: BatchScheduler;
   private resolver: Resolver;
+  
+  private serviceName: string;
 
   /**
    * Core constructor.
@@ -53,6 +54,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
+    this.serviceName = "sidetree-core";
     this.downloadManager.start();
   }
 
@@ -101,7 +103,19 @@ export default class Core {
     return response;
   }
 
-  public async handleGetVersionRequest(): Promise<ServiceVersionModel> {
-    return PackageVersion.getPackageVersion();
+  /**
+   * Handles the get version
+   */
+  public async handleGetVersionRequest(): Promise<ResponseModel> {
+    var responses = [
+      PackageVersion.getPackageVersion(this.serviceName),
+      await this.blockchain.getServiceVersion(),
+      await this.cas.getServiceVersion() 
+    ];
+
+    return {
+      status :  ResponseStatus.Succeeded,
+      body : JSON.stringify(responses)
+    };
   }
 }

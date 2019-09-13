@@ -5,9 +5,9 @@ export default class PackageVersion {
 
     private static readonly packageJson = require('../../package.json');
 
-    public static getPackageVersion(): ServiceVersionModel {
+    public static getPackageVersion(serviceName: string): ServiceVersionModel {
         return {
-            name: this.packageJson.name,
+            name: serviceName,
             version: this.packageJson.version
         };        
     }
