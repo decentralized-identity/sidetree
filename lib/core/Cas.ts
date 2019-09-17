@@ -5,7 +5,6 @@ import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { FetchResultCode } from '../common/FetchResultCode';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import Execute from '../common/Execute';
 import ServiceInfo from '../common/ServiceInfo';
 
 /**
@@ -21,7 +20,7 @@ export default class Cas implements ICas {
 
   public constructor (public uri: string) { 
     this.versionUri = `${uri}/version`;
-    this.cachedVersionModel = { name: "", version: "" };
+    this.cachedVersionModel = ServiceInfo.getEmptyServiceVersion();
   }
 
   public async initialize() {
@@ -106,15 +105,18 @@ export default class Cas implements ICas {
    */
   private async tryGetServiceVersion() : Promise<ServiceVersionModel> {
     
-    let getServiceFunction = async () => {
+    try {
       const response = await this.fetch(this.versionUri);
 
       const responseBodyString = (response.body.read() as Buffer).toString();
       const versionInfo = JSON.parse(responseBodyString);
 
       return versionInfo;
+
+    } catch (e) {
+      console.error("Ignoring the exception during CAS service version retrieval: %s", JSON.stringify(e));
     }
 
-    return Execute.IgnoreException(getServiceFunction, ServiceInfo.getEmptyServiceVersion());
+    return ServiceInfo.getEmptyServiceVersion();
   }
 }

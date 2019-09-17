@@ -8,7 +8,6 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import TransactionModel from '../common/models/TransactionModel';
 import { SidetreeError } from './Error';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import Execute from '../common/Execute';
 import ServiceInfo from '../common/ServiceInfo';
 
 /**
@@ -38,7 +37,7 @@ export default class Blockchain implements IBlockchain {
     this.versionUri = `${uri}/version`;
 
     this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
-    this.cachedVersionModel = { name: "", version: "" };
+    this.cachedVersionModel = ServiceInfo.getEmptyServiceVersion();
   }
 
   /**
@@ -171,15 +170,17 @@ export default class Blockchain implements IBlockchain {
    */
   private async tryGetServiceVersion() : Promise<ServiceVersionModel> {
 
-    const getServiceVersion = async () => {
+    try {
       const response = await this.fetch(this.versionUri);
 
       const responseBodyString = (response.body.read() as Buffer).toString();
       const versionInfo = JSON.parse(responseBodyString);
 
       return versionInfo;
+    } catch (e) {
+      console.error("Ignoring the exception during blockchain service version retrieval: %s", JSON.stringify(e));
     }
 
-    return Execute.IgnoreException(getServiceVersion, ServiceInfo.getEmptyServiceVersion());
+    return ServiceInfo.getEmptyServiceVersion();
   }
 }
