@@ -8,6 +8,8 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import TransactionModel from '../common/models/TransactionModel';
 import { SidetreeError } from './Error';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import Execute from '../common/Execute';
+import ServiceInfo from '../common/ServiceInfo';
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
@@ -44,7 +46,7 @@ export default class Blockchain implements IBlockchain {
    */
   public async initialize () {
     await this.getLatestTime();
-    this.cachedVersionModel = await this.getServiceVersion();
+    this.cachedVersionModel = await this.tryGetServiceVersion();
   }
 
   /**
@@ -167,12 +169,17 @@ export default class Blockchain implements IBlockchain {
   /**
    * Gets the version information by making the REST API call.
    */
-  private async getServiceVersion() : Promise<ServiceVersionModel> {
-    const response = await this.fetch(this.versionUri);
+  private async tryGetServiceVersion() : Promise<ServiceVersionModel> {
 
-    const responseBodyString = (response.body.read() as Buffer).toString();
-    const versionInfo = JSON.parse(responseBodyString);
+    const getServiceVersion = async () => {
+      const response = await this.fetch(this.versionUri);
 
-    return versionInfo;
+      const responseBodyString = (response.body.read() as Buffer).toString();
+      const versionInfo = JSON.parse(responseBodyString);
+
+      return versionInfo;
+    }
+
+    return Execute.IgnoreException(getServiceVersion, ServiceInfo.getEmptyServiceVersion());
   }
 }

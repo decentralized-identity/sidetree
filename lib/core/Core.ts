@@ -104,7 +104,8 @@ export default class Core {
   }
 
   /**
-   * Handles the get version
+   * Handles the get version request. It gets the versions from the dependent services
+   * as well.
    */
   public async handleGetVersionRequest(): Promise<ResponseModel> {
     var responses = [

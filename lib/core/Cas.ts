@@ -5,6 +5,8 @@ import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { FetchResultCode } from '../common/FetchResultCode';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import Execute from '../common/Execute';
+import ServiceInfo from '../common/ServiceInfo';
 
 /**
  * Class that communicates with the underlying CAS using REST API defined by the protocol document.
@@ -23,7 +25,7 @@ export default class Cas implements ICas {
   }
 
   public async initialize() {
-    this.cachedVersionModel = await this.getServiceVersion();
+    this.cachedVersionModel = await this.tryGetServiceVersion();
   }
 
   public async write (content: Buffer): Promise<string> {
@@ -92,19 +94,27 @@ export default class Cas implements ICas {
     }
   }
 
-  public get cachedVersion(): ServiceVersionModel {
+  /**
+   * Gets the cached service version.
+   */
+  public get cachedVersion(): ServiceVersionModel {    
     return this.cachedVersionModel;
   }
 
   /**
    * Gets the version information by making the REST API call.
    */
-  private async getServiceVersion() : Promise<ServiceVersionModel> {
-    const response = await this.fetch(this.versionUri);
+  private async tryGetServiceVersion() : Promise<ServiceVersionModel> {
+    
+    let getServiceFunction = async () => {
+      const response = await this.fetch(this.versionUri);
 
-    const responseBodyString = (response.body.read() as Buffer).toString();
-    const versionInfo = JSON.parse(responseBodyString);
+      const responseBodyString = (response.body.read() as Buffer).toString();
+      const versionInfo = JSON.parse(responseBodyString);
 
-    return versionInfo;
+      return versionInfo;
+    }
+
+    return Execute.IgnoreException(getServiceFunction, ServiceInfo.getEmptyServiceVersion());
   }
 }
