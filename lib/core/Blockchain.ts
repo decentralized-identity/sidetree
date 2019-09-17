@@ -139,7 +139,7 @@ export default class Blockchain implements IBlockchain {
     return this.cachedBlockchainTime;
   }
 
-  public get cachedVersion(): ServiceVersionModel {
+  public getCachedServiceVersion(): ServiceVersionModel {
     return this.cachedVersionModel;
   }
 
@@ -173,7 +173,9 @@ export default class Blockchain implements IBlockchain {
     try {
       const response = await this.fetch(this.versionUri);
 
-      const responseBodyString = (response.body.read() as Buffer).toString();
+      const responseBodyString = await ReadableStream.readAll(response.body);
+      console.info("Received version response from the blockchain service: ", responseBodyString);
+      
       const versionInfo = JSON.parse(responseBodyString);
 
       return versionInfo;

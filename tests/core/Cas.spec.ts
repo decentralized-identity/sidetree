@@ -1,6 +1,8 @@
 import Cas from '../../lib/core/Cas';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import ServiceInfo from '../../lib/common/ServiceInfo';
 
 describe('Cas', async () => {
   it('should return file hash of the content written.', async () => {
@@ -76,5 +78,31 @@ describe('Cas', async () => {
     expect(fetchSpy).toHaveBeenCalled();
     expect(readStreamSpy).toHaveBeenCalled();
     expect(fetchResult.code).toEqual(FetchResultCode.InvalidHash);
+  });
+
+  describe("initialize", async () => {
+    it('should get version by making a REST api call.', async () => {
+      const casClient = new Cas('unused');
+      const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
+
+      const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify(expectedServiceVersion)));
+
+      await casClient.initialize();
+
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
+      expect(casClient.getCachedServiceVersion()).toEqual(expectedServiceVersion);
+    });
+
+    it('should not block initialize if there is an exception during version REST call.', async () => {
+      const casClient = new Cas('unused');
+
+      const fetchSpy = spyOn(casClient as any, 'fetch').and.throwError("some error.");
+      await casClient.initialize();
+
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(casClient.getCachedServiceVersion()).toEqual(ServiceInfo.getEmptyServiceVersion());
+    });
   });
 });

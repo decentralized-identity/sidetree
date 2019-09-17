@@ -54,9 +54,8 @@ export default class Core {
     );
 
     this.serviceInfo = new ServiceInfo("core");
-    this.downloadManager.start();
   }
-
+  
   /**
    * The initialization method that must be called before consumption of this core object.
    * The method starts the Observer and Batch Writer.
@@ -73,11 +72,13 @@ export default class Core {
       this.downloadManager,
       this.operationStore,
       this.resolver
-    ); // `VersionManager` is last initialized component.
-
+      ); // `VersionManager` is last initialized component.
+      
     await this.observer.startPeriodicProcessing();
+    
     this.batchScheduler.startPeriodicBatchWriting();
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
+    this.downloadManager.start();
   }
 
   /**
@@ -110,8 +111,8 @@ export default class Core {
   public async handleGetVersionRequest(): Promise<ResponseModel> {
     var responses = [
       this.serviceInfo.getServiceVersion(),
-      await this.blockchain.cachedVersion,
-      await this.cas.cachedVersion 
+      await this.blockchain.getCachedServiceVersion(),
+      await this.cas.getCachedServiceVersion() 
     ];
 
     return {

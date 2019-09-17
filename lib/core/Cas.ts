@@ -96,7 +96,7 @@ export default class Cas implements ICas {
   /**
    * Gets the cached service version.
    */
-  public get cachedVersion(): ServiceVersionModel {    
+  public getCachedServiceVersion(): ServiceVersionModel {    
     return this.cachedVersionModel;
   }
 
@@ -108,7 +108,9 @@ export default class Cas implements ICas {
     try {
       const response = await this.fetch(this.versionUri);
 
-      const responseBodyString = (response.body.read() as Buffer).toString();
+      const responseBodyString = await ReadableStream.readAll(response.body);
+      console.info("Received version response from the CAS service: ", responseBodyString);
+
       const versionInfo = JSON.parse(responseBodyString);
 
       return versionInfo;

@@ -3,6 +3,8 @@ import CoreErrorCode from '../../lib/core/CoreErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import ServiceInfo from '../../lib/common/ServiceInfo';
 
 describe('Blockchain', async () => {
   describe('read()', async () => {
@@ -242,6 +244,36 @@ describe('Blockchain', async () => {
       }
 
       fail();
+    });
+  });
+
+  describe("initialize", async () => {
+    it('should get version by making a REST api call.', async () => {
+      const blockchainClient = new Blockchain('unused URI');
+      const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
+
+      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: "100" }));
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify(expectedServiceVersion)));
+
+      await blockchainClient.initialize();
+
+      expect(getTimeSpy).toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(readStreamSpy).toHaveBeenCalled();
+      expect(blockchainClient.getCachedServiceVersion()).toEqual(expectedServiceVersion);
+    });
+
+    it('should not block initialize if there is an exception during version REST call.', async () => {
+      const blockchainClient = new Blockchain('unused URI');
+
+      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: "100" }));
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.throwError("some error.");
+      await blockchainClient.initialize();
+
+      expect(getTimeSpy).toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalled();
+      expect(blockchainClient.getCachedServiceVersion()).toEqual(ServiceInfo.getEmptyServiceVersion());
     });
   });
 });
