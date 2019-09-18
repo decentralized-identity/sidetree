@@ -175,10 +175,8 @@ export default class Blockchain implements IBlockchain {
 
       const responseBodyString = await ReadableStream.readAll(response.body);
       console.info("Received version response from the blockchain service: ", responseBodyString);
-      
-      const versionInfo = JSON.parse(responseBodyString);
 
-      return versionInfo;
+      return JSON.parse(responseBodyString);
     } catch (e) {
       console.error("Ignoring the exception during blockchain service version retrieval: %s", JSON.stringify(e));
     }

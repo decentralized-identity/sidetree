@@ -111,10 +111,7 @@ export default class Cas implements ICas {
       const responseBodyString = await ReadableStream.readAll(response.body);
       console.info("Received version response from the CAS service: ", responseBodyString);
 
-      const versionInfo = JSON.parse(responseBodyString);
-
-      return versionInfo;
-
+      return JSON.parse(responseBodyString);
     } catch (e) {
       console.error("Ignoring the exception during CAS service version retrieval: %s", JSON.stringify(e));
     }
