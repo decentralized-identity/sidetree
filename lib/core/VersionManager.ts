@@ -9,6 +9,7 @@ import IRequestHandler from './interfaces/IRequestHandler';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ProtocolVersionMetadata from './models/ProtocolVersionMetadata';
 import Resolver from './Resolver';
+import IVersionManager from "./interfaces/IVersionManager";
 
 /**
  * Defines a protocol version and its starting blockchain time.
@@ -22,7 +23,7 @@ export interface ProtocolVersionModel {
 /**
  * The class that handles the loading of different versions of protocol codebase.
  */
-export default class VersionManager {
+export default class VersionManager implements IVersionManager {
   // Reverse sorted protocol versions. ie. latest version first.
   private protocolVersionsReverseSorted: ProtocolVersionModel[];
 

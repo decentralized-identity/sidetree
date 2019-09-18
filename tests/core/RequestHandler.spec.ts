@@ -23,6 +23,8 @@ import OperationProcessor from '../../lib/core/versions/latest/OperationProcesso
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import { Response } from '../../lib/common/Response';
+import IVersionManager from "../../lib/core/interfaces/IVersionManager";
+import MockVersionedProvider from "../mocks/MockVersionManager";
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -41,6 +43,7 @@ describe('RequestHandler', () => {
   let operationStore: IOperationStore;
   let resolver: Resolver;
   let requestHandler: RequestHandler;
+  let versionManager: IVersionManager;
 
   let publicKey: DidPublicKeyModel;
   let privateKey: any;
@@ -55,10 +58,15 @@ describe('RequestHandler', () => {
 
     cas = new MockCas();
     const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
+    const operationProcessor = new OperationProcessor(config.didMethodName);
+
+    versionManager = new MockVersionedProvider();
+    spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
+    spyOn(versionManager, 'getBatchWriter').and.returnValue(batchWriter);
 
     operationStore = new MockOperationStore();
-    resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
-    batchScheduler = new BatchScheduler((_blockchainTime) => batchWriter, blockchain, config.batchingIntervalInSeconds);
+    resolver = new Resolver(versionManager, operationStore);
+    batchScheduler = new BatchScheduler(versionManager, blockchain, config.batchingIntervalInSeconds);
     requestHandler = new RequestHandler(
       resolver,
       operationQueue,
