@@ -1,26 +1,11 @@
 import ServiceVersionModel from "../../lib/common/models/ServiceVersionModel";
 import Core from "../../lib/core/Core";
-import Config from "../../lib/core/models/Config";
-import { ProtocolVersionModel } from "../../lib/core/VersionManager";
 import { ResponseStatus } from "../../lib/common/Response";
 
 describe('Core', async () => {
 
-    function getMockConfig() : Config {
-        return {
-            batchingIntervalInSeconds: 1, 
-            blockchainServiceUri: 'https://blockchainuri', 
-            contentAddressableStoreServiceUri: 'https://casuri',
-            didMethodName: 'sidetree', 
-            maxConcurrentDownloads: 2, 
-            observingIntervalInSeconds: 5,
-            mongoDbConnectionString: 'db:connectionstring'
-        };
-    }
-
-    function getMockProtocolVersionModels() : ProtocolVersionModel[] {
-        return [ {startingBlockchainTime: 1000, version: '0.4.0'} ];
-    }
+    const testConfig = require('../json/bitcoin-config-test.json');
+    const testVersionConfig = require('../json/core-protocol-versioning-test.json');
 
     describe('handleGetVersionRequest()', async () => {
         it('should call all the dependent services', async () => {
@@ -31,7 +16,7 @@ describe('Core', async () => {
             const expectedBlockchainVersion: ServiceVersionModel = { name: 'b-service', version: 'a.b.c' };
             const expectedCasVersion: ServiceVersionModel = { name: 'c-service', version: '1.x.c' };
         
-            const core = new Core(getMockConfig(), getMockProtocolVersionModels());
+            const core = new Core(testConfig, testVersionConfig);
 
             const serviceInfoSpy = spyOn(core['serviceInfo'], 'getServiceVersion').and.returnValue(expectedCoreVersion);
             const blockchainSpy = spyOn(core['blockchain'], 'getCachedServiceVersion').and.returnValue(expectedBlockchainVersion);
