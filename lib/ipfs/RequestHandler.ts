@@ -1,9 +1,10 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
+import ServiceInfo from '../common/ServiceInfoProvider';
 import { FetchResultCode } from '../common/FetchResultCode';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
-import ServiceInfo from '../common/ServiceInfo';
+
 const multihashes = require('multihashes');
 
 /**
@@ -24,7 +25,7 @@ export default class RequestHandler {
    */
   public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
     this.ipfsStorage = IpfsStorage.create(repo);
-    this.serviceInfo = new ServiceInfo("ipfs");
+    this.serviceInfo = new ServiceInfo('ipfs');
   }
 
   /**
@@ -125,8 +126,8 @@ export default class RequestHandler {
   /**
    * Handles the get version request.
    */
-  public async handleGetVersionRequest(): Promise<ResponseModel> {
-    var body = JSON.stringify(this.serviceInfo.getServiceVersion());
+  public async handleGetVersionRequest (): Promise<ResponseModel> {
+    const body = JSON.stringify(this.serviceInfo.getServiceVersion());
 
     return {
       status : ResponseStatus.Succeeded,

@@ -3,9 +3,9 @@ import FetchResult from '../common/models/FetchResult';
 import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { FetchResultCode } from '../common/FetchResultCode';
+import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import ServiceInfo from '../common/ServiceInfo';
+import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
  * Class that communicates with the underlying CAS using REST API defined by the protocol document.
@@ -14,16 +14,19 @@ export default class Cas implements ICas {
 
   private fetch = nodeFetch;
 
-  private versionUri: string // e.g. https://127.0.0.1/version
+  private versionUri: string; // e.g. https://127.0.0.1/version
 
   private cachedVersionModel: ServiceVersionModel;
 
-  public constructor (public uri: string) { 
+  public constructor (public uri: string) {
     this.versionUri = `${uri}/version`;
     this.cachedVersionModel = ServiceInfo.getEmptyServiceVersion();
   }
 
-  public async initialize() {
+  /**
+   * Initialize the properties.
+   */
+  public async initialize () {
     this.cachedVersionModel = await this.tryGetServiceVersion();
   }
 
@@ -96,24 +99,24 @@ export default class Cas implements ICas {
   /**
    * Gets the cached service version.
    */
-  public getCachedServiceVersion(): ServiceVersionModel {    
+  public getCachedServiceVersion (): ServiceVersionModel {
     return this.cachedVersionModel;
   }
 
   /**
    * Gets the version information by making the REST API call.
    */
-  private async tryGetServiceVersion() : Promise<ServiceVersionModel> {
-    
+  private async tryGetServiceVersion (): Promise<ServiceVersionModel> {
+
     try {
       const response = await this.fetch(this.versionUri);
 
       const responseBodyString = await ReadableStream.readAll(response.body);
-      console.info("Received version response from the CAS service: ", responseBodyString);
+      console.info('Received version response from the CAS service: ', responseBodyString);
 
       return JSON.parse(responseBodyString);
     } catch (e) {
-      console.error("Ignoring the exception during CAS service version retrieval: %s", JSON.stringify(e));
+      console.error('Ignoring the exception during CAS service version retrieval: %s', JSON.stringify(e));
     }
 
     return ServiceInfo.getEmptyServiceVersion();

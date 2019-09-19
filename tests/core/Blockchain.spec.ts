@@ -3,8 +3,8 @@ import CoreErrorCode from '../../lib/core/CoreErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import ServiceInfo from '../../lib/common/ServiceInfoProvider';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import ServiceInfo from '../../lib/common/ServiceInfo';
 
 describe('Blockchain', async () => {
   describe('read()', async () => {
@@ -247,12 +247,12 @@ describe('Blockchain', async () => {
     });
   });
 
-  describe("initialize", async () => {
+  describe('initialize', async () => {
     it('should get version by making a REST api call.', async () => {
       const blockchainClient = new Blockchain('unused URI');
       const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
 
-      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: "100" }));
+      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
       const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
       const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify(expectedServiceVersion)));
 
@@ -267,8 +267,8 @@ describe('Blockchain', async () => {
     it('should not block initialize if there is an exception during version REST call.', async () => {
       const blockchainClient = new Blockchain('unused URI');
 
-      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: "100" }));
-      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.throwError("some error.");
+      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.throwError('some error.');
       await blockchainClient.initialize();
 
       expect(getTimeSpy).toHaveBeenCalled();

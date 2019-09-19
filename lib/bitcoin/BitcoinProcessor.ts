@@ -5,13 +5,13 @@ import ErrorCode from '../common/SharedErrorCode';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import TransactionModel from '../common/models/TransactionModel';
+import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 import { URL } from 'url';
-import ServiceInfo from '../common/ServiceInfo';
-import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
  * Object representing a blockchain time and hash
@@ -102,7 +102,7 @@ export default class BitcoinProcessor {
     this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
-    this.serviceInfo = new ServiceInfo("bitcoin");
+    this.serviceInfo = new ServiceInfo('bitcoin');
   }
 
   /**
@@ -293,10 +293,10 @@ export default class BitcoinProcessor {
     console.info(`Successfully submitted transaction ${transaction.id}`);
   }
 
-   /**
+  /**
    * Handles the get version operation.
    */
-  public async handleGetVersionRequest(): Promise<ServiceVersionModel> {
+  public async handleGetVersionRequest (): Promise<ServiceVersionModel> {
     return this.serviceInfo.getServiceVersion();
   }
 

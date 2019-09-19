@@ -8,9 +8,9 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import Resolver from './Resolver';
+import ServiceInfo from '../common/ServiceInfoProvider';
 import VersionManager, { ProtocolVersionModel } from './VersionManager';
 import { ResponseModel, ResponseStatus } from '../common/Response';
-import ServiceInfo from '../common/ServiceInfo';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -53,9 +53,9 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.serviceInfo = new ServiceInfo("core");
+    this.serviceInfo = new ServiceInfo('core');
   }
-  
+
   /**
    * The initialization method that must be called before consumption of this core object.
    * The method starts the Observer and Batch Writer.
@@ -73,9 +73,9 @@ export default class Core {
       this.operationStore,
       this.resolver
       ); // `VersionManager` is last initialized component.
-      
+
     await this.observer.startPeriodicProcessing();
-    
+
     this.batchScheduler.startPeriodicBatchWriting();
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
     this.downloadManager.start();
@@ -108,11 +108,11 @@ export default class Core {
    * Handles the get version request. It gets the versions from the dependent services
    * as well.
    */
-  public async handleGetVersionRequest(): Promise<ResponseModel> {
-    var responses = [
+  public async handleGetVersionRequest (): Promise<ResponseModel> {
+    const responses = [
       this.serviceInfo.getServiceVersion(),
-      await this.blockchain.getCachedServiceVersion(),
-      await this.cas.getCachedServiceVersion() 
+      this.blockchain.getCachedServiceVersion(),
+      this.cas.getCachedServiceVersion()
     ];
 
     return {

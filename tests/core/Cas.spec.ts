@@ -1,8 +1,8 @@
 import Cas from '../../lib/core/Cas';
 import ReadableStream from '../../lib/common/ReadableStream';
-import { FetchResultCode } from '../../lib/common/FetchResultCode';
+import ServiceInfo from '../../lib/common/ServiceInfoProvider';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import ServiceInfo from '../../lib/common/ServiceInfo';
+import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 describe('Cas', async () => {
   it('should return file hash of the content written.', async () => {
@@ -80,7 +80,7 @@ describe('Cas', async () => {
     expect(fetchResult.code).toEqual(FetchResultCode.InvalidHash);
   });
 
-  describe("initialize", async () => {
+  describe('initialize', async () => {
     it('should get version by making a REST api call.', async () => {
       const casClient = new Cas('unused');
       const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
@@ -98,7 +98,7 @@ describe('Cas', async () => {
     it('should not block initialize if there is an exception during version REST call.', async () => {
       const casClient = new Cas('unused');
 
-      const fetchSpy = spyOn(casClient as any, 'fetch').and.throwError("some error.");
+      const fetchSpy = spyOn(casClient as any, 'fetch').and.throwError('some error.');
       await casClient.initialize();
 
       expect(fetchSpy).toHaveBeenCalled();

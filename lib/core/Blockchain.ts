@@ -4,11 +4,11 @@ import CoreErrorCode from './CoreErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
+import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
 import TransactionModel from '../common/models/TransactionModel';
 import { SidetreeError } from './Error';
-import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import ServiceInfo from '../common/ServiceInfo';
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
@@ -27,9 +27,9 @@ export default class Blockchain implements IBlockchain {
   /** URI that handles transaction operations. */
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private timeUri: string; // e.g. https://127.0.0.1/time
-  
+
   /** Other URIs */
-  private versionUri: string // e.g. https://127.0.0.1/version
+  private versionUri: string; // e.g. https://127.0.0.1/version
 
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
@@ -139,7 +139,10 @@ export default class Blockchain implements IBlockchain {
     return this.cachedBlockchainTime;
   }
 
-  public getCachedServiceVersion(): ServiceVersionModel {
+  /**
+   * Gets the cached version of the bitcoin service.
+   */
+  public getCachedServiceVersion (): ServiceVersionModel {
     return this.cachedVersionModel;
   }
 
@@ -168,17 +171,17 @@ export default class Blockchain implements IBlockchain {
   /**
    * Gets the version information by making the REST API call.
    */
-  private async tryGetServiceVersion() : Promise<ServiceVersionModel> {
+  private async tryGetServiceVersion (): Promise<ServiceVersionModel> {
 
     try {
       const response = await this.fetch(this.versionUri);
 
       const responseBodyString = await ReadableStream.readAll(response.body);
-      console.info("Received version response from the blockchain service: ", responseBodyString);
+      console.info('Received version response from the blockchain service: ', responseBodyString);
 
       return JSON.parse(responseBodyString);
     } catch (e) {
-      console.error("Ignoring the exception during blockchain service version retrieval: %s", JSON.stringify(e));
+      console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e));
     }
 
     return ServiceInfo.getEmptyServiceVersion();
