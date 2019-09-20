@@ -7,9 +7,9 @@ import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
+import IVersionManager from './interfaces/IVersionManager';
 import ProtocolVersionMetadata from './models/ProtocolVersionMetadata';
 import Resolver from './Resolver';
-import IVersionManager from "./interfaces/IVersionManager";
 
 /**
  * Defines a protocol version and its starting blockchain time.

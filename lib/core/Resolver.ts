@@ -1,5 +1,5 @@
 import IOperationStore from './interfaces/IOperationStore';
-import IVersionManager from "./interfaces/IVersionManager";
+import IVersionManager from './interfaces/IVersionManager';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore
