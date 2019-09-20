@@ -7,8 +7,10 @@ import ServiceVersionModel from '../common/models/ServiceVersionModel';
  * Encapsulates the functionality of getting the version information from the dependendant services.
  */
 export default class ServiceVersionFetcher {
+  private static readonly fetchWaitTimeInMilliseconds = 600000; // 10 minutes
   private fetch = nodeFetch;
   private cachedVersion: ServiceVersionModel;
+  private lastFetchTime = 0;
 
   /**
    * Creates a new instance of this object.
@@ -24,7 +26,9 @@ export default class ServiceVersionFetcher {
    * Returns `undefined` service version if unable to fetch it.
    */
   public async getVersion (): Promise<ServiceVersionModel> {
-    if (this.cachedVersion.version === 'undefined') {
+    if (this.cachedVersion.version === 'undefined' &&
+        Date.now() - this.lastFetchTime > ServiceVersionFetcher.fetchWaitTimeInMilliseconds
+    ) {
       this.cachedVersion = await this.tryGetServiceVersion();
     }
 
@@ -44,6 +48,7 @@ export default class ServiceVersionFetcher {
       const response = await this.fetch(versionUri);
       const responseBodyString = await ReadableStream.readAll(response.body);
 
+      this.lastFetchTime = Date.now();
       console.info('Received version response from the blockchain service: ', responseBodyString);
 
       return JSON.parse(responseBodyString);
