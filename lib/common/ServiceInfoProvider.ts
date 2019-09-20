@@ -11,6 +11,7 @@ export default class ServiceInfoProvider {
   constructor (serviceName: string) {
     this.serviceName = serviceName;
   }
+
   /**
    * Gets the service version from the package.json file.
    */
@@ -20,21 +21,14 @@ export default class ServiceInfoProvider {
       version: ServiceInfoProvider.packageJson.version
     };
   }
+
   /**
    * Gets an 'empty' service version object.
    */
-  public static getEmptyServiceVersion (): ServiceVersionModel {
+  public static get emptyServiceVersion (): ServiceVersionModel {
     return {
       name: 'undefined',
       version: 'undefined'
     };
-  }
-  /**
-   * Returns true if the parameter service version is an 'empty' one; false otherwise.
-   * @param serviceVersionModel The service version object to check.
-   */
-  public static isEmptyServiceVersionModel (serviceVersionModel: ServiceVersionModel): boolean {
-    return serviceVersionModel.name === 'undefined' &&
-      serviceVersionModel.version === 'undefined';
   }
 }

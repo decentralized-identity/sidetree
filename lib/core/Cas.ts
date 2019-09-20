@@ -3,7 +3,7 @@ import FetchResult from '../common/models/FetchResult';
 import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import { FetchResultCode } from '../common/FetchResultCode';
 
@@ -13,21 +13,17 @@ import { FetchResultCode } from '../common/FetchResultCode';
 export default class Cas implements ICas {
 
   private fetch = nodeFetch;
-
-  private versionUri: string; // e.g. https://127.0.0.1/version
-
-  private cachedVersionModel: ServiceVersionModel;
+  private serviceVersionFetcher: ServiceVersionFetcher;
 
   public constructor (public uri: string) {
-    this.versionUri = `${uri}/version`;
-    this.cachedVersionModel = ServiceInfo.getEmptyServiceVersion();
+    this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
   }
 
   /**
    * Initialize the properties.
    */
   public async initialize () {
-    this.cachedVersionModel = await this.tryGetServiceVersion();
+    await this.serviceVersionFetcher.initialize();
   }
 
   public async write (content: Buffer): Promise<string> {
@@ -100,25 +96,6 @@ export default class Cas implements ICas {
    * Gets the cached service version.
    */
   public getCachedServiceVersion (): ServiceVersionModel {
-    return this.cachedVersionModel;
-  }
-
-  /**
-   * Gets the version information by making the REST API call.
-   */
-  private async tryGetServiceVersion (): Promise<ServiceVersionModel> {
-
-    try {
-      const response = await this.fetch(this.versionUri);
-
-      const responseBodyString = await ReadableStream.readAll(response.body);
-      console.info('Received version response from the CAS service: ', responseBodyString);
-
-      return JSON.parse(responseBodyString);
-    } catch (e) {
-      console.error('Ignoring the exception during CAS service version retrieval: %s', JSON.stringify(e));
-    }
-
-    return ServiceInfo.getEmptyServiceVersion();
+    return this.serviceVersionFetcher.getCachedVersion();
   }
 }

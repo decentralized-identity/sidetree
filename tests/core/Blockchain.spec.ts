@@ -3,7 +3,6 @@ import CoreErrorCode from '../../lib/core/CoreErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import ServiceInfo from '../../lib/common/ServiceInfoProvider';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 
 describe('Blockchain', async () => {
@@ -248,32 +247,30 @@ describe('Blockchain', async () => {
   });
 
   describe('initialize', async () => {
-    it('should get version by making a REST api call.', async () => {
+    it('should initialize the member variables.', async () => {
       const blockchainClient = new Blockchain('unused URI');
+
+      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
+      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'initialize').and.returnValue(Promise.resolve());
+
+      await blockchainClient.initialize();
+
+      expect(getTimeSpy).toHaveBeenCalled();
+      expect(serviceVersionSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getCachedVersion', async () => {
+    it('should get the version from the service version fetcher', async () => {
+      const blockchainClient = new Blockchain('unused');
       const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
 
-      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
-      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify(expectedServiceVersion)));
+      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'getCachedVersion').and.returnValue(expectedServiceVersion);
 
-      await blockchainClient.initialize();
+      const fetchedServiceVersion = blockchainClient.getCachedServiceVersion();
 
-      expect(getTimeSpy).toHaveBeenCalled();
-      expect(fetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
-      expect(blockchainClient.getCachedServiceVersion()).toEqual(expectedServiceVersion);
-    });
-
-    it('should not block initialize if there is an exception during version REST call.', async () => {
-      const blockchainClient = new Blockchain('unused URI');
-
-      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
-      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.throwError('some error.');
-      await blockchainClient.initialize();
-
-      expect(getTimeSpy).toHaveBeenCalled();
-      expect(fetchSpy).toHaveBeenCalled();
-      expect(blockchainClient.getCachedServiceVersion()).toEqual(ServiceInfo.getEmptyServiceVersion());
+      expect(serviceVersionSpy).toHaveBeenCalled();
+      expect(fetchedServiceVersion).toEqual(expectedServiceVersion);
     });
   });
 });

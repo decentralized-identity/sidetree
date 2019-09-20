@@ -4,7 +4,7 @@ import CoreErrorCode from './CoreErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
 import TransactionModel from '../common/models/TransactionModel';
@@ -20,24 +20,19 @@ export default class Blockchain implements IBlockchain {
   /** Used for caching the blockchain time to avoid excessive time fetching over network. */
   private cachedBlockchainTime: BlockchainTimeModel;
 
-  private cachedVersionModel: ServiceVersionModel;
-
+  private serviceVersionFetcher: ServiceVersionFetcher;
   private fetch = nodeFetch;
 
   /** URI that handles transaction operations. */
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private timeUri: string; // e.g. https://127.0.0.1/time
 
-  /** Other URIs */
-  private versionUri: string; // e.g. https://127.0.0.1/version
-
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
-    this.versionUri = `${uri}/version`;
+    this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
 
     this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
-    this.cachedVersionModel = ServiceInfo.getEmptyServiceVersion();
   }
 
   /**
@@ -45,7 +40,7 @@ export default class Blockchain implements IBlockchain {
    */
   public async initialize () {
     await this.getLatestTime();
-    this.cachedVersionModel = await this.tryGetServiceVersion();
+    await this.serviceVersionFetcher.initialize();
   }
 
   /**
@@ -143,7 +138,7 @@ export default class Blockchain implements IBlockchain {
    * Gets the cached version of the bitcoin service.
    */
   public getCachedServiceVersion (): ServiceVersionModel {
-    return this.cachedVersionModel;
+    return this.serviceVersionFetcher.getCachedVersion();
   }
 
   /**
@@ -166,24 +161,5 @@ export default class Blockchain implements IBlockchain {
 
     console.info(`Refreshed blockchain time: ${responseBodyString}`);
     return responseBody;
-  }
-
-  /**
-   * Gets the version information by making the REST API call.
-   */
-  private async tryGetServiceVersion (): Promise<ServiceVersionModel> {
-
-    try {
-      const response = await this.fetch(this.versionUri);
-
-      const responseBodyString = await ReadableStream.readAll(response.body);
-      console.info('Received version response from the blockchain service: ', responseBodyString);
-
-      return JSON.parse(responseBodyString);
-    } catch (e) {
-      console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e));
-    }
-
-    return ServiceInfo.getEmptyServiceVersion();
   }
 }

@@ -1,13 +1,13 @@
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { PrivateKey, Transaction } from 'bitcore-lib';
 import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
-import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -1228,20 +1228,20 @@ describe('BitcoinProcessor', () => {
       done();
     }, 500);
   });
-  
+
   describe('handleGetVersionRequest', () => {
-    
+
     it('should return the correct response body for the version request', async () => {
       const expectedVersion: ServiceVersionModel = {
         name: 'test-service',
         version: 'x.y.z'
       };
-      
+
       // Make the handle service version call return the test value
       spyOn(bitcoinProcessor['serviceInfo'], 'getServiceVersion').and.returnValue(expectedVersion);
-      
-      const fetchedVersion = await bitcoinProcessor.handleGetVersionRequest();
-      
+
+      const fetchedVersion = await bitcoinProcessor.getServiceVersion();
+
       expect(fetchedVersion.name).toEqual(expectedVersion.name);
       expect(fetchedVersion.version).toEqual(expectedVersion.version);
     });

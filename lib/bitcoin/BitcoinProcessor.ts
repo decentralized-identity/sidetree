@@ -296,7 +296,7 @@ export default class BitcoinProcessor {
   /**
    * Handles the get version operation.
    */
-  public async handleGetVersionRequest (): Promise<ServiceVersionModel> {
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
     return this.serviceInfo.getServiceVersion();
   }
 

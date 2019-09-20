@@ -11,11 +11,4 @@ describe('ServiceInfoProvider', () => {
     expect(serviceVersion.name).toEqual('test-service');
     expect(serviceVersion.version).toEqual(packageJson.version);
   });
-
-  it('should validate the empty service version.', async () => {
-
-    const emptyServiceVersion = ServiceInfo.getEmptyServiceVersion();
-
-    expect(ServiceInfo.isEmptyServiceVersionModel(emptyServiceVersion)).toEqual(true);
-  });
 });
