@@ -1,5 +1,4 @@
 import ReadableStream from '../../lib/common/ReadableStream';
-import ServiceInfoProvider from '../../lib/common/ServiceInfoProvider';
 import ServiceVersionFetcher from '../../lib/core/ServiceVersionFetcher';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 
@@ -27,7 +26,8 @@ describe('ServiceVersionFetcher', async () => {
       const version = await serviceVersionFetcher.getVersion();
 
       expect(fetchSpy).toHaveBeenCalled();
-      expect(version).toEqual(ServiceInfoProvider.emptyServiceVersion);
+      expect(version.name).toEqual('undefined');
+      expect(version.version).toEqual('undefined');
     });
   });
 });

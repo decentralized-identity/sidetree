@@ -21,14 +21,4 @@ export default class ServiceInfoProvider {
       version: ServiceInfoProvider.packageJson.version
     };
   }
-
-  /**
-   * Gets an 'empty' service version object.
-   */
-  public static get emptyServiceVersion (): ServiceVersionModel {
-    return {
-      name: 'undefined',
-      version: 'undefined'
-    };
-  }
 }

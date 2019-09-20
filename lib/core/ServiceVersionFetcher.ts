@@ -1,6 +1,5 @@
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
@@ -18,15 +17,15 @@ export default class ServiceVersionFetcher {
    * ServiceVersionModel json object.
    */
   public constructor (private uri: string) {
-    this.cachedVersion = ServiceInfoProvider.emptyServiceVersion;
+    this.cachedVersion = this.emptyServiceVersion;
   }
 
   /**
    * Gets the service version.
-   * Returns `undefined` service version if unable to fetch it.
+   * Returns an 'empty' service version if unable to fetch it.
    */
   public async getVersion (): Promise<ServiceVersionModel> {
-    if (this.cachedVersion.version === 'undefined' &&
+    if (this.isEmptyServiceVersion(this.cachedVersion) &&
         Date.now() - this.lastFetchTime > ServiceVersionFetcher.fetchWaitTimeInMilliseconds
     ) {
       this.cachedVersion = await this.tryGetServiceVersion();
@@ -56,6 +55,18 @@ export default class ServiceVersionFetcher {
       console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e, Object.getOwnPropertyNames(e)));
     }
 
-    return ServiceInfoProvider.emptyServiceVersion;
+    return this.emptyServiceVersion;
+  }
+
+  private get emptyServiceVersion (): ServiceVersionModel {
+    return {
+      name: 'undefined',
+      version: 'undefined'
+    };
+  }
+
+  private isEmptyServiceVersion (serviceVersion: ServiceVersionModel): boolean {
+    return serviceVersion.name === 'undefined' &&
+           serviceVersion.version === 'undefined';
   }
 }
