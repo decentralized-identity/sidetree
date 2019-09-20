@@ -20,16 +20,14 @@ export default class ServiceVersionFetcher {
   }
 
   /**
-   * Initializes the properites of this object.
+   * Gets the service version.
+   * Returns `undefined` service version if unable to fetch it.
    */
-  public async initialize () {
-    this.cachedVersion = await this.tryGetServiceVersion();
-  }
+  public async getVersion (): Promise<ServiceVersionModel> {
+    if (this.cachedVersion.version === 'undefined') {
+      this.cachedVersion = await this.tryGetServiceVersion();
+    }
 
-  /**
-   * Gets the cached version object if the fetch was successful; an 'empty' service version otherwise.
-   */
-  public getCachedVersion (): ServiceVersionModel {
     return this.cachedVersion;
   }
 

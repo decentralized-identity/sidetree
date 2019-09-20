@@ -79,26 +79,14 @@ describe('Cas', async () => {
     expect(fetchResult.code).toEqual(FetchResultCode.InvalidHash);
   });
 
-  describe('initialize', async () => {
-    it('should initialize the member veriables.', async () => {
-      const casClient = new Cas('unused');
-
-      const serviceVersionSpy = spyOn(casClient['serviceVersionFetcher'], 'initialize').and.returnValue(Promise.resolve());
-
-      await casClient.initialize();
-
-      expect(serviceVersionSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('getCachedVersion', async () => {
+  describe('getServiceVersion', async () => {
     it('should get the version from the service version fetcher', async () => {
       const casClient = new Cas('unused');
       const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
 
-      const serviceVersionSpy = spyOn(casClient['serviceVersionFetcher'], 'getCachedVersion').and.returnValue(expectedServiceVersion);
+      const serviceVersionSpy = spyOn(casClient['serviceVersionFetcher'], 'getVersion').and.returnValue(Promise.resolve(expectedServiceVersion));
 
-      const fetchedServiceVersion = casClient.getCachedServiceVersion();
+      const fetchedServiceVersion = await casClient.getServiceVersion();
 
       expect(serviceVersionSpy).toHaveBeenCalled();
       expect(fetchedServiceVersion).toEqual(expectedServiceVersion);

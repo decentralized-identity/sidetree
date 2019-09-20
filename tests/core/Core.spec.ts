@@ -19,8 +19,8 @@ describe('Core', async () => {
       const core = new Core(testConfig, testVersionConfig);
 
       const serviceInfoSpy = spyOn(core['serviceInfo'], 'getServiceVersion').and.returnValue(expectedCoreVersion);
-      const blockchainSpy = spyOn(core['blockchain'], 'getCachedServiceVersion').and.returnValue(expectedBlockchainVersion);
-      const casSpy = spyOn(core['cas'], 'getCachedServiceVersion').and.returnValue(expectedCasVersion);
+      const blockchainSpy = spyOn(core['blockchain'], 'getServiceVersion').and.returnValue(Promise.resolve(expectedBlockchainVersion));
+      const casSpy = spyOn(core['cas'], 'getServiceVersion').and.returnValue(Promise.resolve(expectedCasVersion));
 
       const fetchedResponse = await core.handleGetVersionRequest();
 

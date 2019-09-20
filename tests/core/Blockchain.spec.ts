@@ -251,12 +251,10 @@ describe('Blockchain', async () => {
       const blockchainClient = new Blockchain('unused URI');
 
       const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
-      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'initialize').and.returnValue(Promise.resolve());
 
       await blockchainClient.initialize();
 
       expect(getTimeSpy).toHaveBeenCalled();
-      expect(serviceVersionSpy).toHaveBeenCalled();
     });
   });
 
@@ -265,9 +263,9 @@ describe('Blockchain', async () => {
       const blockchainClient = new Blockchain('unused');
       const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
 
-      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'getCachedVersion').and.returnValue(expectedServiceVersion);
+      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'getVersion').and.returnValue(Promise.resolve(expectedServiceVersion));
 
-      const fetchedServiceVersion = blockchainClient.getCachedServiceVersion();
+      const fetchedServiceVersion = await blockchainClient.getServiceVersion();
 
       expect(serviceVersionSpy).toHaveBeenCalled();
       expect(fetchedServiceVersion).toEqual(expectedServiceVersion);
