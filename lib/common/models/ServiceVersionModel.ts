@@ -2,7 +2,7 @@
  * Defines a Service version object.
  */
 export default interface ServiceVersionModel {
-    name: string;
-    version : string;
+  name: string;
+  version: string;
 }
-  
+

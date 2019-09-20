@@ -19,13 +19,6 @@ export default class Cas implements ICas {
     this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
   }
 
-  /**
-   * Initialize the properties.
-   */
-  public async initialize () {
-    await this.serviceVersionFetcher.initialize();
-  }
-
   public async write (content: Buffer): Promise<string> {
     const requestParameters = {
       method: 'post',
@@ -93,9 +86,9 @@ export default class Cas implements ICas {
   }
 
   /**
-   * Gets the cached service version.
+   * Gets the service version.
    */
-  public getCachedServiceVersion (): ServiceVersionModel {
-    return this.serviceVersionFetcher.getCachedVersion();
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
+    return this.serviceVersionFetcher.getVersion();
   }
 }

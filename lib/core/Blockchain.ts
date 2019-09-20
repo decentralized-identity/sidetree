@@ -40,7 +40,6 @@ export default class Blockchain implements IBlockchain {
    */
   public async initialize () {
     await this.getLatestTime();
-    await this.serviceVersionFetcher.initialize();
   }
 
   /**
@@ -135,10 +134,10 @@ export default class Blockchain implements IBlockchain {
   }
 
   /**
-   * Gets the cached version of the bitcoin service.
+   * Gets the version of the bitcoin service.
    */
-  public getCachedServiceVersion (): ServiceVersionModel {
-    return this.serviceVersionFetcher.getCachedVersion();
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
+    return this.serviceVersionFetcher.getVersion();
   }
 
   /**
