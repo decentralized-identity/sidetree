@@ -17,9 +17,9 @@ import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
-import Resolver from '../../lib/core/Resolver';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
+import Resolver from '../../lib/core/Resolver';
 import { Response } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {

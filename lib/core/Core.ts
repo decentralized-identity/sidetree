@@ -8,8 +8,9 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import Resolver from './Resolver';
+import ServiceInfo from '../common/ServiceInfoProvider';
 import VersionManager, { ProtocolVersionModel } from './VersionManager';
-import { ResponseModel } from '../common/Response';
+import { ResponseModel, ResponseStatus } from '../common/Response';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -25,6 +26,7 @@ export default class Core {
   private observer: Observer;
   private batchScheduler: BatchScheduler;
   private resolver: Resolver;
+  private serviceInfo: ServiceInfo;
 
   /**
    * Core constructor.
@@ -51,7 +53,7 @@ export default class Core {
       config.observingIntervalInSeconds
     );
 
-    this.downloadManager.start();
+    this.serviceInfo = new ServiceInfo('core');
   }
 
   /**
@@ -69,11 +71,13 @@ export default class Core {
       this.downloadManager,
       this.operationStore,
       this.resolver
-    ); // `VersionManager` is last initialized component.
+      ); // `VersionManager` is last initialized component.
 
     await this.observer.startPeriodicProcessing();
+
     this.batchScheduler.startPeriodicBatchWriting();
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
+    this.downloadManager.start();
   }
 
   /**
@@ -97,5 +101,22 @@ export default class Core {
     const requestHandler = this.versionManager.getRequestHandler(currentTime.time);
     const response = requestHandler.handleResolveRequest(didOrDidDocument);
     return response;
+  }
+
+  /**
+   * Handles the get version request. It gets the versions from the dependent services
+   * as well.
+   */
+  public async handleGetVersionRequest (): Promise<ResponseModel> {
+    const responses = [
+      this.serviceInfo.getServiceVersion(),
+      await this.blockchain.getServiceVersion(),
+      await this.cas.getServiceVersion()
+    ];
+
+    return {
+      status :  ResponseStatus.Succeeded,
+      body : JSON.stringify(responses)
+    };
   }
 }

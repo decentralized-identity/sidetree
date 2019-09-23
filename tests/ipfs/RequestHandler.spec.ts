@@ -1,4 +1,5 @@
 import RequestHandler from '../../lib/ipfs/RequestHandler';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { Response, ResponseStatus } from '../../lib/common/Response';
 
@@ -49,5 +50,24 @@ describe('RequestHandler', () => {
     const fetchedResponse = await requestHandler.handleWriteRequest(mockSidetreeContent);
 
     expect(expectedResponse).toEqual(fetchedResponse);
+  });
+
+  it('should return the correct response body for the version request', async () => {
+    const expectedVersion: ServiceVersionModel = {
+      name: 'test-service',
+      version: 'x.y.z'
+    };
+
+    const expectedResponse = {
+      status: ResponseStatus.Succeeded,
+      body: JSON.stringify(expectedVersion)
+    };
+
+    // Make the handle service version call return the test value
+    spyOn(requestHandler['serviceInfo'], 'getServiceVersion').and.returnValue(expectedVersion);
+
+    const fetchedResponse = await requestHandler.handleGetVersionRequest();
+
+    expect(fetchedResponse).toEqual(expectedResponse);
   });
 });

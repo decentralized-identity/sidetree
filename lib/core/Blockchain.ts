@@ -4,6 +4,8 @@ import CoreErrorCode from './CoreErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
+import ServiceVersionFetcher from './ServiceVersionFetcher';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
 import TransactionModel from '../common/models/TransactionModel';
 import { SidetreeError } from './Error';
@@ -18,6 +20,7 @@ export default class Blockchain implements IBlockchain {
   /** Used for caching the blockchain time to avoid excessive time fetching over network. */
   private cachedBlockchainTime: BlockchainTimeModel;
 
+  private serviceVersionFetcher: ServiceVersionFetcher;
   private fetch = nodeFetch;
 
   /** URI that handles transaction operations. */
@@ -27,6 +30,7 @@ export default class Blockchain implements IBlockchain {
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
+    this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
 
     this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
   }
@@ -127,6 +131,13 @@ export default class Blockchain implements IBlockchain {
 
   public get approximateTime (): BlockchainTimeModel {
     return this.cachedBlockchainTime;
+  }
+
+  /**
+   * Gets the version of the bitcoin service.
+   */
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
+    return this.serviceVersionFetcher.getVersion();
   }
 
   /**

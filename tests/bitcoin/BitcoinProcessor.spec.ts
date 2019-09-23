@@ -1,6 +1,7 @@
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
@@ -1226,5 +1227,23 @@ describe('BitcoinProcessor', () => {
       expect(approved).toBeTruthy();
       done();
     }, 500);
+  });
+
+  describe('getServiceVersion', () => {
+
+    it('should return the correct response body for the version request', async () => {
+      const expectedVersion: ServiceVersionModel = {
+        name: 'test-service',
+        version: 'x.y.z'
+      };
+
+      // Make the handle service version call return the test value
+      spyOn(bitcoinProcessor['serviceInfo'], 'getServiceVersion').and.returnValue(expectedVersion);
+
+      const fetchedVersion = await bitcoinProcessor.getServiceVersion();
+
+      expect(fetchedVersion.name).toEqual(expectedVersion.name);
+      expect(fetchedVersion.version).toEqual(expectedVersion.version);
+    });
   });
 });

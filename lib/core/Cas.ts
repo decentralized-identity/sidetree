@@ -3,6 +3,8 @@ import FetchResult from '../common/models/FetchResult';
 import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
+import ServiceVersionFetcher from './ServiceVersionFetcher';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
@@ -11,8 +13,11 @@ import { FetchResultCode } from '../common/FetchResultCode';
 export default class Cas implements ICas {
 
   private fetch = nodeFetch;
+  private serviceVersionFetcher: ServiceVersionFetcher;
 
-  public constructor (public uri: string) { }
+  public constructor (public uri: string) {
+    this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
+  }
 
   public async write (content: Buffer): Promise<string> {
     const requestParameters = {
@@ -78,5 +83,12 @@ export default class Cas implements ICas {
       // Else throw
       throw error;
     }
+  }
+
+  /**
+   * Gets the service version.
+   */
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
+    return this.serviceVersionFetcher.getVersion();
   }
 }

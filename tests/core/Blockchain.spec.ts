@@ -1,6 +1,7 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/CoreErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
+import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 
@@ -242,6 +243,32 @@ describe('Blockchain', async () => {
       }
 
       fail();
+    });
+  });
+
+  describe('initialize', async () => {
+    it('should initialize the member variables.', async () => {
+      const blockchainClient = new Blockchain('unused URI');
+
+      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
+
+      await blockchainClient.initialize();
+
+      expect(getTimeSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getCachedVersion', async () => {
+    it('should get the version from the service version fetcher', async () => {
+      const blockchainClient = new Blockchain('unused');
+      const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
+
+      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'getVersion').and.returnValue(Promise.resolve(expectedServiceVersion));
+
+      const fetchedServiceVersion = await blockchainClient.getServiceVersion();
+
+      expect(serviceVersionSpy).toHaveBeenCalled();
+      expect(fetchedServiceVersion).toEqual(expectedServiceVersion);
     });
   });
 });

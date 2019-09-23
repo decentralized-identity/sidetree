@@ -1,8 +1,10 @@
 import base64url from 'base64url';
 import IpfsStorage from './IpfsStorage';
+import ServiceInfo from '../common/ServiceInfoProvider';
 import { FetchResultCode } from '../common/FetchResultCode';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
+
 const multihashes = require('multihashes');
 
 /**
@@ -14,6 +16,8 @@ export default class RequestHandler {
    */
   public ipfsStorage: IpfsStorage;
 
+  private serviceInfo: ServiceInfo;
+
   /**
    * Constructs the Sidetree IPFS request handler.
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
@@ -21,6 +25,7 @@ export default class RequestHandler {
    */
   public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
     this.ipfsStorage = IpfsStorage.create(repo);
+    this.serviceInfo = new ServiceInfo('ipfs');
   }
 
   /**
@@ -116,5 +121,17 @@ export default class RequestHandler {
 
     console.error(`Wrote content '${base64urlEncodedMultihash}'.`);
     return response;
+  }
+
+  /**
+   * Handles the get version request.
+   */
+  public async handleGetVersionRequest (): Promise<ResponseModel> {
+    const body = JSON.stringify(this.serviceInfo.getServiceVersion());
+
+    return {
+      status : ResponseStatus.Succeeded,
+      body : body
+    };
   }
 }

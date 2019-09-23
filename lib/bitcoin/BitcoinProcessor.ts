@@ -4,6 +4,8 @@ import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ErrorCode from '../common/SharedErrorCode';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
+import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -78,6 +80,8 @@ export default class BitcoinProcessor {
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
 
+  private serviceInfo: ServiceInfo;
+
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
     if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
@@ -98,6 +102,7 @@ export default class BitcoinProcessor {
     this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
+    this.serviceInfo = new ServiceInfo('bitcoin');
   }
 
   /**
@@ -286,6 +291,13 @@ export default class BitcoinProcessor {
       throw error;
     }
     console.info(`Successfully submitted transaction ${transaction.id}`);
+  }
+
+  /**
+   * Handles the get version operation.
+   */
+  public async getServiceVersion (): Promise<ServiceVersionModel> {
+    return this.serviceInfo.getServiceVersion();
   }
 
   /**
