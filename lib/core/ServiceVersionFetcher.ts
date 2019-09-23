@@ -9,7 +9,7 @@ export default class ServiceVersionFetcher {
   private static readonly fetchWaitTimeInMilliseconds = 600000; // 10 minutes
   private fetch = nodeFetch;
   private cachedVersion: ServiceVersionModel;
-  private lastFetchTime = 0;
+  private lastTryFetchTime = 0;
 
   /**
    * Creates a new instance of this object.
@@ -17,7 +17,7 @@ export default class ServiceVersionFetcher {
    * ServiceVersionModel json object.
    */
   public constructor (private uri: string) {
-    this.cachedVersion = this.emptyServiceVersion;
+    this.cachedVersion = ServiceVersionFetcher.emptyServiceVersion;
   }
 
   /**
@@ -25,9 +25,9 @@ export default class ServiceVersionFetcher {
    * Returns an 'empty' service version if unable to fetch it.
    */
   public async getVersion (): Promise<ServiceVersionModel> {
-    if (this.isEmptyServiceVersion(this.cachedVersion) &&
-        Date.now() - this.lastFetchTime > ServiceVersionFetcher.fetchWaitTimeInMilliseconds
-    ) {
+
+    // If the last fetch was more than our threshold, try and refresh the version again
+    if (Date.now() - this.lastTryFetchTime > ServiceVersionFetcher.fetchWaitTimeInMilliseconds) {
       this.cachedVersion = await this.tryGetServiceVersion();
     }
 
@@ -41,13 +41,14 @@ export default class ServiceVersionFetcher {
   private async tryGetServiceVersion (): Promise<ServiceVersionModel> {
 
     try {
+      this.lastTryFetchTime = Date.now();
+
       const versionUri = `${this.uri}/version`;
       console.info('Trying to get the version info from the blockchain service. Url: ', versionUri);
 
       const response = await this.fetch(versionUri);
       const responseBodyString = await ReadableStream.readAll(response.body);
 
-      this.lastFetchTime = Date.now();
       console.info('Received version response from the blockchain service: ', responseBodyString);
 
       return JSON.parse(responseBodyString);
@@ -55,18 +56,13 @@ export default class ServiceVersionFetcher {
       console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e, Object.getOwnPropertyNames(e)));
     }
 
-    return this.emptyServiceVersion;
+    return ServiceVersionFetcher.emptyServiceVersion;
   }
 
-  private get emptyServiceVersion (): ServiceVersionModel {
+  private static get emptyServiceVersion (): ServiceVersionModel {
     return {
       name: 'undefined',
       version: 'undefined'
     };
-  }
-
-  private isEmptyServiceVersion (serviceVersion: ServiceVersionModel): boolean {
-    return serviceVersion.name === 'undefined' &&
-           serviceVersion.version === 'undefined';
   }
 }
