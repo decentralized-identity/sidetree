@@ -1229,7 +1229,7 @@ describe('BitcoinProcessor', () => {
     }, 500);
   });
 
-  describe('handleGetVersionRequest', () => {
+  describe('getServiceVersion', () => {
 
     it('should return the correct response body for the version request', async () => {
       const expectedVersion: ServiceVersionModel = {
