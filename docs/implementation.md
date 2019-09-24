@@ -454,6 +454,42 @@ HTTP/1.1 400 Bad Request
 ```
 
 
+### Fetch the current service version
+Fetches the current version of the service. The service implementation defines the versioning scheme and its interpretation.
+
+Returns the service _name_ and _version_ of the blockchain service.
+
+#### Request path
+```
+GET /version
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /version
+```
+
+#### Response body schema
+```json
+{
+  "name": "A string representing the name of the service",
+  "version": "A string representing the version of currently running service."
+}
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "name": "bitcoin",
+  "version": "1.0.0"
+}
+```
+
 
 ## CAS REST API
 The CAS (content addressable storage) REST API interface aims to abstract the underlying Sidetree storage away from the main protocol logic. This allows the CAS to be updated or even replaced if needed without affecting the core protocol logic. Conversely, the interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same CAS.
@@ -561,5 +597,41 @@ POST /
 ```json
 {
   "hash": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
+}
+```
+
+### Fetch the current service version
+Fetches the current version of the service. The service implementation defines the versioning scheme and its interpretation.
+
+Returns the service _name_ and _version_ of the CAS service.
+
+#### Request path
+```
+GET /version
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /version
+```
+
+#### Response body schema
+```json
+{
+  "name": "A string representing the name of the service",
+  "version": "A string representing the version of currently running service."
+}
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "name": "ipfs",
+  "version": "1.0.0"
 }
 ```
