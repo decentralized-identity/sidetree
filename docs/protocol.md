@@ -600,6 +600,57 @@ None.
 
 > TODO: API to be added which will impact delete API also.
 
+### Fetch the current service versions (optional).
+Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.
+
+Returns the service _names_ and _versions_ of the core and the dependent blockchain and CAS services.
+
+> NOTE: This API does **NOT** return the protocol version. This just represents the version of the current service(s) itself.
+
+#### Request path
+```
+GET /version
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /version
+```
+
+#### Response body schema
+```json
+[
+  {
+    "name": "A string representing the name of the service",
+    "version": "A string representing the version of currently running service."
+  },
+  ...
+]
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+[
+  {
+  "name":"core",
+  "version":"0.4.1"
+  },
+  {
+    "name":"bitcoin",
+    "version":"0.4.1"
+  },
+  {
+    "name":"ipfs",
+    "version":"0.4.1"
+  }
+]
+```
+
 ## Merkle Root Hash Inclusion
 Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
 
