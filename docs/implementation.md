@@ -68,7 +68,7 @@ There are a number of top-level components (classes) that orchestrate the execut
 - Observer - This component observes the incoming Sidetree transactions and processes them.
 - Resolver - This component resolves a DID resolution request.
 
-The orchestration layer cannot depend on any code that is protocol version specific, this means its dependencies must either external or be part of the orchestration layer itself, such dependencies include:
+The orchestration layer cannot depend on any code that is protocol version specific, this means its dependencies must either be external or be part of the orchestration layer itself, such dependencies include:
 - Blockchain Client
 - CAS (Content Addressable Storage) Client
 - MongoDB Transaction Store
