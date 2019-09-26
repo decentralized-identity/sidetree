@@ -26,7 +26,7 @@ async function addBatchFileOfOneOperationToCas (
   operationIndex: number): Promise<AnchoredOperation> {
 
   const operationBuffers: Buffer[] = [ operationBuffer ];
-  const batchBuffer = BatchFile.fromOperationBuffers(operationBuffers);
+  const batchBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
   await cas.write(batchBuffer);
 
   const anchoredOperationModel: AnchoredOperationModel = {

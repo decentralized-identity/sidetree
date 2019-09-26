@@ -34,7 +34,7 @@ export default class BatchWriter implements IBatchWriter {
     );
 
     // Create the batch file buffer from the operation batch.
-    const batchFileBuffer = BatchFile.fromOperationBuffers(operationBuffers);
+    const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
 
     // Write the 'batch file' to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);

@@ -80,7 +80,7 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
-    const batchBuffer = BatchFile.fromOperationBuffers([createOperationBuffer]);
+    const batchBuffer = await BatchFile.fromOperationBuffers([createOperationBuffer]);
     batchFileHash = MockCas.getAddress(batchBuffer);
 
     // Now force Operation Processor to process the create operation.

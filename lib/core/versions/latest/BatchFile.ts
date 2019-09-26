@@ -2,6 +2,7 @@ import AnchoredOperation from './AnchoredOperation';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFileModel from './models/BatchFileModel';
+import Compressor from './util/Compressor';
 import Encoder from './Encoder';
 import JsonAsync from './util/JsonAsync';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
@@ -25,7 +26,8 @@ export default class BatchFile {
   ): Promise<NamedAnchoredOperationModel[]> {
 
     let endTimer = timeSpan();
-    const batchFileObject = await JsonAsync.parse(batchFileBuffer);
+    const decompressedBatchFileBuffer = await Compressor.decompressBuffer(batchFileBuffer);
+    const batchFileObject = await JsonAsync.parse(decompressedBatchFileBuffer);
     console.info(`Parsed batch file ${anchorFile.batchFileHash} in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
@@ -101,11 +103,14 @@ export default class BatchFile {
    * @param operationBuffers Operation buffers in JSON serialized form, NOT encoded in anyway.
    * @returns The Batch File buffer.
    */
-  public static fromOperationBuffers (operationBuffers: Buffer[]): Buffer {
+  public static async fromOperationBuffers (operationBuffers: Buffer[]): Promise<Buffer> {
     const operations = operationBuffers.map((operation) => {
       return Encoder.encode(operation);
     });
 
-    return Buffer.from(JSON.stringify({ operations }));
+    const rawData = JSON.stringify({ operations });
+    const compressedRawData = await Compressor.compressAsBuffer(Buffer.from(rawData));
+
+    return compressedRawData;
   }
 }
