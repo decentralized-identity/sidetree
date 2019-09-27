@@ -22,6 +22,7 @@ import OperationProcessor from '../../lib/core/versions/latest/OperationProcesso
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import { Response } from '../../lib/common/Response';
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -116,7 +117,8 @@ describe('RequestHandler', () => {
     // Verfiy that CAS was invoked to store the batch file.
     const maxBatchFileSize = 20000000;
     const fetchResult = await cas.read(batchFileHash, maxBatchFileSize);
-    const batchFile = JSON.parse(fetchResult.content!.toString());
+    const decompressedData = await Compressor.decompressBuffer(fetchResult.content!);
+    const batchFile = JSON.parse(decompressedData.toString());
     expect(batchFile.operations.length).toEqual(1);
   });
 

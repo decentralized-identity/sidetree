@@ -112,7 +112,10 @@ export default class AnchorFile {
     return false;
   }
 
-  public static async createBufferFromAnchorFileModel (anchorFileModel: AnchorFileModel) : Promise<Buffer> {
+  /**
+   * Creates a buffer from the input so that the buffer can be persisted.
+   */
+  public static async createBufferFromAnchorFileModel (anchorFileModel: AnchorFileModel): Promise<Buffer> {
 
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
