@@ -5,6 +5,7 @@ export default {
   AnchorFileBatchFileHashMissing: 'anchor_file_batch_file_hash_missing',
   AnchorFileBatchFileHashNotString: 'anchor_file_batch_file_hash_not_string',
   AnchorFileBatchFileHashUnsupported: 'anchor_file_batch_file_hash_unsupported',
+  AnchorFileDecompressionFailure: 'anchor_file_compression_failed',
   AnchorFileDidUniqueSuffixEntryNotString: 'anchor_file_did_unique_suffix_entry_not_string',
   AnchorFileDidUniqueSuffixesHasDuplicates: 'anchor_file_did_unique_suffixes_has_duplicates',
   AnchorFileDidUniqueSuffixesMissing: 'anchor_file_did_unique_suffixes_missing',

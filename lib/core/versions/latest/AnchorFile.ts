@@ -4,6 +4,7 @@ import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { SidetreeError } from '../../Error';
+import Compressor from './util/Compressor';
 
 /**
  * Class containing Anchor File related operations.
@@ -13,11 +14,18 @@ export default class AnchorFile {
    * Parses and validates the given anchor file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): AnchorFileModel {
+  public static async parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): Promise<AnchorFileModel> {
+
+    let anchorFileDecompressedBuffer;
+    try {
+      anchorFileDecompressedBuffer = await Compressor.decompressBuffer(anchorFileBuffer);
+    } catch {
+      throw new SidetreeError(ErrorCode.AnchorFileDecompressionFailure);
+    }
 
     let anchorFile;
     try {
-      anchorFile = JSON.parse(anchorFileBuffer.toString());
+      anchorFile = JSON.parse(anchorFileDecompressedBuffer.toString());
     } catch {
       throw new SidetreeError(ErrorCode.AnchorFileNotJson);
     }
@@ -102,5 +110,13 @@ export default class AnchorFile {
     }
 
     return false;
+  }
+
+  public static async createBufferFromAnchorFileModel (anchorFileModel: AnchorFileModel) : Promise<Buffer> {
+
+    const anchorFileJson = JSON.stringify(anchorFileModel);
+    const anchorFileBuffer = Buffer.from(anchorFileJson);
+
+    return Compressor.compressAsBuffer(anchorFileBuffer);
   }
 }
