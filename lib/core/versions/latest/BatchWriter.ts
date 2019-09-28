@@ -1,5 +1,5 @@
 import AnchorFile from './AnchorFile';
-import AnchorFileModel from '../0.4.0/models/AnchorFileModel';
+import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
 import ICas from '../../interfaces/ICas';
 import Encoder from './Encoder';
