@@ -4,6 +4,7 @@
     {
       "id": "#key1",
       "type": "Secp256k1VerificationKey2018",
+      "usage": "recovery",
       "publicKeyJwk": {
         "kty": "EC",
         "kid": "key1",
@@ -17,6 +18,7 @@
     {
       "id": "#key2",
       "type": "RsaVerificationKey2018",
+      "usage": "signing",
       "publicKeyPem": "-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----"
     }
   ],

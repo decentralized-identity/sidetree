@@ -1,5 +1,6 @@
 import Cryptography from './util/Cryptography';
 import Did from './Did';
+import DidPublicKeyModel from '../latest/models/DidPublicKeyModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
@@ -7,7 +8,6 @@ import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import ProtocolParameters from './ProtocolParameters';
-import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { SidetreeError } from '../../Error';
 
@@ -110,7 +110,7 @@ export default class Operation {
    * @param publicKey The public key used for verification.
    * @returns true if signature is successfully verified, false otherwise.
    */
-  public async verifySignature (publicKey: DidPublicKey): Promise<boolean> {
+  public async verifySignature (publicKey: DidPublicKeyModel): Promise<boolean> {
     // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
     // NOTE: there is no protected header in Sidetree operation.
     const jwsSigningInput = '.' + this.encodedPayload;

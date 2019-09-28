@@ -1,5 +1,6 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import { SidetreeError } from '../../lib/core/Error';
@@ -11,7 +12,7 @@ describe('Operation', async () => {
   let createRequest: any;
 
   beforeAll(async () => {
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairJwk('key1'); // Generate a unique key-pair used for each test.
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
     const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createRequest = JSON.parse(createRequestBuffer.toString());
   });

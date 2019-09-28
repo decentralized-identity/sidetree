@@ -6,6 +6,7 @@ import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -136,7 +137,7 @@ describe('OperationProcessor', async () => {
   let didUniqueSuffix: string;
 
   beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
@@ -156,7 +157,6 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined();
   });
 
   it('should ignore a duplicate create operation', async () => {
@@ -173,7 +173,6 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined();
   });
 
   it('should process update to remove a public key correctly', async () => {
@@ -242,7 +241,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.signature = 'AnInvalidSignature';
 
@@ -277,7 +276,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.header.kid = 'InvalidKeyId';
 
@@ -330,7 +329,6 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined();
   });
 
   it('should ignore delete operations with invalid signature', async () => {
@@ -346,7 +344,6 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
-    expect(publicKey2!.owner).toBeUndefined();
   });
 
   it('should ignore updates to did that is not created', async () => {

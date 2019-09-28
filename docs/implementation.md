@@ -635,3 +635,9 @@ HTTP/1.1 200 OK
   "version": "1.0.0"
 }
 ```
+
+## Frequently Asked Questions
+### Why is the signature not verified before a request is queued and written to the blockchain?
+End users are expected to use a "user agent" for making requests which should almost always generate the right signature,
+thus verifying sigatures for each request simply adds unnecessary computation to the Sidetree node with no real benefits.
+Developers can use other tooling to validate the request signature before submitting a request to a Sidetree node.
