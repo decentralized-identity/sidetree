@@ -7,6 +7,7 @@ import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ICas from '../../lib/core/interfaces/ICas';
@@ -22,7 +23,6 @@ import OperationProcessor from '../../lib/core/versions/latest/OperationProcesso
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import { Response } from '../../lib/common/Response';
-import Compressor from '../../lib/core/versions/latest/util/Compressor';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.

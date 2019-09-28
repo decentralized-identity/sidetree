@@ -1,6 +1,6 @@
-import zlib = require('zlib');
-import util = require('util');
 import Encoder from '../Encoder';
+import util = require('util');
+import zlib = require('zlib');
 
 /**
  * Encapsulates functionality to compress/decompress data.

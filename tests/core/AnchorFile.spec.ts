@@ -1,8 +1,8 @@
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import { SidetreeError } from '../../lib/core/Error';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 
 describe('AnchorFile', async () => {
   describe('parseAndValidate()', async () => {
