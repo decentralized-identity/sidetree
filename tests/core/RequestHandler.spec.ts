@@ -11,6 +11,7 @@ import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
@@ -72,7 +73,7 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(mockLatestTime);
 
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -146,10 +147,13 @@ describe('RequestHandler', () => {
 
   it('should return a resolved DID Document given a valid encoded original DID Document for resolution.', async () => {
     // Create an original DID Document.
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
+    let recoveryPublicKey: DidPublicKeyModel;
+    let signingPublicKey: DidPublicKeyModel;
+    [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
-      publicKey: [publicKey]
+      publicKey: [recoveryPublicKey, signingPublicKey]
     };
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
     const hashAlgorithmInMultihashCode = 18;

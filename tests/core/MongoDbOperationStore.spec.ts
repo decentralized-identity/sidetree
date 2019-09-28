@@ -1,11 +1,12 @@
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
 /**
  * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
@@ -30,7 +31,7 @@ function constructAnchoredOperation (
  * Construct a create operation anchored with a transactionNumber, transactionTime, and operationIndex
  */
 async function constructAnchoredCreateOperation (
-  publicKey: DidPublicKey,
+  publicKey: DidPublicKeyModel,
   privateKey: string,
   transactionNumber: number,
   transactionTime: number,
@@ -126,7 +127,7 @@ function checkEqualArray (putOperations: AnchoredOperation[], gotOperations: Anc
 describe('MongoDbOperationStore', async () => {
 
   let operationStore: IOperationStore;
-  let publicKey: DidPublicKey;
+  let publicKey: DidPublicKeyModel;
   let privateKey: string;
   const config = require('../json/config-test.json');
 
@@ -145,7 +146,7 @@ describe('MongoDbOperationStore', async () => {
 
     await operationStore.delete();
 
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1'); // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
   });
 
   it('should get a put create operation', async () => {

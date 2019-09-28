@@ -1,11 +1,10 @@
 import Did from './Did';
+import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
-import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
- * NOTE: The class is intentionally named to disambiguate from the `DidDocument` class in '@decentralized-identity/did-common-typescript'.
  */
 export default class Document {
   /**
@@ -73,12 +72,38 @@ export default class Document {
       return false;
     }
 
+    // Keeps the count of keys for each usage.
+    const keyUsages = new Map<string, number>();
+
     // Verify each publicKey entry in array.
     for (let publicKeyEntry of originalDocument.publicKey) {
       // 'id' must be a fragment (starts with '#').
       if (!(publicKeyEntry.id as string).startsWith('#')) {
         return false;
       }
+
+      // A valid Sidetree public key must contain a custom 'usage' property.
+      if (typeof publicKeyEntry.usage !== 'string') {
+        return false;
+      }
+
+      // Increment the count of the corresponding key usage.
+      const usageCount = keyUsages.get(publicKeyEntry.usage);
+      if (usageCount === undefined) {
+        keyUsages.set(publicKeyEntry.usage, 1);
+      } else {
+        keyUsages.set(publicKeyEntry.usage, usageCount + 1);
+      }
+    }
+
+    // Must contain one and only one recovery key.
+    if (keyUsages.get('recovery') !== 1) {
+      return false;
+    }
+
+    // Must contain at least one signing key.
+    if (keyUsages.get('signing') === undefined) {
+      return false;
     }
 
     // Verify 'service' property if it exists.
@@ -138,6 +163,11 @@ export default class Document {
 
     // Verify 'publicKey' property if it exists.
     if (didDocument.hasOwnProperty('publicKey')) {
+
+      if (!Array.isArray(didDocument.publicKey)) {
+        return false;
+      }
+
       // Verify each publicKey entry in array.
       for (let publicKeyEntry of didDocument.publicKey) {
         // 'id' must be string type.
@@ -185,7 +215,7 @@ export default class Document {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (didDocument: DocumentModel, keyId: string): DidPublicKey | undefined {
+  public static getPublicKey (didDocument: DocumentModel, keyId: string): DidPublicKeyModel | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 
