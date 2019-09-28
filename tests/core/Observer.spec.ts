@@ -1,23 +1,25 @@
 import * as retry from 'async-retry';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
+import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Blockchain from '../../lib/core/Blockchain';
 import Cas from '../../lib/core/Cas';
+import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Observer from '../../lib/core/Observer';
+import OperationGenerator from '../generators/OperationGenerator';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import Encoder from '../../lib/core/versions/latest/Encoder';
+import Multihash from '../../lib/core/versions/latest/Multihash';
+import Operation from '../../lib/core/versions/latest/Operation';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
-import OperationGenerator from '../generators/OperationGenerator';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import Operation from '../../lib/core/versions/latest/Operation';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -123,52 +125,46 @@ describe('Observer', async () => {
     expect(processedTransactions[1].anchorString).toEqual('2ndTransaction');
   });
 
-  fit('should process a valid operation batch successfully.', async () => {
+  it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
     const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
-    // const batchFile: BatchFileModel = {
-    //   /* tslint:disable */
-    //   operations: [
-    //     Buffer.from(JSON.stringify(await OperationGenerator.generateCreateOperation(didDocumentTemplate, {id: 'publickeyid', type: 'type'}, 'privatekey'))),
-    //     Buffer.from(JSON.stringify(await OperationGenerator.generateCreateOperation(didDocumentTemplate, {id: 'publickeyid', type: 'type'}, 'privatekey')))
-    //   ]
-    //   /* tslint:enable */
-    // };
-
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1');
+    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#key2');
     const operations = [
-      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey),
-      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey)
+      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey1, privateKey1),
+      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey2, privateKey2)
     ];
     const operationsBuffer = operations.map((op) => { return Buffer.from(JSON.stringify(op)); });
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);
 
-    // const batchFileCompressedBuffer = await BatchFile.fromOperationBuffers
     const batchFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: batchFileBuffer // Buffer.from(JSON.stringify(batchFile))
+      content: batchFileBuffer
     };
 
-    const operationDids = operations.map((op) => { return (op as any).didUniqueSuffix; });
+    const batchFilehash = Encoder.encode(Multihash.hash(batchFileBuffer, 18));
+
+    const operationDids = operationsBuffer.map((op) => { return Operation.create(op).didUniqueSuffix; });
     const anchorFile: AnchorFileModel = {
-      batchFileHash: operationsBuffer.toString(),
+      batchFileHash: batchFilehash,
       didUniqueSuffixes: operationDids,
       merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
     };
 
-    const anchorFileCompressedBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
+    const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
 
     const anchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: anchorFileCompressedBuffer
+      content: anchorFileBuffer
     };
 
+    const anchorFilehash = Encoder.encode(Multihash.hash(anchorFileBuffer, 18));
 
     const mockDownloadFunction = async (hash: string) => {
-      if (hash === 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw') {
+      if (hash === anchorFilehash) {
         return anchoreFileFetchResult;
-      } else if (hash === 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA') {
+      } else if (hash === batchFilehash) {
         return batchFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
@@ -191,7 +187,7 @@ describe('Observer', async () => {
       transactionNumber: 1,
       transactionTime: 1000000,
       transactionTimeHash: '1000',
-      anchorString: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
+      anchorString: anchorFilehash
     };
     const transactionUnderProcessing = {
       transaction: mockTransaction,
@@ -199,11 +195,10 @@ describe('Observer', async () => {
     };
     await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
-    const operationArray1 = await operationStore.get('EiCRzEqU4vFsVw5BwIlCpArFSt2OQuu5RNiYUS2wRSt5Xw');
-    expect(operationArray1.length).toEqual(1);
-
-    const operationArray2 = await operationStore.get('EiD7UhzVMsGz1hsGLDkMUyjNxOIS-hlmNo2cuRlexO9Hgg');
-    expect(operationArray2.length).toEqual(1);
+    operationDids.forEach(async (did) => {
+      const operationArray = await operationStore.get(did);
+      expect(operationArray.length).toEqual(1);
+    });
   });
 
   // Testing invalid anchor file scenarios:
