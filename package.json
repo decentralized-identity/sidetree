@@ -7,7 +7,7 @@
   "main": "dist/lib/index.js",
   "types": "dist/lib/index.d.ts",
   "dependencies": {
-    "@decentralized-identity/did-auth-jose": "0.1.5",
+    "@decentralized-identity/did-auth-jose": "0.1.14",
     "@decentralized-identity/did-common-typescript": "0.1.2",
     "base64url": "3.0.1",
     "bitcore-lib": "8.7.1",
