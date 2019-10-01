@@ -514,34 +514,68 @@ export default class BitcoinProcessor {
         // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
         continue;
       }
-      const outputs = transactions[transactionIndex].vout as Array<any>;
-      for (let outputIndex = 0; outputIndex < outputs.length; outputIndex++) {
-        // grab the scripts
-        const script = outputs[outputIndex].scriptPubKey;
 
-        // console.debug(`Checking transaction ${transactionIndex} output coin ${outputIndex}: ${JSON.stringify(script)}`);
-        // check for returned data for sidetree prefix
-        const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
-        if (!hexDataMatches || hexDataMatches.length === 0) {
-          continue;
-        }
-        const data = Buffer.from(hexDataMatches[1], 'hex').toString();
-        if (data.startsWith(this.sidetreePrefix)) {
-          // we have found a sidetree transaction
-          const sidetreeTransaction: TransactionModel = {
-            transactionNumber: TransactionNumber.construct(block, transactionIndex),
-            transactionTime: block,
-            transactionTimeHash: blockHash,
-            anchorString: data.slice(this.sidetreePrefix.length)
-          };
-          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTransaction)}`);
-          await this.transactionStore.addTransaction(sidetreeTransaction);
-          // stop processing future anchor strings. Protocol defines only the first should be accepted.
-          break;
-        }
+      try {
+        const outputs = transactions[transactionIndex].vout as Array<any>;
+
+        await this.addSidetreeTransactionsToTransactionStore(this.transactionStore, outputs, transactionIndex, block, blockHash);
+
+      } catch (e) {
+        const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
+        console.error('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
+                       JSON.stringify(inputs),
+                       JSON.stringify(e, Object.getOwnPropertyNames(e)));
       }
     }
+
     return blockHash;
+  }
+
+  private async addSidetreeTransactionsToTransactionStore (
+    transactionStore: MongoDbTransactionStore,
+    allVOuts: Array<any>,
+    transactionIndex: number,
+    transactionBlock: number,
+    transactionHash: any): Promise<void> {
+
+    let sidetreeTxToAdd: TransactionModel | undefined = undefined;
+
+    for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
+      // grab the scripts
+      const script = allVOuts[outputIndex].scriptPubKey;
+
+      // console.debug(`Checking transaction ${transactionIndex} output coin ${outputIndex}: ${JSON.stringify(script)}`);
+      // check for returned data for sidetree prefix
+      const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+
+      if (!hexDataMatches || hexDataMatches.length === 0) {
+        continue;
+      }
+
+      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
+      const isSidetreeTx = data.startsWith(this.sidetreePrefix);
+      const oneSidetreeTxAlreadyFound = sidetreeTxToAdd !== undefined;
+
+      if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
+        throw new Error('The transaction has more then one sidetree transactions.');
+
+      } else if (isSidetreeTx) {
+        // we have found a sidetree transaction
+        sidetreeTxToAdd = {
+          transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
+          transactionTime: transactionBlock,
+          transactionTimeHash: transactionHash,
+          anchorString: data.slice(this.sidetreePrefix.length)
+        };
+      }
+    }
+
+    if (sidetreeTxToAdd !== undefined) {
+      // If we got to here then everything was good and we found only one sidetree transaction, otherwise
+      // there would've been an exception before. So add it to the store ...
+      console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
+      await transactionStore.addTransaction(sidetreeTxToAdd);
+    }
   }
 
   /**
