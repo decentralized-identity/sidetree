@@ -839,7 +839,7 @@ describe('BitcoinProcessor', () => {
   describe('processBlock', () => {
 
     // creates a response object for Bitcoin
-    async function generateBlock (blockHeight: number, data?: () => string | undefined): Promise<any> {
+    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<any> {
       const tx: any[] = [];
       const count = randomNumber(100) + 10;
       for (let i = 0; i < count; i++) {
@@ -847,7 +847,14 @@ describe('BitcoinProcessor', () => {
         // data generation
         if (data) {
           const hasData = data();
-          if (hasData) {
+
+          // if the data returned is an array then add each value one by one.
+          // otherwise add the single value
+          if (hasData instanceof Array) {
+            hasData.forEach(element => {
+              transaction.addData(Buffer.from(element));
+            });
+          } else if (hasData) {
             transaction.addData(Buffer.from(hasData));
           }
         }
@@ -969,6 +976,45 @@ describe('BitcoinProcessor', () => {
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).not.toHaveBeenCalled();
+      done();
+    });
+
+    it('should ignore any transactions that have multiple OP_RETURN in them', async (done) => {
+      const block = randomNumber();
+      let shouldFindIDs: string[] = [];
+      const blockData = await generateBlock(block, () => {
+        const id = randomString();
+        const rand = Math.random();
+
+        if (rand < 0.8) { // return a single sidetree tx
+          shouldFindIDs.push(id);
+          return testConfig.sidetreeTransactionPrefix + id;
+        } else if (rand < 0.9) { // return 2 sidetree tx
+          const id2 = randomString();
+
+          return [ testConfig.sidetreeTransactionPrefix + id, testConfig.sidetreeTransactionPrefix + id2 ];
+        } else { // return 2 sidetree and one other tx
+          const id2 = randomString();
+          const id3 = randomString();
+
+          return [ testConfig.sidetreeTransactionPrefix + id, id2, testConfig.sidetreeTransactionPrefix + id3 ];
+        }
+      });
+
+      const blockHash = randomString();
+      spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
+        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
+          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
+          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
+          return Promise.resolve(undefined);
+        });
+      const actual = await bitcoinProcessor['processBlock'](block);
+      expect(actual).toEqual(blockData.hash);
+      expect(rpcMock).toHaveBeenCalled();
+      expect(addTransaction).toHaveBeenCalled();
+      expect(shouldFindIDs.length).toEqual(0);
       done();
     });
   });
