@@ -207,12 +207,16 @@ describe('AnchorFile', async () => {
       };
 
       const bufferFromCode = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
-      const bufferFromCodeEncoded = Encoder.encode(bufferFromCode);
 
       // Calculated this manually to validate the output
       const expectedEncodedBuffer = 'H4sIAAAAAAAACqtWSkosSc5wy8xJ9UgszlCyUipLzDFU0lFKyUwJzcssLE0NLk1Ly6xILVayigbJGSnF6ijlphZl56QG5eeXQDQYK9UCAA8KKHBJAAAA';
+      const expectedBuffer = Encoder.decodeAsBuffer(expectedEncodedBuffer);
 
-      expect(bufferFromCodeEncoded).toEqual(expectedEncodedBuffer);
+      // Removing the first 10 bytes of the buffer as those are the header bytes in gzip are
+      // the header bytes which are effected by the current operating system. So if the tests
+      // run on a different OS, those bytes change even though they don't effect the actual
+      // decompression/compression.
+      expect(bufferFromCode.slice(10)).toEqual(expectedBuffer.slice(10));
     });
   });
 });
