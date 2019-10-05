@@ -5,11 +5,8 @@ import MockOperationQueue from '../../../mocks/MockOperationQueue';
  */
 export default class MongoDbOperationQueue extends MockOperationQueue {
 
-  public static classInstantiatedCount: number = 0;
-
   public constructor (private connectionString: string) {
     super();
-    MongoDbOperationQueue.classInstantiatedCount++;
 
     console.debug('Making typescript ', this.connectionString);
   }
@@ -19,4 +16,8 @@ export default class MongoDbOperationQueue extends MockOperationQueue {
    */
   // tslint:disable-next-line: no-empty
   public initialize () { }
+
+  async enqueue (didUniqueSuffix: string, operationBuffer: Buffer) {
+    throw new Error(`MongoDbOperationQueue: Not implemented. Version: TestVersion1. Inputs: ${didUniqueSuffix}, ${operationBuffer}`);
+  }
 }
