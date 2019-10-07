@@ -148,7 +148,7 @@ describe('OperationProcessor', async () => {
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName);
     versionManager = new MockVersionedProvider();
-    spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor)
+    spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     resolver = new Resolver(versionManager, operationStore);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);

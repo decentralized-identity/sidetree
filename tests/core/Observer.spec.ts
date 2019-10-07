@@ -46,10 +46,10 @@ describe('Observer', async () => {
     transactionStore = new MockTransactionStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
-    
+
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
-    versionManager = new MockVersionedProvider;
-    
+    versionManager = new MockVersionedProvider();
+
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
   });
 
