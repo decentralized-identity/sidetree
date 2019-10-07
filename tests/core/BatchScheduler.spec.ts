@@ -2,13 +2,13 @@ import * as retry from 'async-retry';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import MockBatchWriter from '../mocks/MockBatchWriter';
 import MockBlockchain from '../mocks/MockBlockchain';
-import MockVersionedProvider from "../mocks/MockVersionManager";
+import MockVersionedProvider from '../mocks/MockVersionManager';
 
 describe('BatchScheduler', async () => {
   it('should periodically invoke batch writer.', async () => {
     const blockchain = new MockBlockchain();
     const batchWriter = new MockBatchWriter();
-    
+
     const versionManager = new MockVersionedProvider();
     spyOn(versionManager, 'getBatchWriter').and.returnValue(batchWriter);
 

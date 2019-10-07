@@ -6,15 +6,15 @@ import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
+import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
+import MockVersionedProvider from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import Resolver from '../../lib/core/Resolver';
-import IVersionManager from "../../lib/core/interfaces/IVersionManager";
-import MockVersionedProvider from "../mocks/MockVersionManager";
-import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 
 /**
  * Creates a batch file with single operation given operation buffer,

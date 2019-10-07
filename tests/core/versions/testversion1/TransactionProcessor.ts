@@ -1,7 +1,7 @@
 import DownloadManager from '../../../../lib/core/DownloadManager';
+import TransactionModel from '../../../../lib/common/models/TransactionModel';
 import IOperationStore from '../../../../lib/core/interfaces/IOperationStore';
 import ITransactionProcessor from '../../../../lib/core/interfaces/ITransactionProcessor';
-import TransactionModel from '../../../../lib/common/models/TransactionModel';
 
 /**
  * Transaction processor.

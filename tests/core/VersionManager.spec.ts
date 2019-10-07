@@ -1,19 +1,18 @@
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import Config from '../../lib/core/models/Config';
-import VersionManager, { ProtocolVersionModel } from '../../lib/core/VersionManager';
+import DownloadManager from '../../lib/core/DownloadManager';
+import IBlockchain from '../../lib/core/interfaces/IBlockchain';
+import ICas from '../../lib/core/interfaces/ICas';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Resolver from '../../lib/core/Resolver';
-import DownloadManager from '../../lib/core/DownloadManager';
-import ICas from '../../lib/core/interfaces/ICas';
-import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import IBlockchain from '../../lib/core/interfaces/IBlockchain';
-import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import VersionManager, { ProtocolVersionModel } from '../../lib/core/VersionManager';
 
-fdescribe('VersionManager', async () => {
+describe('VersionManager', async () => {
 
-  // let protocolVersionConfig: ProtocolVersionModel;
   let config: Config;
   let blockChain: IBlockchain;
   let cas: ICas;
@@ -118,10 +117,10 @@ fdescribe('VersionManager', async () => {
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver);
 
       // Expect an invalid blockchain time input to throw
-      expect(versionMgr.getBatchWriter(0)).toThrowError();
-      expect(versionMgr.getOperationProcessor(999)).toThrowError();
-      expect(versionMgr.getRequestHandler(100)).toThrowError();
-      expect(versionMgr.getTransactionProcessor(500)).toThrowError();
+      expect(() => { versionMgr.getBatchWriter(0); }).toThrowError();
+      expect(() => { versionMgr.getOperationProcessor(999); }).toThrowError();
+      expect(() => { versionMgr.getRequestHandler(100); }).toThrowError();
+      expect(() => { versionMgr.getTransactionProcessor(500); }).toThrowError();
     });
   });
 });

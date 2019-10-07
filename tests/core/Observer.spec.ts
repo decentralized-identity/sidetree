@@ -11,8 +11,9 @@ import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
+import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import MockOperationStore from '../mocks/MockOperationStore';
-import Multihash from '../../lib/core/versions/latest/Multihash';
+import MockVersionedProvider from '../mocks/MockVersionManager';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -21,8 +22,6 @@ import TransactionProcessor from '../../lib/core/versions/latest/TransactionProc
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
-import MockVersionedProvider from "../mocks/MockVersionManager";
-import IVersionManager from "../../lib/core/interfaces/IVersionManager";
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
