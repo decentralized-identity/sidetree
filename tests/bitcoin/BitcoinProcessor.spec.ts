@@ -986,10 +986,15 @@ describe('BitcoinProcessor', () => {
         const id = randomString();
         const rand = Math.random();
 
-        if (rand < 0.8) { // return a single sidetree tx
+        // In order to have random data, the following code returns block data:
+        // - with a valid transactions
+        // - with invalid transactions with 2 sidetree transactions (should be ignored)
+        // - with invalid transactions with 2 sidetree and 1 other trasaction (should be ignored)
+        //
+        if (rand < 0.3) { // 30% of time
           shouldFindIDs.push(id);
           return testConfig.sidetreeTransactionPrefix + id;
-        } else if (rand < 0.9) { // return 2 sidetree tx
+        } else if (rand < 0.7) { // == 40% of the time
           const id2 = randomString();
 
           return [ testConfig.sidetreeTransactionPrefix + id, testConfig.sidetreeTransactionPrefix + id2 ];

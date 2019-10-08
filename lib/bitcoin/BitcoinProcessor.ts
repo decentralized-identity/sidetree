@@ -518,11 +518,11 @@ export default class BitcoinProcessor {
       try {
         const outputs = transactions[transactionIndex].vout as Array<any>;
 
-        await this.addSidetreeTransactionsToTransactionStore(this.transactionStore, outputs, transactionIndex, block, blockHash);
+        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(this.transactionStore, outputs, transactionIndex, block, blockHash);
 
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
-        console.error('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
+        console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
                        JSON.stringify(inputs),
                        JSON.stringify(e, Object.getOwnPropertyNames(e)));
       }
@@ -531,7 +531,7 @@ export default class BitcoinProcessor {
     return blockHash;
   }
 
-  private async addSidetreeTransactionsToTransactionStore (
+  private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
     transactionStore: MongoDbTransactionStore,
     allVOuts: Array<any>,
     transactionIndex: number,
@@ -557,7 +557,7 @@ export default class BitcoinProcessor {
       const oneSidetreeTxAlreadyFound = sidetreeTxToAdd !== undefined;
 
       if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
-        throw new Error('The transaction has more then one sidetree transactions.');
+        throw new Error('The transaction has more then one sidetree anchor strings.');
 
       } else if (isSidetreeTx) {
         // we have found a sidetree transaction
