@@ -18,7 +18,7 @@ import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
-import MockVersionedProvider from '../mocks/MockVersionManager';
+import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
@@ -60,7 +60,7 @@ describe('RequestHandler', () => {
     const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
     const operationProcessor = new OperationProcessor(config.didMethodName);
 
-    versionManager = new MockVersionedProvider();
+    versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     spyOn(versionManager, 'getBatchWriter').and.returnValue(batchWriter);
 
