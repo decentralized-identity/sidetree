@@ -2,6 +2,7 @@ import AnchorFileModel from './models/AnchorFileModel';
 import Compressor from './util/Compressor';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { SidetreeError } from '../../Error';
@@ -25,7 +26,7 @@ export default class AnchorFile {
 
     let anchorFile;
     try {
-      anchorFile = JSON.parse(anchorFileDecompressedBuffer.toString());
+      anchorFile = await JsonAsync.parse(anchorFileDecompressedBuffer);
     } catch {
       throw new SidetreeError(ErrorCode.AnchorFileNotJson);
     }
