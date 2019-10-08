@@ -10,6 +10,7 @@ import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
@@ -129,8 +130,8 @@ describe('Observer', async () => {
     // Prepare the mock response from the DownloadManager.
     const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
-    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1');
-    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#key2');
+    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.recovery);
     const operations = [
       await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey1, privateKey1),
       await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey2, privateKey2)
