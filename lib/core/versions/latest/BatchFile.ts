@@ -26,7 +26,7 @@ export default class BatchFile {
   ): Promise<NamedAnchoredOperationModel[]> {
 
     let endTimer = timeSpan();
-    const decompressedBatchFileBuffer = await Compressor.decompressBuffer(batchFileBuffer);
+    const decompressedBatchFileBuffer = await Compressor.decompress(batchFileBuffer);
     const batchFileObject = await JsonAsync.parse(decompressedBatchFileBuffer);
     console.info(`Parsed batch file ${anchorFile.batchFileHash} in ${endTimer.rounded()} ms.`);
 
@@ -109,7 +109,7 @@ export default class BatchFile {
     });
 
     const rawData = JSON.stringify({ operations });
-    const compressedRawData = await Compressor.compressAsBuffer(Buffer.from(rawData));
+    const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
     return compressedRawData;
   }

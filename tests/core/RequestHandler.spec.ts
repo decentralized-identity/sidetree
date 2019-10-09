@@ -117,7 +117,7 @@ describe('RequestHandler', () => {
     // Verfiy that CAS was invoked to store the batch file.
     const maxBatchFileSize = 20000000;
     const fetchResult = await cas.read(batchFileHash, maxBatchFileSize);
-    const decompressedData = await Compressor.decompressBuffer(fetchResult.content!);
+    const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
     expect(batchFile.operations.length).toEqual(1);
   });

@@ -8,7 +8,7 @@ describe('AnchorFile', async () => {
   describe('parseAndValidate()', async () => {
     it('should throw if buffer given is not valid JSON.', async () => {
       const anchorFileBuffer = Buffer.from('NotJsonString');
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileNotJson));
     });
@@ -32,7 +32,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
     });
@@ -44,7 +44,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileBatchFileHashMissing));
     });
@@ -56,7 +56,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing));
     });
@@ -68,7 +68,7 @@ describe('AnchorFile', async () => {
         // merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' // Intentionally kept to show what is missing.
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMerkleRootMissing));
     });
@@ -80,7 +80,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileBatchFileHashNotString));
     });
@@ -93,7 +93,7 @@ describe('AnchorFile', async () => {
       };
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-        const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+        const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
         await AnchorFile.parseAndValidate(anchorFileCompressed, 1);
       } catch (error) {
@@ -108,7 +108,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 12345
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMerkleRootNotString));
     });
@@ -121,7 +121,7 @@ describe('AnchorFile', async () => {
       };
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-        const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+        const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
         await AnchorFile.parseAndValidate(anchorFileCompressed, 1);
       } catch (error) {
@@ -136,7 +136,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1))
         .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesNotArray));
@@ -149,7 +149,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1))
         .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileExceededMaxOperationCount));
@@ -162,7 +162,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 2))
         .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesHasDuplicates));
@@ -175,7 +175,7 @@ describe('AnchorFile', async () => {
         merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 2))
         .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString));
@@ -189,7 +189,7 @@ describe('AnchorFile', async () => {
       };
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-        const anchorFileCompressed = await Compressor.compressAsBuffer(anchorFileBuffer);
+        const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
         await AnchorFile.parseAndValidate(anchorFileCompressed, 1);
       } catch (error) {

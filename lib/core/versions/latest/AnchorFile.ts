@@ -19,7 +19,7 @@ export default class AnchorFile {
 
     let anchorFileDecompressedBuffer;
     try {
-      anchorFileDecompressedBuffer = await Compressor.decompressBuffer(anchorFileBuffer);
+      anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer);
     } catch {
       throw new SidetreeError(ErrorCode.AnchorFileDecompressionFailure);
     }
@@ -121,6 +121,6 @@ export default class AnchorFile {
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 
-    return Compressor.compressAsBuffer(anchorFileBuffer);
+    return Compressor.compress(anchorFileBuffer);
   }
 }
