@@ -1,6 +1,8 @@
 import AnchorFileModel from './models/AnchorFileModel';
+import Compressor from './util/Compressor';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import { SidetreeError } from '../../Error';
@@ -13,11 +15,18 @@ export default class AnchorFile {
    * Parses and validates the given anchor file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): AnchorFileModel {
+  public static async parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): Promise<AnchorFileModel> {
+
+    let anchorFileDecompressedBuffer;
+    try {
+      anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer);
+    } catch {
+      throw new SidetreeError(ErrorCode.AnchorFileDecompressionFailure);
+    }
 
     let anchorFile;
     try {
-      anchorFile = JSON.parse(anchorFileBuffer.toString());
+      anchorFile = await JsonAsync.parse(anchorFileDecompressedBuffer);
     } catch {
       throw new SidetreeError(ErrorCode.AnchorFileNotJson);
     }
@@ -102,5 +111,16 @@ export default class AnchorFile {
     }
 
     return false;
+  }
+
+  /**
+   * Creates a buffer from the input so that the buffer can be persisted.
+   */
+  public static async createBufferFromAnchorFileModel (anchorFileModel: AnchorFileModel): Promise<Buffer> {
+
+    const anchorFileJson = JSON.stringify(anchorFileModel);
+    const anchorFileBuffer = Buffer.from(anchorFileJson);
+
+    return Compressor.compress(anchorFileBuffer);
   }
 }

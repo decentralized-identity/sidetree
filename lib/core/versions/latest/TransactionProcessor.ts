@@ -58,7 +58,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     let anchorFile: AnchorFileModel;
     try {
       const maxOperationsPerBatch = ProtocolParameters.maxOperationsPerBatch;
-      anchorFile = AnchorFile.parseAndValidate(
+      anchorFile = await AnchorFile.parseAndValidate(
         anchorFileFetchResult.content!,
         maxOperationsPerBatch
       );

@@ -7,6 +7,7 @@ import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ICas from '../../lib/core/interfaces/ICas';
@@ -80,7 +81,7 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
 
     // Generate the batch file and batch file hash.
-    const batchBuffer = BatchFile.fromOperationBuffers([createOperationBuffer]);
+    const batchBuffer = await BatchFile.fromOperationBuffers([createOperationBuffer]);
     batchFileHash = MockCas.getAddress(batchBuffer);
 
     // Now force Operation Processor to process the create operation.
@@ -116,7 +117,8 @@ describe('RequestHandler', () => {
     // Verfiy that CAS was invoked to store the batch file.
     const maxBatchFileSize = 20000000;
     const fetchResult = await cas.read(batchFileHash, maxBatchFileSize);
-    const batchFile = JSON.parse(fetchResult.content!.toString());
+    const decompressedData = await Compressor.decompress(fetchResult.content!);
+    const batchFile = JSON.parse(decompressedData.toString());
     expect(batchFile.operations.length).toEqual(1);
   });
 

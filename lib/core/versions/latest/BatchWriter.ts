@@ -1,3 +1,5 @@
+import AnchorFile from './AnchorFile';
+import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
 import ICas from '../../interfaces/ICas';
 import Encoder from './Encoder';
@@ -34,7 +36,7 @@ export default class BatchWriter implements IBatchWriter {
     );
 
     // Create the batch file buffer from the operation batch.
-    const batchFileBuffer = BatchFile.fromOperationBuffers(operationBuffers);
+    const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
 
     // Write the 'batch file' to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);
@@ -49,14 +51,14 @@ export default class BatchWriter implements IBatchWriter {
     const didUniqueSuffixes = batch.map(operation => operation.didUniqueSuffix);
 
     // Construct the 'anchor file'.
-    const anchorFile = {
+    const anchorFileModel: AnchorFileModel = {
       batchFileHash: batchFileHash,
       merkleRoot: encodedMerkleRoot,
       didUniqueSuffixes
     };
 
     // Make the 'anchor file' available in content addressable store.
-    const anchorFileJsonBuffer = Buffer.from(JSON.stringify(anchorFile));
+    const anchorFileJsonBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
     const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
     console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
 
