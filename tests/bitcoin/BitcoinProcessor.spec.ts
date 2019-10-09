@@ -986,7 +986,7 @@ describe('BitcoinProcessor', () => {
         const id = randomString();
         const rand = Math.random();
 
-        // In order to have random data, the following code returns block data:
+        // In order to have random data, this code returns one of the following every time it is calleds:
         // - with a valid transactions
         // - with invalid transactions with 2 sidetree transactions (should be ignored)
         // - with invalid transactions with 2 sidetree and 1 other trasaction (should be ignored)

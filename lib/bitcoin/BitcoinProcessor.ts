@@ -518,7 +518,7 @@ export default class BitcoinProcessor {
       try {
         const outputs = transactions[transactionIndex].vout as Array<any>;
 
-        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(this.transactionStore, outputs, transactionIndex, block, blockHash);
+        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash);
 
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
@@ -532,7 +532,6 @@ export default class BitcoinProcessor {
   }
 
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
-    transactionStore: MongoDbTransactionStore,
     allVOuts: Array<any>,
     transactionIndex: number,
     transactionBlock: number,
@@ -574,7 +573,7 @@ export default class BitcoinProcessor {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // there would've been an exception before. So add it to the store ...
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
-      await transactionStore.addTransaction(sidetreeTxToAdd);
+      await this.transactionStore.addTransaction(sidetreeTxToAdd);
     }
   }
 
