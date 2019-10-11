@@ -10,10 +10,11 @@ import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
-import MockVersionedProvider from '../mocks/MockVersionManager';
+import MockVersionManager from '../mocks/MockVersionManager';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -48,7 +49,7 @@ describe('Observer', async () => {
     downloadManager.start();
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
-    versionManager = new MockVersionedProvider();
+    versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
   });
