@@ -32,7 +32,7 @@ describe('VersionManager', async () => {
     it('should initialize all the objects correctly.', async () => {
 
       const protocolVersionConfig: ProtocolVersionModel[] = [
-        { startingBlockchainTime: 1000, version: 'testversion1' }
+        { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
@@ -61,7 +61,7 @@ describe('VersionManager', async () => {
 
     it('should return the correct version-ed objects for valid version.', async () => {
       const protocolVersionConfig: ProtocolVersionModel[] = [
-        { startingBlockchainTime: 1000, version: 'testversion1' }
+        { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
@@ -104,7 +104,7 @@ describe('VersionManager', async () => {
 
     it('should throw for an invalid version.', async () => {
       const protocolVersionConfig: ProtocolVersionModel[] = [
-        { startingBlockchainTime: 1000, version: 'testversion1' }
+        { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
