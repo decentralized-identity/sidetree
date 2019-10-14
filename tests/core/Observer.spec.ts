@@ -10,8 +10,10 @@ import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
+import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
@@ -25,12 +27,11 @@ import { SidetreeError } from '../../lib/core/Error';
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
 
-  let getTransactionProcessor: (blockchainTime: number) => TransactionProcessor;
-
   let casClient;
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
+  let versionManager: IVersionManager;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
@@ -47,7 +48,10 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
 
-    getTransactionProcessor = (_blockchainTime: number) => new TransactionProcessor(downloadManager, operationStore);
+    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    versionManager = new MockVersionManager();
+
+    spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
   });
 
   afterAll(() => {
@@ -93,7 +97,7 @@ describe('Observer', async () => {
 
     // Start the Observer.
     const observer = new Observer(
-      getTransactionProcessor,
+      versionManager,
       blockchainClient,
       config.maxConcurrentDownloads,
       operationStore,
@@ -175,7 +179,7 @@ describe('Observer', async () => {
 
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
     const observer = new Observer(
-      getTransactionProcessor,
+      versionManager,
       blockchainClient,
       config.maxConcurrentDownloads,
       operationStore,
@@ -215,7 +219,7 @@ describe('Observer', async () => {
     it(`should stop processing a transaction if ${mockFetchReturnCode}`, async () => {
       const blockchainClient = new Blockchain(config.blockchainServiceUri);
       const observer = new Observer(
-        getTransactionProcessor,
+        versionManager,
         blockchainClient,
         config.maxConcurrentDownloads,
         operationStore,
@@ -333,7 +337,7 @@ describe('Observer', async () => {
 
     // Process first set of transactions.
     const observer = new Observer(
-      getTransactionProcessor,
+      versionManager,
       blockchainClient,
       config.maxConcurrentDownloads,
       operationStore,

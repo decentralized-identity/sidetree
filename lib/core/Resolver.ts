@@ -1,5 +1,5 @@
-import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
+import IVersionManager from './interfaces/IVersionManager';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore
@@ -11,7 +11,7 @@ import IOperationStore from './interfaces/IOperationStore';
  */
 export default class Resolver {
 
-  public constructor (private getOperationProcessor: (blockchainTime: number) => IOperationProcessor, private operationStore: IOperationStore) { }
+  public constructor (private versionManager: IVersionManager, private operationStore: IOperationStore) { }
 
   /**
    * Resolve the given DID unique suffix to its DID Doducment.
@@ -34,7 +34,7 @@ export default class Resolver {
 
     // Patch each operation in chronological order to build a complete DID Document.
     for (const operation of operations) {
-      const operationProcessor = this.getOperationProcessor(operation.transactionTime);
+      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
       const patchResult = await operationProcessor.patch(operation, previousOperationHash, didDocumentReference);
 
       if (patchResult.validOperation) {

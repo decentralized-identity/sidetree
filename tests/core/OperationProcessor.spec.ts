@@ -6,9 +6,12 @@ import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
+import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
+import MockVersionManager from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import Resolver from '../../lib/core/Resolver';
@@ -131,6 +134,8 @@ describe('OperationProcessor', async () => {
   const config = require('../json/config-test.json');
   let resolver: Resolver;
   let operationStore: IOperationStore;
+  let versionManager: IVersionManager;
+  let operationProcessor: IOperationProcessor;
   let createOp: AnchoredOperation | undefined;
   let publicKey: any;
   let privateKey: any;
@@ -141,7 +146,10 @@ describe('OperationProcessor', async () => {
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
-    resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
+    operationProcessor = new OperationProcessor(config.didMethodName);
+    versionManager = new MockVersionManager();
+    spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
+    resolver = new Resolver(versionManager, operationStore);
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -231,7 +239,7 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
-      resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
+      resolver = new Resolver(versionManager, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationStore.put(permutedOps);
       const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;

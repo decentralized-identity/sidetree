@@ -3,6 +3,7 @@ import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
+import IVersionManager from './interfaces/IVersionManager';
 import SharedErrorCode from '../common/SharedErrorCode';
 import timeSpan = require('time-span');
 import TransactionModel from '../common/models/TransactionModel';
@@ -31,7 +32,7 @@ export default class Observer {
   private lastKnownTransaction: TransactionModel | undefined;
 
   public constructor (
-    private getTransactionProcessor: (blockchainTime: number) => ITransactionProcessor,
+    private versionManager: IVersionManager,
     private blockchain: IBlockchain,
     private maxConcurrentDownloads: number,
     private operationStore: IOperationStore,
@@ -228,7 +229,7 @@ export default class Observer {
     let transactionProcessedSuccessfully;
 
     try {
-      const transactionProcessor: ITransactionProcessor = this.getTransactionProcessor(transaction.transactionTime);
+      const transactionProcessor: ITransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
       transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
       console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);

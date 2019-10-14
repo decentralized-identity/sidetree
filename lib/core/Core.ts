@@ -38,13 +38,12 @@ export default class Core {
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.cas = new Cas(config.contentAddressableStoreServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
-    this.resolver = new Resolver((blockchainTime) => this.versionManager.getOperationProcessor(blockchainTime), this.operationStore);
-    this.batchScheduler = new BatchScheduler(
-      (blockchainTime) => this.versionManager.getBatchWriter(blockchainTime), this.blockchain, config.batchingIntervalInSeconds);
+    this.resolver = new Resolver(this.versionManager, this.operationStore);
+    this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
     this.observer = new Observer(
-      (blockchainTime) => this.versionManager.getTransactionProcessor(blockchainTime),
+      this.versionManager,
       this.blockchain,
       config.maxConcurrentDownloads,
       this.operationStore,

@@ -12,11 +12,13 @@ import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
+import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
@@ -41,6 +43,7 @@ describe('RequestHandler', () => {
   let operationStore: IOperationStore;
   let resolver: Resolver;
   let requestHandler: RequestHandler;
+  let versionManager: IVersionManager;
 
   let publicKey: DidPublicKeyModel;
   let privateKey: any;
@@ -55,10 +58,15 @@ describe('RequestHandler', () => {
 
     cas = new MockCas();
     const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
+    const operationProcessor = new OperationProcessor(config.didMethodName);
+
+    versionManager = new MockVersionManager();
+    spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
+    spyOn(versionManager, 'getBatchWriter').and.returnValue(batchWriter);
 
     operationStore = new MockOperationStore();
-    resolver = new Resolver((_blockchainTime) => new OperationProcessor(config.didMethodName), operationStore);
-    batchScheduler = new BatchScheduler((_blockchainTime) => batchWriter, blockchain, config.batchingIntervalInSeconds);
+    resolver = new Resolver(versionManager, operationStore);
+    batchScheduler = new BatchScheduler(versionManager, blockchain, config.batchingIntervalInSeconds);
     requestHandler = new RequestHandler(
       resolver,
       operationQueue,

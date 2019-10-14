@@ -7,6 +7,7 @@ import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
+import IVersionManager from './interfaces/IVersionManager';
 import ProtocolVersionMetadata from './models/ProtocolVersionMetadata';
 import Resolver from './Resolver';
 
@@ -22,7 +23,7 @@ export interface ProtocolVersionModel {
 /**
  * The class that handles the loading of different versions of protocol codebase.
  */
-export default class VersionManager {
+export default class VersionManager implements IVersionManager {
   // Reverse sorted protocol versions. ie. latest version first.
   private protocolVersionsReverseSorted: ProtocolVersionModel[];
 
@@ -61,7 +62,8 @@ export default class VersionManager {
     // Load all the metadata on all protocol versions first because instantiation of other components will need it.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
       const version = protocolVersion.version;
-      const protocolVersionMetadata = (await import(`./versions/${version}/ProtocolVersionMetadata`)).default;
+
+      const protocolVersionMetadata = await this.loadDefaultExportsForVersion(version, 'ProtocolVersionMetadata');
       this.protocolVersionMetadatas.set(version, protocolVersionMetadata);
     }
 
@@ -77,27 +79,27 @@ export default class VersionManager {
       const version = protocolVersion.version;
 
       /* tslint:disable-next-line */
-      const MongoDbOperationQueue = (await import(`./versions/${version}/MongoDbOperationQueue`)).default;
+      const MongoDbOperationQueue = await this.loadDefaultExportsForVersion(version, 'MongoDbOperationQueue');
       const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString);
       await operationQueue.initialize();
 
       /* tslint:disable-next-line */
-      const TransactionProcessor = (await import(`./versions/${version}/TransactionProcessor`)).default;
+      const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
       const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */
-      const BatchWriter = (await import(`./versions/${version}/BatchWriter`)).default;
+      const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
       const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
       this.batchWriters.set(version, batchWriter);
 
       /* tslint:disable-next-line */
-      const OperationProcessor = (await import(`./versions/${version}/OperationProcessor`)).default;
+      const OperationProcessor = await this.loadDefaultExportsForVersion(version, 'OperationProcessor');
       const operationProcessor = new OperationProcessor(this.config.didMethodName);
       this.operationProcessors.set(version, operationProcessor);
 
       /* tslint:disable-next-line */
-      const RequestHandler = (await import(`./versions/${version}/RequestHandler`)).default;
+      const RequestHandler = await this.loadDefaultExportsForVersion(version, 'RequestHandler');
       const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName, allSupportedHashAlgorithms);
       this.requestHandlers.set(version, requestHandler);
     }
@@ -171,5 +173,11 @@ export default class VersionManager {
     }
 
     throw new Error(`Unabled to find protocol parameters for the given blockchain time ${blockchainTime}, investigate and fix.`);
+  }
+
+  private async loadDefaultExportsForVersion (version: string, className: string): Promise<any> {
+    const defaults = (await import(`./versions/${version}/${className}`)).default;
+
+    return defaults;
   }
 }
