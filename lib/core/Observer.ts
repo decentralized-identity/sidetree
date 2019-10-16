@@ -71,7 +71,6 @@ export default class Observer {
    * then scehdules the next round of processing unless `stopPeriodicProcessing()` is invoked.
    */
   public async processTransactions () {
-    let blockReorganizationDetected = false;
     try {
       await this.storeConsecutiveTransactionsProcessed(); // Do this in multiple places
 
@@ -82,7 +81,9 @@ export default class Observer {
         // Get the last transaction to be used as a timestamp to fetch new transactions.
         const lastKnownTransactionNumber = this.lastKnownTransaction ? this.lastKnownTransaction.transactionNumber : undefined;
         const lastKnownTransactionTimeHash = this.lastKnownTransaction ? this.lastKnownTransaction.transactionTimeHash : undefined;
+        const lastKnownTransactionTime = this.lastKnownTransaction ? this.lastKnownTransaction.transactionTime : 0;
 
+        let invalidTransactionNumberOrTimeHash = false;
         let readResult;
         const endTimer = timeSpan(); // Measure time taken to go blockchain read.
         try {
@@ -90,11 +91,9 @@ export default class Observer {
           readResult = await this.blockchain.read(lastKnownTransactionNumber, lastKnownTransactionTimeHash);
           console.info(`Fetched ${readResult.transactions.length} Sidetree transactions from blockchain service in ${endTimer.rounded()} ms.`);
         } catch (error) {
-          // If block reorganization (temporary fork) has happened.
           if (error instanceof SidetreeError && error.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {
-            console.info(`Block reorganization detected.`);
-            blockReorganizationDetected = true;
-            moreTransactions = true;
+            console.info(`Invalid transaction number ${lastKnownTransactionNumber} or time hash ${lastKnownTransactionTimeHash} given to blockchain service.`);
+            invalidTransactionNumberOrTimeHash = true;
           } else {
             throw error;
           }
@@ -114,6 +113,19 @@ export default class Observer {
           void this.processTransaction(transaction, awaitingTransaction);
         }
 
+        // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
+        // latest transaction time is less or equal to blockchain service time.
+        // This check will prevent Core from reverting transactions if/when blockchain service is reinitializing its data itself.
+        let blockReorganizationDetected = false;
+        if (invalidTransactionNumberOrTimeHash) {
+          if (lastKnownTransactionTime <= this.blockchain.approximateTime.time) {
+            blockReorganizationDetected = true;
+            moreTransactions = true;
+          } else {
+            console.info(`Blockchain microservice blockchain time is behind last known transaction time, waiting for blockchain microservice to catch up...`);
+          }
+        }
+
         // If block reorg is detected, we must wait until no more operation processing is pending,
         // then revert invalid transaction and operations.
         if (blockReorganizationDetected) {
@@ -121,7 +133,7 @@ export default class Observer {
           await this.waitUntilCountOfTransactionsUnderProcessingIsLessOrEqualTo(0);
 
           console.info(`Reverting invalid transactions...`);
-          await this.RevertInvalidTransactions();
+          await this.revertInvalidTransactions();
           console.info(`Completed reverting invalid transactions.`);
         } else {
           // Else it means transaction fetch was successful:
@@ -253,7 +265,7 @@ export default class Observer {
   /**
    * Reverts invalid transactions. Used in the event of a block-reorganization.
    */
-  private async RevertInvalidTransactions () {
+  private async revertInvalidTransactions () {
     // Compute a list of exponentially-spaced transactions with their index, starting from the last transaction of the processed transactions.
     const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 

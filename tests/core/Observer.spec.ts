@@ -13,6 +13,7 @@ import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
+import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
@@ -21,7 +22,6 @@ import OperationGenerator from '../generators/OperationGenerator';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
-import { MockTransactionStore } from '../mocks/MockTransactionStore';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('Observer', async () => {
@@ -56,6 +56,10 @@ describe('Observer', async () => {
 
   afterAll(() => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = originalDefaultTestTimeout;
+  });
+
+  beforeEach(() => {
+    transactionStore = new MockTransactionStore();
   });
 
   it('should record transactions processed.', async () => {
@@ -314,6 +318,10 @@ describe('Observer', async () => {
 
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
+    // Force blockchain time to be higher than the latest known transaction time by core,
+    // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
+    (blockchainClient as any).cachedBlockchainTime = { time: 5000, hash: '5000' };
+
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
       readInvocationCount++;
@@ -356,7 +364,7 @@ describe('Observer', async () => {
         return;
       }
 
-      // NOTE: if anything throws, we retry.
+      // NOTE: the `retry` library retries if error is thrown.
       throw new Error('Block reorganization not handled.');
     }, {
       retries: 10,
@@ -367,5 +375,68 @@ describe('Observer', async () => {
     expect(processedTransactions[1].anchorString).toEqual('2ndTransactionNew');
     expect(processedTransactions[2].anchorString).toEqual('3rdTransactionNew');
     expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
+  });
+
+  it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
+    const transaction = {
+      'transactionNumber': 1,
+      'transactionTime': 1000,
+      'transactionTimeHash': '1000',
+      'anchorString': '1stTransaction'
+    };
+
+    // Prep the transaction store with some initial state.
+    await transactionStore.addTransaction(transaction);
+
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
+
+    // Always return a blockchain time less than the last transaction known by core to simulate blockchain service being behind core service.
+    spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 500, hash: '500' }));
+
+    // Simulate the read response when blockchain service blockchain time is behind core service's.
+    let readInvocationCount = 0;
+    const mockReadFunction = async (sinceTransactionNumber?: number, transactionTimeHash?: string) => {
+      readInvocationCount++;
+      expect(sinceTransactionNumber).toEqual(1);
+      expect(transactionTimeHash).toEqual('1000');
+      throw new SidetreeError(ErrorCode.InvalidTransactionNumberOrTimeHash);
+    };
+    spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
+
+    // NOTE: it is irrelvant what getFirstValidTransaction() returns because it is expected to be not called at all.
+    const getFirstValidTransactionSpy =
+      spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
+
+    // Process first set of transactions.
+    const observer = new Observer(
+      versionManager,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
+    const revertInvalidTransactionsSpy = spyOn(observer as any, 'revertInvalidTransactions').and.returnValue(Promise.resolve(undefined));
+
+    await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
+
+    // Monitor the Observer until at two processing cycle has lapsed.
+    await retry(async _bail => {
+      if (readInvocationCount >= 2) {
+        return;
+      }
+
+      // NOTE: the `retry` library retries if error is thrown.
+      throw new Error('Two transaction processing cycles have not occured yet.');
+    }, {
+      retries: 3,
+      minTimeout: 1000, // milliseconds
+      maxTimeout: 1000 // milliseconds
+    });
+
+    expect(revertInvalidTransactionsSpy).toHaveBeenCalledTimes(0);
+    expect(getFirstValidTransactionSpy).toHaveBeenCalledTimes(0);
   });
 });
