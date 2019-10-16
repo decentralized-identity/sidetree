@@ -13,7 +13,7 @@ interface IUnresolvableTransactionInternal {
 /**
  * In-memory implementation of the `TransactionStore`.
  */
-export class MockTransactionStore implements ITransactionStore, IUnresolvableTransactionStore {
+export default class MockTransactionStore implements ITransactionStore, IUnresolvableTransactionStore {
   private processedTransactions: TransactionModel[] = [];
   private unresolvableTransactions: Map<number, IUnresolvableTransactionInternal> = new Map();
 
