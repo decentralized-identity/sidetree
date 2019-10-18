@@ -1,14 +1,13 @@
-import Cryptography from './util/Cryptography';
 import Did from './Did';
 import DidPublicKeyModel from '../latest/models/DidPublicKeyModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import Jws from './util/Jws';
+import JwsModel from './models/JwsModel';
 import Multihash from './Multihash';
-import OperationModel from './models/OperationModel';
 import ProtocolParameters from './ProtocolParameters';
-import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import { SidetreeError } from '../../Error';
 
 /**
@@ -32,6 +31,10 @@ export enum OperationType {
 export default class Operation {
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
+  /** The encoded protected header. */
+  public readonly encodedProtectedHeader: string;
+  /** The encoded operation payload. */
+  public readonly encodedPayload: string;
 
   /**
    * The unique suffix of the DID of the DID document to be created/updated.
@@ -41,8 +44,7 @@ export default class Operation {
 
   /** Hash of the operation based on the encoded payload string. */
   public readonly operationHash: string;
-  /** The encoded operation payload. */
-  public readonly encodedPayload: string;
+
   /** The type of operation. */
   public readonly type: OperationType;
   /** The hash of the previous operation - undefined for DID create operation */
@@ -67,14 +69,15 @@ export default class Operation {
 
     // Parse request buffer into a JS object.
     const operationJson = operationBuffer.toString();
-    const operation = JSON.parse(operationJson);
+    const operation = JSON.parse(operationJson) as JwsModel;
 
     // Ensure that the operation is well-formed.
-    const [operationType, decodedPayload] = Operation.parseAndValidateOperation(operation);
+    const [decodedHeader, decodedPayload] = Operation.parseAndValidateOperation(operation);
 
     // Initialize common operation properties.
-    this.type = operationType;
-    this.signingKeyId = operation.header.kid;
+    this.type = decodedHeader.operation;
+    this.signingKeyId = decodedHeader.kid;
+    this.encodedProtectedHeader = operation.protected;
     this.encodedPayload = operation.payload;
     this.signature = operation.signature;
     this.operationHash = Operation.computeHash(this.encodedPayload);
@@ -111,23 +114,8 @@ export default class Operation {
    * @returns true if signature is successfully verified, false otherwise.
    */
   public async verifySignature (publicKey: DidPublicKeyModel): Promise<boolean> {
-    // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
-    // NOTE: there is no protected header in Sidetree operation.
-    const jwsSigningInput = '.' + this.encodedPayload;
-    const verified = await Cryptography.verifySignature(jwsSigningInput, this.signature, publicKey);
+    const verified = await Jws.verifySignature(this.encodedProtectedHeader, this.encodedPayload, this.signature, publicKey);
     return verified;
-  }
-
-  /**
-   * Signs the given encoded payload using the given private key.
-   * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
-   */
-  public static async sign (encodedPayload: string, privateKey: string | PrivateKey): Promise<string> {
-    // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
-    // NOTE: there is no protected header in Sidetree operation.
-    const jwsSigningInput = '.' + encodedPayload;
-    const signature = await Cryptography.sign(jwsSigningInput, privateKey);
-    return signature;
   }
 
   /**
@@ -221,43 +209,31 @@ export default class Operation {
   }
 
   /**
-   * Gets the operation type given an operation object.
-   */
-  private static getOperationType (operation: OperationModel): OperationType {
-    switch (operation.header.operation) {
-      case 'create':
-        return OperationType.Create;
-      case 'update':
-        return OperationType.Update;
-      case 'delete':
-        return OperationType.Delete;
-      case 'recover':
-        return OperationType.Recover;
-      default:
-        throw new Error(`Unknown operation type: ${operation.header.operation}`);
-    }
-  }
-
-  /**
    * Parses and validates the given operation object object.
    * NOTE: Operation validation does not include signature verification.
-   * @returns [operation type, decoded payload json object] if given operation is valid, Error is thrown otherwise.
+   * @returns [decoded protected header JSON object, decoded payload JSON object] if given operation JWS is valid, Error is thrown otherwise.
    */
-  private static parseAndValidateOperation (operation: any): [OperationType, any] {
+  private static parseAndValidateOperation (operation: any): [{ kid: string; operation: OperationType }, any] {
+    const decodedProtectedHeadJsonString = Encoder.decodeAsString(operation.protected);
+    const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
+
     // Must contain 'header' property and 'header' property must contain a string 'kid' property.
-    if (typeof operation.header.kid !== 'string') {
+    if (typeof decodedProtectedHeader.kid !== 'string') {
       throw new SidetreeError(ErrorCode.OperationHeaderMissingKid);
     }
 
     // 'header' property must contain 'alg' property with value 'ES256k'.
-    if (operation.header.alg !== 'ES256K') {
+    if (decodedProtectedHeader.alg !== 'ES256K') {
       throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectAlg);
     }
 
+    // Get the operation type.
+    const operationType = decodedProtectedHeader.operation;
+
     // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
     const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
-    if (typeof operation.header.operation !== 'string' ||
-        !allowedOperations.has(operation.header.operation)) {
+    if (typeof operationType !== 'string' ||
+        !allowedOperations.has(operationType)) {
       throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectOperation);
     }
 
@@ -270,9 +246,6 @@ export default class Operation {
     if (typeof operation.signature !== 'string') {
       throw new SidetreeError(ErrorCode.OperationMissingOrIncorrectSignature);
     }
-
-    // Get the operation type.
-    const operationType = Operation.getOperationType(operation);
 
     // Decode the encoded operation string.
     const decodedPayloadJson = Encoder.decodeAsString(operation.payload);
@@ -294,7 +267,7 @@ export default class Operation {
       default:
     }
 
-    return [operationType, decodedPayload];
+    return [decodedProtectedHeader, decodedPayload];
   }
 
   /**
