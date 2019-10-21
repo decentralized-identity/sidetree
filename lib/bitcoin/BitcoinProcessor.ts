@@ -566,7 +566,7 @@ export default class BitcoinProcessor {
       }
 
       this.transactionSampler.clear();
-      this.quantileCalculator.add(xactFees);
+      await this.quantileCalculator.add(xactFees);
     }
 
     return blockHash;
