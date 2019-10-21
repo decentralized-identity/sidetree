@@ -6,7 +6,7 @@
 export interface ISlidingWindowQuantileConfig {
   windowSizeInBlocks: number;
   windowSlideInBlocks: number;
-  transactionFeeApproximation: number;
+  feeApproximation: number;
   sampleSize: number;
 }
 
@@ -14,7 +14,8 @@ export interface ISlidingWindowQuantileConfig {
  * Defines configuration of proof of fee calculation.
  */
 export interface IProofOfFeeConfig {
-  slidingWindowQuantileConfig: ISlidingWindowQuantileConfig;
+  transactionFeeQuantileConfig: ISlidingWindowQuantileConfig;
   quantile: number;
   quantileScale: number;
+  maxTransactionInputCount: number;
 }

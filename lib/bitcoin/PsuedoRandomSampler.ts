@@ -7,10 +7,7 @@ export type Bit = 0 | 1;
 
 /**
  * An instance of this class generates a psuedo-random
- * bit stream based on an initial hexadecimal seed. The initial seed
- * is read off directly so it should have some psuedo-random properties
- * (e.g., sha256 hash). Once the initial seed bits are exhausted, the
- * seed is sha256 hashed to get the next 256 bits.
+ * bit stream based on an initial hexadecimal seed.
  */
 export class PsuedoRandomBitStream {
 
@@ -24,7 +21,7 @@ export class PsuedoRandomBitStream {
    * @param hexSeed Hexadecimal seed value
    */
   public constructor (private hexSeed: string) {
-    this.psuedoRandomBits = PsuedoRandomBitStream.getBitsFromHex(this.hexSeed);
+    this.psuedoRandomBits = PsuedoRandomBitStream.getBitsFromHex(PsuedoRandomBitStream.rehash(this.hexSeed));
   }
 
   /**
@@ -166,7 +163,7 @@ export class ReservoirSampler {
   /**
    * Psuedo-randome generator for various random numbers we need for sampling
    */
-  private psuedoRandomGenerator: PsuedoRandomGenerator;
+  private psuedoRandomGenerator: PsuedoRandomGenerator | undefined;
 
   /**
    * The current sample
@@ -178,9 +175,8 @@ export class ReservoirSampler {
    */
   private streamSize: number = 0;
 
-  public constructor (private sampleSize: number, hexSeed: string) {
-    const psuedoRandomBitStream = new PsuedoRandomBitStream(hexSeed);
-    this.psuedoRandomGenerator = new PsuedoRandomGenerator(psuedoRandomBitStream);
+  public constructor (private sampleSize: number) {
+    this.psuedoRandomGenerator = undefined;
     this.sample = new Array<string>(this.sampleSize);
   }
 
@@ -200,10 +196,10 @@ export class ReservoirSampler {
     // We have a full sampleSize of samples at this point.
     // This element is picked to be in the sample with probability 1/streamSize
     this.streamSize++;
-    if (this.psuedoRandomGenerator.getBernoulliSample(1, this.streamSize) === 0) {
+    if (this.psuedoRandomGenerator!.getBernoulliSample(1, this.streamSize) === 0) {
 
       // If this element is picked, we need to decide which element to evict at random
-      const randIndex = this.psuedoRandomGenerator.getRandomNumber(this.sampleSize);
+      const randIndex = this.psuedoRandomGenerator!.getRandomNumber(this.sampleSize);
 
       // evict the current element at randIndex and store element instead
       this.sample[randIndex] = element;
@@ -227,5 +223,10 @@ export class ReservoirSampler {
   public getSample (): string[] {
     const currentSampleSize = Math.min(this.sampleSize, this.streamSize);
     return this.sample.slice(0, currentSampleSize);
+  }
+
+  /** Reset the sampler for a new stream */
+  public clear () {
+    this.streamSize = 0;
   }
 }

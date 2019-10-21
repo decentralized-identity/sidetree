@@ -6,11 +6,14 @@ import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import SlidingWindowQuantileCalculator from './SlidingWindowQuantileCalculator';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
+import { IProofOfFeeConfig } from './IProofOfFeeConfig';
 import { ResponseStatus } from '../common/Response';
+import { ReservoirSampler } from './PsuedoRandomSampler';
 import { URL } from 'url';
 
 /**
@@ -82,6 +85,16 @@ export default class BitcoinProcessor {
 
   private serviceInfo: ServiceInfo;
 
+  /** proof of fee configuration */
+  private readonly proofOfFeeConfig: IProofOfFeeConfig;
+
+  private readonly quantileCalculator: SlidingWindowQuantileCalculator;
+
+  private readonly transactionSampler: ReservoirSampler;
+
+  /** satoshis per bitcoin */
+  private static readonly satoshiPerBTC = 100000000;
+
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
     if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
@@ -91,6 +104,12 @@ export default class BitcoinProcessor {
     this.bitcoinFee = config.bitcoinFee;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.proofOfFeeConfig = config.proofOfFeeConfig;
+
+    const transactionFeeQuantileConfig = config.proofOfFeeConfig.transactionFeeQuantileConfig;
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation, BitcoinProcessor.satoshiPerBTC);
+    this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSize);
+
     /// Bitcore has a type file error on PrivateKey
     try {
       this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
@@ -507,12 +526,22 @@ export default class BitcoinProcessor {
 
     // console.debug(`Block ${block} contains ${transactions.length} transactions`);
 
+    // reseed source of psuedo-randomness to the blockhash
+    this.transactionSampler.resetPsuedoRandomSeed(blockHash);
+
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
       // get the output coins in the transaction
       if (!('vout' in transactions[transactionIndex])) {
         // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
         continue;
+      }
+
+      // Add the transaction to the sampler.  We filter out transactions with unusual
+      // input count - such transaction require a large number of rpc calls to compute transaction fee
+      const inputs = transactions[transactionIndex].vin as Array<any>;
+      if (inputs.length <= this.proofOfFeeConfig.maxTransactionInputCount) {
+        this.transactionSampler.addElement(transactions[transactionIndex].txid);
       }
 
       try {
@@ -528,7 +557,59 @@ export default class BitcoinProcessor {
       }
     }
 
+    if (((block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.windowSlideInBlocks) === 0) {
+      const xactFees = new Array();
+      const sampledTransactions = this.transactionSampler.getSample();
+      for (let txid in sampledTransactions) {
+        const xactFee = await this.getTransactionFeeInSatoshi(txid);
+        xactFees.push(xactFee);
+      }
+
+      this.transactionSampler.clear();
+      this.quantileCalculator.add(xactFees);
+    }
+
     return blockHash;
+  }
+
+  /** Get the transaction out value in satoshi, for a specified output index */
+  private async getTransactionOutValueInSatoshi (txid: string, outIdx: number) {
+    const xact = await this.rpcCall({
+      method: 'getrawtransaction',
+      params: [
+        txid,  // transaction id
+        true   // verbose
+      ]
+    });
+
+    // output with the desired index
+    const vout = xact.vout.find((v: any) => v.n === outIdx);
+
+    return Math.round(vout.value * BitcoinProcessor.satoshiPerBTC);
+  }
+
+  /** Get the transaction fee of a transaction in satoshis */
+  private async getTransactionFeeInSatoshi (txid: string) {
+    const xact = await this.rpcCall({
+      method: 'getrawtransaction',
+      params: [
+        txid,  // transaction id
+        true   // verbose
+      ]
+    });
+
+    let inputSatoshiSum = 0;
+    for (let i = 0 ; i < xact.vin.length ; i++) {
+      const xactOutValue = await this.getTransactionOutValueInSatoshi(xact.vin[i].txid, xact.vin[i].vout);
+      inputSatoshiSum += xactOutValue;
+    }
+
+    // transaction outputs in satoshis
+    const xactOuts: number[] = xact.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBTC));
+
+    const outputSatoshiSum = xactOuts.reduce((s, v) => s + v, 0);
+
+    return (inputSatoshiSum - outputSatoshiSum);
   }
 
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (

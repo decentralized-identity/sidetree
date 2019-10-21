@@ -77,7 +77,7 @@ type FrequencyVector = Array<number>;
  * we suitably interleave these two methods. It also provides a
  * method to get the quantile from the current window of elements.
  */
-export default class SlidingWindowQuantileComputer {
+export default class SlidingWindowQuantileCalculator {
 
   /**
    * Normalize values to a compact range 0..max, which allows
