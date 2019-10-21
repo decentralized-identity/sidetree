@@ -20,8 +20,11 @@ export class PsuedoRandomBitStream {
   // The index into psuedoRandomBits for the next bit
   private currentIndex: number = 0;
 
-  public constructor (private seed: string) {
-    this.psuedoRandomBits = PsuedoRandomBitStream.getBitsFromHex(this.seed);
+  /**
+   * @param hexSeed Hexadecimal seed value
+   */
+  public constructor (private hexSeed: string) {
+    this.psuedoRandomBits = PsuedoRandomBitStream.getBitsFromHex(this.hexSeed);
   }
 
   /**
@@ -32,8 +35,8 @@ export class PsuedoRandomBitStream {
     this.currentIndex++;
 
     if (this.currentIndex === this.psuedoRandomBits.length) {
-      this.seed = PsuedoRandomBitStream.rehash(this.seed);
-      this.psuedoRandomBits = PsuedoRandomBitStream.getBitsFromHex(this.seed);
+      this.hexSeed = PsuedoRandomBitStream.rehash(this.hexSeed);
+      this.psuedoRandomBits = PsuedoRandomBitStream.getBitsFromHex(this.hexSeed);
       this.currentIndex = 0;
     }
 
@@ -90,7 +93,7 @@ export class PsuedoRandomGenerator {
    * a binary decimal, 1/3 would be written as .010101...., meaning
    * 1/3 = 0 x 1/2 + 1 x 1/4 + 0 x 1/8 + 1 x 1/16 + ...
    *
-   * The result variable below is computing the i'th digit of the
+   * The 'result' variable below is computing the i'th digit of the
    * binary representation of n/d; for 1/3, the sequence of result
    * values is 010101 .... The while check is implementing a
    * geometric distribution that is picking the i'th digit with
@@ -118,6 +121,18 @@ export class PsuedoRandomGenerator {
 
   /**
    * Get a number uniformly at random between 0 and n-1.
+   * This implementation uses the algorithm described in
+   * https://arxiv.org/pdf/1304.1916.pdf
+   *
+   * To see how it works, first consider n that is a power
+   * of 2, say 32. The while loop picks 5 random bits and returns
+   * the value encoded by the 5 bits as the random number; clearly,
+   * any of the values 0...31 are equally likely to be returned as
+   * desired.
+   *
+   * Now consider a non-power-of-2 such as 31. We again pick 5 bits and
+   * if these 5 bits encode a value <= 30, we return that value; otherwise,
+   * we repeat the process.
    */
   public getRandomNumber (n: number): number {
     let n2 = 1;
@@ -136,5 +151,81 @@ export class PsuedoRandomGenerator {
         }
       }
     }
+  }
+}
+
+/**
+ * Implement the reservoir sampling technique which maintains a uniform random
+ * sample over a "stream" of unknown size (https://en.wikipedia.org/wiki/Reservoir_sampling)
+ *
+ * We can add any number of elements to be considered for sampling and at any point request
+ * a sample of preconfigured size over the elements that have been added so far.
+ */
+export class ReservoirSampler {
+
+  /**
+   * Psuedo-randome generator for various random numbers we need for sampling
+   */
+  private psuedoRandomGenerator: PsuedoRandomGenerator;
+
+  /**
+   * The current sample
+   */
+  private sample: string[];
+
+  /**
+   * Number of elements added so far.
+   */
+  private streamSize: number = 0;
+
+  public constructor (private sampleSize: number, hexSeed: string) {
+    const psuedoRandomBitStream = new PsuedoRandomBitStream(hexSeed);
+    this.psuedoRandomGenerator = new PsuedoRandomGenerator(psuedoRandomBitStream);
+    this.sample = new Array<string>(this.sampleSize);
+  }
+
+  /**
+   * Add a new element to be considered for future sampling
+   */
+  public addElement (element: string): void {
+
+    // If we have not reached our sampling limit, we can simply add
+    // the current element to the sample
+    if (this.streamSize < this.sampleSize) {
+      this.sample[this.streamSize] = element;
+      this.streamSize++;
+      return;
+    }
+
+    // We have a full sampleSize of samples at this point.
+    // This element is picked to be in the sample with probability 1/streamSize
+    this.streamSize++;
+    if (this.psuedoRandomGenerator.getBernoulliSample(1, this.streamSize) === 0) {
+
+      // If this element is picked, we need to decide which element to evict at random
+      const randIndex = this.psuedoRandomGenerator.getRandomNumber(this.sampleSize);
+
+      // evict the current element at randIndex and store element instead
+      this.sample[randIndex] = element;
+    }
+  }
+
+  /**
+   * Reset the psuedo-random seed with a new seed for future random
+   * value generation.
+   */
+  public resetPsuedoRandomSeed (hexSeed: string) {
+    const psuedoRandomBitStream = new PsuedoRandomBitStream(hexSeed);
+    this.psuedoRandomGenerator = new PsuedoRandomGenerator(psuedoRandomBitStream);
+  }
+
+  /**
+   * Get the current sample. We return the entire sample unless we have
+   * seen less than sampleSize elements, in which case we return all
+   * the elements seen.
+   */
+  public getSample (): string[] {
+    const currentSampleSize = Math.min(this.sampleSize, this.streamSize);
+    return this.sample.slice(0, currentSampleSize);
   }
 }
