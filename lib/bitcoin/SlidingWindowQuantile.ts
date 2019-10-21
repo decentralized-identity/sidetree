@@ -63,7 +63,10 @@ class ValueApproximator {
   }
 }
 
-// Frequency vector
+/**
+ * Frequency vector is an array of numbers representing frequencies of
+ * normalized values.
+ */
 type FrequencyVector = Array<number>;
 
 /**
