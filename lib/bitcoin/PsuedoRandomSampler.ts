@@ -70,6 +70,12 @@ export class PsuedoRandomBitStream {
   }
 }
 
+/**
+ * PsuedoRandomGenerator: An object of this class takes in a psuedoranbom bit
+ * stream and provides two sampling methods: a bernoulli sampling method and
+ * a uniform sampling method that picks a number uniformly at random from a range
+ * 0..n-1.
+ */
 export class PsuedoRandomGenerator {
 
   public constructor (private psuedoRandomBitStream: PsuedoRandomBitStream) {
