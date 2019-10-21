@@ -1,4 +1,8 @@
 
+/**
+ * Defines configuration of approximate sliding windows used in
+ * proof of fee calculation.
+ */
 export interface ISlidingWindowQuantileConfig {
   windowSizeInBlocks: number;
   windowSlideInBlocks: number;
@@ -6,6 +10,9 @@ export interface ISlidingWindowQuantileConfig {
   sampleSize: number;
 }
 
+/**
+ * Defines configuration of proof of fee calculation.
+ */
 export interface IProofOfFeeConfig {
   slidingWindowQuantileConfig: ISlidingWindowQuantileConfig;
   quantile: number;

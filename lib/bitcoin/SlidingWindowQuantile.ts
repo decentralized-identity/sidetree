@@ -18,12 +18,15 @@ class ValueApproximator {
 
   }
 
+  /**
+   * Get the maximum normalized value.
+   */
   public getMaximumNormalizedValue (): number {
     return this.getNormalizedValue(this.maxValue);
   }
 
   /**
-   * Normalize a value using an approximation factor.
+   * Normalize a value.
    */
   public getNormalizedValue (value: number): number {
     if (value <= 0) {
@@ -37,6 +40,9 @@ class ValueApproximator {
     return 1 + ValueApproximator.getLog(value, this.approximation);
   }
 
+  /**
+   * Get the denormalized value of a normalized value.
+   */
   public getDenormalizedValue (normalizedValue: number): number {
     if (normalizedValue === 0) {
       return 0;
@@ -61,7 +67,8 @@ class ValueApproximator {
 type FrequencyVector = Array<number>;
 
 /**
- * Compute approximate quantiles over a sliding window.
+ * Define a sliding window quantile computer that computes
+ * approximate quantiles over a sliding window.
  * The class exposes methods to add a batch of elements and
  * delete the last batch of elements - to get a sliding window
  * we suitably interleave these two methods. It also provides a
@@ -95,6 +102,10 @@ export default class SlidingWindowQuantileComputer {
    */
   private frequencyVectorAggregated: FrequencyVector;
 
+  /**
+   * Construct a sliding window quantile computer with specified
+   * approximation paramenters.
+   */
   public constructor (approximation: number, maxValue: number) {
     this.valueApproximator = new ValueApproximator(approximation, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
@@ -102,6 +113,11 @@ export default class SlidingWindowQuantileComputer {
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize);
   }
 
+  /**
+   * Add a new batch of values to the sliding window. This function
+   * also materializes (a compact representation) of this batch
+   * to a backend mongo store.
+   */
   public async add (values: number[]): Promise<void> {
     const normalizedFrequencies = new Array(this.frequencyVectorSize);
 
@@ -119,7 +135,10 @@ export default class SlidingWindowQuantileComputer {
     return;
   }
 
-  public deleteLast (): void {
+  /**
+   * Delete the last batch of values from the sliding window.
+   */
+  public async deleteLast (): Promise<void> {
     const deletedFrequencyVector = this.slidingWindow.shift();
 
     if (deletedFrequencyVector) {
@@ -131,7 +150,30 @@ export default class SlidingWindowQuantileComputer {
     return;
   }
 
+  /**
+   * Get a specified quantile in the current sliding window.
+   */
   public getQuantile (quantile: number): number {
+
+    if (quantile < 0 || quantile > 1) {
+      throw Error(`Invalid quantile measure ${quantile}`);
+    }
+
+    // Number of elements in the sliding window;
+    const elementCount = this.frequencyVectorAggregated.reduce((a,b) => a + b, 0);
+
+    // Rank of the element
+    const rankThreshold = quantile * elementCount;
+
+    let runSum = 0;
+    for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
+      runSum += this.frequencyVectorAggregated[i];
+      if (runSum >= rankThreshold) {
+        return this.valueApproximator.getDenormalizedValue(i);
+      }
+    }
+
+    // should never come here.
     return 0;
   }
 }
