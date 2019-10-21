@@ -78,6 +78,29 @@ A valid _original DID Document_ must be a valid generic DID Document that adhere
 See [DID Create API](#original-did-document-example) section for an example of an original DID Document.
 
 
+## Unpublished DID Resolution
+
+DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through _DID Parameters_, as described in the [W3C DID spec](https://w3c.github.io/did-spec/#generic-did-parameter-names).
+
+Many DID Methods feature a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying trust system (i.e. blockchain, ledger). The community has recognized the need for a mechanism to support resolution and use of identifiers during this period. As such, the community will introduce a _Generic DID Parameter_ `initial-values` that any DID method can use to signify initial state variables during this period. 
+
+Sidetree uses the `initial-values` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `initial-values` DID Parameter to the DID, with the value being the encoded string of the _original DID Document_.
+
+e.g. `did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>`.
+
+This allows any entity to support all of the following usage patterns:
+
+- Resolving unpublished DIDs.
+- Authenticating with unpublished DIDs.
+- Signing and verifying credentials signed against unpublished DIDs.
+- Authenticating with either the DID or DID with `initial-values` parameter, after it is published.
+- Signing and verifying credentials signed against either the DID or DID with `initial-values` parameter, after it is published.
+
+### `published` Flag
+
+At such time an ID is published/anchored, a user can provide either the parametered or unparametered version of the ION DID URI to an external party, and it will be resolvable. There is no required change for any party that had been holding the parametered version of the URI - it will continue to resolve just as it had prior to being anchored. In addition, the community will introduce a generic, standard property: `published` in the [DID resolution spec](https://w3c-ccg.github.io/did-resolution/#output-resolvermetadata), that is added to the DID resolution response. The `published` property indicates whether a DID has been published/anchored in the underlying trust system a DID Method writes to. When an entity resolves any DID from any DID Method and finds that the DID has been published, the entity may drop the `initial-values` DID parameter from their held references to the DID in question, if they so desire. However, dropping the `initial-values` DID parameter after publication is purely an elective act - the ID will resolve correctly regardless.
+
+
 ## Sidetree Operation Batching
 The Sidetree protocol increases operation throughput by batching multiple operations together then anchoring a reference to this batch on the blockchain.
 For every batch of Sidetree operations created, there are two files that are created and stored in the CAS layer: 
