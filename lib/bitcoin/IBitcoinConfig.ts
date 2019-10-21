@@ -1,3 +1,5 @@
+import { IProofOfFeeConfig } from './IProofOfFeeConfig';
+
 /**
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
@@ -16,4 +18,5 @@ export interface IBitcoinConfig {
   requestTimeoutInMilliseconds: number | undefined;
   requestMaxRetries: number | undefined;
   transactionPollPeriodInSeconds: number | undefined;
+  proofOfFeeConfig: IProofOfFeeConfig;
 }
