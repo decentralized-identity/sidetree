@@ -65,6 +65,7 @@ export class SlidingWindowQuantileMongoStore {
     return lastBatches[0];
   }
 
+  /** Get the first batchId stored in the collection */
   public async getFirstBatchId (): Promise<number | undefined> {
     const firstBatches = await this.quantileCollection!.find().limit(1).sort({ batchId: 1 }).toArray();
     if (firstBatches.length === 0) {
