@@ -13,7 +13,8 @@ export default class Jws {
   public static async verifySignature (
     encodedProtectedHeader: string,
     encodedPayload: string,
-    signature: string, publicKey: DidPublicKeyModel
+    signature: string,
+    publicKey: DidPublicKeyModel
   ): Promise<boolean> {
     // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
     const jwsSigningInput = encodedProtectedHeader + '.' + encodedPayload;
