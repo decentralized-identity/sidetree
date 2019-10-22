@@ -174,7 +174,7 @@ export class SlidingWindowQuantileCalculator {
   public constructor (approximation: number,
     maxValue: number,
     private readonly size: number,
-    private readonly quantile: number,
+    private readonly quantileParameter: number,
     mongoServerUrl: string,
     database?: string
     ) {
@@ -183,8 +183,8 @@ export class SlidingWindowQuantileCalculator {
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize);
     this.mongoStore = new SlidingWindowQuantileMongoStore(mongoServerUrl, database);
-    if (this.quantile < 0 || this.quantile > 1) {
-      throw Error(`Invalid quantile measure ${quantile}`);
+    if (this.quantileParameter < 0 || this.quantileParameter > 1) {
+      throw Error(`Invalid quantile measure ${quantileParameter}`);
     }
   }
 
@@ -246,7 +246,16 @@ export class SlidingWindowQuantileCalculator {
     }
 
     // calculate and materialize the quantile as of this batchId
-    this.historicalQuantiles.set(batchId, this.calculateCurrentQuantile());
+    const quantile = this.calculateCurrentQuantile();
+    this.historicalQuantiles.set(batchId, quantile);
+
+    // store it into mongo store
+    const quantileInfo = {
+      batchId,
+      quantile,
+      batchFreqVector: runLengthEncode(batchFrequencyVector)
+    };
+    this.mongoStore.put(quantileInfo);
 
     return;
   }
@@ -281,7 +290,7 @@ export class SlidingWindowQuantileCalculator {
     const elementCount = this.frequencyVectorAggregated.reduce((a,b) => a + b, 0);
 
     // Rank of the element
-    const rankThreshold = this.quantile * elementCount;
+    const rankThreshold = this.quantileParameter * elementCount;
 
     let runSum = 0;
     for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
