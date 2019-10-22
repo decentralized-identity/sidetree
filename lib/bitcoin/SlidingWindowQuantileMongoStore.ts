@@ -63,8 +63,17 @@ export class SlidingWindowQuantileMongoStore {
     return lastBatches[0];
   }
 
+  public async getFirstBatchId (): Promise<number | undefined> {
+    const firstBatches = await this.quantileCollection!.find().limit(1).sort({ batchId: 1 }).toArray();
+    if (firstBatches.length === 0) {
+      return undefined;
+    }
+
+    return firstBatches[0];
+  }
+
   /**
-   * Creates the `transaction` collection with indexes if it does not exists.
+   * Creates the `quantile` collection with indexes if it does not exists.
    * @returns The existing collection if exists, else the newly created collection.
    */
   private static async createQuantileCollectionIfNotExist (db: Db): Promise<Collection> {

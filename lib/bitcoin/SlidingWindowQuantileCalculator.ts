@@ -1,3 +1,4 @@
+import { QuantileInfo, SlidingWindowQuantileMongoStore } from './SlidingWindowQuantileMongoStore';
 
 /**
  * Value approximator is used to normalize values to a compact range while
@@ -12,7 +13,7 @@
  * We can replace 2 in the argument above with a value closer to 1 (say 1.1), and all values
  * will be approximated by a factor at most 1.1.
  */
-class ValueApproximator {
+export class ValueApproximator {
 
   public constructor (private approximation: number, private maxValue: number) {
 
@@ -64,6 +65,55 @@ class ValueApproximator {
 }
 
 /**
+ * Run-length encode an array: The array `[0,0,0,1,1]` becomes
+ * `[0,3,1,2]`.
+ */
+export function runLengthEncode (array: number[]): number[] {
+  if (array.length === 0) {
+    return array;
+  }
+
+  const runLengthArray = new Array();
+
+  let value = array[0];
+  let count = 1;
+  for (let i = 1 ; i < array.length ; i++) {
+    if (array[i] === value) {
+      count++;
+    } else {
+      runLengthArray.push(value);
+      runLengthArray.push(count);
+      value = array[i];
+      count = 1;
+    }
+  }
+
+  runLengthArray.push(value);
+  runLengthArray.push(count);
+
+  return runLengthArray;
+}
+
+/** Inverse of run-length encode. */
+export function runLengthDecode (array: number[]): number[] {
+  if (((array.length) % 2 !== 0) || (array.length === 0)) {
+    throw Error(`Invalid array length for runlength decoding: ${array.length}`);
+  }
+
+  const retArray = new Array();
+  for (let i = 0 ; i < array.length ;) {
+    let value = array[i++];
+    let count = array[i++];
+
+    for (let j = 0 ; j < count ; j++) {
+      retArray.push(value);
+    }
+  }
+
+  return retArray;
+}
+
+/**
  * Frequency vector is an array of numbers representing frequencies of
  * normalized values.
  */
@@ -79,7 +129,7 @@ type FrequencyVector = Array<number>;
  * N is the size of the sliding window.
  *
  */
-export default class SlidingWindowQuantileCalculator {
+export class SlidingWindowQuantileCalculator {
 
   /**
    * Normalize values to a compact range 0..max, which allows
@@ -115,18 +165,50 @@ export default class SlidingWindowQuantileCalculator {
   /** Most recent batchId we have seen */
   private prevBatchId: number | undefined = undefined;
 
+  private mongoStore: SlidingWindowQuantileMongoStore;
+
   /**
    * Construct a sliding window quantile computer with specified
    * approximation paramenters.
    */
-  public constructor (approximation: number, maxValue: number, private readonly size: number, private readonly quantile: number) {
+  public constructor (approximation: number,
+    maxValue: number,
+    private readonly size: number,
+    private readonly quantile: number,
+    mongoServerUrl: string,
+    database: string
+    ) {
     this.valueApproximator = new ValueApproximator(approximation, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize);
-
+    this.mongoStore = new SlidingWindowQuantileMongoStore(mongoServerUrl, database);
     if (this.quantile < 0 || this.quantile > 1) {
       throw Error(`Invalid quantile measure ${quantile}`);
+    }
+  }
+
+  /** Initialize self from state stored in mongo store */
+  public async initialize (): Promise<void> {
+    await this.mongoStore.initialize();
+    const firstBatchId = await this.mongoStore.getFirstBatchId();
+    const lastBatchId = await this.mongoStore.getLastBatchId();
+
+    if (firstBatchId) {
+      for (let batchId = firstBatchId ; batchId <= lastBatchId! ; batchId++) {
+        const quantileInfo = (await this.mongoStore.get(batchId))!;
+
+        this.historicalQuantiles.set(batchId, quantileInfo.quantile);
+
+        if (batchId + this.size > lastBatchId!) {
+          const batchFrequencyVector = runLengthDecode(quantileInfo.batchFreqVector);
+          this.slidingWindow.push(batchFrequencyVector);
+
+          for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
+            this.frequencyVectorAggregated[i] += batchFrequencyVector[i];
+          }
+        }
+      }
     }
   }
 
@@ -212,4 +294,6 @@ export default class SlidingWindowQuantileCalculator {
     // should never come here.
     return 0;
   }
+
+
 }
