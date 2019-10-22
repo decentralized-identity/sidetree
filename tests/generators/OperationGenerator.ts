@@ -1,7 +1,7 @@
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
-import Operation from '../../lib/core/versions/latest/Operation';
-import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
+import Jws from '../../lib/core/versions/latest/util/Jws';
+import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
@@ -18,24 +18,29 @@ export default class OperationGenerator {
     didDocumentTemplate: any,
     publicKey: DidPublicKeyModel,
     privateKey: string | PrivateKey
-  ): Promise<OperationModel> {
+  ): Promise<JwsModel> {
 
     // Replace the placeholder public-key with the public-key given.
     didDocumentTemplate.publicKey[0] = publicKey;
+
+    // Create the encoded protected header.
+    const protectedHeader = {
+      operation: 'create',
+      kid: publicKey.id,
+      alg: 'ES256K'
+    };
+    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
+    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
 
     // Create the create payload.
     const didDocumentJson = JSON.stringify(didDocumentTemplate);
     const createPayload = Encoder.encode(didDocumentJson);
 
     // Generate the signature.
-    const signature = await Operation.sign(createPayload, privateKey);
+    const signature = await Jws.sign(protectedHeaderEncodedString, createPayload, privateKey);
 
     const operation = {
-      header: {
-        operation: 'create',
-        kid: publicKey.id,
-        alg: 'ES256K'
-      },
+      protected: protectedHeaderEncodedString,
       payload: createPayload,
       signature
     };
@@ -63,20 +68,25 @@ export default class OperationGenerator {
   /**
    * Generates an Update Operation buffer with valid signature.
    */
-  public static async generateUpdateOperation (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<OperationModel> {
+  public static async generateUpdateOperation (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+    // Create the encoded protected header.
+    const protectedHeader = {
+      operation: 'update',
+      kid: keyId,
+      alg: 'ES256K'
+    };
+    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
+    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
+
     // Encode Update payload.
     const updatePayloadJson = JSON.stringify(updatePayload);
     const updatePayloadEncoded = Encoder.encode(updatePayloadJson);
 
     // Generate the signature.
-    const signature = await Operation.sign(updatePayloadEncoded, privateKey);
+    const signature = await Jws.sign(protectedHeaderEncodedString, updatePayloadEncoded, privateKey);
 
     const operation = {
-      header: {
-        operation: 'update',
-        kid: keyId,
-        alg: 'ES256K'
-      },
+      protected: protectedHeaderEncodedString,
       payload: updatePayloadEncoded,
       signature
     };
@@ -95,21 +105,25 @@ export default class OperationGenerator {
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<OperationModel> {
-    const payload = { didUniqueSuffix };
+  public static async generateDeleteOperation (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+    // Create the encoded protected header.
+    const protectedHeader = {
+      operation: 'delete',
+      kid: keyId,
+      alg: 'ES256K'
+    };
+    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
+    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
 
     // Encode payload.
+    const payload = { didUniqueSuffix };
     const payloadJson = JSON.stringify(payload);
     const payloadEncoded = Encoder.encode(payloadJson);
 
-    const signature = await Operation.sign(payloadEncoded, privateKey);
+    const signature = await Jws.sign(protectedHeaderEncodedString, payloadEncoded, privateKey);
 
     const operation = {
-      header: {
-        operation: 'delete',
-        kid: keyId,
-        alg: 'ES256K'
-      },
+      protected: protectedHeaderEncodedString,
       payload: payloadEncoded,
       signature
     };
