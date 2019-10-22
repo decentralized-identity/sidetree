@@ -16,10 +16,12 @@ export class SlidingWindowQuantileMongoStore {
 
   private db: Db | undefined;
   private quantileCollection: Collection | undefined;
+  private databaseName: string;
   private static readonly quantileCollectionName = 'quantile';
+  private static readonly defaultDatabaseName = 'sidetree';
 
-  public constructor (private serverUrl: string, private databaseName: string) {
-
+  public constructor (private serverUrl: string, databaseName?: string) {
+    this.databaseName = databaseName ? databaseName : SlidingWindowQuantileMongoStore.defaultDatabaseName;
   }
 
   /**

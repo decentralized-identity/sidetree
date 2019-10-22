@@ -176,7 +176,7 @@ export class SlidingWindowQuantileCalculator {
     private readonly size: number,
     private readonly quantile: number,
     mongoServerUrl: string,
-    database: string
+    database?: string
     ) {
     this.valueApproximator = new ValueApproximator(approximation, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
@@ -294,6 +294,5 @@ export class SlidingWindowQuantileCalculator {
     // should never come here.
     return 0;
   }
-
 
 }

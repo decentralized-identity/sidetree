@@ -6,7 +6,7 @@ import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import SlidingWindowQuantileCalculator from './SlidingWindowQuantileCalculator';
+import { SlidingWindowQuantileCalculator } from './SlidingWindowQuantileCalculator';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -110,7 +110,9 @@ export default class BitcoinProcessor {
     this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
       BitcoinProcessor.satoshiPerBTC,
       transactionFeeQuantileConfig.windowSizeInBatches,
-      transactionFeeQuantileConfig.quantile);
+      transactionFeeQuantileConfig.quantile,
+      config.mongoDbConnectionString,
+      config.databaseName);
     this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSize);
 
     /// Bitcore has a type file error on PrivateKey
