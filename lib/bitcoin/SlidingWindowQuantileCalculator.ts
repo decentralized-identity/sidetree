@@ -255,7 +255,7 @@ export class SlidingWindowQuantileCalculator {
       quantile,
       batchFreqVector: runLengthEncode(batchFrequencyVector)
     };
-    this.mongoStore.put(quantileInfo);
+    await this.mongoStore.put(quantileInfo);
 
     return;
   }
