@@ -107,7 +107,10 @@ export default class BitcoinProcessor {
     this.proofOfFeeConfig = config.proofOfFeeConfig;
 
     const transactionFeeQuantileConfig = config.proofOfFeeConfig.transactionFeeQuantileConfig;
-    this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation, BitcoinProcessor.satoshiPerBTC);
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
+      BitcoinProcessor.satoshiPerBTC,
+      transactionFeeQuantileConfig.windowSizeInBatches,
+      transactionFeeQuantileConfig.quantile);
     this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSize);
 
     /// Bitcore has a type file error on PrivateKey
@@ -539,8 +542,9 @@ export default class BitcoinProcessor {
 
       // Add the transaction to the sampler.  We filter out transactions with unusual
       // input count - such transaction require a large number of rpc calls to compute transaction fee
-      const inputs = transactions[transactionIndex].vin as Array<any>;
-      if (inputs.length <= this.proofOfFeeConfig.maxTransactionInputCount) {
+      // not worth the cost for an approximate measure.
+      const inputsCount = (transactions[transactionIndex].vin as Array<any>).length;
+      if (inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
         this.transactionSampler.addElement(transactions[transactionIndex].txid);
       }
 
@@ -557,19 +561,32 @@ export default class BitcoinProcessor {
       }
     }
 
-    if (((block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.windowSlideInBlocks) === 0) {
-      const xactFees = new Array();
-      const sampledTransactions = this.transactionSampler.getSample();
-      for (let txid in sampledTransactions) {
-        const xactFee = await this.getTransactionFeeInSatoshi(txid);
-        xactFees.push(xactFee);
+    if (this.isBatchBoundary(block)) {
+
+      // Compute the transaction fees for sampled transactions of this batch
+      const sampledTransactionIds = this.transactionSampler.getSample();
+      const sampledTransactionFees = new Array();
+      for (let transactionId of sampledTransactionIds) {
+        const transactionFee = await this.getTransactionFeeInSatoshi(transactionId);
+        sampledTransactionFees.push(transactionFee);
       }
 
+      const batchId = this.getBatchId(block);
+      await this.quantileCalculator.add(batchId, sampledTransactionFees);
+
+      // Reset the sampler for the next batch
       this.transactionSampler.clear();
-      await this.quantileCalculator.add(xactFees);
     }
 
     return blockHash;
+  }
+
+  private isBatchBoundary (block: number): boolean {
+    return (block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks === 0;
+  }
+
+  private getBatchId (block: number): number {
+    return Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks);
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */

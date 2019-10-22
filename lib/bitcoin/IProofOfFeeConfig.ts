@@ -4,10 +4,11 @@
  * proof of fee calculation.
  */
 export interface ISlidingWindowQuantileConfig {
-  windowSizeInBlocks: number;
-  windowSlideInBlocks: number;
+  windowSizeInBatches: number;
+  batchSizeInBlocks: number;
   feeApproximation: number;
   sampleSize: number;
+  quantile: number;
 }
 
 /**
@@ -15,7 +16,7 @@ export interface ISlidingWindowQuantileConfig {
  */
 export interface IProofOfFeeConfig {
   transactionFeeQuantileConfig: ISlidingWindowQuantileConfig;
-  quantile: number;
+
   quantileScale: number;
   maxTransactionInputCount: number;
 }

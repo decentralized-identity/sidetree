@@ -70,12 +70,14 @@ class ValueApproximator {
 type FrequencyVector = Array<number>;
 
 /**
- * Define a sliding window quantile computer that computes
- * approximate quantiles over a sliding window.
- * The class exposes methods to add a batch of elements and
- * delete the last batch of elements - to get a sliding window
- * we suitably interleave these two methods. It also provides a
- * method to get the quantile from the current window of elements.
+ * Define a sliding window quantile calculator that computes
+ * approximate quantiles over a sliding window. Elements
+ * are added to sliding windows in batches, where each bag
+ * is a collection of values. The sliding window size is
+ * specified in number of batches: when the i'th batch is added,
+ * all the elements added in (i-N)th batch are removed where
+ * N is the size of the sliding window.
+ *
  */
 export default class SlidingWindowQuantileCalculator {
 
@@ -92,10 +94,9 @@ export default class SlidingWindowQuantileCalculator {
   private frequencyVectorSize: number;
 
   /**
-   * A sliding window is an array of frequency vectors used
-   * as a queue. A new batch of elements is added to the end
-   * of the queue, and old batch of elements are deleted from
-   * the beginning.
+   * The latest sliding window consisting of the last 'size'
+   * batches of elements, where each batch is compactly represented
+   * as (normalized-element, frequency) frequency vector.
    */
   private slidingWindow: Array<FrequencyVector>;
 
@@ -106,48 +107,84 @@ export default class SlidingWindowQuantileCalculator {
   private frequencyVectorAggregated: FrequencyVector;
 
   /**
+   * Historical quantiles: historicalQuantiles.get(batchId) stores the quantile
+   * when batch batchId was added.
+   */
+  private historicalQuantiles: Map<number, number> = new Map();
+
+  /** Most recent batchId we have seen */
+  private prevBatchId: number | undefined = undefined;
+
+  /**
    * Construct a sliding window quantile computer with specified
    * approximation paramenters.
    */
-  public constructor (approximation: number, maxValue: number) {
+  public constructor (approximation: number, maxValue: number, private readonly size: number, private readonly quantile: number) {
     this.valueApproximator = new ValueApproximator(approximation, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize);
+
+    if (this.quantile < 0 || this.quantile > 1) {
+      throw Error(`Invalid quantile measure ${quantile}`);
+    }
   }
 
   /**
-   * Add a new batch of values to the sliding window. This function
-   * also materializes (a compact representation) of this batch
-   * to a backend mongo store.
+   * Add a new batch of values to the sliding window. Each batch is
+   * identified using a batchId which can be used to retrieve historical
+   * quantiles as of a particular batchId.
    */
-  public async add (values: number[]): Promise<void> {
-    const normalizedFrequencies = new Array(this.frequencyVectorSize);
+  public async add (batchId: number, batch: number[]): Promise<void> {
 
-    for (let value of values) {
+    // Our historical quantiles storage logic relies on batchIds being
+    // consecutive numbers: explicitly check this fact.
+    if (this.prevBatchId) {
+      if (this.prevBatchId + 1 !== batchId) {
+        throw Error(`Quantile calculator batchIds not sequential`);
+      }
+    }
+    this.prevBatchId = batchId;
+
+    const batchFrequencyVector = new Array(this.frequencyVectorSize);
+
+    for (let value of batch) {
       const normalizedValue = this.valueApproximator.getNormalizedValue(value);
-      normalizedFrequencies[normalizedValue]++;
+      batchFrequencyVector[normalizedValue]++;
     }
 
-    this.slidingWindow.push(normalizedFrequencies);
+    this.slidingWindow.push(batchFrequencyVector);
 
     for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
-      this.frequencyVectorAggregated[i] += normalizedFrequencies[i];
+      this.frequencyVectorAggregated[i] += batchFrequencyVector[i];
     }
+
+    if (this.slidingWindow.length > this.size) {
+      await this.deleteLast();
+    }
+
+    // calculate and materialize the quantile as of this batchId
+    this.historicalQuantiles.set(batchId, this.calculateCurrentQuantile());
 
     return;
   }
 
   /**
+   * Get the quantile as of a specific batchId.
+   */
+  public getQuantile (batchId: number): number | undefined {
+    return this.historicalQuantiles.get(batchId);
+  }
+
+  /**
    * Delete the last batch of values from the sliding window.
    */
-  public async deleteLast (): Promise<void> {
-    const deletedFrequencyVector = this.slidingWindow.shift();
+  private async deleteLast (): Promise<void> {
+    // We check that slidingWindow size > this.size > 0, so ! should be safe.
+    const deletedFrequencyVector = this.slidingWindow.shift()!;
 
-    if (deletedFrequencyVector) {
-      for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
-        this.frequencyVectorAggregated[i] -= deletedFrequencyVector[i];
-      }
+    for (let i = 0; i < this.frequencyVectorSize; i++) {
+      this.frequencyVectorAggregated[i] -= deletedFrequencyVector[i];
     }
 
     return;
@@ -156,17 +193,13 @@ export default class SlidingWindowQuantileCalculator {
   /**
    * Get a specified quantile in the current sliding window.
    */
-  public getQuantile (quantile: number): number {
-
-    if (quantile < 0 || quantile > 1) {
-      throw Error(`Invalid quantile measure ${quantile}`);
-    }
+  private calculateCurrentQuantile (): number {
 
     // Number of elements in the sliding window;
     const elementCount = this.frequencyVectorAggregated.reduce((a,b) => a + b, 0);
 
     // Rank of the element
-    const rankThreshold = quantile * elementCount;
+    const rankThreshold = this.quantile * elementCount;
 
     let runSum = 0;
     for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
