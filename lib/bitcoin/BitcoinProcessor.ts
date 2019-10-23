@@ -2,6 +2,7 @@ import * as httpStatus from 'http-status';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ErrorCode from '../common/SharedErrorCode';
+import FeeModel from '../common/models/FeeModel';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import ServiceInfo from '../common/ServiceInfoProvider';
@@ -243,7 +244,8 @@ export default class BitcoinProcessor {
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
-        anchorString: transaction.anchorString
+        anchorString: transaction.anchorString,
+        feePaid: transaction.feePaid
       };
     });
 
@@ -315,6 +317,21 @@ export default class BitcoinProcessor {
       throw error;
     }
     console.info(`Successfully submitted transaction ${transaction.id}`);
+  }
+
+  /**
+   * Return proof-of-fee value for a particular block.
+   */
+  public async fee (block: number): Promise<FeeModel | undefined> {
+    const blockAfterHistoryOffset = Math.max(block - this.proofOfFeeConfig.historicalOffsetInBlocks, 0);
+    const batchId = Math.floor(blockAfterHistoryOffset / this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks);
+    const quantileValue = this.quantileCalculator.getQuantile(batchId);
+
+    if (quantileValue) {
+      return { normalizedTransactionFee: quantileValue * this.proofOfFeeConfig.quantileScale };
+    }
+
+    return undefined;
   }
 
   /**
@@ -536,8 +553,10 @@ export default class BitcoinProcessor {
 
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+      const transaction = transactions[transactionIndex];
+
       // get the output coins in the transaction
-      if (!('vout' in transactions[transactionIndex])) {
+      if (!('vout' in transaction)) {
         // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
         continue;
       }
@@ -545,15 +564,15 @@ export default class BitcoinProcessor {
       // Add the transaction to the sampler.  We filter out transactions with unusual
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure.
-      const inputsCount = (transactions[transactionIndex].vin as Array<any>).length;
+      const inputsCount = (transaction.vin as Array<any>).length;
       if (inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
-        this.transactionSampler.addElement(transactions[transactionIndex].txid);
+        this.transactionSampler.addElement(transaction.txid);
       }
 
       try {
-        const outputs = transactions[transactionIndex].vout as Array<any>;
-
-        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash);
+        const outputs = transaction.vout as Array<any>;
+        const transactionFee = await this.getTransactionFeeInSatoshi(transaction.txid);
+        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transactionFee);
 
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
@@ -635,7 +654,8 @@ export default class BitcoinProcessor {
     allVOuts: Array<any>,
     transactionIndex: number,
     transactionBlock: number,
-    transactionHash: any): Promise<void> {
+    transactionHash: any,
+    transactionFee: number): Promise<void> {
 
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
@@ -664,7 +684,8 @@ export default class BitcoinProcessor {
           transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
-          anchorString: data.slice(this.sidetreePrefix.length)
+          anchorString: data.slice(this.sidetreePrefix.length),
+          feePaid: transactionFee
         };
       }
     }

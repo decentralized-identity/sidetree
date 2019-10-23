@@ -89,7 +89,8 @@ export default class MongoDbTransactionStore implements ITransactionStore {
         // NOTE: MUST force `transactionNumber` to be Int64 in MondoDB.
         transactionNumber: Long.fromNumber(transaction.transactionNumber),
         transactionTime: transaction.transactionTime,
-        transactionTimeHash: transaction.transactionTimeHash
+        transactionTimeHash: transaction.transactionTimeHash,
+        transactionFee: transaction.feePaid
       };
       await this.transactionCollection!.insertOne(transactionInMongoDb);
     } catch (error) {

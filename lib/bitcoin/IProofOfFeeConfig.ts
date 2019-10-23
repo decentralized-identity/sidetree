@@ -16,7 +16,7 @@ export interface ISlidingWindowQuantileConfig {
  */
 export interface IProofOfFeeConfig {
   transactionFeeQuantileConfig: ISlidingWindowQuantileConfig;
-
   quantileScale: number;
   maxTransactionInputCount: number;
+  historicalOffsetInBlocks: number;
 }
