@@ -10,7 +10,7 @@ describe('ServiceVersionFetcher', async () => {
       const serviceVersionFetcher = new ServiceVersionFetcher('someURI');
 
       const fetchSpy = spyOn(serviceVersionFetcher as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify(expectedServiceVersion)));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify(expectedServiceVersion))));
 
       const version = await serviceVersionFetcher.getVersion();
 
@@ -54,7 +54,7 @@ describe('ServiceVersionFetcher', async () => {
       const serviceVersionFetcher = new ServiceVersionFetcher('someURI');
 
       const fetchSpy = spyOn(serviceVersionFetcher as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify(expectedServiceVersion)));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify(expectedServiceVersion))));
       const tryGetServiceVersionSpy = spyOn(serviceVersionFetcher as any, 'tryGetServiceVersion').and.callThrough();
 
       await serviceVersionFetcher.getVersion();

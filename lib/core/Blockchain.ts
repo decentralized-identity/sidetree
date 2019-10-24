@@ -88,8 +88,8 @@ export default class Blockchain implements IBlockchain {
     const response = await this.fetch(readUri);
     console.info(`Fetch response: ${response.status}'.`);
 
-    const responseBodyString = await ReadableStream.readAll(response.body);
-    const responseBody = JSON.parse(responseBodyString);
+    const responseBodyBuffer = await ReadableStream.readAll(response.body);
+    const responseBody = JSON.parse(responseBodyBuffer.toString());
 
     if (response.status === HttpStatus.BAD_REQUEST &&
         responseBody.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {

@@ -25,7 +25,7 @@ describe('Blockchain', async () => {
         }]
       });
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(mockReadableStreamReadString));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockReadableStreamReadString)));
 
       const readResult = await blockchainClient.read();
       expect(readResult.moreTransactions).toBeFalsy();
@@ -42,9 +42,9 @@ describe('Blockchain', async () => {
         }
       };
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify({
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({
         code: SharedErrorCode.InvalidTransactionNumberOrTimeHash
-      })));
+      }))));
 
       try {
         await blockchainClient.read();
@@ -70,9 +70,9 @@ describe('Blockchain', async () => {
         }
       };
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(JSON.stringify({
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({
         code: 'unused'
-      })));
+      }))));
 
       try {
         await blockchainClient.read(1, 'Unused transaction hash.');
