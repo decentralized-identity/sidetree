@@ -105,7 +105,7 @@ export class PsuedoRandomGenerator {
       n = n * 2;
 
       if (n >= d) {
-        n = d - n;
+        n = n - d;
         result = 1;
       } else {
         result = 0;
@@ -196,7 +196,7 @@ export class ReservoirSampler {
     // We have a full sampleSize of samples at this point.
     // This element is picked to be in the sample with probability 1/streamSize
     this.streamSize++;
-    if (this.psuedoRandomGenerator!.getBernoulliSample(1, this.streamSize) === 0) {
+    if (this.psuedoRandomGenerator!.getBernoulliSample(this.sampleSize, this.streamSize) === 1) {
 
       // If this element is picked, we need to decide which element to evict at random
       const randIndex = this.psuedoRandomGenerator!.getRandomNumber(this.sampleSize);

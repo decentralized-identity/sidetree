@@ -22,6 +22,18 @@ function randomBlock (above: number = 0): IBlockInfo {
 }
 
 describe('BitcoinProcessor', () => {
+  const proofOfFeeConfig = {
+    transactionFeeQuantileConfig: {
+      windowSizeInBatches: 1,
+      batchSizeInBlocks: 1,
+      feeApproximation: 2,
+      sampleSize: 1,
+      quantile: 0.5
+    },
+    quantileScale: 1,
+    maxTransactionInputCount: 20,
+    historicalOffsetInBlocks: 1
+  };
 
   const testConfig: IBitcoinConfig = {
     bitcoinPeerUri: 'http://localhost:18332',
@@ -37,7 +49,8 @@ describe('BitcoinProcessor', () => {
     transactionFetchPageSize: 100,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
-    transactionPollPeriodInSeconds: 60
+    transactionPollPeriodInSeconds: 60,
+    proofOfFeeConfig
   };
 
   const privateKey: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
@@ -90,7 +103,8 @@ describe('BitcoinProcessor', () => {
         transactionNumber: TransactionNumber.construct(height, i),
         transactionTime: height,
         transactionTimeHash: hash,
-        anchorString: randomString()
+        anchorString: randomString(),
+        feePaid: 1
       });
     }
     return transactions;
@@ -112,7 +126,8 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        proofOfFeeConfig
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
@@ -145,7 +160,8 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        proofOfFeeConfig
       };
 
       try {
@@ -362,7 +378,8 @@ describe('BitcoinProcessor', () => {
           anchorString: randomString(),
           transactionNumber: TransactionNumber.construct(height, randomNumber()),
           transactionTime: height,
-          transactionTimeHash: randomString()
+          transactionTimeHash: randomString(),
+          feePaid: 1
         });
       }
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {

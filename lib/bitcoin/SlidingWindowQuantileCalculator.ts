@@ -1,4 +1,4 @@
-import { QuantileInfo, SlidingWindowQuantileMongoStore } from './SlidingWindowQuantileMongoStore';
+import { SlidingWindowQuantileMongoStore } from './SlidingWindowQuantileMongoStore';
 
 /**
  * Value approximator is used to normalize values to a compact range while

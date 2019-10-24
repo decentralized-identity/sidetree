@@ -181,7 +181,8 @@ describe('Blockchain', async () => {
           anchorString: 'unused',
           transactionNumber: 1,
           transactionTime: 1,
-          transactionTimeHash: 'unused'
+          transactionTimeHash: 'unused',
+          feePaid: 1
         }
       ];
       const firstValidTransaction = await blockchainClient.getFirstValidTransaction(unusedTransactions);
@@ -210,7 +211,8 @@ describe('Blockchain', async () => {
           anchorString: 'unused',
           transactionNumber: 1,
           transactionTime: 1,
-          transactionTimeHash: 'unused'
+          transactionTimeHash: 'unused',
+          feePaid: 1
         }
       ];
       const firstValidTransaction = await blockchainClient.getFirstValidTransaction(unusedTransactions);

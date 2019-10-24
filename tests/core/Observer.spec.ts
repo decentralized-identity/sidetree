@@ -71,13 +71,15 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction'
+          'anchorString': '1stTransaction',
+          'feePaid': 1
         },
         {
           'transactionNumber': 2,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '2ndTransaction'
+          'anchorString': '2ndTransaction',
+          'feePaid': 1
         }
       ]
     };
@@ -196,7 +198,8 @@ describe('Observer', async () => {
       transactionNumber: 1,
       transactionTime: 1000000,
       transactionTimeHash: '1000',
-      anchorString: anchorFilehash
+      anchorString: anchorFilehash,
+      feePaid: 1
     };
     const transactionUnderProcessing = {
       transaction: mockTransaction,
@@ -248,7 +251,8 @@ describe('Observer', async () => {
         transactionNumber: 1,
         transactionTime: 1000000,
         transactionTimeHash: '1000',
-        anchorString: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw'
+        anchorString: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw',
+        feePaid: 1
       };
       const transactionUnderProcessing = {
         transaction: mockTransaction,
@@ -271,19 +275,22 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction'
+          'anchorString': '1stTransaction',
+          'feePaid': 1
         },
         {
           'transactionNumber': 2,
           'transactionTime': 2000,
           'transactionTimeHash': '2000',
-          'anchorString': '2ndTransaction'
+          'anchorString': '2ndTransaction',
+          'feePaid': 1
         },
         {
           'transactionNumber': 3,
           'transactionTime': 3000,
           'transactionTimeHash': '3000',
-          'anchorString': '3rdTransaction'
+          'anchorString': '3rdTransaction',
+          'feePaid': 1
         }
       ]
     };
@@ -295,19 +302,22 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 2001,
           'transactionTimeHash': '2001',
-          'anchorString': '2ndTransactionNew'
+          'anchorString': '2ndTransactionNew',
+          'feePaid': 1
         },
         {
           'transactionNumber': 3,
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
-          'anchorString': '3rdTransactionNew'
+          'anchorString': '3rdTransactionNew',
+          'feePaid': 1
         },
         {
           'transactionNumber': 4,
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
-          'anchorString': '4thTransaction'
+          'anchorString': '4thTransaction',
+          'feePaid': 1
         }
       ]
     };
@@ -382,7 +392,8 @@ describe('Observer', async () => {
       'transactionNumber': 1,
       'transactionTime': 1000,
       'transactionTimeHash': '1000',
-      'anchorString': '1stTransaction'
+      'anchorString': '1stTransaction',
+      'feePaid': 1
     };
 
     // Prep the transaction store with some initial state.
