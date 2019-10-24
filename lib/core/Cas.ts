@@ -37,8 +37,8 @@ export default class Cas implements ICas {
       throw new Error('Encountered an error writing content to CAS.');
     }
 
-    const bodyString = await ReadableStream.readAll(response.body);
-    const hash = JSON.parse(bodyString).hash;
+    const body = await ReadableStream.readAll(response.body);
+    const hash = JSON.parse(body.toString()).hash;
 
     return hash;
   }
@@ -54,7 +54,7 @@ export default class Cas implements ICas {
 
       if (response.status === HttpStatus.BAD_REQUEST) {
         const errorBody = await ReadableStream.readAll(response.body);
-        return JSON.parse(errorBody);
+        return JSON.parse(errorBody.toString());
       }
 
       if (response.status !== HttpStatus.OK) {
@@ -73,7 +73,7 @@ export default class Cas implements ICas {
 
       return {
         code: FetchResultCode.Success,
-        content: Buffer.from(content)
+        content: content
       };
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {

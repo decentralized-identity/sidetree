@@ -1115,11 +1115,11 @@ describe('BitcoinProcessor', () => {
       });
       const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
         expect(body).toEqual(bodyIdentifier);
-        return Promise.resolve(JSON.stringify({
+        return Promise.resolve(Buffer.from(JSON.stringify({
           result,
           error: null,
           id: null
-        }));
+        })));
       });
       const actual = await bitcoinProcessor['rpcCall'](request, path);
       expect(actual).toEqual(result);
@@ -1142,7 +1142,7 @@ describe('BitcoinProcessor', () => {
         });
       });
       const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
-        return Promise.resolve(result);
+        return Promise.resolve(Buffer.from(result));
       });
       try {
         await bitcoinProcessor['rpcCall'](request);
@@ -1171,11 +1171,11 @@ describe('BitcoinProcessor', () => {
         });
       });
       const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
-        return Promise.resolve(JSON.stringify({
+        return Promise.resolve(Buffer.from(JSON.stringify({
           result: null,
           error: result,
           id: null
-        }));
+        })));
       });
       try {
         await bitcoinProcessor['rpcCall'](request);
