@@ -27,7 +27,9 @@ async function generateAndStoreTransactions (transactionStore: ITransactionStore
       anchorString: i.toString(),
       transactionNumber: i,
       transactionTime: i,
-      transactionTimeHash: i.toString()
+      transactionTimeHash: i.toString(),
+      feePaid: 1,
+      normalizedTransactionFee: 1
     };
 
     await transactionStore.addTransaction(transaction);

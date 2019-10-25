@@ -1,3 +1,5 @@
+import AnchoredData from './models/AnchoredData';
+import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
@@ -10,6 +12,7 @@ import MerkleTree from './util/MerkleTree';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
+import FeeManager from './FeeManager';
 
 /**
  * Implementation of the `TransactionProcessor`.
@@ -18,7 +21,8 @@ export default class BatchWriter implements IBatchWriter {
   public constructor (
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
-    private cas: ICas) { }
+    private cas: ICas,
+    private feeMarkupFactor: number) { }
 
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.
@@ -62,8 +66,18 @@ export default class BatchWriter implements IBatchWriter {
     const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
     console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
 
-    // Anchor the 'anchor file hash' on blockchain.
-    await this.blockchain.write(anchorFileAddress);
+    // Anchor the data to the blockchain
+    const dataToBeAnchored: AnchoredData = {
+      anchorFileHash: anchorFileAddress,
+      numberOfOperations: operationBuffers.length
+    };
+
+    const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
+    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
+    const fee = FeeManager.convertNormalizedFeeToTransactionFee(normalizedFee, operationBuffers.length, this.feeMarkupFactor);
+    console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with fee: ${fee}`);
+
+    await this.blockchain.write(stringToWriteToBlockchain, fee);
 
     // Remove written operations from queue if batch writing is successful.
     await this.operationQueue.dequeue(batch.length);

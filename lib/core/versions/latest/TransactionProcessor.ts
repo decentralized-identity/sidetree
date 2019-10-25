@@ -1,7 +1,9 @@
+import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFileModel from './models/AnchorFileModel';
 import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from '../../DownloadManager';
+import FeeManager from './FeeManager';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
@@ -18,8 +20,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
   public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
-    // The anchor string in this protocol version is just the anchor file hash.
-    const anchorFileHash = transaction.anchorString;
+    // Decode the anchor string
+    const anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
+
+    FeeManager.verifyTransactionFeeAndThrowOnError(transaction.feePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
+
+    const anchorFileHash = anchoredData.anchorFileHash;
 
     console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
     const anchorFileFetchResult = await this.downloadManager.download(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);

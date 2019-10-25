@@ -27,7 +27,6 @@ describe('BitcoinProcessor', () => {
     bitcoinPeerUri: 'http://localhost:18332',
     bitcoinRpcUsername: 'admin',
     bitcoinRpcPassword: '123456789',
-    bitcoinFee: 1,
     bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
     requestTimeoutInMilliseconds: 300,
@@ -85,12 +84,16 @@ describe('BitcoinProcessor', () => {
       height = randomNumber();
     }
     const hash = randomString();
+    const feePaidRandom = randomNumber();
+
     for (let i = 0; i < count; i++) {
       transactions.push({
         transactionNumber: TransactionNumber.construct(height, i),
         transactionTime: height,
         transactionTimeHash: hash,
-        anchorString: randomString()
+        anchorString: randomString(),
+        feePaid: feePaidRandom,
+        normalizedTransactionFee: feePaidRandom + 1
       });
     }
     return transactions;
@@ -100,7 +103,6 @@ describe('BitcoinProcessor', () => {
     it('should use appropriate config values', () => {
       const config: IBitcoinConfig = {
         bitcoinPeerUri: randomString(),
-        bitcoinFee: randomNumber(),
         bitcoinRpcUsername: 'admin',
         bitcoinRpcPassword: 'password123',
         bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
@@ -118,7 +120,6 @@ describe('BitcoinProcessor', () => {
       const bitcoinProcessor = new BitcoinProcessor(config);
       expect(bitcoinProcessor.bitcoinPeerUri).toEqual(config.bitcoinPeerUri);
       expect(bitcoinProcessor.bitcoinAuthorization).toEqual(Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64'));
-      expect(bitcoinProcessor.bitcoinFee).toEqual(config.bitcoinFee);
       expect(bitcoinProcessor.requestTimeout).toEqual(300);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
@@ -135,7 +136,6 @@ describe('BitcoinProcessor', () => {
         bitcoinPeerUri: randomString(),
         bitcoinRpcUsername: 'admin',
         bitcoinRpcPassword: '1234',
-        bitcoinFee: randomNumber(),
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
@@ -357,12 +357,16 @@ describe('BitcoinProcessor', () => {
       const count = 10;
       for (let i = 0; i < count; i++) {
         const height = randomNumber();
+        const feePaidRandom = randomNumber();
+
         heights.push(height);
         transactions.push({
           anchorString: randomString(),
           transactionNumber: TransactionNumber.construct(height, randomNumber()),
           transactionTime: height,
-          transactionTimeHash: randomString()
+          transactionTimeHash: randomString(),
+          feePaid: feePaidRandom,
+          normalizedTransactionFee: feePaidRandom + 1
         });
       }
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {
@@ -406,18 +410,19 @@ describe('BitcoinProcessor', () => {
   }
 
   describe('writeTransaction', () => {
-    const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * testConfig.bitcoinFee;
+    const bitcoinFee = 4000;
+    const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async (done) => {
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         generateUnspentCoin(lowLevelWarning + 1)
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(testConfig.bitcoinFee);
+        expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(true);
       });
-      await bitcoinProcessor.writeTransaction(hash);
+      await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
       done();
@@ -429,14 +434,14 @@ describe('BitcoinProcessor', () => {
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(testConfig.bitcoinFee);
+        expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(true);
       });
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
-      await bitcoinProcessor.writeTransaction(hash);
+      await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
       expect(errorSpy).toHaveBeenCalled();
@@ -459,7 +464,7 @@ describe('BitcoinProcessor', () => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
       try {
-        await bitcoinProcessor.writeTransaction(hash);
+        await bitcoinProcessor.writeTransaction(hash, 4000);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Not enough satoshis');
@@ -471,17 +476,18 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should fail if broadcastTransaction fails', async (done) => {
+      const bitcoinFee = 4000;
       const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         generateUnspentCoin(lowLevelWarning + 1)
       ]));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(testConfig.bitcoinFee);
+        expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(false);
       });
       try {
-        await bitcoinProcessor.writeTransaction(hash);
+        await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
         fail('should have failed');
       } catch (error) {
         expect(error.message).toContain('Could not broadcast');
@@ -986,10 +992,10 @@ describe('BitcoinProcessor', () => {
         const id = randomString();
         const rand = Math.random();
 
-        // In order to have random data, this code returns one of the following every time it is calleds:
-        // - with a valid transactions
-        // - with invalid transactions with 2 sidetree transactions (should be ignored)
-        // - with invalid transactions with 2 sidetree and 1 other trasaction (should be ignored)
+        // In order to have random data, this code returns one of the following every time it is called:
+        // - 1 sidetree transaction
+        // - 2 sidetree transactions (should be ignored)
+        // - 2 sidetree and 1 other trasaction (should be ignored)
         //
         if (rand < 0.3) { // 30% of time
           shouldFindIDs.push(id);

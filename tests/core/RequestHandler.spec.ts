@@ -55,9 +55,10 @@ describe('RequestHandler', () => {
   beforeEach(async () => {
     const allSupportedHashAlgorithms = [18];
     const operationQueue = new MockOperationQueue();
+    spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
 
     cas = new MockCas();
-    const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
+    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, 0);
     const operationProcessor = new OperationProcessor(config.didMethodName);
 
     versionManager = new MockVersionManager();
