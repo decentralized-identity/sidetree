@@ -34,6 +34,13 @@ export class SlidingWindowQuantileMongoStore {
   }
 
   /**
+   * Clear all stored state in the quantile store.
+   */
+  public async clear (): Promise<void> {
+    await this.quantileCollection!.deleteMany({});
+  }
+
+  /**
    * Store the quantile info for a new batch.
    */
   public async put (quantileInfo: QuantileInfo): Promise<void> {
@@ -62,7 +69,7 @@ export class SlidingWindowQuantileMongoStore {
       return undefined;
     }
 
-    return lastBatches[0];
+    return (lastBatches[0] as QuantileInfo).batchId;
   }
 
   /** Get the first batchId stored in the collection */
@@ -72,7 +79,7 @@ export class SlidingWindowQuantileMongoStore {
       return undefined;
     }
 
-    return firstBatches[0];
+    return (firstBatches[0] as QuantileInfo).batchId;
   }
 
   /**
