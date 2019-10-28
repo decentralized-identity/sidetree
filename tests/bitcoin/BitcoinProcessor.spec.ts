@@ -93,7 +93,7 @@ describe('BitcoinProcessor', () => {
         transactionTimeHash: hash,
         anchorString: randomString(),
         feePaid: feePaidRandom,
-        normalizedTransactionFee: feePaidRandom + 1
+        normalizedTransactionFee: feePaidRandom - 1
       });
     }
     return transactions;
@@ -366,7 +366,7 @@ describe('BitcoinProcessor', () => {
           transactionTime: height,
           transactionTimeHash: randomString(),
           feePaid: feePaidRandom,
-          normalizedTransactionFee: feePaidRandom + 1
+          normalizedTransactionFee: feePaidRandom - 1
         });
       }
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {

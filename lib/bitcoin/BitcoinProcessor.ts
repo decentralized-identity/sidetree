@@ -579,6 +579,21 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * Gets the normalized fee for the given block.
+   * @param block The block for which the fee is required.
+   */
+  public async getFee (block: number): Promise<{
+    normalizedTransactionFee: number
+  }> {
+
+    console.info(`Getting the normalized fee for the block number: ${block}`);
+
+    // Issue #216 return the actual data from the block
+    return Promise.resolve({
+      normalizedTransactionFee: 100
+    });
+  }
+  /**
    * Checks if the bitcoin peer has a wallet open for a given address
    * @param address The bitcoin address to check
    * @returns true if a wallet exists, false otherwise.

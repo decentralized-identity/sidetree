@@ -80,7 +80,12 @@ export default class AnchoredDataSerializer {
 
     // Convert it into 4 bytes (by adding a dummy 0 byte at the start for Big Endian)
     // and then read uint32 from it.
-    const fourBytesBuffer = Buffer.from([0, threeBytesBuffer[0], threeBytesBuffer[1], threeBytesBuffer[2]]);
+    const fourBytesBuffer = Buffer.alloc(4);
+    fourBytesBuffer[0] = 0;
+    fourBytesBuffer[1] = threeBytesBuffer[0];
+    fourBytesBuffer[2] = threeBytesBuffer[1];
+    fourBytesBuffer[3] = threeBytesBuffer[2];
+
     return fourBytesBuffer.readUInt32BE(0);
   }
 }
