@@ -3,8 +3,8 @@ import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import IOperationProcessor, { PatchResult } from '../../interfaces/IOperationProcessor';
+import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
-import { OperationType } from './Operation';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore

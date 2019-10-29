@@ -1,4 +1,3 @@
-import AnchoredOperationModel from '../models/AnchoredOperationModel';
 import NamedAnchoredOperationModel from '../models/NamedAnchoredOperationModel';
 
 /**
@@ -18,11 +17,16 @@ export default interface IOperationStore {
    * didUniqueSuffix ordered by (transactionNumber, operationIndex)
    * ascending.
    */
-  get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]>;
+  get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]>;
 
   /**
    * Deletes all operations with transaction number greater than the
    * provided parameter.
    */
   delete (transactionNumber?: number): Promise<void>;
+
+  /**
+   * Deletes all the operations of the given DID earlier than the specified operation.
+   */
+  deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void>;
 }

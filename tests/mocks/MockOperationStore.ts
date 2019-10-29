@@ -27,7 +27,7 @@ function compareOperation (op1: AnchoredOperationModel, op2: AnchoredOperationMo
 export default class MockOperationStore implements IOperationStore {
   // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
-  private readonly didToOperations: Map<string, AnchoredOperationModel[]> = new Map();
+  private readonly didToOperations: Map<string, NamedAnchoredOperationModel[]> = new Map();
 
   // Map DID unique suffixes to a boolean indicating if the operations array for the DID is sorted
   // or not.
@@ -58,7 +58,7 @@ export default class MockOperationStore implements IOperationStore {
    * Get an iterator that returns all operations with a given
    * didUniqueSuffix ordered by (transactionNumber, operationIndex).
    */
-  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
+  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
     let didOps = this.didToOperations.get(didUniqueSuffix);
 
     if (!didOps) {
@@ -97,6 +97,10 @@ export default class MockOperationStore implements IOperationStore {
     }
   }
 
+  public async deleteUpdatesEarlierThan (_didUniqueSuffix: string, _transactionNumber: number, _operationIndex: number): Promise<void> {
+    throw new Error('Not implemented.');
+  }
+
   /**
    * Remove operations. A simple linear scan + filter that leaves the
    * original order intact for non-filters operations.
@@ -117,7 +121,7 @@ export default class MockOperationStore implements IOperationStore {
 
   private ensureDidContainerExist (did: string) {
     if (this.didToOperations.get(did) === undefined) {
-      this.didToOperations.set(did, new Array<AnchoredOperationModel>());
+      this.didToOperations.set(did, new Array<NamedAnchoredOperationModel>());
       this.didUpdatedSinceLastSort.set(did, false);
     }
   }

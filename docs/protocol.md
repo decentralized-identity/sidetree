@@ -578,7 +578,60 @@ None.
 
 ### DID Recovery
 
-> TODO: API to be added which will impact delete API also.
+#### Request path
+```http
+POST / HTTP/1.1
+```
+
+#### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+#### Request body schema
+```json
+{
+  "protected": "Encoded protected header.",
+  "payload": "Encoded recovery payload JSON object defined by the schema below.",
+  "signature": "Encoded signature."
+}
+```
+
+#### Recovery payload schema
+```json
+{
+  "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
+  "previousOperationHash": "The hash of the previous create or recovery operation made to the DID Document.",
+  "newDidDocument": "Encoded new DID Document."
+}
+```
+
+#### Response body schema
+The response body is the constructed DID Document of the DID recovered.
+
+#### Response body example
+```json
+{
+  "@context": "https://w3id.org/did/v1",
+  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
+  "publicKey": [{
+    "id": "#key1",
+    "type": "Secp256k1VerificationKey2018",
+    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
+  }],
+  "service": [{
+    "id": "IdentityHub",
+    "type": "IdentityHub",
+    "serviceEndpoint": {
+      "@context": "schema.identity.foundation/hub",
+      "@type": "UserServiceEndpoint",
+      "instance": ["did:bar:456", "did:zaz:789"]
+    }
+  }]
+}
+```
+
+
 
 ### Fetch the current service versions (optional).
 Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.

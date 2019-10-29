@@ -1,4 +1,3 @@
-import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
 import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
 import { Binary, Collection, Long, MongoClient } from 'mongodb';
@@ -16,6 +15,7 @@ interface IMongoOperation {
   opIndex: number;
   transactionNumber: Long;
   transactionTime: number;
+  type: string;
 }
 
 /**
@@ -60,7 +60,7 @@ export default class MongoDbOperationStore implements IOperationStore {
       this.collection = await db.createCollection(this.operationCollectionName);
       // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
       // this is an unique index, so duplicate inserts are rejected.
-      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, opIndex: 1 }, { unique: true });
+      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, opIndex: 1, type: 1 }, { unique: true });
     }
   }
 
@@ -90,8 +90,8 @@ export default class MongoDbOperationStore implements IOperationStore {
    * didUniqueSuffix ordered by (transactionNumber, operationIndex)
    * ascending.
    */
-  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
-    const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
+  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
+    const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, opIndex: 1 }).toArray();
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 
@@ -107,6 +107,22 @@ export default class MongoDbOperationStore implements IOperationStore {
     }
   }
 
+  public async deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void> {
+    await this.collection!.deleteMany({ $or: [
+      {
+        didUniqueSuffix: didUniqueSuffix,
+        transactionNumber: { $lt: Long.fromNumber(transactionNumber) },
+        type: 'update'
+      },
+      {
+        didUniqueSuffix: didUniqueSuffix,
+        transactionNumber: Long.fromNumber(transactionNumber),
+        opIndex: { $lt: operationIndex },
+        type: 'update'
+      }
+    ]});
+  }
+
   /**
    * Convert a Sidetree operation to a more minimal IMongoOperation object
    * that can be stored on MongoDb. The IMongoOperation object has sufficient
@@ -114,6 +130,7 @@ export default class MongoDbOperationStore implements IOperationStore {
    */
   private static convertToMongoOperation (operation: NamedAnchoredOperationModel): IMongoOperation {
     return {
+      type: operation.type,
       didUniqueSuffix: operation.didUniqueSuffix,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
       opIndex: operation.operationIndex,
@@ -129,8 +146,10 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
    * hence the type 'any' for mongoOperation.
    */
-  private static convertToAnchoredOperationModel (mongoOperation: any): AnchoredOperationModel {
+  private static convertToAnchoredOperationModel (mongoOperation: any): NamedAnchoredOperationModel {
     return {
+      type: mongoOperation.type,
+      didUniqueSuffix: mongoOperation.didUniqueSuffix,
       operationBuffer: mongoOperation.operationBufferBsonBinary.buffer,
       operationIndex: mongoOperation.opIndex,
       transactionNumber: mongoOperation.transactionNumber,

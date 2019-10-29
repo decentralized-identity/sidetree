@@ -7,18 +7,9 @@ import ErrorCode from './ErrorCode';
 import Jws from './util/Jws';
 import JwsModel from './models/JwsModel';
 import Multihash from './Multihash';
+import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import { SidetreeError } from '../../Error';
-
-/**
- * Sidetree operation types.
- */
-export enum OperationType {
-  Create = 'create',
-  Update = 'update',
-  Delete = 'delete',
-  Recover = 'recover'
-}
 
 /**
  * A class that represents a Sidetree operation.
