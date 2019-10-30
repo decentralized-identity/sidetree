@@ -1,3 +1,4 @@
+import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFileModel from './models/AnchorFileModel';
 import AnchorFile from './AnchorFile';
@@ -21,7 +22,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     // Decode the anchor string
-    let anchoredData;
+    let anchoredData: AnchoredData;
 
     try {
       anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);

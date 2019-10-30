@@ -37,7 +37,7 @@ export default class AnchoredDataSerializer {
 
     const splitData = serializedData.split(AnchoredDataSerializer.delimeter);
 
-    if (splitData.length < 2) {
+    if (splitData.length !== 2) {
       throw new SidetreeError(ErrorCode.AnchoredDataIncorrectFormat, `Input is not in correct format: ${serializedData}`);
     }
 

@@ -9,7 +9,7 @@ export default interface IBlockchain {
   /**
    * Writes a Sidtree transaction with the given anchor string to blockchain.
    * @param anchorString Data to write to the blockchain.
-   * @param fee Fee for the current
+   * @param fee Fee for the current transaction.
    */
   write (anchorString: string, fee: number): Promise<void>;
   /**
