@@ -32,16 +32,15 @@ export default class Resolver {
     let didDocumentReference: { didDocument: object | undefined } = { didDocument: undefined };
     let previousOperationHash: string | undefined;
 
-
-    // Get create and recovery operations and process them first.
-    // const createAndRecoverOperations = await this.operationStore.get(didUniqueSuffix, [OperationType.Create, OperationType.Recover]);
-
     const operations = await this.operationStore.get(didUniqueSuffix);
-    const createAndRecoverOperations = operations.filter(op => op.type === OperationType.Create || op.type === OperationType.Recover);
+    const createAndRecoverAndRevokeOperations = operations.filter(
+      op => op.type === OperationType.Create ||
+      op.type === OperationType.Recover ||
+      op.type === OperationType.Delete);
 
     let lastFullOperation: AnchoredOperationModel | undefined;
     // Validate each operation in chronological order to build a complete base DID Document for update patches to be applied on later.
-    for (const operation of createAndRecoverOperations) {
+    for (const operation of createAndRecoverAndRevokeOperations) {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
       const patchResult = await operationProcessor.patch(operation, previousOperationHash, didDocumentReference);
 

@@ -152,7 +152,7 @@ describe('Operation', async () => {
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 
-    it('should throw error if a add-service-endpoints patch contains additional unknown property..', async () => {
+    it('should throw error if a add-service-endpoints patch contains additional unknown property.', async () => {
       const updatePayload = generateUpdatePayloadForPublicKeys();
       (updatePayload.patches[2] as any).unknownProperty = 'unknownProperty';
 

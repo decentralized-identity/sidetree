@@ -98,7 +98,7 @@ export default class MockOperationStore implements IOperationStore {
   }
 
   public async deleteUpdatesEarlierThan (_didUniqueSuffix: string, _transactionNumber: number, _operationIndex: number): Promise<void> {
-    throw new Error('Not implemented.');
+    return;
   }
 
   /**

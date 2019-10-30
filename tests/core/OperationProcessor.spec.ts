@@ -315,22 +315,6 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeUndefined();
   });
 
-  it('should return undefined for deleted did', async () => {
-    const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
-    await operationStore.put(ops);
-
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
-    validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
-
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
-    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
-    await operationStore.put([deleteOperation]);
-
-    const didDocumentAfterDelete = await resolver.resolve(didUniqueSuffix);
-    expect(didDocumentAfterDelete).toBeUndefined();
-  });
-
   it('should ignore delete operations of a non-existent did', async () => {
     const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
