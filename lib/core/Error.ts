@@ -13,7 +13,7 @@ export class SidetreeError extends Error {
 
   /**
    * Returns a new SidetreeError object using the inputs.
-   * 
+   *
    * @param code The error code.
    * @param err The error exception thrown.
    */

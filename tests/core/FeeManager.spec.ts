@@ -52,7 +52,7 @@ describe('FeeManager', async () => {
         new SidetreeError(ErrorCode.TransactionFeeInvalid));
     });
 
-    it('should throw if the number of operations are <= 0', async() => {
+    it('should throw if the number of operations are <= 0', async () => {
       JasmineHelper.expectSideTreeErrorToBeThrown(
         () => FeeManager.verifyTransactionFeeAndThrowOnError(101, 0, 10),
         new SidetreeError(ErrorCode.OperationCountLessThanZero));

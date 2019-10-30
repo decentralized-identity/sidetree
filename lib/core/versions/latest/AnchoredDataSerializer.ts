@@ -78,7 +78,7 @@ export default class AnchoredDataSerializer {
 
     // Ensure that the input has 3 bytes
     if (threeBytesBuffer.length !== 3) {
-      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotThreeBytes, 
+      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotThreeBytes,
                               `Input must have 3 bytes but have ${threeBytesBuffer.length} bytes instead.`);
     }
 
