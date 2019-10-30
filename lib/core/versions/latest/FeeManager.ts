@@ -1,4 +1,6 @@
+import ErrorCode from './ErrorCode';
 import ProtocolParameters from './ProtocolParameters';
+import { SidetreeError } from '../../Error';
 
 /**
  * Encapsulates the functionality to calculate and verify the blockchain transaction fees.
@@ -18,7 +20,7 @@ export default class FeeManager {
   public static convertNormalizedFeeToTransactionFee (normalizedFee: number, numberOfOperations: number, feeMarkupFactor: number): number {
 
     if (numberOfOperations <= 0) {
-      throw new Error(`Fee cannot be calculated for the given number of operations: ${numberOfOperations}`);
+      throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `Fee cannot be calculated for the given number of operations: ${numberOfOperations}`);
     }
 
     const normalizedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
@@ -41,14 +43,15 @@ export default class FeeManager {
 
     // If there are no operations written then someone wrote incorrect data and we are going to throw
     if (numberOfOperations <= 0) {
-      throw new Error(`The number of operations input: ${numberOfOperations} must be greater than 0`);
+      throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `The number of operations: ${numberOfOperations} must be greater than 0`);
     }
 
     const actualFeePerOperation = feePaid / numberOfOperations;
     const expectedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
 
     if (actualFeePerOperation < expectedFeePerOperation) {
-      throw new Error(`The actual fee paid: ${feePaid} per number of operations: ${numberOfOperations} should be at least ${expectedFeePerOperation}.`);
+      // tslint:disable-next-line: max-line-length
+      throw new SidetreeError(ErrorCode.TransactionFeeInvalid, `The actual fee paid: ${feePaid} per number of operations: ${numberOfOperations} should be at least ${expectedFeePerOperation}.`);
     }
   }
 }

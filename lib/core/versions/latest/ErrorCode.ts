@@ -19,6 +19,7 @@ export default {
   AnchorFileNotJson: 'anchor_file_not_json',
   BatchWriterAlreadyHasOperationForDid: 'batch_writer_already_has_operation_for_did',
   OperationCreateInvalidDidDocument: 'operation_create_invalid_did_document',
+  OperationCountLessThanZero: 'operation_count_less_than_zero',
   OperationExceedsMaximumSize: 'operation_exceeds_maximum_size',
   OperationHeaderMissingKid: 'operation_header_missing_kid',
   OperationHeaderMissingOrIncorrectAlg: 'operation_header_missing_or_incorrect_alg',
@@ -39,5 +40,6 @@ export default {
   OperationUpdatePatchServiceEndpointNotDid: 'operation_update_patch_service_endpoint_not_did',
   OperationUpdatePatchServiceEndpointsNotArray: 'operation_update_patch_service_endpoints_not_array',
   OperationUpdatePatchServiceTypeMissingOrUnknown: 'operation_update_patch_service_type_missing_or_unknown',
-  QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed'
+  QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed',
+  TransactionFeeInvalid: 'transaction_fee_is_invalid'
 };

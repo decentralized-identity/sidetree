@@ -1,4 +1,7 @@
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FeeManager from '../../lib/core/versions/latest/FeeManager';
+import JasmineHelper from '../JasmineHelper';
+import { SidetreeError } from '../../lib/core/Error';
 
 describe('FeeManager', async () => {
 
@@ -11,8 +14,13 @@ describe('FeeManager', async () => {
     });
 
     it('should fail if the number of operations is <= 0', async () => {
-      expect(() => { FeeManager.convertNormalizedFeeToTransactionFee(100, 0, 0.05); }).toThrow();
-      expect(() => { FeeManager.convertNormalizedFeeToTransactionFee(100, -1, 0.05); }).toThrow();
+      JasmineHelper.expectSideTreeErrorToBeThrown(
+        () => FeeManager.convertNormalizedFeeToTransactionFee(100, 0, 0.05),
+        new SidetreeError(ErrorCode.OperationCountLessThanZero));
+
+      JasmineHelper.expectSideTreeErrorToBeThrown(
+        () => FeeManager.convertNormalizedFeeToTransactionFee(100, -1, 0.05),
+        new SidetreeError(ErrorCode.OperationCountLessThanZero));
     });
   });
 
@@ -39,16 +47,19 @@ describe('FeeManager', async () => {
     it('should throw if the fee paid is less than the expected fee', async () => {
       const feeToPay = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 0);
 
-      expect(() => { FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay - 1, 100, 100); }).toThrow();
+      JasmineHelper.expectSideTreeErrorToBeThrown(
+        () => FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay - 1, 100, 100),
+        new SidetreeError(ErrorCode.TransactionFeeInvalid));
     });
 
-    it('should throw if the number of operations are <= 0', async () => {
-      expect(() => { FeeManager.verifyTransactionFeeAndThrowOnError(101, 0, 10); }).toThrow();
-      expect(() => { FeeManager.verifyTransactionFeeAndThrowOnError(101, -1, 10); }).toThrow();
-    });
+    it('should throw if the number of operations are <= 0', async() => {
+      JasmineHelper.expectSideTreeErrorToBeThrown(
+        () => FeeManager.verifyTransactionFeeAndThrowOnError(101, 0, 10),
+        new SidetreeError(ErrorCode.OperationCountLessThanZero));
 
-    it('should throw if the actual fee is less than the expected fee', () => {
-      expect(() => { FeeManager.verifyTransactionFeeAndThrowOnError(101, -1, 10); }).toThrow();
+      JasmineHelper.expectSideTreeErrorToBeThrown(
+        () => FeeManager.verifyTransactionFeeAndThrowOnError(101, -1, 10),
+        new SidetreeError(ErrorCode.OperationCountLessThanZero));
     });
   });
 });

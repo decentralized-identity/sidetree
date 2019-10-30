@@ -21,9 +21,33 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     // Decode the anchor string
-    const anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
+    let anchoredData;
 
-    FeeManager.verifyTransactionFeeAndThrowOnError(transaction.feePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
+    try {
+      anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
+    } catch (e) {
+      const message = `Anchored data deserialization failed for anchor string ${transaction.anchorString}. Error: ${e.message}`;
+      if (e instanceof SidetreeError) {
+        console.info(`Ignoring error: ${message}`);
+        return true;
+      } else {
+        console.error(`Unexpected error processing anchor string, MUST investigate and fix: ${message}`);
+        return false;
+      }
+    }
+
+    try {
+      FeeManager.verifyTransactionFeeAndThrowOnError(transaction.feePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
+    } catch (e) {
+      const message = `Fee verification failure for anchor string ${transaction.anchorString}. Error: ${e.message}`;
+      if (e instanceof SidetreeError) {
+        console.info(`Ignoring error: ${message}`);
+        return true;
+      } else {
+        console.error(`Unexpected error processing anchor string, MUST investigate and fix: ${message}`);
+        return false;
+      }
+    }
 
     const anchorFileHash = anchoredData.anchorFileHash;
 

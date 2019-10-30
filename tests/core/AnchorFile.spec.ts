@@ -2,6 +2,7 @@ import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineHelper from '../JasmineHelper';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('AnchorFile', async () => {
@@ -21,7 +22,9 @@ describe('AnchorFile', async () => {
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileBuffer, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDecompressionFailure));
+      await JasmineHelper.expectSideTreeErrorToBeThrownAsync(
+        () => AnchorFile.parseAndValidate(anchorFileBuffer, 1),
+        new SidetreeError(ErrorCode.AnchorFileDecompressionFailure));
     });
 
     it('should throw if has an unknown property.', async () => {
