@@ -2,6 +2,10 @@
  * Error codes used ONLY by this version of the protocol.
  */
 export default {
+  AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
+  AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
+  AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
+  AnchoredDataNumberOfOperationsNotThreeBytes: 'anchored_data_number_of_operations_not_three_bytes',
   AnchorFileBatchFileHashMissing: 'anchor_file_batch_file_hash_missing',
   AnchorFileBatchFileHashNotString: 'anchor_file_batch_file_hash_not_string',
   AnchorFileBatchFileHashUnsupported: 'anchor_file_batch_file_hash_unsupported',

@@ -1,5 +1,7 @@
 import AnchoredData from './models/AnchoredData';
 import Encoder from './Encoder';
+import ErrorCode from './ErrorCode';
+import { SidetreeError } from '../../Error';
 
 /**
  * Encapsulates functionality to serialize/deserialize data that read/write to
@@ -36,7 +38,7 @@ export default class AnchoredDataSerializer {
     const splitData = serializedData.split(AnchoredDataSerializer.delimeter);
 
     if (splitData.length < 2) {
-      throw new Error(`Input is not in correct format: ${serializedData}`);
+      throw new SidetreeError(ErrorCode.AnchoredDataIncorrectFormat, `Input is not in correct format: ${serializedData}`);
     }
 
     const decodedNumberOfOperations = Encoder.decodeAsBuffer(splitData[0]);
@@ -52,13 +54,14 @@ export default class AnchoredDataSerializer {
 
     if (numberOfOperations < 0) {
       // We are going to write the number as unint32
-      throw new Error(`Number of operations ${numberOfOperations} must be greater than 0`);
+      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsLessThanZero, `Number of operations ${numberOfOperations} must be greater than 0`);
     }
 
     if (numberOfOperations > this.maxInThreeBytes) {
       // We are only using 3 bytes to store the number of operations so any number greater than
       // that is not allowed.
-      throw new Error(`Number of operations ${numberOfOperations} must be less than equal to ${this.maxInThreeBytes}`);
+      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsGreaterThanMax,
+                              `Number of operations ${numberOfOperations} must be less than equal to ${this.maxInThreeBytes}`);
     }
 
     // First write the input into a 4 bytes buffer. Big Endian format.
@@ -75,7 +78,8 @@ export default class AnchoredDataSerializer {
 
     // Ensure that the input has 3 bytes
     if (threeBytesBuffer.length !== 3) {
-      throw new Error(`Input must have 3 bytes but have ${threeBytesBuffer.length} bytes instead.`);
+      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotThreeBytes, 
+                              `Input must have 3 bytes but have ${threeBytesBuffer.length} bytes instead.`);
     }
 
     // Convert it into 4 bytes (by adding a dummy 0 byte at the start for Big Endian)

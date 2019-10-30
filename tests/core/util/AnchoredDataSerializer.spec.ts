@@ -1,5 +1,8 @@
 import AnchoredData from '../../../lib/core/versions/latest/models/AnchoredData';
 import AnchoredDataSerializer from '../../../lib/core/versions/latest/AnchoredDataSerializer';
+import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
+import JasmineHelper from '../../JasmineHelper';
+import { SidetreeError } from '../../../lib/core/Error';
 
 describe('AnchoredDataSerializer', async () => {
 
@@ -43,15 +46,22 @@ describe('AnchoredDataSerializer', async () => {
   it('should throw if the number of ops are not within range', async () => {
 
     testDataToWrite.numberOfOperations = -1;
-    expect(() => { AnchoredDataSerializer.serialize(testDataToWrite); }).toThrow();
+    JasmineHelper.expectSideTreeErrorToBeThrown(
+      () => AnchoredDataSerializer.serialize(testDataToWrite),
+      new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsLessThanZero));
 
     testDataToWrite.numberOfOperations = 0xFFFFFF + 1;
-    expect(() => { AnchoredDataSerializer.serialize(testDataToWrite); }).toThrow();
+    JasmineHelper.expectSideTreeErrorToBeThrown(
+      () => AnchoredDataSerializer.serialize(testDataToWrite),
+      new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsGreaterThanMax));
   });
 
   it('deserialize should throw if the input is not in the correct format.', async () => {
 
     // Input doesn't have any delimeter
     expect(() => { AnchoredDataSerializer.deserialize('SOMEINVALIDDATA'); }).toThrow();
+    JasmineHelper.expectSideTreeErrorToBeThrown(
+      () => AnchoredDataSerializer.deserialize('SOMEINVALIDDATA'),
+      new SidetreeError(ErrorCode.AnchoredDataIncorrectFormat));
   });
 });
