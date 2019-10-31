@@ -290,7 +290,7 @@ describe('MongoDbOperationStore', async () => {
 
   describe('deleteUpdatesEarlierThan()', () => {
 
-    fit('should delete updates in the earlier transactions correctly', async () => {
+    it('should delete updates in the earlier transactions correctly', async () => {
       // Use a create operation to generate a DID
       const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -311,7 +311,7 @@ describe('MongoDbOperationStore', async () => {
       checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
     });
 
-    fit('should delete earlier updates in the same transaction correctly', async () => {
+    it('should delete earlier updates in the same transaction correctly', async () => {
       // Use a create operation to generate a DID
       const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
       const didUniqueSuffix = createOperation.didUniqueSuffix;

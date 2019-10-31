@@ -13,9 +13,7 @@ export default interface IOperationStore {
   put (operations: NamedAnchoredOperationModel[]): Promise<void>;
 
   /**
-   * Gets an array of all operations with a given
-   * didUniqueSuffix ordered by (transactionNumber, operationIndex)
-   * ascending.
+   * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
   get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]>;
 
