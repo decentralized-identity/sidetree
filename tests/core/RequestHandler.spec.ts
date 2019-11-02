@@ -82,7 +82,8 @@ describe('RequestHandler', () => {
 
     blockchain.setLatestTime(mockLatestTime);
 
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
+    // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -159,8 +160,8 @@ describe('RequestHandler', () => {
     // Create an original DID Document.
     let recoveryPublicKey: DidPublicKeyModel;
     let signingPublicKey: DidPublicKeyModel;
-    [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
+    [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
+    [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing, 'did:exmaple:123');
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
       publicKey: [recoveryPublicKey, signingPublicKey]

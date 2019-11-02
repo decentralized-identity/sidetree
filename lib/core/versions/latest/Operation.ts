@@ -1,5 +1,5 @@
 import Did from './Did';
-import DidPublicKeyModel from '../latest/models/DidPublicKeyModel';
+import DidPublicKeyModel from './models/DidPublicKeyModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
@@ -340,6 +340,10 @@ export default class Operation {
 
       if (typeof publicKey.id !== 'string') {
         throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+      }
+
+      if (typeof publicKey.controller === 'string') {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyControllerNotAllowed);
       }
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {

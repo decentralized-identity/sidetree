@@ -126,6 +126,16 @@ function getPermutation (size: number, index: number): Array<number> {
 function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
   expect(didDocument!.service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  validateDidDocumentPublicKeys(didDocument as DocumentModel);
+}
+
+function validateDidDocumentPublicKeys (didDocument: DocumentModel) {
+  expect(didDocument.id).toBeDefined();
+  const did = didDocument.id;
+
+  for (let publicKey of didDocument.publicKey) {
+    expect(publicKey.controller).toEqual(did);
+  }
 }
 
 describe('OperationProcessor', async () => {
@@ -144,7 +154,8 @@ describe('OperationProcessor', async () => {
   let didUniqueSuffix: string;
 
   beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
+    // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery,'did:exmaple:123');
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
@@ -167,6 +178,7 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
+    validateDidDocumentPublicKeys(didDocument);
   });
 
   it('should ignore a duplicate create operation', async () => {
@@ -209,6 +221,7 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const key2 = Document.getPublicKey(didDocument, '#key2');
     expect(key2).not.toBeDefined(); // if update above went through, new key would be added.
+    validateDidDocumentPublicKeys(didDocument);
   });
 
   it('should process updates correctly', async () => {
@@ -251,7 +264,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.signature = 'AnInvalidSignature';
 
@@ -286,7 +299,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
 
     // Replace the protected header with invlaid `kid`.

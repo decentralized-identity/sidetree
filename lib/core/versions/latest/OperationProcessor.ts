@@ -97,6 +97,11 @@ export default class OperationProcessor implements IOperationProcessor {
         }
 
         AnchoredOperation.applyPatchesToDidDocument(didDocument, operation.patches!);
+
+        // Update the document with the actual id .. for example, the patches may add some fields that may not
+        // have the 'id' fields set.
+        Document.updatePlaceholdersInDocumentWithDid(didDocument, didDocument.id);
+
         return { validOperation: true, operationHash };
       }
     } catch (error) {
