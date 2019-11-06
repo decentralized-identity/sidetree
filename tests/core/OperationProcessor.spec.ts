@@ -125,7 +125,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
-  expect(didDocument!.service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  expect(didDocument!.service![0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -378,6 +378,7 @@ describe('OperationProcessor', async () => {
             {
               id: '#new-key',
               type: 'Secp256k1VerificationKey2018',
+              usage: 'signing',
               publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
             }
           ]
@@ -410,6 +411,7 @@ describe('OperationProcessor', async () => {
             {
               id: '#new-key',
               type: 'Secp256k1VerificationKey2018',
+              usage: 'signing',
               publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
             }
           ]
@@ -444,6 +446,7 @@ describe('OperationProcessor', async () => {
             {
               id: '#new-key1',
               type: 'Secp256k1VerificationKey2018',
+              usage: 'signing',
               publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
             }
           ]
@@ -461,6 +464,7 @@ describe('OperationProcessor', async () => {
             {
               id: '#new-key2',
               type: 'Secp256k1VerificationKey2018',
+              usage: 'signing',
               publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
             }
           ]

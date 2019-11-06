@@ -204,6 +204,7 @@ function generateUpdatePayloadForPublicKeys () {
           {
             id: '#keyX',
             type: 'Secp256k1VerificationKey2018',
+            usage: 'signing',
             publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
           }
         ]

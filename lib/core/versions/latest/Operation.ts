@@ -6,6 +6,7 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Jws from './util/Jws';
 import JwsModel from './models/JwsModel';
+import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
@@ -45,7 +46,7 @@ export default class Operation {
   /** Signature of this operation. */
   public readonly signature: string;
 
-  /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
+  /** Encoded DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument?: DocumentModel;
 
   /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
@@ -77,11 +78,16 @@ export default class Operation {
     switch (this.type) {
       case OperationType.Create:
         this.didUniqueSuffix = this.operationHash;
+        this.didDocument = decodedPayload;
         break;
       case OperationType.Update:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.previousOperationHash = decodedPayload.previousOperationHash;
         this.patches = decodedPayload.patches;
+        break;
+      case OperationType.Recover:
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
+        this.didDocument = decodedPayload.newDidDocument;
         break;
       case OperationType.Delete:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
@@ -147,15 +153,24 @@ export default class Operation {
     } else if (patch.action === 'remove-public-keys') {
       const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
 
-      // Loop through all given public key IDs and add them from the existing public key set.
+      // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
       for (let publicKey of patch.publicKeys) {
-        publicKeyMap.delete(publicKey);
+        const existingKey = publicKeyMap.get(publicKey);
+
+        // Deleting recovery key is NOT allowed.
+        if (existingKey !== undefined &&
+            existingKey.type !== KeyUsage.recovery) {
+          publicKeyMap.delete(publicKey);
+        }
       }
 
       didDocument.publicKey = [...publicKeyMap.values()];
     } else if (patch.action === 'add-service-endpoints') {
       // Find the service of the given service type.
-      let service = didDocument.service.find(service => service.type === patch.serviceType);
+      let service = undefined;
+      if (didDocument.service !== undefined) {
+        service = didDocument.service.find(service => service.type === patch.serviceType);
+      }
 
       // If service not found, create a new service element and add it to the property.
       if (service === undefined) {
@@ -168,7 +183,11 @@ export default class Operation {
           }
         };
 
-        didDocument.service.push(service);
+        if (didDocument.service === undefined) {
+          didDocument.service = [service];
+        } else {
+          didDocument.service.push(service);
+        }
       } else {
         // Else we add to the eixsting service element.
 
@@ -182,7 +201,10 @@ export default class Operation {
         }
       }
     } else if (patch.action === 'remove-service-endpoints') {
-      let service = didDocument.service.find(service => service.type === patch.serviceType);
+      let service = undefined;
+      if (didDocument.service !== undefined) {
+        service = didDocument.service.find(service => service.type === patch.serviceType);
+      }
 
       if (service === undefined) {
         return;
@@ -253,8 +275,10 @@ export default class Operation {
       case OperationType.Update:
         Operation.validateUpdatePayload(decodedPayload);
         break;
-      case OperationType.Delete:
       case OperationType.Recover:
+        Operation.validateRecoverPayload(decodedPayload);
+        break;
+      case OperationType.Delete:
       default:
     }
 
@@ -325,12 +349,16 @@ export default class Operation {
 
     for (let publicKey of patch.publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      if (publicKeyProperties.length !== 3) {
+      if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyMissingOrUnknownProperty);
       }
 
       if (typeof publicKey.id !== 'string') {
         throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+      }
+
+      if (publicKey.usage === KeyUsage.recovery) {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyAddRecoveryKeyNotAllowed);
       }
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {
@@ -384,6 +412,26 @@ export default class Operation {
           !Did.isDid(serviceEndpoint)) {
         throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotDid);
       }
+    }
+  }
+
+  /**
+   * Validates the schema given recover operation payload.
+   * @throws Error if given operation payload fails validation.
+   */
+  public static validateRecoverPayload (payload: any) {
+    const payloadProperties = Object.keys(payload);
+    if (payloadProperties.length !== 2) {
+      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrUnknownProperty);
+    }
+
+    if (typeof payload.didUniqueSuffix !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidUniqueSuffixType);
+    }
+
+    const validDocument = Document.isObjectValidOriginalDocument(payload.newDidDocument);
+    if (!validDocument) {
+      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidDocument);
     }
   }
 }

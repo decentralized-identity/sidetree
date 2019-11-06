@@ -1,5 +1,6 @@
 import Did from './Did';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
+import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 
@@ -151,6 +152,10 @@ export default class Document {
       requireId = true;
     }
 
+    if (didDocument === undefined) {
+      return false;
+    }
+
     // Verify 'id' property.
     if (requireId && !didDocument.hasOwnProperty('id')) {
       return false;
@@ -190,11 +195,6 @@ export default class Document {
 
       // Verify each service entry in array.
       for (let serviceEntry of didDocument.service) {
-        // 'id' is required and must be string type.
-        if (typeof serviceEntry.id !== 'string') {
-          return false;
-        }
-
         // 'type' is required and must be string type.
         if (typeof serviceEntry.type !== 'string') {
           return false;
@@ -225,5 +225,17 @@ export default class Document {
     }
 
     return undefined;
+  }
+
+  /**
+   * Creates a DID document model.
+   */
+  public static create (publicKeys: DidPublicKeyModel[], services?: DidServiceEndpointModel[]): DocumentModel {
+
+    return {
+      '@context': 'https://w3id.org/did/v1',
+      publicKey: publicKeys,
+      service: services
+    };
   }
 }

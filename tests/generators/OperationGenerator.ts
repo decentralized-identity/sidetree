@@ -1,7 +1,10 @@
+import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
+import OperationType from '../../lib/core/enums/OperationType';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
@@ -9,6 +12,79 @@ import { PrivateKey } from '@decentralized-identity/did-auth-jose';
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
+  /**
+   * Creates an anchored operation.
+   */
+  public static async createAnchoredOperation (
+    type: OperationType,
+    payload: any,
+    publicKeyId: string,
+    privateKey: string | PrivateKey,
+    transactionTime: number,
+    transactionNumber: number,
+    operationIndex: number
+  ): Promise<AnchoredOperation> {
+    const operationBuffer = await OperationGenerator.createOperationBuffer(type, payload, publicKeyId, privateKey);
+    const anchoredCreateOperationModel: AnchoredOperationModel = {
+      operationBuffer,
+      operationIndex,
+      transactionNumber,
+      transactionTime
+    };
+
+    const anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
+    return anchoredCreateOperation;
+  }
+
+  /**
+   * Creates an operation.
+   */
+  public static async createOperationBuffer (
+    type: OperationType,
+    payload: any,
+    publicKeyId: string,
+    privateKey: string | PrivateKey
+  ): Promise<Buffer> {
+    const operationJws = await OperationGenerator.createOperationJws(type, payload, publicKeyId, privateKey);
+    return Buffer.from(JSON.stringify(operationJws));
+  }
+
+  /**
+   * Creates an operation.
+   *
+   * @param payload Unencoded plain object to be stringified and encoded as payload string.
+   */
+  public static async createOperationJws (
+    type: OperationType,
+    payload: any,
+    publicKeyId: string,
+    privateKey: string | PrivateKey
+  ): Promise<JwsModel> {
+
+    // Create the encoded protected header.
+    const protectedHeader = {
+      operation: type,
+      kid: publicKeyId,
+      alg: 'ES256K'
+    };
+    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
+    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
+
+    // Create the create payload.
+    const payloadJsonString = JSON.stringify(payload);
+    const createPayload = Encoder.encode(payloadJsonString);
+
+    // Generate the signature.
+    const signature = await Jws.sign(protectedHeaderEncodedString, createPayload, privateKey);
+
+    const operation = {
+      protected: protectedHeaderEncodedString,
+      payload: createPayload,
+      signature
+    };
+
+    return operation;
+  }
 
   /**
    * Creates a Create Operation with valid signature.
@@ -23,29 +99,8 @@ export default class OperationGenerator {
     // Replace the placeholder public-key with the public-key given.
     didDocumentTemplate.publicKey[0] = publicKey;
 
-    // Create the encoded protected header.
-    const protectedHeader = {
-      operation: 'create',
-      kid: publicKey.id,
-      alg: 'ES256K'
-    };
-    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
-
-    // Create the create payload.
-    const didDocumentJson = JSON.stringify(didDocumentTemplate);
-    const createPayload = Encoder.encode(didDocumentJson);
-
-    // Generate the signature.
-    const signature = await Jws.sign(protectedHeaderEncodedString, createPayload, privateKey);
-
-    const operation = {
-      protected: protectedHeaderEncodedString,
-      payload: createPayload,
-      signature
-    };
-
-    return operation;
+    const operationJws = OperationGenerator.createOperationJws(OperationType.Create, didDocumentTemplate, publicKey.id, privateKey);
+    return operationJws;
   }
 
   /**
@@ -66,68 +121,74 @@ export default class OperationGenerator {
   }
 
   /**
+   * Creates a update operation for adding a key.
+   */
+  public static async createUpdatePayloadForAddingAKey (previousOperation: AnchoredOperation, keyId: string, publicKeyHex: string): Promise<any> {
+    const updatePayload = {
+      didUniqueSuffix: previousOperation.didUniqueSuffix,
+      previousOperationHash: previousOperation.operationHash,
+      patches: [
+        {
+          action: 'add-public-keys',
+          publicKeys: [
+            {
+              id: keyId,
+              type: 'Secp256k1VerificationKey2018',
+              usage: 'signing',
+              publicKeyHex: publicKeyHex
+            }
+          ]
+        }
+      ]
+    };
+
+    return updatePayload;
+  }
+
+  /**
    * Generates an Update Operation buffer with valid signature.
    */
-  public static async generateUpdateOperation (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
-    // Create the encoded protected header.
-    const protectedHeader = {
-      operation: 'update',
-      kid: keyId,
-      alg: 'ES256K'
-    };
-    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
-
-    // Encode Update payload.
-    const updatePayloadJson = JSON.stringify(updatePayload);
-    const updatePayloadEncoded = Encoder.encode(updatePayloadJson);
-
-    // Generate the signature.
-    const signature = await Jws.sign(protectedHeaderEncodedString, updatePayloadEncoded, privateKey);
-
-    const operation = {
-      protected: protectedHeaderEncodedString,
-      payload: updatePayloadEncoded,
-      signature
-    };
-
-    return operation;
+  public static async generateUpdateOperation (updatePayload: object, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+    const operationJws = await OperationGenerator.createOperationJws(OperationType.Update, updatePayload, signingKeyId, privateKey);
+    return operationJws;
   }
 
   /**
    * Generates a Delete Operation buffer.
    */
-  public static async generateDeleteOperationBuffer (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, keyId, privateKey);
+  public static async generateDeleteOperationBuffer (didUniqueSuffix: string, signingKeyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
+    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, signingKeyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (didUniqueSuffix: string, keyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
-    // Create the encoded protected header.
-    const protectedHeader = {
-      operation: 'delete',
-      kid: keyId,
-      alg: 'ES256K'
+  public static async generateDeleteOperation (didUniqueSuffix: string, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+    const operationJws = await OperationGenerator.createOperationJws(OperationType.Delete, { didUniqueSuffix }, signingKeyId, privateKey);
+    return operationJws;
+  }
+
+  /**
+   * Generates a Recover Operation buffer with valid signature.
+   */
+  public static async generateRecoverOperationBuffer (
+    didUniqueSuffix: string,
+    newDidDocumentTemplate: any,
+    existingRecoveryKeyId: string,
+    existingRecoveryPrivateKey: string | PrivateKey,
+    newRecoveryKey: DidPublicKeyModel
+  ): Promise<Buffer> {
+    // Replace the placeholder public-key with the public-key given.
+    newDidDocumentTemplate.publicKey[0] = newRecoveryKey;
+
+    // Construct and encode the payload.
+    const payload = {
+      didUniqueSuffix,
+      newDidDocument: newDidDocumentTemplate
     };
-    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
 
-    // Encode payload.
-    const payload = { didUniqueSuffix };
-    const payloadJson = JSON.stringify(payload);
-    const payloadEncoded = Encoder.encode(payloadJson);
-
-    const signature = await Jws.sign(protectedHeaderEncodedString, payloadEncoded, privateKey);
-
-    const operation = {
-      protected: protectedHeaderEncodedString,
-      payload: payloadEncoded,
-      signature
-    };
-
-    return operation;
+    const operationJws = await OperationGenerator.createOperationJws(OperationType.Recover, payload, existingRecoveryKeyId, existingRecoveryPrivateKey);
+    return Buffer.from(JSON.stringify(operationJws));
   }
 }

@@ -64,6 +64,7 @@ async function constructAnchoredUpdateOperation (
           {
             id: '#key2',
             type: 'RsaVerificationKey2018',
+            usage: 'signing',
             publicKeyPem: new Date(Date.now()).toLocaleString() // Some dummy value that's not used.
           }
         ]

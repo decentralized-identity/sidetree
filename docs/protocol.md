@@ -601,8 +601,7 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "previousOperationHash": "The hash of the previous create or recovery operation made to the DID Document.",
-  "newDidDocument": "Encoded new DID Document."
+  "newDidDocument": "The new DID Document."
 }
 ```
 
