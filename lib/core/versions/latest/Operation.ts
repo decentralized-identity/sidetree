@@ -1,4 +1,3 @@
-import Did from './Did';
 import DidPublicKeyModel from '../latest/models/DidPublicKeyModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
@@ -408,9 +407,8 @@ export default class Operation {
     }
 
     for (let serviceEndpoint of patch.serviceEndpoints) {
-      if (typeof serviceEndpoint !== 'string' ||
-          !Did.isDid(serviceEndpoint)) {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotDid);
+      if (typeof serviceEndpoint !== 'string') {
+        throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotString);
       }
     }
   }

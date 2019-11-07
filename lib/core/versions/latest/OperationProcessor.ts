@@ -144,11 +144,6 @@ export default class OperationProcessor implements IOperationProcessor {
       return false;
     }
 
-    // The operation passes all checks.
-    if (!Document.isObjectValidOriginalDocument(operation.didDocument!)) {
-      return false;
-    }
-
     const newDidDocument = operation.didDocument!;
     newDidDocument.id = this.didMethodName + operation.didUniqueSuffix;
     didDocumentReference.didDocument = newDidDocument;

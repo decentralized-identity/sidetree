@@ -203,7 +203,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(200);
   });
 
-  it('should respond with HTTP 200 when an update operation rquest is successful.', async () => {
+  it('should respond with HTTP 200 when an update operation request is successful.', async () => {
     // write operation batch to prevent the violation of 1 operation per DID per batch rule.
     await batchScheduler.writeOperationBatch();
 

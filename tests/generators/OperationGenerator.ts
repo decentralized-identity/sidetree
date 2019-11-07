@@ -24,16 +24,34 @@ export default class OperationGenerator {
     transactionNumber: number,
     operationIndex: number
   ): Promise<AnchoredOperation> {
+    const anchoredOperationModel =
+      await OperationGenerator.createAnchoredOperationModel(type, payload, publicKeyId, privateKey, transactionTime, transactionNumber, operationIndex);
+    const anchoredOperation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
+
+    return anchoredOperation;
+  }
+
+  /**
+   * Creates an anchored operation model.
+   */
+  public static async createAnchoredOperationModel (
+    type: OperationType,
+    payload: any,
+    publicKeyId: string,
+    privateKey: string | PrivateKey,
+    transactionTime: number,
+    transactionNumber: number,
+    operationIndex: number
+  ): Promise<AnchoredOperationModel> {
     const operationBuffer = await OperationGenerator.createOperationBuffer(type, payload, publicKeyId, privateKey);
-    const anchoredCreateOperationModel: AnchoredOperationModel = {
+    const anchoredOperationModel: AnchoredOperationModel = {
       operationBuffer,
       operationIndex,
       transactionNumber,
       transactionTime
     };
 
-    const anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
-    return anchoredCreateOperation;
+    return anchoredOperationModel;
   }
 
   /**
@@ -121,9 +139,9 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates a update operation for adding a key.
+   * Creates an update operation for adding a key.
    */
-  public static async createUpdatePayloadForAddingAKey (previousOperation: AnchoredOperation, keyId: string, publicKeyHex: string): Promise<any> {
+  public static createUpdatePayloadForAddingAKey (previousOperation: AnchoredOperation, keyId: string, publicKeyHex: string): any {
     const updatePayload = {
       didUniqueSuffix: previousOperation.didUniqueSuffix,
       previousOperationHash: previousOperation.operationHash,
@@ -140,6 +158,41 @@ export default class OperationGenerator {
           ]
         }
       ]
+    };
+
+    return updatePayload;
+  }
+
+  /**
+   * Creates an update operation for adding and/or removing hub service endpoints.
+   */
+  public static createUpdatePayloadForHubEndpoints (previousOperation: AnchoredOperation, endpointsToAdd: string[], endpointsToRemove: string[]): any {
+    const patches = [];
+
+    if (endpointsToAdd.length > 0) {
+      const patch = {
+        action: 'add-service-endpoints',
+        serviceType: 'IdentityHub',
+        serviceEndpoints: endpointsToAdd
+      };
+
+      patches.push(patch);
+    }
+
+    if (endpointsToRemove.length > 0) {
+      const patch = {
+        action: 'remove-service-endpoints',
+        serviceType: 'IdentityHub',
+        serviceEndpoints: endpointsToRemove
+      };
+
+      patches.push(patch);
+    }
+
+    const updatePayload = {
+      didUniqueSuffix: previousOperation.didUniqueSuffix,
+      previousOperationHash: previousOperation.operationHash,
+      patches
     };
 
     return updatePayload;

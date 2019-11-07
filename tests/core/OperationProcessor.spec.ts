@@ -2,9 +2,11 @@ import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation'
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
-import Encoder from '../../lib/core/versions/0.4.0/Encoder';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
@@ -16,6 +18,7 @@ import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
+import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
 
 /**
@@ -498,5 +501,185 @@ describe('OperationProcessor', async () => {
     await operationStore.delete();
     const didDocumentAfterRollback = await resolver.resolve(didUniqueSuffix);
     expect(didDocumentAfterRollback).toBeUndefined();
+  });
+
+  describe('applyUpdateOperation()', () => {
+    let recoveryPublicKey: DidPublicKeyModel;
+    let recoveryPrivateKey: string;
+    let signingPublicKey: DidPublicKeyModel;
+    let signingPrivateKey: string;
+    let anchoredCreateOperation: AnchoredOperation;
+    let didDocumentReference: { didDocument: DocumentModel | undefined };
+
+    // Create a DID before each test.
+    beforeEach(async () => {
+      // MUST reset the DID document back to `undefined` for each test.
+      didDocumentReference = { didDocument: undefined };
+
+      // Generate key(s) and service endpoint(s) to be included in the DID Document.
+      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
+      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
+
+      // Create the initial create operation.
+      const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
+      const anchoredCreateOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Create, documentModel, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
+      anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
+
+      // Apply the initial create operation.
+      const result = await operationProcessor.patch(anchoredCreateOperationModel, undefined, didDocumentReference);
+
+      // Sanity check the create operation.
+      expect(result).toBeTruthy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+    });
+
+    it('should not apply if existing document is undefined.', async () => {
+      // Create an update and insert it to the operation store.
+      const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
+        anchoredCreateOperation,
+        '#new-key1',
+        '000000000000000000000000000000000000000000000000000000000000000000'
+      );
+      const anchoredUpdateOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+      const result = await operationProcessor.patch(anchoredUpdateOperationModel, anchoredCreateOperation.operationHash, { didDocument: undefined });
+      expect(result.validOperation).toBeFalsy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+    });
+  });
+
+  describe('applyRecoverOperation()', () => {
+    let recoveryPublicKey: DidPublicKeyModel;
+    let recoveryPrivateKey: string;
+    let signingPublicKey: DidPublicKeyModel;
+    let signingPrivateKey: string;
+    let anchoredCreateOperation: AnchoredOperation;
+    let didDocumentReference: { didDocument: DocumentModel | undefined };
+
+    // Create a DID before each test.
+    beforeEach(async () => {
+      // MUST reset the DID document back to `undefined` for each test.
+      didDocumentReference = { didDocument: undefined };
+
+      // Generate key(s) and service endpoint(s) to be included in the DID Document.
+      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
+      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
+
+      // Create the initial create operation.
+      const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
+      const anchoredCreateOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Create, documentModel, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
+      anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
+
+      // Apply the initial create operation.
+      const result = await operationProcessor.patch(anchoredCreateOperationModel, undefined, didDocumentReference);
+
+      // Sanity check the create operation.
+      expect(result).toBeTruthy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+    });
+
+    it('should not apply if existing document is undefined.', async () => {
+      // Create new keys used for new document for recovery request.
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
+      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+
+      // Create the recover operation and insert it to the operation store.
+      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
+      const recoveryPayload = {
+        didUniqueSuffix,
+        newDidDocument: recoveryDocumentModel
+      };
+      const anchoredRecoveryOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+
+      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, { didDocument: undefined });
+      expect(recoveryResult.validOperation).toBeFalsy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+    });
+
+    it('should not apply if unable to locate recovery key for signature verification.', async () => {
+      // Create new keys used for new document for recovery request.
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
+      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+
+      // Create the recover operation and insert it to the operation store.
+      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
+      const recoveryPayload = {
+        didUniqueSuffix,
+        newDidDocument: recoveryDocumentModel
+      };
+      const anchoredRecoveryOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, '#non-existent-key-id', recoveryPrivateKey, 2, 2, 2);
+
+      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
+      expect(recoveryResult.validOperation).toBeFalsy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+    });
+
+    it('should not apply if key used to sign is not a recovery key.', async () => {
+      // Create new keys used for new document for recovery request.
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
+      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+
+      // Create the recover operation and insert it to the operation store.
+      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
+      const recoveryPayload = {
+        didUniqueSuffix,
+        newDidDocument: recoveryDocumentModel
+      };
+      const anchoredRecoveryOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
+      expect(recoveryResult.validOperation).toBeFalsy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+    });
+
+    it('should not apply if signature does not pass verification.', async () => {
+      // Create new keys used for new document for recovery request.
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
+      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+
+      // Create the recover operation and insert it to the operation store.
+      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
+      const recoveryPayload = {
+        didUniqueSuffix,
+        newDidDocument: recoveryDocumentModel
+      };
+      const anchoredRecoveryOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
+      expect(recoveryResult.validOperation).toBeFalsy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+    });
+
+    it('should not apply if new Document does not pass verification.', async () => {
+      const recoveryPayload = {
+        didUniqueSuffix,
+        newDidDocument: { invalidDidDocument: 'invalidDidDocument' }
+      };
+      const anchoredRecoveryOperationModel =
+        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
+      expect(recoveryResult.validOperation).toBeFalsy();
+      expect(didDocumentReference.didDocument).toBeDefined();
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+    });
   });
 });

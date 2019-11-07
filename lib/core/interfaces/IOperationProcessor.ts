@@ -33,5 +33,6 @@ export default interface IOperationProcessor {
  */
 export interface PatchResult {
   validOperation: boolean;
+  /** The operation hash of the operation being applied. */
   operationHash: string | undefined;
 }
