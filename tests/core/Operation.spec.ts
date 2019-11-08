@@ -178,7 +178,7 @@ describe('Operation', async () => {
 
     it('should throw error if any of the service endpoints in the add-service-endpoints patch is not a valid DID.', async () => {
       const updatePayload = generateUpdatePayloadForPublicKeys() as any;
-      updatePayload.patches[2].serviceEndpoints![0] = 111;
+      updatePayload.patches[2].serviceEndpoints[0] = 111;
 
       const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotString);
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
