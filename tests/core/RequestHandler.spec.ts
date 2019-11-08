@@ -145,7 +145,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body!.code).toEqual(ErrorCode.OperationExceedsMaximumSize);
+    expect(response.body.code).toEqual(ErrorCode.OperationExceedsMaximumSize);
   });
 
   it('should return bad request if two operations for the same DID is received.', async () => {
@@ -162,7 +162,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body!.code).toEqual(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
+    expect(response.body.code).toEqual(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
   });
 
   it('should return a resolved DID Document given a known DID.', async () => {
