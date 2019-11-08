@@ -605,30 +605,8 @@ POST / HTTP/1.1
 }
 ```
 
-#### Response body schema
-The response body is the constructed DID Document of the DID recovered.
-
-#### Response body example
-```json
-{
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
-  "publicKey": [{
-    "id": "#key1",
-    "type": "Secp256k1VerificationKey2018",
-    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
-  }],
-  "service": [{
-    "id": "IdentityHub",
-    "type": "IdentityHub",
-    "serviceEndpoint": {
-      "@context": "schema.identity.foundation/hub",
-      "@type": "UserServiceEndpoint",
-      "instance": ["did:bar:456", "did:zaz:789"]
-    }
-  }]
-}
-```
+#### Response body
+None.
 
 
 

@@ -45,7 +45,7 @@ export default class Operation {
   /** Signature of this operation. */
   public readonly signature: string;
 
-  /** Encoded DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
+  /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument?: DocumentModel;
 
   /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
