@@ -115,12 +115,8 @@ describe('BitcoinProcessor', () => {
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
-      expect(bitcoinProcessor.bitcoinPeerUri).toEqual(config.bitcoinPeerUri);
-      expect(bitcoinProcessor.bitcoinAuthorization).toEqual(Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64'));
-      expect(bitcoinProcessor.requestTimeout).toEqual(300);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
-      expect(bitcoinProcessor.maxRetries).toEqual(3);
       expect(bitcoinProcessor.pageSize).toEqual(config.transactionFetchPageSize);
       expect(bitcoinProcessor.pollPeriod).toEqual(60);
       expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);

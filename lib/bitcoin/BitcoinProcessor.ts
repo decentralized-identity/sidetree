@@ -36,12 +36,6 @@ export interface IBlockInfo {
  */
 export default class BitcoinProcessor {
 
-  /** URI for the bitcoin peer's RPC endpoint */
-  public readonly bitcoinPeerUri: string;
-
-  /** Bitcoin peer's RPC basic authorization credentials */
-  public readonly bitcoinAuthorization?: string;
-
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
 
@@ -56,12 +50,6 @@ export default class BitcoinProcessor {
 
   /** Number of items to return per page */
   public pageSize: number;
-
-  /** request timeout in milliseconds */
-  public requestTimeout: number;
-
-  /** maximum number of request retries */
-  public maxRetries: number;
 
   /** Number of seconds between transaction queries */
   public pollPeriod: number;
@@ -80,10 +68,6 @@ export default class BitcoinProcessor {
   private bitcoinLedger: IBitcoinLedger;
 
   public constructor (config: IBitcoinConfig) {
-    this.bitcoinPeerUri = config.bitcoinPeerUri;
-    if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
-      this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
-    }
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
@@ -94,8 +78,6 @@ export default class BitcoinProcessor {
       throw new Error(`Failed creating private key from '${config.bitcoinWalletImportString}': ${error.message}`);
     }
     this.pageSize = config.transactionFetchPageSize;
-    this.requestTimeout = config.requestTimeoutInMilliseconds || 300;
-    this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
