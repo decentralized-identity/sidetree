@@ -3,6 +3,8 @@
  */
 export default interface IBitcoinLedger {
 
+  // get
+
   /**
    * Makes a generic RPC call to the satoshi client and returns the response.
    *
