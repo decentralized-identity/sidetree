@@ -1,17 +1,15 @@
-import * as httpStatus from 'http-status';
-import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
+import BitcoinLedger from './BitcoinLedger';
 import ErrorCode from '../common/SharedErrorCode';
-import ReadableStream from '../common/ReadableStream';
+import IBitcoinLedger from './interfaces/IBitcoinLedger';
+import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import RequestError from './RequestError';
-import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
-import { URL } from 'url';
 
 /**
  * Object representing a blockchain time and hash
@@ -77,7 +75,9 @@ export default class BitcoinProcessor {
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
 
-  private serviceInfo: ServiceInfo;
+  private serviceInfoProvider: ServiceInfoProvider;
+
+  private bitcoinLedger: IBitcoinLedger;
 
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
@@ -98,7 +98,14 @@ export default class BitcoinProcessor {
     this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
-    this.serviceInfo = new ServiceInfo('bitcoin');
+    this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
+    this.bitcoinLedger =
+      new BitcoinLedger(
+        config.bitcoinPeerUri,
+        config.bitcoinRpcUsername,
+        config.bitcoinRpcPassword,
+        config.requestTimeoutInMilliseconds || 300,
+        config.requestMaxRetries || 3);
   }
 
   /**
@@ -139,7 +146,7 @@ export default class BitcoinProcessor {
           true
         ]
       };
-      await this.rpcCall(request, undefined, false);
+      await this.bitcoinLedger.SendGenericRequest(request, false);
     } else {
       console.debug('Wallet found.');
     }
@@ -180,7 +187,7 @@ export default class BitcoinProcessor {
         1 // 1 = block information
       ]
     };
-    const response = await this.rpcCall(request);
+    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
     return {
       hash: response.hash,
       time: response.height
@@ -296,7 +303,7 @@ export default class BitcoinProcessor {
    * Handles the get version operation.
    */
   public async getServiceVersion (): Promise<ServiceVersionModel> {
-    return this.serviceInfo.getServiceVersion();
+    return this.serviceInfoProvider.getServiceVersion();
   }
 
   /**
@@ -312,7 +319,7 @@ export default class BitcoinProcessor {
         height // height of the block
       ]
     };
-    return this.rpcCall(hashRequest);
+    return this.bitcoinLedger.SendGenericRequest(hashRequest, true);
   }
 
   /**
@@ -332,7 +339,7 @@ export default class BitcoinProcessor {
         [addressToSearch]
       ]
     };
-    const response: Array<any> = await this.rpcCall(request);
+    const response: Array<any> = await this.bitcoinLedger.SendGenericRequest(request, true);
 
     const unspentTransactions = response.map((coin) => {
       return new Transaction.UnspentOutput(coin);
@@ -356,7 +363,7 @@ export default class BitcoinProcessor {
         rawTransaction
       ]
     };
-    const response = await this.rpcCall(request);
+    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
 
     return response.length > 0;
   }
@@ -467,7 +474,7 @@ export default class BitcoinProcessor {
     const request = {
       method: 'getblockcount'
     };
-    const response = await this.rpcCall(request);
+    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
     return response;
   }
 
@@ -493,13 +500,14 @@ export default class BitcoinProcessor {
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
     const hash = await this.getBlockHash(block);
-    const responseData = await this.rpcCall({
+    const getBlockRequest = {
       method: 'getblock',
       params: [
         hash,  // hash
         2      // block and transaction information
-      ]
-    });
+      ]};
+
+    const responseData = await this.bitcoinLedger.SendGenericRequest(getBlockRequest, true);
 
     const transactions = responseData.tx as Array<any>;
     const blockHash = responseData.hash;
@@ -607,102 +615,7 @@ export default class BitcoinProcessor {
       ]
     };
 
-    const response = await this.rpcCall(request);
+    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
     return response.labels.length > 0 || response.iswatchonly;
   }
-
-  /**
-   * performs an RPC call given a request
-   * @param request RPC request parameters as an object
-   * @param path optional path extension
-   * @returns response as an object
-   */
-  private async rpcCall (request: any, requestPath: string = '', timeout: boolean = true): Promise<any> {
-    // append some standard jrpc parameters
-    request['jsonrpc'] = '1.0';
-    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
-    const fullPath = new URL(requestPath, this.bitcoinPeerUri);
-    const requestString = JSON.stringify(request);
-    // console.debug(`Fetching ${fullPath}`);
-    // console.debug(requestString);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
-    const requestOptions: RequestInit = {
-      body: requestString,
-      method: 'post'
-    };
-    if (this.bitcoinAuthorization) {
-      requestOptions.headers = {
-        Authorization: `Basic ${this.bitcoinAuthorization}`
-      };
-    }
-    const response = await this.fetchWithRetry(fullPath.toString(), requestOptions, timeout);
-
-    const responseData = await ReadableStream.readAll(response.body);
-    if (response.status !== httpStatus.OK) {
-      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      console.error(error);
-      throw error;
-    }
-
-    const responseJson = JSON.parse(responseData.toString());
-
-    if ('error' in responseJson && responseJson.error !== null) {
-      const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
-      console.error(error);
-      throw error;
-    }
-
-    return responseJson.result;
-  }
-
-  /**
-   * Calls `nodeFetch` and retries with exponential back-off on `request-timeout` FetchError`.
-   * @param uri URI to fetch
-   * @param requestParameters Request parameters to use
-   * @param setTimeout True to set a timeout on the request, and retry if times out, false to wait indefinitely.
-   * @returns Response of the fetch
-   */
-  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined, setTimeout: boolean = true): Promise<Response> {
-    let retryCount = 0;
-    let timeout: number;
-    do {
-      timeout = this.requestTimeout * 2 ** retryCount;
-      let params = Object.assign({}, requestParameters);
-      if (setTimeout) {
-        params = Object.assign(params, {
-          timeout
-        });
-      }
-      try {
-        return await nodeFetch(uri, params);
-      } catch (error) {
-        if (error instanceof FetchError) {
-          if (retryCount >= this.maxRetries) {
-            console.debug('Max retries reached. Request failed.');
-            throw error;
-          }
-          switch (error.type) {
-            case 'request-timeout':
-              console.debug(`Request timeout (${retryCount})`);
-              await this.waitFor(Math.round(timeout));
-              console.debug(`Retrying request (${++retryCount})`);
-              continue;
-          }
-        }
-        console.error(error);
-        throw error;
-      }
-    } while (true);
-  }
-
-  /**
-   * Async timeout
-   * @param milliseconds Timeout in milliseconds
-   */
-  private async waitFor (milliseconds: number) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, milliseconds);
-    });
-  }
-
 }
