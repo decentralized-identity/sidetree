@@ -261,6 +261,18 @@ export class SlidingWindowQuantileCalculator {
   }
 
   /**
+   * Remove all batches with ids greater than or equal
+   * to a provided batchId.
+   */
+  public async removeBatchesGreaterThanOrEqual (batchId: number): Promise<void> {
+    await this.mongoStore.removeBatchesGreaterThanEqualTo(batchId);
+
+    // Re-initialize - slightly inefficient but simplest way to reset our state to the
+    // correct value.
+    await this.initialize();
+  }
+
+  /**
    * Get the quantile as of a specific batchId.
    */
   public getQuantile (batchId: number): number | undefined {

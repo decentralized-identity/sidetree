@@ -82,6 +82,11 @@ export class SlidingWindowQuantileMongoStore {
     return (firstBatches[0] as QuantileInfo).batchId;
   }
 
+  /** Remove batches with ids greater than or equal to a specified batchId */
+  public async removeBatchesGreaterThanEqualTo (batchId: number): Promise<void> {
+    await this.quantileCollection!.deleteMany({ batchId: { $gte: Long.fromNumber(batchId) } });
+  }
+
   /**
    * Creates the `quantile` collection with indexes if it does not exists.
    * @returns The existing collection if exists, else the newly created collection.

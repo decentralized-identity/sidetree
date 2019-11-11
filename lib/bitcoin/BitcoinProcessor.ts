@@ -7,7 +7,6 @@ import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import { SlidingWindowQuantileCalculator } from './SlidingWindowQuantileCalculator';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -15,6 +14,7 @@ import { IBitcoinConfig } from './IBitcoinConfig';
 import { IProofOfFeeConfig } from './IProofOfFeeConfig';
 import { ResponseStatus } from '../common/Response';
 import { ReservoirSampler } from './PsuedoRandomSampler';
+import { SlidingWindowQuantileCalculator } from './SlidingWindowQuantileCalculator';
 import { URL } from 'url';
 
 /**
@@ -462,6 +462,16 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * For proof of fee calculation, blocks are grouped into fixed sized batches.
+   * This function rounds a block to the first block in its batch and returns that
+   * value.
+   */
+  private roundToBatchBoundary (block: number): number {
+    const batchId = Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks);
+    return batchId * this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks;
+  }
+
+  /**
    * Begins to revert the blockchain cache until consistent, returns last good height
    * @returns last valid block height before the fork
    */
@@ -474,27 +484,37 @@ export default class BitcoinProcessor {
 
       const firstValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
-      let revertToTransactionNumber: number;
-
       if (firstValidTransaction) {
-        // The number that represents the theoritical last possible transaction written on `firstValidTransaction.transactionTime`.
-        revertToTransactionNumber = TransactionNumber.construct(firstValidTransaction.transactionTime + 1, 0) - 1;
-      } else {
-        const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
-        revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
+        // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a batch
+        // boundary to simplify resetting proof-of-fee state which is maintained per batch.
+        let revertToBlockNumber = this.roundToBatchBoundary(firstValidTransaction.transactionTime + 1);
+
+        // The number that represents the theoritical last possible transaction written with a block number
+        // less than revertToBlockNumber
+        const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber, 0) - 1;
+
+        console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
+        await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
+
+        // Reset transaction sampling
+        this.transactionSampler.clear();
+
+        // Revert the quantile calculator
+        this.quantileCalculator.removeBatchesGreaterThanOrEqual(revertToBlockNumber);
+
+        console.info(`reverted Transactions to block ${revertToBlockNumber}`);
+        return revertToBlockNumber;
       }
+
+      // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
+      // transactions and repeat the process with a new reduced list of transactions.
+      const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
+      const revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
 
       console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
       await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
-
-      // If we have reverted back to a valid transaction, rollback is complete.
-      if (firstValidTransaction) {
-        console.info(`reverted Transactions to block ${firstValidTransaction.transactionTime}`);
-        return firstValidTransaction.transactionTime;
-      }
-
-      // Else we repeat the process using the newly reduced list of trasactions.
     }
+
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
     return this.genesisBlockNumber;
@@ -561,19 +581,18 @@ export default class BitcoinProcessor {
         continue;
       }
 
-      // Add the transaction to the sampler.  We filter out transactions with unusual
-      // input count - such transaction require a large number of rpc calls to compute transaction fee
-      // not worth the cost for an approximate measure.
-      const inputsCount = (transaction.vin as Array<any>).length;
-      if (inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
-        this.transactionSampler.addElement(transaction.txid);
-      }
-
       try {
         const outputs = transaction.vout as Array<any>;
-        const transactionFee = await this.getTransactionFeeInSatoshi(transaction.txid);
-        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transactionFee);
+        const isSidetreeTransaction =
+          await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.txid);
 
+        // Add the transaction to the sampler.  We filter out transactions with unusual
+        // input count - such transaction require a large number of rpc calls to compute transaction fee
+        // not worth the cost for an approximate measure. We also filter out sidetree transactions
+        const inputsCount = (transaction.vin as Array<any>).length;
+        if (!isSidetreeTransaction && inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
+          this.transactionSampler.addElement(transaction.txid);
+        }
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
@@ -655,7 +674,7 @@ export default class BitcoinProcessor {
     transactionIndex: number,
     transactionBlock: number,
     transactionHash: any,
-    transactionFee: number): Promise<void> {
+    transactionId: string): Promise<boolean> {
 
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
@@ -685,7 +704,7 @@ export default class BitcoinProcessor {
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
           anchorString: data.slice(this.sidetreePrefix.length),
-          feePaid: transactionFee
+          feePaid: 0    // filled in before adding to transactionStore after all error checks
         };
       }
     }
@@ -693,9 +712,15 @@ export default class BitcoinProcessor {
     if (sidetreeTxToAdd !== undefined) {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // there would've been an exception before. So add it to the store ...
+      sidetreeTxToAdd.feePaid = await this.getTransactionFeeInSatoshi(transactionId);
+
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
       await this.transactionStore.addTransaction(sidetreeTxToAdd);
+      return true;
     }
+
+    // non sidetree transaction
+    return false;
   }
 
   /**
