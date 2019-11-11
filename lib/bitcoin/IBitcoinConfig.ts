@@ -1,4 +1,4 @@
-import { IProofOfFeeConfig } from './IProofOfFeeConfig';
+import IProofOfFeeConfig from './IProofOfFeeConfig';
 
 /**
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.

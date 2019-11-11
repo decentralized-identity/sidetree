@@ -196,11 +196,12 @@ export class ReservoirSampler {
     // We have a full sampleSize of samples at this point.
     // This element is picked to be in the sample with probability 1/streamSize
     this.streamSize++;
-    if (this.psuedoRandomGenerator!.getBernoulliSample(this.sampleSize, this.streamSize) === 1) {
 
-      // If this element is picked, we need to decide which element to evict at random
-      const randIndex = this.psuedoRandomGenerator!.getRandomNumber(this.sampleSize);
+    // Pick a random index [0 .. streamSize] and if the index < sampleSize, replace
+    // the element at that index.
+    const randIndex = this.psuedoRandomGenerator!.getRandomNumber(this.streamSize);
 
+    if (randIndex < this.sampleSize) {
       // evict the current element at randIndex and store element instead
       this.sample[randIndex] = element;
     }

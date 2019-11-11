@@ -3,7 +3,7 @@
  * Defines configuration of approximate sliding windows used in
  * proof of fee calculation.
  */
-export interface ISlidingWindowQuantileConfig {
+interface ISlidingWindowQuantileConfig {
   windowSizeInBatches: number;
   batchSizeInBlocks: number;
   feeApproximation: number;
@@ -14,7 +14,7 @@ export interface ISlidingWindowQuantileConfig {
 /**
  * Defines configuration of proof of fee calculation.
  */
-export interface IProofOfFeeConfig {
+export default interface IProofOfFeeConfig {
   transactionFeeQuantileConfig: ISlidingWindowQuantileConfig;
   quantileScale: number;
   maxTransactionInputCount: number;

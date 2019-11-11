@@ -102,7 +102,7 @@ export class SlidingWindowQuantileMongoStore {
       console.info('Quantile collection does not exists, creating...');
       const quantileCollection = await db.createCollection(SlidingWindowQuantileMongoStore.quantileCollectionName);
       await quantileCollection.createIndex({ batchId: 1 }, { unique: true });
-      console.info('Transaction collection created.');
+      console.info('Quantile collection created.');
       return quantileCollection;
     }
   }
