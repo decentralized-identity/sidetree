@@ -234,7 +234,7 @@ export default class Document {
    * @param didDocument The document to update.
    * @param did The did which gets added to the document.
    */
-  public static updatePlaceholdersInDocumentWithDid (didDocument: DocumentModel, did: string): void {
+  private static updatePlaceholdersInDocumentWithDid (didDocument: DocumentModel, did: string): void {
 
     didDocument.id = did;
 
