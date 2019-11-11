@@ -500,7 +500,7 @@ export default class BitcoinProcessor {
         this.transactionSampler.clear();
 
         // Revert the quantile calculator
-        this.quantileCalculator.removeBatchesGreaterThanOrEqual(revertToBlockNumber);
+        await this.quantileCalculator.removeBatchesGreaterThanOrEqual(revertToBlockNumber);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
         return revertToBlockNumber;
