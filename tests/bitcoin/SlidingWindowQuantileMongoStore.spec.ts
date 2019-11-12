@@ -1,5 +1,5 @@
 import MongoDb from '../common/MongoDb';
-import { QuantileInfo, SlidingWindowQuantileMongoStore } from '../../lib/bitcoin/SlidingWindowQuantileMongoStore';
+import { QuantileInfo, MongoDbSlidingWindowQuantileStore } from '../../lib/bitcoin/SlidingWindowQuantileMongoStore';
 
 function checkArrayEqual (array1: number[], array2: number[]): boolean {
   if (array1.length !== array2.length) {
@@ -18,13 +18,13 @@ function checkArrayEqual (array1: number[], array2: number[]): boolean {
 describe('SlidingWindowQuantileMongoStore', async () => {
   const mongoDbConnectionString = 'mongodb://localhost:27017';
   const databaseName = 'sidetree-test';
-  let mongoStore: SlidingWindowQuantileMongoStore;
+  let mongoStore: MongoDbSlidingWindowQuantileStore;
   let mongoServiceAvailable = false;
 
   beforeAll(async () => {
     mongoServiceAvailable = await MongoDb.isServerAvailable(mongoDbConnectionString);
     if (mongoServiceAvailable) {
-      mongoStore = new SlidingWindowQuantileMongoStore(mongoDbConnectionString, databaseName);
+      mongoStore = new MongoDbSlidingWindowQuantileStore(mongoDbConnectionString, databaseName);
       await mongoStore.initialize();
     }
   });

@@ -94,7 +94,7 @@ export default class BitcoinProcessor {
   private readonly transactionSampler: ReservoirSampler;
 
   /** satoshis per bitcoin */
-  private static readonly satoshiPerBTC = 100000000;
+  private static readonly satoshiPerBitcoin = 100000000;
 
   public constructor (config: IBitcoinConfig) {
     this.bitcoinPeerUri = config.bitcoinPeerUri;
@@ -109,7 +109,7 @@ export default class BitcoinProcessor {
 
     const transactionFeeQuantileConfig = config.proofOfFeeConfig.transactionFeeQuantileConfig;
     this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
-      BitcoinProcessor.satoshiPerBTC,
+      BitcoinProcessor.satoshiPerBitcoin,
       transactionFeeQuantileConfig.windowSizeInBatches,
       transactionFeeQuantileConfig.quantile,
       config.mongoDbConnectionString,
@@ -642,7 +642,7 @@ export default class BitcoinProcessor {
     // output with the desired index
     const vout = xact.vout.find((v: any) => v.n === outIdx);
 
-    return Math.round(vout.value * BitcoinProcessor.satoshiPerBTC);
+    return Math.round(vout.value * BitcoinProcessor.satoshiPerBitcoin);
   }
 
   /** Get the transaction fee of a transaction in satoshis */
@@ -662,7 +662,7 @@ export default class BitcoinProcessor {
     }
 
     // transaction outputs in satoshis
-    const xactOuts: number[] = xact.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBTC));
+    const xactOuts: number[] = xact.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBitcoin));
 
     const outputSatoshiSum = xactOuts.reduce((s, v) => s + v, 0);
 

@@ -1,4 +1,4 @@
-import { SlidingWindowQuantileMongoStore } from './SlidingWindowQuantileMongoStore';
+import { MongoDbSlidingWindowQuantileStore } from './SlidingWindowQuantileMongoStore';
 
 /**
  * Value approximator is used to normalize values to a compact range while
@@ -165,7 +165,7 @@ export class SlidingWindowQuantileCalculator {
   /** Most recent batchId we have seen */
   private prevBatchId: number | undefined = undefined;
 
-  private mongoStore: SlidingWindowQuantileMongoStore;
+  private mongoStore: MongoDbSlidingWindowQuantileStore;
 
   /**
    * Construct a sliding window quantile computer with specified
@@ -182,7 +182,7 @@ export class SlidingWindowQuantileCalculator {
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize);
-    this.mongoStore = new SlidingWindowQuantileMongoStore(mongoServerUrl, database);
+    this.mongoStore = new MongoDbSlidingWindowQuantileStore(mongoServerUrl, database);
     if (this.quantileParameter < 0 || this.quantileParameter > 1) {
       throw Error(`Invalid quantile measure ${quantileParameter}`);
     }

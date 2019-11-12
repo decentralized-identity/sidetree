@@ -12,7 +12,7 @@ export interface QuantileInfo {
 /**
  * MongoDB store for sliding window quantile information.
  */
-export class SlidingWindowQuantileMongoStore {
+export class MongoDbSlidingWindowQuantileStore {
 
   private db: Db | undefined;
   private quantileCollection: Collection | undefined;
@@ -21,7 +21,7 @@ export class SlidingWindowQuantileMongoStore {
   private static readonly defaultDatabaseName = 'sidetree';
 
   public constructor (private serverUrl: string, databaseName?: string) {
-    this.databaseName = databaseName ? databaseName : SlidingWindowQuantileMongoStore.defaultDatabaseName;
+    this.databaseName = databaseName ? databaseName : MongoDbSlidingWindowQuantileStore.defaultDatabaseName;
   }
 
   /**
@@ -30,7 +30,7 @@ export class SlidingWindowQuantileMongoStore {
   public async initialize (): Promise<void> {
     const client = await MongoClient.connect(this.serverUrl);
     this.db = client.db(this.databaseName);
-    this.quantileCollection = await SlidingWindowQuantileMongoStore.createQuantileCollectionIfNotExist(this.db);
+    this.quantileCollection = await MongoDbSlidingWindowQuantileStore.createQuantileCollectionIfNotExist(this.db);
   }
 
   /**
@@ -95,12 +95,12 @@ export class SlidingWindowQuantileMongoStore {
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 
-    if (collectionNames.includes(SlidingWindowQuantileMongoStore.quantileCollectionName)) {
+    if (collectionNames.includes(MongoDbSlidingWindowQuantileStore.quantileCollectionName)) {
       console.info('Quantile collection already exists.');
-      return db.collection(SlidingWindowQuantileMongoStore.quantileCollectionName);
+      return db.collection(MongoDbSlidingWindowQuantileStore.quantileCollectionName);
     } else {
       console.info('Quantile collection does not exists, creating...');
-      const quantileCollection = await db.createCollection(SlidingWindowQuantileMongoStore.quantileCollectionName);
+      const quantileCollection = await db.createCollection(MongoDbSlidingWindowQuantileStore.quantileCollectionName);
       await quantileCollection.createIndex({ batchId: 1 }, { unique: true });
       console.info('Quantile collection created.');
       return quantileCollection;
