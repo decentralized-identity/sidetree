@@ -64,8 +64,8 @@ export default class BatchWriter implements IBatchWriter {
     //
     // NOTE: We are passing 0 for the fee parameter in this version. The fee parameter was
     // introduced after this version had shipped. This 'write' function is only ever called
-    // for the latest blockchain time which means that this previous version will never be
-    // called and passing a fake value like 0 is ok.
+    // for the latest blockchain time and the implementation should handle this previous
+    // version calling it with a fake value like 0.
     //
     await this.blockchain.write(anchorFileAddress, 0);
 
