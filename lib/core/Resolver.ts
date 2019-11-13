@@ -1,6 +1,6 @@
-import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
+import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
 import OperationType from './enums/OperationType';
 
 /**
@@ -30,7 +30,6 @@ export default class Resolver {
     // 1. `didDocument` can be `undefined` initially; and
     // 2. `didDocument` can be modified directly in-place in subsequent document patching.
     let didDocumentReference: { didDocument: object | undefined } = { didDocument: undefined };
-    let previousOperationHash: string | undefined;
 
     const operations = await this.operationStore.get(didUniqueSuffix);
     const createAndRecoverAndRevokeOperations = operations.filter(
@@ -38,24 +37,11 @@ export default class Resolver {
       op.type === OperationType.Recover ||
       op.type === OperationType.Delete);
 
-    let lastFullOperation: AnchoredOperationModel | undefined;
-    // Validate each operation in chronological order to build a complete base DID Document for update patches to be applied on later.
-    for (const operation of createAndRecoverAndRevokeOperations) {
-      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const patchResult = await operationProcessor.patch(operation, previousOperationHash, didDocumentReference);
+    // Apply "full" operations first.
+    const [lastFullOperation, lastFullOperationHash] =
+      await this.applyOperations(didDocumentReference, createAndRecoverAndRevokeOperations, undefined, undefined);
 
-      if (patchResult.validOperation) {
-        lastFullOperation = operation;
-        previousOperationHash = patchResult.operationHash;
-      } else {
-        const index = operation.operationIndex;
-        const time = operation.transactionTime;
-        const number = operation.transactionNumber;
-        console.info(`Ignored invalid full operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
-      }
-    }
-
-    // If no create operation found at all, the DID is not anchored.
+    // If no full operation found at all, the DID is not anchored.
     if (lastFullOperation === undefined) {
       return undefined;
     }
@@ -64,29 +50,45 @@ export default class Resolver {
     const updateOperations = operations.filter(op => op.type === OperationType.Update);
     const updateOperationsToBeApplied = updateOperations.filter(
       op => op.transactionNumber > lastFullOperation!.transactionNumber ||
-            (op.transactionNumber === lastFullOperation!.transactionNumber && op.operationIndex > lastFullOperation!.operationIndex)
+           (op.transactionNumber === lastFullOperation!.transactionNumber && op.operationIndex > lastFullOperation!.operationIndex)
     );
 
-    // Patch each operation in chronological order to build a complete DID Document.
-    for (const operation of updateOperationsToBeApplied) {
+    // Apply "update/delta" operations.
+    await this.applyOperations(didDocumentReference, updateOperationsToBeApplied, lastFullOperation, lastFullOperationHash);
+
+    return didDocumentReference.didDocument;
+  }
+
+  /**
+   * Applies the given operations to the given DID document.
+   * @param didDocumentReference The reference to the DID document to be modified.
+   * @param operations The list of operations to be applied in sequence.
+   * @param lastOperation  The last operation that was successfully applied.
+   * @param lastOperationHash The hash of the last operation that was successfully applied.
+   * @returns [last operation that was successfully applied, the hash of the last operation that was successfully applied]
+   */
+  private async applyOperations (
+    didDocumentReference: { didDocument: any | undefined },
+    operations: NamedAnchoredOperationModel[],
+    lastOperation: NamedAnchoredOperationModel | undefined,
+    lastOperationHash: string | undefined
+  ): Promise<[NamedAnchoredOperationModel | undefined, string | undefined]> {
+    for (const operation of operations) {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const patchResult = await operationProcessor.patch(operation, previousOperationHash, didDocumentReference);
+      const patchResult = await operationProcessor.patch(operation, lastOperationHash, didDocumentReference);
 
       if (patchResult.validOperation) {
-        previousOperationHash = patchResult.operationHash;
+        lastOperation = operation;
+        lastOperationHash = patchResult.operationHash;
       } else {
         const index = operation.operationIndex;
         const time = operation.transactionTime;
         const number = operation.transactionNumber;
-        console.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        const did = didDocumentReference.didDocument ? didDocumentReference.didDocument.id : undefined;
+        console.info(`Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     }
 
-    // Opportunistic/optional DB pruning: Delete all updates that are prior to the last full (create, recover) operation if any.
-    if (updateOperationsToBeApplied.length < updateOperations.length) {
-      void this.operationStore.deleteUpdatesEarlierThan(didUniqueSuffix, lastFullOperation.transactionNumber, lastFullOperation.operationIndex);
-    }
-
-    return didDocumentReference.didDocument;
+    return [lastOperation, lastOperationHash];
   }
 }

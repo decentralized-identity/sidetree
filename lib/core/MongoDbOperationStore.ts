@@ -88,8 +88,8 @@ export default class MongoDbOperationStore implements IOperationStore {
   /**
    * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
-  public async get (didSuffix: string): Promise<NamedAnchoredOperationModel[]> {
-    const mongoOperations = await this.collection!.find({ didSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
+  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
+    const mongoOperations = await this.collection!.find({ didSuffix: didUniqueSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 
