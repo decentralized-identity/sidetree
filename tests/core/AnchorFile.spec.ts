@@ -11,7 +11,9 @@ describe('AnchorFile', async () => {
       const anchorFileBuffer = Buffer.from('NotJsonString');
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileNotJson));
+      await JasmineHelper.expectSideTreeErrorToBeThrownAsync(
+        () => AnchorFile.parseAndValidate(anchorFileCompressed, 1),
+        new SidetreeError(ErrorCode.AnchorFileNotJson));
     });
 
     it('should throw if the buffer is not compressed', async () => {

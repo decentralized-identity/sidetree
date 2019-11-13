@@ -4,8 +4,9 @@ import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
 import JasmineHelper from '../../JasmineHelper';
 import { SidetreeError } from '../../../lib/core/Error';
 
-describe('AnchoredDataSerializer', async () => {
+fdescribe('AnchoredDataSerializer', async () => {
 
+  const maxNumberOfOperationsAllowed = 0xFFFFFFFF; // max unint32 value
   let testDataToWrite: AnchoredData;
 
   beforeEach(async () => {
@@ -35,7 +36,7 @@ describe('AnchoredDataSerializer', async () => {
   });
 
   it('should serialize & deserialize the max number of operations correctly', async () => {
-    testDataToWrite.numberOfOperations = 0xFFFFFF;
+    testDataToWrite.numberOfOperations = maxNumberOfOperationsAllowed;
     const serialized = AnchoredDataSerializer.serialize(testDataToWrite);
     const deserialized = AnchoredDataSerializer.deserialize(serialized);
 
@@ -50,7 +51,7 @@ describe('AnchoredDataSerializer', async () => {
       () => AnchoredDataSerializer.serialize(testDataToWrite),
       new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsLessThanZero));
 
-    testDataToWrite.numberOfOperations = 0xFFFFFF + 1;
+    testDataToWrite.numberOfOperations = maxNumberOfOperationsAllowed + 1;
     JasmineHelper.expectSideTreeErrorToBeThrown(
       () => AnchoredDataSerializer.serialize(testDataToWrite),
       new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsGreaterThanMax));

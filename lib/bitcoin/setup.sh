@@ -74,7 +74,6 @@ echo "
   \"bitcoinRpcUsername\": \"admin\",``
   \"bitcoinRpcPassword\": \"$password\",
   \"bitcoinWalletImportString\": \"[FILL THIS IN!]\",
-  \"bitcoinFee\": 4000,
   \"sidetreeTransactionPrefix\": \"[FILL THIS IN!]:\",
   \"genesisBlockNumber\": 1500000,
   \"databaseName\": \"sidetree-bitcoin\",

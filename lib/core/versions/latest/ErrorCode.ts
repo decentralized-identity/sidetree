@@ -5,7 +5,7 @@ export default {
   AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
   AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
   AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
-  AnchoredDataNumberOfOperationsNotThreeBytes: 'anchored_data_number_of_operations_not_three_bytes',
+  AnchoredDataNumberOfOperationsNotFourBytes: 'anchored_data_number_of_operations_not_four_bytes',
   AnchorFileBatchFileHashMissing: 'anchor_file_batch_file_hash_missing',
   AnchorFileBatchFileHashNotString: 'anchor_file_batch_file_hash_not_string',
   AnchorFileBatchFileHashUnsupported: 'anchor_file_batch_file_hash_unsupported',
@@ -45,5 +45,6 @@ export default {
   OperationUpdatePatchServiceEndpointsNotArray: 'operation_update_patch_service_endpoints_not_array',
   OperationUpdatePatchServiceTypeMissingOrUnknown: 'operation_update_patch_service_type_missing_or_unknown',
   QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed',
-  TransactionFeeInvalid: 'transaction_fee_is_invalid'
+  TransactionFeePaidInvalid: 'transaction_fee_paid_is_invalid',
+  TransactionFeePaidLessThanNormalizedFee: 'transaction_fee_paid_less_than_normalized_fee'
 };

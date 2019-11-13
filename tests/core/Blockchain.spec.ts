@@ -305,7 +305,7 @@ describe('Blockchain', async () => {
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
       spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
-      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk));
+      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk));
     });
 
     it('should throw if the response is 400 with the specific error code', async () => {
@@ -333,7 +333,7 @@ describe('Blockchain', async () => {
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
       spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
-      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk));
+      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk));
     });
   });
 });

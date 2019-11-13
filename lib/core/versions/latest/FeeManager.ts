@@ -24,10 +24,14 @@ export default class FeeManager {
     }
 
     const normalizedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
-    const perOperationFee = normalizedFeePerOperation * numberOfOperations;
+    const normalizedFeeForAllOperations = normalizedFeePerOperation * numberOfOperations;
+
+    // If our calculated-fee is lower than the normalized fee then the calculated-fee will be ignored by
+    // the blockchain miners ... so make sure that we return at-least the normalized fee.
+    const transactionFee = Math.max(normalizedFeeForAllOperations, normalizedFee);
 
     // Add some markup to the fee as defined by the caller.
-    return perOperationFee + (feeMarkupFactor * perOperationFee);
+    return transactionFee + (transactionFee * feeMarkupFactor);
   }
 
   /**
@@ -46,12 +50,17 @@ export default class FeeManager {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `The number of operations: ${numberOfOperations} must be greater than 0`);
     }
 
+    if (feePaid < normalizedFee) {
+      throw new SidetreeError(ErrorCode.TransactionFeePaidLessThanNormalizedFee,
+                              `The actual fee paid: ${feePaid} should be greater than or equal to the normalized fee: ${normalizedFee}`);
+    }
+
     const actualFeePerOperation = feePaid / numberOfOperations;
     const expectedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
 
     if (actualFeePerOperation < expectedFeePerOperation) {
-      // tslint:disable-next-line: max-line-length
-      throw new SidetreeError(ErrorCode.TransactionFeeInvalid, `The actual fee paid: ${feePaid} per number of operations: ${numberOfOperations} should be at least ${expectedFeePerOperation}.`);
+      throw new SidetreeError(ErrorCode.TransactionFeePaidInvalid,
+                              `The actual fee paid: ${feePaid} per number of operations: ${numberOfOperations} should be at least ${expectedFeePerOperation}.`);
     }
   }
 }

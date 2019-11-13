@@ -42,7 +42,6 @@ Example bitcoin-config.json
   "bitcoinRpcUsername": "{{YOUR USERNAME}}",
   "bitcoinRpcPassword": "{{YOUR PASSWORD}}",
   "bitcoinWalletImportString": "[FILL THIS IN!]",
-  "bitcoinFee": 4000,
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1500000,
   "databaseName": "sidetree-bitcoin",

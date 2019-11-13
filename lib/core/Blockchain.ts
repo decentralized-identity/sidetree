@@ -165,13 +165,6 @@ export default class Blockchain implements IBlockchain {
     return responseBody;
   }
 
-  /**
-   * Fetches the normalized transaction fee used for proof-of-fee calculation, given the blockchain time.
-   * @param transactionNumber A valid Sidetree transaction number.
-   *
-   * @throws SidetreeError with ErrorCode.BlockchainTimeOutOfRange if the input transaction number is less
-   * than Sidetree genesis blockchain time or is later than the current blockchain time.
-   */
   public async getFee (transactionNumber: number): Promise<number> {
 
     const readUri = `${this.feeUri}/${transactionNumber}`;
@@ -188,7 +181,7 @@ export default class Blockchain implements IBlockchain {
     if (response.status !== HttpStatus.OK) {
       console.error(`Blockchain read error response status: ${response.status}`);
       console.error(`Blockchain read error body: ${responseBodyString}`);
-      throw new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk);
+      throw new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk);
     }
 
     return responseBody.normalizedTransactionFee as number;

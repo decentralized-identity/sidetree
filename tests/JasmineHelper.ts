@@ -18,7 +18,8 @@ export default class JasmineHelper {
       functionToExcute();
     } catch (e) {
       if (e instanceof SidetreeError) {
-        validated = (e.code === expectedSidetreeError.code);
+        expect(e.code).toEqual(expectedSidetreeError.code);
+        validated = true;
       }
     }
 
@@ -40,7 +41,8 @@ export default class JasmineHelper {
       await functionToExcute();
     } catch (e) {
       if (e instanceof SidetreeError) {
-        validated = (e.code === expectedSidetreeError.code);
+        expect(e.code).toEqual(expectedSidetreeError.code);
+        validated = true;
       }
     }
 

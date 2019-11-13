@@ -13,6 +13,12 @@ describe('FeeManager', async () => {
       expect(fee).toEqual(105);
     });
 
+    it('should return at least the normalized fee if the calculated fee is lower', async () => {
+      const fee = FeeManager.convertNormalizedFeeToTransactionFee(100, 1, 0.05);
+
+      expect(fee).toEqual(105);
+    });
+
     it('should fail if the number of operations is <= 0', async () => {
       JasmineHelper.expectSideTreeErrorToBeThrown(
         () => FeeManager.convertNormalizedFeeToTransactionFee(100, 0, 0.05),
@@ -47,9 +53,17 @@ describe('FeeManager', async () => {
     it('should throw if the fee paid is less than the expected fee', async () => {
       const feeToPay = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 0);
 
+      // Make the next call w/ a large number of operations to simulate the error.
       JasmineHelper.expectSideTreeErrorToBeThrown(
-        () => FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay - 1, 100, 100),
-        new SidetreeError(ErrorCode.TransactionFeeInvalid));
+        () => FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 1000, 100),
+        new SidetreeError(ErrorCode.TransactionFeePaidInvalid));
+    });
+
+    it('should throw if the fee paid is less than the normalized fee', async () => {
+
+      JasmineHelper.expectSideTreeErrorToBeThrown(
+        () => FeeManager.verifyTransactionFeeAndThrowOnError(99, 10, 100),
+        new SidetreeError(ErrorCode.TransactionFeePaidLessThanNormalizedFee));
     });
 
     it('should throw if the number of operations are <= 0', async () => {
