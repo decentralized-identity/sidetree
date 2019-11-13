@@ -27,7 +27,7 @@ export default class FeeManager {
     const normalizedFeeForAllOperations = normalizedFeePerOperation * numberOfOperations;
 
     // If our calculated-fee is lower than the normalized fee (which can happen if the number of operations is
-    // very low) then the calculated-fee will be ignored by the blockchain miners ... so make sure that we 
+    // very low) then the calculated-fee will be ignored by the blockchain miners ... so make sure that we
     // return at-least the normalized fee.
     const transactionFee = Math.max(normalizedFeeForAllOperations, normalizedFee);
 
