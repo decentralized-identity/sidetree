@@ -3,8 +3,9 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
-import ICas from '../../interfaces/ICas';
 import Encoder from './Encoder';
+import FeeManager from './FeeManager';
+import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
@@ -12,7 +13,6 @@ import MerkleTree from './util/MerkleTree';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import FeeManager from './FeeManager';
 
 /**
  * Implementation of the `TransactionProcessor`.

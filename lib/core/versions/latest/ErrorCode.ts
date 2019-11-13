@@ -3,9 +3,10 @@
  */
 export default {
   AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
-  AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
   AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
+  AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
   AnchoredDataNumberOfOperationsNotFourBytes: 'anchored_data_number_of_operations_not_four_bytes',
+  AnchoredDataNumberOfOperationsNotInteger: 'anchored_data_number_of_operations_not_integer',
   AnchorFileBatchFileHashMissing: 'anchor_file_batch_file_hash_missing',
   AnchorFileBatchFileHashNotString: 'anchor_file_batch_file_hash_not_string',
   AnchorFileBatchFileHashUnsupported: 'anchor_file_batch_file_hash_unsupported',

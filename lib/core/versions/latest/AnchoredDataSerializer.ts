@@ -51,6 +51,10 @@ export default class AnchoredDataSerializer {
 
   private static convertToBytesBuffer (numberOfOperations: number): Buffer {
 
+    if (!Number.isInteger(numberOfOperations)) {
+      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotInteger, `Number of operations ${numberOfOperations} must be an integer.`);
+    }
+
     if (numberOfOperations < 0) {
       throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsLessThanZero, `Number of operations ${numberOfOperations} must be greater than 0`);
     }
@@ -71,7 +75,7 @@ export default class AnchoredDataSerializer {
 
   private static convertFromBytesBuffer (bytesBuffer: Buffer): number {
 
-    // Ensure that the input has 43 bytes
+    // Ensure that the input has 4 bytes
     if (bytesBuffer.length !== 4) {
       throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotFourBytes,
                               `Input must have 3 bytes but have ${bytesBuffer.length} bytes instead.`);

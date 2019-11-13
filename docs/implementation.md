@@ -38,7 +38,7 @@ The anchor string is the data that is stored on the blockchain. The data is stor
 
 WHERE
 
-encoded_number_of_operations: The total number of operations included in the batch file converted to 4 bytes and encoded as Base64 URL string
+encoded_number_of_operations: The total number of operations included in the batch file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
 hash_of_batch_file: The hash of the batch file
 ```
 

@@ -57,6 +57,14 @@ describe('AnchoredDataSerializer', async () => {
       new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsGreaterThanMax));
   });
 
+  it('should throw if the number of ops is not an integer', async () => {
+
+    testDataToWrite.numberOfOperations = 101.2;
+    JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+      () => AnchoredDataSerializer.serialize(testDataToWrite),
+      new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotInteger));
+  });
+
   it('deserialize should throw if the input is not in the correct format.', async () => {
 
     // Input doesn't have any delimeter
