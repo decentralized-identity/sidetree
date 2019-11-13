@@ -217,7 +217,7 @@ GET /transactions?since=170&transaction-time-hash=00000000000000000000100158f474
       "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
       "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorString": "The string written to the blockchain for this transaction.",
-      "feePaid": "A number representing the fee paid for this transaction.",
+      "transactionFeePaid": "A number representing the fee paid for this transaction.",
       "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation."
     },
     ...
@@ -237,7 +237,7 @@ HTTP/1.1 200 OK
       "transactionTime": 545236,
       "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
       "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-      "feePaid": 40000,
+      "transactionFeePaid": 40000,
       "normalizedTransactionFee": 100
     },
     {
@@ -245,7 +245,7 @@ HTTP/1.1 200 OK
       "transactionTime": 545236,
       "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
       "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
-      "feePaid": 600000,
+      "transactionFeePaid": 600000,
       "normalizedTransactionFee": 400
     }
   ]
@@ -286,7 +286,7 @@ POST /transactions/firstValid HTTP/1.1
       "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
       "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorString": "The string written to the blockchain for this transaction.",
-      "feePaid": "A number representing the fee paid for this transaction.",
+      "transactionFeePaid": "A number representing the fee paid for this transaction.",
       "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation."
     },
     ...
@@ -306,7 +306,7 @@ Content-Type: application/json
       "transactionTime": 545236,
       "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
       "anchorString": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg",
-      "feePaid": 5000,
+      "transactionFeePaid": 5000,
       "normalizedTransactionFee": 100
     },
     {
@@ -314,7 +314,7 @@ Content-Type: application/json
       "transactionTime": 545236,
       "transactionTimeHash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
       "anchorString": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb",
-      "feePaid": 30,
+      "transactionFeePaid": 30,
       "normalizedTransactionFee": 10
 
     },
@@ -323,7 +323,7 @@ Content-Type: application/json
       "transactionTime": 545200,
       "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
       "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
-      "feePaid": 50000,
+      "transactionFeePaid": 50000,
       "normalizedTransactionFee": 150
     },
     {
@@ -331,7 +331,7 @@ Content-Type: application/json
       "transactionTime": 545003,
       "transactionTimeHash": "0000000000000000001e002080595267fe034d370897b7b506d119ad29da1541",
       "anchorString": "Qmss3gKdm9uU9YLx3MPRHQTcUq1CR1Xv9Zpdu7EBG9Pk9Y",
-      "feePaid": 1000000,
+      "transactionFeePaid": 1000000,
       "normalizedTransactionFee": 200
     },
     {
@@ -339,7 +339,7 @@ Content-Type: application/json
       "transactionTime": 544939,
       "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
       "anchorString": "QmdcDrVPWy3ZXoZcuvFq7fDVqatks22MMqPAxDqXsZzGhy"
-      "feePaid": 100,
+      "transactionFeePaid": 100,
       "normalizedTransactionFee": 50
     }
   ]
@@ -353,7 +353,7 @@ Content-Type: application/json
   "transactionTime": "The logical blockchain time this transaction is anchored. Used for protocol version selection.",
   "transactionTimeHash": "The hash associated with the transaction time.",
   "anchorString": "The string written to the blockchain for this transaction.",
-  "feePaid": "A number representing the fee paid for this transaction.",
+  "transactionFeePaid": "A number representing the fee paid for this transaction.",
   "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation."
 }
 ```
@@ -367,7 +367,7 @@ HTTP/1.1 200 OK
   "transactionTime": 545200,
   "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
   "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
-  "feePaid": 50000,
+  "transactionFeePaid": 50000,
   "normalizedTransactionFee": 50
 }
 ```

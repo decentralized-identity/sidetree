@@ -3,7 +3,7 @@ import FeeManager from '../../lib/core/versions/latest/FeeManager';
 import JasmineHelper from '../JasmineHelper';
 import { SidetreeError } from '../../lib/core/Error';
 
-fdescribe('FeeManager', async () => {
+describe('FeeManager', async () => {
 
   describe('convertNormalizedFeeToTransactionFee', async () => {
 

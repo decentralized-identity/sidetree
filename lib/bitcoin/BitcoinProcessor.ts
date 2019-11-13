@@ -216,7 +216,7 @@ export default class BitcoinProcessor {
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
         anchorString: transaction.anchorString,
-        feePaid: transaction.feePaid,
+        transactionFeePaid: transaction.transactionFeePaid,
         normalizedTransactionFee: transaction.normalizedTransactionFee
       };
     });
@@ -564,7 +564,7 @@ export default class BitcoinProcessor {
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
           anchorString: data.slice(this.sidetreePrefix.length),
-          feePaid: 100, // issue #216: read actual data from tx
+          transactionFeePaid: 100, // issue #216: read actual data from tx
           normalizedTransactionFee: 100 // issue #216: read actual data from tx
         };
       }

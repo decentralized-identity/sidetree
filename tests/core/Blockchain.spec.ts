@@ -183,7 +183,7 @@ describe('Blockchain', async () => {
           transactionNumber: 1,
           transactionTime: 1,
           transactionTimeHash: 'unused',
-          feePaid: 1,
+          transactionFeePaid: 1,
           normalizedTransactionFee: 1
         }
       ];
@@ -214,7 +214,7 @@ describe('Blockchain', async () => {
           transactionNumber: 1,
           transactionTime: 1,
           transactionTimeHash: 'unused',
-          feePaid: 1,
+          transactionFeePaid: 1,
           normalizedTransactionFee: 1
         }
       ];

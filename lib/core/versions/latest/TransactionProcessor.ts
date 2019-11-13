@@ -38,7 +38,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
 
     try {
-      FeeManager.verifyTransactionFeeAndThrowOnError(transaction.feePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
+      FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
     } catch (e) {
       const message = `Fee verification failure for anchor string ${transaction.anchorString}. Error: ${e.message}`;
       if (e instanceof SidetreeError) {

@@ -73,7 +73,7 @@ describe('Observer', async () => {
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': '1stTransaction',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
         {
@@ -81,7 +81,7 @@ describe('Observer', async () => {
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': '2ndTransaction',
-          'feePaid': 2,
+          'transactionFeePaid': 2,
           'normalizedTransactionFee': 2
         }
       ]
@@ -203,7 +203,7 @@ describe('Observer', async () => {
       transactionTime: 1000000,
       transactionTimeHash: '1000',
       anchorString: anchoredData,
-      feePaid: 1,
+      transactionFeePaid: 1,
       normalizedTransactionFee: 1
     };
     const transactionUnderProcessing = {
@@ -258,7 +258,7 @@ describe('Observer', async () => {
         transactionTime: 1000000,
         transactionTimeHash: '1000',
         anchorString: anchoredData,
-        feePaid: 1,
+        transactionFeePaid: 1,
         normalizedTransactionFee: 1
       };
       const transactionUnderProcessing = {
@@ -283,7 +283,7 @@ describe('Observer', async () => {
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': '1stTransaction',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
         {
@@ -291,7 +291,7 @@ describe('Observer', async () => {
           'transactionTime': 2000,
           'transactionTimeHash': '2000',
           'anchorString': '2ndTransaction',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
         {
@@ -299,7 +299,7 @@ describe('Observer', async () => {
           'transactionTime': 3000,
           'transactionTimeHash': '3000',
           'anchorString': '3rdTransaction',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
       ]
@@ -313,7 +313,7 @@ describe('Observer', async () => {
           'transactionTime': 2001,
           'transactionTimeHash': '2001',
           'anchorString': '2ndTransactionNew',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
         {
@@ -321,7 +321,7 @@ describe('Observer', async () => {
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
           'anchorString': '3rdTransactionNew',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
         {
@@ -329,7 +329,7 @@ describe('Observer', async () => {
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
           'anchorString': '4thTransaction',
-          'feePaid': 1,
+          'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
       ]
@@ -407,7 +407,7 @@ describe('Observer', async () => {
       'transactionTime': 1000,
       'transactionTimeHash': '1000',
       'anchorString': anchoredData,
-      'feePaid': 1,
+      'transactionFeePaid': 1,
       'normalizedTransactionFee': 1
     };
 

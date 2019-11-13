@@ -38,30 +38,31 @@ export default class FeeManager {
   /**
    * Verifies that the fee paid for the given transaction is valid; throws if it is not valid.
    *
-   * @param feePaid The actual fee paid for that transaction.
+   * @param transactionFeePaid The actual fee paid for that transaction.
    * @param numberOfOperations The number of operations written.
    * @param normalizedFee The normalized fee for that transaction.
    *
    * @throws if the number of operations is <= 0; if the feepaid is invalid.
    */
-  public static verifyTransactionFeeAndThrowOnError (feePaid: number, numberOfOperations: number, normalizedFee: number): void {
+  public static verifyTransactionFeeAndThrowOnError (transactionFeePaid: number, numberOfOperations: number, normalizedFee: number): void {
 
     // If there are no operations written then someone wrote incorrect data and we are going to throw
     if (numberOfOperations <= 0) {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `The number of operations: ${numberOfOperations} must be greater than 0`);
     }
 
-    if (feePaid < normalizedFee) {
+    if (transactionFeePaid < normalizedFee) {
       throw new SidetreeError(ErrorCode.TransactionFeePaidLessThanNormalizedFee,
-                              `The actual fee paid: ${feePaid} should be greater than or equal to the normalized fee: ${normalizedFee}`);
+                              `The actual fee paid: ${transactionFeePaid} should be greater than or equal to the normalized fee: ${normalizedFee}`);
     }
 
-    const actualFeePerOperation = feePaid / numberOfOperations;
+    const actualFeePerOperation = transactionFeePaid / numberOfOperations;
     const expectedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
 
     if (actualFeePerOperation < expectedFeePerOperation) {
-      throw new SidetreeError(ErrorCode.TransactionFeePaidInvalid,
-                              `The actual fee paid: ${feePaid} per number of operations: ${numberOfOperations} should be at least ${expectedFeePerOperation}.`);
+      throw new SidetreeError(
+        ErrorCode.TransactionFeePaidInvalid,
+        `The actual fee paid: ${transactionFeePaid} per number of operations: ${numberOfOperations} should be at least ${expectedFeePerOperation}.`);
     }
   }
 }
