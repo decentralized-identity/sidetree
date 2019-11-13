@@ -46,7 +46,7 @@ hash_of_batch_file: The hash of the batch file
 The following anchor string encodes 10000 operations and the hash of the batch file.
 
 ```
-ECcAAA.2cad8d9657e6e702eee71cbf3a9a3fdf
+ECcAAA.c8957a1a204074f556a13049b2de287db980640167fb6ebb030766471a4cb33d
 ```
 
 ## Versioning
