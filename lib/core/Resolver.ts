@@ -49,8 +49,8 @@ export default class Resolver {
     // Get only update operations that came after the create or last recovery operation.
     const updateOperations = operations.filter(op => op.type === OperationType.Update);
     const updateOperationsToBeApplied = updateOperations.filter(
-      op => op.transactionNumber > lastFullOperation!.transactionNumber ||
-           (op.transactionNumber === lastFullOperation!.transactionNumber && op.operationIndex > lastFullOperation!.operationIndex)
+      op => op.transactionNumber > lastFullOperation.transactionNumber ||
+           (op.transactionNumber === lastFullOperation.transactionNumber && op.operationIndex > lastFullOperation.operationIndex)
     );
 
     // Apply "update/delta" operations.
