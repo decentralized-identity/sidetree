@@ -345,7 +345,7 @@ export default class Operation {
         throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
       }
 
-      if (publicKeyProperties.includes('controller')) {
+      if (publicKey.controller !== undefined) {
         throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyControllerNotAllowed);
       }
 
