@@ -20,7 +20,7 @@ export default class Document {
     const decodedDidDocument = JSON.parse(decodedJsonString);
 
     // Replace the placeholder DID with real DID before returning it.
-    decodedDidDocument.id = did;
+    Document.updatePlaceholdersInDocumentWithDid(decodedDidDocument, did);
 
     // Return `undefined` if original DID Document is invalid.
     if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
@@ -225,5 +225,24 @@ export default class Document {
     }
 
     return undefined;
+  }
+
+  /**
+   * Updates the placeholders in the document with the given did. For example, we replace the id value with
+   * the actual id as the client creating the document will not have this value set.
+   *
+   * @param didDocument The document to update.
+   * @param did The did which gets added to the document.
+   */
+  private static updatePlaceholdersInDocumentWithDid (didDocument: DocumentModel, did: string): void {
+
+    didDocument.id = did;
+
+    // Only update the publickey if the array is present
+    if (Array.isArray(didDocument.publicKey)) {
+      for (let publicKeyEntry of didDocument.publicKey) {
+        publicKeyEntry.controller = did;
+      }
+    }
   }
 }

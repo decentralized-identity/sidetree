@@ -12,7 +12,8 @@ describe('Operation', async () => {
   let createRequest: any;
 
   beforeAll(async () => {
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
+    // Generate a unique key-pair used for each test.
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
     const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
     createRequest = JSON.parse(createRequestBuffer.toString());
   });
@@ -107,6 +108,15 @@ describe('Operation', async () => {
       (updatePayload.patches[0].publicKeys![0] as any).id = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+      expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
+    });
+
+    it('should throw error if the public key includes the controller property', async () => {
+      const updatePayload = generateUpdatePayloadForPublicKeys();
+      delete (updatePayload.patches[0].publicKeys![0] as any).type;
+      (updatePayload.patches[0].publicKeys![0] as any).controller = 'somevalue';
+
+      const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyControllerNotAllowed);
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 

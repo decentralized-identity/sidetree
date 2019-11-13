@@ -31,6 +31,7 @@ export default {
   OperationUpdatePatchesNotArray: 'operation_update_patches_not_array',
   OperationUpdatePatchMissingOrUnknownAction: 'operation_update_patch_missing_or_unknown_action',
   OperationUpdatePatchMissingOrUnknownProperty: 'operation_update_patch_missing_or_unknown_property',
+  OperationUpdatePatchPublicKeyControllerNotAllowed: 'operation_update_patch_public_key_controller_not_allowed',
   OperationUpdatePatchPublicKeyHexMissingOrIncorrect: 'operation_update_patch_public_key_hex_missing_or_incorrect',
   OperationUpdatePatchPublicKeyIdNotString: 'operation_update_patch_public_key_id_not_string',
   OperationUpdatePatchPublicKeyMissingOrUnknownProperty: 'operation_update_patch_public_key_missing_or_unknown_property',
