@@ -2,7 +2,7 @@ import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import JasmineHelper from '../JasmineHelper';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('AnchorFile', async () => {
@@ -11,7 +11,7 @@ describe('AnchorFile', async () => {
       const anchorFileBuffer = Buffer.from('NotJsonString');
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await JasmineHelper.expectSideTreeErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parseAndValidate(anchorFileCompressed, 1),
         new SidetreeError(ErrorCode.AnchorFileNotJson));
     });
@@ -24,7 +24,7 @@ describe('AnchorFile', async () => {
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
 
-      await JasmineHelper.expectSideTreeErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parseAndValidate(anchorFileBuffer, 1),
         new SidetreeError(ErrorCode.AnchorFileDecompressionFailure));
     });

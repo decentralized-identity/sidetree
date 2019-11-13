@@ -3,7 +3,7 @@ import { SidetreeError } from '../lib/core/Error';
 /**
  * Encapsulates the helper functions for the tests.
  */
-export default class JasmineHelper {
+export default class JasmineSidetreeErrorValidator {
 
   /**
    * Fails the current spec if the execution of the function does not throw the expected SidetreeError.
@@ -11,7 +11,7 @@ export default class JasmineHelper {
    * @param functionToExcute The function to execute.
    * @param expectedSidetreeError The expected error.
    */
-  public static expectSideTreeErrorToBeThrown (functionToExcute: () => any, expectedSidetreeError: SidetreeError): void {
+  public static expectSidetreeErrorToBeThrown (functionToExcute: () => any, expectedSidetreeError: SidetreeError): void {
     let validated: boolean = false;
 
     try {
@@ -34,7 +34,7 @@ export default class JasmineHelper {
    * @param functionToExcute The function to execute.
    * @param expectedSidetreeError The expected error.
    */
-  public static async expectSideTreeErrorToBeThrownAsync (functionToExcute: () => Promise<any>, expectedSidetreeError: SidetreeError): Promise<void> {
+  public static async expectSidetreeErrorToBeThrownAsync (functionToExcute: () => Promise<any>, expectedSidetreeError: SidetreeError): Promise<void> {
     let validated: boolean = false;
 
     try {

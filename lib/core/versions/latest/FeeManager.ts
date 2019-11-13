@@ -23,7 +23,7 @@ export default class FeeManager {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `Fee cannot be calculated for the given number of operations: ${numberOfOperations}`);
     }
 
-    const normalizedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
+    const normalizedFeePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     const normalizedFeeForAllOperations = normalizedFeePerOperation * numberOfOperations;
 
     // If our calculated-fee is lower than the normalized fee then the calculated-fee will be ignored by
@@ -57,7 +57,7 @@ export default class FeeManager {
     }
 
     const actualFeePerOperation = transactionFeePaid / numberOfOperations;
-    const expectedFeePerOperation = normalizedFee * ProtocolParameters.normalizedToPerOperationFeeFactor;
+    const expectedFeePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
 
     if (actualFeePerOperation < expectedFeePerOperation) {
       throw new SidetreeError(

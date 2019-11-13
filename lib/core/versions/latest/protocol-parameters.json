@@ -5,5 +5,5 @@
   "maxEncodedHashStringLength": 100,
   "maxOperationByteSize": 2000,
   "maxOperationsPerBatch": 10000,
-  "normalizedToPerOperationFeeFactor": 0.01
+  "normalizedFeeToPerOperationFeeMultiplier": 0.01
 }
