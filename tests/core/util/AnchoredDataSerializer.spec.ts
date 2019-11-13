@@ -4,7 +4,7 @@ import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
 import JasmineHelper from '../../JasmineHelper';
 import { SidetreeError } from '../../../lib/core/Error';
 
-fdescribe('AnchoredDataSerializer', async () => {
+describe('AnchoredDataSerializer', async () => {
 
   const maxNumberOfOperationsAllowed = 0xFFFFFFFF; // max unint32 value
   let testDataToWrite: AnchoredData;

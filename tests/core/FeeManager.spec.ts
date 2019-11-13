@@ -3,29 +3,29 @@ import FeeManager from '../../lib/core/versions/latest/FeeManager';
 import JasmineHelper from '../JasmineHelper';
 import { SidetreeError } from '../../lib/core/Error';
 
-describe('FeeManager', async () => {
+fdescribe('FeeManager', async () => {
 
   describe('convertNormalizedFeeToTransactionFee', async () => {
 
     it('should add the markup margin to the transaction fee', async () => {
-      const fee = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 0.05);
+      const fee = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 5);
 
       expect(fee).toEqual(105);
     });
 
     it('should return at least the normalized fee if the calculated fee is lower', async () => {
-      const fee = FeeManager.convertNormalizedFeeToTransactionFee(100, 1, 0.05);
+      const fee = FeeManager.convertNormalizedFeeToTransactionFee(100, 1, 5);
 
       expect(fee).toEqual(105);
     });
 
     it('should fail if the number of operations is <= 0', async () => {
       JasmineHelper.expectSideTreeErrorToBeThrown(
-        () => FeeManager.convertNormalizedFeeToTransactionFee(100, 0, 0.05),
+        () => FeeManager.convertNormalizedFeeToTransactionFee(100, 0, 5),
         new SidetreeError(ErrorCode.OperationCountLessThanZero));
 
       JasmineHelper.expectSideTreeErrorToBeThrown(
-        () => FeeManager.convertNormalizedFeeToTransactionFee(100, -1, 0.05),
+        () => FeeManager.convertNormalizedFeeToTransactionFee(100, -1, 5),
         new SidetreeError(ErrorCode.OperationCountLessThanZero));
     });
   });
@@ -34,7 +34,7 @@ describe('FeeManager', async () => {
 
     it('should not throw if the fee paid is at least the expected fee', async () => {
       try {
-        const feeToPay = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 0.05);
+        const feeToPay = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 5);
         FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 100, 100);
       } catch (e) {
         fail();
@@ -53,7 +53,7 @@ describe('FeeManager', async () => {
     it('should throw if the fee paid is less than the expected fee', async () => {
       const feeToPay = FeeManager.convertNormalizedFeeToTransactionFee(100, 100, 0);
 
-      // Make the next call w/ a large number of operations to simulate the error.
+      // Make the next call w/ a large number of operations to simulate the error condition.
       JasmineHelper.expectSideTreeErrorToBeThrown(
         () => FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 1000, 100),
         new SidetreeError(ErrorCode.TransactionFeePaidInvalid));

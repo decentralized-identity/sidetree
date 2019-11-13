@@ -4,7 +4,7 @@
 export default interface Config {
   batchingIntervalInSeconds: number;
   blockchainServiceUri: string;
-  blockchainFeeMarkupFactor: number;
+  transactionFeeMarkupPercentage: number;
   contentAddressableStoreServiceUri: string;
   didMethodName: string;
   maxConcurrentDownloads: number;
