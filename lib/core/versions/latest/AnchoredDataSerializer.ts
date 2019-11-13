@@ -19,7 +19,7 @@ export default class AnchoredDataSerializer {
    */
   public static serialize (dataToBeAnchored: AnchoredData): string {
 
-    // First convert the number of operations input into a 3-byte buffer and then base64 encode it
+    // First convert the number of operations input into a 4-byte buffer and then base64 encode it
     const numberAsBuffer = AnchoredDataSerializer.convertToBytesBuffer(dataToBeAnchored.numberOfOperations);
     const encodedNumberOfOperations = Encoder.encode(numberAsBuffer);
 
