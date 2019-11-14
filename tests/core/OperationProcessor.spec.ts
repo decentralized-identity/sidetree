@@ -158,7 +158,7 @@ describe('OperationProcessor', async () => {
 
   beforeEach(async () => {
     // Generate a unique key-pair used for each test.
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery,'did:exmaple:123');
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
@@ -267,7 +267,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.signature = 'AnInvalidSignature';
 
@@ -302,7 +302,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
 
     // Replace the protected header with invlaid `kid`.

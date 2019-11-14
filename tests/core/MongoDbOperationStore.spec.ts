@@ -156,7 +156,7 @@ describe('MongoDbOperationStore', async () => {
     await operationStore.delete();
 
     // Generate a unique key-pair used for each test.
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
   });
 
   it('should get a put create operation', async () => {

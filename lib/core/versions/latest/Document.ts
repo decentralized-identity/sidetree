@@ -20,13 +20,13 @@ export default class Document {
     const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
     const decodedDidDocument = JSON.parse(decodedJsonString);
 
-    // Replace the placeholder DID with real DID before returning it.
-    Document.updatePlaceholdersInDocumentWithDid(decodedDidDocument, did);
-
     // Return `undefined` if original DID Document is invalid.
     if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
       return undefined;
     }
+
+    // Replace the placeholder DID with real DID before returning it.
+    Document.updatePlaceholdersInDocumentWithDid(decodedDidDocument, did);
 
     return decodedDidDocument;
   }
@@ -94,6 +94,11 @@ export default class Document {
         keyUsages.set(publicKeyEntry.usage, 1);
       } else {
         keyUsages.set(publicKeyEntry.usage, usageCount + 1);
+      }
+
+      // Controller field is not allowed to be filled in by the client
+      if (publicKeyEntry.controller !== undefined) {
+        return false;
       }
     }
 
