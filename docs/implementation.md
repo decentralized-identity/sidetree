@@ -30,25 +30,6 @@ The primary goals for the _Observer_ are to:
 
 The above goals lead to the design decision of minimal processing of the operations at the time of ingestion, and deferring the heavy processing such as signature validations to the time of DID resolution.
 
-## Anchor String Schema
-The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
-
-```
-[encoded_number_of_operations].[hash_of_batch_file]
-
-WHERE
-
-encoded_number_of_operations: The total number of operations included in the batch file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
-hash_of_batch_file: The hash of the batch file
-```
-
-### Example
-The following anchor string encodes 10000 operations and the hash of the batch file.
-
-```
-ECcAAA.c8957a1a204074f556a13049b2de287db980640167fb6ebb030766471a4cb33d
-```
-
 ## Versioning
 As the Sidetree protocol evolves, existing nodes executing an earlier version of the protocol need to upgrade to execute the newer version of the protocol while remaining backward compatible to processing of prior transactions and operations.
 

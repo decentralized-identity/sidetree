@@ -17,19 +17,19 @@ export default class FeeManager {
    *
    * @throws if the number of operations are <= 0.
    */
-  public static convertNormalizedFeeToTransactionFee (normalizedFee: number, numberOfOperations: number, feeMarkupPercentage: number): number {
+  public static computeTransactionFee (normalizedFee: number, numberOfOperations: number, feeMarkupPercentage: number): number {
 
     if (numberOfOperations <= 0) {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `Fee cannot be calculated for the given number of operations: ${numberOfOperations}`);
     }
 
-    const normalizedFeePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
-    const normalizedFeeForAllOperations = normalizedFeePerOperation * numberOfOperations;
+    const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
+    const feeForAllOperations = feePerOperation * numberOfOperations;
 
     // If our calculated-fee is lower than the normalized fee (which can happen if the number of operations is
     // very low) then the calculated-fee will be ignored by the blockchain miners ... so make sure that we
     // return at-least the normalized fee.
-    const transactionFee = Math.max(normalizedFeeForAllOperations, normalizedFee);
+    const transactionFee = Math.max(feeForAllOperations, normalizedFee);
 
     // Add some markup to the fee as defined by the caller.
     const markupToAdd = transactionFee * (feeMarkupPercentage / 100);

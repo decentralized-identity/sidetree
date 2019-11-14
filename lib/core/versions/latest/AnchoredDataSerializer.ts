@@ -20,7 +20,7 @@ export default class AnchoredDataSerializer {
   public static serialize (dataToBeAnchored: AnchoredData): string {
 
     // First convert the number of operations input into a 4-byte buffer and then base64 encode it
-    const numberAsBuffer = AnchoredDataSerializer.convertToBytesBuffer(dataToBeAnchored.numberOfOperations);
+    const numberAsBuffer = AnchoredDataSerializer.convertNumberToBuffer(dataToBeAnchored.numberOfOperations);
     const encodedNumberOfOperations = Encoder.encode(numberAsBuffer);
 
     // Concatenate the inputs w/ the delimiter and return
@@ -41,7 +41,7 @@ export default class AnchoredDataSerializer {
     }
 
     const decodedNumberOfOperations = Encoder.decodeAsBuffer(splitData[0]);
-    const numberOfOperations = AnchoredDataSerializer.convertFromBytesBuffer(decodedNumberOfOperations);
+    const numberOfOperations = AnchoredDataSerializer.convertBufferToNumber(decodedNumberOfOperations);
 
     return {
       anchorFileHash: splitData[1],
@@ -49,7 +49,7 @@ export default class AnchoredDataSerializer {
     };
   }
 
-  private static convertToBytesBuffer (numberOfOperations: number): Buffer {
+  private static convertNumberToBuffer (numberOfOperations: number): Buffer {
 
     if (!Number.isInteger(numberOfOperations)) {
       throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotInteger, `Number of operations ${numberOfOperations} must be an integer.`);
@@ -73,12 +73,12 @@ export default class AnchoredDataSerializer {
     return byteArrayBuffer;
   }
 
-  private static convertFromBytesBuffer (bytesBuffer: Buffer): number {
+  private static convertBufferToNumber (bytesBuffer: Buffer): number {
 
     // Ensure that the input has 4 bytes
     if (bytesBuffer.length !== 4) {
       throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotFourBytes,
-                              `Input must have 3 bytes but have ${bytesBuffer.length} bytes instead.`);
+                              `Input has ${bytesBuffer.length} bytes.`);
     }
 
     return bytesBuffer.readUInt32LE(0);

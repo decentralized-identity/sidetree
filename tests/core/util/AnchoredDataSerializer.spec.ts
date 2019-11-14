@@ -68,9 +68,27 @@ describe('AnchoredDataSerializer', async () => {
   it('deserialize should throw if the input is not in the correct format.', async () => {
 
     // Input doesn't have any delimeter
-    expect(() => { AnchoredDataSerializer.deserialize('SOMEINVALIDDATA'); }).toThrow();
     JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
       () => AnchoredDataSerializer.deserialize('SOMEINVALIDDATA'),
       new SidetreeError(ErrorCode.AnchoredDataIncorrectFormat));
+  });
+
+  describe('convertBufferToNumber', async () => {
+
+    it('should convert the buffer to number correctly', async () => {
+      const number = 109939;
+      const buffer = Buffer.alloc(4);
+      buffer.writeUInt32LE(number, 0);
+
+      const actual = AnchoredDataSerializer['convertBufferToNumber'](buffer);
+      expect(actual).toEqual(number);
+    });
+
+    it('should return an error if the buffer size is not correct', async () => {
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => AnchoredDataSerializer['convertBufferToNumber'](Buffer.alloc(2)),
+        new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotFourBytes));
+    });
   });
 });
