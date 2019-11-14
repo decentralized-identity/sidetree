@@ -1,5 +1,5 @@
 import Did from './Did';
-import DidPublicKeyModel from '../latest/models/DidPublicKeyModel';
+import DidPublicKeyModel from './models/DidPublicKeyModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';

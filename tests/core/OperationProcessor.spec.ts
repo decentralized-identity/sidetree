@@ -129,6 +129,16 @@ function getPermutation (size: number, index: number): Array<number> {
 function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
   expect(didDocument!.service![0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  validateDidDocumentPublicKeys(didDocument as DocumentModel);
+}
+
+function validateDidDocumentPublicKeys (didDocument: DocumentModel) {
+  expect(didDocument.id).toBeDefined();
+  const did = didDocument.id;
+
+  for (let publicKey of didDocument.publicKey) {
+    expect(publicKey.controller).toEqual(did);
+  }
 }
 
 describe('OperationProcessor', async () => {
@@ -147,7 +157,8 @@ describe('OperationProcessor', async () => {
   let didUniqueSuffix: string;
 
   beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
+    // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery,'did:exmaple:123');
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
@@ -170,6 +181,7 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
+    validateDidDocumentPublicKeys(didDocument);
   });
 
   it('should ignore a duplicate create operation', async () => {
@@ -212,6 +224,7 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const key2 = Document.getPublicKey(didDocument, '#key2');
     expect(key2).not.toBeDefined(); // if update above went through, new key would be added.
+    validateDidDocumentPublicKeys(didDocument);
   });
 
   it('should process updates correctly', async () => {
@@ -254,7 +267,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.signature = 'AnInvalidSignature';
 
@@ -289,7 +302,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
 
     // Replace the protected header with invlaid `kid`.
@@ -533,6 +546,9 @@ describe('OperationProcessor', async () => {
       // Sanity check the create operation.
       expect(result).toBeTruthy();
       expect(didDocumentReference.didDocument).toBeDefined();
+
+      // Recording DID unique suffix for tests below to use.
+      didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
     });
 
     it('should not apply if existing document is undefined.', async () => {
@@ -548,7 +564,10 @@ describe('OperationProcessor', async () => {
       const result = await operationProcessor.patch(anchoredUpdateOperationModel, anchoredCreateOperation.operationHash, { didDocument: undefined });
       expect(result.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+
+      // The patched/resolved document is expected to contain the `controller` property.
+      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
     });
   });
 
@@ -582,6 +601,9 @@ describe('OperationProcessor', async () => {
       // Sanity check the create operation.
       expect(result).toBeTruthy();
       expect(didDocumentReference.didDocument).toBeDefined();
+
+      // Recording DID unique suffix for tests below to use.
+      didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
     });
 
     it('should not apply if existing document is undefined.', async () => {
@@ -602,7 +624,10 @@ describe('OperationProcessor', async () => {
       const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, { didDocument: undefined });
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+
+      // The patched/resolved document is expected to contain the `controller` property.
+      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
     });
 
     it('should not apply if unable to locate recovery key for signature verification.', async () => {
@@ -623,7 +648,10 @@ describe('OperationProcessor', async () => {
       const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+
+      // The patched/resolved document is expected to contain the `controller` property.
+      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
     });
 
     it('should not apply if key used to sign is not a recovery key.', async () => {
@@ -644,7 +672,10 @@ describe('OperationProcessor', async () => {
       const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+
+      // The patched/resolved document is expected to contain the `controller` property.
+      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
     });
 
     it('should not apply if signature does not pass verification.', async () => {
@@ -665,7 +696,10 @@ describe('OperationProcessor', async () => {
       const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+
+      // The patched/resolved document is expected to contain the `controller` property.
+      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
     });
 
     it('should not apply if new Document does not pass verification.', async () => {
@@ -679,7 +713,10 @@ describe('OperationProcessor', async () => {
       const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, anchoredCreateOperation.operationHash, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(recoveryPublicKey);
+
+      // The patched/resolved document is expected to contain the `controller` property.
+      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
     });
   });
 });
