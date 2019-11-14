@@ -1,5 +1,5 @@
-import MongoDb from '../common/MongoDb';
-import { QuantileInfo, MongoDbSlidingWindowQuantileStore } from '../../lib/bitcoin/SlidingWindowQuantileMongoStore';
+import MongoDb from '../../common/MongoDb';
+import MongoDbSlidingWindowQuantileStore from '../../../lib/bitcoin/pof/MongoDbSlidingWindowQuantileStore';
 
 function checkArrayEqual (array1: number[], array2: number[]): boolean {
   if (array1.length !== array2.length) {
@@ -38,36 +38,36 @@ describe('SlidingWindowQuantileMongoStore', async () => {
   });
 
   it('should put and get quantile info', async () => {
-    const quantileInfo: QuantileInfo = {
-      batchId: 1,
+    const quantileInfo = {
+      groupId: 1,
       quantile: 0.5,
-      batchFreqVector: [0, 10]
+      groupFreqVector: [0, 10]
     };
 
     await mongoStore.put(quantileInfo);
 
-    const quantileInfoRetrieved = await mongoStore.get(quantileInfo.batchId);
+    const quantileInfoRetrieved = await mongoStore.get(quantileInfo.groupId);
     expect(quantileInfoRetrieved).toBeDefined();
-    expect(quantileInfoRetrieved!.batchId).toBe(quantileInfo.batchId);
+    expect(quantileInfoRetrieved!.groupId).toBe(quantileInfo.groupId);
     expect(quantileInfoRetrieved!.quantile).toBe(quantileInfo.quantile);
-    expect(checkArrayEqual(quantileInfoRetrieved!.batchFreqVector, quantileInfo.batchFreqVector)).toBe(true);
+    expect(checkArrayEqual(quantileInfoRetrieved!.groupFreqVector, quantileInfo.groupFreqVector)).toBe(true);
   });
 
-  it('should return correct first/last batchid', async () => {
-    for (let batchId = 1 ; batchId <= 10 ; batchId++) {
+  it('should return correct first/last groupid', async () => {
+    for (let groupId = 1 ; groupId <= 10 ; groupId++) {
       await mongoStore.put({
-        batchId,
+        groupId: groupId,
         quantile: 0.5,
-        batchFreqVector: [0, 10]
+        groupFreqVector: [0, 10]
       });
     }
 
-    const firstBatchId = await mongoStore.getFirstBatchId();
-    expect(firstBatchId).toBeDefined();
-    expect(firstBatchId!).toBe(1);
+    const firstGroupId = await mongoStore.getFirstGroupId();
+    expect(firstGroupId).toBeDefined();
+    expect(firstGroupId!).toBe(1);
 
-    const lastBatchId = await mongoStore.getLastBatchId();
-    expect(lastBatchId).toBeDefined();
-    expect(lastBatchId).toBe(10);
+    const lastGroupId = await mongoStore.getLastGroupId();
+    expect(lastGroupId).toBeDefined();
+    expect(lastGroupId).toBe(10);
   });
 });

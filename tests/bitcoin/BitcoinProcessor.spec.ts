@@ -24,8 +24,8 @@ function randomBlock (above: number = 0): IBlockInfo {
 describe('BitcoinProcessor', () => {
   const proofOfFeeConfig = {
     transactionFeeQuantileConfig: {
-      windowSizeInBatches: 1,
-      batchSizeInBlocks: 1,
+      windowSizeInGroups: 1,
+      groupSizeInBlocks: 1,
       feeApproximation: 2,
       sampleSize: 1,
       quantile: 0.5

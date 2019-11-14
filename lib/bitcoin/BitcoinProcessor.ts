@@ -3,18 +3,18 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ErrorCode from '../common/SharedErrorCode';
 import FeeModel from '../common/models/FeeModel';
-import IProofOfFeeConfig from './IProofOfFeeConfig';
+import ProofOfFeeConfig from './pof/models/ProofOfFeeConfig';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
+import ReservoirSampler from './pof/ReservoirSampler';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import SlidingWindowQuantileCalculator from './pof/SlidingWindowQuantileCalculator';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
-import { ReservoirSampler } from './PsuedoRandomSampler';
-import { SlidingWindowQuantileCalculator } from './SlidingWindowQuantileCalculator';
 import { URL } from 'url';
 
 /**
@@ -87,7 +87,7 @@ export default class BitcoinProcessor {
   private serviceInfo: ServiceInfo;
 
   /** proof of fee configuration */
-  private readonly proofOfFeeConfig: IProofOfFeeConfig;
+  private readonly proofOfFeeConfig: ProofOfFeeConfig;
 
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
 
@@ -110,7 +110,7 @@ export default class BitcoinProcessor {
     const transactionFeeQuantileConfig = config.proofOfFeeConfig.transactionFeeQuantileConfig;
     this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
       BitcoinProcessor.satoshiPerBitcoin,
-      transactionFeeQuantileConfig.windowSizeInBatches,
+      transactionFeeQuantileConfig.windowSizeInGroups,
       transactionFeeQuantileConfig.quantile,
       config.mongoDbConnectionString,
       config.databaseName);
@@ -324,8 +324,8 @@ export default class BitcoinProcessor {
    */
   public async fee (block: number): Promise<FeeModel | undefined> {
     const blockAfterHistoryOffset = Math.max(block - this.proofOfFeeConfig.historicalOffsetInBlocks, 0);
-    const batchId = Math.floor(blockAfterHistoryOffset / this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks);
-    const quantileValue = this.quantileCalculator.getQuantile(batchId);
+    const groupId = Math.floor(blockAfterHistoryOffset / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
+    const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
     if (quantileValue) {
       return { normalizedTransactionFee: quantileValue * this.proofOfFeeConfig.quantileScale };
@@ -462,13 +462,13 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * For proof of fee calculation, blocks are grouped into fixed sized batches.
-   * This function rounds a block to the first block in its batch and returns that
+   * For proof of fee calculation, blocks are grouped into fixed sized groups.
+   * This function rounds a block to the first block in its group and returns that
    * value.
    */
-  private roundToBatchBoundary (block: number): number {
-    const batchId = Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks);
-    return batchId * this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks;
+  private roundToGroupBoundary (block: number): number {
+    const groupId = Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
+    return groupId * this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks;
   }
 
   /**
@@ -485,9 +485,9 @@ export default class BitcoinProcessor {
       const firstValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
       if (firstValidTransaction) {
-        // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a batch
-        // boundary to simplify resetting proof-of-fee state which is maintained per batch.
-        let revertToBlockNumber = this.roundToBatchBoundary(firstValidTransaction.transactionTime + 1);
+        // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a group
+        // boundary to simplify resetting proof-of-fee state which is maintained per group.
+        let revertToBlockNumber = this.roundToGroupBoundary(firstValidTransaction.transactionTime + 1);
 
         // The number that represents the theoritical last possible transaction written with a block number
         // less than revertToBlockNumber
@@ -500,7 +500,7 @@ export default class BitcoinProcessor {
         this.transactionSampler.clear();
 
         // Revert the quantile calculator
-        await this.quantileCalculator.removeBatchesGreaterThanOrEqual(revertToBlockNumber);
+        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToBlockNumber);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
         return revertToBlockNumber;
@@ -601,9 +601,9 @@ export default class BitcoinProcessor {
       }
     }
 
-    if (this.isBatchBoundary(block)) {
+    if (this.isGroupBoundary(block)) {
 
-      // Compute the transaction fees for sampled transactions of this batch
+      // Compute the transaction fees for sampled transactions of this group
       const sampledTransactionIds = this.transactionSampler.getSample();
       const sampledTransactionFees = new Array();
       for (let transactionId of sampledTransactionIds) {
@@ -611,22 +611,22 @@ export default class BitcoinProcessor {
         sampledTransactionFees.push(transactionFee);
       }
 
-      const batchId = this.getBatchId(block);
-      await this.quantileCalculator.add(batchId, sampledTransactionFees);
+      const groupId = this.getgroupId(block);
+      await this.quantileCalculator.add(groupId, sampledTransactionFees);
 
-      // Reset the sampler for the next batch
+      // Reset the sampler for the next group
       this.transactionSampler.clear();
     }
 
     return blockHash;
   }
 
-  private isBatchBoundary (block: number): boolean {
-    return (block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks === 0;
+  private isGroupBoundary (block: number): boolean {
+    return (block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks === 0;
   }
 
-  private getBatchId (block: number): number {
-    return Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.batchSizeInBlocks);
+  private getgroupId (block: number): number {
+    return Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */

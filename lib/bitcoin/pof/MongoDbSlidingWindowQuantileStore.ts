@@ -1,18 +1,11 @@
+import ISlidingWindowQuantileStore from './interfaces/ISlidingWindowQuantileStore';
+import QuantileInfo from './models/QuantileInfo';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
-
-/**
- * Quantile information stored in mongo for each batch.
- */
-export interface QuantileInfo {
-  batchId: number;
-  quantile: number;
-  batchFreqVector: number[];
-}
 
 /**
  * MongoDB store for sliding window quantile information.
  */
-export class MongoDbSlidingWindowQuantileStore {
+export default class MongoDbSlidingWindowQuantileStore implements ISlidingWindowQuantileStore {
 
   private db: Db | undefined;
   private quantileCollection: Collection | undefined;
@@ -41,50 +34,50 @@ export class MongoDbSlidingWindowQuantileStore {
   }
 
   /**
-   * Store the quantile info for a new batch.
+   * Store the quantile info for a new group.
    */
   public async put (quantileInfo: QuantileInfo): Promise<void> {
     const quantileInfoInMongoDb = {
-      batchId: Long.fromNumber(quantileInfo.batchId),
+      groupId: Long.fromNumber(quantileInfo.groupId),
       quantile: quantileInfo.quantile,
-      batchFreqVector: quantileInfo.batchFreqVector
+      groupFreqVector: quantileInfo.groupFreqVector
     };
 
     await this.quantileCollection!.insertOne(quantileInfoInMongoDb);
   }
 
   /**
-   * Retrieve the quantile info for a given batchId
+   * Retrieve the quantile info for a given groupId
    */
-  public async get (batchId: number): Promise<QuantileInfo | undefined> {
-    return await this.quantileCollection!.findOne({ batchId: Long.fromNumber(batchId) }) as QuantileInfo;
+  public async get (groupId: number): Promise<QuantileInfo | undefined> {
+    return await this.quantileCollection!.findOne({ groupId: Long.fromNumber(groupId) }) as QuantileInfo;
   }
 
   /**
-   * Get the last batchId stored in the collection.
+   * Get the last groupId stored in the collection.
    */
-  public async getLastBatchId (): Promise<number | undefined> {
-    const lastBatches = await this.quantileCollection!.find().limit(1).sort({ batchId: -1 }).toArray();
-    if (lastBatches.length === 0) {
+  public async getLastGroupId (): Promise<number | undefined> {
+    const lastGroups = await this.quantileCollection!.find().limit(1).sort({ groupId: -1 }).toArray();
+    if (lastGroups.length === 0) {
       return undefined;
     }
 
-    return (lastBatches[0] as QuantileInfo).batchId;
+    return (lastGroups[0] as QuantileInfo).groupId;
   }
 
-  /** Get the first batchId stored in the collection */
-  public async getFirstBatchId (): Promise<number | undefined> {
-    const firstBatches = await this.quantileCollection!.find().limit(1).sort({ batchId: 1 }).toArray();
-    if (firstBatches.length === 0) {
+  /** Get the first groupId stored in the collection */
+  public async getFirstGroupId (): Promise<number | undefined> {
+    const firstGroups = await this.quantileCollection!.find().limit(1).sort({ groupId: 1 }).toArray();
+    if (firstGroups.length === 0) {
       return undefined;
     }
 
-    return (firstBatches[0] as QuantileInfo).batchId;
+    return (firstGroups[0] as QuantileInfo).groupId;
   }
 
-  /** Remove batches with ids greater than or equal to a specified batchId */
-  public async removeBatchesGreaterThanEqualTo (batchId: number): Promise<void> {
-    await this.quantileCollection!.deleteMany({ batchId: { $gte: Long.fromNumber(batchId) } });
+  /** Remove batches with ids greater than or equal to a specified groupId */
+  public async removeGroupsGreaterThanEqualTo (groupId: number): Promise<void> {
+    await this.quantileCollection!.deleteMany({ groupId: { $gte: Long.fromNumber(groupId) } });
   }
 
   /**
@@ -101,7 +94,7 @@ export class MongoDbSlidingWindowQuantileStore {
     } else {
       console.info('Quantile collection does not exists, creating...');
       const quantileCollection = await db.createCollection(MongoDbSlidingWindowQuantileStore.quantileCollectionName);
-      await quantileCollection.createIndex({ batchId: 1 }, { unique: true });
+      await quantileCollection.createIndex({ groupId: 1 }, { unique: true });
       console.info('Quantile collection created.');
       return quantileCollection;
     }
