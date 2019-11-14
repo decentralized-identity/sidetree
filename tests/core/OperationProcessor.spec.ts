@@ -4,10 +4,12 @@ import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import Encoder from '../../lib/core/versions/0.4.0/Encoder';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import Jws from '../../lib/core/versions/latest/util/Jws';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -124,6 +126,16 @@ function getPermutation (size: number, index: number): Array<number> {
 function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
   expect(didDocument!.service[0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  validateDidDocumentPublicKeys(didDocument as DocumentModel);
+}
+
+function validateDidDocumentPublicKeys (didDocument: DocumentModel) {
+  expect(didDocument.id).toBeDefined();
+  const did = didDocument.id;
+
+  for (let publicKey of didDocument.publicKey) {
+    expect(publicKey.controller).toEqual(did);
+  }
 }
 
 describe('OperationProcessor', async () => {
@@ -142,7 +154,8 @@ describe('OperationProcessor', async () => {
   let didUniqueSuffix: string;
 
   beforeEach(async () => {
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery); // Generate a unique key-pair used for each test.
+    // Generate a unique key-pair used for each test.
+    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery,'did:exmaple:123');
 
     cas = new MockCas();
     operationStore = new MockOperationStore();
@@ -165,6 +178,7 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const publicKey2 = Document.getPublicKey(didDocument, 'key2');
     expect(publicKey2).toBeDefined();
+    validateDidDocumentPublicKeys(didDocument);
   });
 
   it('should ignore a duplicate create operation', async () => {
@@ -207,6 +221,7 @@ describe('OperationProcessor', async () => {
     expect(didDocument).toBeDefined();
     const key2 = Document.getPublicKey(didDocument, '#key2');
     expect(key2).not.toBeDefined(); // if update above went through, new key would be added.
+    validateDidDocumentPublicKeys(didDocument);
   });
 
   it('should process updates correctly', async () => {
@@ -249,7 +264,7 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
     operation.signature = 'AnInvalidSignature';
 
@@ -284,9 +299,21 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
     const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
-    operation.header.kid = 'InvalidKeyId';
+
+    // Replace the protected header with invlaid `kid`.
+    const protectedHeader = {
+      operation: 'create',
+      kid: 'InvalidKeyId',
+      alg: 'ES256K'
+    };
+    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
+    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
+    operation.protected = protectedHeaderEncodedString;
+
+    // Recompute the signature.
+    operation.signature = await Jws.sign(protectedHeaderEncodedString, operation.payload, privateKey);
 
     // Create and upload the batch file with the invalid operation.
     const operationBuffer = Buffer.from(JSON.stringify(operation));

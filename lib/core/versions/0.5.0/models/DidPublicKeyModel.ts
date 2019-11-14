@@ -4,7 +4,6 @@
 export default interface DidPublicKeyModel {
   id: string;
   type: string;
-  controller: string;
   usage: string;
   publicKeyJwk?: any;
   publicKeyHex?: string;

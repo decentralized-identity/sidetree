@@ -774,7 +774,7 @@ export default class BitcoinProcessor {
       throw error;
     }
 
-    const responseJson = JSON.parse(responseData);
+    const responseJson = JSON.parse(responseData.toString());
 
     if ('error' in responseJson && responseJson.error !== null) {
       const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);

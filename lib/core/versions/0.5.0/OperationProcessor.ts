@@ -97,7 +97,6 @@ export default class OperationProcessor implements IOperationProcessor {
         }
 
         AnchoredOperation.applyPatchesToDidDocument(didDocument, operation.patches!);
-
         return { validOperation: true, operationHash };
       }
     } catch (error) {

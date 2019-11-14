@@ -209,14 +209,27 @@ A _Sidetree node_ exposes a set of REST API that enables the creation of new DID
 ### JSON Web Signature (JWS)
 Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme.
 
-When constructing the JWS input for signing (_JWS Signing Input_), the following scheme is specified by the JWS specification:
+The JWS operation request header must be protected and be encoded in the following schema:
 
-`ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))`
+#### Protected header schema
+```json
+{
+  "operation": "create | update | delete | recover",
+  "kid": "ID of the key used to sign the original DID Document.",
+  "alg": "ES256K"
+}
+```
 
-Since there is no protected header in a Sidetree operation, the JWS Signing Input will always begin with the '`.`' character.
+#### JWS operation Create Request Example
+```http
+POST / HTTP/1.1
 
-Note that signature validation is _only_ being performed when the Sidetree node is processing operations anchored on the blockchain. No signature validation will be done when the operation requests are being received and handled. This is because there is no way of guaranteeing/enforcing the validity of the signing key used in an update since the signing key could have been invalidated in an earlier update that has not been anchored or seen by the Sidetree node yet.
-
+{
+  "header": ewogICJvcGVyYXRpb24iOiAiY3JlYXRlIiwKICAia2lkIjogImtleTEiLAogICJhbGciOiAiRVMyNTZLIgp9,
+  "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwicHVibGljS2V5IjpbeyJpZCI6IiNrZXkxIiwidHlwZSI6IlNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTgiLCJwdWJsaWNLZXlIZXgiOiIwMmY0OTgwMmZiM2UwOWM2ZGQ0M2YxOWFhNDEyOTNkMWUwZGFkMDQ0YjY4Y2Y4MWNmNzA3OTQ5OWVkZmQwYWE5ZjEifSx7ImlkIjoiI2tleTIiLCJ0eXBlIjoiUnNhVmVyaWZpY2F0aW9uS2V5MjAxOCIsInB1YmxpY0tleVBlbSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS4yLkVORCBQVUJMSUMgS0VZLS0tLS0ifV0sInNlcnZpY2UiOlt7InR5cGUiOiJJZGVudGl0eUh1YiIsInB1YmxpY0tleSI6IiNrZXkxIiwic2VydmljZUVuZHBvaW50Ijp7IkBjb250ZXh0Ijoic2NoZW1hLmlkZW50aXR5LmZvdW5kYXRpb24vaHViIiwiQHR5cGUiOiJVc2VyU2VydmljZUVuZHBvaW50IiwiaW5zdGFuY2VzIjpbImRpZDpiYXI6NDU2IiwiZGlkOnphejo3ODkiXX19XX0",
+  "signature": "mAJp4ZHwY5UMA05OEKvoZreRo0XrYe77s3RLyGKArG85IoBULs4cLDBtdpOToCtSZhPvCC2xOUXMGyGXDmmEHg"
+}
+```
 
 ### DID and DID Document Creation
 Use this API to create a Sidetree DID and its initial state.
@@ -236,11 +249,7 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "header": {
-    "operation": "create",
-    "kid": "ID of the key used to sign the original DID Document.",
-    "alg": "ES256K"
-  },
+  "protected": "Encoded protected header.",
   "payload": "Encoded original DID Document.",
   "signature": "Encoded signature."
 }
@@ -264,21 +273,6 @@ POST / HTTP/1.1
       "instance": ["did:bar:456", "did:zaz:789"]
     }
   }]
-}
-```
-
-#### Request example
-```http
-POST / HTTP/1.1
-
-{
-  "header": {
-    "operation": "create",
-    "kid": "#key1",
-    "alg": "ES256K"
-  },
-  "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwicHVibGljS2V5IjpbeyJpZCI6IiNrZXkxIiwidHlwZSI6IlNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTgiLCJwdWJsaWNLZXlIZXgiOiIwMmY0OTgwMmZiM2UwOWM2ZGQ0M2YxOWFhNDEyOTNkMWUwZGFkMDQ0YjY4Y2Y4MWNmNzA3OTQ5OWVkZmQwYWE5ZjEifSx7ImlkIjoiI2tleTIiLCJ0eXBlIjoiUnNhVmVyaWZpY2F0aW9uS2V5MjAxOCIsInB1YmxpY0tleVBlbSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS4yLkVORCBQVUJMSUMgS0VZLS0tLS0ifV0sInNlcnZpY2UiOlt7InR5cGUiOiJJZGVudGl0eUh1YiIsInB1YmxpY0tleSI6IiNrZXkxIiwic2VydmljZUVuZHBvaW50Ijp7IkBjb250ZXh0Ijoic2NoZW1hLmlkZW50aXR5LmZvdW5kYXRpb24vaHViIiwiQHR5cGUiOiJVc2VyU2VydmljZUVuZHBvaW50IiwiaW5zdGFuY2VzIjpbImRpZDpiYXI6NDU2IiwiZGlkOnphejo3ODkiXX19XX0",
-  "signature": "mAJp4ZHwY5UMA05OEKvoZreRo0XrYe77s3RLyGKArG85IoBULs4cLDBtdpOToCtSZhPvCC2xOUXMGyGXDmmEHg"
 }
 ```
 
@@ -315,20 +309,20 @@ The response body is the constructed DID Document of the DID created.
 
 ### DID Document resolution
 This API fetches the latest DID Document of a DID.
-Two types of string can be passed in the URI:
-1. DID
+Two forms of string can be passed in the URI:
+1. Standard DID format: `did:sidetree:<unique-portion>`.
 
    e.g.
    ```did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A```
 
    The latest DID Document will be returned if found.
 
-1. Method name prefixed, encoded _original DID Document_
+1. DID with `initial-values` DID parameter: `did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>`
 
    e.g.
-   ```did:sidetree:ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ```
+   ```did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A;initial-values=ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ```
 
-   The encoded DID Document is hashed using the current supported hashing algorithm to obtain the corresponding DID, after which the resolution is done against the computed DID. If a DID Document cannot be found, the supplied DID Document is used directly to generate and return a resolved DID Document, in which case the supplied DID Document is subject to the same validation as an _original DID Document_ in a create operation.
+   Standard resolution is performed if the DID is found to registered on the blockchain. If the DID Document cannot be found, the encoded DID Document given in the `initial-values` DID parameter is used directly to generate and return as the resolved DID Document, in which case the supplied encoded DID Document is subject to the same validation as an _original DID Document_ in a create operation.
 
 #### Request path
 ```http
@@ -393,11 +387,7 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "header": {
-    "operation": "update",
-    "kid": "ID of the key used to sign the update payload.",
-    "alg": "ES256K"
-  },
+  "protected": "Encoded protected header.",
   "payload": "Encoded update payload JSON object defined by the schema below.",
   "signature": "Encoded signature."
 }
@@ -543,21 +533,6 @@ Example:
 }
 ```
 
-#### Request example
-```http
-POST / HTTP/1.1
-
-{
-  "header": {
-    "operation": "update",
-    "kid": "#key1",
-    "alg": "ES256K"
-  },
-  "payload": "eyJkaWQiOiJkaWQ6c2lkZXRyZWU6RWlERkRGVVNnb3hsWm94U2x1LTE3eXpfRm1NQ0l4NGhwU2FyZUNFN0lSWnYwQSIsIm9wZXJhdGlvbk51bWJlciI6MSwicHJldmlvdXNPcGVyYXRpb25IYXNoIjoiRWlERkRGVVNnb3hsWm94U2x1LTE3eXpfRm1NQ0l4NGhwU2FyZUNFN0lSWnYwQSIsInBhdGNoIjpbeyJvcCI6InJlcGxhY2UiLCJwYXRoIjoiL3B1YmxpY0tleS8xIiwidmFsdWUiOnsiaWQiOiIja2V5MiIsInR5cGUiOiJTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE4IiwicHVibGljS2V5SGV4IjoiMDI5YTQ3NzRkNTQzMDk0ZGVhZjM0MjY2M2FlNjcyNzI4ZTEyZjAzYjNiNmQ5ODE2YjBiNzk5OTVmYWRlMGZhYjIzIn19XX0",
-  "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
-}
-```
-
 #### Response body
 None.
 
@@ -578,11 +553,7 @@ POST /
 #### Request body schema
 ```json
 {
-  "header": {
-    "operation": "delete",
-    "kid": "ID of the key used to sign the delete payload.",
-    "alg": "ES256K"
-  },
+  "protected": "Encoded protected header.",
   "payload": "Encoded delete payload JSON object define by the schema below.",
   "signature": "Encoded signature."
 }
@@ -599,20 +570,6 @@ POST /
 ```json
 {
   "didUniqueSuffix": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-}
-```
-
-#### Request example
-```http
-POST / HTTP/1.1
-{
-  "header": {
-    "operation": "delete",
-    "kid": "#key1",
-    "alg": "ES256K"
-  },
-  "payload": "3hAPKZnaKcJkR85UvXhiAH7majrfpZGFFVJj8tgAtK9aSrxnrbygDTN2URoQEghPbWtFgZDMNU6RQjiMD1dpbEaoZwKBSVB3oCq1LR2",
-  "signature": "nymBtWB1_nwtSdrHsb2uiIa91yTJWN-lqANEcspjp-9kd079jlGWoYIxgvVKJkW-WJkYA5Kryws9G5XIfup5RA"
 }
 ```
 

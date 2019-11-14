@@ -47,11 +47,11 @@ export default class ServiceVersionFetcher {
       console.info('Trying to get the version info from the blockchain service. Url: ', versionUri);
 
       const response = await this.fetch(versionUri);
-      const responseBodyString = await ReadableStream.readAll(response.body);
+      const responseBodyBuffer = await ReadableStream.readAll(response.body);
 
-      console.info('Received version response from the blockchain service: ', responseBodyString);
+      console.info('Received version response from the blockchain service: ', responseBodyBuffer.toString());
 
-      return JSON.parse(responseBodyString);
+      return JSON.parse(responseBodyBuffer.toString());
     } catch (e) {
       console.error('Ignoring the exception during blockchain service version retrieval: %s', JSON.stringify(e, Object.getOwnPropertyNames(e)));
     }
