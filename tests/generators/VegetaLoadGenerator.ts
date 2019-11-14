@@ -30,7 +30,7 @@ export default class VegetaLoadGenerator {
 
     for (let i = 0; i < uniqueDidCount; i++) {
       // Generate a random pair of public-private key pair and save them on disk.
-      const [publicKey, privateKey] = await Cryptography.generateKeyPairHex(keyId, KeyUsage.recovery, 'did:exmaple:123');
+      const [publicKey, privateKey] = await Cryptography.generateKeyPairHex(keyId, KeyUsage.recovery);
       fs.writeFileSync(absoluteFolderPath + `/keys/privateKey${i}.json`, JSON.stringify(privateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
