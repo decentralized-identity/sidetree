@@ -5,7 +5,8 @@ import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
 import Multihash from './Multihash';
-import Operation, { OperationType } from './Operation';
+import Operation from './Operation';
+import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
 import { ResponseModel, ResponseStatus } from '../../../common/Response';
@@ -78,10 +79,7 @@ export default class RequestHandler implements IRequestHandler {
           };
           break;
         case OperationType.Update:
-          response = {
-            status: ResponseStatus.Succeeded
-          };
-          break;
+        case OperationType.Recover:
         case OperationType.Delete:
           response = {
             status: ResponseStatus.Succeeded

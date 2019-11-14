@@ -64,6 +64,7 @@ async function constructAnchoredUpdateOperation (
           {
             id: '#key2',
             type: 'RsaVerificationKey2018',
+            usage: 'signing',
             publicKeyPem: new Date(Date.now()).toLocaleString() // Some dummy value that's not used.
           }
         ]
@@ -86,14 +87,22 @@ async function createOperationStore (mongoDbConnectionString: string): Promise<I
 
 /**
  * Constructs an operation chain from the given create opeartion.
+ * @param transactionNumber The transaction number to use for all the operations created. If undefined, the array index is used.
  */
-async function createOperationChain (createOperation: AnchoredOperation, chainLength: number, privateKey: string): Promise<AnchoredOperation[]> {
+async function createOperationChain (
+  createOperation: AnchoredOperation,
+  chainLength: number,
+  privateKey: string,
+  transactionNumber?: number):
+  Promise<AnchoredOperation[]> {
   const didUniqueSuffix = createOperation.didUniqueSuffix;
   const chain = new Array<AnchoredOperation>(createOperation);
   for (let i = 1; i < chainLength ; i++) {
     const previousOperation = chain[i - 1];
     const previousVersion = previousOperation.operationHash;
-    const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, i, i, 0);
+    const transactionNumberToUse = transactionNumber ? transactionNumber : i;
+    const transactionTimeToUse = transactionNumberToUse;
+    const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, transactionNumberToUse, transactionTimeToUse, i);
     chain.push(operation);
   }
   return chain;
@@ -279,5 +288,51 @@ describe('MongoDbOperationStore', async () => {
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
+  });
+
+  describe('deleteUpdatesEarlierThan()', () => {
+
+    it('should delete updates in the earlier transactions correctly', async () => {
+      // Use a create operation to generate a DID
+      const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+
+      const chainSize = 10;
+      const operationChain = await createOperationChain(createOperation, chainSize, privateKey);
+      await operationStore.put(operationChain);
+      const returnedOperations = await operationStore.get(didUniqueSuffix);
+      checkEqualArray(operationChain, returnedOperations);
+
+      const markerOperation = operationChain[5];
+      await operationStore.deleteUpdatesEarlierThan(didUniqueSuffix, markerOperation.transactionNumber, markerOperation.operationIndex);
+      const returnedOperationsAfterDeletion = await operationStore.get(didUniqueSuffix);
+
+      // Expected remaining operations is the first operation + the last 5 update operations.
+      let expectedRemainingOperations = [createOperation];
+      expectedRemainingOperations.push(...operationChain.slice(5));
+      checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
+    });
+
+    it('should delete earlier updates in the same transaction correctly', async () => {
+      // Use a create operation to generate a DID
+      const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+
+      const chainSize = 10;
+      const transactionNumber = 1;
+      const operationChain = await createOperationChain(createOperation, chainSize, privateKey, transactionNumber);
+      await operationStore.put(operationChain);
+      const returnedOperations = await operationStore.get(didUniqueSuffix);
+      checkEqualArray(operationChain, returnedOperations);
+
+      const markerOperation = operationChain[5];
+      await operationStore.deleteUpdatesEarlierThan(didUniqueSuffix, markerOperation.transactionNumber, markerOperation.operationIndex);
+      const returnedOperationsAfterDeletion = await operationStore.get(didUniqueSuffix);
+
+      // Expected remaining operations is the first operation + the last 5 update operations.
+      let expectedRemainingOperations = [createOperation];
+      expectedRemainingOperations.push(...operationChain.slice(5));
+      checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
+    });
   });
 });

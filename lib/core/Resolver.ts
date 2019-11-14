@@ -1,5 +1,7 @@
 import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
+import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
+import OperationType from './enums/OperationType';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore
@@ -28,25 +30,65 @@ export default class Resolver {
     // 1. `didDocument` can be `undefined` initially; and
     // 2. `didDocument` can be modified directly in-place in subsequent document patching.
     let didDocumentReference: { didDocument: object | undefined } = { didDocument: undefined };
-    let previousOperationHash: string | undefined;
 
     const operations = await this.operationStore.get(didUniqueSuffix);
+    const createAndRecoverAndRevokeOperations = operations.filter(
+      op => op.type === OperationType.Create ||
+      op.type === OperationType.Recover ||
+      op.type === OperationType.Delete);
 
-    // Patch each operation in chronological order to build a complete DID Document.
+    // Apply "full" operations first.
+    const [lastFullOperation, lastFullOperationHash] =
+      await this.applyOperations(didDocumentReference, createAndRecoverAndRevokeOperations, undefined, undefined);
+
+    // If no full operation found at all, the DID is not anchored.
+    if (lastFullOperation === undefined) {
+      return undefined;
+    }
+
+    // Get only update operations that came after the create or last recovery operation.
+    const updateOperations = operations.filter(op => op.type === OperationType.Update);
+    const updateOperationsToBeApplied = updateOperations.filter(
+      op => op.transactionNumber > lastFullOperation.transactionNumber ||
+           (op.transactionNumber === lastFullOperation.transactionNumber && op.operationIndex > lastFullOperation.operationIndex)
+    );
+
+    // Apply "update/delta" operations.
+    await this.applyOperations(didDocumentReference, updateOperationsToBeApplied, lastFullOperation, lastFullOperationHash);
+
+    return didDocumentReference.didDocument;
+  }
+
+  /**
+   * Applies the given operations to the given DID document.
+   * @param didDocumentReference The reference to the DID document to be modified.
+   * @param operations The list of operations to be applied in sequence.
+   * @param lastOperation  The last operation that was successfully applied.
+   * @param lastOperationHash The hash of the last operation that was successfully applied.
+   * @returns [last operation that was successfully applied, the hash of the last operation that was successfully applied]
+   */
+  private async applyOperations (
+    didDocumentReference: { didDocument: any | undefined },
+    operations: NamedAnchoredOperationModel[],
+    lastOperation: NamedAnchoredOperationModel | undefined,
+    lastOperationHash: string | undefined
+  ): Promise<[NamedAnchoredOperationModel | undefined, string | undefined]> {
     for (const operation of operations) {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const patchResult = await operationProcessor.patch(operation, previousOperationHash, didDocumentReference);
+      const patchResult = await operationProcessor.patch(operation, lastOperationHash, didDocumentReference);
 
       if (patchResult.validOperation) {
-        previousOperationHash = patchResult.operationHash;
+        lastOperation = operation;
+        lastOperationHash = patchResult.operationHash;
       } else {
         const index = operation.operationIndex;
         const time = operation.transactionTime;
         const number = operation.transactionNumber;
-        console.info(`Ignored invalid operation for DID '${didUniqueSuffix}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        const did = didDocumentReference.didDocument ? didDocumentReference.didDocument.id : undefined;
+        console.info(`Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     }
 
-    return didDocumentReference.didDocument;
+    return [lastOperation, lastOperationHash];
   }
 }

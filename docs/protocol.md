@@ -578,7 +578,37 @@ None.
 
 ### DID Recovery
 
-> TODO: API to be added which will impact delete API also.
+#### Request path
+```http
+POST / HTTP/1.1
+```
+
+#### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+#### Request body schema
+```json
+{
+  "protected": "Encoded protected header.",
+  "payload": "Encoded recovery payload JSON object defined by the schema below.",
+  "signature": "Encoded signature."
+}
+```
+
+#### Recovery payload schema
+```json
+{
+  "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
+  "newDidDocument": "The new DID Document."
+}
+```
+
+#### Response body
+None.
+
+
 
 ### Fetch the current service versions (optional).
 Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.
