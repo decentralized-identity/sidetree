@@ -245,7 +245,8 @@ export default class BitcoinProcessor {
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
         anchorString: transaction.anchorString,
-        feePaid: transaction.feePaid
+        feePaid: transaction.feePaid,
+        normalizedFee: transaction.normalizedFee
       };
     });
 
@@ -704,7 +705,8 @@ export default class BitcoinProcessor {
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
           anchorString: data.slice(this.sidetreePrefix.length),
-          feePaid: 0    // filled in before adding to transactionStore after all error checks
+          feePaid: 0,      // filled in before adding to transactionStore after all error checks,
+          normalizedFee: 0 // filled in before adding to transactionStore after all error checks,
         };
       }
     }
@@ -713,7 +715,8 @@ export default class BitcoinProcessor {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // there would've been an exception before. So add it to the store ...
       sidetreeTxToAdd.feePaid = await this.getTransactionFeeInSatoshi(transactionId);
-
+      const fee = await this.fee(transactionBlock);
+      sidetreeTxToAdd.normalizedFee = fee!.normalizedTransactionFee;
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
       await this.transactionStore.addTransaction(sidetreeTxToAdd);
       return true;

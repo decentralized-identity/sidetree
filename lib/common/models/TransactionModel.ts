@@ -7,4 +7,5 @@ export default interface TransactionModel {
   transactionTimeHash: string;
   anchorString: string;
   feePaid: number;
+  normalizedFee: number;
 }
