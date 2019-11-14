@@ -97,7 +97,9 @@ describe('VersionManager', async () => {
         anchorString: '',
         transactionNumber: 0,
         transactionTime: 0,
-        transactionTimeHash: ''
+        transactionTimeHash: '',
+        transactionFeePaid: 1,
+        normalizedTransactionFee: 1
       };
       await expectAsync(txProcessor.processTransaction(txModel)).toBeRejected();
     });

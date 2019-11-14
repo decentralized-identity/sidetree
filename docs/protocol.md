@@ -134,6 +134,26 @@ The _anchor file_ is a JSON document of the following schema:
 ```
 > NOTE: See [Sidetree Operation Receipts](#Sidetree-Operation-Receipts) section on purpose and construction of the `merkleRoot`.
 
+### Anchor String Schema
+The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
+
+```
+[encoded_number_of_operations].[hash_of_batch_file]
+
+WHERE
+
+ encoded_number_of_operations: The total number of operations included in the batch file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
+
+ hash_of_batch_file: The hash of the batch file
+```
+
+#### Example
+The following anchor string encodes 10000 operations and the hash of the batch file.
+
+```
+ECcAAA.QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
+```
+
 ### Operation chaining of a DID
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 

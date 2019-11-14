@@ -8,8 +8,11 @@ import TransactionModel from '../../common/models/TransactionModel';
 export default interface IBlockchain {
   /**
    * Writes a Sidtree transaction with the given anchor string to blockchain.
+   * @param anchorString Data to write to the blockchain.
+   * @param fee Fee for the current transaction.
    */
-  write (anchorString: string): Promise<void>;
+  write (anchorString: string, fee: number): Promise<void>;
+
   /**
    * Gets Sidetree transactions in chronological order.
    * The function call may not return all known transactions, moreTransaction indicates if there are more transactions to be fetched.
@@ -24,14 +27,25 @@ export default interface IBlockchain {
     moreTransactions: boolean;
     transactions: TransactionModel[];
   }>;
+
   /**
    * Given a list of Sidetree transaction in any order, iterate through the list and return the first transaction that is valid.
    * @param transactions List of potentially valid transactions.
    */
   getFirstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined>;
+
   /**
    * Gets the approximate latest time synchronously without requiring to make network call.
    * Useful for cases where high performance is desired and hgih accuracy is not required.
    */
   approximateTime: BlockchainTimeModel;
+
+  /**
+   * Fetches the normalized transaction fee used for proof-of-fee calculation, given the blockchain time.
+   * @param transactionNumber A valid Sidetree transaction number.
+   *
+   * @throws SidetreeError with ErrorCode.BlockchainTimeOutOfRange if the input transaction number is less
+   * than Sidetree genesis blockchain time or is later than the current blockchain time.
+   */
+  getFee (transactionNumber: number): Promise<number>;
 }

@@ -16,7 +16,7 @@ export default class JsonAsync {
     const jsonParsePromise = new Promise((resolve, reject) => {
       yieldableJson.parseAsync(jsonString, (err: any, data: any) => {
         if (err) {
-          reject();
+          reject(err);
         } else {
           resolve(data);
         }

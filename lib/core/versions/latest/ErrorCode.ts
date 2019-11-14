@@ -2,6 +2,11 @@
  * Error codes used ONLY by this version of the protocol.
  */
 export default {
+  AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
+  AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
+  AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
+  AnchoredDataNumberOfOperationsNotFourBytes: 'anchored_data_number_of_operations_not_four_bytes',
+  AnchoredDataNumberOfOperationsNotInteger: 'anchored_data_number_of_operations_not_integer',
   AnchorFileBatchFileHashMissing: 'anchor_file_batch_file_hash_missing',
   AnchorFileBatchFileHashNotString: 'anchor_file_batch_file_hash_not_string',
   AnchorFileBatchFileHashUnsupported: 'anchor_file_batch_file_hash_unsupported',
@@ -19,6 +24,7 @@ export default {
   AnchorFileNotJson: 'anchor_file_not_json',
   BatchWriterAlreadyHasOperationForDid: 'batch_writer_already_has_operation_for_did',
   OperationCreateInvalidDidDocument: 'operation_create_invalid_did_document',
+  OperationCountLessThanZero: 'operation_count_less_than_zero',
   OperationExceedsMaximumSize: 'operation_exceeds_maximum_size',
   OperationHeaderMissingKid: 'operation_header_missing_kid',
   OperationHeaderMissingOrIncorrectAlg: 'operation_header_missing_or_incorrect_alg',
@@ -44,5 +50,7 @@ export default {
   OperationUpdatePatchServiceEndpointNotString: 'operation_update_patch_service_endpoint_not_string',
   OperationUpdatePatchServiceEndpointsNotArray: 'operation_update_patch_service_endpoints_not_array',
   OperationUpdatePatchServiceTypeMissingOrUnknown: 'operation_update_patch_service_type_missing_or_unknown',
-  QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed'
+  QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed',
+  TransactionFeePaidInvalid: 'transaction_fee_paid_is_invalid',
+  TransactionFeePaidLessThanNormalizedFee: 'transaction_fee_paid_less_than_normalized_fee'
 };

@@ -6,4 +6,6 @@ export default interface TransactionModel {
   transactionTime: number;
   transactionTimeHash: string;
   anchorString: string;
+  transactionFeePaid: number;
+  normalizedTransactionFee: number;
 }

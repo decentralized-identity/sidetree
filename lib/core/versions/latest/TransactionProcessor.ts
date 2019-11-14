@@ -1,7 +1,10 @@
+import AnchoredData from './models/AnchoredData';
+import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFileModel from './models/AnchorFileModel';
 import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from '../../DownloadManager';
+import FeeManager from './FeeManager';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
@@ -18,8 +21,36 @@ export default class TransactionProcessor implements ITransactionProcessor {
   public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
-    // The anchor string in this protocol version is just the anchor file hash.
-    const anchorFileHash = transaction.anchorString;
+    // Decode the anchor string
+    let anchoredData: AnchoredData;
+
+    try {
+      anchoredData = AnchoredDataSerializer.deserialize(transaction.anchorString);
+    } catch (e) {
+      const message = `Anchored data deserialization failed for anchor string ${transaction.anchorString}. Error: ${e.message}`;
+      if (e instanceof SidetreeError) {
+        console.info(`Ignoring error: ${message}`);
+        return true;
+      } else {
+        console.error(`Unexpected error processing anchor string, MUST investigate and fix: ${message}`);
+        return false;
+      }
+    }
+
+    try {
+      FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
+    } catch (e) {
+      const message = `Fee verification failure for anchor string ${transaction.anchorString}. Error: ${e.message}`;
+      if (e instanceof SidetreeError) {
+        console.info(`Ignoring error: ${message}`);
+        return true;
+      } else {
+        console.error(`Unexpected error processing anchor string, MUST investigate and fix: ${message}`);
+        return false;
+      }
+    }
+
+    const anchorFileHash = anchoredData.anchorFileHash;
 
     console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
     const anchorFileFetchResult = await this.downloadManager.download(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
