@@ -625,7 +625,7 @@ export default class BitcoinProcessor {
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    console.debug(`Sending jRPC request id: ${request.id}`);
+    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
     const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'
