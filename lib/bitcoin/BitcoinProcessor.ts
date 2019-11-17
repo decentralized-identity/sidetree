@@ -628,41 +628,41 @@ export default class BitcoinProcessor {
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */
-  private async getTransactionOutValueInSatoshi (txid: string, outIdx: number) {
-    const xact = await this.rpcCall({
+  private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
+    const transaction = await this.rpcCall({
       method: 'getrawtransaction',
       params: [
-        txid,  // transaction id
+        transactionId,  // transaction id
         true   // verbose
       ]
     });
 
     // output with the desired index
-    const vout = xact.vout.find((v: any) => v.n === outIdx);
+    const vout = transaction.vout.find((v: any) => v.n === outputIndex);
 
     return Math.round(vout.value * BitcoinProcessor.satoshiPerBitcoin);
   }
 
   /** Get the transaction fee of a transaction in satoshis */
-  private async getTransactionFeeInSatoshi (txid: string) {
-    const xact = await this.rpcCall({
+  private async getTransactionFeeInSatoshi (transactionId: string) {
+    const transaction = await this.rpcCall({
       method: 'getrawtransaction',
       params: [
-        txid,  // transaction id
+        transactionId,  // transaction id
         true   // verbose
       ]
     });
 
     let inputSatoshiSum = 0;
-    for (let i = 0 ; i < xact.vin.length ; i++) {
-      const xactOutValue = await this.getTransactionOutValueInSatoshi(xact.vin[i].txid, xact.vin[i].vout);
-      inputSatoshiSum += xactOutValue;
+    for (let i = 0 ; i < transaction.vin.length ; i++) {
+      const transactionOutValue = await this.getTransactionOutValueInSatoshi(transaction.vin[i].txid, transaction.vin[i].vout);
+      inputSatoshiSum += transactionOutValue;
     }
 
     // transaction outputs in satoshis
-    const xactOuts: number[] = xact.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBitcoin));
+    const transactionOutputs: number[] = transaction.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBitcoin));
 
-    const outputSatoshiSum = xactOuts.reduce((sum, value) => sum + value, 0);
+    const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
 
     return (inputSatoshiSum - outputSatoshiSum);
   }
