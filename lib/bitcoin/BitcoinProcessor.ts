@@ -111,10 +111,10 @@ export default class BitcoinProcessor {
     this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
       BitcoinProcessor.satoshiPerBitcoin,
       transactionFeeQuantileConfig.windowSizeInGroups,
-      transactionFeeQuantileConfig.quantile,
+      transactionFeeQuantileConfig.quantileMeasure,
       config.mongoDbConnectionString,
       config.databaseName);
-    this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSize);
+    this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSizePerGroup);
 
     /// Bitcore has a type file error on PrivateKey
     try {
@@ -329,7 +329,7 @@ export default class BitcoinProcessor {
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
     if (quantileValue) {
-      return { normalizedTransactionFee: quantileValue * this.proofOfFeeConfig.quantileScale };
+      return { normalizedTransactionFee: quantileValue };
     }
 
     return undefined;
@@ -665,7 +665,7 @@ export default class BitcoinProcessor {
     // transaction outputs in satoshis
     const xactOuts: number[] = xact.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBitcoin));
 
-    const outputSatoshiSum = xactOuts.reduce((s, v) => s + v, 0);
+    const outputSatoshiSum = xactOuts.reduce((sum, value) => sum + value, 0);
 
     return (inputSatoshiSum - outputSatoshiSum);
   }
