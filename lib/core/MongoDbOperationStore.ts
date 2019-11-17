@@ -1,21 +1,21 @@
-import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
 import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
+import OperationType from './enums/OperationType';
 import { Binary, Collection, Long, MongoClient } from 'mongodb';
 
 /**
  * Sidetree operation stored in MongoDb.
- * Note: we use the shorter property name "opIndex" instead of "operationIndex" due to a constraint imposed by CosmosDB/MongoDB:
- * the sum of property names of a unique index keys need to be less than 40 characters.
- * Note: We represent opIndex, transactionNumber, and transactionTime as long instead of number (double) to avoid some floating
- * point comparison quirks.
+ * Note: We use shorter property names such as "opIndex" instead of "operationIndex" to ensure unique index compatibility between MongoDB implementations.
+ * Note: We represent txnNumber as long instead of number (double) to ensure large number compatibility
+ *       (avoid floating point comparison quirks) between MongoDB implementations.
  */
 interface IMongoOperation {
-  didUniqueSuffix: string;
+  didSuffix: string;
   operationBufferBsonBinary: Binary;
   opIndex: number;
-  transactionNumber: Long;
-  transactionTime: number;
+  txnNumber: Long;
+  txnTime: number;
+  type: string;
 }
 
 /**
@@ -58,9 +58,9 @@ export default class MongoDbOperationStore implements IOperationStore {
       this.collection = db.collection(this.operationCollectionName);
     } else {
       this.collection = await db.createCollection(this.operationCollectionName);
-      // create an index on didUniqueSuffix, transactionNumber, operationIndex to make get() operations more efficient
-      // this is an unique index, so duplicate inserts are rejected.
-      await this.collection.createIndex({ didUniqueSuffix: 1, transactionNumber: 1, opIndex: 1 }, { unique: true });
+      // create an index on didSuffix, txnNumber, opIndex, and type to make DB operations more efficient.
+      // This is an unique index, so duplicate inserts are rejected/ignored.
+      await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
     }
   }
 
@@ -86,12 +86,10 @@ export default class MongoDbOperationStore implements IOperationStore {
   }
 
   /**
-   * Get an iterator that returns all operations with a given
-   * didUniqueSuffix ordered by (transactionNumber, operationIndex)
-   * ascending.
+   * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
-  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
-    const mongoOperations = await this.collection!.find({ didUniqueSuffix }).sort({ transactionNumber: 1, operationIndex: 1 }).toArray();
+  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
+    const mongoOperations = await this.collection!.find({ didSuffix: didUniqueSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
 
@@ -101,10 +99,26 @@ export default class MongoDbOperationStore implements IOperationStore {
    */
   public async delete (transactionNumber?: number): Promise<void> {
     if (transactionNumber) {
-      await this.collection!.deleteMany({ transactionNumber: { $gt: Long.fromNumber(transactionNumber) } });
+      await this.collection!.deleteMany({ txnNumber: { $gt: Long.fromNumber(transactionNumber) } });
     } else {
       await this.collection!.deleteMany({});
     }
+  }
+
+  public async deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void> {
+    await this.collection!.deleteMany({ $or: [
+      {
+        didSuffix: didUniqueSuffix,
+        txnNumber: { $lt: Long.fromNumber(transactionNumber) },
+        type: OperationType.Update
+      },
+      {
+        didSuffix: didUniqueSuffix,
+        txnNumber: Long.fromNumber(transactionNumber),
+        opIndex: { $lt: operationIndex },
+        type: OperationType.Update
+      }
+    ]});
   }
 
   /**
@@ -114,11 +128,12 @@ export default class MongoDbOperationStore implements IOperationStore {
    */
   private static convertToMongoOperation (operation: NamedAnchoredOperationModel): IMongoOperation {
     return {
-      didUniqueSuffix: operation.didUniqueSuffix,
+      type: operation.type,
+      didSuffix: operation.didUniqueSuffix,
       operationBufferBsonBinary: new Binary(operation.operationBuffer),
       opIndex: operation.operationIndex,
-      transactionNumber: Long.fromNumber(operation.transactionNumber),
-      transactionTime: operation.transactionTime
+      txnNumber: Long.fromNumber(operation.transactionNumber),
+      txnTime: operation.transactionTime
     };
   }
 
@@ -129,12 +144,14 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
    * hence the type 'any' for mongoOperation.
    */
-  private static convertToAnchoredOperationModel (mongoOperation: any): AnchoredOperationModel {
+  private static convertToAnchoredOperationModel (mongoOperation: any): NamedAnchoredOperationModel {
     return {
+      type: mongoOperation.type,
+      didUniqueSuffix: mongoOperation.didSuffix,
       operationBuffer: mongoOperation.operationBufferBsonBinary.buffer,
       operationIndex: mongoOperation.opIndex,
-      transactionNumber: mongoOperation.transactionNumber,
-      transactionTime: mongoOperation.transactionTime
+      transactionNumber: mongoOperation.txnNumber,
+      transactionTime: mongoOperation.txnTime
     };
   }
 }

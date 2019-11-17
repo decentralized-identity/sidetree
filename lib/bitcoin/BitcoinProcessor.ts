@@ -51,9 +51,6 @@ export default class BitcoinProcessor {
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
 
-  /** Bitcoin transaction fee amount */
-  public readonly bitcoinFee: number;
-
   /** The first Sidetree block in Bitcoin's blockchain. */
   public readonly genesisBlockNumber: number;
 
@@ -102,7 +99,6 @@ export default class BitcoinProcessor {
       this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
     }
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
-    this.bitcoinFee = config.bitcoinFee;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.proofOfFeeConfig = config.proofOfFeeConfig;
@@ -245,8 +241,8 @@ export default class BitcoinProcessor {
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
         anchorString: transaction.anchorString,
-        feePaid: transaction.feePaid,
-        normalizedFee: transaction.normalizedFee
+        transactionFeePaid: transaction.transactionFeePaid,
+        normalizedTransactionFee: transaction.normalizedTransactionFee
       };
     });
 
@@ -276,9 +272,10 @@ export default class BitcoinProcessor {
   /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorString The string to be written as part of the transaction.
+   * @param fee The fee to be paid for this transaction.
    */
-  public async writeTransaction (anchorString: string) {
-    console.info(`Anchoring string ${anchorString}`);
+  public async writeTransaction (anchorString: string, fee: number) {
+    console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
     const address = this.privateKey.toAddress();
@@ -289,14 +286,14 @@ export default class BitcoinProcessor {
     }, 0);
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
-    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * this.bitcoinFee;
+    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
     if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * this.bitcoinFee));
+      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
       console.error(`Low balance (${daysLeft} days remaining),\
  please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis, Address: ${address.toString()}`);
     }
     // cannot make the transaction
-    if (totalSatoshis < this.bitcoinFee) {
+    if (totalSatoshis < fee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
       throw error;
@@ -309,7 +306,7 @@ export default class BitcoinProcessor {
       satoshis: 0
     }));
     transaction.change(address);
-    transaction.fee(this.bitcoinFee);
+    transaction.fee(fee);
     transaction.sign(this.privateKey);
 
     if (!await this.broadcastTransaction(transaction)) {
@@ -705,8 +702,8 @@ export default class BitcoinProcessor {
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
           anchorString: data.slice(this.sidetreePrefix.length),
-          feePaid: 0,      // filled in before adding to transactionStore after all error checks,
-          normalizedFee: 0 // filled in before adding to transactionStore after all error checks,
+          transactionFeePaid: 100, // issue #216: read actual data from tx
+          normalizedTransactionFee: 100 // issue #216: read actual data from tx
         };
       }
     }
@@ -714,9 +711,9 @@ export default class BitcoinProcessor {
     if (sidetreeTxToAdd !== undefined) {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // there would've been an exception before. So add it to the store ...
-      sidetreeTxToAdd.feePaid = await this.getTransactionFeeInSatoshi(transactionId);
+      sidetreeTxToAdd.transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
       const fee = await this.fee(transactionBlock);
-      sidetreeTxToAdd.normalizedFee = fee!.normalizedTransactionFee;
+      sidetreeTxToAdd.normalizedTransactionFee = fee!.normalizedTransactionFee;
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
       await this.transactionStore.addTransaction(sidetreeTxToAdd);
       return true;
@@ -726,6 +723,21 @@ export default class BitcoinProcessor {
     return false;
   }
 
+  /**
+   * Gets the normalized fee for the given block.
+   * @param block The block for which the fee is required.
+   */
+  public async getFee (block: number): Promise<{
+    normalizedTransactionFee: number
+  }> {
+
+    console.info(`Getting the normalized fee for the block number: ${block}`);
+
+    // Issue #216 return the actual data from the block
+    return Promise.resolve({
+      normalizedTransactionFee: 100
+    });
+  }
   /**
    * Checks if the bitcoin peer has a wallet open for a given address
    * @param address The bitcoin address to check
@@ -758,7 +770,7 @@ export default class BitcoinProcessor {
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    console.debug(`Sending jRPC request id: ${request.id}`);
+    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
     const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'

@@ -134,6 +134,26 @@ The _anchor file_ is a JSON document of the following schema:
 ```
 > NOTE: See [Sidetree Operation Receipts](#Sidetree-Operation-Receipts) section on purpose and construction of the `merkleRoot`.
 
+### Anchor String Schema
+The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
+
+```
+[encoded_number_of_operations].[hash_of_batch_file]
+
+WHERE
+
+ encoded_number_of_operations: The total number of operations included in the batch file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
+
+ hash_of_batch_file: The hash of the batch file
+```
+
+#### Example
+The following anchor string encodes 10000 operations and the hash of the batch file.
+
+```
+ECcAAA.QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
+```
+
 ### Operation chaining of a DID
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 
@@ -578,7 +598,37 @@ None.
 
 ### DID Recovery
 
-> TODO: API to be added which will impact delete API also.
+#### Request path
+```http
+POST / HTTP/1.1
+```
+
+#### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+#### Request body schema
+```json
+{
+  "protected": "Encoded protected header.",
+  "payload": "Encoded recovery payload JSON object defined by the schema below.",
+  "signature": "Encoded signature."
+}
+```
+
+#### Recovery payload schema
+```json
+{
+  "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
+  "newDidDocument": "The new DID Document."
+}
+```
+
+#### Response body
+None.
+
+
 
 ### Fetch the current service versions (optional).
 Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.

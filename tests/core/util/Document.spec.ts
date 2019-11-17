@@ -147,6 +147,13 @@ describe('Document', () => {
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
     });
+
+    it('returns false if the publickey element has the controller property set.', async () => {
+      defaultOriginalDidDocument.publicKey[0].controller = 'somevalue';
+
+      const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
+      expect(isDocumentValid).toBeFalsy();
+    });
   });
 
   describe('isValid()', () => {
@@ -184,10 +191,8 @@ describe('Document', () => {
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if the "id" property of "service" property is not a string.', async () => {
-      defaultOriginalDidDocument.service[0].id = undefined;
-
-      const isDocumentValid = Document.isValid(defaultOriginalDidDocument, false);
+    it('returns false if document given is undefined.', async () => {
+      const isDocumentValid = Document.isValid(undefined, false);
       expect(isDocumentValid).toBeFalsy();
     });
 

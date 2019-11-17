@@ -20,15 +20,15 @@ export default class AnchorFile {
     let anchorFileDecompressedBuffer;
     try {
       anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer);
-    } catch {
-      throw new SidetreeError(ErrorCode.AnchorFileDecompressionFailure);
+    } catch (e) {
+      throw SidetreeError.createFromError(ErrorCode.AnchorFileDecompressionFailure, e);
     }
 
     let anchorFile;
     try {
       anchorFile = await JsonAsync.parse(anchorFileDecompressedBuffer);
-    } catch {
-      throw new SidetreeError(ErrorCode.AnchorFileNotJson);
+    } catch (e) {
+      throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
     const anchorFileProperties = Object.keys(anchorFile);

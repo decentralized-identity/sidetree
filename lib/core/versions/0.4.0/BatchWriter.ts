@@ -61,7 +61,13 @@ export default class BatchWriter implements IBatchWriter {
     console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
 
     // Anchor the 'anchor file hash' on blockchain.
-    await this.blockchain.write(anchorFileAddress);
+    //
+    // NOTE: We are passing 0 for the fee parameter in this version. The fee parameter was
+    // introduced after this version had shipped. This 'write' function is only ever called
+    // for the latest blockchain time and the implementation should handle this previous
+    // version calling it with a fake value like 0.
+    //
+    await this.blockchain.write(anchorFileAddress, 0);
 
     // Remove written operations from queue if batch writing is successful.
     await this.operationQueue.dequeue(batch.length);

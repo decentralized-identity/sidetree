@@ -162,7 +162,7 @@ describe('Operation', async () => {
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 
-    it('should throw error if a add-service-endpoints patch contains additional unknown property..', async () => {
+    it('should throw error if a add-service-endpoints patch contains additional unknown property.', async () => {
       const updatePayload = generateUpdatePayloadForPublicKeys();
       (updatePayload.patches[2] as any).unknownProperty = 'unknownProperty';
 
@@ -187,10 +187,10 @@ describe('Operation', async () => {
     });
 
     it('should throw error if any of the service endpoints in the add-service-endpoints patch is not a valid DID.', async () => {
-      const updatePayload = generateUpdatePayloadForPublicKeys();
-      updatePayload.patches[2].serviceEndpoints![0] = 'invalidDidFormat';
+      const updatePayload = generateUpdatePayloadForPublicKeys() as any;
+      updatePayload.patches[2].serviceEndpoints[0] = 111;
 
-      const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotDid);
+      const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotString);
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 
@@ -214,6 +214,7 @@ function generateUpdatePayloadForPublicKeys () {
           {
             id: '#keyX',
             type: 'Secp256k1VerificationKey2018',
+            usage: 'signing',
             publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
           }
         ]

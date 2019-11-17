@@ -1,5 +1,6 @@
 import Did from './Did';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
+import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 
@@ -19,13 +20,13 @@ export default class Document {
     const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
     const decodedDidDocument = JSON.parse(decodedJsonString);
 
-    // Replace the placeholder DID with real DID before returning it.
-    Document.updatePlaceholdersInDocumentWithDid(decodedDidDocument, did);
-
     // Return `undefined` if original DID Document is invalid.
     if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
       return undefined;
     }
+
+    // Replace the placeholder DID with real DID before returning it.
+    Document.updatePlaceholdersInDocumentWithDid(decodedDidDocument, did);
 
     return decodedDidDocument;
   }
@@ -94,6 +95,11 @@ export default class Document {
       } else {
         keyUsages.set(publicKeyEntry.usage, usageCount + 1);
       }
+
+      // Controller field is not allowed to be filled in by the client
+      if (publicKeyEntry.controller !== undefined) {
+        return false;
+      }
     }
 
     // Must contain one and only one recovery key.
@@ -151,6 +157,10 @@ export default class Document {
       requireId = true;
     }
 
+    if (didDocument === undefined) {
+      return false;
+    }
+
     // Verify 'id' property.
     if (requireId && !didDocument.hasOwnProperty('id')) {
       return false;
@@ -190,11 +200,6 @@ export default class Document {
 
       // Verify each service entry in array.
       for (let serviceEntry of didDocument.service) {
-        // 'id' is required and must be string type.
-        if (typeof serviceEntry.id !== 'string') {
-          return false;
-        }
-
         // 'type' is required and must be string type.
         if (typeof serviceEntry.type !== 'string') {
           return false;
@@ -228,6 +233,18 @@ export default class Document {
   }
 
   /**
+   * Creates a DID document model.
+   */
+  public static create (publicKeys: DidPublicKeyModel[], services?: DidServiceEndpointModel[]): DocumentModel {
+
+    return {
+      '@context': 'https://w3id.org/did/v1',
+      publicKey: publicKeys,
+      service: services
+    };
+  }
+
+  /*
    * Updates the placeholders in the document with the given did. For example, we replace the id value with
    * the actual id as the client creating the document will not have this value set.
    *

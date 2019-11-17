@@ -6,11 +6,11 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
  * Mock Blockchain class for testing.
  */
 export default class MockBlockchain implements IBlockchain {
-  /** Stores each hash given in write() method. */
-  hashes: string[] = [];
+  /** Stores each hash & fee given in write() method. */
+  hashes: [string, number][] = [];
 
-  public async write (anchorString: string): Promise<void> {
-    this.hashes.push(anchorString);
+  public async write (anchorString: string, fee: number): Promise<void> {
+    this.hashes.push([anchorString, fee]);
   }
 
   public async read (sinceTransactionNumber?: number, _transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: TransactionModel[] }> {
@@ -31,10 +31,10 @@ export default class MockBlockchain implements IBlockchain {
       const transaction = {
         transactionNumber: hashIndex,
         transactionTime: hashIndex,
-        transactionTimeHash: this.hashes[hashIndex],
-        anchorString: this.hashes[hashIndex],
-        feePaid: 1,
-        normalizedFee: 1
+        transactionTimeHash: this.hashes[hashIndex][0],
+        anchorString: this.hashes[hashIndex][0],
+        transactionFeePaid: this.hashes[hashIndex][1],
+        normalizedTransactionFee: this.hashes[hashIndex][1]
       };
       transactions.push(transaction);
     }
@@ -59,5 +59,9 @@ export default class MockBlockchain implements IBlockchain {
    */
   public setLatestTime (time: BlockchainTimeModel) {
     this.latestTime = time;
+  }
+
+  public async getFee (transactionNumber: number): Promise<number> {
+    throw Error('Not implemented. Inputs: ' + transactionNumber);
   }
 }

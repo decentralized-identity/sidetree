@@ -21,13 +21,13 @@ export default class Cryptography {
    * NOTE: The public key returned is wrapped as a DidPublicKeyModel for convenient usage.
    * @returns Public key, followed by private key.
    */
-  public static async generateKeyPairJwk (keyId: string, usage: KeyUsage, controller: string): Promise<[DidPublicKeyModel, PrivateKey]> {
+  public static async generateKeyPairJwk (keyId: string, usage: KeyUsage, controller?: string): Promise<[DidPublicKeyModel, PrivateKey]> {
     const privateKeyJwk = await EcPrivateKey.generatePrivateKey(keyId);
     const publicKeyJwk = privateKeyJwk.getPublicKey();
     const didPublicKey = {
       id: keyId,
       type: 'Secp256k1VerificationKey2018',
-      controller: controller,
+      controller,
       usage,
       publicKeyJwk
     };
@@ -39,7 +39,7 @@ export default class Cryptography {
    * Generates a random pair of SECP256K1 public-private key-pair in HEX format.
    * @returns Public key, followed by private key.
    */
-  public static async generateKeyPairHex (keyId: string, usage: KeyUsage, controller: string): Promise<[DidPublicKeyModel, string]> {
+  public static async generateKeyPairHex (keyId: string, usage: KeyUsage): Promise<[DidPublicKeyModel, string]> {
     let privateKeyBuffer;
     do {
       privateKeyBuffer = crypto.randomBytes(32);
@@ -53,7 +53,6 @@ export default class Cryptography {
     const didPublicKey = {
       id: keyId,
       type: 'Secp256k1VerificationKey2018',
-      controller: controller,
       usage,
       publicKeyHex
     };

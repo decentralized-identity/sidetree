@@ -1,4 +1,5 @@
 import * as retry from 'async-retry';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
@@ -72,16 +73,16 @@ describe('Observer', async () => {
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': '1stTransaction',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         },
         {
           'transactionNumber': 2,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': '2ndTransaction',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
         }
       ]
     };
@@ -142,8 +143,8 @@ describe('Observer', async () => {
     // Prepare the mock response from the DownloadManager.
     const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
-    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery, 'did:exmaple:123');
-    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.recovery, 'did:exmaple:123');
+    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.recovery);
     const operations = [
       await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey1, privateKey1),
       await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey2, privateKey2)
@@ -196,13 +197,14 @@ describe('Observer', async () => {
       1
     );
 
+    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: anchorFilehash, numberOfOperations: 1 });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
       transactionTimeHash: '1000',
-      anchorString: anchorFilehash,
-      feePaid: 1,
-      normalizedFee: 1
+      anchorString: anchoredData,
+      transactionFeePaid: 1,
+      normalizedTransactionFee: 1
     };
     const transactionUnderProcessing = {
       transaction: mockTransaction,
@@ -250,13 +252,14 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
+      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
         transactionTimeHash: '1000',
-        anchorString: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw',
-        feePaid: 1,
-        normalizedFee: 1
+        anchorString: anchoredData,
+        transactionFeePaid: 1,
+        normalizedTransactionFee: 1
       };
       const transactionUnderProcessing = {
         transaction: mockTransaction,
@@ -280,24 +283,24 @@ describe('Observer', async () => {
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': '1stTransaction',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         },
         {
           'transactionNumber': 2,
           'transactionTime': 2000,
           'transactionTimeHash': '2000',
           'anchorString': '2ndTransaction',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         },
         {
           'transactionNumber': 3,
           'transactionTime': 3000,
           'transactionTimeHash': '3000',
           'anchorString': '3rdTransaction',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         }
       ]
     };
@@ -310,24 +313,24 @@ describe('Observer', async () => {
           'transactionTime': 2001,
           'transactionTimeHash': '2001',
           'anchorString': '2ndTransactionNew',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         },
         {
           'transactionNumber': 3,
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
           'anchorString': '3rdTransactionNew',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         },
         {
           'transactionNumber': 4,
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
           'anchorString': '4thTransaction',
-          'feePaid': 1,
-          'normalizedFee': 1
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
         }
       ]
     };
@@ -398,13 +401,14 @@ describe('Observer', async () => {
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
+    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
     const transaction = {
       'transactionNumber': 1,
       'transactionTime': 1000,
       'transactionTimeHash': '1000',
-      'anchorString': '1stTransaction',
-      'feePaid': 1,
-      'normalizedFee': 1
+      'anchorString': anchoredData,
+      'transactionFeePaid': 1,
+      'normalizedTransactionFee': 1
     };
 
     // Prep the transaction store with some initial state.
