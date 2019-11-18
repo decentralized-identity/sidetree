@@ -3,6 +3,7 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ErrorCode from '../common/SharedErrorCode';
 import FeeModel from '../common/models/FeeModel';
+import MongoDbSlidingWindowQuantileStore from './pof/MongoDbSlidingWindowQuantileStore';
 import ProofOfFeeConfig from './pof/models/ProofOfFeeConfig';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
@@ -104,12 +105,12 @@ export default class BitcoinProcessor {
     this.proofOfFeeConfig = config.proofOfFeeConfig;
 
     const transactionFeeQuantileConfig = config.proofOfFeeConfig.transactionFeeQuantileConfig;
+    const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
     this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
       BitcoinProcessor.satoshiPerBitcoin,
       transactionFeeQuantileConfig.windowSizeInGroups,
       transactionFeeQuantileConfig.quantileMeasure,
-      config.mongoDbConnectionString,
-      config.databaseName);
+      mongoQuantileStore);
     this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSizePerGroup);
 
     /// Bitcore has a type file error on PrivateKey
@@ -485,11 +486,11 @@ export default class BitcoinProcessor {
       if (firstValidTransaction) {
         // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a group
         // boundary to simplify resetting proof-of-fee state which is maintained per group.
-        let revertToBlockNumber = this.roundToGroupBoundary(firstValidTransaction.transactionTime + 1);
+        let revertToBlockNumber = this.roundToGroupBoundary(firstValidTransaction.transactionTime);
 
         // The number that represents the theoritical last possible transaction written with a block number
         // less than revertToBlockNumber
-        const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber, 0) - 1;
+        const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber + 1, 0) - 1;
 
         console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
         await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
@@ -498,7 +499,7 @@ export default class BitcoinProcessor {
         this.transactionSampler.clear();
 
         // Revert the quantile calculator
-        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToBlockNumber);
+        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToBlockNumber + 1);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
         return revertToBlockNumber;
@@ -545,6 +546,85 @@ export default class BitcoinProcessor {
     return hash === responseData;
   }
 
+  private isSidetreeTransaction (transaction: any): boolean {
+    const transactionOutputs = transaction.vout as Array<any>;
+
+    for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
+      // grab the scripts
+      const script = transactionOutputs[outputIndex].scriptPubKey;
+
+      // check for returned data for sidetree prefix
+      const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+
+      if (!hexDataMatches || hexDataMatches.length === 0) {
+        continue;
+      }
+
+      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
+
+      // We do not check for multiple sidetree anchors; we would treat such
+      // transactions as non-sidetree for updating the transaction store, but here
+      // it seems better to consider this as a sidetree transaction and ignore it
+      // for sampling purposes to eliminate potentially fraudelent transactions from
+      // affecting the sample.
+      if (data.startsWith(this.sidetreePrefix)) {
+        return true;
+      }
+    }
+
+    // non sidetree transaction
+    return false;
+  }
+
+  private isGroupBoundary (block: number): boolean {
+    return (block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks === 0;
+  }
+
+  private getgroupId (block: number): number {
+    return Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
+  }
+
+  private async processBlockForPofCalculation (blockHeight: number, blockData: any): Promise<void> {
+
+    const blockHash = blockData.hash as string;
+
+    // reseed source of psuedo-randomness to the blockhash
+    this.transactionSampler.resetPsuedoRandomSeed(blockHash);
+
+    const transactions = blockData.tx as Array<any>;
+
+    for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+      const transaction = transactions[transactionIndex];
+
+      const isSidetreeTransaction = this.isSidetreeTransaction(transaction);
+
+      // Add the transaction to the sampler.  We filter out transactions with unusual
+      // input count - such transaction require a large number of rpc calls to compute transaction fee
+      // not worth the cost for an approximate measure. We also filter out sidetree transactions
+      const inputsCount = (transaction.vin as Array<any>).length;
+      if (!isSidetreeTransaction && inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
+        this.transactionSampler.addElement(transaction.txid);
+      }
+    }
+
+    if (this.isGroupBoundary(blockHeight)) {
+
+      // Compute the transaction fees for sampled transactions of this group
+      const sampledTransactionIds = this.transactionSampler.getSample();
+      const sampledTransactionFees = new Array();
+      for (let transactionId of sampledTransactionIds) {
+        const transactionFee = await this.getTransactionFeeInSatoshi(transactionId);
+        sampledTransactionFees.push(transactionFee);
+      }
+
+      const groupId = this.getgroupId(blockHeight);
+      await this.quantileCalculator.add(groupId, sampledTransactionFees);
+
+      // Reset the sampler for the next group
+      this.transactionSampler.clear();
+    }
+  }
+
   /**
    * Given a Bitcoin block height, processes that block for Sidetree transactions
    * @param block Block height to process
@@ -561,13 +641,12 @@ export default class BitcoinProcessor {
       ]
     });
 
+    await this.processBlockForPofCalculation(block, responseData);
+
     const transactions = responseData.tx as Array<any>;
     const blockHash = responseData.hash;
 
     // console.debug(`Block ${block} contains ${transactions.length} transactions`);
-
-    // reseed source of psuedo-randomness to the blockhash
-    this.transactionSampler.resetPsuedoRandomSeed(blockHash);
 
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
@@ -581,16 +660,9 @@ export default class BitcoinProcessor {
 
       try {
         const outputs = transaction.vout as Array<any>;
-        const isSidetreeTransaction =
-          await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.txid);
 
-        // Add the transaction to the sampler.  We filter out transactions with unusual
-        // input count - such transaction require a large number of rpc calls to compute transaction fee
-        // not worth the cost for an approximate measure. We also filter out sidetree transactions
-        const inputsCount = (transaction.vin as Array<any>).length;
-        if (!isSidetreeTransaction && inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
-          this.transactionSampler.addElement(transaction.txid);
-        }
+        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.txid);
+
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
@@ -599,32 +671,7 @@ export default class BitcoinProcessor {
       }
     }
 
-    if (this.isGroupBoundary(block)) {
-
-      // Compute the transaction fees for sampled transactions of this group
-      const sampledTransactionIds = this.transactionSampler.getSample();
-      const sampledTransactionFees = new Array();
-      for (let transactionId of sampledTransactionIds) {
-        const transactionFee = await this.getTransactionFeeInSatoshi(transactionId);
-        sampledTransactionFees.push(transactionFee);
-      }
-
-      const groupId = this.getgroupId(block);
-      await this.quantileCalculator.add(groupId, sampledTransactionFees);
-
-      // Reset the sampler for the next group
-      this.transactionSampler.clear();
-    }
-
     return blockHash;
-  }
-
-  private isGroupBoundary (block: number): boolean {
-    return (block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks === 0;
-  }
-
-  private getgroupId (block: number): number {
-    return Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */
