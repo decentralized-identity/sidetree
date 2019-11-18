@@ -1,6 +1,9 @@
 import ISlidingWindowQuantileStore from '../../lib/bitcoin/pof/interfaces/ISlidingWindowQuantileStore';
 import QuantileInfo from '../../lib/bitcoin/pof/models/QuantileInfo';
 
+/**
+ * Mock implementation of sliding window quantile store for testing.
+ */
 export default class MockSlidingWindowQuantileStore implements ISlidingWindowQuantileStore {
 
   private groupIdToQuantileInfo: Map<number, QuantileInfo> = new Map();
