@@ -6,6 +6,15 @@ import QuantileInfo from '../models/QuantileInfo';
  * tests using mock implementations.
  */
 export default interface ISlidingWindowQuantileStore {
+
+  /** Initialize the store */
+  initialize (): Promise<void>;
+
+  /**
+   * Retrieve the quantile info for a given groupId
+   */
+  get (groupId: number): Promise<QuantileInfo | undefined>;
+
   /**
    * Store the quantile info for a new group.
    */

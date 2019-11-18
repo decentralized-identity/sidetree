@@ -1,6 +1,6 @@
-import MongoDbSlidingWindowQuantileStore from './MongoDbSlidingWindowQuantileStore';
 import RunLengthTransformer from './RunLengthTransformer';
 import ValueApproximator from './ValueApproximator';
+import ISlidingWindowQuantileStore from './interfaces/ISlidingWindowQuantileStore';
 
 /**
  * Frequency vector is an array of numbers representing frequencies of
@@ -54,8 +54,6 @@ export default class SlidingWindowQuantileCalculator {
   /** Most recent groupId we have seen */
   private prevgroupId: number | undefined = undefined;
 
-  private mongoStore: MongoDbSlidingWindowQuantileStore;
-
   /**
    * Construct a sliding window quantile computer with specified
    * approximation paramenters.
@@ -65,14 +63,12 @@ export default class SlidingWindowQuantileCalculator {
     maxValue: number,  // all values above maxValue are rounded down by maxValue
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
-    mongoServerUrl: string,
-    database?: string
+    private readonly mongoStore: ISlidingWindowQuantileStore
     ) {
     this.valueApproximator = new ValueApproximator(approximation, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
-    this.frequencyVectorAggregated = new Array(this.frequencyVectorSize);
-    this.mongoStore = new MongoDbSlidingWindowQuantileStore(mongoServerUrl, database);
+    this.frequencyVectorAggregated = new Array(this.frequencyVectorSize).fill(0);
     if (this.quantileMeasure < 0 || this.quantileMeasure > 1) {
       throw Error(`Invalid quantile measure ${quantileMeasure}`);
     }
@@ -84,7 +80,11 @@ export default class SlidingWindowQuantileCalculator {
     const firstgroupId = await this.mongoStore.getFirstGroupId();
     const lastgroupId = await this.mongoStore.getLastGroupId();
 
-    if (firstgroupId) {
+    this.frequencyVectorAggregated.fill(0);
+    this.slidingWindow = new Array<FrequencyVector>();
+    this.prevgroupId = lastgroupId;
+
+    if (firstgroupId !== undefined) {
       for (let groupId = firstgroupId ; groupId <= lastgroupId! ; groupId++) {
         const quantileInfo = (await this.mongoStore.get(groupId))!;
 
@@ -117,7 +117,7 @@ export default class SlidingWindowQuantileCalculator {
       }
     }
 
-    const groupFrequencyVector = new Array(this.frequencyVectorSize);
+    const groupFrequencyVector = new Array(this.frequencyVectorSize).fill(0);
 
     for (let value of group) {
       const normalizedValue = this.valueApproximator.getNormalizedValue(value);
@@ -187,7 +187,6 @@ export default class SlidingWindowQuantileCalculator {
    * Get a specified quantile in the current sliding window.
    */
   private calculateCurrentQuantile (): number {
-
     // Number of elements in the sliding window;
     const elementCount = this.frequencyVectorAggregated.reduce((a,b) => a + b, 0);
 
@@ -205,5 +204,4 @@ export default class SlidingWindowQuantileCalculator {
     // should never come here.
     return 0;
   }
-
 }
