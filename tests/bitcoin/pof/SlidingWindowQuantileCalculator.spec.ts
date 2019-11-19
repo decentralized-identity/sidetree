@@ -1,6 +1,6 @@
 import ISlidingWindowQuantileStore from '../../../lib/bitcoin/interfaces/ISlidingWindowQuantileStore';
 import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
-import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/pof/SlidingWindowQuantileCalculator';
+import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/fee/SlidingWindowQuantileCalculator';
 
 describe('SlidingWindowQuantileCalculator', async () => {
   const valueApproximation = 2;

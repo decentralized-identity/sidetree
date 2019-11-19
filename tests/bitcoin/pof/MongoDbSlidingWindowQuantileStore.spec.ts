@@ -1,5 +1,5 @@
 import MongoDb from '../../common/MongoDb';
-import MongoDbSlidingWindowQuantileStore from '../../../lib/bitcoin/pof/MongoDbSlidingWindowQuantileStore';
+import MongoDbSlidingWindowQuantileStore from '../../../lib/bitcoin/fee/MongoDbSlidingWindowQuantileStore';
 
 function checkArrayEqual (array1: number[], array2: number[]): boolean {
   if (array1.length !== array2.length) {

@@ -1,5 +1,5 @@
-import PsuedoRandomBitStream from '../../../lib/bitcoin/pof/PsuedoRandomBitStream';
-import PsuedoRandomNumberGenerator from '../../../lib/bitcoin/pof/PsuedoRandomNumberGenerator';
+import PsuedoRandomBitStream from '../../../lib/bitcoin/fee/PsuedoRandomBitStream';
+import PsuedoRandomNumberGenerator from '../../../lib/bitcoin/fee/PsuedoRandomNumberGenerator';
 
 describe('PsuedoRandomNumberGenerator', () => {
 

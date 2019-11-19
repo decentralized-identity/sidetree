@@ -1,15 +1,15 @@
 import * as httpStatus from 'http-status';
 import ErrorCode from '../common/SharedErrorCode';
-import MongoDbSlidingWindowQuantileStore from './pof/MongoDbSlidingWindowQuantileStore';
+import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ProofOfFeeConfig from './models/ProofOfFeeConfig';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
-import ReservoirSampler from './pof/ReservoirSampler';
+import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import SlidingWindowQuantileCalculator from './pof/SlidingWindowQuantileCalculator';
+import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
@@ -762,7 +762,7 @@ export default class BitcoinProcessor {
 
     if (sidetreeTxToAdd !== undefined) {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
-      // there would've been an exception before. So let's fill the missing information for the 
+      // there would've been an exception before. So let's fill the missing information for the
       // transaction and return it
       const transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
       const normalizedFeeModel = await this.getFee(transactionBlock);

@@ -1,4 +1,4 @@
-import PsuedoRandomBitStream from '../../../lib/bitcoin/pof/PsuedoRandomBitStream';
+import PsuedoRandomBitStream from '../../../lib/bitcoin/fee/PsuedoRandomBitStream';
 
 describe('PsuedoRandomBitStream', () => {
   it('should produce deterministic bit stream', () => {

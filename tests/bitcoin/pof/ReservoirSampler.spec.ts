@@ -1,4 +1,4 @@
-import ReservoirSampler from '../../../lib/bitcoin/pof/ReservoirSampler';
+import ReservoirSampler from '../../../lib/bitcoin/fee/ReservoirSampler';
 
 describe('ReservoirSampler', () => {
   it('should sample uniformly with sample size 1', () => {

@@ -1,4 +1,4 @@
-import ValueApproximator from '../../../lib/bitcoin/pof/ValueApproximator';
+import ValueApproximator from '../../../lib/bitcoin/fee/ValueApproximator';
 
 describe('Value approximator', () => {
   const approximation = 2;

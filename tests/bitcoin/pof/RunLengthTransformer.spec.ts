@@ -1,4 +1,4 @@
-import RunLengthTransformer from '../../../lib/bitcoin/pof/RunLengthTransformer';
+import RunLengthTransformer from '../../../lib/bitcoin/fee/RunLengthTransformer';
 
 function checkArrayEqual (array1: number[], array2: number[]): boolean {
   if (array1.length !== array2.length) {
