@@ -1,14 +1,14 @@
 import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
-import BitcoinLedger from '../../lib/bitcoin/BitcoinLedger';
+import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinProcessor from '../../lib/bitcoin/BitcoinProcessor';
 import BlockData from '../../lib/bitcoin/models/BlockData';
 import ReadableStream from '../../lib/common/ReadableStream';
 
-describe('BitcoinLedger', async () => {
+describe('BitcoinClient', async () => {
 
-  let bitcoinLedger: BitcoinLedger;
+  let bitcoinClient: BitcoinClient;
   let fetchSpy: jasmine.Spy;
   let bitcoinWalletImportString: string;
 
@@ -16,7 +16,7 @@ describe('BitcoinLedger', async () => {
   const maxRetries = 2;
 
   beforeEach(() => {
-    bitcoinLedger = new BitcoinLedger(bitcoinPeerUri, 'u', 'p', 10, maxRetries);
+    bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', 10, maxRetries);
     bitcoinWalletImportString = BitcoinProcessor.generatePrivateKey('testnet'),
 
     // this is always mocked to protect against actual calls to the bitcoin network
@@ -24,7 +24,7 @@ describe('BitcoinLedger', async () => {
   });
 
   function mockRpcCall (method: string, params: any[], returns: any, path?: string): jasmine.Spy {
-    return spyOn(bitcoinLedger, 'SendGenericRequest' as any).and.callFake((request: any, requestPath: string) => {
+    return spyOn(bitcoinClient, 'SendGenericRequest' as any).and.callFake((request: any, requestPath: string) => {
       if (path) {
         expect(requestPath).toEqual(path);
       }
@@ -42,7 +42,7 @@ describe('BitcoinLedger', async () => {
       // need to disable transaction serialization
       spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
-      const actual = await bitcoinLedger.broadcastTransaction(transaction);
+      const actual = await bitcoinClient.broadcastTransaction(transaction);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
       done();
@@ -55,7 +55,7 @@ describe('BitcoinLedger', async () => {
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
       spy.and.throwError('test');
       try {
-        await bitcoinLedger.broadcastTransaction(transaction);
+        await bitcoinClient.broadcastTransaction(transaction);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('test');
@@ -70,7 +70,7 @@ describe('BitcoinLedger', async () => {
       // need to disable transaction serialization
       spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], []);
-      const actual = await bitcoinLedger.broadcastTransaction(transaction);
+      const actual = await bitcoinClient.broadcastTransaction(transaction);
       expect(actual).toBeFalsy();
       expect(spy).toHaveBeenCalled();
       done();
@@ -88,7 +88,7 @@ describe('BitcoinLedger', async () => {
       };
 
       const spy = mockRpcCall('getblock', [hash, verbosity], blockData);
-      const actual = await bitcoinLedger.getBlock(hash, verbosity);
+      const actual = await bitcoinClient.getBlock(hash, verbosity);
 
       expect(spy).toHaveBeenCalled();
       expect(actual).toEqual(blockData);
@@ -100,7 +100,7 @@ describe('BitcoinLedger', async () => {
       const height = 512;
       const hash = 'ADSFSAEF34359';
       const spy = mockRpcCall('getblockhash', [height], hash);
-      const actual = await bitcoinLedger.getBlockHash(height);
+      const actual = await bitcoinClient.getBlockHash(height);
       expect(actual).toEqual(hash);
       expect(spy).toHaveBeenCalled();
     });
@@ -110,7 +110,7 @@ describe('BitcoinLedger', async () => {
     it('should return the latest block', async (done) => {
       const height = 753;
       const mock = mockRpcCall('getblockcount', [], height);
-      const actual = await bitcoinLedger.getCurrentBlockHeight();
+      const actual = await bitcoinClient.getCurrentBlockHeight();
       expect(actual).toEqual(height);
       expect(mock).toHaveBeenCalled();
       done();
@@ -130,7 +130,7 @@ describe('BitcoinLedger', async () => {
           satoshis: coin.satoshis
         }
       ]);
-      const actual = await bitcoinLedger.getUnspentCoins(coin.address);
+      const actual = await bitcoinClient.getUnspentCoins(coin.address);
       expect(coinSpy).toHaveBeenCalled();
       expect(actual[0].address).toEqual(coin.address);
       expect(actual[0].txId).toEqual(coin.txId);
@@ -140,7 +140,7 @@ describe('BitcoinLedger', async () => {
     it('should return empty if no coins were found', async (done) => {
       const coin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1);
       const coinSpy = mockRpcCall('listunspent', [null, null, [coin.address.toString()]], []);
-      const actual = await bitcoinLedger.getUnspentCoins(coin.address);
+      const actual = await bitcoinClient.getUnspentCoins(coin.address);
       expect(coinSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
       done();
@@ -165,7 +165,7 @@ describe('BitcoinLedger', async () => {
         timestamp: 0,
         labels: []
       });
-      const actual = await bitcoinLedger.walletExists(address);
+      const actual = await bitcoinClient.walletExists(address);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
     });
@@ -193,7 +193,7 @@ describe('BitcoinLedger', async () => {
           }
         ]
       });
-      const actual = await bitcoinLedger.walletExists(address);
+      const actual = await bitcoinClient.walletExists(address);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
     });
@@ -211,7 +211,7 @@ describe('BitcoinLedger', async () => {
         ischange: false,
         labels: []
       });
-      const actual = await bitcoinLedger.walletExists(address);
+      const actual = await bitcoinClient.walletExists(address);
       expect(actual).toBeFalsy();
       expect(spy).toHaveBeenCalled();
     });
@@ -226,7 +226,7 @@ describe('BitcoinLedger', async () => {
       const bodyIdentifier = 12345;
       const result = 'some_result';
 
-      const retryFetchSpy = spyOn(bitcoinLedger as any, 'fetchWithRetry');
+      const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(bitcoinPeerUri);
         expect(params.method).toEqual('post');
@@ -245,7 +245,7 @@ describe('BitcoinLedger', async () => {
         })));
       });
 
-      const actual = await bitcoinLedger['SendGenericRequest'](request, true);
+      const actual = await bitcoinClient['SendGenericRequest'](request, true);
       expect(actual).toEqual(result);
       expect(retryFetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
@@ -259,7 +259,7 @@ describe('BitcoinLedger', async () => {
       const result = 'some result';
       const statusCode = 7890;
 
-      const retryFetchSpy = spyOn(bitcoinLedger as any, 'fetchWithRetry');
+      const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(bitcoinPeerUri);
         expect(params.method).toEqual('post');
@@ -274,7 +274,7 @@ describe('BitcoinLedger', async () => {
       });
 
       try {
-        await bitcoinLedger['SendGenericRequest'](request, true);
+        await bitcoinClient['SendGenericRequest'](request, true);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Fetch');
@@ -293,7 +293,7 @@ describe('BitcoinLedger', async () => {
       };
       const result = 'some result';
 
-      const retryFetchSpy = spyOn(bitcoinLedger as any, 'fetchWithRetry');
+      const retryFetchSpy = spyOn(bitcoinClient as any, 'fetchWithRetry');
       retryFetchSpy.and.callFake((uri: string, params: any) => {
         expect(uri).toContain(bitcoinPeerUri);
         expect(params.method).toEqual('post');
@@ -312,7 +312,7 @@ describe('BitcoinLedger', async () => {
       });
 
       try {
-        await bitcoinLedger['SendGenericRequest'](request, true);
+        await bitcoinClient['SendGenericRequest'](request, true);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('RPC');
@@ -343,7 +343,7 @@ describe('BitcoinLedger', async () => {
         return Promise.resolve(result);
       });
 
-      const actual = await bitcoinLedger['fetchWithRetry'](path, request);
+      const actual = await bitcoinClient['fetchWithRetry'](path, request);
       expect(actual as any).toEqual(result);
       expect(fetchSpy).toHaveBeenCalled();
       done();
@@ -363,7 +363,7 @@ describe('BitcoinLedger', async () => {
         }
       });
 
-      await bitcoinLedger['fetchWithRetry']('localhost', { headers: { id: requestId } });
+      await bitcoinClient['fetchWithRetry']('localhost', { headers: { id: requestId } });
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       done();
@@ -375,7 +375,7 @@ describe('BitcoinLedger', async () => {
       });
 
       try {
-        await bitcoinLedger['fetchWithRetry']('localhost');
+        await bitcoinClient['fetchWithRetry']('localhost');
       } catch (error) {
         expect(error.message).toEqual('test');
         expect(error.type).toEqual('request-timeout');
@@ -397,7 +397,7 @@ describe('BitcoinLedger', async () => {
         }
       });
       try {
-        await bitcoinLedger['fetchWithRetry']('localhost');
+        await bitcoinClient['fetchWithRetry']('localhost');
       } catch (error) {
         expect(error.message).toEqual(result);
         expect(fetchSpy).toHaveBeenCalledTimes(2);
@@ -414,7 +414,7 @@ describe('BitcoinLedger', async () => {
         approved = true;
       }, 300);
 
-      await bitcoinLedger['waitFor'](400);
+      await bitcoinClient['waitFor'](400);
       expect(approved).toBeTruthy();
       done();
     }, 500);

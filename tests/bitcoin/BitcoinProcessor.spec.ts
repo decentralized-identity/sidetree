@@ -147,7 +147,7 @@ describe('BitcoinProcessor', () => {
     let walletExistsSpy: jasmine.Spy;
 
     beforeEach(async () => {
-      walletExistsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'walletExists' as any);
+      walletExistsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'walletExists' as any);
     });
 
     it('should initialize the transactionStore', async (done) => {
@@ -197,7 +197,7 @@ describe('BitcoinProcessor', () => {
     it('should import key if the wallet does not exist', async () => {
       walletExistsSpy.and.returnValue(Promise.resolve(false));
       const publicKeyHex = privateKey.toPublicKey().toBuffer().toString('hex');
-      const importSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'importPublicKey').and.callFake((key, rescan) => {
+      const importSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'importPublicKey').and.callFake((key, rescan) => {
         expect(key).toEqual(publicKeyHex);
         expect(rescan).toBeTruthy();
 
@@ -226,9 +226,9 @@ describe('BitcoinProcessor', () => {
     it('should get the current latest when given no hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
-      const hashSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
-      const spy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
+      const hashSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
+      const spy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
       const actual = await bitcoinProcessor.time();
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
@@ -251,9 +251,9 @@ describe('BitcoinProcessor', () => {
         }
       };
 
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
-      const hashSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
-      const spy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
+      const hashSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
+      const spy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
       spy.and.returnValue(Promise.resolve(block));
 
       const actual = await bitcoinProcessor.time(hash);
@@ -394,11 +394,11 @@ describe('BitcoinProcessor', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
         expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(true);
@@ -410,11 +410,11 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
         expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(true);
@@ -431,7 +431,7 @@ describe('BitcoinProcessor', () => {
 
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
       const coin = BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         new Transaction.UnspentOutput({
           txid: coin.txId,
           vout: coin.outputIndex,
@@ -441,7 +441,7 @@ describe('BitcoinProcessor', () => {
         })
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake(() => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
       try {
@@ -458,11 +458,11 @@ describe('BitcoinProcessor', () => {
 
     it('should fail if broadcastTransaction fails', async (done) => {
       const bitcoinFee = 4000;
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
         expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(false);
@@ -579,7 +579,7 @@ describe('BitcoinProcessor', () => {
       const hash = randomString();
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
       await bitcoinProcessor['processTransactions'](startBlock);
       expect(verifySpy).toHaveBeenCalled();
@@ -591,7 +591,7 @@ describe('BitcoinProcessor', () => {
     it('should use genesis if no start is specified', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       // tslint:disable-next-line: max-line-length
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(randomString()));
       await bitcoinProcessor['processTransactions']();
       expect(verifySpy).not.toHaveBeenCalled();
@@ -603,7 +603,7 @@ describe('BitcoinProcessor', () => {
     it('should throw if asked to start processing before genesis', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       // tslint:disable-next-line: max-line-length
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
         await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString() });
@@ -621,7 +621,7 @@ describe('BitcoinProcessor', () => {
     it('should throw if asked to process while the miners block height is below genesis', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       // tslint:disable-next-line: max-line-length
-      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber - 1));
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber - 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
         await bitcoinProcessor['processTransactions']();
@@ -715,7 +715,7 @@ describe('BitcoinProcessor', () => {
     it('should return true if the hash matches given a block height', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const mock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(hash);
+      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(hash);
       const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeTruthy();
       expect(mock).toHaveBeenCalled();
@@ -725,7 +725,7 @@ describe('BitcoinProcessor', () => {
     it('should return false if the hash does not match given a block height', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const mock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(randomString());
+      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(randomString());
       const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeFalsy();
       expect(mock).toHaveBeenCalled();
@@ -777,8 +777,8 @@ describe('BitcoinProcessor', () => {
         return undefined;
       });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
       rpcMock.and.returnValue(Promise.resolve(blockData));
 
       let seenTransactionNumbers: number[] = [];
@@ -812,8 +812,8 @@ describe('BitcoinProcessor', () => {
         return randomString();
       });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
       rpcMock.and.returnValue(Promise.resolve(blockData));
 
       let seenTransactionNumbers: number[] = [];
@@ -839,8 +839,8 @@ describe('BitcoinProcessor', () => {
       const block = randomNumber();
       const blockData = await generateBlock(block);
       const blockHash = randomString();
-      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
       rpcMock.and.returnValue(Promise.resolve(blockData));
 
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
@@ -880,8 +880,8 @@ describe('BitcoinProcessor', () => {
       });
 
       const blockHash = randomString();
-      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
       rpcMock.and.returnValue(Promise.resolve(blockData));
 
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],

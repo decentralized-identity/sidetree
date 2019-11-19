@@ -1,6 +1,6 @@
 import * as httpStatus from 'http-status';
 import BlockData from './models/BlockData';
-import IBitcoinLedger from './interfaces/IBitcoinLedger';
+import IBitcoinClient from './interfaces/IBitcoinClient';
 import ReadableStream from '../common/ReadableStream';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import { Address, Transaction } from 'bitcore-lib';
@@ -8,7 +8,7 @@ import { Address, Transaction } from 'bitcore-lib';
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
  */
-export default class BitcoinLedger implements IBitcoinLedger {
+export default class BitcoinLedger implements IBitcoinClient {
 
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;

@@ -4,7 +4,7 @@ import { Address, Transaction } from 'bitcore-lib';
 /**
  * Defines functionality for a class which handles the reading/writing data for the bitcoin ledger layer.
  */
-export default interface IBitcoinLedger {
+export default interface IBitcoinClient {
 
   /**
    * Broadcasts a transaction to the bitcoin network

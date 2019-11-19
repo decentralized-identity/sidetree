@@ -1,6 +1,6 @@
-import BitcoinLedger from './BitcoinLedger';
+import BitcoinClient from './BitcoinClient';
 import ErrorCode from '../common/SharedErrorCode';
-import IBitcoinLedger from './interfaces/IBitcoinLedger';
+import IBitcoinClient from './interfaces/IBitcoinClient';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import RequestError from './RequestError';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
@@ -65,7 +65,7 @@ export default class BitcoinProcessor {
 
   private serviceInfoProvider: ServiceInfoProvider;
 
-  private bitcoinLedger: IBitcoinLedger;
+  private bitcoinClient: IBitcoinClient;
 
   public constructor (config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
@@ -81,8 +81,8 @@ export default class BitcoinProcessor {
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
-    this.bitcoinLedger =
-      new BitcoinLedger(
+    this.bitcoinClient =
+      new BitcoinClient(
         config.bitcoinPeerUri,
         config.bitcoinRpcUsername,
         config.bitcoinRpcPassword,
@@ -118,11 +118,11 @@ export default class BitcoinProcessor {
     await this.transactionStore.initialize();
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
-    if (!await this.bitcoinLedger.walletExists(address.toString())) {
+    if (!await this.bitcoinClient.walletExists(address.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${address}. This can take up to 10 minutes.`);
 
       const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
-      await this.bitcoinLedger.importPublicKey(publicKeyAsHex, true);
+      await this.bitcoinClient.importPublicKey(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
     }
@@ -149,15 +149,15 @@ export default class BitcoinProcessor {
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
-      const blockHeight = await this.bitcoinLedger.getCurrentBlockHeight();
-      hash = await this.bitcoinLedger.getBlockHash(blockHeight);
+      const blockHeight = await this.bitcoinClient.getCurrentBlockHeight();
+      hash = await this.bitcoinClient.getBlockHash(blockHeight);
       return {
         time: blockHeight,
         hash
       };
     }
 
-    const blockData = await this.bitcoinLedger.getBlock(hash, 1);
+    const blockData = await this.bitcoinClient.getBlock(hash, 1);
 
     return {
       hash: blockData.hash,
@@ -232,7 +232,7 @@ export default class BitcoinProcessor {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
     const address = this.privateKey.toAddress();
-    const unspentOutputs = await this.bitcoinLedger.getUnspentCoins(address);
+    const unspentOutputs = await this.bitcoinClient.getUnspentCoins(address);
 
     let totalSatoshis = unspentOutputs.reduce((total: number, coin: Transaction.UnspentOutput) => {
       return total + coin.satoshis;
@@ -262,7 +262,7 @@ export default class BitcoinProcessor {
     transaction.fee(fee);
     transaction.sign(this.privateKey);
 
-    if (!await this.bitcoinLedger.broadcastTransaction(transaction)) {
+    if (!await this.bitcoinClient.broadcastTransaction(transaction)) {
       const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
       console.error(error);
       throw error;
@@ -315,7 +315,7 @@ export default class BitcoinProcessor {
       startBlockHeight = this.genesisBlockNumber;
     }
     if (endBlockHeight === undefined) {
-      endBlockHeight = await this.bitcoinLedger.getCurrentBlockHeight();
+      endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     }
 
     if (startBlockHeight < this.genesisBlockNumber || endBlockHeight < this.genesisBlockNumber) {
@@ -382,7 +382,7 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
-    const responseData = await this.bitcoinLedger.getBlockHash(height);
+    const responseData = await this.bitcoinClient.getBlockHash(height);
 
     console.debug(`Retrieved block ${height} (${responseData})`);
     return hash === responseData;
@@ -395,8 +395,8 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
-    const hash = await this.bitcoinLedger.getBlockHash(block);
-    const blockData = await this.bitcoinLedger.getBlock(hash, 2);
+    const hash = await this.bitcoinClient.getBlockHash(block);
+    const blockData = await this.bitcoinClient.getBlock(hash, 2);
 
     const transactions = blockData.transactions;
     const blockHash = blockData.hash;
