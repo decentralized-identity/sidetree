@@ -1,11 +1,13 @@
+import * as httpStatus from 'http-status';
+import BlockData from '../../lib/bitcoin/models/BlockData';
+import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
-import { PrivateKey, Transaction } from 'bitcore-lib';
-import * as httpStatus from 'http-status';
+import { Block, PrivateKey, Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -56,19 +58,6 @@ describe('BitcoinProcessor', () => {
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
   });
-
-  function mockRpcCall (method: string, params: any[], returns: any, path?: string): jasmine.Spy {
-    return spyOn(bitcoinProcessor['bitcoinLedger'], 'SendGenericRequest' as any).and.callFake((request: any, requestPath: string) => {
-      if (path) {
-        expect(requestPath).toEqual(path);
-      }
-      expect(request.method).toEqual(method);
-      if (request.params) {
-        expect(request.params).toEqual(params);
-      }
-      return Promise.resolve(returns);
-    });
-  }
 
   function createTransactions (count?: number, height?: number): TransactionModel[] {
     const transactions: TransactionModel[] = [];
@@ -158,7 +147,7 @@ describe('BitcoinProcessor', () => {
     let walletExistsSpy: jasmine.Spy;
 
     beforeEach(async () => {
-      walletExistsSpy = spyOn(bitcoinProcessor, 'walletExists' as any);
+      walletExistsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'walletExists' as any);
     });
 
     it('should initialize the transactionStore', async (done) => {
@@ -208,7 +197,13 @@ describe('BitcoinProcessor', () => {
     it('should import key if the wallet does not exist', async () => {
       walletExistsSpy.and.returnValue(Promise.resolve(false));
       const publicKeyHex = privateKey.toPublicKey().toBuffer().toString('hex');
-      const importSpy = mockRpcCall('importpubkey', [publicKeyHex, 'sidetree', true], undefined);
+      const importSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'importPublicKey').and.callFake((key, rescan) => {
+        expect(key).toEqual(publicKeyHex);
+        expect(rescan).toBeTruthy();
+
+        return Promise.resolve(undefined);
+      });
+
       await bitcoinProcessor.initialize();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).toHaveBeenCalled();
@@ -231,9 +226,9 @@ describe('BitcoinProcessor', () => {
     it('should get the current latest when given no hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
-      const hashSpy = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
-      const spy = mockRpcCall('getblock', [hash, 1], { hash, height });
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
+      const hashSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
+      const spy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
       const actual = await bitcoinProcessor.time();
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
@@ -246,9 +241,21 @@ describe('BitcoinProcessor', () => {
     it('should get the corresponding bitcoin height given a hash', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
-      const hashSpy = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
-      const spy = mockRpcCall('getblock', [hash, 1], { hash, height });
+      const block: Block = {
+        hash: hash,
+        height: height,
+        transactions: [],
+        header: {
+          prevHash: 'previous_hash',
+          time: 1234
+        }
+      };
+
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(height));
+      const hashSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(Promise.resolve(hash));
+      const spy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      spy.and.returnValue(Promise.resolve(block));
+
       const actual = await bitcoinProcessor.time(hash);
       expect(actual.time).toEqual(height);
       expect(actual.hash).toEqual(hash);
@@ -383,36 +390,15 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  // function specific to bitcoin coin operations
-  function generateBitcoinTransaction (satoshis: number = 1, wif: string = testConfig.bitcoinWalletImportString): Transaction {
-    const keyObject: PrivateKey = (PrivateKey as any).fromWIF(wif);
-    const address = keyObject.toAddress();
-    const transaction = new Transaction();
-    transaction.to(address, satoshis);
-    transaction.change(address);
-    return transaction;
-  }
-
-  function generateUnspentCoin (satoshis: number): Transaction.UnspentOutput {
-    const transaction = generateBitcoinTransaction(satoshis);
-    return new Transaction.UnspentOutput({
-      txid: transaction.id,
-      vout: 0,
-      address: transaction.outputs[0].script.getAddressInfo(),
-      amount: transaction.outputs[0].satoshis * 0.00000001, // Satoshi amount
-      script: transaction.outputs[0].script
-    });
-  }
-
   describe('writeTransaction', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(lowLevelWarning + 1)
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
         expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(true);
@@ -424,11 +410,11 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(lowLevelWarning - 1)
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
         expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(true);
@@ -444,8 +430,8 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
-      const coin = generateUnspentCoin(0);
-      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+      const coin = BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         new Transaction.UnspentOutput({
           txid: coin.txId,
           vout: coin.outputIndex,
@@ -455,7 +441,7 @@ describe('BitcoinProcessor', () => {
         })
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake(() => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
       try {
@@ -472,11 +458,11 @@ describe('BitcoinProcessor', () => {
 
     it('should fail if broadcastTransaction fails', async (done) => {
       const bitcoinFee = 4000;
-      const getCoinsSpy = spyOn(bitcoinProcessor, 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        generateUnspentCoin(lowLevelWarning + 1)
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
+        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor, 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
         expect(transaction.getFee()).toEqual(bitcoinFee);
         expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
         return Promise.resolve(false);
@@ -491,88 +477,6 @@ describe('BitcoinProcessor', () => {
       } finally {
         done();
       }
-    });
-  });
-
-  describe('getBlockHash', () => {
-    it('should get the block hash', async () => {
-      const height = randomNumber();
-      const hash = randomString();
-      const spy = mockRpcCall('getblockhash', [height], hash);
-      const actual = await bitcoinProcessor['getBlockHash'](height);
-      expect(actual).toEqual(hash);
-      expect(spy).toHaveBeenCalled();
-    });
-  });
-
-  describe('getUnspentCoins', () => {
-    it('should query for unspent output coins given an address', async (done) => {
-      const coin = generateUnspentCoin(1);
-
-      const coinSpy = mockRpcCall('listunspent', [null, null, [coin.address.toString()]], [
-        {
-          txId: coin.txId,
-          outputIndex: coin.outputIndex,
-          address: coin.address,
-          script: coin.script,
-          satoshis: coin.satoshis
-        }
-      ]);
-      const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
-      expect(coinSpy).toHaveBeenCalled();
-      expect(actual[0].address).toEqual(coin.address);
-      expect(actual[0].txId).toEqual(coin.txId);
-      done();
-    });
-
-    it('should return empty if no coins were found', async (done) => {
-      const coin = generateUnspentCoin(1);
-      const coinSpy = mockRpcCall('listunspent', [null, null, [coin.address.toString()]], []);
-      const actual = await bitcoinProcessor['getUnspentCoins'](coin.address);
-      expect(coinSpy).toHaveBeenCalled();
-      expect(actual).toEqual([]);
-      done();
-    });
-  });
-
-  describe('broadcastTransaction', () => {
-    it('should serialize and broadcast a transaction', async (done) => {
-      const transaction = generateBitcoinTransaction();
-      // need to disable transaction serialization
-      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
-      const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
-      expect(actual).toBeTruthy();
-      expect(spy).toHaveBeenCalled();
-      done();
-    });
-
-    it('should throw if the request failed', async (done) => {
-      const transaction = generateBitcoinTransaction();
-      // need to disable transaction serialization
-      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
-      spy.and.throwError('test');
-      try {
-        await bitcoinProcessor['broadcastTransaction'](transaction);
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain('test');
-        expect(spy).toHaveBeenCalled();
-      } finally {
-        done();
-      }
-    });
-
-    it('should return false if the broadcast failed', async (done) => {
-      const transaction = generateBitcoinTransaction();
-      // need to disable transaction serialization
-      spyOn(transaction, 'serialize').and.callFake(() => transaction.toString());
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], []);
-      const actual = await bitcoinProcessor['broadcastTransaction'](transaction);
-      expect(actual).toBeFalsy();
-      expect(spy).toHaveBeenCalled();
-      done();
     });
   });
 
@@ -675,7 +579,7 @@ describe('BitcoinProcessor', () => {
       const hash = randomString();
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
       await bitcoinProcessor['processTransactions'](startBlock);
       expect(verifySpy).toHaveBeenCalled();
@@ -686,7 +590,8 @@ describe('BitcoinProcessor', () => {
 
     it('should use genesis if no start is specified', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      // tslint:disable-next-line: max-line-length
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(randomString()));
       await bitcoinProcessor['processTransactions']();
       expect(verifySpy).not.toHaveBeenCalled();
@@ -697,7 +602,8 @@ describe('BitcoinProcessor', () => {
 
     it('should throw if asked to start processing before genesis', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
+      // tslint:disable-next-line: max-line-length
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
         await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString() });
@@ -714,7 +620,8 @@ describe('BitcoinProcessor', () => {
 
     it('should throw if asked to process while the miners block height is below genesis', async (done) => {
       const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber - 1));
+      // tslint:disable-next-line: max-line-length
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinLedger'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber - 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
         await bitcoinProcessor['processTransactions']();
@@ -804,22 +711,11 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('getCurrentBlockHeight', () => {
-    it('should return the latest block', async (done) => {
-      const height = randomNumber();
-      const mock = mockRpcCall('getblockcount', [], height);
-      const actual = await bitcoinProcessor['getCurrentBlockHeight']();
-      expect(actual).toEqual(height);
-      expect(mock).toHaveBeenCalled();
-      done();
-    });
-  });
-
   describe('verifyBlock', () => {
     it('should return true if the hash matches given a block height', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const mock = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(hash);
+      const mock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(hash);
       const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeTruthy();
       expect(mock).toHaveBeenCalled();
@@ -829,7 +725,7 @@ describe('BitcoinProcessor', () => {
     it('should return false if the hash does not match given a block height', async (done) => {
       const height = randomNumber();
       const hash = randomString();
-      const mock = spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(randomString());
+      const mock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(randomString());
       const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeFalsy();
       expect(mock).toHaveBeenCalled();
@@ -840,11 +736,11 @@ describe('BitcoinProcessor', () => {
   describe('processBlock', () => {
 
     // creates a response object for Bitcoin
-    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<any> {
-      const tx: any[] = [];
+    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<BlockData> {
+      const tx: Transaction[] = [];
       const count = randomNumber(100) + 10;
       for (let i = 0; i < count; i++) {
-        const transaction = generateBitcoinTransaction(1, BitcoinProcessor.generatePrivateKey('testnet'));
+        const transaction = BitcoinDataGenerator.generateBitcoinTransaction(BitcoinProcessor.generatePrivateKey('testnet'), 1);
         // data generation
         if (data) {
           const hasData = data();
@@ -859,37 +755,13 @@ describe('BitcoinProcessor', () => {
             transaction.addData(Buffer.from(hasData));
           }
         }
-        const vout: any[] = [];
-        transaction.outputs.forEach((output, index) => {
-          vout.push({
-            value: output.satoshis,
-            n: index,
-            scriptPubKey: {
-              asm: output.script.toASM(),
-              hex: output.script.toHex(),
-              addresses: [
-                output.script.getAddressInfo()
-              ]
-            }
-          });
-        });
 
-        tx.push({
-          txid: transaction.id,
-          hash: transaction.id,
-          vin: [
-            { // every block in the mining reward because its easier and not verified by us
-              coinbase: randomString(),
-              sequence: randomNumber()
-            }
-          ],
-          vout
-        });
+        tx.push(transaction);
       }
       return {
         hash: randomString(),
         height: blockHeight,
-        tx
+        transactions: tx
       };
     }
 
@@ -905,8 +777,10 @@ describe('BitcoinProcessor', () => {
         return undefined;
       });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
+      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      rpcMock.and.returnValue(Promise.resolve(blockData));
+
       let seenTransactionNumbers: number[] = [];
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
         'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
@@ -938,8 +812,10 @@ describe('BitcoinProcessor', () => {
         return randomString();
       });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
+      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      rpcMock.and.returnValue(Promise.resolve(blockData));
+
       let seenTransactionNumbers: number[] = [];
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
         'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
@@ -962,15 +838,11 @@ describe('BitcoinProcessor', () => {
     it('should work with transactions that contain no vout parameter', async (done) => {
       const block = randomNumber();
       const blockData = await generateBlock(block);
-      blockData.tx = blockData.tx.map((transaction: any) => {
-        return {
-          txid: transaction.txid,
-          hash: transaction.hash
-        };
-      });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
+      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      rpcMock.and.returnValue(Promise.resolve(blockData));
+
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
         'addTransaction');
       const actual = await bitcoinProcessor['processBlock'](block);
@@ -1008,8 +880,10 @@ describe('BitcoinProcessor', () => {
       });
 
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
+      spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinLedger'], 'getBlock');
+      rpcMock.and.returnValue(Promise.resolve(blockData));
+
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
         'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
           expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
@@ -1022,76 +896,6 @@ describe('BitcoinProcessor', () => {
       expect(addTransaction).toHaveBeenCalled();
       expect(shouldFindIDs.length).toEqual(0);
       done();
-    });
-  });
-
-  describe('walletExists', () => {
-    it('should check if the wallet is watch only', async () => {
-      const address = randomString();
-      const spy = mockRpcCall('getaddressinfo', [address], {
-        address,
-        scriptPubKey: randomString(),
-        ismine: false,
-        solvable: true,
-        desc: 'Test Address data',
-        iswatchonly: true,
-        isscript: false,
-        iswitness: false,
-        pubkey: randomString(),
-        iscompressed: true,
-        ischange: false,
-        timestamp: 0,
-        labels: []
-      });
-      const actual = await bitcoinProcessor['walletExists'](address);
-      expect(actual).toBeTruthy();
-      expect(spy).toHaveBeenCalled();
-    });
-
-    it('should check if the wallet has labels', async () => {
-      const address = randomString();
-      const spy = mockRpcCall('getaddressinfo', [address], {
-        address,
-        scriptPubKey: randomString(),
-        ismine: false,
-        solvable: true,
-        desc: 'Test Address data',
-        iswatchonly: false,
-        isscript: false,
-        iswitness: false,
-        pubkey: randomString(),
-        iscompressed: true,
-        label: 'sidetree',
-        ischange: false,
-        timestamp: 0,
-        labels: [
-          {
-            name: 'sidetree',
-            purpose: 'receive'
-          }
-        ]
-      });
-      const actual = await bitcoinProcessor['walletExists'](address);
-      expect(actual).toBeTruthy();
-      expect(spy).toHaveBeenCalled();
-    });
-
-    it('should return false if it appears to be a random address', async () => {
-      const address = randomString();
-      const spy = mockRpcCall('getaddressinfo', [address], {
-        address,
-        scriptPubKey: randomString(),
-        ismine: false,
-        solvable: false,
-        iswatchonly: false,
-        isscript: true,
-        iswitness: false,
-        ischange: false,
-        labels: []
-      });
-      const actual = await bitcoinProcessor['walletExists'](address);
-      expect(actual).toBeFalsy();
-      expect(spy).toHaveBeenCalled();
     });
   });
 

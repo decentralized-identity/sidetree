@@ -7,7 +7,7 @@ import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
-import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 
@@ -118,17 +118,11 @@ export default class BitcoinProcessor {
     await this.transactionStore.initialize();
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
-    if (!await this.walletExists(address.toString())) {
+    if (!await this.bitcoinLedger.walletExists(address.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${address}. This can take up to 10 minutes.`);
-      const request = {
-        method: 'importpubkey',
-        params: [
-          this.privateKey.toPublicKey().toBuffer().toString('hex'),
-          'sidetree',
-          true
-        ]
-      };
-      await this.bitcoinLedger.SendGenericRequest(request, false);
+
+      const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
+      await this.bitcoinLedger.importPublicKey(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
     }
@@ -155,24 +149,19 @@ export default class BitcoinProcessor {
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
-      const blockHeight = await this.getCurrentBlockHeight();
-      hash = await this.getBlockHash(blockHeight);
+      const blockHeight = await this.bitcoinLedger.getCurrentBlockHeight();
+      hash = await this.bitcoinLedger.getBlockHash(blockHeight);
       return {
         time: blockHeight,
         hash
       };
     }
-    const request = {
-      method: 'getblock',
-      params: [
-        hash, // hash of the block
-        1 // 1 = block information
-      ]
-    };
-    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
+
+    const blockData = await this.bitcoinLedger.getBlock(hash, 1);
+
     return {
-      hash: response.hash,
-      time: response.height
+      hash: blockData.hash,
+      time: blockData.height
     };
   }
 
@@ -243,7 +232,7 @@ export default class BitcoinProcessor {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
     const address = this.privateKey.toAddress();
-    const unspentOutputs = await this.getUnspentCoins(address);
+    const unspentOutputs = await this.bitcoinLedger.getUnspentCoins(address);
 
     let totalSatoshis = unspentOutputs.reduce((total: number, coin: Transaction.UnspentOutput) => {
       return total + coin.satoshis;
@@ -273,7 +262,7 @@ export default class BitcoinProcessor {
     transaction.fee(fee);
     transaction.sign(this.privateKey);
 
-    if (!await this.broadcastTransaction(transaction)) {
+    if (!await this.bitcoinLedger.broadcastTransaction(transaction)) {
       const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
       console.error(error);
       throw error;
@@ -286,68 +275,6 @@ export default class BitcoinProcessor {
    */
   public async getServiceVersion (): Promise<ServiceVersionModel> {
     return this.serviceInfoProvider.getServiceVersion();
-  }
-
-  /**
-   * Gets the block hash for a given block height
-   * @param height The height to get a hash for
-   * @returns the block hash
-   */
-  private async getBlockHash (height: number): Promise<string> {
-    console.info(`Getting hash for block ${height}`);
-    const hashRequest = {
-      method: 'getblockhash',
-      params: [
-        height // height of the block
-      ]
-    };
-    return this.bitcoinLedger.SendGenericRequest(hashRequest, true);
-  }
-
-  /**
-   * Gets all unspent coins of a given address
-   * @param address Bitcoin address to get coins for
-   */
-  private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
-
-    // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
-    const addressToSearch = address.toString();
-    console.info(`Getting unspent coins for ${addressToSearch}`);
-    const request = {
-      method: 'listunspent',
-      params: [
-        null,
-        null,
-        [addressToSearch]
-      ]
-    };
-    const response: Array<any> = await this.bitcoinLedger.SendGenericRequest(request, true);
-
-    const unspentTransactions = response.map((coin) => {
-      return new Transaction.UnspentOutput(coin);
-    });
-
-    console.info(`Returning ${unspentTransactions.length} coins`);
-
-    return unspentTransactions;
-  }
-
-  /**
-   * Broadcasts a transaction to the bitcoin network
-   * @param transaction Transaction to broadcast
-   */
-  private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
-    const rawTransaction = transaction.serialize();
-    console.info(`Broadcasting transaction ${transaction.id}`);
-    const request = {
-      method: 'sendrawtransaction',
-      params: [
-        rawTransaction
-      ]
-    };
-    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
-
-    return response.length > 0;
   }
 
   /**
@@ -388,7 +315,7 @@ export default class BitcoinProcessor {
       startBlockHeight = this.genesisBlockNumber;
     }
     if (endBlockHeight === undefined) {
-      endBlockHeight = await this.getCurrentBlockHeight();
+      endBlockHeight = await this.bitcoinLedger.getCurrentBlockHeight();
     }
 
     if (startBlockHeight < this.genesisBlockNumber || endBlockHeight < this.genesisBlockNumber) {
@@ -448,19 +375,6 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Gets the current Bitcoin block height
-   * @returns the latest block number
-   */
-  private async getCurrentBlockHeight (): Promise<number> {
-    console.info('Getting current block height...');
-    const request = {
-      method: 'getblockcount'
-    };
-    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
-    return response;
-  }
-
-  /**
    * Given a Bitcoin block height and hash, verifies against the blockchain
    * @param height Block height to verify
    * @param hash Block hash to verify
@@ -468,7 +382,7 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
-    const responseData = await this.getBlockHash(height);
+    const responseData = await this.bitcoinLedger.getBlockHash(height);
 
     console.debug(`Retrieved block ${height} (${responseData})`);
     return hash === responseData;
@@ -481,32 +395,25 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
-    const hash = await this.getBlockHash(block);
-    const getBlockRequest = {
-      method: 'getblock',
-      params: [
-        hash,  // hash
-        2      // block and transaction information
-      ]};
+    const hash = await this.bitcoinLedger.getBlockHash(block);
+    const blockData = await this.bitcoinLedger.getBlock(hash, 2);
 
-    const responseData = await this.bitcoinLedger.SendGenericRequest(getBlockRequest, true);
-
-    const transactions = responseData.tx as Array<any>;
-    const blockHash = responseData.hash;
+    const transactions = blockData.transactions;
+    const blockHash = blockData.hash;
 
     // console.debug(`Block ${block} contains ${transactions.length} transactions`);
 
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
       // get the output coins in the transaction
-      if (!('vout' in transactions[transactionIndex])) {
+      const outputs = transactions[transactionIndex].outputs;
+
+      if (outputs.length <= 0) {
         // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
         continue;
       }
 
       try {
-        const outputs = transactions[transactionIndex].vout as Array<any>;
-
         await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash);
 
       } catch (e) {
@@ -521,7 +428,7 @@ export default class BitcoinProcessor {
   }
 
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
-    allVOuts: Array<any>,
+    allVOuts: Transaction.Output[],
     transactionIndex: number,
     transactionBlock: number,
     transactionHash: any): Promise<void> {
@@ -530,11 +437,11 @@ export default class BitcoinProcessor {
 
     for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
       // grab the scripts
-      const script = allVOuts[outputIndex].scriptPubKey;
+      const script = allVOuts[outputIndex].script;
 
       // console.debug(`Checking transaction ${transactionIndex} output coin ${outputIndex}: ${JSON.stringify(script)}`);
       // check for returned data for sidetree prefix
-      const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+      const hexDataMatches = script.toASM().match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
 
       if (!hexDataMatches || hexDataMatches.length === 0) {
         continue;
@@ -582,22 +489,5 @@ export default class BitcoinProcessor {
     return Promise.resolve({
       normalizedTransactionFee: 100
     });
-  }
-  /**
-   * Checks if the bitcoin peer has a wallet open for a given address
-   * @param address The bitcoin address to check
-   * @returns true if a wallet exists, false otherwise.
-   */
-  private async walletExists (address: string): Promise<boolean> {
-    console.info(`Checking if bitcoin wallet for ${address} exists`);
-    const request = {
-      method: 'getaddressinfo',
-      params: [
-        address
-      ]
-    };
-
-    const response = await this.bitcoinLedger.SendGenericRequest(request, true);
-    return response.labels.length > 0 || response.iswatchonly;
   }
 }
