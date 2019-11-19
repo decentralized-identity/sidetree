@@ -1,4 +1,4 @@
-import ISlidingWindowQuantileStore from '../../../lib/bitcoin/pof/interfaces/ISlidingWindowQuantileStore';
+import ISlidingWindowQuantileStore from '../../../lib/bitcoin/interfaces/ISlidingWindowQuantileStore';
 import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/pof/SlidingWindowQuantileCalculator';
 

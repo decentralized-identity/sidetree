@@ -1,6 +1,6 @@
 import RunLengthTransformer from './RunLengthTransformer';
 import ValueApproximator from './ValueApproximator';
-import ISlidingWindowQuantileStore from './interfaces/ISlidingWindowQuantileStore';
+import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileStore';
 
 /**
  * Frequency vector is an array of numbers representing frequencies of

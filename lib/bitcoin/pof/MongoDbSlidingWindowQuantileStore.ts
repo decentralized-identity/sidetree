@@ -1,5 +1,5 @@
-import ISlidingWindowQuantileStore from './interfaces/ISlidingWindowQuantileStore';
-import QuantileInfo from './models/QuantileInfo';
+import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileStore';
+import QuantileInfo from '../models/QuantileInfo';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 
 /**

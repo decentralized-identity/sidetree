@@ -1,16 +1,16 @@
 import * as httpStatus from 'http-status';
+import ErrorCode from '../common/SharedErrorCode';
+import MongoDbSlidingWindowQuantileStore from './pof/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import ErrorCode from '../common/SharedErrorCode';
-import FeeModel from '../common/models/FeeModel';
-import MongoDbSlidingWindowQuantileStore from './pof/MongoDbSlidingWindowQuantileStore';
-import ProofOfFeeConfig from './pof/models/ProofOfFeeConfig';
+import ProofOfFeeConfig from './models/ProofOfFeeConfig';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import ReservoirSampler from './pof/ReservoirSampler';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SlidingWindowQuantileCalculator from './pof/SlidingWindowQuantileCalculator';
+import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -321,7 +321,7 @@ export default class BitcoinProcessor {
   /**
    * Return proof-of-fee value for a particular block.
    */
-  public async fee (block: number): Promise<FeeModel | undefined> {
+  public async getFee (block: number): Promise<TransactionFeeModel | undefined> {
     const blockAfterHistoryOffset = Math.max(block - this.proofOfFeeConfig.historicalOffsetInBlocks, 0);
     const groupId = Math.floor(blockAfterHistoryOffset / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
@@ -550,30 +550,41 @@ export default class BitcoinProcessor {
     const transactionOutputs = transaction.vout as Array<any>;
 
     for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
-      // grab the scripts
-      const script = transactionOutputs[outputIndex].scriptPubKey;
 
-      // check for returned data for sidetree prefix
-      const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
-
-      if (!hexDataMatches || hexDataMatches.length === 0) {
-        continue;
-      }
-
-      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
+      const data = this.getSidetreeDataFromVOutIfExist(transactionOutputs[outputIndex]);
 
       // We do not check for multiple sidetree anchors; we would treat such
       // transactions as non-sidetree for updating the transaction store, but here
       // it seems better to consider this as a sidetree transaction and ignore it
       // for sampling purposes to eliminate potentially fraudelent transactions from
       // affecting the sample.
-      if (data.startsWith(this.sidetreePrefix)) {
+      if (data !== undefined) {
         return true;
       }
     }
 
     // non sidetree transaction
     return false;
+  }
+
+  private getSidetreeDataFromVOutIfExist (transactionOutput: any): string | undefined {
+      // grab the scripts
+    const script = transactionOutput.scriptPubKey;
+
+    // check for returned data for sidetree prefix
+    const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+
+    if (hexDataMatches && hexDataMatches.length !== 0) {
+
+      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
+
+      if (data.startsWith(this.sidetreePrefix)) {
+        return data.slice(this.sidetreePrefix.length);
+      }
+    }
+
+    // Nothing was found
+    return undefined;
   }
 
   private isGroupBoundary (block: number): boolean {
@@ -724,20 +735,10 @@ export default class BitcoinProcessor {
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
     for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
-      // grab the scripts
-      const script = allVOuts[outputIndex].scriptPubKey;
 
-      // console.debug(`Checking transaction ${transactionIndex} output coin ${outputIndex}: ${JSON.stringify(script)}`);
-      // check for returned data for sidetree prefix
-      const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
-
-      if (!hexDataMatches || hexDataMatches.length === 0) {
-        continue;
-      }
-
-      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
-      const isSidetreeTx = data.startsWith(this.sidetreePrefix);
-      const oneSidetreeTxAlreadyFound = sidetreeTxToAdd !== undefined;
+      const sidetreeData = this.getSidetreeDataFromVOutIfExist(allVOuts[outputIndex]);
+      const isSidetreeTx = (sidetreeData !== undefined);
+      const oneSidetreeTxAlreadyFound = (sidetreeTxToAdd !== undefined);
 
       if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
         throw new Error('The transaction has more then one sidetree anchor strings.');
@@ -748,21 +749,30 @@ export default class BitcoinProcessor {
           transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
-          anchorString: data.slice(this.sidetreePrefix.length),
-          transactionFeePaid: 100, // issue #216: read actual data from tx
-          normalizedTransactionFee: 100 // issue #216: read actual data from tx
+          anchorString: sidetreeData as string,
+
+          // We will fill the following information after we have make sure that this is
+          // indeed the transaction that we want to return. This is because the calculation
+          // of the following properties may be expensive.
+          transactionFeePaid: -1,
+          normalizedTransactionFee: -1
         };
       }
     }
 
     if (sidetreeTxToAdd !== undefined) {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
-      // there would've been an exception before. So add it to the store ...
-      sidetreeTxToAdd.transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
-      const fee = await this.fee(transactionBlock);
-      sidetreeTxToAdd.normalizedTransactionFee = fee!.normalizedTransactionFee;
+      // there would've been an exception before. So let's fill the missing information for the 
+      // transaction and return it
+      const transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
+      const normalizedFeeModel = await this.getFee(transactionBlock);
+
+      sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
+      sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel!.normalizedTransactionFee;
+
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
       await this.transactionStore.addTransaction(sidetreeTxToAdd);
+
       return true;
     }
 
@@ -770,21 +780,6 @@ export default class BitcoinProcessor {
     return false;
   }
 
-  /**
-   * Gets the normalized fee for the given block.
-   * @param block The block for which the fee is required.
-   */
-  public async getFee (block: number): Promise<{
-    normalizedTransactionFee: number
-  }> {
-
-    console.info(`Getting the normalized fee for the block number: ${block}`);
-
-    // Issue #216 return the actual data from the block
-    return Promise.resolve({
-      normalizedTransactionFee: 100
-    });
-  }
   /**
    * Checks if the bitcoin peer has a wallet open for a given address
    * @param address The bitcoin address to check

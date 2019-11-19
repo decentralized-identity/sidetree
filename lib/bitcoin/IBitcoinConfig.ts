@@ -1,4 +1,4 @@
-import ProofOfFeeConfig from './pof/models/ProofOfFeeConfig';
+import ProofOfFeeConfig from './models/ProofOfFeeConfig';
 
 /**
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.

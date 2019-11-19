@@ -932,7 +932,7 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'fee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
+      spyOn(bitcoinProcessor, 'getFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       let seenTransactionNumbers: number[] = [];
@@ -969,7 +969,7 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'fee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
+      spyOn(bitcoinProcessor, 'getFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       let seenTransactionNumbers: number[] = [];
@@ -1004,7 +1004,7 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'fee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
+      spyOn(bitcoinProcessor, 'getFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
@@ -1047,7 +1047,7 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'fee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
+      spyOn(bitcoinProcessor, 'getFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],

@@ -1,5 +1,5 @@
-import ISlidingWindowQuantileStore from '../../lib/bitcoin/pof/interfaces/ISlidingWindowQuantileStore';
-import QuantileInfo from '../../lib/bitcoin/pof/models/QuantileInfo';
+import ISlidingWindowQuantileStore from '../../lib/bitcoin/interfaces/ISlidingWindowQuantileStore';
+import QuantileInfo from '../../lib/bitcoin/models/QuantileInfo';
 
 /**
  * Mock implementation of sliding window quantile store for testing.
