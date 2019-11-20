@@ -782,7 +782,7 @@ export default class BitcoinProcessor {
       const normalizedFeeModel = await this.getFee(transactionBlock);
 
       sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
-      sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel!.normalizedTransactionFee;
+      sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel.normalizedTransactionFee;
 
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
       await this.transactionStore.addTransaction(sidetreeTxToAdd);
