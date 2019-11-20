@@ -3,7 +3,7 @@ import ErrorCode from '../common/SharedErrorCode';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import ProofOfFeeConfig from './models/ProofOfFeeConfig';
+import ProtocolParameters from './ProtocolParameters';
 import ReadableStream from '../common/ReadableStream';
 import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
@@ -85,8 +85,6 @@ export default class BitcoinProcessor {
   private serviceInfo: ServiceInfo;
 
   /** proof of fee configuration */
-  private readonly proofOfFeeConfig: ProofOfFeeConfig;
-
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
 
   private readonly transactionSampler: ReservoirSampler;
@@ -102,16 +100,14 @@ export default class BitcoinProcessor {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
-    this.proofOfFeeConfig = config.proofOfFeeConfig;
 
-    const transactionFeeQuantileConfig = config.proofOfFeeConfig.transactionFeeQuantileConfig;
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
-    this.quantileCalculator = new SlidingWindowQuantileCalculator(transactionFeeQuantileConfig.feeApproximation,
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(ProtocolParameters.feeApproximation,
       BitcoinProcessor.satoshiPerBitcoin,
-      transactionFeeQuantileConfig.windowSizeInGroups,
-      transactionFeeQuantileConfig.quantileMeasure,
+      ProtocolParameters.windowSizeInGroups,
+      ProtocolParameters.quantileMeasure,
       mongoQuantileStore);
-    this.transactionSampler = new ReservoirSampler(transactionFeeQuantileConfig.sampleSizePerGroup);
+    this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
 
     /// Bitcore has a type file error on PrivateKey
     try {
@@ -336,8 +332,8 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const blockAfterHistoryOffset = Math.max(block - this.proofOfFeeConfig.historicalOffsetInBlocks, 0);
-    const groupId = Math.floor(blockAfterHistoryOffset / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
+    const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
+    const groupId = Math.floor(blockAfterHistoryOffset / ProtocolParameters.groupSizeInBlocks);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
     if (quantileValue) {
@@ -480,8 +476,8 @@ export default class BitcoinProcessor {
    * value.
    */
   private roundToGroupBoundary (block: number): number {
-    const groupId = Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
-    return groupId * this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks;
+    const groupId = Math.floor(block / ProtocolParameters.groupSizeInBlocks);
+    return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
   /**
@@ -602,11 +598,11 @@ export default class BitcoinProcessor {
   }
 
   private isGroupBoundary (block: number): boolean {
-    return (block + 1) % this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks === 0;
+    return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
 
   private getgroupId (block: number): number {
-    return Math.floor(block / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
+    return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
   }
 
   private async processBlockForPofCalculation (blockHeight: number, blockData: any): Promise<void> {
@@ -627,7 +623,7 @@ export default class BitcoinProcessor {
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
       const inputsCount = (transaction.vin as Array<any>).length;
-      if (!isSidetreeTransaction && inputsCount <= this.proofOfFeeConfig.maxTransactionInputCount) {
+      if (!isSidetreeTransaction && inputsCount <= ProtocolParameters.maxTransactionInputCount) {
         this.transactionSampler.addElement(transaction.txid);
       }
     }

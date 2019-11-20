@@ -1,9 +1,8 @@
-
 /**
- * Defines configuration of approximate sliding windows used in
- * proof of fee calculation.
+ * Defines configuration of proof of fee calculation.
  */
-interface SlidingWindowQuantileConfig {
+export default interface ProtocolParameters {
+
   /** Number of contiguous blocks that go into a group */
   groupSizeInBlocks: number;
 
@@ -23,13 +22,7 @@ interface SlidingWindowQuantileConfig {
 
   /** Quantile measure we use for proof of fee; e.g., 0.5 would be the median */
   quantileMeasure: number;
-}
 
-/**
- * Defines configuration of proof of fee calculation.
- */
-export default interface ProofOfFeeConfig {
-  transactionFeeQuantileConfig: SlidingWindowQuantileConfig;
   maxTransactionInputCount: number;
   historicalOffsetInBlocks: number;
 }

@@ -1,0 +1,10 @@
+{
+  "groupSizeInBlocks": 100,
+  "windowSizeInGroups": 10,
+  "feeApproximation": 1.5,
+  "sampleSizePerGroup": 25,
+  "quantileMeasure": 0.5,
+
+  "maxTransactionInputCount": 100,
+  "historicalOffsetInBlocks": 5
+}

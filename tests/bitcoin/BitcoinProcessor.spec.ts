@@ -22,18 +22,6 @@ function randomBlock (above: number = 0): IBlockInfo {
 }
 
 describe('BitcoinProcessor', () => {
-  const proofOfFeeConfig = {
-    transactionFeeQuantileConfig: {
-      groupSizeInBlocks: 1,
-      windowSizeInGroups: 1,
-      feeApproximation: 2,
-      sampleSizePerGroup: 1,
-      quantileMeasure: 0.5
-    },
-    maxTransactionInputCount: 20,
-    historicalOffsetInBlocks: 1
-  };
-
   const testConfig: IBitcoinConfig = {
     bitcoinPeerUri: 'http://localhost:18332',
     bitcoinRpcUsername: 'admin',
@@ -47,8 +35,7 @@ describe('BitcoinProcessor', () => {
     transactionFetchPageSize: 100,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
-    transactionPollPeriodInSeconds: 60,
-    proofOfFeeConfig
+    transactionPollPeriodInSeconds: 60
   };
 
   const privateKey: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
@@ -126,8 +113,7 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined,
-        proofOfFeeConfig
+        transactionPollPeriodInSeconds: undefined
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
@@ -158,8 +144,7 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined,
-        proofOfFeeConfig
+        transactionPollPeriodInSeconds: undefined
       };
 
       try {
@@ -803,7 +788,7 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('revertBlockchainCache', () => {
+  fdescribe('revertBlockchainCache', () => {
     it('should exponentially revert transactions', async (done) => {
       const transactions = createTransactions(10).sort((a, b) => b.transactionNumber - a.transactionNumber);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],

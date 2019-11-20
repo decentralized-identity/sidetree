@@ -53,6 +53,11 @@ export default class ValueApproximator {
    * Get the integer part of logarithm of a number n with base b.
    */
   private static getLog (n: number, b: number): number {
+    // Just return the number if the base == 1
+    if (b === 1) {
+      return n;
+    }
+
     let i = 1;
     let log = 0;
     for (log = 0 ; i < n ; log++) {
