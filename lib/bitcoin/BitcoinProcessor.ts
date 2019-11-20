@@ -321,7 +321,21 @@ export default class BitcoinProcessor {
   /**
    * Return proof-of-fee value for a particular block.
    */
-  public async getFee (block: number): Promise<TransactionFeeModel | undefined> {
+  public async getFee (block: number): Promise<TransactionFeeModel> {
+
+    if (block < this.genesisBlockNumber) {
+      const error = `The input block number must be greater than: ${this.genesisBlockNumber}`;
+      console.error(error);
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    }
+
+    const currentBlockNumber = await this.getCurrentBlockHeight();
+    if (block > currentBlockNumber) {
+      const error = `The input block number must be less than: ${currentBlockNumber}`;
+      console.error(error);
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    }
+
     const blockAfterHistoryOffset = Math.max(block - this.proofOfFeeConfig.historicalOffsetInBlocks, 0);
     const groupId = Math.floor(blockAfterHistoryOffset / this.proofOfFeeConfig.transactionFeeQuantileConfig.groupSizeInBlocks);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
@@ -330,7 +344,7 @@ export default class BitcoinProcessor {
       return { normalizedTransactionFee: quantileValue };
     }
 
-    return undefined;
+    throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCouldNotBeCaclculated);
   }
 
   /**

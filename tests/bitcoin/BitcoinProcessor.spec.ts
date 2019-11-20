@@ -513,6 +513,60 @@ describe('BitcoinProcessor', () => {
     });
   });
 
+  describe('getFee', () => {
+
+    let mockedCurrentHeight: number;
+    let validBlockHeight: number;
+
+    beforeEach(() => {
+      mockedCurrentHeight = bitcoinProcessor['genesisBlockNumber'] + 200;
+      validBlockHeight = mockedCurrentHeight - 50;
+
+      spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(mockedCurrentHeight));
+    });
+
+    it('should throw if the input is less than the genesis block', async () => {
+      try {
+        await bitcoinProcessor.getFee(0);
+        fail('should have failed');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+      }
+    });
+
+    it('should throw if the input is greter than the current block height.', async () => {
+
+      try {
+        await bitcoinProcessor.getFee(mockedCurrentHeight + 1);
+        fail('should have failed');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+      }
+    });
+
+    it('should throw if the the quantile calculator does not return a value.', async () => {
+      spyOn(bitcoinProcessor['quantileCalculator'], 'getQuantile').and.returnValue(undefined);
+
+      try {
+        await bitcoinProcessor.getFee(validBlockHeight);
+        fail('should have failed');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+        expect(error.code).toEqual(ErrorCode.NormalizedFeeCouldNotBeCaclculated);
+      }
+    });
+
+    it('should return the value from the quantile calculator.', async () => {
+      spyOn(bitcoinProcessor['quantileCalculator'], 'getQuantile').and.returnValue(509);
+
+      const response = await bitcoinProcessor.getFee(validBlockHeight);
+      expect(response).toBeDefined();
+      expect(response.normalizedTransactionFee).toEqual(509);
+    });
+  });
+
   describe('getBlockHash', () => {
     it('should get the block hash', async () => {
       const height = randomNumber();
