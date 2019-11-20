@@ -1163,6 +1163,8 @@ describe('BitcoinProcessor', () => {
         const txnSamplerClearSpy = spyOn(bitcoinProcessor['transactionSampler'], 'clear');
         const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
 
+        const mockedSampleTxns = [ 'abc', '123', '23k', '35d', '4', 'tr', 'afe', '12d', '3rf' ];
+        spyOn(bitcoinProcessor['transactionSampler'], 'getSample').and.returnValue(mockedSampleTxns);
         spyOn(bitcoinProcessor['transactionSampler'], 'addElement').and.returnValue(undefined);
         spyOn(bitcoinProcessor, 'isGroupBoundary' as any).and.returnValue(true);
 
