@@ -337,7 +337,7 @@ Two forms of string can be passed in the URI:
 
    The latest DID Document will be returned if found.
 
-1. DID with `initial-values` DID parameter: `did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>`
+2. DID with `initial-values` DID parameter: `did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>`
 
    e.g.
    ```did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A;initial-values=ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ```
