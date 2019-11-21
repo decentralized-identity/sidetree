@@ -22,7 +22,6 @@ function randomBlock (above: number = 0): IBlockInfo {
 }
 
 describe('BitcoinProcessor', () => {
-
   const testConfig: IBitcoinConfig = {
     bitcoinPeerUri: 'http://localhost:18332',
     bitcoinRpcUsername: 'admin',
@@ -499,6 +498,60 @@ describe('BitcoinProcessor', () => {
     });
   });
 
+  describe('getNormalizedFee', () => {
+
+    let mockedCurrentHeight: number;
+    let validBlockHeight: number;
+
+    beforeEach(() => {
+      mockedCurrentHeight = bitcoinProcessor['genesisBlockNumber'] + 200;
+      validBlockHeight = mockedCurrentHeight - 50;
+
+      spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(mockedCurrentHeight));
+    });
+
+    it('should throw if the input is less than the genesis block', async () => {
+      try {
+        await bitcoinProcessor.getNormalizedFee(0);
+        fail('should have failed');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+      }
+    });
+
+    it('should throw if the input is greter than the current block height.', async () => {
+
+      try {
+        await bitcoinProcessor.getNormalizedFee(mockedCurrentHeight + 1);
+        fail('should have failed');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+      }
+    });
+
+    it('should throw if the the quantile calculator does not return a value.', async () => {
+      spyOn(bitcoinProcessor['quantileCalculator'], 'getQuantile').and.returnValue(undefined);
+
+      try {
+        await bitcoinProcessor.getNormalizedFee(validBlockHeight);
+        fail('should have failed');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.INTERNAL_SERVER_ERROR);
+        expect(error.code).toEqual(ErrorCode.NormalizedFeeCouldNotBeCaclculated);
+      }
+    });
+
+    it('should return the value from the quantile calculator.', async () => {
+      spyOn(bitcoinProcessor['quantileCalculator'], 'getQuantile').and.returnValue(509);
+
+      const response = await bitcoinProcessor.getNormalizedFee(validBlockHeight);
+      expect(response).toBeDefined();
+      expect(response.normalizedTransactionFee).toEqual(509);
+    });
+  });
+
   describe('getBlockHash', () => {
     it('should get the block hash', async () => {
       const height = randomNumber();
@@ -748,12 +801,19 @@ describe('BitcoinProcessor', () => {
       });
       const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
+      const revertQuantileState = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
+      const getFirstBlockInGroupSpy = spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.callFake((block: number) => {
+        return block;
+      });
+
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual).toEqual(transactions[1].transactionTime);
       expect(transactionCount).toHaveBeenCalled();
       expect(exponentialTransactions).toHaveBeenCalled();
       expect(firstValid).toHaveBeenCalled();
       expect(removeTransactions).toHaveBeenCalled();
+      expect(revertQuantileState).toHaveBeenCalled();
+      expect(getFirstBlockInGroupSpy).toHaveBeenCalled();
       done();
     });
 
@@ -775,12 +835,19 @@ describe('BitcoinProcessor', () => {
       });
       const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
+      const revertQuantileState = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
+      const getFirstBlockInGroupSpy = spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.callFake((block: number) => {
+        return block;
+      });
+
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual).toEqual(transactions[0].transactionTime);
       expect(transactionCount).toHaveBeenCalledTimes(2);
       expect(exponentialTransactions).toHaveBeenCalledTimes(2);
       expect(firstValid).toHaveBeenCalledTimes(2);
       expect(removeTransactions).toHaveBeenCalledTimes(2);
+      expect(revertQuantileState).toHaveBeenCalled();
+      expect(getFirstBlockInGroupSpy).toHaveBeenCalled();
       done();
     });
 
@@ -799,6 +866,7 @@ describe('BitcoinProcessor', () => {
           transactions = [];
           return Promise.resolve();
         });
+      spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual).toEqual(testConfig.genesisBlockNumber);
       expect(transactionCount).toHaveBeenCalled();
@@ -806,6 +874,19 @@ describe('BitcoinProcessor', () => {
       expect(firstValid).toHaveBeenCalled();
       expect(removeTransactions).toHaveBeenCalled();
       done();
+    });
+  });
+
+  describe('getFirstBlockInGroup', () => {
+    it('should round the value correctly', async () => {
+      // The expected values are dependent upon the protocol-parameters.json so if those values
+      // are changed, these expected value may as well
+
+      const actualRoundDown = bitcoinProcessor['getFirstBlockInGroup'](84);
+      expect(actualRoundDown).toEqual(0);
+
+      const actualRoundUp = bitcoinProcessor['getFirstBlockInGroup'](124);
+      expect(actualRoundUp).toEqual(100);
     });
   });
 
@@ -910,6 +991,10 @@ describe('BitcoinProcessor', () => {
         return undefined;
       });
       const blockHash = randomString();
+      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       let seenTransactionNumbers: number[] = [];
@@ -943,6 +1028,10 @@ describe('BitcoinProcessor', () => {
         return randomString();
       });
       const blockHash = randomString();
+      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       let seenTransactionNumbers: number[] = [];
@@ -974,6 +1063,10 @@ describe('BitcoinProcessor', () => {
         };
       });
       const blockHash = randomString();
+      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
@@ -1013,6 +1106,10 @@ describe('BitcoinProcessor', () => {
       });
 
       const blockHash = randomString();
+      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
@@ -1028,6 +1125,70 @@ describe('BitcoinProcessor', () => {
       expect(shouldFindIDs.length).toEqual(0);
       done();
     });
+
+    describe('processBlockForPofCalculation', async () => {
+      it('should only add the non-sidetree transactions to the sampler.', async (done) => {
+        const block = randomNumber();
+        let numOfNonSidetreeTransactions = 0;
+        const blockData = await generateBlock(block, () => {
+          if (Math.random() > 0.8) {
+            const id = randomString();
+            return testConfig.sidetreeTransactionPrefix + id;
+          }
+
+          numOfNonSidetreeTransactions++;
+          return randomString();
+        });
+
+        const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
+        const txnSamplerAddSpy = spyOn(bitcoinProcessor['transactionSampler'], 'addElement').and.returnValue(undefined);
+
+        await bitcoinProcessor['processBlockForPofCalculation'](block, blockData);
+        expect(txnSamplerAddSpy.calls.count()).toEqual(numOfNonSidetreeTransactions);
+        expect(txnSamplerResetSpy).toHaveBeenCalled();
+        done();
+      });
+
+      it('should add values to the quantile calculator only if we have reached the target group count', async (done) => {
+        const block = randomNumber();
+        const blockData = await generateBlock(block, () => {
+          if (Math.random() > 0.2) {
+            const id = randomString();
+            return testConfig.sidetreeTransactionPrefix + id;
+          }
+
+          return randomString();
+        });
+
+        const txnSamplerClearSpy = spyOn(bitcoinProcessor['transactionSampler'], 'clear');
+        const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
+
+        const mockedSampleTxns = [ 'abc', '123', '23k', '35d', '4', 'tr', 'afe', '12d', '3rf' ];
+        spyOn(bitcoinProcessor['transactionSampler'], 'getSample').and.returnValue(mockedSampleTxns);
+        spyOn(bitcoinProcessor['transactionSampler'], 'addElement').and.returnValue(undefined);
+        spyOn(bitcoinProcessor, 'isGroupBoundary' as any).and.returnValue(true);
+
+        let mockedTransactionFees = new Array<number>();
+        spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.callFake((_id: any) => {
+          const fee = randomNumber();
+          mockedTransactionFees.push(fee);
+          return fee;
+        });
+
+        const expectedGroupId = bitcoinProcessor['getGroupId'](block);
+        const quantileCalculatorAddSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'add').and.callFake(async (groupId, fees) => {
+          expect(groupId).toEqual(expectedGroupId);
+          expect(fees).toEqual(mockedTransactionFees);
+        });
+
+        await bitcoinProcessor['processBlockForPofCalculation'](block, blockData);
+        expect(quantileCalculatorAddSpy).toHaveBeenCalled();
+        expect(txnSamplerClearSpy).toHaveBeenCalled();
+        expect(txnSamplerResetSpy).toHaveBeenCalled();
+        done();
+      });
+    });
+
   });
 
   describe('walletExists', () => {

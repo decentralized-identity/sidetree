@@ -2,6 +2,7 @@
  * Common error codes used across services.
  */
 export default {
+  BlockchainTimeOutOfRange: 'blockchain_time_out_of_range',
   InvalidTransactionNumberOrTimeHash: 'invalid_transaction_number_or_time_hash',
-  BlockchainTimeOutOfRange: 'blockchain_time_out_of_range'
+  NormalizedFeeCouldNotBeCaclculated: 'normalized_fee_could_not_be_calculated'
 };
