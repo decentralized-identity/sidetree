@@ -77,20 +77,20 @@ export default class SlidingWindowQuantileCalculator {
   /** Initialize self from state stored in mongo store */
   public async initialize (): Promise<void> {
     await this.mongoStore.initialize();
-    const firstgroupId = await this.mongoStore.getFirstGroupId();
-    const lastgroupId = await this.mongoStore.getLastGroupId();
+    const firstGroupId = await this.mongoStore.getFirstGroupId();
+    const lastGroupId = await this.mongoStore.getLastGroupId();
 
     this.frequencyVectorAggregated.fill(0);
     this.slidingWindow = new Array<FrequencyVector>();
-    this.prevgroupId = lastgroupId;
+    this.prevgroupId = lastGroupId;
 
-    if (firstgroupId !== undefined) {
-      for (let groupId = firstgroupId ; groupId <= lastgroupId! ; groupId++) {
+    if (firstGroupId !== undefined) {
+      for (let groupId = firstGroupId ; groupId <= lastGroupId! ; groupId++) {
         const quantileInfo = (await this.mongoStore.get(groupId))!;
 
         this.historicalQuantiles.set(groupId, quantileInfo.quantile);
 
-        if (groupId + this.slidingWindowSize > lastgroupId!) {
+        if (groupId + this.slidingWindowSize > lastGroupId!) {
           const groupFrequencyVector = RunLengthTransformer.decode(quantileInfo.groupFreqVector);
           this.slidingWindow.push(groupFrequencyVector);
 

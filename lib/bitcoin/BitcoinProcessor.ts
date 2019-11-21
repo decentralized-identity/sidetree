@@ -317,23 +317,23 @@ export default class BitcoinProcessor {
   /**
    * Return proof-of-fee value for a particular block.
    */
-  public async getFee (block: number): Promise<TransactionFeeModel> {
+  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
 
     if (block < this.genesisBlockNumber) {
-      const error = `The input block number must be greater than: ${this.genesisBlockNumber}`;
+      const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
     const currentBlockNumber = await this.getCurrentBlockHeight();
     if (block > currentBlockNumber) {
-      const error = `The input block number must be less than: ${currentBlockNumber}`;
+      const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
     const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
-    const groupId = Math.floor(blockAfterHistoryOffset / ProtocolParameters.groupSizeInBlocks);
+    const groupId = this.getGroupId(blockAfterHistoryOffset);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
     if (quantileValue) {
@@ -475,8 +475,8 @@ export default class BitcoinProcessor {
    * This function rounds a block to the first block in its group and returns that
    * value.
    */
-  private roundToGroupBoundary (block: number): number {
-    const groupId = Math.floor(block / ProtocolParameters.groupSizeInBlocks);
+  private getFirstBlockInGroup (block: number): number {
+    const groupId = this.getGroupId(block);
     return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
@@ -496,7 +496,7 @@ export default class BitcoinProcessor {
       if (firstValidTransaction) {
         // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a group
         // boundary to simplify resetting proof-of-fee state which is maintained per group.
-        let revertToBlockNumber = this.roundToGroupBoundary(firstValidTransaction.transactionTime);
+        let revertToBlockNumber = this.getFirstBlockInGroup(firstValidTransaction.transactionTime);
 
         // The number that represents the theoritical last possible transaction written with a block number
         // less than revertToBlockNumber
@@ -601,7 +601,7 @@ export default class BitcoinProcessor {
     return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
 
-  private getgroupId (block: number): number {
+  private getGroupId (block: number): number {
     return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
   }
 
@@ -623,7 +623,7 @@ export default class BitcoinProcessor {
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
       const inputsCount = (transaction.vin as Array<any>).length;
-      if (!isSidetreeTransaction && inputsCount <= ProtocolParameters.maxTransactionInputCount) {
+      if (!isSidetreeTransaction && inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
         this.transactionSampler.addElement(transaction.txid);
       }
     }
@@ -638,7 +638,7 @@ export default class BitcoinProcessor {
         sampledTransactionFees.push(transactionFee);
       }
 
-      const groupId = this.getgroupId(blockHeight);
+      const groupId = this.getGroupId(blockHeight);
       await this.quantileCalculator.add(groupId, sampledTransactionFees);
 
       // Reset the sampler for the next group
@@ -775,7 +775,7 @@ export default class BitcoinProcessor {
       // there would've been an exception before. So let's fill the missing information for the
       // transaction and return it
       const transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
-      const normalizedFeeModel = await this.getFee(transactionBlock);
+      const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
       sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel.normalizedTransactionFee;

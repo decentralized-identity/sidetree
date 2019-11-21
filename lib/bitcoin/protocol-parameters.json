@@ -5,6 +5,6 @@
   "sampleSizePerGroup": 25,
   "quantileMeasure": 0.5,
 
-  "maxTransactionInputCount": 100,
+  "maxInputCountForSampledTransaction": 100,
   "historicalOffsetInBlocks": 5
 }

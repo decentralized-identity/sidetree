@@ -23,6 +23,6 @@ export default interface ProtocolParameters {
   /** Quantile measure we use for proof of fee; e.g., 0.5 would be the median */
   quantileMeasure: number;
 
-  maxTransactionInputCount: number;
+  maxInputCountForSampledTransaction: number;
   historicalOffsetInBlocks: number;
 }
