@@ -508,6 +508,7 @@ describe('BitcoinProcessor', () => {
       validBlockHeight = mockedCurrentHeight - 50;
 
       spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(mockedCurrentHeight));
+      bitcoinProcessor['lastProcessedBlock'] = { height: mockedCurrentHeight, hash: 'mocked_hash' };
     });
 
     it('should throw if the input is less than the genesis block', async () => {
@@ -520,7 +521,7 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should throw if the input is greater than the current block height.', async () => {
+    it('should throw if the input is greater than the last processed block height.', async () => {
 
       try {
         await bitcoinProcessor.getNormalizedFee(mockedCurrentHeight + 1);

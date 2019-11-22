@@ -324,7 +324,10 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const currentBlockNumber = this.lastProcessedBlock ? this.lastProcessedBlock.height : await this.getCurrentBlockHeight();
+    // Our code pattern dictates that the initialize() call must be finished before the service is ready to
+    // process any client requests so we can assume that hte lastProcessedBlock variable is actually set
+    // and not undefined at this point.
+    const currentBlockNumber = this.lastProcessedBlock!.height;
     if (block > currentBlockNumber) {
       const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
       console.error(error);
