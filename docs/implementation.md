@@ -465,7 +465,6 @@ HTTP/1.1 400 Bad Request
 ```
 
 #### Response example - Error while computing the normalized fee.
-
 ```http
 HTTP/1.1 500 Internal Server Error
 
