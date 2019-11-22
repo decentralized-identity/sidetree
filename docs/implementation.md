@@ -456,6 +456,14 @@ HTTP/1.1 200 OK
 }
 ```
 
+#### Response example - Blockchain time given is out of computable range.	
+```http
+HTTP/1.1 500 Internal Server Error
+{
+  "code": "blockchain_time_out_of_range"
+}
+```
+
 #### Response example - Error while computing the normalized fee.
 
 ```http
