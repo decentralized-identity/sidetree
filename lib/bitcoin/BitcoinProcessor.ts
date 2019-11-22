@@ -77,7 +77,7 @@ export default class BitcoinProcessor {
   public lowBalanceNoticeDays: number;
 
   /** Last seen block */
-  private lastSeenBlock: IBlockInfo | undefined;
+  private lastProcessedBlock: IBlockInfo | undefined;
 
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
@@ -102,8 +102,7 @@ export default class BitcoinProcessor {
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
-    this.quantileCalculator = new SlidingWindowQuantileCalculator(ProtocolParameters.feeApproximation,
-      BitcoinProcessor.satoshiPerBitcoin,
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
       ProtocolParameters.windowSizeInGroups,
       ProtocolParameters.quantileMeasure,
       mongoQuantileStore);
@@ -169,10 +168,10 @@ export default class BitcoinProcessor {
     const lastKnownTransaction = await this.transactionStore.getLastTransaction();
     if (lastKnownTransaction) {
       console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
-      this.lastSeenBlock = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
-      this.lastSeenBlock = await this.processTransactions(this.lastSeenBlock);
+      const startingBlock: IBlockInfo = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
+      await this.processTransactions(startingBlock);
     } else {
-      this.lastSeenBlock = await this.processTransactions();
+      await this.processTransactions();
     }
     // disabling floating promise lint since periodicPoll should just float in the background event loop
     /* tslint:disable-next-line:no-floating-promises */
@@ -325,7 +324,10 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const currentBlockNumber = await this.getCurrentBlockHeight();
+    // Our code pattern dictates that the initialize() call must be finished before the service is ready to
+    // process any client requests so we can assume that hte lastProcessedBlock variable is actually set
+    // and not undefined at this point.
+    const currentBlockNumber = this.lastProcessedBlock!.height;
     if (block > currentBlockNumber) {
       const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
       console.error(error);
@@ -340,7 +342,8 @@ export default class BitcoinProcessor {
       return { normalizedTransactionFee: quantileValue };
     }
 
-    throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCouldNotBeCaclculated);
+    console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
+    throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCannotBeComputed);
   }
 
   /**
@@ -423,8 +426,7 @@ export default class BitcoinProcessor {
     }
 
     try {
-      const syncedTo = await this.processTransactions(this.lastSeenBlock);
-      this.lastSeenBlock = syncedTo;
+      await this.processTransactions(this.lastProcessedBlock);
     } catch (error) {
       console.error(error);
     } finally {
@@ -439,12 +441,15 @@ export default class BitcoinProcessor {
    * @returns The block height and hash it processed to
    */
   private async processTransactions (startBlock?: IBlockInfo, endBlockHeight?: number): Promise<IBlockInfo> {
+    console.info(`Starting processTransaction at: ${Date.now()}`);
+
     let startBlockHeight: number;
     if (startBlock) {
       const startValid = await this.verifyBlock(startBlock.height, startBlock.hash);
       startBlockHeight = startBlock.height;
       if (!startValid) {
-        startBlockHeight = await this.revertBlockchainCache();
+        this.lastProcessedBlock = await this.revertBlockchainCache();
+        startBlockHeight = this.lastProcessedBlock.height;
       }
     } else {
       startBlockHeight = this.genesisBlockNumber;
@@ -459,15 +464,17 @@ export default class BitcoinProcessor {
 
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
-    for (let blockHeight = startBlockHeight; blockHeight < endBlockHeight; blockHeight++) {
-      await this.processBlock(blockHeight);
+    for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
+      const processedBlockHash = await this.processBlock(blockHeight);
+
+      this.lastProcessedBlock = {
+        height: blockHeight,
+        hash: processedBlockHash
+      };
     }
-    const hash = await this.processBlock(endBlockHeight);
+
     console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
-    return {
-      hash,
-      height: endBlockHeight
-    };
+    return this.lastProcessedBlock!;
   }
 
   /**
@@ -484,7 +491,7 @@ export default class BitcoinProcessor {
    * Begins to revert the blockchain cache until consistent, returns last good height
    * @returns last valid block height before the fork
    */
-  private async revertBlockchainCache (): Promise<number> {
+  private async revertBlockchainCache (): Promise<IBlockInfo> {
     console.info('Reverting transactions');
 
     // Keep reverting transactions until a valid transaction is found.
@@ -512,7 +519,10 @@ export default class BitcoinProcessor {
         await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToBlockNumber + 1);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
-        return revertToBlockNumber;
+        return {
+          height: revertToBlockNumber,
+          hash: await this.getBlockHash(revertToBlockNumber)
+        };
       }
 
       // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
@@ -526,7 +536,10 @@ export default class BitcoinProcessor {
 
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
-    return this.genesisBlockNumber;
+    return {
+      height: this.genesisBlockNumber,
+      hash: await this.getBlockHash(this.genesisBlockNumber)
+    };
   }
 
   /**

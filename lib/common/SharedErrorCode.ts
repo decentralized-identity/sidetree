@@ -4,5 +4,5 @@
 export default {
   BlockchainTimeOutOfRange: 'blockchain_time_out_of_range',
   InvalidTransactionNumberOrTimeHash: 'invalid_transaction_number_or_time_hash',
-  NormalizedFeeCouldNotBeCaclculated: 'normalized_fee_could_not_be_calculated'
+  NormalizedFeeCannotBeComputed: 'normalized_fee_cannot_be_computed'
 };
