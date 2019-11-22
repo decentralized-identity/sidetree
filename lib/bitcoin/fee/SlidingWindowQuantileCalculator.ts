@@ -28,6 +28,10 @@ export default class SlidingWindowQuantileCalculator {
   private valueApproximator: ValueApproximator;
 
   /**
+   * The value to use as an input to the ValueApproximator.
+   */
+  private readonly feeApproximate: number = 2;
+  /**
    * Size of a frequency vector; 1 + max normalized value
    */
   private frequencyVectorSize: number;
@@ -59,13 +63,12 @@ export default class SlidingWindowQuantileCalculator {
    * approximation paramenters.
    */
   public constructor (
-    approximation: number,  // approximation used to round up values (to reduce storage)
     maxValue: number,  // all values above maxValue are rounded down by maxValue
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
     private readonly mongoStore: ISlidingWindowQuantileStore
     ) {
-    this.valueApproximator = new ValueApproximator(approximation, maxValue);
+    this.valueApproximator = new ValueApproximator(this.feeApproximate, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize).fill(0);

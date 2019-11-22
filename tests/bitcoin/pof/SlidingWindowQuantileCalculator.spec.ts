@@ -3,7 +3,6 @@ import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantil
 import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/fee/SlidingWindowQuantileCalculator';
 
 describe('SlidingWindowQuantileCalculator', async () => {
-  const valueApproximation = 2;
   const maxValue = 128;
   const slidingWindowSize = 2;
   const medianQuantile = 0.5;
@@ -13,7 +12,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
   beforeAll(async () => {
     slidingWindowQuantileStore = new MockSlidingWindowQuantileStore();
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      valueApproximation, maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
   });
 
@@ -146,7 +145,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     // start a new calculator with the same store
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      valueApproximation, maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
 
     // quantile of 0 is over [2x100], so 2
