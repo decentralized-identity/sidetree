@@ -419,7 +419,7 @@ Fetches the normalized transaction fee used for proof-of-fee calculation, given 
 
 Returns `HTTP 400 Bad Request` with `blockchain_time_out_of_range` as the `code` parameter value in the JSON body if the given blockchain time is:
 1. earlier than the genesis Sidetree blockchain time; or
-1. later than the current blockchain time.
+1. later than the blockchain time of the block that the service has processed.
 
 Returns `HTTP 500 Internal Server Error` with `normalized_fee_cannot_be_computed` as the `code` parameter value in the JSON body if the server is unable to compute the normalized fee.
 #### Request path
