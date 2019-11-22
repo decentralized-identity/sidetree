@@ -458,7 +458,7 @@ HTTP/1.1 200 OK
 
 #### Response example - Blockchain time given is out of computable range.	
 ```http
-HTTP/1.1 500 Internal Server Error
+HTTP/1.1 400 Bad Request
 {
   "code": "blockchain_time_out_of_range"
 }
