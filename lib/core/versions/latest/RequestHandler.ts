@@ -1,10 +1,8 @@
-import Encoder from './Encoder';
 import Did from './Did';
 import Document from './Document';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
-import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
@@ -20,8 +18,7 @@ export default class RequestHandler implements IRequestHandler {
   public constructor (
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
-    private didMethodName: string,
-    private allSupportedHashAlgorithms: number[]) { }
+    private didMethodName: string) { }
 
   /**
    * Handles an operation request.
@@ -108,7 +105,6 @@ export default class RequestHandler implements IRequestHandler {
         };
       }
 
-      // Else we give a generic bad request response.
       console.info(`Unexpected error: ${error}`);
       return {
         status: ResponseStatus.ServerError
@@ -118,41 +114,39 @@ export default class RequestHandler implements IRequestHandler {
 
   /**
    * Handles resolve operation.
-   * @param didOrDidDocument Can either be:
-   *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
-   *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
+   * @param shortOrLongFormDid Can either be:
+   *   1. A short-form DID. e.g. 'did:sidetree:abc' or
+   *   2. A long-form DID. e.g. 'did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>'.
    */
-  public async handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel> {
-    console.log(`Handling resolution request for: ${didOrDidDocument}...`);
-    if (!didOrDidDocument.startsWith(this.didMethodName)) {
-      return {
-        status: ResponseStatus.BadRequest
-      };
-    }
-
-    // Figure out if the given parameter contains a DID or DID Document.
-    let uniquePortion;
-    let parameterIsDid;
+  public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
     try {
-      uniquePortion = didOrDidDocument.substring(this.didMethodName.length);
+      console.log(`Handling resolution request for: ${shortOrLongFormDid}...`);
 
-      parameterIsDid = Multihash.isSupportedHash(Encoder.decodeAsBuffer(uniquePortion), this.allSupportedHashAlgorithms);
-    } catch {
+      const did = Did.create(shortOrLongFormDid, this.didMethodName);
+
+      if (did.isShortForm) {
+        return this.handleResolveRequestWithShortFormDid(did);
+      } else {
+        return this.handleResolveRequestWithLongFormDid(did);
+      }
+    } catch (error) {
+      // Give meaningful/specific error code and message when possible.
+      if (error instanceof SidetreeError) {
+        return {
+          status: ResponseStatus.BadRequest,
+          body: { code: error.code, message: error.message }
+        };
+      }
+
+      console.info(`Unexpected error: ${error}`);
       return {
-        status: ResponseStatus.BadRequest
+        status: ResponseStatus.ServerError
       };
-    }
-
-    if (parameterIsDid) {
-      return this.handleResolveRequestWithDid(didOrDidDocument);
-    } else {
-      return this.handleResolveRequestWithDidDocument(uniquePortion);
     }
   }
 
-  private async handleResolveRequestWithDid (did: string): Promise<ResponseModel> {
-    const didUniqueSuffix = did.substring(this.didMethodName.length);
-    const didDocument = await this.resolver.resolve(didUniqueSuffix);
+  private async handleResolveRequestWithShortFormDid (did: Did): Promise<ResponseModel> {
+    const didDocument = await this.resolver.resolve(did.uniqueSuffix);
 
     if (!didDocument) {
       return {
@@ -166,21 +160,9 @@ export default class RequestHandler implements IRequestHandler {
     };
   }
 
-  private async handleResolveRequestWithDidDocument (encodedDidDocument: string): Promise<ResponseModel> {
-    // TODO: Issue #256 - Revisit resolution using Initial DID Document, currently assumes this versions protocol parameters.
-    const currentHashAlgorithm = ProtocolParameters.hashAlgorithmInMultihashCode;
-
-    // Validate that the given encoded DID Document is a valid original document.
-    const isValidOriginalDocument = Document.isEncodedStringValidOriginalDocument(encodedDidDocument, ProtocolParameters.maxOperationByteSize);
-    if (!isValidOriginalDocument) {
-      return { status: ResponseStatus.BadRequest };
-    }
-
-    // Currently assumes that resolution with full DID document occurs only near initial bootstrapping.
-    const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(encodedDidDocument, currentHashAlgorithm);
-
-    // Attempt to resolve the DID.
-    const didDocument = await this.resolver.resolve(didUniqueSuffix);
+  private async handleResolveRequestWithLongFormDid (did: Did): Promise<ResponseModel> {
+    // Attempt to resolve the DID by using operations found from the network.
+    let didDocument = await this.resolver.resolve(did.uniqueSuffix);
 
     // If DID Document found then return it.
     if (didDocument) {
@@ -190,12 +172,13 @@ export default class RequestHandler implements IRequestHandler {
       };
     }
 
-    // Else contruct a DID Document with valid DID using the given encoded DID Document string.
-    const constructedDidDocument = Document.from(encodedDidDocument, this.didMethodName, currentHashAlgorithm);
+    // The code reaches here if this DID is not registered on the ledger.
+
+    didDocument = Document.fromLongFormDid(did);
 
     return {
       status: ResponseStatus.Succeeded,
-      body: constructedDidDocument
+      body: didDocument
     };
   }
 }

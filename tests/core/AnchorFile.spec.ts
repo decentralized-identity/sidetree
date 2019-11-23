@@ -13,7 +13,7 @@ describe('AnchorFile', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parseAndValidate(anchorFileCompressed, 1),
-        new SidetreeError(ErrorCode.AnchorFileNotJson));
+        ErrorCode.AnchorFileNotJson);
     });
 
     it('should throw if the buffer is not compressed', async () => {
@@ -26,7 +26,7 @@ describe('AnchorFile', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => AnchorFile.parseAndValidate(anchorFileBuffer, 1),
-        new SidetreeError(ErrorCode.AnchorFileDecompressionFailure));
+        ErrorCode.AnchorFileDecompressionFailure);
     });
 
     it('should throw if has an unknown property.', async () => {

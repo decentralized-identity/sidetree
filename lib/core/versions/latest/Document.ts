@@ -3,6 +3,8 @@ import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
+import ErrorCode from './ErrorCode';
+import { SidetreeError } from '../../Error';
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
@@ -26,7 +28,47 @@ export default class Document {
     }
 
     // Replace the placeholder DID with real DID before returning it.
-    Document.updatePlaceholdersInDocumentWithDid(decodedDidDocument, did);
+    Document.addDidToDocument(decodedDidDocument, did);
+
+    return decodedDidDocument;
+  }
+
+  /**
+   * Creates a DID Document from the given long-form DID.
+   */
+  public static fromLongFormDid (did: Did): DocumentModel {
+    const originalDidDocument = this.parseEncodedOriginalDidDocument(did.encodedDidDocument!);
+
+    Document.addDidToDocument(originalDidDocument, did.shortForm);
+
+    return originalDidDocument;
+  }
+
+  /**
+   * Parses the given string as an encoded original DID document.
+   * @throws SidetreeError if unable to parse the given string.
+   */
+  public static parseEncodedOriginalDidDocument (encodedOriginalDidDocument: string): DocumentModel {
+    // Decode the encoded DID Document.
+    let decodedJsonString;
+    try {
+      decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
+    } catch (error) {
+      throw SidetreeError.createFromError(ErrorCode.DocumentIncorretEncodedFormat, error);
+    }
+
+    let decodedDidDocument;
+    try {
+      decodedDidDocument = JSON.parse(decodedJsonString);
+    } catch (error) {
+      throw SidetreeError.createFromError(ErrorCode.DocumentNotJson, error);
+    }
+
+    // Validate that the given encoded DID Document is a valid original document.
+    const isValidOriginalDocument = Document.isObjectValidOriginalDocument(decodedDidDocument);
+    if (!isValidOriginalDocument) {
+      throw new SidetreeError(ErrorCode.DocumentNotValidOriginalDocument);
+    }
 
     return decodedDidDocument;
   }
@@ -245,13 +287,16 @@ export default class Document {
   }
 
   /*
-   * Updates the placeholders in the document with the given did. For example, we replace the id value with
-   * the actual id as the client creating the document will not have this value set.
+   * Adds DID references in the document using the given DID
+   * because client creating the document will not have these value set.
+   * Specifically:
+   * 1. `id` is added.
+   * 1. `controller` of the public-keys is added.
    *
    * @param didDocument The document to update.
-   * @param did The did which gets added to the document.
+   * @param did The DID which gets added to the document.
    */
-  private static updatePlaceholdersInDocumentWithDid (didDocument: DocumentModel, did: string): void {
+  private static addDidToDocument (didDocument: DocumentModel, did: string): void {
 
     didDocument.id = did;
 

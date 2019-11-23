@@ -1,4 +1,6 @@
 import * as crypto from 'crypto';
+import ErrorCode from './ErrorCode';
+import { SidetreeError } from '../../Error';
 const multihashes = require('multihashes');
 
 /**
@@ -17,7 +19,7 @@ export default class Multihash {
         hash = crypto.createHash('sha256').update(content).digest();
         break;
       default:
-        throw new Error(`Hashing algorithm '${hashAlgorithm}' not implemented.`);
+        throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
     }
 
     const hashAlgorithmName = multihashes.codes[hashAlgorithm];
@@ -27,22 +29,25 @@ export default class Multihash {
   }
 
   /**
+   * Given a multihash, returns the code of the hash algorithm used.
+   * @throws `SidetreeError` if hash algorithm used for the given multihash is unsupported.
+   */
+  public static getHashAlgorithmCode (hash: Buffer): number {
+    const multihash = multihashes.decode(hash);
+
+    // Hash algorithm must be SHA-256.
+    if (multihash.code !== 18) {
+      throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
+    }
+
+    return multihash.code;
+  }
+
+  /**
    * Encodes the given hash into a multihash with the specified hashing algorithm.
    */
   public static encode (hash: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
     return multihashes.encode(hash, hashAlgorithmInMultihashCode);
-  }
-
-  /**
-   * Checks if the given hash is multihash formatted in one of the given accepted hash algorithms.
-   */
-  public static isSupportedHash (hash: Buffer, acceptedHashAlgorithms: number[]): boolean {
-    try {
-      const multihash = multihashes.decode(hash);
-      return (acceptedHashAlgorithms.indexOf(multihash.code) >= 0);
-    } catch {
-      return false;
-    }
   }
 
   /**

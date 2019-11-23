@@ -9,16 +9,16 @@ export default class JasmineSidetreeErrorValidator {
    * Fails the current spec if the execution of the function does not throw the expected SidetreeError.
    *
    * @param functionToExcute The function to execute.
-   * @param expectedSidetreeError The expected error.
+   * @param expectedSidetreeErrorCode The expected Sidetree error code.
    */
-  public static expectSidetreeErrorToBeThrown (functionToExcute: () => any, expectedSidetreeError: SidetreeError): void {
+  public static expectSidetreeErrorToBeThrown (functionToExcute: () => any, expectedSidetreeErrorCode: string): void {
     let validated: boolean = false;
 
     try {
       functionToExcute();
     } catch (e) {
       if (e instanceof SidetreeError) {
-        expect(e.code).toEqual(expectedSidetreeError.code);
+        expect(e.code).toEqual(expectedSidetreeErrorCode);
         validated = true;
       }
     }
@@ -32,16 +32,16 @@ export default class JasmineSidetreeErrorValidator {
    * Fails the current spec if the execution of the function does not throw the expected SidetreeError.
    *
    * @param functionToExcute The function to execute.
-   * @param expectedSidetreeError The expected error.
+   * @param expectedSidetreeErrorCode The expected Sidetree error code.
    */
-  public static async expectSidetreeErrorToBeThrownAsync (functionToExcute: () => Promise<any>, expectedSidetreeError: SidetreeError): Promise<void> {
+  public static async expectSidetreeErrorToBeThrownAsync (functionToExcute: () => Promise<any>, expectedSidetreeErrorCode: string): Promise<void> {
     let validated: boolean = false;
 
     try {
       await functionToExcute();
     } catch (e) {
       if (e instanceof SidetreeError) {
-        expect(e.code).toEqual(expectedSidetreeError.code);
+        expect(e.code).toEqual(expectedSidetreeErrorCode);
         validated = true;
       }
     }
