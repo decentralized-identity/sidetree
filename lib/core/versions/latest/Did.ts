@@ -8,6 +8,8 @@ import { SidetreeError } from '../../Error';
  */
 export default class Did {
 
+  private static readonly initialValuesParameterPrefix = 'initial-values=';
+
   /** `true` if DID is short form; `false` if DID is long-form. */
   public isShortForm: boolean;
   /** DID method name. */
@@ -56,12 +58,12 @@ export default class Did {
     if (!this.isShortForm) {
       const didParameterString = did.substring(indexOfSemiColonChar + 1);
 
-      if (!didParameterString.startsWith('initial-values=')) {
+      if (!didParameterString.startsWith(Did.initialValuesParameterPrefix)) {
         throw new SidetreeError(ErrorCode.DidLongFormMissingInitialValues);
       }
 
       // Trim the `initial-values=` string to get the full initial DID DOcument.
-      this.encodedDidDocument = didParameterString.substring(15);
+      this.encodedDidDocument = didParameterString.substring(Did.initialValuesParameterPrefix.length);
 
       // Ensure that the encoded DID document hash matches the DID unique Suffix.
       const uniqueSuffixBuffer = Encoder.decodeAsBuffer(this.uniqueSuffix);
@@ -95,12 +97,13 @@ export default class Did {
 
   /**
    * Creates a long-form DID string.
+   * ie. 'did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>'
    */
   public static createLongFormDidString (didMethodName: string, originalDidDocument: any, hashAlgorithmInMultihashCode: number): string {
     const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
     const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
     const didUniqueSuffix = Encoder.encode(documentHash);
-    const did = `${didMethodName}${didUniqueSuffix};initial-values=${encodedOriginalDidDocument}`;
+    const did = `${didMethodName}${didUniqueSuffix};${Did.initialValuesParameterPrefix}${encodedOriginalDidDocument}`;
     return did;
   }
   /**

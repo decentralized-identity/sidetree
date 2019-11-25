@@ -5,6 +5,7 @@ import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 
 describe('DID', async () => {
   describe('create()', async () => {
@@ -20,6 +21,31 @@ describe('DID', async () => {
       expect(did.uniqueSuffix).toEqual(uniqueSuffix);
     });
 
+    it('should create a long-form DID succssefully.', async () => {
+      // Create an original DID Document.
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
+      const originalDidDocument = {
+        '@context': 'https://w3id.org/did/v1',
+        publicKey: [recoveryPublicKey, signingPublicKey]
+      };
+      const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
+      const hashAlgorithmInMultihashCode = 18;
+      const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
+      const expectedDidMethodName = 'did:sidetree:';
+      const longFormDid = Did.createLongFormDidString(expectedDidMethodName, originalDidDocument, hashAlgorithmInMultihashCode);
+      const did = Did.create(longFormDid, expectedDidMethodName);
+
+      const expectedEncodedDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
+      const expectedUniqueSuffix = Encoder.encode(documentHash);
+      const expectedShortFormDid = expectedDidMethodName + expectedUniqueSuffix;
+      expect(did.didMethodName).toEqual(expectedDidMethodName);
+      expect(did.encodedDidDocument).toEqual(expectedEncodedDidDocument);
+      expect(did.isShortForm).toBeFalsy();
+      expect(did.shortForm).toEqual(expectedShortFormDid);
+      expect(did.uniqueSuffix).toEqual(expectedUniqueSuffix);
+    });
+
     it('should throw if DID given does not match the expected DID method name.', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => Did.create('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg', 'did:sidetree2:'),
@@ -27,7 +53,7 @@ describe('DID', async () => {
       );
     });
 
-    it('should throw if DID given does not match the expected DID method name.', async () => {
+    it('should throw if DID given does not contain unique suffix.', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => Did.create('did:sidetree:', 'did:sidetree:'),
         ErrorCode.DidNoUniqueSuffix

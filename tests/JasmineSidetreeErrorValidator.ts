@@ -24,7 +24,7 @@ export default class JasmineSidetreeErrorValidator {
     }
 
     if (!validated) {
-      fail();
+      fail(`Expected error '${expectedSidetreeErrorCode}' did not occur.`);
     }
   }
 
@@ -47,7 +47,7 @@ export default class JasmineSidetreeErrorValidator {
     }
 
     if (!validated) {
-      fail();
+      fail(`Expected error '${expectedSidetreeErrorCode}' did not occur.`);
     }
   }
 }

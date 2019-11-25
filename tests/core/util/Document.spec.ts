@@ -52,7 +52,7 @@ describe('Document', () => {
       defaultOriginalDidDocument['@context'] = 'invalid-context';
       const originalDidDocumentJson = JSON.stringify(defaultOriginalDidDocument);
       const encodedOriginalDidDocument = Encoder.encode(originalDidDocumentJson);
-      const documentModel = Document.from(encodedOriginalDidDocument, 'did:sidetree', 18);
+      const documentModel = await Document.from(encodedOriginalDidDocument, 'did:sidetree', 18);
 
       expect(documentModel).toBeUndefined();
     });
@@ -218,7 +218,7 @@ describe('Document', () => {
     it('should throw if unable to decode input string.', async () => {
       spyOn(Encoder, 'decodeAsString').and.throwError('Some error');
 
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => Document.parseEncodedOriginalDidDocument('Unused string in test.'),
         ErrorCode.DocumentIncorretEncodedFormat
       );
@@ -227,7 +227,7 @@ describe('Document', () => {
     it('should throw if decoded input string is not JSON.', async () => {
       const incorrectJsonString = 'value = { Not Json }';
       const inputString = Encoder.encode(incorrectJsonString);
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => Document.parseEncodedOriginalDidDocument(inputString),
         ErrorCode.DocumentNotJson
       );
@@ -236,7 +236,7 @@ describe('Document', () => {
     it('should throw if decoded input string is not JSON.', async () => {
       const jsonString = JSON.stringify({ value: 'Not DID document' });
       const inputString = Encoder.encode(jsonString);
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => Document.parseEncodedOriginalDidDocument(inputString),
         ErrorCode.DocumentNotValidOriginalDocument
       );

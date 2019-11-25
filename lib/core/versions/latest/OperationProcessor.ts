@@ -60,8 +60,8 @@ export default class OperationProcessor implements IOperationProcessor {
       return false;
     }
 
-    const originalDidDocument = Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode)!;
-    const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
+    const originalDidDocument = await Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode);
+    const signingKey = Document.getPublicKey(originalDidDocument!, operation.signingKeyId);
 
     if (!signingKey) {
       return false;

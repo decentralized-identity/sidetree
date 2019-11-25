@@ -174,12 +174,10 @@ describe('RequestHandler', () => {
     expect((response.body).id).toEqual(did);
   });
 
-  it('should return a resolved DID Document given a valid encoded original DID Document for resolution.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID.', async () => {
     // Create an original DID Document.
-    let recoveryPublicKey: DidPublicKeyModel;
-    let signingPublicKey: DidPublicKeyModel;
-    [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
       publicKey: [recoveryPublicKey, signingPublicKey]

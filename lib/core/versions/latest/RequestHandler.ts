@@ -68,7 +68,7 @@ export default class RequestHandler implements IRequestHandler {
       let response: ResponseModel;
       switch (operation.type) {
         case OperationType.Create:
-          const didDocument = Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode);
+          const didDocument = await Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode);
 
           response = {
             status: ResponseStatus.Succeeded,
@@ -174,7 +174,7 @@ export default class RequestHandler implements IRequestHandler {
 
     // The code reaches here if this DID is not registered on the ledger.
 
-    didDocument = Document.fromLongFormDid(did);
+    didDocument = await Document.fromLongFormDid(did);
 
     return {
       status: ResponseStatus.Succeeded,

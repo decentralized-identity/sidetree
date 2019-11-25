@@ -4,6 +4,7 @@ import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonAsync from './util/JsonAsync';
 import { SidetreeError } from '../../Error';
 
 /**
@@ -14,13 +15,17 @@ export default class Document {
    * Creates a DID Document with a valid Sidetree DID from an encoded original DID Document.
    * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
    */
-  public static from (encodedOriginalDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): DocumentModel | undefined {
+  public static async from (
+    encodedOriginalDidDocument: string,
+    didMethodName: string,
+    hashAlgorithmAsMultihashCode: number
+  ): Promise<DocumentModel | undefined> {
     // Compute the hash of the DID Document in the create payload as the DID
     const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
 
     // Decode the encoded DID Document.
     const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
-    const decodedDidDocument = JSON.parse(decodedJsonString);
+    const decodedDidDocument = await JsonAsync.parse(decodedJsonString);
 
     // Return `undefined` if original DID Document is invalid.
     if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
@@ -36,8 +41,8 @@ export default class Document {
   /**
    * Creates a DID Document from the given long-form DID.
    */
-  public static fromLongFormDid (did: Did): DocumentModel {
-    const originalDidDocument = this.parseEncodedOriginalDidDocument(did.encodedDidDocument!);
+  public static async fromLongFormDid (did: Did): Promise<DocumentModel> {
+    const originalDidDocument = await this.parseEncodedOriginalDidDocument(did.encodedDidDocument!);
 
     Document.addDidToDocument(originalDidDocument, did.shortForm);
 
@@ -48,7 +53,7 @@ export default class Document {
    * Parses the given string as an encoded original DID document.
    * @throws SidetreeError if unable to parse the given string.
    */
-  public static parseEncodedOriginalDidDocument (encodedOriginalDidDocument: string): DocumentModel {
+  public static async parseEncodedOriginalDidDocument (encodedOriginalDidDocument: string): Promise<DocumentModel> {
     // Decode the encoded DID Document.
     let decodedJsonString;
     try {
@@ -59,7 +64,7 @@ export default class Document {
 
     let decodedDidDocument;
     try {
-      decodedDidDocument = JSON.parse(decodedJsonString);
+      decodedDidDocument = await JsonAsync.parse(decodedJsonString);
     } catch (error) {
       throw SidetreeError.createFromError(ErrorCode.DocumentNotJson, error);
     }
