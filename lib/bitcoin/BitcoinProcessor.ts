@@ -148,6 +148,8 @@ export default class BitcoinProcessor {
   public async initialize () {
     console.debug('Initializing ITransactionStore');
     await this.transactionStore.initialize();
+    await this.quantileCalculator.initialize();
+
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
     if (!await this.walletExists(address.toString())) {
@@ -327,12 +329,12 @@ export default class BitcoinProcessor {
     // Our code pattern dictates that the initialize() call must be finished before the service is ready to
     // process any client requests so we can assume that hte lastProcessedBlock variable is actually set
     // and not undefined at this point.
-    const currentBlockNumber = this.lastProcessedBlock!.height;
-    if (block > currentBlockNumber) {
-      const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
-      console.error(error);
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
-    }
+    // const currentBlockNumber = this.lastProcessedBlock!.height;
+    // if (block > currentBlockNumber) {
+    //   const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
+    //   console.error(error);
+    //   throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    // }
 
     const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
     const groupId = this.getGroupId(blockAfterHistoryOffset);
@@ -343,7 +345,8 @@ export default class BitcoinProcessor {
     }
 
     console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
-    throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCannotBeComputed);
+    throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    // throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCannotBeComputed);
   }
 
   /**
@@ -835,7 +838,7 @@ export default class BitcoinProcessor {
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
+    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}, params: ${JSON.stringify(request)}`);
     const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'
