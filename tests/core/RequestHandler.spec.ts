@@ -209,7 +209,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.DidLongFormMissingInitialValues);
+    expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
   });
 
   it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {

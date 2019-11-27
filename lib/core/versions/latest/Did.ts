@@ -59,7 +59,7 @@ export default class Did {
       const didParameterString = did.substring(indexOfSemiColonChar + 1);
 
       if (!didParameterString.startsWith(Did.initialValuesParameterPrefix)) {
-        throw new SidetreeError(ErrorCode.DidLongFormMissingInitialValues);
+        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
       }
 
       // Trim the `initial-values=` string to get the full initial DID DOcument.

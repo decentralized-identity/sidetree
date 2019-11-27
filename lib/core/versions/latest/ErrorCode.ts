@@ -25,7 +25,7 @@ export default {
   BatchWriterAlreadyHasOperationForDid: 'batch_writer_already_has_operation_for_did',
   DidEncodedDidDocumentHashMismatch: 'did_encoded_did_document_hash_mismatch',
   DidIncorrectPrefix: 'did_incorrect_prefix',
-  DidLongFormMissingInitialValues: 'did_long_form_missing_initial_values',
+  DidLongFormOnlyInitialValuesParameterIsAllowed: 'did_long_form_only_initial_values_parameter_is_allowed',
   DidNoUniqueSuffix: 'did_no_unique_suffix',
   DocumentIncorretEncodedFormat: 'document_incorrect_encoded_format',
   DocumentNotJson: 'document_not_json',
