@@ -630,7 +630,9 @@ export default class BitcoinProcessor {
 
     const transactions = blockData.tx as Array<any>;
 
-    for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+    // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
+    // so we are going to ignore that transaction in our calculations.
+    for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
       const isSidetreeTransaction = this.isSidetreeTransaction(transaction);
