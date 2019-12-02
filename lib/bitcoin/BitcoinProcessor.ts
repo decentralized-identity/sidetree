@@ -707,6 +707,8 @@ export default class BitcoinProcessor {
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
                        JSON.stringify(inputs),
                        JSON.stringify(e, Object.getOwnPropertyNames(e)));
+
+        throw e;
       }
     }
 
