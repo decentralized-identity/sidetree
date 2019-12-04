@@ -167,11 +167,11 @@ export default class BitcoinProcessor {
       console.debug('Wallet found.');
     }
     console.debug('Synchronizing blocks for sidetree transactions...');
-    const lastKnownTransaction = await this.transactionStore.getLastTransaction();
+    const lastKnownTransaction = await this.getStartingBlockForInitialization();
     if (lastKnownTransaction) {
-      console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
-      const startingBlock: IBlockInfo = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
-      await this.processTransactions(startingBlock);
+      console.info(`Last known block: ${lastKnownTransaction.height} (${lastKnownTransaction.hash})`);
+      // const startingBlock: IBlockInfo = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
+      await this.processTransactions(lastKnownTransaction);
     } else {
       await this.processTransactions();
     }
@@ -326,18 +326,8 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
-    // Our code pattern dictates that the initialize() call must be finished before the service is ready to
-    // process any client requests so we can assume that hte lastProcessedBlock variable is actually set
-    // and not undefined at this point.
-    // const currentBlockNumber = this.lastProcessedBlock!.height;
-    // if (block > currentBlockNumber) {
-    //   const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
-    //   console.error(error);
-    //   throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
-    // }
-
     const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
-    const groupId = this.getGroupId(blockAfterHistoryOffset);
+    const groupId = this.getGroupIdFromBlock(blockAfterHistoryOffset);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
     if (quantileValue) {
@@ -346,7 +336,6 @@ export default class BitcoinProcessor {
 
     console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
     throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
-    // throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCannotBeComputed);
   }
 
   /**
@@ -486,8 +475,37 @@ export default class BitcoinProcessor {
    * value.
    */
   private getFirstBlockInGroup (block: number): number {
-    const groupId = this.getGroupId(block);
+    const groupId = this.getGroupIdFromBlock(block);
     return groupId * ProtocolParameters.groupSizeInBlocks;
+  }
+
+  private async getStartingBlockForInitialization (): Promise<IBlockInfo | undefined> {
+    // We look at the latest data that we saved in the quantile calculator. The latest
+    // Id in there tells us which group of blocks have been processed.
+    const lastSavedGroupId = await this.quantileCalculator.getLastGroupId();
+
+    if (!lastSavedGroupId) {
+      // We are returning undefined because at the time of this refactor, the calling code
+      // is expecting an undefined for this case and having this code return the genesis
+      // block is going to cause more refactor.
+      return undefined;
+    }
+
+    const startingBlockForLastSavedGroupId = this.getStartingBlockFromGroupId(lastSavedGroupId);
+
+    // We want to delete the last group Id because we might not have saved all the transaction(s)
+    // in that group. So removing that ensures that we redo this block which will ensure that
+    // all the transactions are processed again.
+    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(lastSavedGroupId);
+
+    // The starting block is included in the lastGroupId and since we are removing the lastGroupId
+    // we should remove that block from the  the transaction store as well
+    await this.transactionStore.removeTransactionsLaterThan(startingBlockForLastSavedGroupId - 1);
+
+    return {
+      height: startingBlockForLastSavedGroupId,
+      hash: await this.getBlockHash(startingBlockForLastSavedGroupId)
+    };
   }
 
   /**
@@ -617,8 +635,12 @@ export default class BitcoinProcessor {
     return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
 
-  private getGroupId (block: number): number {
+  private getGroupIdFromBlock (block: number): number {
     return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
+  }
+
+  private getStartingBlockFromGroupId (groupId: number): number {
+    return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
   private async processBlockForPofCalculation (blockHeight: number, blockData: any): Promise<void> {
@@ -641,6 +663,7 @@ export default class BitcoinProcessor {
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
       const inputsCount = (transaction.vin as Array<any>).length;
+
       if (!isSidetreeTransaction && inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
         this.transactionSampler.addElement(transaction.txid);
       }
@@ -656,7 +679,7 @@ export default class BitcoinProcessor {
         sampledTransactionFees.push(transactionFee);
       }
 
-      const groupId = this.getGroupId(blockHeight);
+      const groupId = this.getGroupIdFromBlock(blockHeight);
       await this.quantileCalculator.add(groupId, sampledTransactionFees);
 
       // Reset the sampler for the next group
@@ -842,7 +865,7 @@ export default class BitcoinProcessor {
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}, params: ${JSON.stringify(request)}`);
+    console.debug(`Sending jRPC request: ${JSON.stringify(request)}`);
     const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'

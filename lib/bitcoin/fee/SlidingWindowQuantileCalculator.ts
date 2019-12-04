@@ -173,6 +173,13 @@ export default class SlidingWindowQuantileCalculator {
   }
 
   /**
+   * Gets the last group id which is saved in the store.
+   */
+  public async getLastGroupId (): Promise<number | undefined> {
+    return this.mongoStore.getLastGroupId();
+  }
+
+  /**
    * Delete the last group of values from the sliding window.
    */
   private async deleteLast (): Promise<void> {
