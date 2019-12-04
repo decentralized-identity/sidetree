@@ -167,11 +167,10 @@ export default class BitcoinProcessor {
       console.debug('Wallet found.');
     }
     console.debug('Synchronizing blocks for sidetree transactions...');
-    const lastKnownTransaction = await this.getStartingBlockForInitialization();
-    if (lastKnownTransaction) {
-      console.info(`Last known block: ${lastKnownTransaction.height} (${lastKnownTransaction.hash})`);
-      // const startingBlock: IBlockInfo = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
-      await this.processTransactions(lastKnownTransaction);
+    const startingBlock = await this.getStartingBlockForInitialization();
+    if (startingBlock) {
+      console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+      await this.processTransactions(startingBlock);
     } else {
       await this.processTransactions();
     }
