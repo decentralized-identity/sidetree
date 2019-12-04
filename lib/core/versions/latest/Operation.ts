@@ -161,7 +161,7 @@ export default class Operation {
 
         // Deleting recovery key is NOT allowed.
         if (existingKey !== undefined &&
-            existingKey.type !== KeyUsage.recovery) {
+            existingKey.usage !== KeyUsage.recovery) {
           publicKeyMap.delete(publicKey);
         }
       }

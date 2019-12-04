@@ -227,6 +227,32 @@ describe('OperationProcessor', async () => {
     validateDidDocumentPublicKeys(didDocument);
   });
 
+  it('should fail to remove the recovery key', async () => {
+    await operationStore.put([createOp!]);
+    const updatePayload = {
+      didUniqueSuffix,
+      previousOperationHash: createOp!.operationHash,
+      patches: [
+        {
+          action: 'remove-public-keys',
+          publicKeys: ['#key1']
+        }
+      ]
+    };
+
+    // Generate operation with an invalid key
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
+    const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
+    await operationStore.put([updateOp]);
+
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+
+    expect(didDocument).toBeDefined();
+    const key1 = Document.getPublicKey(didDocument, '#key1');
+    expect(key1).toBeDefined();
+    validateDidDocumentPublicKeys(didDocument);
+  });
+
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
