@@ -42,6 +42,7 @@ describe('BitcoinProcessor', () => {
 
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
+  let quantileCalculatorInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForInitializationSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
@@ -52,6 +53,7 @@ describe('BitcoinProcessor', () => {
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
+    quantileCalculatorInitializeSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'initialize');
 
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
@@ -169,6 +171,7 @@ describe('BitcoinProcessor', () => {
 
     beforeEach(async () => {
       walletExistsSpy = spyOn(bitcoinProcessor, 'walletExists' as any);
+      quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
     });
 
     it('should initialize the transactionStore', async (done) => {
@@ -1204,9 +1207,8 @@ describe('BitcoinProcessor', () => {
         const txnSamplerAddSpy = spyOn(bitcoinProcessor['transactionSampler'], 'addElement').and.returnValue(undefined);
 
         await bitcoinProcessor['processBlockForPofCalculation'](block, blockData);
-
-        expect(txnSamplerResetSpy).toHaveBeenCalled();
         expect(txnSamplerAddSpy.calls.count()).toEqual(numOfNonSidetreeTransactions);
+        expect(txnSamplerResetSpy).toHaveBeenCalled();
         done();
       });
 
