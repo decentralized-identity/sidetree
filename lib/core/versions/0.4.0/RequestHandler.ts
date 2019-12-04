@@ -19,8 +19,7 @@ export default class RequestHandler implements IRequestHandler {
   public constructor (
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
-    private didMethodName: string,
-    private allSupportedHashAlgorithms: number[]) { }
+    private didMethodName: string) { }
 
   /**
    * Handles an operation request.
@@ -138,7 +137,7 @@ export default class RequestHandler implements IRequestHandler {
     try {
       uniquePortion = didOrDidDocument.substring(this.didMethodName.length);
 
-      parameterIsDid = Multihash.isSupportedHash(Encoder.decodeAsBuffer(uniquePortion), this.allSupportedHashAlgorithms);
+      parameterIsDid = Multihash.isSupportedHash(Encoder.decodeAsBuffer(uniquePortion));
     } catch {
       return {
         status: ResponseStatus.BadRequest

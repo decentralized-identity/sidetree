@@ -8,7 +8,6 @@ import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import IVersionManager from './interfaces/IVersionManager';
-import ProtocolVersionMetadata from './models/ProtocolVersionMetadata';
 import Resolver from './Resolver';
 
 /**
@@ -31,7 +30,6 @@ export default class VersionManager implements IVersionManager {
   private operationProcessors: Map<string, IOperationProcessor>;
   private requestHandlers: Map<string, IRequestHandler>;
   private transactionProcessors: Map<string, ITransactionProcessor>;
-  private protocolVersionMetadatas: Map<string, ProtocolVersionMetadata>;
 
   public constructor (
     private config: Config,
@@ -45,7 +43,6 @@ export default class VersionManager implements IVersionManager {
     this.operationProcessors = new Map();
     this.requestHandlers = new Map();
     this.transactionProcessors = new Map();
-    this.protocolVersionMetadatas = new Map();
   }
 
   /**
@@ -58,19 +55,6 @@ export default class VersionManager implements IVersionManager {
     operationStore: IOperationStore,
     resolver: Resolver
   ) {
-
-    // Load all the metadata on all protocol versions first because instantiation of other components will need it.
-    for (const protocolVersion of this.protocolVersionsReverseSorted) {
-      const version = protocolVersion.version;
-
-      const protocolVersionMetadata = await this.loadDefaultExportsForVersion(version, 'ProtocolVersionMetadata');
-      this.protocolVersionMetadatas.set(version, protocolVersionMetadata);
-    }
-
-    // Get and cache supported hash algorithms.
-    let allSupportedHashAlgorithms = Array.from(this.protocolVersionMetadatas.values(), value => value.hashAlgorithmInMultihashCode);
-    allSupportedHashAlgorithms = Array.from(new Set(allSupportedHashAlgorithms)); // This line removes duplicates.
-
     // Instantiate rest of the protocol components.
     // NOTE: In principal each version of the interface implemtnations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
@@ -100,7 +84,7 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const RequestHandler = await this.loadDefaultExportsForVersion(version, 'RequestHandler');
-      const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName, allSupportedHashAlgorithms);
+      const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName);
       this.requestHandlers.set(version, requestHandler);
     }
   }
