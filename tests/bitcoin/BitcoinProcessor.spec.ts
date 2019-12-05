@@ -172,6 +172,7 @@ describe('BitcoinProcessor', () => {
     beforeEach(async () => {
       walletExistsSpy = spyOn(bitcoinProcessor, 'walletExists' as any);
       quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
+      getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
     });
 
     it('should initialize the transactionStore', async (done) => {
@@ -804,12 +805,23 @@ describe('BitcoinProcessor', () => {
       getStartingBlockForInitializationSpy.and.callThrough();
     });
 
-    it('returns undefined if nothing is saved in the db', async (done) => {
+    it('should return the genesis block if no quantile is saved in the db', async (done) => {
       const getLastGroupIdSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'getLastGroupId');
-      getLastGroupIdSpy.and.returnValue(Promise.resolve(undefined));
+      const removeGroupSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual');
+      const removeTxnsSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan');
+
+      const mockStartingBlockHash = 'some_hash';
+      const mockStartingBlockFirstTxn = 987654321;
+
+      getLastGroupIdSpy.and.returnValue(Promise.resolve(undefined)); // simulate that nothing is saved
+      removeGroupSpy.and.returnValue(Promise.resolve(undefined));
+      removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
+      spyOn(TransactionNumber, 'construct').and.returnValue(mockStartingBlockFirstTxn);
+      spyOn(bitcoinProcessor as any, 'getBlockHash').and.returnValue(mockStartingBlockHash);
 
       const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
-      expect(startingBlock).toBeUndefined();
+      expect(startingBlock.height).toEqual(bitcoinProcessor['genesisBlockNumber']);
+      expect(startingBlock.hash).toEqual(mockStartingBlockHash);
       done();
     });
 
@@ -821,21 +833,22 @@ describe('BitcoinProcessor', () => {
       const mockLastGroupId = 1345;
       const mockStartingBlockHeight = 10000;
       const mockStartingBlockHash = 'some_hash';
+      const mockStartingBlockFirstTxn = 987654321;
 
       getLastGroupIdSpy.and.returnValue(Promise.resolve(mockLastGroupId));
       removeGroupSpy.and.returnValue(Promise.resolve(undefined));
       removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
       spyOn(bitcoinProcessor as any, 'getStartingBlockFromGroupId').and.returnValue(mockStartingBlockHeight);
       spyOn(bitcoinProcessor as any, 'getBlockHash').and.returnValue(mockStartingBlockHash);
+      spyOn(TransactionNumber, 'construct').and.returnValue(mockStartingBlockFirstTxn);
 
       const actualBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
 
       expect(removeGroupSpy).toHaveBeenCalledWith(mockLastGroupId);
-      expect(removeTxnsSpy).toHaveBeenCalledWith(mockStartingBlockHeight - 1);
+      expect(removeTxnsSpy).toHaveBeenCalledWith(mockStartingBlockFirstTxn - 1);
 
-      expect(actualBlock).toBeDefined();
-      expect(actualBlock!.height).toEqual(mockStartingBlockHeight);
-      expect(actualBlock!.hash).toEqual(mockStartingBlockHash);
+      expect(actualBlock.height).toEqual(mockStartingBlockHeight);
+      expect(actualBlock.hash).toEqual(mockStartingBlockHash);
       done();
     });
   });
@@ -853,7 +866,12 @@ describe('BitcoinProcessor', () => {
       });
       const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
-      const revertQuantileState = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
+      const revertQuantileState = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.callFake((_groupId): Promise<void> => {
+        // Make sure that that this call is made BEFORE the transaction-store call.
+        expect(removeTransactions.calls.count()).toEqual(0);
+
+        return Promise.resolve();
+      });
       const getFirstBlockInGroupSpy = spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.callFake((block: number) => {
         return block;
       });
@@ -952,6 +970,16 @@ describe('BitcoinProcessor', () => {
 
       const actualRoundUp = bitcoinProcessor['getFirstBlockInGroup'](124);
       expect(actualRoundUp).toEqual(100);
+    });
+  });
+
+  describe('getStartingBlockFromGroupId', () => {
+    it('should round the value correctly', async () => {
+      // The expected values are dependent upon the protocol-parameters.json so if those values
+      // are changed, these expected value may as well
+
+      const actualBlock = bitcoinProcessor['getStartingBlockFromGroupId'](152);
+      expect(actualBlock).toEqual(15200);
     });
   });
 

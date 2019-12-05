@@ -166,14 +166,13 @@ export default class BitcoinProcessor {
     } else {
       console.debug('Wallet found.');
     }
+
     console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForInitialization();
-    if (startingBlock) {
-      console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
-      await this.processTransactions(startingBlock);
-    } else {
-      await this.processTransactions();
-    }
+
+    console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+    await this.processTransactions(startingBlock);
+
     // disabling floating promise lint since periodicPoll should just float in the background event loop
     /* tslint:disable-next-line:no-floating-promises */
     this.periodicPoll();
@@ -478,32 +477,32 @@ export default class BitcoinProcessor {
     return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
-  private async getStartingBlockForInitialization (): Promise<IBlockInfo | undefined> {
+  private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
+
+    // Assume that we're going to start form the genesis block
+    let startingBlock = this.genesisBlockNumber;
+
     // We look at the latest data that we saved in the quantile calculator. The latest
     // Id in there tells us which group of blocks have been processed.
     const lastSavedGroupId = await this.quantileCalculator.getLastGroupId();
 
-    if (!lastSavedGroupId) {
-      // We are returning undefined because at the time of this refactor, the calling code
-      // is expecting an undefined for this case and having this code return the genesis
-      // block is going to cause more refactor.
-      return undefined;
+    if (lastSavedGroupId) {
+      // Then we need to start from the block corresponding to that groupId
+      startingBlock = this.getStartingBlockFromGroupId(lastSavedGroupId);
+
+      // We want to delete the last group Id because we might not have saved all the transaction(s)
+      // in that group. So removing that ensures that we redo this block which will ensure that
+      // all the transactions are processed again.
+      await this.quantileCalculator.removeGroupsGreaterThanOrEqual(lastSavedGroupId);
     }
 
-    const startingBlockForLastSavedGroupId = this.getStartingBlockFromGroupId(lastSavedGroupId);
-
-    // We want to delete the last group Id because we might not have saved all the transaction(s)
-    // in that group. So removing that ensures that we redo this block which will ensure that
-    // all the transactions are processed again.
-    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(lastSavedGroupId);
-
-    // The starting block is included in the lastGroupId and since we are removing the lastGroupId
-    // we should remove that block from the  the transaction store as well
-    await this.transactionStore.removeTransactionsLaterThan(startingBlockForLastSavedGroupId - 1);
+    // Remove everything after the starting block as we are (re)starting from that point
+    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
+    await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
 
     return {
-      height: startingBlockForLastSavedGroupId,
-      hash: await this.getBlockHash(startingBlockForLastSavedGroupId)
+      height: startingBlock,
+      hash: await this.getBlockHash(startingBlock)
     };
   }
 
@@ -525,18 +524,26 @@ export default class BitcoinProcessor {
         // boundary to simplify resetting proof-of-fee state which is maintained per group.
         let revertToBlockNumber = this.getFirstBlockInGroup(firstValidTransaction.transactionTime);
 
+        // Revert the quantile calculator. We want to keep the revertToBlock which means that we should
+        // keep the corresponding group and delete everything greater than that one.
+        //
+        // NOTE: Make sure that we remove the groupId data BEFORE we remove the transactions. This is
+        // because that if the service stops at any moment after this, the initialize code looks at
+        // the groupId and can revert the transactions db accordingly.
+        const revertToGroupId = this.getGroupIdFromBlock(revertToBlockNumber);
+
+        console.debug(`Reverting the quantile data greater than: ${revertToGroupId}`);
+        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId + 1);
+
+        // Reset transaction sampling
+        this.transactionSampler.clear();
+
         // The number that represents the theoritical last possible transaction written with a block number
         // less than revertToBlockNumber
         const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber + 1, 0) - 1;
 
         console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
         await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
-
-        // Reset transaction sampling
-        this.transactionSampler.clear();
-
-        // Revert the quantile calculator
-        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToBlockNumber + 1);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
         return {
@@ -864,7 +871,7 @@ export default class BitcoinProcessor {
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    console.debug(`Sending jRPC request: ${JSON.stringify(request)}`);
+    console.debug(`Sending jRPC request id: ${request.id}, method: ${request['method']}`);
     const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'
