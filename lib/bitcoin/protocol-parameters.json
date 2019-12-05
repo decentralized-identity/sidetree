@@ -5,5 +5,5 @@
   "quantileMeasure": 0.5,
 
   "maxInputCountForSampledTransaction": 100,
-  "historicalOffsetInBlocks": 5
+  "historicalOffsetInBlocks": 200
 }

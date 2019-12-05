@@ -148,6 +148,8 @@ export default class BitcoinProcessor {
   public async initialize () {
     console.debug('Initializing ITransactionStore');
     await this.transactionStore.initialize();
+    await this.quantileCalculator.initialize();
+
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
     if (!await this.walletExists(address.toString())) {
@@ -164,15 +166,13 @@ export default class BitcoinProcessor {
     } else {
       console.debug('Wallet found.');
     }
+
     console.debug('Synchronizing blocks for sidetree transactions...');
-    const lastKnownTransaction = await this.transactionStore.getLastTransaction();
-    if (lastKnownTransaction) {
-      console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
-      const startingBlock: IBlockInfo = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
-      await this.processTransactions(startingBlock);
-    } else {
-      await this.processTransactions();
-    }
+    const startingBlock = await this.getStartingBlockForInitialization();
+
+    console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+    await this.processTransactions(startingBlock);
+
     // disabling floating promise lint since periodicPoll should just float in the background event loop
     /* tslint:disable-next-line:no-floating-promises */
     this.periodicPoll();
@@ -324,18 +324,8 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
     }
 
-    // Our code pattern dictates that the initialize() call must be finished before the service is ready to
-    // process any client requests so we can assume that hte lastProcessedBlock variable is actually set
-    // and not undefined at this point.
-    const currentBlockNumber = this.lastProcessedBlock!.height;
-    if (block > currentBlockNumber) {
-      const error = `The input block number must be less than or equal to: ${currentBlockNumber}`;
-      console.error(error);
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
-    }
-
     const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
-    const groupId = this.getGroupId(blockAfterHistoryOffset);
+    const groupId = this.getGroupIdFromBlock(blockAfterHistoryOffset);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
     if (quantileValue) {
@@ -343,7 +333,7 @@ export default class BitcoinProcessor {
     }
 
     console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
-    throw new RequestError(ResponseStatus.ServerError, ErrorCode.NormalizedFeeCannotBeComputed);
+    throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
   }
 
   /**
@@ -483,8 +473,37 @@ export default class BitcoinProcessor {
    * value.
    */
   private getFirstBlockInGroup (block: number): number {
-    const groupId = this.getGroupId(block);
+    const groupId = this.getGroupIdFromBlock(block);
     return groupId * ProtocolParameters.groupSizeInBlocks;
+  }
+
+  private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
+
+    // Assume that we're going to start form the genesis block
+    let startingBlock = this.genesisBlockNumber;
+
+    // We look at the latest data that we saved in the quantile calculator. The latest
+    // Id in there tells us which group of blocks have been processed.
+    const lastSavedGroupId = await this.quantileCalculator.getLastGroupId();
+
+    if (lastSavedGroupId) {
+      // Then we need to start from the block corresponding to that groupId
+      startingBlock = this.getStartingBlockFromGroupId(lastSavedGroupId);
+
+      // We want to delete the last group Id because we might not have saved all the transaction(s)
+      // in that group. So removing that ensures that we redo this block which will ensure that
+      // all the transactions are processed again.
+      await this.quantileCalculator.removeGroupsGreaterThanOrEqual(lastSavedGroupId);
+    }
+
+    // Remove everything after the starting block as we are (re)starting from that point
+    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
+    await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
+
+    return {
+      height: startingBlock,
+      hash: await this.getBlockHash(startingBlock)
+    };
   }
 
   /**
@@ -505,18 +524,26 @@ export default class BitcoinProcessor {
         // boundary to simplify resetting proof-of-fee state which is maintained per group.
         let revertToBlockNumber = this.getFirstBlockInGroup(firstValidTransaction.transactionTime);
 
+        // Revert the quantile calculator. We want to keep the revertToBlock which means that we should
+        // keep the corresponding group and delete everything greater than that one.
+        //
+        // NOTE: Make sure that we remove the groupId data BEFORE we remove the transactions. This is
+        // because that if the service stops at any moment after this, the initialize code looks at
+        // the groupId and can revert the transactions db accordingly.
+        const revertToGroupId = this.getGroupIdFromBlock(revertToBlockNumber);
+
+        console.debug(`Reverting the quantile data greater than: ${revertToGroupId}`);
+        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId + 1);
+
+        // Reset transaction sampling
+        this.transactionSampler.clear();
+
         // The number that represents the theoritical last possible transaction written with a block number
         // less than revertToBlockNumber
         const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber + 1, 0) - 1;
 
         console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
         await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
-
-        // Reset transaction sampling
-        this.transactionSampler.clear();
-
-        // Revert the quantile calculator
-        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToBlockNumber + 1);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
         return {
@@ -614,8 +641,12 @@ export default class BitcoinProcessor {
     return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
 
-  private getGroupId (block: number): number {
+  private getGroupIdFromBlock (block: number): number {
     return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
+  }
+
+  private getStartingBlockFromGroupId (groupId: number): number {
+    return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
   private async processBlockForPofCalculation (blockHeight: number, blockData: any): Promise<void> {
@@ -627,7 +658,9 @@ export default class BitcoinProcessor {
 
     const transactions = blockData.tx as Array<any>;
 
-    for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+    // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
+    // so we are going to ignore that transaction in our calculations.
+    for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
       const isSidetreeTransaction = this.isSidetreeTransaction(transaction);
@@ -636,6 +669,7 @@ export default class BitcoinProcessor {
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
       const inputsCount = (transaction.vin as Array<any>).length;
+
       if (!isSidetreeTransaction && inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
         this.transactionSampler.addElement(transaction.txid);
       }
@@ -651,7 +685,7 @@ export default class BitcoinProcessor {
         sampledTransactionFees.push(transactionFee);
       }
 
-      const groupId = this.getGroupId(blockHeight);
+      const groupId = this.getGroupIdFromBlock(blockHeight);
       await this.quantileCalculator.add(groupId, sampledTransactionFees);
 
       // Reset the sampler for the next group
@@ -702,6 +736,8 @@ export default class BitcoinProcessor {
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
                        JSON.stringify(inputs),
                        JSON.stringify(e, Object.getOwnPropertyNames(e)));
+
+        throw e;
       }
     }
 
@@ -764,7 +800,10 @@ export default class BitcoinProcessor {
       const oneSidetreeTxAlreadyFound = (sidetreeTxToAdd !== undefined);
 
       if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
-        throw new Error('The transaction has more then one sidetree anchor strings.');
+        // tslint:disable-next-line: max-line-length
+        const message = `The outputs in block: ${transactionBlock} with transaction id: ${transactionId} has multiple sidetree transactions. So ignoring this transaction.`;
+        console.debug(message);
+        return false;
 
       } else if (isSidetreeTx) {
         // we have found a sidetree transaction
@@ -835,7 +874,7 @@ export default class BitcoinProcessor {
     const requestString = JSON.stringify(request);
     // console.debug(`Fetching ${fullPath}`);
     // console.debug(requestString);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
+    console.debug(`Sending jRPC request id: ${request.id}, method: ${request['method']}`);
     const requestOptions: RequestInit = {
       body: requestString,
       method: 'post'
