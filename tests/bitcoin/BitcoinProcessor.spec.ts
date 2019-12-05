@@ -1171,22 +1171,30 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should throw if there are any transactions that have multiple OP_RETURN in them', async (done) => {
+    it('should ignore any transactions that have multiple OP_RETURN in them', async (done) => {
       const block = randomNumber();
+      let shouldFindIDs: string[] = [];
       const blockData = await generateBlock(block, () => {
         const id = randomString();
         const rand = Math.random();
 
         // In order to have random data, this code returns one of the following every time it is called:
         // - 1 sidetree transaction
-        // - 2 sidetree transactions (should throw)
+        // - 2 sidetree transactions (should be ignored)
+        // - 2 sidetree and 1 other trasaction (should be ignored)
         //
         if (rand < 0.3) { // 30% of time
+          shouldFindIDs.push(id);
           return testConfig.sidetreeTransactionPrefix + id;
-        } else {
+        } else if (rand < 0.7) { // == 40% of the time
           const id2 = randomString();
 
           return [ testConfig.sidetreeTransactionPrefix + id, testConfig.sidetreeTransactionPrefix + id2 ];
+        } else { // return 2 sidetree and one other tx
+          const id2 = randomString();
+          const id3 = randomString();
+
+          return [ testConfig.sidetreeTransactionPrefix + id, id2, testConfig.sidetreeTransactionPrefix + id3 ];
         }
       });
 
@@ -1196,16 +1204,18 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor, 'getBlockHash' as any).and.returnValue(blockHash);
-      spyOn(bitcoinProcessor['transactionStore'], 'addTransaction').and.returnValue(Promise.resolve(undefined));
-      mockRpcCall('getblock', [blockHash, 2], blockData);
-
-      try {
-        await bitcoinProcessor['processBlock'](block);
-        fail('An error should have been thrown');
-      } catch (e) {
-        expect(e).toBeDefined();
-      }
-
+      const rpcMock = mockRpcCall('getblock', [blockHash, 2], blockData);
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
+        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
+          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
+          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
+          return Promise.resolve(undefined);
+        });
+      const actual = await bitcoinProcessor['processBlock'](block);
+      expect(actual).toEqual(blockData.hash);
+      expect(rpcMock).toHaveBeenCalled();
+      expect(addTransaction).toHaveBeenCalled();
+      expect(shouldFindIDs.length).toEqual(0);
       done();
     });
 

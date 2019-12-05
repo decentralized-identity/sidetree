@@ -800,7 +800,10 @@ export default class BitcoinProcessor {
       const oneSidetreeTxAlreadyFound = (sidetreeTxToAdd !== undefined);
 
       if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
-        throw new Error('The transaction has more then one sidetree anchor strings.');
+        // tslint:disable-next-line: max-line-length
+        const message = `The outputs in block: ${transactionBlock} with transaction id: ${transactionId} has multiple sidetree transactions. So ignoring this transaction.`;
+        console.debug(message);
+        return false;
 
       } else if (isSidetreeTx) {
         // we have found a sidetree transaction
