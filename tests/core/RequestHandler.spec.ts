@@ -36,7 +36,7 @@ describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
   console.info = () => { return; };
   console.error = () => { return; };
-  console.debug = () => { return; }
+  console.debug = () => { return; };
 
   const config: Config = require('../json/config-test.json');
   const didMethodName = config.didMethodName;
