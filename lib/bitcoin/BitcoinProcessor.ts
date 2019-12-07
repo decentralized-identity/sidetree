@@ -281,6 +281,8 @@ export default class BitcoinProcessor {
       return total + coin.satoshis;
     }, 0);
 
+    totalSatoshis = Math.max(totalSatoshis, 500);
+
     const estimatedBitcoinWritesPerDay = 6 * 24;
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
     if (totalSatoshis < lowBalanceAmount) {
@@ -416,7 +418,11 @@ export default class BitcoinProcessor {
     }
 
     try {
-      await this.processTransactions(this.lastProcessedBlock);
+      const startingBlock = await this.getStartingBlockForPeriodicPoll();
+
+      if (startingBlock) {
+        await this.processTransactions(startingBlock);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -430,28 +436,16 @@ export default class BitcoinProcessor {
    * @param endBlockHeight The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock?: IBlockInfo, endBlockHeight?: number): Promise<IBlockInfo> {
+  private async processTransactions (startBlock: IBlockInfo /*, endBlockHeight?: number*/): Promise<IBlockInfo> {
     console.info(`Starting processTransaction at: ${Date.now()}`);
 
-    let startBlockHeight: number;
-    if (startBlock) {
-      const startValid = await this.verifyBlock(startBlock.height, startBlock.hash);
-      startBlockHeight = startBlock.height;
-      if (!startValid) {
-        this.lastProcessedBlock = await this.revertBlockchainCache();
-        startBlockHeight = this.lastProcessedBlock.height;
-      }
-    } else {
-      startBlockHeight = this.genesisBlockNumber;
-    }
-    if (endBlockHeight === undefined) {
-      endBlockHeight = await this.getCurrentBlockHeight();
-    }
+    const startBlockHeight = startBlock.height;
 
-    if (startBlockHeight < this.genesisBlockNumber || endBlockHeight < this.genesisBlockNumber) {
+    if (startBlockHeight < this.genesisBlockNumber) {
       throw new Error('Cannot process Transactions before genesis');
     }
 
+    const endBlockHeight = await this.getCurrentBlockHeight();
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
     for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
@@ -503,6 +497,33 @@ export default class BitcoinProcessor {
     return {
       height: startingBlock,
       hash: await this.getBlockHash(startingBlock)
+    };
+  }
+
+  private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
+
+    const lastProcessedBlockVerified = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
+
+    // If the last processed block is not verified then that means that we need to
+    // revert the blockchain to the correct block
+    if (!lastProcessedBlockVerified) {
+      // The revert logic will return the last correct processed block
+      this.lastProcessedBlock = await this.revertBlockchainCache();
+    }
+
+    // Now that we have the correct last processed block, the new starting block needs
+    // to be the one after that one.
+    const startingBlockHeight = this.lastProcessedBlock!.height + 1;
+    const currentHeight = await this.getCurrentBlockHeight();
+
+    if (startingBlockHeight > currentHeight) {
+      return undefined;
+    }
+
+    // We have our new starting point
+    return {
+      height: startingBlockHeight,
+      hash: await this.getBlockHash(startingBlockHeight)
     };
   }
 
