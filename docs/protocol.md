@@ -212,6 +212,13 @@ Sidetree protocol requires the specification by the DID owner of dedicated crypt
 
 The most basic recovery operation, most often used to regain control after loss or theft of a controlling device/key,  is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current DID Document.
 
+
+## Sidetree Client Guidelines
+A Sidetree client manages the private keys and performs DID Document operations on behalf of the DID owner. The Sidetree client needs to comply to the following guidelines to keep the DIDs it manages secure.
+
+1. The client MUST keep the operation payload once it is submitted to a Sidetree node until it is generally available and observed. In the submitted operation is not observed, the same operation payload MUST be resubmitted. Submitting a different operation payload would put the DID in risk of a _late publish_ attack which can lead to an unrecoverable DID if the original operation payload contains a recovery key rotation and the recovery key is lost.
+
+
 ## Sidetree REST API
 A _Sidetree node_ exposes a set of REST API that enables the creation of new DIDs and their initial state, subsequent DID Document updates, and DID Document resolutions.
 
