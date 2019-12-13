@@ -238,7 +238,6 @@ describe('RequestHandler', () => {
     // Construct update payload.
     const updatePayload = {
       didUniqueSuffix,
-      previousOperationHash: didUniqueSuffix,
       patches
     };
 

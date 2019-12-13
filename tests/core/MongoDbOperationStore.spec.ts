@@ -48,7 +48,6 @@ async function constructAnchoredCreateOperation (
 async function constructAnchoredUpdateOperation (
   privateKey: string,
   didUniqueSuffix: string,
-  previousVersion: string,
   transactionNumber: number,
   transactionTime: number,
   operationIndex: number
@@ -56,7 +55,6 @@ async function constructAnchoredUpdateOperation (
 
   const updatePayload = {
     didUniqueSuffix,
-    previousOperationHash: previousVersion,
     patches: [
       {
         action: 'add-public-keys',
@@ -98,11 +96,9 @@ async function createOperationChain (
   const didUniqueSuffix = createOperation.didUniqueSuffix;
   const chain = new Array<AnchoredOperation>(createOperation);
   for (let i = 1; i < chainLength ; i++) {
-    const previousOperation = chain[i - 1];
-    const previousVersion = previousOperation.operationHash;
     const transactionNumberToUse = transactionNumber ? transactionNumber : i;
     const transactionTimeToUse = transactionNumberToUse;
-    const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, previousVersion, transactionNumberToUse, transactionTimeToUse, i);
+    const operation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, transactionNumberToUse, transactionTimeToUse, i);
     chain.push(operation);
   }
   return chain;
@@ -170,8 +166,7 @@ describe('MongoDbOperationStore', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
-    const createVersion = createOperation.operationHash;
-    const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0);
+    const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, 1, 1, 0);
     await operationStore.put([updateOperation]);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray([updateOperation], returnedOperations);
@@ -181,8 +176,7 @@ describe('MongoDbOperationStore', async () => {
     // Use a create operation to generate a DID
     const createOperation = await constructAnchoredCreateOperation(publicKey, privateKey, 0, 0, 0);
     const didUniqueSuffix = createOperation.didUniqueSuffix;
-    const createVersion = createOperation.operationHash;
-    const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, createVersion, 1, 1, 0);
+    const updateOperation = await constructAnchoredUpdateOperation(privateKey, didUniqueSuffix, 1, 1, 0);
     await operationStore.put([updateOperation]);
     // Insert duplicate operation
     await operationStore.put([updateOperation]);

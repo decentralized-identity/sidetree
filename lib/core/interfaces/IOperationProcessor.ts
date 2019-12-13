@@ -23,7 +23,6 @@ export default interface IOperationProcessor {
    */
   patch (
     operation: AnchoredOperationModel,
-    previousOperationHash: string | undefined,
     didDocumentReference: { didDocument: object | undefined }
   ): Promise<PatchResult>;
 }

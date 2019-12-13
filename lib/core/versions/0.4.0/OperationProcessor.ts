@@ -18,7 +18,6 @@ export default class OperationProcessor implements IOperationProcessor {
 
   public async patch (
     anchoredOperationModel: AnchoredOperationModel,
-    previousOperationHash: string | undefined,
     didDocumentReference: { didDocument: object | undefined }
   ): Promise<PatchResult> {
     let operationHash = undefined;
@@ -32,8 +31,8 @@ export default class OperationProcessor implements IOperationProcessor {
 
       if (operation.type === OperationType.Create) {
 
-        // If either of these is defined, then we have seen a previous create operation.
-        if (previousOperationHash !== undefined || didDocumentReference.didDocument) {
+        // If we have seen a previous create operation.
+        if (didDocumentReference.didDocument) {
           return { validOperation: false, operationHash };
         }
 
@@ -74,14 +73,8 @@ export default class OperationProcessor implements IOperationProcessor {
       } else {
         // Update operation
 
-        // Every operation other than a create has a previous operation and a valid
-        // current DID document.
-        if (previousOperationHash === undefined || didDocument === undefined) {
-          return { validOperation: false, operationHash };
-        }
-
-        // Any non-create needs a previous operation hash that should match the hash of the latest valid operation (previousOperation)
-        if (operation.previousOperationHash !== previousOperationHash) {
+        // If we have not seen a valid create operation yet.
+        if (didDocument === undefined) {
           return { validOperation: false, operationHash };
         }
 

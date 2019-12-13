@@ -12,10 +12,9 @@ export default class OperationProcessor implements IOperationProcessor {
 
   async patch (
     anchoredOperationModel: AnchoredOperationModel,
-    previousOperationHash: string | undefined,
     didDocumentReference: { didDocument: object | undefined }
   ): Promise<PatchResult> {
     /* tslint:disable-next-line */
-    throw new Error(`OperationProcessor: Not implemented. Version: TestVersion1. Inputs: ${anchoredOperationModel}, ${previousOperationHash}, ${didDocumentReference}`);
+    throw new Error(`OperationProcessor: Not implemented. Version: TestVersion1. Inputs: ${anchoredOperationModel}, ${didDocumentReference}`);
   }
 }
