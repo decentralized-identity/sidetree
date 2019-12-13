@@ -38,7 +38,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, values);
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile).toBe(64); // 50 is the correct value, with rounding it becomes 64
+    expect(quantile).toBe(50); // This value changes based on the valueApproximation field
   });
 
   it('should compute correct median at boundary', async () => {
@@ -85,7 +85,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, values);
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile).toBe(64); // 50 is the correct value, with rounding it becomes 64
+    expect(quantile).toBe(50); // This value changes based on the valueApproximation field
   });
 
   it('should compute correct median with a window', async () => {

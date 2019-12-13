@@ -651,8 +651,10 @@ describe('BitcoinProcessor', () => {
           height: nextBlock
         });
       });
+
+      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve(lastBlock));
       /* tslint:disable-next-line */
-      bitcoinProcessor['periodicPoll']();
+      await bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {
         expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
@@ -664,11 +666,30 @@ describe('BitcoinProcessor', () => {
       expect(processTransactionsSpy).toHaveBeenCalled();
     });
 
+    it('should not call process transaction if the starting block is undefined', async (done) => {
+      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve(undefined));
+
+      await bitcoinProcessor['periodicPoll']();
+      // need to wait for the process call
+      setTimeout(() => {
+        expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
+        // clean up
+        clearTimeout(bitcoinProcessor['pollTimeoutId']);
+        done();
+      }, 300);
+
+      expect(processTransactionsSpy).not.toHaveBeenCalled();
+      done();
+    });
+
     it('should set a timeout to call itself', async (done) => {
       processTransactionsSpy.and.returnValue(Promise.resolve({
         hash: randomString(),
         height: randomNumber()
       }));
+
+      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(bitcoinProcessor['lastProcessedBlock']);
+
       /* tslint:disable-next-line */
       bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
@@ -690,48 +711,28 @@ describe('BitcoinProcessor', () => {
     it('should verify the start block', async (done) => {
       const hash = randomString();
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      const actual = await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 1);
+      const getCurrentHeightMock = spyOn(bitcoinProcessor as any,'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));
+      const actual = await bitcoinProcessor['processTransactions'](startBlock);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(startBlock.height + 1);
       expect(bitcoinProcessor['lastProcessedBlock']).toBeDefined();
       expect(actual).toEqual(bitcoinProcessor['lastProcessedBlock']!);
-      expect(verifySpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalled();
-      done();
-    });
-
-    it('should begin a rollback if the start block failed to validate', async (done) => {
-      const startBlock = randomBlock(testConfig.genesisBlockNumber + 100);
-      const hash = randomString();
-      const revertNumber = startBlock.height - 100;
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
-      const revertSpy = spyOn(bitcoinProcessor, 'revertBlockchainCache' as any);
-      revertSpy.and.returnValue(Promise.resolve({ height: revertNumber, hash: 'some_hash' }));
-
-      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      const actual = await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 1);
-      expect(actual.height).toEqual(startBlock.height + 1);
-      expect(actual.hash).toEqual(hash);
-      expect(bitcoinProcessor['lastProcessedBlock']).toBeDefined();
-      expect(actual).toEqual(bitcoinProcessor['lastProcessedBlock']!);
-      expect(verifySpy).toHaveBeenCalled();
-      expect(revertSpy).toHaveBeenCalled();
-      expect(processMock).toHaveBeenCalledWith(revertNumber);
-      expect(processMock).toHaveBeenCalledWith(startBlock.height + 1);
+      expect(getCurrentHeightMock).toHaveBeenCalled();
       done();
     });
 
     it('should call processBlock on all blocks within range', async (done) => {
       const hash = randomString();
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
-      const actual = await bitcoinProcessor['processTransactions'](startBlock, startBlock.height + 9);
+      const getCurrentHeightMock = spyOn(bitcoinProcessor as any,'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 9));
+
+      const actual = await bitcoinProcessor['processTransactions'](startBlock);
       expect(bitcoinProcessor['lastProcessedBlock']).toBeDefined();
       expect(actual).toEqual(bitcoinProcessor['lastProcessedBlock']!);
-      expect(verifySpy).toHaveBeenCalled();
+      expect(getCurrentHeightMock).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(10);
       done();
     });
@@ -739,33 +740,17 @@ describe('BitcoinProcessor', () => {
     it('should use the current tip if no end is specified', async (done) => {
       const hash = randomString();
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(startBlock.height + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(hash));
       const actual = await bitcoinProcessor['processTransactions'](startBlock);
       expect(bitcoinProcessor['lastProcessedBlock']).toBeDefined();
       expect(actual).toEqual(bitcoinProcessor['lastProcessedBlock']!);
-      expect(verifySpy).toHaveBeenCalled();
-      expect(tipSpy).toHaveBeenCalled();
-      expect(processMock).toHaveBeenCalledTimes(2);
-      done();
-    });
-
-    it('should use genesis if no start is specified', async (done) => {
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
-      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(randomString()));
-      const actual = await bitcoinProcessor['processTransactions']();
-      expect(bitcoinProcessor['lastProcessedBlock']).toBeDefined();
-      expect(actual).toEqual(bitcoinProcessor['lastProcessedBlock']!);
-      expect(verifySpy).not.toHaveBeenCalled();
       expect(tipSpy).toHaveBeenCalled();
       expect(processMock).toHaveBeenCalledTimes(2);
       done();
     });
 
     it('should throw if asked to start processing before genesis', async (done) => {
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
@@ -773,8 +758,7 @@ describe('BitcoinProcessor', () => {
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('before genesis');
-        expect(verifySpy).toHaveBeenCalled();
-        expect(tipSpy).toHaveBeenCalled();
+        expect(tipSpy).not.toHaveBeenCalled();
         expect(processMock).not.toHaveBeenCalled();
       } finally {
         done();
@@ -782,16 +766,12 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should throw if asked to process while the miners block height is below genesis', async (done) => {
-      const verifySpy = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const tipSpy = spyOn(bitcoinProcessor, 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber - 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
-        await bitcoinProcessor['processTransactions']();
+        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 1, hash: randomString() });
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('before genesis');
-        expect(verifySpy).not.toHaveBeenCalled();
-        expect(tipSpy).toHaveBeenCalled();
         expect(processMock).not.toHaveBeenCalled();
       } finally {
         done();
@@ -850,6 +830,51 @@ describe('BitcoinProcessor', () => {
       expect(actualBlock.height).toEqual(mockStartingBlockHeight);
       expect(actualBlock.hash).toEqual(mockStartingBlockHash);
       done();
+    });
+  });
+
+  describe('getStartingBlockForPeriodicPoll', () => {
+    let actualLastProcessedBlock: IBlockInfo;
+
+    beforeEach(() => {
+      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString() };
+      actualLastProcessedBlock = bitcoinProcessor['lastProcessedBlock'];
+      expect(actualLastProcessedBlock).toBeDefined();
+    });
+
+    it('should return the block after the last-processed-block', async () => {
+      spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(true));
+      spyOn(bitcoinProcessor as any, 'getCurrentBlockHeight').and.returnValue(actualLastProcessedBlock.height + 1);
+      spyOn(bitcoinProcessor as any, 'getBlockHash').and.returnValue(Promise.resolve('some_hash'));
+
+      const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
+      expect(actual).toBeDefined();
+      expect(actual!.height).toEqual(actualLastProcessedBlock.height + 1);
+    });
+
+    it('should return undefined if the last-processed-block is same as the current height', async () => {
+      spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(true));
+      spyOn(bitcoinProcessor as any, 'getCurrentBlockHeight').and.returnValue(actualLastProcessedBlock.height);
+      spyOn(bitcoinProcessor as any, 'getBlockHash').and.returnValue(Promise.resolve('some_hash'));
+
+      const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
+      expect(actual).not.toBeDefined();
+    });
+
+    it('should revert blockchain if verifyblock fails', async () => {
+      const mockHeightAfterRevert = actualLastProcessedBlock.height - 1;
+
+      const revertBlockchainSpy = spyOn(bitcoinProcessor as any, 'revertBlockchainCache');
+      revertBlockchainSpy.and.returnValue({ height: mockHeightAfterRevert, hash: randomString() });
+
+      spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(false));
+      spyOn(bitcoinProcessor as any, 'getCurrentBlockHeight').and.returnValue(actualLastProcessedBlock.height + 1);
+      spyOn(bitcoinProcessor as any, 'getBlockHash').and.returnValue(Promise.resolve('some_hash'));
+
+      const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
+      expect(actual).toBeDefined();
+      expect(actual!.height).toEqual(mockHeightAfterRevert + 1);
+      expect(revertBlockchainSpy).toHaveBeenCalled();
     });
   });
 
