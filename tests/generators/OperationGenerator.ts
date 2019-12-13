@@ -144,7 +144,6 @@ export default class OperationGenerator {
   public static createUpdatePayloadForAddingAKey (previousOperation: AnchoredOperation, keyId: string, publicKeyHex: string): any {
     const updatePayload = {
       didUniqueSuffix: previousOperation.didUniqueSuffix,
-      previousOperationHash: previousOperation.operationHash,
       patches: [
         {
           action: 'add-public-keys',
@@ -166,7 +165,7 @@ export default class OperationGenerator {
   /**
    * Creates an update operation for adding and/or removing hub service endpoints.
    */
-  public static createUpdatePayloadForHubEndpoints (previousOperation: AnchoredOperation, endpointsToAdd: string[], endpointsToRemove: string[]): any {
+  public static createUpdatePayloadForHubEndpoints (didUniqueSuffix: string, endpointsToAdd: string[], endpointsToRemove: string[]): any {
     const patches = [];
 
     if (endpointsToAdd.length > 0) {
@@ -190,8 +189,7 @@ export default class OperationGenerator {
     }
 
     const updatePayload = {
-      didUniqueSuffix: previousOperation.didUniqueSuffix,
-      previousOperationHash: previousOperation.operationHash,
+      didUniqueSuffix,
       patches
     };
 
