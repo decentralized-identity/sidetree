@@ -281,7 +281,11 @@ export default class BitcoinProcessor {
       return total + coin.satoshis;
     }, 0);
 
-    totalSatoshis = Math.max(totalSatoshis, 500);
+    // ----
+    // Issue #347 opened to track the investigation for this hardcoded value.
+    // Ensure that we are always paying this minimum fee.
+    fee = Math.max(fee, 1000);
+    // ----
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
@@ -436,7 +440,7 @@ export default class BitcoinProcessor {
    * @param endBlockHeight The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock: IBlockInfo /*, endBlockHeight?: number*/): Promise<IBlockInfo> {
+  private async processTransactions (startBlock: IBlockInfo): Promise<IBlockInfo> {
     console.info(`Starting processTransaction at: ${Date.now()}`);
 
     const startBlockHeight = startBlock.height;

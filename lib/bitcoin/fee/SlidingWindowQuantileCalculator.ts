@@ -30,7 +30,7 @@ export default class SlidingWindowQuantileCalculator {
   /**
    * The value to use as an input to the ValueApproximator.
    */
-  private readonly feeApproximate: number = 2;
+  private readonly feeApproximate: number = 1.1;
   /**
    * Size of a frequency vector; 1 + max normalized value
    */
