@@ -520,6 +520,8 @@ export default class BitcoinProcessor {
     const startingBlockHeight = this.lastProcessedBlock!.height + 1;
     const currentHeight = await this.getCurrentBlockHeight();
 
+    // The new starting block-height may not be actually written on the blockchain yet
+    // so here we make sure that we don't return an 'invalid' starting block.
     if (startingBlockHeight > currentHeight) {
       return undefined;
     }
