@@ -424,7 +424,6 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID",
-  "previousOperationHash": "The hash of the previous operation made to the DID Document.",
   "patches": ["An array of patches each must adhere to the patch schema defined below."
   ]
 }
@@ -531,7 +530,6 @@ Example:
 ```json
 {
   "didUniqueSuffix": "EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A",
-  "previousOperationHash": "EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A",
   "patches": [
     {
       "action": "add-public-keys",

@@ -75,7 +75,7 @@ export default class Resolver {
   ): Promise<[NamedAnchoredOperationModel | undefined, string | undefined]> {
     for (const operation of operations) {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const patchResult = await operationProcessor.patch(operation, lastOperationHash, didDocumentReference);
+      const patchResult = await operationProcessor.patch(operation, didDocumentReference);
 
       if (patchResult.validOperation) {
         lastOperation = operation;
