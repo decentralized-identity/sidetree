@@ -669,8 +669,7 @@ describe('BitcoinProcessor', () => {
     it('should not call process transaction if the starting block is undefined', async (done) => {
       spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve(undefined));
 
-      /* tslint:disable-next-line */
-      bitcoinProcessor['periodicPoll']();
+      await bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
       setTimeout(() => {
         expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
