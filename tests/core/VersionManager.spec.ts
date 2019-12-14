@@ -87,7 +87,7 @@ describe('VersionManager', async () => {
         operationIndex: 0,
         operationBuffer: Buffer.from('')
       };
-      await expectAsync(operationProcessor.patch(anchoredOpModel, { didDocument: undefined })).toBeRejected();
+      await expectAsync(operationProcessor.apply(anchoredOpModel, { didDocument: undefined })).toBeRejected();
 
       const requestHandler = versionMgr.getRequestHandler(2000);
       await expectAsync(requestHandler.handleResolveRequest('')).toBeRejected();

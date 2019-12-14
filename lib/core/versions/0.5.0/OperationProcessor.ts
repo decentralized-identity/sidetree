@@ -2,7 +2,7 @@ import AnchoredOperation from './AnchoredOperation';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
-import IOperationProcessor, { PatchResult } from '../../interfaces/IOperationProcessor';
+import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
 import ProtocolParameters from './ProtocolParameters';
 import { OperationType } from './Operation';
 
@@ -16,10 +16,10 @@ export default class OperationProcessor implements IOperationProcessor {
 
   public constructor (private didMethodName: string) { }
 
-  public async patch (
+  public async apply (
     anchoredOperationModel: AnchoredOperationModel,
     didDocumentReference: { didDocument: object | undefined }
-  ): Promise<PatchResult> {
+  ): Promise<ApplyResult> {
     let operationHash = undefined;
 
     try {

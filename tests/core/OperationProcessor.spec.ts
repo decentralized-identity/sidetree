@@ -507,7 +507,7 @@ describe('OperationProcessor', async () => {
       anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
 
       // Apply the initial create operation.
-      const result = await operationProcessor.patch(anchoredCreateOperationModel, didDocumentReference);
+      const result = await operationProcessor.apply(anchoredCreateOperationModel, didDocumentReference);
 
       // Sanity check the create operation.
       expect(result).toBeTruthy();
@@ -527,7 +527,7 @@ describe('OperationProcessor', async () => {
       const anchoredUpdateOperationModel =
         await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
 
-      const result = await operationProcessor.patch(anchoredUpdateOperationModel, { didDocument: undefined });
+      const result = await operationProcessor.apply(anchoredUpdateOperationModel, { didDocument: undefined });
       expect(result.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
 
@@ -562,7 +562,7 @@ describe('OperationProcessor', async () => {
       anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
 
       // Apply the initial create operation.
-      const result = await operationProcessor.patch(anchoredCreateOperationModel, didDocumentReference);
+      const result = await operationProcessor.apply(anchoredCreateOperationModel, didDocumentReference);
 
       // Sanity check the create operation.
       expect(result).toBeTruthy();
@@ -587,7 +587,7 @@ describe('OperationProcessor', async () => {
       const anchoredRecoveryOperationModel =
         await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
 
-      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, { didDocument: undefined });
+      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, { didDocument: undefined });
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
 
@@ -611,7 +611,7 @@ describe('OperationProcessor', async () => {
       const anchoredRecoveryOperationModel =
         await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, '#non-existent-key-id', recoveryPrivateKey, 2, 2, 2);
 
-      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, didDocumentReference);
+      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
 
@@ -635,7 +635,7 @@ describe('OperationProcessor', async () => {
       const anchoredRecoveryOperationModel =
         await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
 
-      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, didDocumentReference);
+      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
 
@@ -659,7 +659,7 @@ describe('OperationProcessor', async () => {
       const anchoredRecoveryOperationModel =
         await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
 
-      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, didDocumentReference);
+      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
 
@@ -676,7 +676,7 @@ describe('OperationProcessor', async () => {
       const anchoredRecoveryOperationModel =
         await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
 
-      const recoveryResult = await operationProcessor.patch(anchoredRecoveryOperationModel, didDocumentReference);
+      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
       expect(recoveryResult.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
 

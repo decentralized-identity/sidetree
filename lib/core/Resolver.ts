@@ -28,7 +28,7 @@ export default class Resolver {
 
     // NOTE: We create an object referencing the DID document to be constructed so that both:
     // 1. `didDocument` can be `undefined` initially; and
-    // 2. `didDocument` can be modified directly in-place in subsequent document patching.
+    // 2. `didDocument` can be modified directly in-place in subsequent applying of operations.
     let didDocumentReference: { didDocument: object | undefined } = { didDocument: undefined };
 
     const operations = await this.operationStore.get(didUniqueSuffix);
@@ -75,11 +75,11 @@ export default class Resolver {
   ): Promise<[NamedAnchoredOperationModel | undefined, string | undefined]> {
     for (const operation of operations) {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const patchResult = await operationProcessor.patch(operation, didDocumentReference);
+      const applyResult = await operationProcessor.apply(operation, didDocumentReference);
 
-      if (patchResult.validOperation) {
+      if (applyResult.validOperation) {
         lastOperation = operation;
-        lastOperationHash = patchResult.operationHash;
+        lastOperationHash = applyResult.operationHash;
       } else {
         const index = operation.operationIndex;
         const time = operation.transactionTime;
