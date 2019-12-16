@@ -1,5 +1,5 @@
 import AnchoredOperationModel from '../../../../lib/core/models/AnchoredOperationModel';
-import IOperationProcessor, { PatchResult } from '../../../../lib/core/interfaces/IOperationProcessor';
+import IOperationProcessor, { ApplyResult } from '../../../../lib/core/interfaces/IOperationProcessor';
 
 /**
  * Operation processor.
@@ -10,10 +10,10 @@ export default class OperationProcessor implements IOperationProcessor {
     console.debug(this.didMethodName);
   }
 
-  async patch (
+  async apply (
     anchoredOperationModel: AnchoredOperationModel,
     didDocumentReference: { didDocument: object | undefined }
-  ): Promise<PatchResult> {
+  ): Promise<ApplyResult> {
     /* tslint:disable-next-line */
     throw new Error(`OperationProcessor: Not implemented. Version: TestVersion1. Inputs: ${anchoredOperationModel}, ${didDocumentReference}`);
   }

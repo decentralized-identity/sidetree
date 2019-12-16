@@ -21,16 +21,16 @@ export default interface IOperationProcessor {
    * @param didDocumentReference The object containing DID document to apply the given operation against.
    * @returns a boolean that indicates if the operation is valid and applied.
    */
-  patch (
+  apply (
     operation: AnchoredOperationModel,
     didDocumentReference: { didDocument: object | undefined }
-  ): Promise<PatchResult>;
+  ): Promise<ApplyResult>;
 }
 
 /**
- * The result of applying an operation update patch.
+ * The result of applying an operation.
  */
-export interface PatchResult {
+export interface ApplyResult {
   validOperation: boolean;
   /** The operation hash of the operation being applied. */
   operationHash: string | undefined;
