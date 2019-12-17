@@ -1,14 +1,14 @@
 import * as httpStatus from 'http-status';
 import BlockData from './models/BlockData';
 import IBitcoinClient from './interfaces/IBitcoinClient';
-import ReadableStream from '../common/ReadableStream';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import { Address, Transaction } from 'bitcore-lib';
+import ReadableStream from '../common/ReadableStream';
+import { Address, Block, Transaction } from 'bitcore-lib';
 
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
  */
-export default class BitcoinLedger implements IBitcoinClient {
+export default class BitcoinClient implements IBitcoinClient {
 
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
@@ -34,26 +34,29 @@ export default class BitcoinLedger implements IBitcoinClient {
         rawTransaction
       ]
     };
-    const response = await this.SendGenericRequest(request, true);
+    const response = await this.rpcCall(request, true);
 
     return response.length > 0;
   }
 
-  public async getBlock (hash: string, verbosity: number = 1): Promise<BlockData> {
+  public async getBlock (hash: string): Promise<BlockData> {
     const request = {
       method: 'getblock',
       params: [
         hash,
-        verbosity
+        0 // get full block data as hex encoded string
       ]
     };
 
-    const response = await this.SendGenericRequest(request, true);
+    const hexEncodedResponse = await this.rpcCall(request, true);
+    const responseBuffer = Buffer.from(hexEncodedResponse, 'hex');
+
+    const block = BitcoinClient.createBlockFromBuffer(responseBuffer);
 
     return {
-      hash: response.hash,
-      height: response.height,
-      transactions: response.transactions
+      hash: block.hash,
+      height: block.height,
+      transactions: block.transactions
     };
   }
 
@@ -65,7 +68,22 @@ export default class BitcoinLedger implements IBitcoinClient {
         height // height of the block
       ]
     };
-    return this.SendGenericRequest(hashRequest, true);
+
+    return this.rpcCall(hashRequest, true);
+  }
+
+  public async getBlockHeight (hash: string): Promise<number> {
+    const request = {
+      method: 'getblock',
+      params: [
+        hash,
+        1 // get details about the block as json
+      ]
+    };
+
+    const response = await this.rpcCall(request, true);
+
+    return response.height;
   }
 
   public async getCurrentBlockHeight (): Promise<number> {
@@ -73,8 +91,24 @@ export default class BitcoinLedger implements IBitcoinClient {
     const request = {
       method: 'getblockcount'
     };
-    const response = await this.SendGenericRequest(request, true);
+
+    const response = await this.rpcCall(request, true);
     return response;
+  }
+
+  public async getRawTransaction (transactionId: string): Promise<Transaction> {
+    const request = {
+      method: 'getrawtransaction',
+      params: [
+        transactionId,  // transaction id
+        0   // get the raw hex-encoded string
+      ]
+    };
+
+    const hexEncodedTransaction = await this.rpcCall(request, true);
+    const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
+
+    return BitcoinClient.createTransactionFromBuffer(transactionBuffer);
   }
 
   public async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
@@ -90,7 +124,7 @@ export default class BitcoinLedger implements IBitcoinClient {
         [addressToSearch]
       ]
     };
-    const response: Array<any> = await this.SendGenericRequest(request, true);
+    const response: Array<any> = await this.rpcCall(request, true);
 
     const unspentTransactions = response.map((coin) => {
       return new Transaction.UnspentOutput(coin);
@@ -111,7 +145,7 @@ export default class BitcoinLedger implements IBitcoinClient {
       ]
     };
 
-    await this.SendGenericRequest(request, false);
+    await this.rpcCall(request, false);
   }
 
   public async walletExists (address: string): Promise<boolean> {
@@ -123,11 +157,21 @@ export default class BitcoinLedger implements IBitcoinClient {
       ]
     };
 
-    const response = await this.SendGenericRequest(request, true);
+    const response = await this.rpcCall(request, true);
     return response.labels.length > 0 || response.iswatchonly;
   }
 
-  private async SendGenericRequest (request: any, timeout: boolean): Promise<any> {
+  // This function is specifically created to help with unit testing.
+  private static createTransactionFromBuffer (buffer: Buffer): Transaction {
+    return new Transaction(buffer);
+  }
+
+  // This function is specifically created to help with unit testing.
+  private static createBlockFromBuffer (buffer: Buffer): Block {
+    return new Block(buffer);
+  }
+
+  private async rpcCall (request: any, timeout: boolean): Promise<any> {
     // append some standard jrpc parameters
     request['jsonrpc'] = '1.0';
     request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);

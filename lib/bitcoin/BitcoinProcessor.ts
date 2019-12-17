@@ -1,15 +1,21 @@
 import BitcoinClient from './BitcoinClient';
 import ErrorCode from '../common/SharedErrorCode';
+import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
+import ProtocolParameters from './ProtocolParameters';
 import IBitcoinClient from './interfaces/IBitcoinClient';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import RequestError from './RequestError';
+import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
+import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
+import BlockData from './models/BlockData';
 
 /**
  * Object representing a blockchain time and hash
@@ -58,7 +64,7 @@ export default class BitcoinProcessor {
   public lowBalanceNoticeDays: number;
 
   /** Last seen block */
-  private lastSeenBlock: IBlockInfo | undefined;
+  private lastProcessedBlock: IBlockInfo | undefined;
 
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
@@ -67,10 +73,26 @@ export default class BitcoinProcessor {
 
   private bitcoinClient: IBitcoinClient;
 
+  /** proof of fee configuration */
+  private readonly quantileCalculator: SlidingWindowQuantileCalculator;
+
+  private readonly transactionSampler: ReservoirSampler;
+
+  /** satoshis per bitcoin */
+  private static readonly satoshiPerBitcoin = 100000000;
+
   public constructor (config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
+    const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
+      ProtocolParameters.windowSizeInGroups,
+      ProtocolParameters.quantileMeasure,
+      mongoQuantileStore);
+    this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
+
     /// Bitcore has a type file error on PrivateKey
     try {
       this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
@@ -116,6 +138,8 @@ export default class BitcoinProcessor {
   public async initialize () {
     console.debug('Initializing ITransactionStore');
     await this.transactionStore.initialize();
+    await this.quantileCalculator.initialize();
+
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
     if (!await this.bitcoinClient.walletExists(address.toString())) {
@@ -126,15 +150,13 @@ export default class BitcoinProcessor {
     } else {
       console.debug('Wallet found.');
     }
+
     console.debug('Synchronizing blocks for sidetree transactions...');
-    const lastKnownTransaction = await this.transactionStore.getLastTransaction();
-    if (lastKnownTransaction) {
-      console.info(`Last known block ${lastKnownTransaction.transactionTime} (${lastKnownTransaction.transactionTimeHash})`);
-      this.lastSeenBlock = { height: lastKnownTransaction.transactionTime, hash: lastKnownTransaction.transactionTimeHash };
-      this.lastSeenBlock = await this.processTransactions(this.lastSeenBlock);
-    } else {
-      this.lastSeenBlock = await this.processTransactions();
-    }
+    const startingBlock = await this.getStartingBlockForInitialization();
+
+    console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+    await this.processTransactions(startingBlock);
+
     // disabling floating promise lint since periodicPoll should just float in the background event loop
     /* tslint:disable-next-line:no-floating-promises */
     this.periodicPoll();
@@ -157,11 +179,11 @@ export default class BitcoinProcessor {
       };
     }
 
-    const blockData = await this.bitcoinClient.getBlock(hash, 1);
+    const height = await this.bitcoinClient.getBlockHeight(hash);
 
     return {
-      hash: blockData.hash,
-      time: blockData.height
+      hash: hash,
+      time: height
     };
   }
 
@@ -238,6 +260,12 @@ export default class BitcoinProcessor {
       return total + coin.satoshis;
     }, 0);
 
+    // ----
+    // Issue #347 opened to track the investigation for this hardcoded value.
+    // Ensure that we are always paying this minimum fee.
+    fee = Math.max(fee, 1000);
+    // ----
+
     const estimatedBitcoinWritesPerDay = 6 * 24;
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
     if (totalSatoshis < lowBalanceAmount) {
@@ -271,6 +299,29 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * Return proof-of-fee value for a particular block.
+   */
+  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
+
+    if (block < this.genesisBlockNumber) {
+      const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
+      console.error(error);
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    }
+
+    const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
+    const groupId = this.getGroupIdFromBlock(blockAfterHistoryOffset);
+    const quantileValue = this.quantileCalculator.getQuantile(groupId);
+
+    if (quantileValue) {
+      return { normalizedTransactionFee: quantileValue };
+    }
+
+    console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
+    throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+  }
+
+  /**
    * Handles the get version operation.
    */
   public async getServiceVersion (): Promise<ServiceVersionModel> {
@@ -288,8 +339,11 @@ export default class BitcoinProcessor {
     }
 
     try {
-      const syncedTo = await this.processTransactions(this.lastSeenBlock);
-      this.lastSeenBlock = syncedTo;
+      const startingBlock = await this.getStartingBlockForPeriodicPoll();
+
+      if (startingBlock) {
+        await this.processTransactions(startingBlock);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -303,35 +357,96 @@ export default class BitcoinProcessor {
    * @param endBlockHeight The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock?: IBlockInfo, endBlockHeight?: number): Promise<IBlockInfo> {
-    let startBlockHeight: number;
-    if (startBlock) {
-      const startValid = await this.verifyBlock(startBlock.height, startBlock.hash);
-      startBlockHeight = startBlock.height;
-      if (!startValid) {
-        startBlockHeight = await this.revertBlockchainCache();
-      }
-    } else {
-      startBlockHeight = this.genesisBlockNumber;
-    }
-    if (endBlockHeight === undefined) {
-      endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    }
+  private async processTransactions (startBlock: IBlockInfo): Promise<IBlockInfo> {
+    console.info(`Starting processTransaction at: ${Date.now()}`);
 
-    if (startBlockHeight < this.genesisBlockNumber || endBlockHeight < this.genesisBlockNumber) {
+    const startBlockHeight = startBlock.height;
+
+    if (startBlockHeight < this.genesisBlockNumber) {
       throw new Error('Cannot process Transactions before genesis');
     }
 
+    const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
-    for (let blockHeight = startBlockHeight; blockHeight < endBlockHeight; blockHeight++) {
-      await this.processBlock(blockHeight);
+    for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
+      const processedBlockHash = await this.processBlock(blockHeight);
+
+      this.lastProcessedBlock = {
+        height: blockHeight,
+        hash: processedBlockHash
+      };
     }
-    const hash = await this.processBlock(endBlockHeight);
+
     console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
+    return this.lastProcessedBlock!;
+  }
+
+  /**
+   * For proof of fee calculation, blocks are grouped into fixed sized groups.
+   * This function rounds a block to the first block in its group and returns that
+   * value.
+   */
+  private getFirstBlockInGroup (block: number): number {
+    const groupId = this.getGroupIdFromBlock(block);
+    return groupId * ProtocolParameters.groupSizeInBlocks;
+  }
+
+  private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
+
+    // Assume that we're going to start form the genesis block
+    let startingBlock = this.genesisBlockNumber;
+
+    // We look at the latest data that we saved in the quantile calculator. The latest
+    // Id in there tells us which group of blocks have been processed.
+    const lastSavedGroupId = await this.quantileCalculator.getLastGroupId();
+
+    if (lastSavedGroupId) {
+      // Then we need to start from the block corresponding to that groupId
+      startingBlock = this.getStartingBlockFromGroupId(lastSavedGroupId);
+
+      // We want to delete the last group Id because we might not have saved all the transaction(s)
+      // in that group. So removing that ensures that we redo this block which will ensure that
+      // all the transactions are processed again.
+      await this.quantileCalculator.removeGroupsGreaterThanOrEqual(lastSavedGroupId);
+    }
+
+    // Remove everything after the starting block as we are (re)starting from that point
+    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
+    await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
+
     return {
-      hash,
-      height: endBlockHeight
+      height: startingBlock,
+      hash: await this.bitcoinClient.getBlockHash(startingBlock)
+    };
+  }
+
+  private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
+
+    const lastProcessedBlockVerified = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
+
+    // If the last processed block is not verified then that means that we need to
+    // revert the blockchain to the correct block
+    if (!lastProcessedBlockVerified) {
+      // The revert logic will return the last correct processed block
+      this.lastProcessedBlock = await this.revertBlockchainCache();
+    }
+
+    // Now that we have the correct last processed block, the new starting block needs
+    // to be the one after that one.
+    const startingBlockHeight = this.lastProcessedBlock!.height + 1;
+    const currentHeight = await this.bitcoinClient.getCurrentBlockHeight();
+
+    // The new starting block-height may not be actually written on the blockchain yet
+    // so here we make sure that we don't return an 'invalid' starting block.
+    if (startingBlockHeight > currentHeight) {
+      return undefined;
+    }
+
+    // We have our new starting point
+    return {
+      height: startingBlockHeight,
+      hash: await this.bitcoinClient.getBlockHash(startingBlockHeight)
     };
   }
 
@@ -339,7 +454,7 @@ export default class BitcoinProcessor {
    * Begins to revert the blockchain cache until consistent, returns last good height
    * @returns last valid block height before the fork
    */
-  private async revertBlockchainCache (): Promise<number> {
+  private async revertBlockchainCache (): Promise<IBlockInfo> {
     console.info('Reverting transactions');
 
     // Keep reverting transactions until a valid transaction is found.
@@ -348,30 +463,54 @@ export default class BitcoinProcessor {
 
       const firstValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
-      let revertToTransactionNumber: number;
-
       if (firstValidTransaction) {
-        // The number that represents the theoritical last possible transaction written on `firstValidTransaction.transactionTime`.
-        revertToTransactionNumber = TransactionNumber.construct(firstValidTransaction.transactionTime + 1, 0) - 1;
-      } else {
-        const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
-        revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
+        // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a group
+        // boundary to simplify resetting proof-of-fee state which is maintained per group.
+        let revertToBlockNumber = this.getFirstBlockInGroup(firstValidTransaction.transactionTime);
+
+        // Revert the quantile calculator. We want to keep the revertToBlock which means that we should
+        // keep the corresponding group and delete everything greater than that one.
+        //
+        // NOTE: Make sure that we remove the groupId data BEFORE we remove the transactions. This is
+        // because that if the service stops at any moment after this, the initialize code looks at
+        // the groupId and can revert the transactions db accordingly.
+        const revertToGroupId = this.getGroupIdFromBlock(revertToBlockNumber);
+
+        console.debug(`Reverting the quantile data greater than: ${revertToGroupId}`);
+        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId + 1);
+
+        // Reset transaction sampling
+        this.transactionSampler.clear();
+
+        // The number that represents the theoritical last possible transaction written with a block number
+        // less than revertToBlockNumber
+        const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber + 1, 0) - 1;
+
+        console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
+        await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
+
+        console.info(`reverted Transactions to block ${revertToBlockNumber}`);
+        return {
+          height: revertToBlockNumber,
+          hash: await this.bitcoinClient.getBlockHash(revertToBlockNumber)
+        };
       }
+
+      // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
+      // transactions and repeat the process with a new reduced list of transactions.
+      const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
+      const revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
 
       console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
       await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
-
-      // If we have reverted back to a valid transaction, rollback is complete.
-      if (firstValidTransaction) {
-        console.info(`reverted Transactions to block ${firstValidTransaction.transactionTime}`);
-        return firstValidTransaction.transactionTime;
-      }
-
-      // Else we repeat the process using the newly reduced list of trasactions.
     }
+
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
-    return this.genesisBlockNumber;
+    return {
+      height: this.genesisBlockNumber,
+      hash: await this.bitcoinClient.getBlockHash(this.genesisBlockNumber)
+    };
   }
 
   /**
@@ -388,6 +527,104 @@ export default class BitcoinProcessor {
     return hash === responseData;
   }
 
+  private isSidetreeTransaction (transaction: Transaction): boolean {
+    const transactionOutputs = transaction.outputs;
+
+    for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
+
+      const data = this.getSidetreeDataFromVOutIfExist(transactionOutputs[outputIndex]);
+
+      // We do not check for multiple sidetree anchors; we would treat such
+      // transactions as non-sidetree for updating the transaction store, but here
+      // it seems better to consider this as a sidetree transaction and ignore it
+      // for sampling purposes to eliminate potentially fraudelent transactions from
+      // affecting the sample.
+      if (data !== undefined) {
+        return true;
+      }
+    }
+
+    // non sidetree transaction
+    return false;
+  }
+
+  private getSidetreeDataFromVOutIfExist (transactionOutput: Transaction.Output): string | undefined {
+      // grab the scripts
+    const script = transactionOutput.script;
+
+    // check for returned data for sidetree prefix
+    const hexDataMatches = script.toASM().match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+
+    if (hexDataMatches && hexDataMatches.length !== 0) {
+
+      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
+
+      if (data.startsWith(this.sidetreePrefix)) {
+        return data.slice(this.sidetreePrefix.length);
+      }
+    }
+
+    // Nothing was found
+    return undefined;
+  }
+
+  private isGroupBoundary (block: number): boolean {
+    return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
+  }
+
+  private getGroupIdFromBlock (block: number): number {
+    return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
+  }
+
+  private getStartingBlockFromGroupId (groupId: number): number {
+    return groupId * ProtocolParameters.groupSizeInBlocks;
+  }
+
+  private async processBlockForPofCalculation (blockHeight: number, blockData: BlockData): Promise<void> {
+
+    const blockHash = blockData.hash;
+
+    // reseed source of psuedo-randomness to the blockhash
+    this.transactionSampler.resetPsuedoRandomSeed(blockHash);
+
+    const transactions = blockData.transactions;
+
+    // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
+    // so we are going to ignore that transaction in our calculations.
+    for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
+      const transaction = transactions[transactionIndex];
+
+      const isSidetreeTransaction = this.isSidetreeTransaction(transaction);
+
+      // Add the transaction to the sampler.  We filter out transactions with unusual
+      // input count - such transaction require a large number of rpc calls to compute transaction fee
+      // not worth the cost for an approximate measure. We also filter out sidetree transactions
+      // const inputsCount = (transaction.vin as Array<any>).length;
+
+      if (!isSidetreeTransaction &&
+          transactions.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
+        this.transactionSampler.addElement(transaction.id);
+      }
+    }
+
+    if (this.isGroupBoundary(blockHeight)) {
+
+      // Compute the transaction fees for sampled transactions of this group
+      const sampledTransactionIds = this.transactionSampler.getSample();
+      const sampledTransactionFees = new Array();
+      for (let transactionId of sampledTransactionIds) {
+        const transactionFee = await this.getTransactionFeeInSatoshi(transactionId);
+        sampledTransactionFees.push(transactionFee);
+      }
+
+      const groupId = this.getGroupIdFromBlock(blockHeight);
+      await this.quantileCalculator.add(groupId, sampledTransactionFees);
+
+      // Reset the sampler for the next group
+      this.transactionSampler.clear();
+    }
+  }
+
   /**
    * Given a Bitcoin block height, processes that block for Sidetree transactions
    * @param block Block height to process
@@ -396,7 +633,9 @@ export default class BitcoinProcessor {
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
     const hash = await this.bitcoinClient.getBlockHash(block);
-    const blockData = await this.bitcoinClient.getBlock(hash, 2);
+    const blockData = await this.bitcoinClient.getBlock(hash);
+
+    await this.processBlockForPofCalculation(block, blockData);
 
     const transactions = blockData.transactions;
     const blockHash = blockData.hash;
@@ -405,6 +644,8 @@ export default class BitcoinProcessor {
 
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+      const transaction = transactions[transactionIndex];
+
       // get the output coins in the transaction
       const outputs = transactions[transactionIndex].outputs;
 
@@ -414,45 +655,77 @@ export default class BitcoinProcessor {
       }
 
       try {
-        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash);
+        const outputs = transaction.outputs as Array<any>;
+        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.id);
 
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
                        JSON.stringify(inputs),
                        JSON.stringify(e, Object.getOwnPropertyNames(e)));
+
+        throw e;
       }
     }
 
     return blockHash;
   }
 
+  /** Get the transaction out value in satoshi, for a specified output index */
+  private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
+    const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
+
+    // output with the desired index
+    const vout = transaction.outputs[outputIndex];
+
+    return Math.round(vout.satoshis * BitcoinProcessor.satoshiPerBitcoin);
+  }
+
+  /** Get the transaction fee of a transaction in satoshis */
+  private async getTransactionFeeInSatoshi (transactionId: string) {
+
+    const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
+
+    let inputSatoshiSum = 0;
+    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+
+      const currentInput = transaction.inputs[i];
+      const transactionIdForCurrentInput = currentInput.prevTxId.toString('hex');
+
+      const transactionOutValue = await this.getTransactionOutValueInSatoshi(transactionIdForCurrentInput, currentInput.outputIndex);
+
+      inputSatoshiSum += transactionOutValue;
+    }
+
+    // transaction outputs in satoshis
+    const transactionOutputs: number[] = transaction.outputs.map((output) => Math.round(output.satoshis * BitcoinProcessor.satoshiPerBitcoin));
+
+    const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
+
+    return (inputSatoshiSum - outputSatoshiSum);
+  }
+
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
     allVOuts: Transaction.Output[],
     transactionIndex: number,
     transactionBlock: number,
-    transactionHash: any): Promise<void> {
+    transactionHash: any,
+    transactionId: string): Promise<boolean> {
 
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
     for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
-      // grab the scripts
-      const script = allVOuts[outputIndex].script;
+      // const script = allVOuts[outputIndex].script;
 
-      // console.debug(`Checking transaction ${transactionIndex} output coin ${outputIndex}: ${JSON.stringify(script)}`);
-      // check for returned data for sidetree prefix
-      const hexDataMatches = script.toASM().match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
-
-      if (!hexDataMatches || hexDataMatches.length === 0) {
-        continue;
-      }
-
-      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
-      const isSidetreeTx = data.startsWith(this.sidetreePrefix);
-      const oneSidetreeTxAlreadyFound = sidetreeTxToAdd !== undefined;
+      const sidetreeData = this.getSidetreeDataFromVOutIfExist(allVOuts[outputIndex]);
+      const isSidetreeTx = (sidetreeData !== undefined);
+      const oneSidetreeTxAlreadyFound = (sidetreeTxToAdd !== undefined);
 
       if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
-        throw new Error('The transaction has more then one sidetree anchor strings.');
+        // tslint:disable-next-line: max-line-length
+        const message = `The outputs in block: ${transactionBlock} with transaction id: ${transactionId} has multiple sidetree transactions. So ignoring this transaction.`;
+        console.debug(message);
+        return false;
 
       } else if (isSidetreeTx) {
         // we have found a sidetree transaction
@@ -460,34 +733,35 @@ export default class BitcoinProcessor {
           transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
-          anchorString: data.slice(this.sidetreePrefix.length),
-          transactionFeePaid: 100, // issue #216: read actual data from tx
-          normalizedTransactionFee: 100 // issue #216: read actual data from tx
+          anchorString: sidetreeData as string,
+
+          // We will fill the following information after we have make sure that this is
+          // indeed the transaction that we want to return. This is because the calculation
+          // of the following properties may be expensive.
+          transactionFeePaid: -1,
+          normalizedTransactionFee: -1
         };
       }
     }
 
     if (sidetreeTxToAdd !== undefined) {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
-      // there would've been an exception before. So add it to the store ...
+      // there would've been an exception before. So let's fill the missing information for the
+      // transaction and return it
+      const transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
+      const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
+
+      sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
+      sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel.normalizedTransactionFee;
+
       console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
       await this.transactionStore.addTransaction(sidetreeTxToAdd);
+
+      return true;
     }
+
+    // non sidetree transaction
+    return false;
   }
 
-  /**
-   * Gets the normalized fee for the given block.
-   * @param block The block for which the fee is required.
-   */
-  public async getFee (block: number): Promise<{
-    normalizedTransactionFee: number
-  }> {
-
-    console.info(`Getting the normalized fee for the block number: ${block}`);
-
-    // Issue #216 return the actual data from the block
-    return Promise.resolve({
-      normalizedTransactionFee: 100
-    });
-  }
 }

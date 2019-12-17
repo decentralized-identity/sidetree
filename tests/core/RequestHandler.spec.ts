@@ -30,12 +30,13 @@ import OperationType from '../../lib/core/enums/OperationType';
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import util = require('util');
-import { Response } from '../../lib/common/Response';
+import { Response, ResponseStatus } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
   console.info = () => { return; };
   console.error = () => { return; };
+  console.debug = () => { return; };
 
   const config: Config = require('../json/config-test.json');
   const didMethodName = config.didMethodName;
@@ -59,7 +60,6 @@ describe('RequestHandler', () => {
 
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
-    const allSupportedHashAlgorithms = [18];
     const operationQueue = new MockOperationQueue();
     spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
 
@@ -77,8 +77,7 @@ describe('RequestHandler', () => {
     requestHandler = new RequestHandler(
       resolver,
       operationQueue,
-      didMethodName,
-      allSupportedHashAlgorithms
+      didMethodName
     );
 
     // Set a latest time that must be able to resolve to a protocol version in the protocol config file used.
@@ -176,12 +175,10 @@ describe('RequestHandler', () => {
     expect((response.body).id).toEqual(did);
   });
 
-  it('should return a resolved DID Document given a valid encoded original DID Document for resolution.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID.', async () => {
     // Create an original DID Document.
-    let recoveryPublicKey: DidPublicKeyModel;
-    let signingPublicKey: DidPublicKeyModel;
-    [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
     const originalDidDocument = {
       '@context': 'https://w3id.org/did/v1',
       publicKey: [recoveryPublicKey, signingPublicKey]
@@ -190,7 +187,9 @@ describe('RequestHandler', () => {
     const hashAlgorithmInMultihashCode = 18;
     const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
     const expectedDid = didMethodName + Encoder.encode(documentHash);
-    const response = await requestHandler.handleResolveRequest(didMethodName + encodedOriginalDidDocument);
+
+    const longFormDid = Did.createLongFormDidString(didMethodName, originalDidDocument, hashAlgorithmInMultihashCode);
+    const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
@@ -207,11 +206,11 @@ describe('RequestHandler', () => {
   });
 
   it('should return BadRequest given a malformed DID.', async () => {
-    const response = await requestHandler.handleResolveRequest('did:sidetree:abc123');
+    const response = await requestHandler.handleResolveRequest('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg;bad-request-param=bad-input');
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body).toBeUndefined();
+    expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
   });
 
   it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
@@ -239,7 +238,6 @@ describe('RequestHandler', () => {
     // Construct update payload.
     const updatePayload = {
       didUniqueSuffix,
-      previousOperationHash: didUniqueSuffix,
       patches
     };
 
@@ -271,5 +269,26 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
+  });
+
+  describe('handleResolveRequest()', async () => {
+    it('should return internal server error if non-Sidetree error has occurred.', async () => {
+      spyOn(Did, 'create').and.throwError('Non-Sidetree error.');
+
+      const response = await requestHandler.handleResolveRequest('unused');
+
+      expect(response.status).toEqual(ResponseStatus.ServerError);
+    });
+  });
+
+  describe('handleResolveRequestWithLongFormDid()', async () => {
+    it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
+      const resolverOverriddenReturnValue = 'overridden value';
+      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(resolverOverriddenReturnValue));
+
+      const response = await (requestHandler as any).handleResolveRequestWithLongFormDid('unused');
+
+      expect(response.body).toEqual(resolverOverriddenReturnValue);
+    });
   });
 });

@@ -38,8 +38,6 @@ export default class Operation {
 
   /** The type of operation. */
   public readonly type: OperationType;
-  /** The hash of the previous operation - undefined for DID create operation */
-  public readonly previousOperationHash?: string;
   /** ID of the key used to sign this operation. */
   public readonly signingKeyId: string;
   /** Signature of this operation. */
@@ -81,7 +79,6 @@ export default class Operation {
         break;
       case OperationType.Update:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
-        this.previousOperationHash = decodedPayload.previousOperationHash;
         this.patches = decodedPayload.patches;
         break;
       case OperationType.Recover:
@@ -161,7 +158,7 @@ export default class Operation {
 
         // Deleting recovery key is NOT allowed.
         if (existingKey !== undefined &&
-            existingKey.type !== KeyUsage.recovery) {
+            existingKey.usage !== KeyUsage.recovery) {
           publicKeyMap.delete(publicKey);
         }
       }
@@ -293,16 +290,12 @@ export default class Operation {
    */
   public static validateUpdatePayload (payload: any) {
     const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 3) {
+    if (payloadProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
     }
 
     if (typeof payload.didUniqueSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType);
-    }
-
-    if (typeof payload.previousOperationHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
     }
 
     // Validate schema of every patch to be applied.

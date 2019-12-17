@@ -1,5 +1,7 @@
 import Document from '../../../lib/core/versions/latest/Document';
 import Encoder from '../../../lib/core/versions/latest/Encoder';
+import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 
 describe('Document', () => {
 
@@ -50,7 +52,7 @@ describe('Document', () => {
       defaultOriginalDidDocument['@context'] = 'invalid-context';
       const originalDidDocumentJson = JSON.stringify(defaultOriginalDidDocument);
       const encodedOriginalDidDocument = Encoder.encode(originalDidDocumentJson);
-      const documentModel = Document.from(encodedOriginalDidDocument, 'did:sidetree', 18);
+      const documentModel = await Document.from(encodedOriginalDidDocument, 'did:sidetree', 18);
 
       expect(documentModel).toBeUndefined();
     });
@@ -208,6 +210,47 @@ describe('Document', () => {
 
       const isDocumentValid = Document.isValid(defaultOriginalDidDocument, false);
       expect(isDocumentValid).toBeFalsy();
+    });
+  });
+
+  describe('parseEncodedOriginalDidDocument()', () => {
+
+    it('should throw if unable to decode input string.', async () => {
+      spyOn(Encoder, 'decodeAsString').and.throwError('Some error');
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => Document.parseEncodedOriginalDidDocument('Unused string in test.'),
+        ErrorCode.DocumentIncorretEncodedFormat
+      );
+    });
+
+    it('should throw if decoded input string is not JSON.', async () => {
+      const incorrectJsonString = 'value = { Not Json }';
+      const inputString = Encoder.encode(incorrectJsonString);
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => Document.parseEncodedOriginalDidDocument(inputString),
+        ErrorCode.DocumentNotJson
+      );
+    });
+
+    it('should throw if decoded input string is not JSON.', async () => {
+      const jsonString = JSON.stringify({ value: 'Not DID document' });
+      const inputString = Encoder.encode(jsonString);
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => Document.parseEncodedOriginalDidDocument(inputString),
+        ErrorCode.DocumentNotValidOriginalDocument
+      );
+    });
+  });
+
+  describe('isEncodedStringValidOriginalDocument ()', () => {
+
+    it('should return false if given encoded string does not contain a JSON object', async () => {
+      const incorrectJsonString = 'value = { Not Json }';
+      const inputString = Encoder.encode(incorrectJsonString);
+      const isValid = Document.isEncodedStringValidOriginalDocument(inputString);
+
+      expect(isValid).toBeFalsy();
     });
   });
 });

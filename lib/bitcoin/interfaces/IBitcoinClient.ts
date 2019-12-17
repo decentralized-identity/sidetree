@@ -15,22 +15,33 @@ export default interface IBitcoinClient {
   /**
    * Gets the block data for the given block hash.
    * @param hash The hash of the block
-   * @param verbosity The verbosity level; default = 1 (1: minimal, 2: detailed)
    */
-  getBlock (hash: string, verbosity: number): Promise<BlockData>;
+  getBlock (hash: string): Promise<BlockData>;
 
   /**
-   * Gets the block hash for a given block height
+   * Gets the block hash for a given block height.
    * @param height The height to get a hash for
    * @returns the block hash
    */
   getBlockHash (height: number): Promise<string>;
 
   /**
+   * Gets the block height for the given block hash.
+   * @param hash The hash to get the block height for
+   */
+  getBlockHeight (hash: string): Promise<number>;
+
+  /**
    * Gets the current Bitcoin block height
    * @returns the latest block number
    */
   getCurrentBlockHeight (): Promise<number>;
+
+  /**
+   * Get the raw transaction data.
+   * @param transactionId The target transaction id.
+   */
+  getRawTransaction (transactionId: string): Promise<Transaction>;
 
   /**
    * Gets all unspent coins of a given address

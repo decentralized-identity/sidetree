@@ -5,6 +5,7 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinProcessor from '../../lib/bitcoin/BitcoinProcessor';
 import BlockData from '../../lib/bitcoin/models/BlockData';
 import ReadableStream from '../../lib/common/ReadableStream';
+import { Transaction } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
 
@@ -24,7 +25,7 @@ describe('BitcoinClient', async () => {
   });
 
   function mockRpcCall (method: string, params: any[], returns: any, path?: string): jasmine.Spy {
-    return spyOn(bitcoinClient, 'SendGenericRequest' as any).and.callFake((request: any, requestPath: string) => {
+    return spyOn(bitcoinClient, 'rpcCall' as any).and.callFake((request: any, requestPath: string) => {
       if (path) {
         expect(requestPath).toEqual(path);
       }
@@ -80,15 +81,15 @@ describe('BitcoinClient', async () => {
   describe('getBlock', () => {
     it('should get the block data.', async () => {
       const hash = 'block_hash';
-      const verbosity = 1;
       const blockData: BlockData = {
         hash: 'some hash',
         height: 2,
         transactions: []
       };
 
-      const spy = mockRpcCall('getblock', [hash, verbosity], blockData);
-      const actual = await bitcoinClient.getBlock(hash, verbosity);
+      spyOn(BitcoinClient as any, 'createBlockFromBuffer').and.returnValue(blockData);
+      const spy = mockRpcCall('getblock', [hash, 0], JSON.stringify(blockData));
+      const actual = await bitcoinClient.getBlock(hash);
 
       expect(spy).toHaveBeenCalled();
       expect(actual).toEqual(blockData);
@@ -106,6 +107,17 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('getBlockHeight', () => {
+    it('should get the block height', async () => {
+      const height = 1234;
+      const hash = 'some_hash_value';
+      const spy = mockRpcCall('getblock', [hash, 1], { height: height });
+      const actual = await bitcoinClient.getBlockHeight(hash);
+      expect(actual).toEqual(height);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
   describe('getCurrentBlockHeight', () => {
     it('should return the latest block', async (done) => {
       const height = 753;
@@ -114,6 +126,21 @@ describe('BitcoinClient', async () => {
       expect(actual).toEqual(height);
       expect(mock).toHaveBeenCalled();
       done();
+    });
+  });
+
+  describe('getRawTransaction', () => {
+    it('should make the correct rpc call and return the transaction object', async () => {
+      const txnId = 'transaction_id';
+      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
+
+      spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
+
+      const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
+
+      const actual = await bitcoinClient.getRawTransaction(txnId);
+      expect(actual).toEqual(mockTransaction);
+      expect(spy).toHaveBeenCalled();
     });
   });
 
@@ -217,7 +244,7 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('SendGenericRequest', () => {
+  describe('rpcCall', () => {
     it('should call retry-fetch', async (done) => {
       const request: any = {};
       const memberName = 'memberRequestName';
@@ -245,7 +272,7 @@ describe('BitcoinClient', async () => {
         })));
       });
 
-      const actual = await bitcoinClient['SendGenericRequest'](request, true);
+      const actual = await bitcoinClient['rpcCall'](request, true);
       expect(actual).toEqual(result);
       expect(retryFetchSpy).toHaveBeenCalled();
       expect(readUtilSpy).toHaveBeenCalled();
@@ -274,7 +301,7 @@ describe('BitcoinClient', async () => {
       });
 
       try {
-        await bitcoinClient['SendGenericRequest'](request, true);
+        await bitcoinClient['rpcCall'](request, true);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Fetch');
@@ -312,7 +339,7 @@ describe('BitcoinClient', async () => {
       });
 
       try {
-        await bitcoinClient['SendGenericRequest'](request, true);
+        await bitcoinClient['rpcCall'](request, true);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('RPC');

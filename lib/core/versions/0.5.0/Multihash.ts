@@ -5,6 +5,8 @@ const multihashes = require('multihashes');
  * Class that performs hashing operations using the multihash format.
  */
 export default class Multihash {
+  private static acceptedHashAlgorithms = [18]; // SHA256.
+
   /**
    * Hashes the content using the hashing algorithm specified.
    */
@@ -34,12 +36,12 @@ export default class Multihash {
   }
 
   /**
-   * Checks if the given hash is multihash formatted in one of the given accepted hash algorithms.
+   * Checks if the given hash is a multihash formatted in one of the supported hash algorithms.
    */
-  public static isSupportedHash (hash: Buffer, acceptedHashAlgorithms: number[]): boolean {
+  public static isSupportedHash (hash: Buffer): boolean {
     try {
       const multihash = multihashes.decode(hash);
-      return (acceptedHashAlgorithms.indexOf(multihash.code) >= 0);
+      return (Multihash.acceptedHashAlgorithms.indexOf(multihash.code) >= 0);
     } catch {
       return false;
     }
