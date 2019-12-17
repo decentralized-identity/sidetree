@@ -1,4 +1,5 @@
 import BitcoinClient from './BitcoinClient';
+import BlockData from './models/BlockData';
 import ErrorCode from '../common/SharedErrorCode';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import ProtocolParameters from './ProtocolParameters';
@@ -15,7 +16,6 @@ import TransactionNumber from './TransactionNumber';
 import { Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
-import BlockData from './models/BlockData';
 
 /**
  * Object representing a blockchain time and hash
@@ -655,7 +655,6 @@ export default class BitcoinProcessor {
       }
 
       try {
-        const outputs = transaction.outputs as Array<any>;
         await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.id);
 
       } catch (e) {
@@ -678,7 +677,7 @@ export default class BitcoinProcessor {
     // output with the desired index
     const vout = transaction.outputs[outputIndex];
 
-    return Math.round(vout.satoshis * BitcoinProcessor.satoshiPerBitcoin);
+    return Math.round(vout.satoshis);
   }
 
   /** Get the transaction fee of a transaction in satoshis */
@@ -698,7 +697,7 @@ export default class BitcoinProcessor {
     }
 
     // transaction outputs in satoshis
-    const transactionOutputs: number[] = transaction.outputs.map((output) => Math.round(output.satoshis * BitcoinProcessor.satoshiPerBitcoin));
+    const transactionOutputs: number[] = transaction.outputs.map((output) => Math.round(output.satoshis));
 
     const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
 
@@ -715,7 +714,6 @@ export default class BitcoinProcessor {
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
     for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
-      // const script = allVOuts[outputIndex].script;
 
       const sidetreeData = this.getSidetreeDataFromVOutIfExist(allVOuts[outputIndex]);
       const isSidetreeTx = (sidetreeData !== undefined);
