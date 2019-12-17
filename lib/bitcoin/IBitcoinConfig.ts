@@ -6,8 +6,6 @@ export interface IBitcoinConfig {
   bitcoinRpcUsername: string | undefined;
   bitcoinRpcPassword: string | undefined;
   bitcoinWalletImportString: string;
-  bitcoinFeeSpendingCutoffPeriodInBlocks: number;
-  bitcoinFeeSpendingCutoffPerPeriod: number;
   lowBalanceNoticeInDays: number | undefined;
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;
