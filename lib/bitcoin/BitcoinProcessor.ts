@@ -1,22 +1,21 @@
-import * as httpStatus from 'http-status';
+import BitcoinClient from './BitcoinClient';
+import BlockData from './models/BlockData';
 import ErrorCode from '../common/SharedErrorCode';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
-import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ProtocolParameters from './ProtocolParameters';
-import ReadableStream from '../common/ReadableStream';
+import IBitcoinClient from './interfaces/IBitcoinClient';
+import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
-import ServiceInfo from '../common/ServiceInfoProvider';
+import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
-import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
-import { URL } from 'url';
 
 /**
  * Object representing a blockchain time and hash
@@ -43,12 +42,6 @@ export interface IBlockInfo {
  */
 export default class BitcoinProcessor {
 
-  /** URI for the bitcoin peer's RPC endpoint */
-  public readonly bitcoinPeerUri: string;
-
-  /** Bitcoin peer's RPC basic authorization credentials */
-  public readonly bitcoinAuthorization?: string;
-
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
 
@@ -64,12 +57,6 @@ export default class BitcoinProcessor {
   /** Number of items to return per page */
   public pageSize: number;
 
-  /** request timeout in milliseconds */
-  public requestTimeout: number;
-
-  /** maximum number of request retries */
-  public maxRetries: number;
-
   /** Number of seconds between transaction queries */
   public pollPeriod: number;
 
@@ -82,7 +69,9 @@ export default class BitcoinProcessor {
   /** Poll timeout identifier */
   private pollTimeoutId: number | undefined;
 
-  private serviceInfo: ServiceInfo;
+  private serviceInfoProvider: ServiceInfoProvider;
+
+  private bitcoinClient: IBitcoinClient;
 
   /** proof of fee configuration */
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
@@ -93,10 +82,6 @@ export default class BitcoinProcessor {
   private static readonly satoshiPerBitcoin = 100000000;
 
   public constructor (config: IBitcoinConfig) {
-    this.bitcoinPeerUri = config.bitcoinPeerUri;
-    if (config.bitcoinRpcUsername && config.bitcoinRpcPassword) {
-      this.bitcoinAuthorization = Buffer.from(`${config.bitcoinRpcUsername}:${config.bitcoinRpcPassword}`).toString('base64');
-    }
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
@@ -115,11 +100,16 @@ export default class BitcoinProcessor {
       throw new Error(`Failed creating private key from '${config.bitcoinWalletImportString}': ${error.message}`);
     }
     this.pageSize = config.transactionFetchPageSize;
-    this.requestTimeout = config.requestTimeoutInMilliseconds || 300;
-    this.maxRetries = config.requestMaxRetries || 3;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
-    this.serviceInfo = new ServiceInfo('bitcoin');
+    this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
+    this.bitcoinClient =
+      new BitcoinClient(
+        config.bitcoinPeerUri,
+        config.bitcoinRpcUsername,
+        config.bitcoinRpcPassword,
+        config.requestTimeoutInMilliseconds || 300,
+        config.requestMaxRetries || 3);
   }
 
   /**
@@ -152,17 +142,11 @@ export default class BitcoinProcessor {
 
     const address = this.privateKey.toAddress();
     console.debug(`Checking if bitcoin contains a wallet for ${address}`);
-    if (!await this.walletExists(address.toString())) {
+    if (!await this.bitcoinClient.walletExists(address.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${address}. This can take up to 10 minutes.`);
-      const request = {
-        method: 'importpubkey',
-        params: [
-          this.privateKey.toPublicKey().toBuffer().toString('hex'),
-          'sidetree',
-          true
-        ]
-      };
-      await this.rpcCall(request, undefined, false);
+
+      const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
+      await this.bitcoinClient.importPublicKey(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
     }
@@ -187,24 +171,19 @@ export default class BitcoinProcessor {
   public async time (hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
-      const blockHeight = await this.getCurrentBlockHeight();
-      hash = await this.getBlockHash(blockHeight);
+      const blockHeight = await this.bitcoinClient.getCurrentBlockHeight();
+      hash = await this.bitcoinClient.getBlockHash(blockHeight);
       return {
         time: blockHeight,
         hash
       };
     }
-    const request = {
-      method: 'getblock',
-      params: [
-        hash, // hash of the block
-        1 // 1 = block information
-      ]
-    };
-    const response = await this.rpcCall(request);
+
+    const height = await this.bitcoinClient.getBlockHeight(hash);
+
     return {
-      hash: response.hash,
-      time: response.height
+      hash: hash,
+      time: height
     };
   }
 
@@ -275,7 +254,7 @@ export default class BitcoinProcessor {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
     const address = this.privateKey.toAddress();
-    const unspentOutputs = await this.getUnspentCoins(address);
+    const unspentOutputs = await this.bitcoinClient.getUnspentCoins(address);
 
     let totalSatoshis = unspentOutputs.reduce((total: number, coin: Transaction.UnspentOutput) => {
       return total + coin.satoshis;
@@ -311,7 +290,7 @@ export default class BitcoinProcessor {
     transaction.fee(fee);
     transaction.sign(this.privateKey);
 
-    if (!await this.broadcastTransaction(transaction)) {
+    if (!await this.bitcoinClient.broadcastTransaction(transaction)) {
       const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
       console.error(error);
       throw error;
@@ -346,69 +325,7 @@ export default class BitcoinProcessor {
    * Handles the get version operation.
    */
   public async getServiceVersion (): Promise<ServiceVersionModel> {
-    return this.serviceInfo.getServiceVersion();
-  }
-
-  /**
-   * Gets the block hash for a given block height
-   * @param height The height to get a hash for
-   * @returns the block hash
-   */
-  private async getBlockHash (height: number): Promise<string> {
-    console.info(`Getting hash for block ${height}`);
-    const hashRequest = {
-      method: 'getblockhash',
-      params: [
-        height // height of the block
-      ]
-    };
-    return this.rpcCall(hashRequest);
-  }
-
-  /**
-   * Gets all unspent coins of a given address
-   * @param address Bitcoin address to get coins for
-   */
-  private async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
-
-    // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
-    const addressToSearch = address.toString();
-    console.info(`Getting unspent coins for ${addressToSearch}`);
-    const request = {
-      method: 'listunspent',
-      params: [
-        null,
-        null,
-        [addressToSearch]
-      ]
-    };
-    const response: Array<any> = await this.rpcCall(request);
-
-    const unspentTransactions = response.map((coin) => {
-      return new Transaction.UnspentOutput(coin);
-    });
-
-    console.info(`Returning ${unspentTransactions.length} coins`);
-
-    return unspentTransactions;
-  }
-
-  /**
-   * Broadcasts a transaction to the bitcoin network
-   * @param transaction Transaction to broadcast
-   */
-  private async broadcastTransaction (transaction: Transaction): Promise<boolean> {
-    const rawTransaction = transaction.serialize();
-    console.info(`Broadcasting transaction ${transaction.id}`);
-    const request = {
-      method: 'sendrawtransaction',
-      params: [
-        rawTransaction
-      ]
-    };
-    const response = await this.rpcCall(request);
-
-    return response.length > 0;
+    return this.serviceInfoProvider.getServiceVersion();
   }
 
   /**
@@ -449,7 +366,7 @@ export default class BitcoinProcessor {
       throw new Error('Cannot process Transactions before genesis');
     }
 
-    const endBlockHeight = await this.getCurrentBlockHeight();
+    const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
     for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
@@ -500,7 +417,7 @@ export default class BitcoinProcessor {
 
     return {
       height: startingBlock,
-      hash: await this.getBlockHash(startingBlock)
+      hash: await this.bitcoinClient.getBlockHash(startingBlock)
     };
   }
 
@@ -518,7 +435,7 @@ export default class BitcoinProcessor {
     // Now that we have the correct last processed block, the new starting block needs
     // to be the one after that one.
     const startingBlockHeight = this.lastProcessedBlock!.height + 1;
-    const currentHeight = await this.getCurrentBlockHeight();
+    const currentHeight = await this.bitcoinClient.getCurrentBlockHeight();
 
     // The new starting block-height may not be actually written on the blockchain yet
     // so here we make sure that we don't return an 'invalid' starting block.
@@ -529,7 +446,7 @@ export default class BitcoinProcessor {
     // We have our new starting point
     return {
       height: startingBlockHeight,
-      hash: await this.getBlockHash(startingBlockHeight)
+      hash: await this.bitcoinClient.getBlockHash(startingBlockHeight)
     };
   }
 
@@ -575,7 +492,7 @@ export default class BitcoinProcessor {
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
         return {
           height: revertToBlockNumber,
-          hash: await this.getBlockHash(revertToBlockNumber)
+          hash: await this.bitcoinClient.getBlockHash(revertToBlockNumber)
         };
       }
 
@@ -592,21 +509,8 @@ export default class BitcoinProcessor {
     console.info('Reverted all known transactions.');
     return {
       height: this.genesisBlockNumber,
-      hash: await this.getBlockHash(this.genesisBlockNumber)
+      hash: await this.bitcoinClient.getBlockHash(this.genesisBlockNumber)
     };
-  }
-
-  /**
-   * Gets the current Bitcoin block height
-   * @returns the latest block number
-   */
-  private async getCurrentBlockHeight (): Promise<number> {
-    console.info('Getting current block height...');
-    const request = {
-      method: 'getblockcount'
-    };
-    const response = await this.rpcCall(request);
-    return response;
   }
 
   /**
@@ -617,14 +521,14 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
-    const responseData = await this.getBlockHash(height);
+    const responseData = await this.bitcoinClient.getBlockHash(height);
 
     console.debug(`Retrieved block ${height} (${responseData})`);
     return hash === responseData;
   }
 
-  private isSidetreeTransaction (transaction: any): boolean {
-    const transactionOutputs = transaction.vout as Array<any>;
+  private isSidetreeTransaction (transaction: Transaction): boolean {
+    const transactionOutputs = transaction.outputs;
 
     for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
 
@@ -644,12 +548,12 @@ export default class BitcoinProcessor {
     return false;
   }
 
-  private getSidetreeDataFromVOutIfExist (transactionOutput: any): string | undefined {
+  private getSidetreeDataFromVOutIfExist (transactionOutput: Transaction.Output): string | undefined {
       // grab the scripts
-    const script = transactionOutput.scriptPubKey;
+    const script = transactionOutput.script;
 
     // check for returned data for sidetree prefix
-    const hexDataMatches = script.asm.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+    const hexDataMatches = script.toASM().match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
 
     if (hexDataMatches && hexDataMatches.length !== 0) {
 
@@ -676,14 +580,14 @@ export default class BitcoinProcessor {
     return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
-  private async processBlockForPofCalculation (blockHeight: number, blockData: any): Promise<void> {
+  private async processBlockForPofCalculation (blockHeight: number, blockData: BlockData): Promise<void> {
 
-    const blockHash = blockData.hash as string;
+    const blockHash = blockData.hash;
 
     // reseed source of psuedo-randomness to the blockhash
     this.transactionSampler.resetPsuedoRandomSeed(blockHash);
 
-    const transactions = blockData.tx as Array<any>;
+    const transactions = blockData.transactions;
 
     // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
     // so we are going to ignore that transaction in our calculations.
@@ -695,10 +599,11 @@ export default class BitcoinProcessor {
       // Add the transaction to the sampler.  We filter out transactions with unusual
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
-      const inputsCount = (transaction.vin as Array<any>).length;
+      // const inputsCount = (transaction.vin as Array<any>).length;
 
-      if (!isSidetreeTransaction && inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
-        this.transactionSampler.addElement(transaction.txid);
+      if (!isSidetreeTransaction &&
+          transactions.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
+        this.transactionSampler.addElement(transaction.id);
       }
     }
 
@@ -727,19 +632,13 @@ export default class BitcoinProcessor {
    */
   private async processBlock (block: number): Promise<string> {
     console.info(`Processing block ${block}`);
-    const hash = await this.getBlockHash(block);
-    const responseData = await this.rpcCall({
-      method: 'getblock',
-      params: [
-        hash,  // hash
-        2      // block and transaction information
-      ]
-    });
+    const hash = await this.bitcoinClient.getBlockHash(block);
+    const blockData = await this.bitcoinClient.getBlock(hash);
 
-    await this.processBlockForPofCalculation(block, responseData);
+    await this.processBlockForPofCalculation(block, blockData);
 
-    const transactions = responseData.tx as Array<any>;
-    const blockHash = responseData.hash;
+    const transactions = blockData.transactions;
+    const blockHash = blockData.hash;
 
     // console.debug(`Block ${block} contains ${transactions.length} transactions`);
 
@@ -748,15 +647,15 @@ export default class BitcoinProcessor {
       const transaction = transactions[transactionIndex];
 
       // get the output coins in the transaction
-      if (!('vout' in transaction)) {
+      const outputs = transactions[transactionIndex].outputs;
+
+      if (outputs.length <= 0) {
         // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
         continue;
       }
 
       try {
-        const outputs = transaction.vout as Array<any>;
-
-        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.txid);
+        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.id);
 
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
@@ -773,38 +672,32 @@ export default class BitcoinProcessor {
 
   /** Get the transaction out value in satoshi, for a specified output index */
   private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
-    const transaction = await this.rpcCall({
-      method: 'getrawtransaction',
-      params: [
-        transactionId,  // transaction id
-        true   // verbose
-      ]
-    });
+    const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
 
     // output with the desired index
-    const vout = transaction.vout.find((v: any) => v.n === outputIndex);
+    const vout = transaction.outputs[outputIndex];
 
-    return Math.round(vout.value * BitcoinProcessor.satoshiPerBitcoin);
+    return Math.round(vout.satoshis);
   }
 
   /** Get the transaction fee of a transaction in satoshis */
   private async getTransactionFeeInSatoshi (transactionId: string) {
-    const transaction = await this.rpcCall({
-      method: 'getrawtransaction',
-      params: [
-        transactionId,  // transaction id
-        true   // verbose
-      ]
-    });
+
+    const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
 
     let inputSatoshiSum = 0;
-    for (let i = 0 ; i < transaction.vin.length ; i++) {
-      const transactionOutValue = await this.getTransactionOutValueInSatoshi(transaction.vin[i].txid, transaction.vin[i].vout);
+    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+
+      const currentInput = transaction.inputs[i];
+      const transactionIdForCurrentInput = currentInput.prevTxId.toString('hex');
+
+      const transactionOutValue = await this.getTransactionOutValueInSatoshi(transactionIdForCurrentInput, currentInput.outputIndex);
+
       inputSatoshiSum += transactionOutValue;
     }
 
     // transaction outputs in satoshis
-    const transactionOutputs: number[] = transaction.vout.map((v: any) => Math.round((v.value as number) * BitcoinProcessor.satoshiPerBitcoin));
+    const transactionOutputs: number[] = transaction.outputs.map((output) => Math.round(output.satoshis));
 
     const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
 
@@ -812,7 +705,7 @@ export default class BitcoinProcessor {
   }
 
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
-    allVOuts: Array<any>,
+    allVOuts: Transaction.Output[],
     transactionIndex: number,
     transactionBlock: number,
     transactionHash: any,
@@ -867,118 +760,6 @@ export default class BitcoinProcessor {
 
     // non sidetree transaction
     return false;
-  }
-
-  /**
-   * Checks if the bitcoin peer has a wallet open for a given address
-   * @param address The bitcoin address to check
-   * @returns true if a wallet exists, false otherwise.
-   */
-  private async walletExists (address: string): Promise<boolean> {
-    console.info(`Checking if bitcoin wallet for ${address} exists`);
-    const request = {
-      method: 'getaddressinfo',
-      params: [
-        address
-      ]
-    };
-
-    const response = await this.rpcCall(request);
-    return response.labels.length > 0 || response.iswatchonly;
-  }
-
-  /**
-   * performs an RPC call given a request
-   * @param request RPC request parameters as an object
-   * @param path optional path extension
-   * @returns response as an object
-   */
-  private async rpcCall (request: any, requestPath: string = '', timeout: boolean = true): Promise<any> {
-    // append some standard jrpc parameters
-    request['jsonrpc'] = '1.0';
-    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
-    const fullPath = new URL(requestPath, this.bitcoinPeerUri);
-    const requestString = JSON.stringify(request);
-    // console.debug(`Fetching ${fullPath}`);
-    // console.debug(requestString);
-    console.debug(`Sending jRPC request id: ${request.id}, method: ${request['method']}`);
-    const requestOptions: RequestInit = {
-      body: requestString,
-      method: 'post'
-    };
-    if (this.bitcoinAuthorization) {
-      requestOptions.headers = {
-        Authorization: `Basic ${this.bitcoinAuthorization}`
-      };
-    }
-    const response = await this.fetchWithRetry(fullPath.toString(), requestOptions, timeout);
-
-    const responseData = await ReadableStream.readAll(response.body);
-    if (response.status !== httpStatus.OK) {
-      const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
-      console.error(error);
-      throw error;
-    }
-
-    const responseJson = JSON.parse(responseData.toString());
-
-    if ('error' in responseJson && responseJson.error !== null) {
-      const error = new Error(`RPC failed: ${JSON.stringify(responseJson.error)}`);
-      console.error(error);
-      throw error;
-    }
-
-    return responseJson.result;
-  }
-
-  /**
-   * Calls `nodeFetch` and retries with exponential back-off on `request-timeout` FetchError`.
-   * @param uri URI to fetch
-   * @param requestParameters Request parameters to use
-   * @param setTimeout True to set a timeout on the request, and retry if times out, false to wait indefinitely.
-   * @returns Response of the fetch
-   */
-  private async fetchWithRetry (uri: string, requestParameters?: RequestInit | undefined, setTimeout: boolean = true): Promise<Response> {
-    let retryCount = 0;
-    let timeout: number;
-    do {
-      timeout = this.requestTimeout * 2 ** retryCount;
-      let params = Object.assign({}, requestParameters);
-      if (setTimeout) {
-        params = Object.assign(params, {
-          timeout
-        });
-      }
-      try {
-        return await nodeFetch(uri, params);
-      } catch (error) {
-        if (error instanceof FetchError) {
-          if (retryCount >= this.maxRetries) {
-            console.debug('Max retries reached. Request failed.');
-            throw error;
-          }
-          switch (error.type) {
-            case 'request-timeout':
-              console.debug(`Request timeout (${retryCount})`);
-              await this.waitFor(Math.round(timeout));
-              console.debug(`Retrying request (${++retryCount})`);
-              continue;
-          }
-        }
-        console.error(error);
-        throw error;
-      }
-    } while (true);
-  }
-
-  /**
-   * Async timeout
-   * @param milliseconds Timeout in milliseconds
-   */
-  private async waitFor (milliseconds: number) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, milliseconds);
-    });
   }
 
 }
