@@ -111,7 +111,7 @@ describe('BitcoinClient', async () => {
     it('should get the block height', async () => {
       const height = 1234;
       const hash = 'some_hash_value';
-      const spy = mockRpcCall('getblock', [hash, 1], { height: height });
+      const spy = mockRpcCall('getblockheader', [hash, true], { height: height });
       const actual = await bitcoinClient.getBlockHeight(hash);
       expect(actual).toEqual(height);
       expect(spy).toHaveBeenCalled();

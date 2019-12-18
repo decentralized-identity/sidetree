@@ -74,10 +74,10 @@ export default class BitcoinClient implements IBitcoinClient {
 
   public async getBlockHeight (hash: string): Promise<number> {
     const request = {
-      method: 'getblock',
+      method: 'getblockheader',
       params: [
         hash,
-        1 // get details about the block as json
+        true // verbose
       ]
     };
 
