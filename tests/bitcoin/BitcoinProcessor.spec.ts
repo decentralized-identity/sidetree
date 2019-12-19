@@ -669,7 +669,7 @@ describe('BitcoinProcessor', () => {
       // Custom write some sequential blocks such that between blocks the previousHash changes.
       const numBlocks = randomNumber(10) + 2;
       const hashes: string[] = [];
-      for (var i = 0; i < numBlocks; i++) {
+      for (let i = 0; i < numBlocks; i++) {
         hashes[i] = randomString();
       }
       const offset = randomNumber(100) + testConfig.genesisBlockNumber;
