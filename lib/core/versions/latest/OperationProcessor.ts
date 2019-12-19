@@ -2,7 +2,7 @@ import AnchoredOperation from './AnchoredOperation';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
-import IOperationProcessor, { PatchResult } from '../../interfaces/IOperationProcessor';
+import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
 import KeyUsage from './KeyUsage';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
@@ -17,11 +17,10 @@ export default class OperationProcessor implements IOperationProcessor {
 
   public constructor (private didMethodName: string) { }
 
-  public async patch (
+  public async apply (
     anchoredOperationModel: AnchoredOperationModel,
-    previousOperationHash: string | undefined,
     didDocumentReference: { didDocument: DocumentModel | undefined }
-  ): Promise<PatchResult> {
+  ): Promise<ApplyResult> {
     let operationHash = undefined;
 
     try {
@@ -30,9 +29,9 @@ export default class OperationProcessor implements IOperationProcessor {
 
       let validOperation = false;
       if (operation.type === OperationType.Create) {
-        validOperation = await this.applyCreateOperation(previousOperationHash, operation, didDocumentReference);
+        validOperation = await this.applyCreateOperation(operation, didDocumentReference);
       } else if (operation.type === OperationType.Update) {
-        validOperation = await this.applyUpdateOperation(previousOperationHash, operation, didDocumentReference);
+        validOperation = await this.applyUpdateOperation(operation, didDocumentReference);
       } else if (operation.type === OperationType.Recover) {
         validOperation = await this.applyRecoverOperation(operation, didDocumentReference);
       } else {
@@ -51,12 +50,11 @@ export default class OperationProcessor implements IOperationProcessor {
    * @returns `true` if operation was successfully applied, `false` otherwise.
    */
   private async applyCreateOperation (
-    previousOperationHash: string | undefined,
     operation: AnchoredOperation,
     didDocumentReference: { didDocument: object | undefined }
   ): Promise<boolean> {
-    // If either of these is defined, then we have seen a previous create operation.
-    if (previousOperationHash !== undefined || didDocumentReference.didDocument) {
+    // If we have seen a previous create operation.
+    if (didDocumentReference.didDocument) {
       return false;
     }
 
@@ -79,21 +77,14 @@ export default class OperationProcessor implements IOperationProcessor {
    * @returns `true` if operation was successfully applied, `false` otherwise.
    */
   private async applyUpdateOperation (
-    previousOperationHash: string | undefined,
     operation: AnchoredOperation,
     didDocumentReference: { didDocument: DocumentModel | undefined }
   ): Promise<boolean> {
 
     const didDocument = didDocumentReference.didDocument;
 
-    // Every operation other than a create has a previous operation and a valid
-    // current DID document.
-    if (previousOperationHash === undefined || didDocument === undefined) {
-      return false;
-    }
-
-    // Any non-create needs a previous operation hash that should match the hash of the latest valid operation (previousOperation)
-    if (operation.previousOperationHash !== previousOperationHash) {
+    // If we have not seen a valid create operation yet.
+    if (didDocument === undefined) {
       return false;
     }
 

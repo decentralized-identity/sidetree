@@ -51,7 +51,7 @@ describe('Resolver', () => {
       await operationStore.put([updateOperationPriorRecovery1]);
 
       // Create another update and insert it to the operation store.
-      const updatePayloadPriorRecovery2 = await OperationGenerator.createUpdatePayloadForHubEndpoints(updateOperationPriorRecovery1, ['dummyHubUri3'], []);
+      const updatePayloadPriorRecovery2 = await OperationGenerator.createUpdatePayloadForHubEndpoints(didUniqueSuffix, ['dummyHubUri3'], []);
       const updateOperationPriorRecovery2 =
         await OperationGenerator.createAnchoredOperation(OperationType.Update, updatePayloadPriorRecovery2, signingPublicKey.id, signingPrivateKey, 3, 3, 3);
       await operationStore.put([updateOperationPriorRecovery2]);
@@ -87,7 +87,7 @@ describe('Resolver', () => {
       await operationStore.put([updateOperationAfterRecovery1]);
 
       // Create another update and insert it to the operation store.
-      const updatePayloadAfterRecovery2 = await OperationGenerator.createUpdatePayloadForHubEndpoints(updateOperationAfterRecovery1, [], ['newDummyHubUri1']);
+      const updatePayloadAfterRecovery2 = await OperationGenerator.createUpdatePayloadForHubEndpoints(didUniqueSuffix, [], ['newDummyHubUri1']);
       const updateOperationAfterRecovery2 = await
         OperationGenerator.createAnchoredOperation(OperationType.Update, updatePayloadAfterRecovery2, newSigningPublicKey.id, newSigningPrivateKey, 6, 6, 6);
       await operationStore.put([updateOperationAfterRecovery2]);

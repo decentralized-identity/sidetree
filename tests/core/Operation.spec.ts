@@ -56,14 +56,6 @@ describe('Operation', async () => {
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 
-    it('should throw error if previousOperationHash is not a string.', async () => {
-      const updatePayload = generateUpdatePayloadForPublicKeys();
-      (updatePayload as any).previousOperationHash = { invalidType: true };
-
-      const expectedError = new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
-      expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
-    });
-
     it('should throw error if `patches` is not an array.', async () => {
       const updatePayload = generateUpdatePayloadForPublicKeys();
       (updatePayload as any).patches = 'shouldNotBeAString';
@@ -235,7 +227,6 @@ describe('Operation', async () => {
 function generateUpdatePayloadForPublicKeys () {
   return {
     didUniqueSuffix: 'EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA',
-    previousOperationHash: 'EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A',
     patches: [
       {
         action: 'add-public-keys',
