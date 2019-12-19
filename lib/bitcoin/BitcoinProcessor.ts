@@ -1,5 +1,8 @@
+import BitcoinBlockData from './models/BitcoinBlockData';
 import BitcoinClient from './BitcoinClient';
-import BlockData from './models/BlockData';
+import BitcoinOutputModel from './models/BitcoinOutputModel';
+import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import BitcoinUnspentCoinsModel from './models/BitcoinUnspentCoinsModel';
 import ErrorCode from '../common/SharedErrorCode';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import ProtocolParameters from './ProtocolParameters';
@@ -13,7 +16,6 @@ import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculat
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
-import { Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 
@@ -50,9 +52,6 @@ export default class BitcoinProcessor {
 
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
-
-  /** Wallet private key */
-  private readonly privateKey: PrivateKey;
 
   /** Number of items to return per page */
   public pageSize: number;
@@ -93,12 +92,6 @@ export default class BitcoinProcessor {
       mongoQuantileStore);
     this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
 
-    /// Bitcore has a type file error on PrivateKey
-    try {
-      this.privateKey = (PrivateKey as any).fromWIF(config.bitcoinWalletImportString);
-    } catch (error) {
-      throw new Error(`Failed creating private key from '${config.bitcoinWalletImportString}': ${error.message}`);
-    }
     this.pageSize = config.transactionFetchPageSize;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
@@ -108,28 +101,9 @@ export default class BitcoinProcessor {
         config.bitcoinPeerUri,
         config.bitcoinRpcUsername,
         config.bitcoinRpcPassword,
+        config.bitcoinWalletImportString,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3);
-  }
-
-  /**
-   * generates a private key in WIF format
-   * @param network Which bitcoin network to generate this key for
-   */
-  public static generatePrivateKey (network: 'mainnet' | 'livenet' | 'testnet' | undefined): string {
-    let bitcoreNetwork: Networks.Network | undefined;
-    switch (network) {
-      case 'mainnet':
-        bitcoreNetwork = Networks.mainnet;
-        break;
-      case 'livenet':
-        bitcoreNetwork = Networks.livenet;
-        break;
-      case 'testnet':
-        bitcoreNetwork = Networks.testnet;
-        break;
-    }
-    return new PrivateKey(undefined, bitcoreNetwork).toWIF();
   }
 
   /**
@@ -139,17 +113,7 @@ export default class BitcoinProcessor {
     console.debug('Initializing ITransactionStore');
     await this.transactionStore.initialize();
     await this.quantileCalculator.initialize();
-
-    const address = this.privateKey.toAddress();
-    console.debug(`Checking if bitcoin contains a wallet for ${address}`);
-    if (!await this.bitcoinClient.walletExists(address.toString())) {
-      console.debug(`Configuring bitcoin peer to watch address ${address}. This can take up to 10 minutes.`);
-
-      const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
-      await this.bitcoinClient.importPublicKey(publicKeyAsHex, true);
-    } else {
-      console.debug('Wallet found.');
-    }
+    await this.bitcoinClient.initialize();
 
     console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForInitialization();
@@ -253,10 +217,9 @@ export default class BitcoinProcessor {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
-    const address = this.privateKey.toAddress();
-    const unspentOutputs = await this.bitcoinClient.getUnspentCoins(address);
+    const unspentOutputs = await this.bitcoinClient.getUnspentCoins();
 
-    let totalSatoshis = unspentOutputs.reduce((total: number, coin: Transaction.UnspentOutput) => {
+    let totalSatoshis = unspentOutputs.reduce((total: number, coin: BitcoinUnspentCoinsModel) => {
       return total + coin.satoshis;
     }, 0);
 
@@ -271,7 +234,7 @@ export default class BitcoinProcessor {
     if (totalSatoshis < lowBalanceAmount) {
       const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
       console.error(`Low balance (${daysLeft} days remaining),\
- please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis, Address: ${address.toString()}`);
+ please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
     }
     // cannot make the transaction
     if (totalSatoshis < fee) {
@@ -280,22 +243,8 @@ export default class BitcoinProcessor {
       throw error;
     }
 
-    const transaction = new Transaction();
-    transaction.from(unspentOutputs);
-    transaction.addOutput(new Transaction.Output({
-      script: Script.buildDataOut(sidetreeTransactionString),
-      satoshis: 0
-    }));
-    transaction.change(address);
-    transaction.fee(fee);
-    transaction.sign(this.privateKey);
-
-    if (!await this.bitcoinClient.broadcastTransaction(transaction)) {
-      const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
-      console.error(error);
-      throw error;
-    }
-    console.info(`Successfully submitted transaction ${transaction.id}`);
+    const transactionId = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
+    console.info(`Successfully submitted transaction ${transactionId}`);
   }
 
   /**
@@ -527,7 +476,7 @@ export default class BitcoinProcessor {
     return hash === responseData;
   }
 
-  private isSidetreeTransaction (transaction: Transaction): boolean {
+  private isSidetreeTransaction (transaction: BitcoinTransactionModel): boolean {
     const transactionOutputs = transaction.outputs;
 
     for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
@@ -548,12 +497,10 @@ export default class BitcoinProcessor {
     return false;
   }
 
-  private getSidetreeDataFromVOutIfExist (transactionOutput: Transaction.Output): string | undefined {
-      // grab the scripts
-    const script = transactionOutput.script;
+  private getSidetreeDataFromVOutIfExist (transactionOutput: BitcoinOutputModel): string | undefined {
 
     // check for returned data for sidetree prefix
-    const hexDataMatches = script.toASM().match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+    const hexDataMatches = transactionOutput.scriptAsmAsString.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
 
     if (hexDataMatches && hexDataMatches.length !== 0) {
 
@@ -580,7 +527,7 @@ export default class BitcoinProcessor {
     return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
-  private async processBlockForPofCalculation (blockHeight: number, blockData: BlockData): Promise<void> {
+  private async processBlockForPofCalculation (blockHeight: number, blockData: BitcoinBlockData): Promise<void> {
 
     const blockHash = blockData.hash;
 
@@ -599,10 +546,9 @@ export default class BitcoinProcessor {
       // Add the transaction to the sampler.  We filter out transactions with unusual
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
-      // const inputsCount = (transaction.vin as Array<any>).length;
 
       if (!isSidetreeTransaction &&
-          transactions.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
+          transaction.inputs.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
         this.transactionSampler.addElement(transaction.id);
       }
     }
@@ -677,7 +623,7 @@ export default class BitcoinProcessor {
     // output with the desired index
     const vout = transaction.outputs[outputIndex];
 
-    return Math.round(vout.satoshis);
+    return vout.satoshis;
   }
 
   /** Get the transaction fee of a transaction in satoshis */
@@ -689,15 +635,13 @@ export default class BitcoinProcessor {
     for (let i = 0 ; i < transaction.inputs.length ; i++) {
 
       const currentInput = transaction.inputs[i];
-      const transactionIdForCurrentInput = currentInput.prevTxId.toString('hex');
-
-      const transactionOutValue = await this.getTransactionOutValueInSatoshi(transactionIdForCurrentInput, currentInput.outputIndex);
+      const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);
 
       inputSatoshiSum += transactionOutValue;
     }
 
     // transaction outputs in satoshis
-    const transactionOutputs: number[] = transaction.outputs.map((output) => Math.round(output.satoshis));
+    const transactionOutputs: number[] = transaction.outputs.map((output) => output.satoshis);
 
     const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
 
@@ -705,7 +649,7 @@ export default class BitcoinProcessor {
   }
 
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
-    allVOuts: Transaction.Output[],
+    allVOuts: BitcoinOutputModel[],
     transactionIndex: number,
     transactionBlock: number,
     transactionHash: any,

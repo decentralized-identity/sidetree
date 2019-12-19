@@ -1,5 +1,6 @@
-import BlockData from '../models/BlockData';
-import { Address, Transaction } from 'bitcore-lib';
+import BitcoinBlockData from '../models/BitcoinBlockData';
+import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
+import BitcoinUnspentCoinsModel from '../models/BitcoinUnspentCoinsModel';
 
 /**
  * Defines functionality for a class which handles the reading/writing data for the bitcoin ledger layer.
@@ -10,13 +11,21 @@ export default interface IBitcoinClient {
    * Broadcasts a transaction to the bitcoin network
    * @param transaction Transaction to broadcast
    */
-  broadcastTransaction (transaction: Transaction): Promise<boolean>;
+  // broadcastTransaction (transaction: Transaction): Promise<boolean>;
+
+  /**
+   * Broadcasts a transaction to the bitcoin network.
+   * @param transactionData The data to write to the transaction
+   * @param feeInSatoshis The fee for the transaction in satoshis
+   * @returns The id of the transaction if broadcasted successfully.
+   */
+  broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string>;
 
   /**
    * Gets the block data for the given block hash.
    * @param hash The hash of the block
    */
-  getBlock (hash: string): Promise<BlockData>;
+  getBlock (hash: string): Promise<BitcoinBlockData>;
 
   /**
    * Gets the block hash for a given block height.
@@ -41,25 +50,16 @@ export default interface IBitcoinClient {
    * Get the raw transaction data.
    * @param transactionId The target transaction id.
    */
-  getRawTransaction (transactionId: string): Promise<Transaction>;
+  getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel>;
 
   /**
    * Gets all unspent coins of a given address
    * @param address Bitcoin address to get coins for
    */
-  getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]>;
+  getUnspentCoins (): Promise<BitcoinUnspentCoinsModel[]>;
 
   /**
-   * Start watching a public key.
-   * @param publicKeyInHex The key to start 'watched'.
-   * @param rescan Rescan the wallet for transaction again.
+   * Initialize this bitcoin client.
    */
-  importPublicKey (publicKeyAsHex: string, rescan: boolean): Promise<void>;
-
-  /**
-   * Checks if the bitcoin peer has a wallet open for a given address
-   * @param address The bitcoin address to check
-   * @returns true if a wallet exists, false otherwise.
-   */
-  walletExists (address: string): Promise<boolean>;
+  initialize (): Promise<void>;
 }

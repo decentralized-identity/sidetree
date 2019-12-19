@@ -1,5 +1,6 @@
 import * as httpStatus from 'http-status';
-import BlockData from '../../lib/bitcoin/models/BlockData';
+import BlockData from '../../lib/bitcoin/models/BitcoinBlockData';
+import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import ErrorCode from '../../lib/common/SharedErrorCode';
@@ -7,7 +8,7 @@ import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
-import { PrivateKey, Transaction } from 'bitcore-lib';
+import { Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -26,7 +27,7 @@ describe('BitcoinProcessor', () => {
     bitcoinPeerUri: 'http://localhost:18332',
     bitcoinRpcUsername: 'admin',
     bitcoinRpcPassword: '123456789',
-    bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
+    bitcoinWalletImportString: BitcoinClient.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
     requestTimeoutInMilliseconds: 300,
     genesisBlockNumber: 1480000,
@@ -37,8 +38,6 @@ describe('BitcoinProcessor', () => {
     sidetreeTransactionPrefix: 'sidetree:',
     transactionPollPeriodInSeconds: 60
   };
-
-  const privateKey: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
 
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
@@ -94,7 +93,7 @@ describe('BitcoinProcessor', () => {
         bitcoinPeerUri: randomString(),
         bitcoinRpcUsername: 'admin',
         bitcoinRpcPassword: 'password123',
-        bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
+        bitcoinWalletImportString: BitcoinClient.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
         transactionFetchPageSize: randomNumber(),
@@ -195,33 +194,6 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor.initialize();
       expect(periodicPollSpy).toHaveBeenCalled();
       done();
-    });
-
-    it('should import key if the wallet does not exist', async () => {
-      walletExistsSpy.and.returnValue(Promise.resolve(false));
-      const publicKeyHex = privateKey.toPublicKey().toBuffer().toString('hex');
-      const importSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'importPublicKey').and.callFake((key, rescan) => {
-        expect(key).toEqual(publicKeyHex);
-        expect(rescan).toBeTruthy();
-
-        return Promise.resolve(undefined);
-      });
-
-      await bitcoinProcessor.initialize();
-      expect(walletExistsSpy).toHaveBeenCalled();
-      expect(importSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('generatePrivateKey', () => {
-    it('should construct a PrivateKey and export its WIF', () => {
-      const privateKey = BitcoinProcessor.generatePrivateKey('mainnet');
-      expect(privateKey).toBeDefined();
-      expect(typeof privateKey).toEqual('string');
-      expect(privateKey.length).toBeGreaterThan(0);
-      expect(() => {
-        (PrivateKey as any).fromWIF(privateKey);
-      }).not.toThrow();
     });
   });
 
@@ -392,11 +364,8 @@ describe('BitcoinProcessor', () => {
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(bitcoinFee);
-        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
-        return Promise.resolve(true);
-      });
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
+
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
@@ -408,11 +377,7 @@ describe('BitcoinProcessor', () => {
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
       ]));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(bitcoinFee);
-        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
-        return Promise.resolve(true);
-      });
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
@@ -445,29 +410,6 @@ describe('BitcoinProcessor', () => {
         expect(error.message).toContain('Not enough satoshis');
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
-      } finally {
-        done();
-      }
-    });
-
-    it('should fail if broadcastTransaction fails', async (done) => {
-      const bitcoinFee = 4000;
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
-      ]));
-      const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(bitcoinFee);
-        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
-        return Promise.resolve(false);
-      });
-      try {
-        await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
-        fail('should have failed');
-      } catch (error) {
-        expect(error.message).toContain('Could not broadcast');
-        expect(getCoinsSpy).toHaveBeenCalled();
-        expect(broadcastSpy).toHaveBeenCalled();
       } finally {
         done();
       }
@@ -924,7 +866,7 @@ describe('BitcoinProcessor', () => {
       const tx: Transaction[] = [];
       const count = randomNumber(100) + 10;
       for (let i = 0; i < count; i++) {
-        const transaction = BitcoinDataGenerator.generateBitcoinTransaction(BitcoinProcessor.generatePrivateKey('testnet'), 1);
+        const transaction = BitcoinDataGenerator.generateBitcoinTransaction(BitcoinClient.generatePrivateKey('testnet'), 1);
         // data generation
         if (data) {
           const hasData = data();
@@ -942,10 +884,11 @@ describe('BitcoinProcessor', () => {
 
         tx.push(transaction);
       }
+
       return {
         hash: randomString(),
         height: blockHeight,
-        transactions: tx
+        transactions: tx.map((txn) => { return BitcoinClient['createBitcoinTransactionModel'](txn); })
       };
     }
 
@@ -988,7 +931,7 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should ignore other data transactions', async (done) => {
+    fit('should ignore other data transactions', async (done) => {
       const block = randomNumber();
       let shouldFindIDs: string[] = [];
       const blockData = await generateBlock(block, () => {
