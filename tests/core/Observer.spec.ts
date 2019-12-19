@@ -143,8 +143,8 @@ describe('Observer', async () => {
     // Prepare the mock response from the DownloadManager.
     const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
-    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#extraKey1', KeyUsage.recovery);
-    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#extraKey2', KeyUsage.recovery);
+    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#extraRecoveryKey1', KeyUsage.recovery);
+    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#extraRecoveryKey2', KeyUsage.recovery);
     const operations = [
       await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey1, privateKey1),
       await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey2, privateKey2)
