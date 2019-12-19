@@ -109,7 +109,6 @@ For every batch of Sidetree operations created, there are two files that are cre
 
     1. Metadata about the associated Sidetree operations, including a content addressable hash of the operation _batch file_.
     2. Array of DID suffixes (the unique portion of the DID string that differentiates one DID from another) for all DIDs that are declared to have operations within the associated _batch file_.
-    3. The Merkle Root of the tree constructed from all the operations in the batch file, to aid in proving an operation was included in a given transaction with minimal overhead.
 
 ### Batch File Schema
 The _batch file_ is a ZIP compressed JSON document of the following schema:
@@ -128,11 +127,9 @@ The _anchor file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded multihash of the batch file.",
-  "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."],
-  "merkleRoot": "Encoded multihash of the root of the Merkle tree constructed from the operations included in the batch file."
+  "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."]
 }
 ```
-> NOTE: See [Sidetree Operation Receipts](#Sidetree-Operation-Receipts) section on purpose and construction of the `merkleRoot`.
 
 ### Anchor String Schema
 The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
@@ -686,7 +683,7 @@ HTTP/1.1 200 OK
 ]
 ```
 
-## Merkle Root Hash Inclusion
+## Merkle Root Hash Inclusion (Currently not used)
 Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
 
 The main protocol does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire batch file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.

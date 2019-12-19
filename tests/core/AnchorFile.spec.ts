@@ -19,8 +19,7 @@ describe('AnchorFile', async () => {
     it('should throw if the buffer is not compressed', async () => {
       const anchorFile = {
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
 
@@ -33,20 +32,18 @@ describe('AnchorFile', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
+      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 2)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
     });
 
     it('should throw if missing batch file hash.', async () => {
       const anchorFile = {
         // batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -56,9 +53,8 @@ describe('AnchorFile', async () => {
 
     it('should throw if missing DID unique suffix.', async () => {
       const anchorFile = {
-        batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
         // didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A'], // Intentionally kept to show what is missing.
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -66,23 +62,10 @@ describe('AnchorFile', async () => {
       await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing));
     });
 
-    it('should throw if missing Merkle root hash.', async () => {
-      const anchorFile = {
-        batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
-        // merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA' // Intentionally kept to show what is missing.
-      };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
-
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMerkleRootMissing));
-    });
-
     it('should throw if batch file hash is not string.', async () => {
       const anchorFile = {
         batchFileHash: 12345,
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -93,8 +76,7 @@ describe('AnchorFile', async () => {
     it('should throw if batch file hash is invalid.', async () => {
       const anchorFile = {
         batchFileHash: 'InvalidHash',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -106,39 +88,10 @@ describe('AnchorFile', async () => {
       }
     });
 
-    it('should throw if Merkle root hash is not string.', async () => {
-      const anchorFile = {
-        batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 12345
-      };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
-
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed, 1)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMerkleRootNotString));
-    });
-
-    it('should throw if Merkle root hash is invalid.', async () => {
-      const anchorFile = {
-        batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'InvalidHash'
-      };
-      try {
-        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-        const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
-
-        await AnchorFile.parseAndValidate(anchorFileCompressed, 1);
-      } catch (error) {
-        expect(error.code).toEqual(ErrorCode.AnchorFileMerkleRootUnsupported);
-      }
-    });
-
     it('should throw if DID unique suffixes is not an array.', async () => {
       const anchorFile = {
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: 'IncorrectType',
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: 'IncorrectType'
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -150,8 +103,7 @@ describe('AnchorFile', async () => {
     it('should throw if DID unique suffixes is not an array.', async () => {
       const anchorFile = {
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -163,8 +115,7 @@ describe('AnchorFile', async () => {
     it('should throw if DID unique suffixes has duplicates.', async () => {
       const anchorFile = {
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -176,8 +127,7 @@ describe('AnchorFile', async () => {
     it('should throw if a DID unique suffix is not string.', async () => {
       const anchorFile = {
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 12345],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 12345]
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -189,8 +139,7 @@ describe('AnchorFile', async () => {
     it('should throw if a DID unique suffix is invalid.', async () => {
       const anchorFile = {
         batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['SuperLongDidUniqueSuffixSuperLongDidUniqueSuffixSuperLongDidUniqueSuffix'],
-        merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        didUniqueSuffixes: ['SuperLongDidUniqueSuffixSuperLongDidUniqueSuffixSuperLongDidUniqueSuffix']
       };
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
@@ -207,14 +156,13 @@ describe('AnchorFile', async () => {
     it('should created a compressed buffer correctly.', async () => {
       const anchorFile = {
         batchFileHash: 'val1',
-        didUniqueSuffixes: ['val2'],
-        merkleRoot: 'val3'
+        didUniqueSuffixes: ['val2']
       };
 
       const bufferFromCode = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
 
       // Calculated this manually to validate the output
-      const expectedEncodedBuffer = 'H4sIAAAAAAAACqtWSkosSc5wy8xJ9UgszlCyUipLzDFU0lFKyUwJzcssLE0NLk1Ly6xILVayigbJGSnF6ijlphZl56QG5eeXQDQYK9UCAA8KKHBJAAAA';
+      const expectedEncodedBuffer = 'H4sIAAAAAAAACqtWSkosSc5wy8xJ9UgszlCyUipLzDFU0lFKyUwJzcssLE0NLk1Ly6xILVayigbJGSnF1gIAyR0qQjUAAAA';
       const expectedBuffer = Encoder.decodeAsBuffer(expectedEncodedBuffer);
 
       // Removing the first 10 bytes of the buffer as those are the header bytes in gzip are
