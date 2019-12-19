@@ -695,7 +695,7 @@ describe('BitcoinProcessor', () => {
         hash: 'some_hash',
         height: 987654321,
         previousHash: 'some previous hash'
-      }
+      };
 
       getLastGroupIdSpy.and.returnValue(Promise.resolve(undefined)); // simulate that nothing is saved
       removeGroupSpy.and.returnValue(Promise.resolve(undefined));

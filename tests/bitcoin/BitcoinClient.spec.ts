@@ -85,7 +85,7 @@ describe('BitcoinClient', async () => {
         height: 2,
         transactions: [],
         header: {
-          prevHash: 'some other hash',
+          prevHash: 'some other hash'
         }
       };
 
