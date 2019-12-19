@@ -824,7 +824,13 @@ describe('BitcoinProcessor', () => {
       });
 
       const mockHash = 'mock_hash';
-      spyOn(bitcoinProcessor['bitcoinClient'],'getBlockHash' as any).and.returnValue(Promise.resolve(mockHash));
+      spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any).and.callFake((height: number) => {
+        return Promise.resolve({
+          height,
+          hash: mockHash,
+          previousHash: randomString()
+        });
+      });
 
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual.height).toEqual(transactions[1].transactionTime);
@@ -862,7 +868,13 @@ describe('BitcoinProcessor', () => {
       });
 
       const mockHash = 'mock_hash';
-      spyOn(bitcoinProcessor['bitcoinClient'],'getBlockHash' as any).and.returnValue(Promise.resolve(mockHash));
+      spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any).and.callFake((height: number) => {
+        return Promise.resolve({
+          height,
+          hash: mockHash,
+          previousHash: randomString()
+        });
+      });
 
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual.height).toEqual(transactions[0].transactionTime);
@@ -894,7 +906,13 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
 
       const mockHash = 'mock_hash';
-      spyOn(bitcoinProcessor['bitcoinClient'],'getBlockHash' as any).and.returnValue(Promise.resolve(mockHash));
+      spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any).and.callFake((height: number) => {
+        return Promise.resolve({
+          height,
+          hash: mockHash,
+          previousHash: randomString()
+        });
+      });
 
       const actual = await bitcoinProcessor['revertBlockchainCache']();
       expect(actual.height).toEqual(testConfig.genesisBlockNumber);
@@ -1132,6 +1150,25 @@ describe('BitcoinProcessor', () => {
       expect(addTransaction).toHaveBeenCalled();
       expect(shouldFindIDs.length).toEqual(0);
       done();
+    });
+
+    it('should throw if the previousBlockHash does not match the bitcoin block retrieved', async (done) => {
+      const block = randomNumber();
+      const blockData = await generateBlock(block, () => { return undefined; });
+      const blockHash = randomString();
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
+      rpcMock.and.returnValue(Promise.resolve(blockData));
+
+      try {
+        await bitcoinProcessor['processBlock'](block, blockData.previousHash + '-but-not-though');
+        fail('expected to throw');
+      } catch (error) {
+        expect(rpcMock).toHaveBeenCalled();
+        expect(error.message).toContain('Blockchain fork');
+      } finally {
+        done();
+      }
     });
 
     describe('processBlockForPofCalculation', async () => {
