@@ -97,7 +97,7 @@ export default class BitcoinClient implements IBitcoinClient {
       hash: hash,
       height: response.height,
       previousHash: response.previousblockhash
-    }
+    };
   }
 
   public async getCurrentBlockHeight (): Promise<number> {

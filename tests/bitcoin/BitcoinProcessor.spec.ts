@@ -666,11 +666,11 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should detect when the underlying blockchain forks between processed blocks', async (done) => {
-      //Custom write some sequential blocks such that between blocks the previousHash changes.
+      // Custom write some sequential blocks such that between blocks the previousHash changes.
       // const numBlocks = randomNumber(10) + 2;
       // const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
-        await bitcoinProcessor['processTransactions']({height: testConfig.genesisBlockNumber, hash: randomString(), previousHash: randomString() });
+        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber, hash: randomString(), previousHash: randomString() });
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('Blockchain forked during processing');
@@ -691,18 +691,22 @@ describe('BitcoinProcessor', () => {
       const removeGroupSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual');
       const removeTxnsSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan');
 
-      const mockStartingBlockHash = 'some_hash';
-      const mockStartingBlockFirstTxn = 987654321;
+      const mockBlock: IBlockInfo = {
+        hash: 'some_hash',
+        height: 987654321,
+        previousHash: 'some previous hash'
+      }
 
       getLastGroupIdSpy.and.returnValue(Promise.resolve(undefined)); // simulate that nothing is saved
       removeGroupSpy.and.returnValue(Promise.resolve(undefined));
       removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
-      spyOn(TransactionNumber, 'construct').and.returnValue(mockStartingBlockFirstTxn);
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash').and.returnValue(Promise.resolve(mockStartingBlockHash));
+      spyOn(TransactionNumber, 'construct').and.returnValue(mockBlock.height);
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.returnValue(Promise.resolve(mockBlock));
 
       const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
       expect(startingBlock.height).toEqual(bitcoinProcessor['genesisBlockNumber']);
-      expect(startingBlock.hash).toEqual(mockStartingBlockHash);
+      expect(startingBlock.hash).toEqual(mockBlock.hash);
+      expect(startingBlock.previousHash).toEqual(mockBlock.previousHash);
       done();
     });
 

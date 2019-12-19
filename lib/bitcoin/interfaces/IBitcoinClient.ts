@@ -38,7 +38,6 @@ export default interface IBitcoinClient {
    */
   getBlockInfo (hash: string): Promise<IBlockInfo>;
 
-
   /**
    * Gets the block info for the given block height.
    * @param height The height of the block

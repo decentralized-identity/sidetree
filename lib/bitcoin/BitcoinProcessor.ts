@@ -420,7 +420,7 @@ export default class BitcoinProcessor {
     const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
     await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
 
-    return await this.bitcoinClient.getBlockInfoFromHeight(startingBlock);
+    return this.bitcoinClient.getBlockInfoFromHeight(startingBlock);
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
@@ -446,7 +446,7 @@ export default class BitcoinProcessor {
     }
 
     // We have our new starting point
-    return await this.bitcoinClient.getBlockInfoFromHeight(startingBlockHeight);
+    return this.bitcoinClient.getBlockInfoFromHeight(startingBlockHeight);
   }
 
   /**
@@ -630,7 +630,7 @@ export default class BitcoinProcessor {
     const blockData = await this.bitcoinClient.getBlock(hash);
 
     if (blockData.previousHash !== previousBlockHash) {
-      throw Error("Blockchain forked from previous block");
+      throw Error('Blockchain forked from previous block');
     }
 
     await this.processBlockForPofCalculation(block, blockData);

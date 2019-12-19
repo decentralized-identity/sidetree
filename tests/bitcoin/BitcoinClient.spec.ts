@@ -3,7 +3,6 @@ import * as nodeFetchPackage from 'node-fetch';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinProcessor from '../../lib/bitcoin/BitcoinProcessor';
-import BlockData from '../../lib/bitcoin/models/BlockData';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { Transaction } from 'bitcore-lib';
 
@@ -81,19 +80,24 @@ describe('BitcoinClient', async () => {
   describe('getBlock', () => {
     it('should get the block data.', async () => {
       const hash = 'block_hash';
-      const blockData: BlockData = {
+      const blockData: any = {
         hash: 'some hash',
-        previousHash: 'some other hash',
         height: 2,
-        transactions: []
+        transactions: [],
+        header: {
+          prevHash: 'some other hash',
+        }
       };
 
       spyOn(BitcoinClient as any, 'createBlockFromBuffer').and.returnValue(blockData);
-      const spy = mockRpcCall('getblock', [hash, 0], JSON.stringify(blockData));
+      const spy = mockRpcCall('getblock', [hash, 0], Buffer.from(JSON.stringify(blockData)).toString('hex'));
       const actual = await bitcoinClient.getBlock(hash);
 
       expect(spy).toHaveBeenCalled();
-      expect(actual).toEqual(blockData);
+      expect(actual.hash).toEqual(blockData.hash);
+      expect(actual.height).toEqual(blockData.height);
+      expect(actual.transactions).toEqual(blockData.transactions);
+      expect(actual.previousHash).toEqual(blockData.header.prevHash);
     });
   });
 
@@ -123,9 +127,9 @@ describe('BitcoinClient', async () => {
   describe('getBlockInfo', () => {
     it('should get the block info', async () => {
       const height = 1234;
-      const hash = "some hash value";
+      const hash = 'some hash value';
       const previousHash = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
-      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash});
+      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash });
       const actual = await bitcoinClient.getBlockInfo(hash);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(height);
@@ -137,13 +141,13 @@ describe('BitcoinClient', async () => {
   describe('getBlockInfoFromHeight', () => {
     it('should get the block info', async () => {
       const height = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
-      const hash = "some hash value";
+      const hash = 'some hash value';
       const previousHash = 'some other hash';
       const heightSpy = spyOn(bitcoinClient, 'getBlockHash').and.callFake((calledHeight: number) => {
         expect(calledHeight).toEqual(height);
         return Promise.resolve(hash);
       });
-      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash});
+      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash });
       const actual = await bitcoinClient.getBlockInfoFromHeight(height);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(height);
