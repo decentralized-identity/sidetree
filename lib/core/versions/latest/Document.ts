@@ -226,11 +226,18 @@ export default class Document {
       }
 
       // Verify each publicKey entry in array.
+      const publicKeyIdSet: Set<string> = new Set();
       for (let publicKeyEntry of didDocument.publicKey) {
         // 'id' must be string type.
         if (typeof publicKeyEntry.id !== 'string') {
           return false;
         }
+
+        // 'id' must be unique
+        if (publicKeyIdSet.has(publicKeyEntry.id)) {
+          return false;
+        }
+        publicKeyIdSet.add(publicKeyEntry.id);
 
         if (typeof publicKeyEntry.type !== 'string') {
           return false;

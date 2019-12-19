@@ -186,6 +186,16 @@ describe('Document', () => {
       expect(isDocumentValid).toBeFalsy();
     });
 
+    it('returns false when document has multiple public keys with the same id', async () => {
+      let checkValid = Document.isValid(defaultOriginalDidDocument, false);
+      expect(checkValid).toBeTruthy();
+
+      defaultOriginalDidDocument.publicKey.push(defaultOriginalDidDocument.publicKey[0]);
+      checkValid = Document.isValid(defaultOriginalDidDocument, false);
+      expect(checkValid).toBeFalsy();
+
+    });
+
     it('returns false if the "service" property is not an array.', async () => {
       defaultOriginalDidDocument.service = undefined;
 

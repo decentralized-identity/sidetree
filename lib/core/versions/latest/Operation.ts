@@ -145,7 +145,7 @@ export default class Operation {
 
       // Loop through all given public keys and add them if they don't exist already.
       for (let publicKey of patch.publicKeys) {
-        if (!publicKeySet.has(publicKey)) {
+        if (!publicKeySet.has(publicKey.id)) {
           // Add the controller property. This cannot be added by the client and can
           // only be set by the server side
           publicKey.controller = didDocument.id;

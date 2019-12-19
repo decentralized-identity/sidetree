@@ -4,6 +4,7 @@ import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import { SidetreeError } from '../../lib/core/Error';
+import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 
 describe('Operation', async () => {
   // Load the DID Document template.
@@ -192,6 +193,34 @@ describe('Operation', async () => {
 
       const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotString);
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
+    });
+
+    describe('applyPatchesToDidDocument', async () => {
+      it('should prevent the same id for multiple keys', async () => {
+        const didDocument: DocumentModel = {
+          '@context': 'someContext',
+          id: 'someId',
+          publicKey: [{ id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }],
+          service: []
+        };
+        const patches = [
+          {
+            action: 'add-public-keys',
+            publicKeys: [
+              { id: 'aRepeatingId', type: 'thisShouldNotShowUp', usage: 'thisShouldNotShowUp' },
+              { id: 'aNonRepeatingId', type: 'someType', usage: 'some usage' }
+            ]
+          }
+        ];
+
+        Operation.applyPatchesToDidDocument(didDocument, patches);
+
+        expect(didDocument.publicKey).toEqual([
+          { id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' },
+          { id: 'aNonRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }
+        ]);
+
+      });
     });
 
   });
