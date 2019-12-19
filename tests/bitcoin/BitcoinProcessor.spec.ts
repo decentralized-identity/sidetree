@@ -770,7 +770,7 @@ describe('BitcoinProcessor', () => {
     it('should return the block after the last-processed-block', async () => {
       spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(true));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(actualLastProcessedBlock.height + 1));
-      
+
       const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
       expect(actual).toBeDefined();
       expect(actual!.height).toEqual(actualLastProcessedBlock.height + 1);
