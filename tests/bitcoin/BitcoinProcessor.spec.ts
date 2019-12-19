@@ -665,18 +665,26 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should detect when the underlying blockchain forks between processed blocks', async (done) => {
+    it('should recall previous hashes when calling processBlock', async (done) => {
       // Custom write some sequential blocks such that between blocks the previousHash changes.
-      // const numBlocks = randomNumber(10) + 2;
-      // const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
-      try {
-        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber, hash: randomString(), previousHash: randomString() });
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain('Blockchain forked during processing');
-      } finally {
-        done();
+      const numBlocks = randomNumber(10) + 2;
+      const hashes: string[] = [];
+      for (var i = 0; i < numBlocks; i++) {
+        hashes[i] = randomString();
       }
+      const offset = randomNumber(100) + testConfig.genesisBlockNumber;
+      const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(offset + numBlocks - 1));
+      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.callFake((height: number, hash: string) => {
+        const index = height - offset;
+        if (index !== 0) {
+          expect(hash).toEqual(hashes[index - 1]);
+        }
+        return Promise.resolve(hashes[index]);
+      });
+      await bitcoinProcessor['processTransactions']({ height: offset, hash: randomString(), previousHash: randomString() });
+      expect(tipSpy).toHaveBeenCalled();
+      expect(processMock).toHaveBeenCalled();
+      done();
     });
   });
 
