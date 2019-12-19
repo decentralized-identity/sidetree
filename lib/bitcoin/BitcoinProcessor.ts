@@ -35,6 +35,8 @@ export interface IBlockInfo {
   height: number;
   /** Block hash. */
   hash: string;
+  /** Previous block hash. */
+  previousHash: string;
 }
 
 /**
@@ -369,13 +371,16 @@ export default class BitcoinProcessor {
     const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
+    let previousBlockHash = startBlock.previousHash;
     for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
-      const processedBlockHash = await this.processBlock(blockHeight);
+      const processedBlockHash = await this.processBlock(blockHeight, previousBlockHash);
 
       this.lastProcessedBlock = {
         height: blockHeight,
-        hash: processedBlockHash
+        hash: processedBlockHash,
+        previousHash: previousBlockHash
       };
+      previousBlockHash = processedBlockHash;
     }
 
     console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
@@ -415,10 +420,7 @@ export default class BitcoinProcessor {
     const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
     await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
 
-    return {
-      height: startingBlock,
-      hash: await this.bitcoinClient.getBlockHash(startingBlock)
-    };
+    return await this.bitcoinClient.getBlockInfoFromHeight(startingBlock);
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
@@ -444,10 +446,7 @@ export default class BitcoinProcessor {
     }
 
     // We have our new starting point
-    return {
-      height: startingBlockHeight,
-      hash: await this.bitcoinClient.getBlockHash(startingBlockHeight)
-    };
+    return await this.bitcoinClient.getBlockInfoFromHeight(startingBlockHeight);
   }
 
   /**
@@ -490,10 +489,7 @@ export default class BitcoinProcessor {
         await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
 
         console.info(`reverted Transactions to block ${revertToBlockNumber}`);
-        return {
-          height: revertToBlockNumber,
-          hash: await this.bitcoinClient.getBlockHash(revertToBlockNumber)
-        };
+        return this.bitcoinClient.getBlockInfoFromHeight(revertToBlockNumber);
       }
 
       // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
@@ -507,10 +503,7 @@ export default class BitcoinProcessor {
 
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
-    return {
-      height: this.genesisBlockNumber,
-      hash: await this.bitcoinClient.getBlockHash(this.genesisBlockNumber)
-    };
+    return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
   }
 
   /**
@@ -628,12 +621,17 @@ export default class BitcoinProcessor {
   /**
    * Given a Bitcoin block height, processes that block for Sidetree transactions
    * @param block Block height to process
+   * @param previousBlockHash Block hash of the previous block
    * @returns the block hash processed
    */
-  private async processBlock (block: number): Promise<string> {
+  private async processBlock (block: number, previousBlockHash: string): Promise<string> {
     console.info(`Processing block ${block}`);
     const hash = await this.bitcoinClient.getBlockHash(block);
     const blockData = await this.bitcoinClient.getBlock(hash);
+
+    if (blockData.previousHash !== previousBlockHash) {
+      throw Error("Blockchain forked from previous block");
+    }
 
     await this.processBlockForPofCalculation(block, blockData);
 

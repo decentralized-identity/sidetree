@@ -1,5 +1,6 @@
 import BlockData from '../models/BlockData';
 import { Address, Transaction } from 'bitcore-lib';
+import { IBlockInfo } from '../BitcoinProcessor';
 
 /**
  * Defines functionality for a class which handles the reading/writing data for the bitcoin ledger layer.
@@ -30,6 +31,19 @@ export default interface IBitcoinClient {
    * @param hash The hash to get the block height for
    */
   getBlockHeight (hash: string): Promise<number>;
+
+  /**
+   * Gets the block info for the given block hash.
+   * @param hash The hash of the block
+   */
+  getBlockInfo (hash: string): Promise<IBlockInfo>;
+
+
+  /**
+   * Gets the block info for the given block height.
+   * @param height The height of the block
+   */
+  getBlockInfoFromHeight (height: number): Promise<IBlockInfo>;
 
   /**
    * Gets the current Bitcoin block height

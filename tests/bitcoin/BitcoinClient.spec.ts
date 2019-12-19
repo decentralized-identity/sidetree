@@ -83,6 +83,7 @@ describe('BitcoinClient', async () => {
       const hash = 'block_hash';
       const blockData: BlockData = {
         hash: 'some hash',
+        previousHash: 'some other hash',
         height: 2,
         transactions: []
       };
@@ -111,10 +112,44 @@ describe('BitcoinClient', async () => {
     it('should get the block height', async () => {
       const height = 1234;
       const hash = 'some_hash_value';
-      const spy = mockRpcCall('getblockheader', [hash, true], { height: height });
+      const previousHash = 'some other hash value';
+      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash });
       const actual = await bitcoinClient.getBlockHeight(hash);
       expect(actual).toEqual(height);
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getBlockInfo', () => {
+    it('should get the block info', async () => {
+      const height = 1234;
+      const hash = "some hash value";
+      const previousHash = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
+      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash});
+      const actual = await bitcoinClient.getBlockInfo(hash);
+      expect(actual.hash).toEqual(hash);
+      expect(actual.height).toEqual(height);
+      expect(actual.previousHash).toEqual(previousHash);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getBlockInfoFromHeight', () => {
+    it('should get the block info', async () => {
+      const height = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+      const hash = "some hash value";
+      const previousHash = 'some other hash';
+      const heightSpy = spyOn(bitcoinClient, 'getBlockHash').and.callFake((calledHeight: number) => {
+        expect(calledHeight).toEqual(height);
+        return Promise.resolve(hash);
+      });
+      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash});
+      const actual = await bitcoinClient.getBlockInfoFromHeight(height);
+      expect(actual.hash).toEqual(hash);
+      expect(actual.height).toEqual(height);
+      expect(actual.previousHash).toEqual(previousHash);
+      expect(spy).toHaveBeenCalled();
+      expect(heightSpy).toHaveBeenCalled();
     });
   });
 

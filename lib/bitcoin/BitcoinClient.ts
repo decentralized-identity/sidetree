@@ -4,6 +4,7 @@ import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { Address, Block, Transaction } from 'bitcore-lib';
+import { IBlockInfo } from './BitcoinProcessor';
 
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
@@ -56,6 +57,7 @@ export default class BitcoinClient implements IBitcoinClient {
     return {
       hash: block.hash,
       height: block.height,
+      previousHash: block.header.prevHash,
       transactions: block.transactions
     };
   }
@@ -73,6 +75,14 @@ export default class BitcoinClient implements IBitcoinClient {
   }
 
   public async getBlockHeight (hash: string): Promise<number> {
+    return (await this.getBlockInfo(hash)).height;
+  }
+
+  public async getBlockInfoFromHeight (height: number): Promise<IBlockInfo> {
+    return this.getBlockInfo(await this.getBlockHash(height));
+  }
+
+  public async getBlockInfo (hash: string): Promise<IBlockInfo> {
     const request = {
       method: 'getblockheader',
       params: [
@@ -83,7 +93,11 @@ export default class BitcoinClient implements IBitcoinClient {
 
     const response = await this.rpcCall(request, true);
 
-    return response.height;
+    return {
+      hash: hash,
+      height: response.height,
+      previousHash: response.previousblockhash
+    }
   }
 
   public async getCurrentBlockHeight (): Promise<number> {

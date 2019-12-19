@@ -18,7 +18,7 @@ function randomNumber (max: number = 256): number {
 }
 
 function randomBlock (above: number = 0): IBlockInfo {
-  return { height: above + randomNumber(), hash: randomString() };
+  return { height: above + randomNumber(), hash: randomString(), previousHash: randomString() };
 }
 
 describe('BitcoinProcessor', () => {
@@ -640,7 +640,7 @@ describe('BitcoinProcessor', () => {
       const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
-        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString() });
+        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString(), previousHash: randomString() });
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('before genesis');
@@ -655,11 +655,25 @@ describe('BitcoinProcessor', () => {
       // tslint:disable-next-line: max-line-length
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
       try {
-        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 1, hash: randomString() });
+        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 1, hash: randomString(), previousHash: randomString() });
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('before genesis');
         expect(processMock).not.toHaveBeenCalled();
+      } finally {
+        done();
+      }
+    });
+
+    it('should detect when the underlying blockchain forks between processed blocks', async (done) => {
+      //Custom write some sequential blocks such that between blocks the previousHash changes.
+      // const numBlocks = randomNumber(10) + 2;
+      // const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
+      try {
+        await bitcoinProcessor['processTransactions']({height: testConfig.genesisBlockNumber, hash: randomString(), previousHash: randomString() });
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toContain('Blockchain forked during processing');
       } finally {
         done();
       }
@@ -724,7 +738,7 @@ describe('BitcoinProcessor', () => {
     let actualLastProcessedBlock: IBlockInfo;
 
     beforeEach(() => {
-      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString() };
+      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString(), previousHash: randomString() };
       actualLastProcessedBlock = bitcoinProcessor['lastProcessedBlock'];
       expect(actualLastProcessedBlock).toBeDefined();
     });
@@ -945,7 +959,8 @@ describe('BitcoinProcessor', () => {
       return {
         hash: randomString(),
         height: blockHeight,
-        transactions: tx
+        transactions: tx,
+        previousHash: randomString()
       };
     }
 
@@ -980,7 +995,7 @@ describe('BitcoinProcessor', () => {
           seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
           return Promise.resolve(undefined);
         });
-      const actual = await bitcoinProcessor['processBlock'](block);
+      const actual = await bitcoinProcessor['processBlock'](block, blockData.previousHash);
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).toHaveBeenCalled();
@@ -1019,7 +1034,7 @@ describe('BitcoinProcessor', () => {
           seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
           return Promise.resolve(undefined);
         });
-      const actual = await bitcoinProcessor['processBlock'](block);
+      const actual = await bitcoinProcessor['processBlock'](block, blockData.previousHash);
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).toHaveBeenCalled();
@@ -1041,7 +1056,7 @@ describe('BitcoinProcessor', () => {
 
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
         'addTransaction');
-      const actual = await bitcoinProcessor['processBlock'](block);
+      const actual = await bitcoinProcessor['processBlock'](block, blockData.previousHash);
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).not.toHaveBeenCalled();
@@ -1090,7 +1105,7 @@ describe('BitcoinProcessor', () => {
           shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
           return Promise.resolve(undefined);
         });
-      const actual = await bitcoinProcessor['processBlock'](block);
+      const actual = await bitcoinProcessor['processBlock'](block, blockData.previousHash);
       expect(actual).toEqual(blockData.hash);
       expect(rpcMock).toHaveBeenCalled();
       expect(addTransaction).toHaveBeenCalled();

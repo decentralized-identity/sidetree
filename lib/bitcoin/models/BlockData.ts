@@ -6,5 +6,6 @@ import { Transaction } from 'bitcore-lib';
 export default interface BlockData {
   hash: string;
   height: number;
+  previousHash: string;
   transactions: Transaction[];
 }
