@@ -931,7 +931,7 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    fit('should ignore other data transactions', async (done) => {
+    it('should ignore other data transactions', async (done) => {
       const block = randomNumber();
       let shouldFindIDs: string[] = [];
       const blockData = await generateBlock(block, () => {
