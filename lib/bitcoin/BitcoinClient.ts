@@ -223,13 +223,6 @@ export default class BitcoinClient implements IBitcoinClient {
     return new Block(buffer);
   }
 
-  private static createBitcoinInputModel (bcoreInput: Transaction.Input): BitcoinInputModel {
-    return {
-      previousTransactionId: bcoreInput.prevTxId.toString('hex'),
-      outputIndexInPreviousTransaction: bcoreInput.outputIndex
-    };
-  }
-
   private async createBcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
     const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
 
@@ -244,6 +237,13 @@ export default class BitcoinClient implements IBitcoinClient {
     transaction.sign(this.privateKey);
 
     return transaction;
+  }
+
+  private static createBitcoinInputModel (bcoreInput: Transaction.Input): BitcoinInputModel {
+    return {
+      previousTransactionId: bcoreInput.prevTxId.toString('hex'),
+      outputIndexInPreviousTransaction: bcoreInput.outputIndex
+    };
   }
 
   private static createBitcoinOutputModel (bcoreOutput: Transaction.Output): BitcoinOutputModel {
