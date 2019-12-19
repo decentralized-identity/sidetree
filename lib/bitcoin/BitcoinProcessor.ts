@@ -50,6 +50,12 @@ export default class BitcoinProcessor {
   /** The first Sidetree block in Bitcoin's blockchain. */
   public readonly genesisBlockNumber: number;
 
+  /** The period for the bitcoin spending limit */
+  public readonly bitcoinFeeSpendingCutoffPeriodInBlocks: number;
+
+  /** The number of bitcoin spending limit for each period */
+  public readonly bitcoinFeeSpendingCutoff: number;
+
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
 
@@ -83,6 +89,9 @@ export default class BitcoinProcessor {
   public constructor (config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
+    this.bitcoinFeeSpendingCutoff = config.bitcoinFeeSpendingCutoff;
+    this.bitcoinFeeSpendingCutoffPeriodInBlocks = config.bitcoinFeeSpendingCutoffPeriodInBlocks;
+
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
@@ -217,17 +226,21 @@ export default class BitcoinProcessor {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
-    const unspentOutputs = await this.bitcoinClient.getUnspentCoins();
-
-    let totalSatoshis = unspentOutputs.reduce((total: number, coin: BitcoinUnspentCoinsModel) => {
-      return total + coin.satoshis;
-    }, 0);
-
     // ----
     // Issue #347 opened to track the investigation for this hardcoded value.
     // Ensure that we are always paying this minimum fee.
     fee = Math.max(fee, 1000);
     // ----
+
+    if (await this.isCurrentFeeOverSpendingLimit(fee, this.bitcoinFeeSpendingCutoffPeriodInBlocks, this.bitcoinFeeSpendingCutoff)) {
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
+    }
+
+    const unspentOutputs = await this.bitcoinClient.getUnspentCoins();
+
+    let totalSatoshis = unspentOutputs.reduce((total: number, coin: BitcoinUnspentCoinsModel) => {
+      return total + coin.satoshis;
+    }, 0);
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
@@ -706,4 +719,28 @@ export default class BitcoinProcessor {
     return false;
   }
 
+  private async isCurrentFeeOverSpendingLimit (
+    currentFee: number,
+    bitcoinFeeSpendingCutoffPeriodInBlocks: number,
+    bitcoinFeeSpendingCutoff: number): Promise<boolean> {
+
+    const startingBlockHeight = this.lastProcessedBlock!.height - bitcoinFeeSpendingCutoffPeriodInBlocks;
+    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlockHeight, 0);
+
+    const allTxnsSinceStartingBlock = await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber, 100000);
+    const totalFeeSinceStartingBlock = allTxnsSinceStartingBlock.reduce((total: number, currTxnModel: TransactionModel) => {
+      return total + currTxnModel.transactionFeePaid;
+    }, 0);
+
+    const totalFeePlusCurrentFee = totalFeeSinceStartingBlock + currentFee;
+    const bitcoinFeeSpendingCutoffInSatoshis = bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin;
+
+    if (totalFeePlusCurrentFee > bitcoinFeeSpendingCutoffInSatoshis) {
+      // tslint:disable-next-line: max-line-length
+      console.error(`Current fee (in satoshis): ${currentFee} + total fees (${totalFeeSinceStartingBlock}) since block number: ${startingBlockHeight} is greater than the spending cap: ${bitcoinFeeSpendingCutoffInSatoshis}`);
+      return true;
+    }
+
+    return false;
+  }
 }
