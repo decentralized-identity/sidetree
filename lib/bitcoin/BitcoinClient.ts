@@ -78,7 +78,7 @@ export default class BitcoinClient implements IBitcoinClient {
 
   public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
 
-    const transaction = await this.createTransaction(transactionData, feeInSatoshis);
+    const transaction = await this.createBcoreTransaction(transactionData, feeInSatoshis);
     const rawTransaction = transaction.serialize();
 
     console.info(`Broadcasting transaction ${transaction.id}`);
@@ -113,7 +113,7 @@ export default class BitcoinClient implements IBitcoinClient {
     const hexEncodedResponse = await this.rpcCall(request, true);
     const responseBuffer = Buffer.from(hexEncodedResponse, 'hex');
 
-    const block = BitcoinClient.createBlockFromBuffer(responseBuffer);
+    const block = BitcoinClient.createBcoreBlockFromBuffer(responseBuffer);
     const transactionModels = block.transactions.map((txn) => { return BitcoinClient.createBitcoinTransactionModel(txn); });
 
     return {
@@ -171,7 +171,7 @@ export default class BitcoinClient implements IBitcoinClient {
     const hexEncodedTransaction = await this.rpcCall(request, true);
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    const bcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer);
+    const bcoreTransaction = BitcoinClient.createBcoreTransactionFromBuffer(transactionBuffer);
 
     return BitcoinClient.createBitcoinTransactionModel(bcoreTransaction);
   }
@@ -214,12 +214,12 @@ export default class BitcoinClient implements IBitcoinClient {
   }
 
   // This function is specifically created to help with unit testing.
-  private static createTransactionFromBuffer (buffer: Buffer): Transaction {
+  private static createBcoreTransactionFromBuffer (buffer: Buffer): Transaction {
     return new Transaction(buffer);
   }
 
   // This function is specifically created to help with unit testing.
-  private static createBlockFromBuffer (buffer: Buffer): Block {
+  private static createBcoreBlockFromBuffer (buffer: Buffer): Block {
     return new Block(buffer);
   }
 
@@ -228,6 +228,22 @@ export default class BitcoinClient implements IBitcoinClient {
       previousTransactionId: bcoreInput.prevTxId.toString('hex'),
       outputIndexInPreviousTransaction: bcoreInput.outputIndex
     };
+  }
+
+  private async createBcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
+    const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
+
+    const transaction = new Transaction();
+    transaction.from(unspentOutputs);
+    transaction.addOutput(new Transaction.Output({
+      script: Script.buildDataOut(transactionData),
+      satoshis: 0
+    }));
+    transaction.change(this.privateKeyAddress);
+    transaction.fee(feeInSatoshis);
+    transaction.sign(this.privateKey);
+
+    return transaction;
   }
 
   private static createBitcoinOutputModel (bcoreOutput: Transaction.Output): BitcoinOutputModel {
@@ -247,22 +263,6 @@ export default class BitcoinClient implements IBitcoinClient {
       outputs: bitcoinOutputs,
       id: bcoreTransaction.id
     };
-  }
-
-  private async createTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
-    const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
-
-    const transaction = new Transaction();
-    transaction.from(unspentOutputs);
-    transaction.addOutput(new Transaction.Output({
-      script: Script.buildDataOut(transactionData),
-      satoshis: 0
-    }));
-    transaction.change(this.privateKeyAddress);
-    transaction.fee(feeInSatoshis);
-    transaction.sign(this.privateKey);
-
-    return transaction;
   }
 
   private async getUnspentOutputs (address: Address): Promise<Transaction.UnspentOutput[]> {

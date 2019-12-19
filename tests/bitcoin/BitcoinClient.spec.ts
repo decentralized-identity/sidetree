@@ -75,7 +75,7 @@ describe('BitcoinClient', async () => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
 
-      spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(bitcoinClient as any, 'createBcoreTransaction').and.returnValue(Promise.resolve(transaction));
 
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
       const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
@@ -88,7 +88,7 @@ describe('BitcoinClient', async () => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
 
-      spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(bitcoinClient as any, 'createBcoreTransaction').and.returnValue(Promise.resolve(transaction));
 
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
       spy.and.throwError('test');
@@ -107,7 +107,7 @@ describe('BitcoinClient', async () => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
 
-      spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(bitcoinClient as any, 'createBcoreTransaction').and.returnValue(Promise.resolve(transaction));
 
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], []);
       try {
@@ -131,7 +131,7 @@ describe('BitcoinClient', async () => {
         transactions: [transaction]
       };
 
-      spyOn(BitcoinClient as any, 'createBlockFromBuffer').and.returnValue(blockData);
+      spyOn(BitcoinClient as any, 'createBcoreBlockFromBuffer').and.returnValue(blockData);
       const spy = mockRpcCall('getblock', [hash, 0], JSON.stringify(blockData));
       const actual = await bitcoinClient.getBlock(hash);
 
@@ -179,7 +179,7 @@ describe('BitcoinClient', async () => {
       const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
       const mockTransactionAsOutputTxn = BitcoinClient['createBitcoinTransactionModel'](mockTransaction);
 
-      spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
+      spyOn(BitcoinClient as any, 'createBcoreTransactionFromBuffer').and.returnValue(mockTransaction);
 
       const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
 
@@ -229,7 +229,7 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('createTransaction', () => {
+  describe('createBcoreTransaction', () => {
     it('should create the transaction object using the inputs correctly.', async (done) => {
       const availableSatoshis = 5000;
       const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
@@ -248,7 +248,7 @@ describe('BitcoinClient', async () => {
       const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
       const fee = availableSatoshis / 2;
 
-      const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
+      const transaction = await bitcoinClient['createBcoreTransaction'](dataToWrite, fee);
       expect(transaction.getFee()).toEqual(fee);
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
       done();
