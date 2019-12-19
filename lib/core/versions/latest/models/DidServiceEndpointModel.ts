@@ -7,6 +7,6 @@ export default interface DidServiceEndpointModel {
   serviceEndpoint: {
     '@context': string;
     '@type': string;
-    instance: string[]
+    instances: string[]
   };
 }

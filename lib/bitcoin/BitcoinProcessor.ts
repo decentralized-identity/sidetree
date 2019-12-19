@@ -545,9 +545,10 @@ export default class BitcoinProcessor {
       // Add the transaction to the sampler.  We filter out transactions with unusual
       // input count - such transaction require a large number of rpc calls to compute transaction fee
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
+      const inputsCount = transaction.inputs.length;
 
       if (!isSidetreeTransaction &&
-          transaction.inputs.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
+          inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
         this.transactionSampler.addElement(transaction.id);
       }
     }
