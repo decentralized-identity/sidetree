@@ -701,7 +701,7 @@ describe('BitcoinProcessor', () => {
 
       const mockBlock: IBlockInfo = {
         hash: 'some_hash',
-        height: 987654321,
+        height: bitcoinProcessor['genesisBlockNumber'],
         previousHash: 'some previous hash'
       };
 
@@ -709,12 +709,13 @@ describe('BitcoinProcessor', () => {
       removeGroupSpy.and.returnValue(Promise.resolve(undefined));
       removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
       spyOn(TransactionNumber, 'construct').and.returnValue(mockBlock.height);
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.returnValue(Promise.resolve(mockBlock));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((height: number) => {
+        expect(height).toEqual(bitcoinProcessor['genesisBlockNumber']);
+        return Promise.resolve(mockBlock);
+      });
 
       const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
-      expect(startingBlock.height).toEqual(bitcoinProcessor['genesisBlockNumber']);
-      expect(startingBlock.hash).toEqual(mockBlock.hash);
-      expect(startingBlock.previousHash).toEqual(mockBlock.previousHash);
+      expect(startingBlock).toEqual(mockBlock);
       done();
     });
 
@@ -732,7 +733,11 @@ describe('BitcoinProcessor', () => {
       removeGroupSpy.and.returnValue(Promise.resolve(undefined));
       removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
       spyOn(bitcoinProcessor as any, 'getStartingBlockFromGroupId').and.returnValue(mockStartingBlockHeight);
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash').and.returnValue(Promise.resolve(mockStartingBlockHash));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.returnValue(Promise.resolve({
+        hash: mockStartingBlockHash,
+        height: mockStartingBlockHeight,
+        previousHash: randomString()
+      }));
       spyOn(TransactionNumber, 'construct').and.returnValue(mockStartingBlockFirstTxn);
 
       const actualBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
@@ -752,14 +757,20 @@ describe('BitcoinProcessor', () => {
     beforeEach(() => {
       bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString(), previousHash: randomString() };
       actualLastProcessedBlock = bitcoinProcessor['lastProcessedBlock'];
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((height: number) => {
+        return Promise.resolve({
+          height,
+          hash: randomString(),
+          previousHash: randomString()
+        });
+      });
       expect(actualLastProcessedBlock).toBeDefined();
     });
 
     it('should return the block after the last-processed-block', async () => {
       spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(true));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(actualLastProcessedBlock.height + 1));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash').and.returnValue(Promise.resolve('some_hash'));
-
+      
       const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
       expect(actual).toBeDefined();
       expect(actual!.height).toEqual(actualLastProcessedBlock.height + 1);
@@ -768,7 +779,6 @@ describe('BitcoinProcessor', () => {
     it('should return undefined if the last-processed-block is same as the current height', async () => {
       spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(true));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(actualLastProcessedBlock.height));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash').and.returnValue(Promise.resolve('some_hash'));
 
       const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
       expect(actual).not.toBeDefined();
@@ -782,7 +792,6 @@ describe('BitcoinProcessor', () => {
 
       spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(false));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(actualLastProcessedBlock.height + 1));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash').and.returnValue(Promise.resolve('some_hash'));
 
       const actual = await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
       expect(actual).toBeDefined();
