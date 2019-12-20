@@ -760,7 +760,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should invoke revert code if the db returns a forked transaction', async (done) => {
-      
+
       const getLastGroupIdSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'getLastGroupId');
       const removeGroupSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual');
       const removeTxnsSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan');

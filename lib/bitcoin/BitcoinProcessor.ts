@@ -429,7 +429,7 @@ export default class BitcoinProcessor {
       // revert the blockchain to the correct block
       if (!lastProcessedBlockVerified) {
         // The revert logic will return the last correct processed block
-        return await this.revertBlockchainCache();
+        return this.revertBlockchainCache();
       } else {
         return this.bitcoinClient.getBlockInfo(lastKnownBlock.transactionTimeHash);
       }
