@@ -78,7 +78,7 @@ export default class SpendingMonitor {
     console.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
 
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
-    // filter them to get the transactions that were written only by this node. 
+    // filter them to get the transactions that were written only by this node.
     const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(allTxnsSinceStartingBlock);
     console.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance}`);
 
