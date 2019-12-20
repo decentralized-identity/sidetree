@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
+import Document from '../../lib/core/versions/latest/Document';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import OperationGenerator from './OperationGenerator';
+import OperationType from '../../lib/core/enums/OperationType';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -20,7 +22,6 @@ export default class VegetaLoadGenerator {
    * @param hashAlgorithmInMultihashCode The hash algorithm in Multihash code in DEC (not in HEX).
    */
   public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string, hashAlgorithmInMultihashCode: number) {
-    const didDocumentTemplate = require('../json/didDocumentTemplate.json');
     const keyId = '#key1';
 
     // Make directories needed by the request generator.
@@ -34,8 +35,28 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/privateKey${i}.json`, JSON.stringify(privateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
+      const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const publicKeys = [
+        publicKey,
+        signingKeys[0]
+      ];
+      const service = [
+        {
+          'id': 'IdentityHub',
+          'type': 'IdentityHub',
+          'serviceEndpoint': {
+            '@context': 'schema.identity.foundation/hub',
+            '@type': 'UserServiceEndpoint',
+            'instance': [
+              'did:sidetree:value0'
+            ]
+          }
+        }
+      ];
+      const document = Document.create(publicKeys, service);
+
       // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+      const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 

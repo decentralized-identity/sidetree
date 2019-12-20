@@ -42,8 +42,6 @@ describe('RequestHandler', () => {
   const didMethodName = config.didMethodName;
 
   // Load the DID Document template.
-  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
-
   const blockchain = new MockBlockchain();
   let cas: ICas;
   let batchScheduler: BatchScheduler;
@@ -90,7 +88,27 @@ describe('RequestHandler', () => {
 
     // Generate a unique key-pair used for each test.
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+
+    const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const publicKeys = [
+      publicKey,
+      signingKeys[0]
+    ];
+    const service = [
+      {
+        'id': 'IdentityHub',
+        'type': 'IdentityHub',
+        'serviceEndpoint': {
+          '@context': 'schema.identity.foundation/hub',
+          '@type': 'UserServiceEndpoint',
+          'instance': [
+            'did:sidetree:value0'
+          ]
+        }
+      }
+    ];
+    const document = Document.create(publicKeys, service);
+    const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
     await batchScheduler.writeOperationBatch();

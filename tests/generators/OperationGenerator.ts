@@ -105,32 +105,6 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates a Create Operation with valid signature.
-   * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
-   */
-  public static async generateCreateOperation (
-    didDocumentTemplate: any,
-    publicKey: DidPublicKeyModel,
-    privateKey: string | PrivateKey
-  ): Promise<JwsModel> {
-
-    // Replace the placeholder public-key with the public-key given.
-    didDocumentTemplate.publicKey[0] = publicKey;
-
-    const operationJws = OperationGenerator.createOperationJws(OperationType.Create, didDocumentTemplate, publicKey.id, privateKey);
-    return operationJws;
-  }
-
-  /**
-   * Creates a Create Operation buffer with valid signature.
-   * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
-   */
-  public static async generateCreateOperationBuffer (didDocumentTemplate: any, publicKey: DidPublicKeyModel, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
-    return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
    * Generates an Update Operation buffer with valid signature.
    */
   public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {

@@ -6,6 +6,7 @@ import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Blockchain from '../../lib/core/Blockchain';
 import Cas from '../../lib/core/Cas';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import Document from '../../lib/core/versions/latest/Document';
 import DownloadManager from '../../lib/core/DownloadManager';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
@@ -20,6 +21,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
+import OperationType from '../../lib/core/enums/OperationType';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
@@ -141,15 +143,28 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const didDocumentTemplate = require('../json/didDocumentTemplate.json');
-
-    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#extraRecoveryKey1', KeyUsage.recovery);
-    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#extraRecoveryKey2', KeyUsage.recovery);
-    const operations = [
-      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey1, privateKey1),
-      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey2, privateKey2)
+    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const publicKeys = [
+      publicKey1,
+      signingKeys[0]
     ];
-    const operationsBuffer = operations.map((op) => { return Buffer.from(JSON.stringify(op)); });
+    const service = [
+      {
+        'id': 'IdentityHub',
+        'type': 'IdentityHub',
+        'serviceEndpoint': {
+          '@context': 'schema.identity.foundation/hub',
+          '@type': 'UserServiceEndpoint',
+          'instance': [
+            'did:sidetree:value0'
+          ]
+        }
+      }
+    ];
+    const document = Document.create(publicKeys, service);
+    const operationsBuffer = [await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey1)];
+
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);
 
     const batchFileFetchResult: FetchResult = {
