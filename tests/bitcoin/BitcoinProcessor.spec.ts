@@ -733,12 +733,66 @@ describe('BitcoinProcessor', () => {
       removeGroupSpy.and.returnValue(Promise.resolve(undefined));
       removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
       spyOn(bitcoinProcessor as any, 'getStartingBlockFromGroupId').and.returnValue(mockStartingBlockHeight);
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.returnValue(Promise.resolve({
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfo').and.returnValue(Promise.resolve({
         hash: mockStartingBlockHash,
         height: mockStartingBlockHeight,
         previousHash: randomString()
       }));
       spyOn(TransactionNumber, 'construct').and.returnValue(mockStartingBlockFirstTxn);
+      transactionStoreLatestTransactionSpy.and.returnValue({
+        transactionNumber: mockStartingBlockFirstTxn,
+        transactionTime: mockStartingBlockHeight,
+        transactionTimeHash: mockStartingBlockHash,
+        anchorString: randomString(),
+        transactionFeePaid: randomNumber(),
+        normalizedTransactionFee: randomNumber()
+      });
+      spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(true);
+
+      const actualBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
+
+      expect(removeGroupSpy).toHaveBeenCalledWith(mockLastGroupId);
+      expect(removeTxnsSpy).toHaveBeenCalledWith(mockStartingBlockFirstTxn - 1);
+
+      expect(actualBlock.height).toEqual(mockStartingBlockHeight);
+      expect(actualBlock.hash).toEqual(mockStartingBlockHash);
+      done();
+    });
+
+    it('should invoke revert code if the db returns a forked transaction', async (done) => {
+      
+      const getLastGroupIdSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'getLastGroupId');
+      const removeGroupSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual');
+      const removeTxnsSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan');
+
+      const mockLastGroupId = 1345;
+      const mockStartingBlockHeight = 10000;
+      const mockStartingBlockHash = 'some_hash';
+      const mockStartingBlockFirstTxn = 987654321;
+
+      getLastGroupIdSpy.and.returnValue(Promise.resolve(mockLastGroupId));
+      removeGroupSpy.and.returnValue(Promise.resolve(undefined));
+      removeTxnsSpy.and.returnValue(Promise.resolve(undefined));
+      spyOn(bitcoinProcessor as any, 'getStartingBlockFromGroupId').and.returnValue(mockStartingBlockHeight);
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((_: number) => {
+        fail('getBlockInfoFromHeight should not be called; BlockInfo returned by revert.');
+        return Promise.reject();
+      });
+      spyOn(TransactionNumber, 'construct').and.returnValue(mockStartingBlockFirstTxn);
+      transactionStoreLatestTransactionSpy.and.returnValue({
+        transactionNumber: mockStartingBlockFirstTxn,
+        transactionTime: mockStartingBlockHeight,
+        transactionTimeHash: mockStartingBlockHash,
+        anchorString: randomString(),
+        transactionFeePaid: randomNumber(),
+        normalizedTransactionFee: randomNumber()
+      });
+      spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(false);
+      spyOn(bitcoinProcessor, 'revertBlockchainCache' as any).and.returnValue(Promise.resolve({
+        hash: mockStartingBlockHash,
+        height: mockStartingBlockHeight,
+        previousHash: randomString()
+      }));
 
       const actualBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
 

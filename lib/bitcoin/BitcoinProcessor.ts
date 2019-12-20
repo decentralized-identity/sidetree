@@ -420,7 +420,22 @@ export default class BitcoinProcessor {
     const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
     await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
 
-    return this.bitcoinClient.getBlockInfoFromHeight(startingBlock);
+    // Check the last known block hash
+    const lastKnownBlock = (await this.transactionStore.getLastTransaction());
+    if (lastKnownBlock) {
+      const lastProcessedBlockVerified = await this.verifyBlock(lastKnownBlock.transactionTime, lastKnownBlock.transactionTimeHash);
+
+      // If the last processed block is not verified then that means that we need to
+      // revert the blockchain to the correct block
+      if (!lastProcessedBlockVerified) {
+        // The revert logic will return the last correct processed block
+        return await this.revertBlockchainCache();
+      } else {
+        return this.bitcoinClient.getBlockInfo(lastKnownBlock.transactionTimeHash);
+      }
+    } else {
+      return this.bitcoinClient.getBlockInfoFromHeight(startingBlock);
+    }
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
