@@ -13,6 +13,7 @@ import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
+import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
@@ -50,12 +51,6 @@ export default class BitcoinProcessor {
   /** The first Sidetree block in Bitcoin's blockchain. */
   public readonly genesisBlockNumber: number;
 
-  /** The period for the bitcoin spending limit */
-  public readonly bitcoinFeeSpendingCutoffPeriodInBlocks: number;
-
-  /** The number of bitcoin spending limit for each period */
-  public readonly bitcoinFeeSpendingCutoff: number;
-
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
 
@@ -78,6 +73,8 @@ export default class BitcoinProcessor {
 
   private bitcoinClient: IBitcoinClient;
 
+  private spendingMonitor: SpendingMonitor;
+
   /** proof of fee configuration */
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
 
@@ -89,10 +86,11 @@ export default class BitcoinProcessor {
   public constructor (config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
-    this.bitcoinFeeSpendingCutoff = config.bitcoinFeeSpendingCutoff;
-    this.bitcoinFeeSpendingCutoffPeriodInBlocks = config.bitcoinFeeSpendingCutoffPeriodInBlocks;
-
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
+    this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
+      config.bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin,
+      this.transactionStore);
 
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
     this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
@@ -232,7 +230,7 @@ export default class BitcoinProcessor {
     fee = Math.max(fee, 1000);
     // ----
 
-    if (await this.isCurrentFeeOverSpendingLimit(fee, this.bitcoinFeeSpendingCutoffPeriodInBlocks, this.bitcoinFeeSpendingCutoff)) {
+    if (await this.spendingMonitor.isCurrentFeeOverSpendingLimit(fee, this.lastProcessedBlock!.height)) {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
     }
 
@@ -258,6 +256,8 @@ export default class BitcoinProcessor {
 
     const transactionId = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
     console.info(`Successfully submitted transaction ${transactionId}`);
+
+    this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
   /**
@@ -716,31 +716,6 @@ export default class BitcoinProcessor {
     }
 
     // non sidetree transaction
-    return false;
-  }
-
-  private async isCurrentFeeOverSpendingLimit (
-    currentFee: number,
-    bitcoinFeeSpendingCutoffPeriodInBlocks: number,
-    bitcoinFeeSpendingCutoff: number): Promise<boolean> {
-
-    const startingBlockHeight = this.lastProcessedBlock!.height - bitcoinFeeSpendingCutoffPeriodInBlocks;
-    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlockHeight, 0);
-
-    const allTxnsSinceStartingBlock = await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber, 100000);
-    const totalFeeSinceStartingBlock = allTxnsSinceStartingBlock.reduce((total: number, currTxnModel: TransactionModel) => {
-      return total + currTxnModel.transactionFeePaid;
-    }, 0);
-
-    const totalFeePlusCurrentFee = totalFeeSinceStartingBlock + currentFee;
-    const bitcoinFeeSpendingCutoffInSatoshis = bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin;
-
-    if (totalFeePlusCurrentFee > bitcoinFeeSpendingCutoffInSatoshis) {
-      // tslint:disable-next-line: max-line-length
-      console.error(`Current fee (in satoshis): ${currentFee} + total fees (${totalFeeSinceStartingBlock}) since block number: ${startingBlockHeight} is greater than the spending cap: ${bitcoinFeeSpendingCutoffInSatoshis}`);
-      return true;
-    }
-
     return false;
   }
 }

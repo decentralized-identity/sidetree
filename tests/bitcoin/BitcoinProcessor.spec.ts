@@ -22,7 +22,7 @@ function randomBlock (above: number = 0): IBlockInfo {
   return { height: above + randomNumber(), hash: randomString() };
 }
 
-fdescribe('BitcoinProcessor', () => {
+describe('BitcoinProcessor', () => {
   const testConfig: IBitcoinConfig = {
     bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
     bitcoinFeeSpendingCutoff: 1,
@@ -365,8 +365,14 @@ fdescribe('BitcoinProcessor', () => {
   describe('writeTransaction', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
+
+    beforeEach(() => {
+      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString() };
+    });
+
     it('should write a transaction if there are enough Satoshis', async (done) => {
-      spyOn(bitcoinProcessor as any, 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
+      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
 
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
@@ -377,11 +383,13 @@ fdescribe('BitcoinProcessor', () => {
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
+      expect(monitorAddSpy).toHaveBeenCalledWith(hash);
       done();
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
-      spyOn(bitcoinProcessor as any, 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
+      spyOn(bitcoinProcessor['spendingMonitor'],'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
       ]));
@@ -394,11 +402,13 @@ fdescribe('BitcoinProcessor', () => {
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
       expect(errorSpy).toHaveBeenCalled();
+      expect(monitorAddSpy).toHaveBeenCalled();
       done();
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
-      spyOn(bitcoinProcessor as any, 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
+      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
       const coin = BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
         new Transaction.UnspentOutput({
@@ -421,12 +431,14 @@ fdescribe('BitcoinProcessor', () => {
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
       } finally {
+        expect(monitorAddSpy).not.toHaveBeenCalled();
         done();
       }
     });
 
     it('should fail if the current fee is over the spending limits', async (done) => {
-      const spendLimitSpy = spyOn(bitcoinProcessor as any, 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(true));
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
+      const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(true));
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any);
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any);
 
@@ -440,7 +452,8 @@ fdescribe('BitcoinProcessor', () => {
 
       expect(getCoinsSpy).not.toHaveBeenCalled();
       expect(broadcastSpy).not.toHaveBeenCalled();
-      expect(spendLimitSpy).toHaveBeenCalledWith(bitcoinFee, testConfig.bitcoinFeeSpendingCutoffPeriodInBlocks, testConfig.bitcoinFeeSpendingCutoff);
+      expect(spendLimitSpy).toHaveBeenCalledWith(bitcoinFee, bitcoinProcessor['lastProcessedBlock']!.height);
+      expect(monitorAddSpy).not.toHaveBeenCalled();
       done();
     });
   });
@@ -1141,76 +1154,6 @@ fdescribe('BitcoinProcessor', () => {
       });
     });
 
-  });
-
-  describe('isCurrentFeeOverSpendingLimit', () => {
-    const mockTxns = createTransactions(2);
-
-    beforeEach(() => {
-      bitcoinProcessor['lastProcessedBlock'] = { height: 12, hash: 'hash' };
-    });
-
-    it('should return true if the spending limit is reached.', async (done) => {
-      const spendingLimitInBitcoins = 3;
-      const spendingLimitInSatoshis = spendingLimitInBitcoins * BitcoinProcessor['satoshiPerBitcoin'];
-
-      // Setup fees so that we are over the limit
-      const fees = [spendingLimitInSatoshis / 3, spendingLimitInSatoshis / 3, (spendingLimitInSatoshis / 3) + 1000];
-
-      mockTxns[0].transactionFeePaid = fees[0];
-      mockTxns[1].transactionFeePaid = fees[1];
-
-      const txnStoreSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan');
-      txnStoreSpy.and.returnValue(Promise.resolve(mockTxns));
-
-      const currentFee = fees[2];
-      const result = await bitcoinProcessor['isCurrentFeeOverSpendingLimit'](currentFee, 5, spendingLimitInBitcoins);
-      expect(result).toBeTruthy();
-      expect(txnStoreSpy).toHaveBeenCalled();
-      done();
-    });
-
-    it('should return false if the spending limit is not reached.', async (done) => {
-      const spendingLimitInBitcoins = 3;
-      const spendingLimitInSatoshis = spendingLimitInBitcoins * BitcoinProcessor['satoshiPerBitcoin'];
-
-      // Setup fees so that we are under the limit
-      const fees = [spendingLimitInSatoshis / 3, spendingLimitInSatoshis / 3, (spendingLimitInSatoshis / 3) - 1000];
-
-      mockTxns[0].transactionFeePaid = fees[0];
-      mockTxns[1].transactionFeePaid = fees[1];
-
-      const txnStoreSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan');
-      txnStoreSpy.and.returnValue(Promise.resolve(mockTxns));
-
-      // Pass in the fee which will ensure that the we are going to stay under the limit
-      const currentFee = fees[2];
-      const result = await bitcoinProcessor['isCurrentFeeOverSpendingLimit'](currentFee, 5, spendingLimitInBitcoins);
-      expect(result).toBeFalsy();
-      expect(txnStoreSpy).toHaveBeenCalled();
-      done();
-    });
-
-    it('should return false if we are exactly at the spending limit.', async (done) => {
-      const spendingLimitInBitcoins = 3;
-      const spendingLimitInSatoshis = spendingLimitInBitcoins * BitcoinProcessor['satoshiPerBitcoin'];
-
-      // Setup fees so that we are exactly at the limit
-      const fees = [spendingLimitInSatoshis / 3, spendingLimitInSatoshis / 3, spendingLimitInSatoshis / 3];
-
-      mockTxns[0].transactionFeePaid = fees[0];
-      mockTxns[1].transactionFeePaid = fees[1];
-
-      const txnStoreSpy = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan');
-      txnStoreSpy.and.returnValue(Promise.resolve(mockTxns));
-
-      // Pass in the fee which will ensure that the we are going to stay under the limit
-      const currentFee = fees[2];
-      const result = await bitcoinProcessor['isCurrentFeeOverSpendingLimit'](currentFee, 5, spendingLimitInBitcoins);
-      expect(result).toBeFalsy();
-      expect(txnStoreSpy).toHaveBeenCalled();
-      done();
-    });
   });
 
   describe('getServiceVersion', () => {
