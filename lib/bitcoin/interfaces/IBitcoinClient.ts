@@ -1,5 +1,4 @@
 import BitcoinBlockData from '../models/BitcoinBlockData';
-import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import BitcoinUnspentCoinsModel from '../models/BitcoinUnspentCoinsModel';
 
 /**
@@ -47,16 +46,15 @@ export default interface IBitcoinClient {
   getCurrentBlockHeight (): Promise<number>;
 
   /**
-   * Get the raw transaction data.
-   * @param transactionId The target transaction id.
-   */
-  getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel>;
-
-  /**
    * Gets all unspent coins of a given address
    * @param address Bitcoin address to get coins for
    */
   getUnspentCoins (): Promise<BitcoinUnspentCoinsModel[]>;
+
+  /**
+   * Gets the transaction fee of a transaction in satoshis.
+   */
+  getTransactionFee (transactionId: string): Promise<number>;
 
   /**
    * Initialize this bitcoin client.
