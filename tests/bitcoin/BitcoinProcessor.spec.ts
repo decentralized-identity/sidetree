@@ -1,5 +1,5 @@
 import * as httpStatus from 'http-status';
-import BlockData from '../../lib/bitcoin/models/BitcoinBlockData';
+import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
@@ -42,6 +42,7 @@ describe('BitcoinProcessor', () => {
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
   let quantileCalculatorInitializeSpy: jasmine.Spy;
+  let bitcoinClientInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForInitializationSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
@@ -51,6 +52,7 @@ describe('BitcoinProcessor', () => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     quantileCalculatorInitializeSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'initialize');
+    bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
 
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
@@ -144,24 +146,26 @@ describe('BitcoinProcessor', () => {
 
   describe('initialize', () => {
 
-    let walletExistsSpy: jasmine.Spy;
-
     beforeEach(async () => {
-      walletExistsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'walletExists' as any);
       quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
+      bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
       getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
     });
 
-    it('should initialize the transactionStore', async (done) => {
-      walletExistsSpy.and.returnValue(Promise.resolve(true));
+    it('should initialize the internal objects', async (done) => {
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
+      expect(quantileCalculatorInitializeSpy).not.toHaveBeenCalled();
+      expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
+
       await bitcoinProcessor.initialize();
+
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
+      expect(quantileCalculatorInitializeSpy).toHaveBeenCalledWith();
+      expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
       done();
     });
 
     it('should process all the blocks since its last known', async (done) => {
-      walletExistsSpy.and.returnValue(Promise.resolve(true));
       const fromNumber = randomNumber();
       const fromHash = randomString();
 
@@ -189,7 +193,6 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should begin to periodically poll for updates', async (done) => {
-      walletExistsSpy.and.returnValue(Promise.resolve(true));
       expect(periodicPollSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(periodicPollSpy).toHaveBeenCalled();
@@ -360,9 +363,7 @@ describe('BitcoinProcessor', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
-      ]));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
 
@@ -373,9 +374,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
-      ]));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
@@ -389,16 +388,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
-      const coin = BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        new Transaction.UnspentOutput({
-          txid: coin.txId,
-          vout: coin.outputIndex,
-          address: coin.address,
-          script: coin.script,
-          amount: 0
-        })
-      ]));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(0));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
@@ -862,7 +852,7 @@ describe('BitcoinProcessor', () => {
   describe('processBlock', () => {
 
     // creates a response object for Bitcoin
-    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<BlockData> {
+    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<BitcoinBlockModel> {
       const tx: Transaction[] = [];
       const count = randomNumber(100) + 10;
       for (let i = 0; i < count; i++) {
@@ -905,8 +895,7 @@ describe('BitcoinProcessor', () => {
       });
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -944,8 +933,7 @@ describe('BitcoinProcessor', () => {
       });
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -975,8 +963,7 @@ describe('BitcoinProcessor', () => {
       const blockData = await generateBlock(block);
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -1020,8 +1007,7 @@ describe('BitcoinProcessor', () => {
 
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -1092,7 +1078,7 @@ describe('BitcoinProcessor', () => {
         spyOn(bitcoinProcessor, 'isGroupBoundary' as any).and.returnValue(true);
 
         let mockedTransactionFees = new Array<number>();
-        spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.callFake((_id: any) => {
+        spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.callFake((_id: any) => {
           const fee = randomNumber();
           mockedTransactionFees.push(fee);
           return fee;

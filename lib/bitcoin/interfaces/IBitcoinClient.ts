@@ -1,16 +1,9 @@
-import BitcoinBlockData from '../models/BitcoinBlockData';
-import BitcoinUnspentCoinsModel from '../models/BitcoinUnspentCoinsModel';
+import BitcoinBlockModel from '../models/BitcoinBlockModel';
 
 /**
  * Defines functionality for a class which handles the reading/writing data for the bitcoin ledger layer.
  */
 export default interface IBitcoinClient {
-
-  /**
-   * Broadcasts a transaction to the bitcoin network
-   * @param transaction Transaction to broadcast
-   */
-  // broadcastTransaction (transaction: Transaction): Promise<boolean>;
 
   /**
    * Broadcasts a transaction to the bitcoin network.
@@ -24,7 +17,7 @@ export default interface IBitcoinClient {
    * Gets the block data for the given block hash.
    * @param hash The hash of the block
    */
-  getBlock (hash: string): Promise<BitcoinBlockData>;
+  getBlock (hash: string): Promise<BitcoinBlockModel>;
 
   /**
    * Gets the block hash for a given block height.
@@ -46,15 +39,15 @@ export default interface IBitcoinClient {
   getCurrentBlockHeight (): Promise<number>;
 
   /**
-   * Gets all unspent coins of a given address
-   * @param address Bitcoin address to get coins for
+   * Gets all unspent coins of the wallet which is being watched.
+   * @returns the balance of the wallet
    */
-  getUnspentCoins (): Promise<BitcoinUnspentCoinsModel[]>;
+  getBalanceInSatoshis (): Promise<number>;
 
   /**
    * Gets the transaction fee of a transaction in satoshis.
    */
-  getTransactionFee (transactionId: string): Promise<number>;
+  getTransactionFeeInSatoshis (transactionId: string): Promise<number>;
 
   /**
    * Initialize this bitcoin client.

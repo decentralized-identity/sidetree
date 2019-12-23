@@ -2,6 +2,7 @@ import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
+import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { PrivateKey, Transaction, Address } from 'bitcore-lib';
 
@@ -54,10 +55,10 @@ describe('BitcoinClient', async () => {
 
   describe('initialize', () => {
     it('should import key if the wallet does not exist', async () => {
-      const walletExistsSpy = spyOn(bitcoinClient as any, 'walletExists').and.returnValue(Promise.resolve(false));
+      const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(false));
       const publicKeyHex = privateKeyFromBitcoinClient.toPublicKey().toBuffer().toString('hex');
 
-      const importSpy = spyOn(bitcoinClient as any, 'importPublicKey').and.callFake((key: string, rescan: boolean) => {
+      const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet').and.callFake((key: string, rescan: boolean) => {
         expect(key).toEqual(publicKeyHex);
         expect(rescan).toBeTruthy();
 
@@ -189,6 +190,51 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('getTransactionOutValueInSatoshi', () => {
+    it('should return the satoshis from the correct output index.', async () => {
+      const mockTxnWithMultipleOutputs: BitcoinTransactionModel = {
+        id: 'someid',
+        inputs: [],
+        outputs: [
+          { satoshis: 100, scriptAsmAsString: 'script1' },
+          { satoshis: 200, scriptAsmAsString: 'script2' }
+        ]
+      };
+
+      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(Promise.resolve(mockTxnWithMultipleOutputs));
+
+      const outputFromZeroIdx = await bitcoinClient['getTransactionOutValueInSatoshi']('someId', 0);
+      expect(outputFromZeroIdx).toEqual(100);
+
+      const outputFromOneIdx = await bitcoinClient['getTransactionOutValueInSatoshi']('someId', 1);
+      expect(outputFromOneIdx).toEqual(200);
+    });
+  });
+
+  describe('getTransactionFeeInSatoshis', () => {
+    it('should return the inputs - outputs.', async () => {
+      const mockTxn: BitcoinTransactionModel = {
+        id: 'someid',
+        inputs: [
+          { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0 }
+        ],
+        outputs: [
+          { satoshis: 100, scriptAsmAsString: 'script1' },
+          { satoshis: 200, scriptAsmAsString: 'script2' }
+        ]
+      };
+
+      const mockTxnOutputsSum = 300; // manually calculated based on the mockTxn above
+      const mockInputsSum = 500;
+
+      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
+      spyOn(bitcoinClient as any, 'getTransactionOutValueInSatoshi').and.returnValue(Promise.resolve(mockInputsSum));
+
+      const actual = await bitcoinClient.getTransactionFeeInSatoshis('someid');
+      expect(actual).toEqual(mockInputsSum - mockTxnOutputsSum);
+    });
+  });
+
   describe('getUnspentOutputs', () => {
     it('should query for unspent output coins given an address', async (done) => {
       const coin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1);
@@ -217,13 +263,13 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('importPublicKey', () => {
+  describe('addWatchOnlyAddressToWallet', () => {
     it('should call the importpubkey API', async (done) => {
       const publicKeyAsHex = 'some dummy value';
       const rescan = true;
       const spy = mockRpcCall('importpubkey', [publicKeyAsHex, 'sidetree', rescan], []);
 
-      await bitcoinClient['importPublicKey'](publicKeyAsHex, rescan);
+      await bitcoinClient['addWatchOnlyAddressToWallet'](publicKeyAsHex, rescan);
       expect(spy).toHaveBeenCalled();
       done();
     });
@@ -255,22 +301,20 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('getUnspentCoins', () => {
+  describe('getBalanceInSatoshis', () => {
     it('should call the unspentoutput API', async (done) => {
       const mockUnspentOutput = {
         satoshis: 12345
       };
 
-      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue([mockUnspentOutput]);
-      const actual = await bitcoinClient.getUnspentCoins();
-      expect(actual).toBeDefined();
-      expect(actual.length).toEqual(1);
-      expect(actual[0].satoshis).toEqual(mockUnspentOutput.satoshis);
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue([mockUnspentOutput, mockUnspentOutput]);
+      const actual = await bitcoinClient.getBalanceInSatoshis();
+      expect(actual).toEqual(mockUnspentOutput.satoshis * 2);
       done();
     });
   });
 
-  describe('walletExists', () => {
+  describe('isAddressAddedToWallet', () => {
     it('should check if the wallet is watch only', async () => {
       const address = 'ADSFAEADSF0934ADF';
       const spy = mockRpcCall('getaddressinfo', [address], {
@@ -288,7 +332,7 @@ describe('BitcoinClient', async () => {
         timestamp: 0,
         labels: []
       });
-      const actual = await bitcoinClient['walletExists'](address);
+      const actual = await bitcoinClient['isAddressAddedToWallet'](address);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
     });
@@ -316,7 +360,7 @@ describe('BitcoinClient', async () => {
           }
         ]
       });
-      const actual = await bitcoinClient['walletExists'](address);
+      const actual = await bitcoinClient['isAddressAddedToWallet'](address);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
     });
@@ -334,7 +378,7 @@ describe('BitcoinClient', async () => {
         ischange: false,
         labels: []
       });
-      const actual = await bitcoinClient['walletExists'](address);
+      const actual = await bitcoinClient['isAddressAddedToWallet'](address);
       expect(actual).toBeFalsy();
       expect(spy).toHaveBeenCalled();
     });

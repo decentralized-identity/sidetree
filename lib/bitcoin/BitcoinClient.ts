@@ -1,9 +1,8 @@
 import * as httpStatus from 'http-status';
-import BitcoinBlockData from './models/BitcoinBlockData';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import BitcoinUnspentCoinsModel from './models/BitcoinUnspentCoinsModel';
 import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
@@ -46,11 +45,11 @@ export default class BitcoinClient implements IBitcoinClient {
   public async initialize (): Promise<void> {
 
     console.debug(`Checking if bitcoin contains a wallet for ${this.privateKeyAddress}`);
-    if (!await this.walletExists(this.privateKeyAddress.toString())) {
+    if (!await this.isAddressAddedToWallet(this.privateKeyAddress.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${this.privateKeyAddress}. This can take up to 10 minutes.`);
 
       const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
-      await this.importPublicKey(publicKeyAsHex, true);
+      await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
     }
@@ -101,7 +100,7 @@ export default class BitcoinClient implements IBitcoinClient {
     return transaction.id;
   }
 
-  public async getBlock (hash: string): Promise<BitcoinBlockData> {
+  public async getBlock (hash: string): Promise<BitcoinBlockModel> {
     const request = {
       method: 'getblock',
       params: [
@@ -159,18 +158,18 @@ export default class BitcoinClient implements IBitcoinClient {
     return response;
   }
 
-  public async getUnspentCoins (): Promise<BitcoinUnspentCoinsModel[]> {
+  public async getBalanceInSatoshis (): Promise<number> {
 
     const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
 
-    const unspentTransactions = unspentOutputs.map((unspentOutput) => {
-      return { satoshis: unspentOutput.satoshis };
-    });
+    const unspentSatoshis = unspentOutputs.reduce((total, unspentOutput) => {
+      return total + unspentOutput.satoshis;
+    }, 0);
 
-    return unspentTransactions;
+    return unspentSatoshis;
   }
 
-  public async getTransactionFee (transactionId: string): Promise<number> {
+  public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
 
     const transaction = await this.getRawTransaction(transactionId);
 
@@ -191,7 +190,7 @@ export default class BitcoinClient implements IBitcoinClient {
     return (inputSatoshiSum - outputSatoshiSum);
   }
 
-  private async importPublicKey (publicKeyAsHex: string, rescan: boolean): Promise<void> {
+  private async addWatchOnlyAddressToWallet (publicKeyAsHex: string, rescan: boolean): Promise<void> {
     const request = {
       method: 'importpubkey',
       params: [
@@ -204,7 +203,7 @@ export default class BitcoinClient implements IBitcoinClient {
     await this.rpcCall(request, false);
   }
 
-  private async walletExists (address: string): Promise<boolean> {
+  private async isAddressAddedToWallet (address: string): Promise<boolean> {
     console.info(`Checking if bitcoin wallet for ${address} exists`);
     const request = {
       method: 'getaddressinfo',

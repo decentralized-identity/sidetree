@@ -1,8 +1,7 @@
-import BitcoinBlockData from './models/BitcoinBlockData';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import BitcoinUnspentCoinsModel from './models/BitcoinUnspentCoinsModel';
 import ErrorCode from '../common/SharedErrorCode';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import ProtocolParameters from './ProtocolParameters';
@@ -110,7 +109,6 @@ export default class BitcoinProcessor {
    * Initializes the Bitcoin processor
    */
   public async initialize () {
-    console.debug('Initializing ITransactionStore');
     await this.transactionStore.initialize();
     await this.quantileCalculator.initialize();
     await this.bitcoinClient.initialize();
@@ -214,17 +212,13 @@ export default class BitcoinProcessor {
   public async writeTransaction (anchorString: string, fee: number) {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
 
-    const unspentOutputs = await this.bitcoinClient.getUnspentCoins();
-
-    let totalSatoshis = unspentOutputs.reduce((total: number, coin: BitcoinUnspentCoinsModel) => {
-      return total + coin.satoshis;
-    }, 0);
-
     // ----
     // Issue #347 opened to track the investigation for this hardcoded value.
     // Ensure that we are always paying this minimum fee.
     fee = Math.max(fee, 1000);
     // ----
+
+    const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
@@ -525,7 +519,7 @@ export default class BitcoinProcessor {
     return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
-  private async processBlockForPofCalculation (blockHeight: number, blockData: BitcoinBlockData): Promise<void> {
+  private async processBlockForPofCalculation (blockHeight: number, blockData: BitcoinBlockModel): Promise<void> {
 
     const blockHash = blockData.hash;
 
@@ -557,7 +551,7 @@ export default class BitcoinProcessor {
       const sampledTransactionIds = this.transactionSampler.getSample();
       const sampledTransactionFees = new Array();
       for (let transactionId of sampledTransactionIds) {
-        const transactionFee = await this.bitcoinClient.getTransactionFee(transactionId);
+        const transactionFee = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
         sampledTransactionFees.push(transactionFee);
       }
 
@@ -656,7 +650,7 @@ export default class BitcoinProcessor {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // there would've been an exception before. So let's fill the missing information for the
       // transaction and return it
-      const transactionFeePaid = await this.bitcoinClient.getTransactionFee(transactionId);
+      const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
       const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
