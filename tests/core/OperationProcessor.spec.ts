@@ -161,19 +161,7 @@ describe('OperationProcessor', async () => {
       publicKey,
       signingKeys[0]
     ];
-    const service = [
-      {
-        'id': 'IdentityHub',
-        'type': 'IdentityHub',
-        'serviceEndpoint': {
-          '@context': 'schema.identity.foundation/hub',
-          '@type': 'UserServiceEndpoint',
-          'instance': [
-            'did:sidetree:value0'
-          ]
-        }
-      }
-    ];
+    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
     const document = Document.create(publicKeys, service);
 
     cas = new MockCas();
@@ -210,19 +198,7 @@ describe('OperationProcessor', async () => {
       publicKey,
       signingKeys[0]
     ];
-    const service = [
-      {
-        'id': 'IdentityHub',
-        'type': 'IdentityHub',
-        'serviceEndpoint': {
-          '@context': 'schema.identity.foundation/hub',
-          '@type': 'UserServiceEndpoint',
-          'instance': [
-            'did:sidetree:value0'
-          ]
-        }
-      }
-    ];
+    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
     const document = Document.create(publicKeys, service);
     const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, publicKey.id, privateKey);
     const duplicateCreateOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 1, 1, 0);
@@ -334,19 +310,7 @@ describe('OperationProcessor', async () => {
       publicKey,
       signingKeys[0]
     ];
-    const service = [
-      {
-        'id': 'IdentityHub',
-        'type': 'IdentityHub',
-        'serviceEndpoint': {
-          '@context': 'schema.identity.foundation/hub',
-          '@type': 'UserServiceEndpoint',
-          'instance': [
-            'did:sidetree:value0'
-          ]
-        }
-      }
-    ];
+    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
     const document = Document.create(publicKeys, service);
     const operationBufferWithoutSignature = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
 
@@ -391,19 +355,7 @@ describe('OperationProcessor', async () => {
       publicKey,
       signingKeys[0]
     ];
-    const service = [
-      {
-        'id': 'IdentityHub',
-        'type': 'IdentityHub',
-        'serviceEndpoint': {
-          '@context': 'schema.identity.foundation/hub',
-          '@type': 'UserServiceEndpoint',
-          'instance': [
-            'did:sidetree:value0'
-          ]
-        }
-      }
-    ];
+    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
     const document = Document.create(publicKeys, service);
     const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
 

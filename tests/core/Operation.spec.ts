@@ -21,19 +21,7 @@ describe('Operation', async () => {
       publicKey,
       signingKeys[0]
     ];
-    const service = [
-      {
-        'id': 'IdentityHub',
-        'type': 'IdentityHub',
-        'serviceEndpoint': {
-          '@context': 'schema.identity.foundation/hub',
-          '@type': 'UserServiceEndpoint',
-          'instance': [
-            'did:sidetree:value0'
-          ]
-        }
-      }
-    ];
+    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
     const document = Document.create(publicKeys, service);
     const createRequestBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
     createRequest = JSON.parse(createRequestBuffer.toString());

@@ -216,4 +216,22 @@ export default class OperationGenerator {
     const operationJws = await OperationGenerator.createOperationJws(OperationType.Recover, payload, existingRecoveryKeyId, existingRecoveryPrivateKey);
     return Buffer.from(JSON.stringify(operationJws));
   }
+
+  /**
+   * Generates a single element array with a identity hub service object for DID document
+   * @param instances the instance field in serviceEndpoint. A list of DIDs
+   */
+  public static createIdentityHubServiceEndpoints (instances: string[]): any[] {
+    return [
+      {
+        'id': 'IdentityHub',
+        'type': 'IdentityHub',
+        'serviceEndpoint': {
+          '@context': 'schema.identity.foundation/hub',
+          '@type': 'UserServiceEndpoint',
+          'instance': instances
+        }
+      }
+    ];
+  }
 }

@@ -40,19 +40,7 @@ export default class VegetaLoadGenerator {
         publicKey,
         signingKeys[0]
       ];
-      const service = [
-        {
-          'id': 'IdentityHub',
-          'type': 'IdentityHub',
-          'serviceEndpoint': {
-            '@context': 'schema.identity.foundation/hub',
-            '@type': 'UserServiceEndpoint',
-            'instance': [
-              'did:sidetree:value0'
-            ]
-          }
-        }
-      ];
+      const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
       const document = Document.create(publicKeys, service);
 
       // Generate the Create request body and save it on disk.

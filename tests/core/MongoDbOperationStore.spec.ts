@@ -39,19 +39,7 @@ async function constructAnchoredCreateOperation (
   transactionTime: number,
   operationIndex: number): Promise<AnchoredOperation> {
   const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-  const service = [
-    {
-      'id': 'IdentityHub',
-      'type': 'IdentityHub',
-      'serviceEndpoint': {
-        '@context': 'schema.identity.foundation/hub',
-        '@type': 'UserServiceEndpoint',
-        'instance': [
-          'did:sidetree:value0'
-        ]
-      }
-    }
-  ];
+  const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
 
   const document = Document.create([publicKey, signingKeys[0]], service);
   const operationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, publicKey.id, privateKey);
