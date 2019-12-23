@@ -587,14 +587,14 @@ export default class BitcoinProcessor {
       // get the output coins in the transaction
       const outputs = transactions[transactionIndex].outputs;
 
-      if (outputs.length <= 0) {
-        // console.debug(`Skipping transaction ${transactionIndex}: no output coins.`);
-        continue;
-      }
-
       try {
-        await this.addValidSidetreeTransactionsFromVOutsToTransactionStore(outputs, transactionIndex, block, blockHash, transaction.id);
+        const sidetreeTxToAdd = await this.getValidSidetreeTransactionFromOutputs(outputs, transactionIndex, block, blockHash, transaction.id);
 
+        // If there are transactions found then add them to the transaction store
+        if (sidetreeTxToAdd) {
+          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
+          await this.transactionStore.addTransaction(sidetreeTxToAdd);
+        }
       } catch (e) {
         const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
@@ -608,12 +608,12 @@ export default class BitcoinProcessor {
     return blockHash;
   }
 
-  private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
+  private async getValidSidetreeTransactionFromOutputs (
     allVOuts: BitcoinOutputModel[],
     transactionIndex: number,
     transactionBlock: number,
-    transactionHash: any,
-    transactionId: string): Promise<boolean> {
+    transactionHash: string,
+    transactionId: string): Promise<TransactionModel | undefined> {
 
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
@@ -627,7 +627,7 @@ export default class BitcoinProcessor {
         // tslint:disable-next-line: max-line-length
         const message = `The outputs in block: ${transactionBlock} with transaction id: ${transactionId} has multiple sidetree transactions. So ignoring this transaction.`;
         console.debug(message);
-        return false;
+        return undefined;
 
       } else if (isSidetreeTx) {
         // we have found a sidetree transaction
@@ -648,22 +648,17 @@ export default class BitcoinProcessor {
 
     if (sidetreeTxToAdd !== undefined) {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
-      // there would've been an exception before. So let's fill the missing information for the
-      // transaction and return it
+      // we would've returned earlier. So let's fill the missing information for the transaction and
+      // return it
       const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
       const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
       sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel.normalizedTransactionFee;
-
-      console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
-      await this.transactionStore.addTransaction(sidetreeTxToAdd);
-
-      return true;
     }
 
     // non sidetree transaction
-    return false;
+    return sidetreeTxToAdd;
   }
 
 }
