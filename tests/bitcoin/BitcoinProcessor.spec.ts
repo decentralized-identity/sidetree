@@ -905,8 +905,8 @@ describe('BitcoinProcessor', () => {
       });
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -944,8 +944,8 @@ describe('BitcoinProcessor', () => {
       });
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -975,8 +975,8 @@ describe('BitcoinProcessor', () => {
       const blockData = await generateBlock(block);
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -1020,8 +1020,8 @@ describe('BitcoinProcessor', () => {
 
       const blockHash = randomString();
       spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.returnValue(Promise.resolve(1));
       spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -1092,7 +1092,7 @@ describe('BitcoinProcessor', () => {
         spyOn(bitcoinProcessor, 'isGroupBoundary' as any).and.returnValue(true);
 
         let mockedTransactionFees = new Array<number>();
-        spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.callFake((_id: any) => {
+        spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFee' as any).and.callFake((_id: any) => {
           const fee = randomNumber();
           mockedTransactionFees.push(fee);
           return fee;

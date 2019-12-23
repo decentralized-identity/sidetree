@@ -121,9 +121,7 @@ export default class BitcoinProcessor {
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
     await this.processTransactions(startingBlock);
 
-    // disabling floating promise lint since periodicPoll should just float in the background event loop
-    /* tslint:disable-next-line:no-floating-promises */
-    this.periodicPoll();
+    void this.periodicPoll();
   }
 
   /**
@@ -215,7 +213,6 @@ export default class BitcoinProcessor {
    */
   public async writeTransaction (anchorString: string, fee: number) {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
-    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
 
     const unspentOutputs = await this.bitcoinClient.getUnspentCoins();
 
@@ -243,6 +240,7 @@ export default class BitcoinProcessor {
       throw error;
     }
 
+    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
     const transactionId = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
     console.info(`Successfully submitted transaction ${transactionId}`);
   }
@@ -559,7 +557,7 @@ export default class BitcoinProcessor {
       const sampledTransactionIds = this.transactionSampler.getSample();
       const sampledTransactionFees = new Array();
       for (let transactionId of sampledTransactionIds) {
-        const transactionFee = await this.getTransactionFeeInSatoshi(transactionId);
+        const transactionFee = await this.bitcoinClient.getTransactionFee(transactionId);
         sampledTransactionFees.push(transactionFee);
       }
 
@@ -616,38 +614,6 @@ export default class BitcoinProcessor {
     return blockHash;
   }
 
-  /** Get the transaction out value in satoshi, for a specified output index */
-  private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
-    const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
-
-    // output with the desired index
-    const vout = transaction.outputs[outputIndex];
-
-    return vout.satoshis;
-  }
-
-  /** Get the transaction fee of a transaction in satoshis */
-  private async getTransactionFeeInSatoshi (transactionId: string) {
-
-    const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
-
-    let inputSatoshiSum = 0;
-    for (let i = 0 ; i < transaction.inputs.length ; i++) {
-
-      const currentInput = transaction.inputs[i];
-      const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);
-
-      inputSatoshiSum += transactionOutValue;
-    }
-
-    // transaction outputs in satoshis
-    const transactionOutputs: number[] = transaction.outputs.map((output) => output.satoshis);
-
-    const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
-
-    return (inputSatoshiSum - outputSatoshiSum);
-  }
-
   private async addValidSidetreeTransactionsFromVOutsToTransactionStore (
     allVOuts: BitcoinOutputModel[],
     transactionIndex: number,
@@ -690,7 +656,7 @@ export default class BitcoinProcessor {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // there would've been an exception before. So let's fill the missing information for the
       // transaction and return it
-      const transactionFeePaid = await this.getTransactionFeeInSatoshi(transactionId);
+      const transactionFeePaid = await this.bitcoinClient.getTransactionFee(transactionId);
       const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
