@@ -7,8 +7,8 @@ import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
-import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import OperationType from '../../lib/core/enums/OperationType';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 
 /**
  * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
