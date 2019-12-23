@@ -1035,7 +1035,7 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('isSidetreeTransaction', async () => {
-    it('should return true if at least 1 output has sidetree data', async(done) => {
+    it('should return true if at least 1 output has sidetree data', async (done) => {
       const mockTxnModel: BitcoinTransactionModel = {
         id: 'id',
         inputs: [],
@@ -1061,7 +1061,7 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should return false if no output has sidetree data', async(done) => {
+    it('should return false if no output has sidetree data', async (done) => {
       const mockTxnModel: BitcoinTransactionModel = {
         id: 'id',
         inputs: [],
