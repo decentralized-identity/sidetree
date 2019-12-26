@@ -501,6 +501,26 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
+    it('should not throw if the processing throws', async (done) => {
+      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.throwError('Test error');
+
+      try {
+        await bitcoinProcessor['periodicPoll']();
+      } catch (e) {
+        fail('There should not be any exception thrown.');
+      }
+
+      // need to wait for the process call
+      setTimeout(() => {
+        expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
+        // clean up
+        clearTimeout(bitcoinProcessor['pollTimeoutId']);
+        done();
+      }, 300);
+
+      done();
+    });
+
     it('should set a timeout to call itself', async (done) => {
       processTransactionsSpy.and.returnValue(Promise.resolve({
         hash: randomString(),
@@ -885,7 +905,7 @@ describe('BitcoinProcessor', () => {
       };
     }
 
-    it('should review all transactions in a block and add them to the transactionStore', async (done) => {
+    it('should review all transactions in a block and add valid sidetree txns to the transactionStore', async (done) => {
       const block = randomNumber();
       const blockHash = randomString();
       const blockData: BitcoinBlockModel = {
@@ -893,7 +913,8 @@ describe('BitcoinProcessor', () => {
         hash: blockHash,
         transactions: [
           { id: 'id', inputs: [], outputs: [] },
-          { id: 'id2', inputs: [], outputs: [] }
+          { id: 'id2', inputs: [], outputs: [] },
+          { id: 'id3', inputs: [], outputs: [] }
         ]
       };
 
@@ -911,10 +932,16 @@ describe('BitcoinProcessor', () => {
       // Return the mock values one-by-one in order
       let getSidetreeTxnCallIndex = 0;
       spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.callFake(() => {
-        const retValue = mockSidetreeTxnModels[getSidetreeTxnCallIndex];
-        getSidetreeTxnCallIndex++;
 
-        return Promise.resolve(retValue);
+        if (getSidetreeTxnCallIndex < mockSidetreeTxnModels.length) {
+          const retValue = mockSidetreeTxnModels[getSidetreeTxnCallIndex];
+          getSidetreeTxnCallIndex++;
+
+          return Promise.resolve(retValue);
+        }
+
+        // Return undefined if we don't have data (to mock no valid sidetree transactions)
+        return Promise.resolve(undefined);
       });
 
       // Verify that the add transaction is called with the correct values
@@ -958,6 +985,36 @@ describe('BitcoinProcessor', () => {
       expect(pofCalcSpy).toHaveBeenCalled();
       expect(addTransactionSpy).not.toHaveBeenCalled();
 
+      done();
+    });
+
+    it('should throw if any exception is thrown while going through transactions.', async (done) => {
+      const block = randomNumber();
+      const blockHash = randomString();
+      const blockData: BitcoinBlockModel = {
+        height: block,
+        hash: blockHash,
+        transactions: [
+          { id: 'id', inputs: [], outputs: [] }
+        ]
+      };
+
+      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
+
+      spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.throwError('Test exception');
+
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction');
+
+      try {
+        await bitcoinProcessor['processBlock'](block);
+        fail('Expected exception is not thrown');
+      // tslint:disable-next-line: no-empty
+      } catch (e) { }
+
+      expect(pofCalcSpy).toHaveBeenCalled();
+      expect(addTransaction).not.toHaveBeenCalled();
       done();
     });
 

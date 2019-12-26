@@ -235,8 +235,8 @@ export default class BitcoinProcessor {
     }
 
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const transactionId = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
-    console.info(`Successfully submitted transaction ${transactionId}`);
+    const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
+    console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
   }
 
   /**
@@ -267,6 +267,13 @@ export default class BitcoinProcessor {
    */
   public async getServiceVersion (): Promise<ServiceVersionModel> {
     return this.serviceInfoProvider.getServiceVersion();
+  }
+
+  /**
+   * Generates a private key for the Bitcoin testnet.
+   */
+  public static generatePrivateKeyForTestnet(): string {
+    return BitcoinClient.generatePrivateKey('testnet');
   }
 
   /**
@@ -630,7 +637,7 @@ export default class BitcoinProcessor {
         return undefined;
 
       } else if (isSidetreeTx) {
-        // we have found a sidetree transaction
+        // we have found a valid sidetree transaction
         sidetreeTxToAdd = {
           transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
           transactionTime: transactionBlock,

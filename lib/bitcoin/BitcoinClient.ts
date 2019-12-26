@@ -89,15 +89,7 @@ export default class BitcoinClient implements IBitcoinClient {
       ]
     };
 
-    const response = await this.rpcCall(request, true);
-
-    if (response.length <= 0) {
-      const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
-      console.error(error);
-      throw error;
-    }
-
-    return transaction.id;
+    return this.rpcCall(request, true);
   }
 
   public async getBlock (hash: string): Promise<BitcoinBlockModel> {

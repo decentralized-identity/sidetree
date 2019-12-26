@@ -9,7 +9,7 @@ export default interface IBitcoinClient {
    * Broadcasts a transaction to the bitcoin network.
    * @param transactionData The data to write to the transaction
    * @param feeInSatoshis The fee for the transaction in satoshis
-   * @returns The id of the transaction if broadcasted successfully.
+   * @returns The hash of the transaction if broadcasted successfully.
    */
   broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string>;
 

@@ -74,13 +74,15 @@ describe('BitcoinClient', async () => {
   describe('broadcastTransaction', () => {
     it('should serialize and broadcast a transaction', async (done) => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
+      const transactionToString = transaction.toString();
+
+      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
 
       spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(Promise.resolve(transaction));
 
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
+      const spy = mockRpcCall('sendrawtransaction', [transactionToString], transactionToString);
       const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
-      expect(actual).toEqual(transaction.id);
+      expect(actual).toEqual(transactionToString);
       expect(spy).toHaveBeenCalled();
       done();
     });
@@ -102,22 +104,6 @@ describe('BitcoinClient', async () => {
       } finally {
         done();
       }
-    });
-
-    it('should throw if the RPC call returns empty.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
-
-      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(Promise.resolve(transaction));
-
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], []);
-      try {
-        await bitcoinClient.broadcastTransaction('data to write', 1000);
-        fail('expected exception not thrown.');
-      } catch (error) {
-        expect(spy).toHaveBeenCalled();
-      }
-      done();
     });
   });
 
