@@ -933,15 +933,16 @@ describe('BitcoinProcessor', () => {
       let getSidetreeTxnCallIndex = 0;
       spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.callFake(() => {
 
-        if (getSidetreeTxnCallIndex < mockSidetreeTxnModels.length) {
-          const retValue = mockSidetreeTxnModels[getSidetreeTxnCallIndex];
-          getSidetreeTxnCallIndex++;
+        let retValue: TransactionModel | undefined = undefined;
 
-          return Promise.resolve(retValue);
+        if (getSidetreeTxnCallIndex < mockSidetreeTxnModels.length) {
+          retValue = mockSidetreeTxnModels[getSidetreeTxnCallIndex];
         }
 
+        getSidetreeTxnCallIndex++;
+
         // Return undefined if we don't have data (to mock no valid sidetree transactions)
-        return Promise.resolve(undefined);
+        return Promise.resolve(retValue);
       });
 
       // Verify that the add transaction is called with the correct values
@@ -955,7 +956,7 @@ describe('BitcoinProcessor', () => {
       const actual = await bitcoinProcessor['processBlock'](block);
       expect(actual).toEqual(blockData.hash);
       expect(pofCalcSpy).toHaveBeenCalled();
-      expect(addTransaction).toHaveBeenCalled();
+      expect(addTransaction.calls.count()).toEqual(2);
       expect(addTxnCallIndex).toEqual(2);
 
       done();

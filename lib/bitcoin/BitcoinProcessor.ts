@@ -272,7 +272,7 @@ export default class BitcoinProcessor {
   /**
    * Generates a private key for the Bitcoin testnet.
    */
-  public static generatePrivateKeyForTestnet(): string {
+  public static generatePrivateKeyForTestnet (): string {
     return BitcoinClient.generatePrivateKey('testnet');
   }
 
