@@ -6,7 +6,7 @@ import ErrorCode from '../../lib/common/SharedErrorCode';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
-import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
+import { IBitcoinConfig } from '../../lib/bitcoin/interfaces/IBitcoinConfig';
 import { PrivateKey, Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {

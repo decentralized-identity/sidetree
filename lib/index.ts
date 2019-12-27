@@ -17,7 +17,7 @@ export {
 
 // Blockchain service exports.
 import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
-import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/IBitcoinConfig';
+import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/interfaces/IBitcoinConfig';
 
 export {
   ISidetreeBitcoinConfig,

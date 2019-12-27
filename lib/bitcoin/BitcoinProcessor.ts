@@ -14,7 +14,7 @@ import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import { Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
-import { IBitcoinConfig } from './IBitcoinConfig';
+import { IBitcoinConfig } from './interfaces/IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 
 /**

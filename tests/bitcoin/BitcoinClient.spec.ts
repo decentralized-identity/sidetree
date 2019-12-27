@@ -134,13 +134,14 @@ describe('BitcoinClient', async () => {
       const txnId = 'transaction_id';
       const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
 
-      spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
+      const createTransactionFromBufferSpy = spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
 
       const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
 
       const actual = await bitcoinClient.getRawTransaction(txnId);
       expect(actual).toEqual(mockTransaction);
       expect(spy).toHaveBeenCalled();
+      expect(createTransactionFromBufferSpy).toHaveBeenCalled();
     });
   });
 
@@ -171,6 +172,18 @@ describe('BitcoinClient', async () => {
       expect(coinSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
       done();
+    });
+  });
+
+  describe('importPublicKey', () => {
+    it('should call rpcCall with the expected arguments', async () => {
+      const publicKeyAsHex = '123456';
+      const sidetreeString = 'sidetree';
+      const rescan = true;
+      const params = [publicKeyAsHex, sidetreeString, rescan];
+      const spy = mockRpcCall('importpubkey', params, {});
+      await bitcoinClient.importPublicKey(publicKeyAsHex, rescan);
+      expect(spy).toHaveBeenCalled();
     });
   });
 
