@@ -20,7 +20,7 @@ describe('TransactionProcessor', () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
     transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
-  })
+  });
 
   it('should ignore error and return true when AnchoredDataSerializer throws a sidetree error', async () => {
     const anchoredData = 'Bad Format';
