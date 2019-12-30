@@ -249,7 +249,7 @@ export default class OperationGenerator {
         'serviceEndpoint': {
           '@context': 'schema.identity.foundation/hub',
           '@type': 'UserServiceEndpoint',
-          'instance': instances
+          'instances': instances
         }
       }
     ];
