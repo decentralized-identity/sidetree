@@ -1,10 +1,8 @@
 import * as fs from 'fs';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
-import Document from '../../lib/core/versions/latest/Document';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import OperationGenerator from './OperationGenerator';
-import OperationType from '../../lib/core/enums/OperationType';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -35,16 +33,11 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/privateKey${i}.json`, JSON.stringify(privateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
-      const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-      const publicKeys = [
-        publicKey,
-        signingKeys[0]
-      ];
-      const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
-      const document = Document.create(publicKeys, service);
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
       // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 

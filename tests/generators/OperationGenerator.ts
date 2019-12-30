@@ -1,11 +1,13 @@
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import Document from '../../lib/core/versions/latest/Document';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 
 /**
  * A class that can generate valid operations.
@@ -65,6 +67,24 @@ export default class OperationGenerator {
   ): Promise<Buffer> {
     const operationJws = await OperationGenerator.createOperationJws(type, payload, publicKeyId, privateKey);
     return Buffer.from(JSON.stringify(operationJws));
+  }
+
+  /**
+   * Create a did doc with specified arguments and generate a create operation with it
+   * @param recoveryPublicKey recovery public key
+   * @param recoveryPrivateKey recovery private key
+   * @param signingPublicKey signing public key
+   * @param serviceEndpoints service endpoints
+   */
+  public static async generateCreateOperationBuffer (
+    recoveryPublicKey: DidPublicKeyModel,
+    recoveryPrivateKey: string | PrivateKey,
+    signingPublicKey: DidPublicKeyModel,
+    serviceEndpoints?: DidServiceEndpointModel[]
+  ): Promise<Buffer> {
+    const publicKeys = [recoveryPublicKey, signingPublicKey];
+    const document = Document.create(publicKeys, serviceEndpoints);
+    return this.createOperationBuffer(OperationType.Create, document, recoveryPublicKey.id, recoveryPrivateKey);
   }
 
   /**
@@ -221,7 +241,7 @@ export default class OperationGenerator {
    * Generates a single element array with a identity hub service object for DID document
    * @param instances the instance field in serviceEndpoint. A list of DIDs
    */
-  public static createIdentityHubServiceEndpoints (instances: string[]): any[] {
+  public static createIdentityHubUserServiceEndpoints (instances: string[]): any[] {
     return [
       {
         'id': 'IdentityHub',

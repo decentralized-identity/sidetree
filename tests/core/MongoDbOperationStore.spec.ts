@@ -2,12 +2,10 @@ import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation'
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
-import Document from '../../lib/core/versions/latest/Document';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
-import OperationType from '../../lib/core/enums/OperationType';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 
 /**
@@ -38,11 +36,9 @@ async function constructAnchoredCreateOperation (
   transactionNumber: number,
   transactionTime: number,
   operationIndex: number): Promise<AnchoredOperation> {
-  const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-  const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
-
-  const document = Document.create([publicKey, signingKeys[0]], service);
-  const operationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, publicKey.id, privateKey);
+  const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+  const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+  const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
   const operation = constructAnchoredOperation(operationBuffer, transactionNumber, transactionTime, operationIndex);
   return operation;
 }

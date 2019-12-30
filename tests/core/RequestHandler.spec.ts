@@ -50,8 +50,8 @@ describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
   let versionManager: IVersionManager;
 
-  let publicKey: DidPublicKeyModel;
-  let privateKey: any;
+  let recoveryPublicKey: DidPublicKeyModel;
+  let recoveryPrivateKey: any;
   let did: string; // This DID is created at the beginning of every test.
   let didUniqueSuffix: string;
   let batchFileHash: string;
@@ -87,16 +87,10 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     // Generate a unique key-pair used for each test.
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-
-    const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const publicKeys = [
-      publicKey,
-      signingKeys[0]
-    ];
-    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
-    const document = Document.create(publicKeys, service);
-    const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
+    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
     await batchScheduler.writeOperationBatch();
@@ -159,9 +153,7 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
-
-    const documentModel = Document.create([recoveryPublicKey, signingPublicKey]);
-    const createOperationBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, documentModel, recoveryPublicKey.id, recoveryPrivateKey);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey);
 
     // Submit the create request twice.
     await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -222,7 +214,7 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
     // write operation batch to prevent the violation of 1 operation per DID per batch rule.
     await batchScheduler.writeOperationBatch();
-    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', privateKey);
+    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -247,7 +239,7 @@ describe('RequestHandler', () => {
       patches
     };
 
-    const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKey.id, privateKey);
+    const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, recoveryPublicKey.id, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -270,7 +262,7 @@ describe('RequestHandler', () => {
       newDidDocument: newDocumentModel
     };
 
-    const request = await OperationGenerator.createOperationBuffer(OperationType.Recover, recoverPayload, publicKey.id, privateKey);
+    const request = await OperationGenerator.createOperationBuffer(OperationType.Recover, recoverPayload, recoveryPublicKey.id, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 

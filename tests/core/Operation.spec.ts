@@ -1,11 +1,9 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
-import OperationType from '../../lib/core/enums/OperationType';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('Operation', async () => {
@@ -15,15 +13,10 @@ describe('Operation', async () => {
 
   beforeAll(async () => {
     // Generate a unique key-pair used for each test.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
-    const signingKeys = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const publicKeys = [
-      publicKey,
-      signingKeys[0]
-    ];
-    const service = OperationGenerator.createIdentityHubServiceEndpoints(['did:sidetree:value0']);
-    const document = Document.create(publicKeys, service);
-    const createRequestBuffer = await OperationGenerator.createOperationBuffer(OperationType.Create, document, '#key1', privateKey);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service);
     createRequest = JSON.parse(createRequestBuffer.toString());
   });
 
