@@ -32,7 +32,7 @@ export default class AnchorFile {
     }
 
     const anchorFileProperties = Object.keys(anchorFile);
-    if (anchorFileProperties.length > 3) {
+    if (anchorFileProperties.length > 2) {
       throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
     }
 
@@ -44,10 +44,6 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing);
     }
 
-    if (!anchorFile.hasOwnProperty('merkleRoot')) {
-      throw new SidetreeError(ErrorCode.AnchorFileMerkleRootMissing);
-    }
-
     // Batch file hash validations.
     if (typeof anchorFile.batchFileHash !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashNotString);
@@ -56,16 +52,6 @@ export default class AnchorFile {
     const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.batchFileHash);
     if (!Multihash.isValidHash(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
       throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashUnsupported, `Batch file hash '${anchorFile.batchFileHash}' is unsupported.`);
-    }
-
-    // Merkle root hash validations.
-    if (typeof anchorFile.merkleRoot !== 'string') {
-      throw new SidetreeError(ErrorCode.AnchorFileMerkleRootNotString);
-    }
-
-    const merkleRootBuffer = Encoder.decodeAsBuffer(anchorFile.merkleRoot);
-    if (!Multihash.isValidHash(merkleRootBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMerkleRootUnsupported, `Merkle root '${anchorFile.merkleRoot}' is unsupported.`);
     }
 
     // DID Unique Suffixes validations.

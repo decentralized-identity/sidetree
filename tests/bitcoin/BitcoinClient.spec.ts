@@ -2,6 +2,7 @@ import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
+import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { PrivateKey, Transaction, Address } from 'bitcore-lib';
 
@@ -54,10 +55,10 @@ describe('BitcoinClient', async () => {
 
   describe('initialize', () => {
     it('should import key if the wallet does not exist', async () => {
-      const walletExistsSpy = spyOn(bitcoinClient as any, 'walletExists').and.returnValue(Promise.resolve(false));
+      const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(false));
       const publicKeyHex = privateKeyFromBitcoinClient.toPublicKey().toBuffer().toString('hex');
 
-      const importSpy = spyOn(bitcoinClient as any, 'importPublicKey').and.callFake((key: string, rescan: boolean) => {
+      const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet').and.callFake((key: string, rescan: boolean) => {
         expect(key).toEqual(publicKeyHex);
         expect(rescan).toBeTruthy();
 
@@ -73,13 +74,15 @@ describe('BitcoinClient', async () => {
   describe('broadcastTransaction', () => {
     it('should serialize and broadcast a transaction', async (done) => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
+      const transactionToString = transaction.toString();
 
-      spyOn(bitcoinClient as any, 'createBcoreTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
 
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
+      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(Promise.resolve(transaction));
+
+      const spy = mockRpcCall('sendrawtransaction', [transactionToString], transactionToString);
       const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
-      expect(actual).toEqual(transaction.id);
+      expect(actual).toEqual(transactionToString);
       expect(spy).toHaveBeenCalled();
       done();
     });
@@ -88,7 +91,7 @@ describe('BitcoinClient', async () => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
 
-      spyOn(bitcoinClient as any, 'createBcoreTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(Promise.resolve(transaction));
 
       const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
       spy.and.throwError('test');
@@ -101,22 +104,6 @@ describe('BitcoinClient', async () => {
       } finally {
         done();
       }
-    });
-
-    it('should throw if the RPC call returns empty.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
-
-      spyOn(bitcoinClient as any, 'createBcoreTransaction').and.returnValue(Promise.resolve(transaction));
-
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], []);
-      try {
-        await bitcoinClient.broadcastTransaction('data to write', 1000);
-        fail('expected exception not thrown.');
-      } catch (error) {
-        expect(spy).toHaveBeenCalled();
-      }
-      done();
     });
   });
 
@@ -131,7 +118,7 @@ describe('BitcoinClient', async () => {
         transactions: [transaction]
       };
 
-      spyOn(BitcoinClient as any, 'createBcoreBlockFromBuffer').and.returnValue(blockData);
+      spyOn(BitcoinClient as any, 'createBitcoreBlockFromBuffer').and.returnValue(blockData);
       const spy = mockRpcCall('getblock', [hash, 0], JSON.stringify(blockData));
       const actual = await bitcoinClient.getBlock(hash);
 
@@ -179,13 +166,58 @@ describe('BitcoinClient', async () => {
       const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
       const mockTransactionAsOutputTxn = BitcoinClient['createBitcoinTransactionModel'](mockTransaction);
 
-      spyOn(BitcoinClient as any, 'createBcoreTransactionFromBuffer').and.returnValue(mockTransaction);
+      spyOn(BitcoinClient as any, 'createBitcoreTransactionFromBuffer').and.returnValue(mockTransaction);
 
       const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
 
-      const actual = await bitcoinClient.getRawTransaction(txnId);
+      const actual = await bitcoinClient['getRawTransaction'](txnId);
       expect(actual).toEqual(mockTransactionAsOutputTxn);
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getTransactionOutValueInSatoshi', () => {
+    it('should return the satoshis from the correct output index.', async () => {
+      const mockTxnWithMultipleOutputs: BitcoinTransactionModel = {
+        id: 'someid',
+        inputs: [],
+        outputs: [
+          { satoshis: 100, scriptAsmAsString: 'script1' },
+          { satoshis: 200, scriptAsmAsString: 'script2' }
+        ]
+      };
+
+      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(Promise.resolve(mockTxnWithMultipleOutputs));
+
+      const outputFromZeroIdx = await bitcoinClient['getTransactionOutValueInSatoshi']('someId', 0);
+      expect(outputFromZeroIdx).toEqual(100);
+
+      const outputFromOneIdx = await bitcoinClient['getTransactionOutValueInSatoshi']('someId', 1);
+      expect(outputFromOneIdx).toEqual(200);
+    });
+  });
+
+  describe('getTransactionFeeInSatoshis', () => {
+    it('should return the inputs - outputs.', async () => {
+      const mockTxn: BitcoinTransactionModel = {
+        id: 'someid',
+        inputs: [
+          { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0 }
+        ],
+        outputs: [
+          { satoshis: 100, scriptAsmAsString: 'script1' },
+          { satoshis: 200, scriptAsmAsString: 'script2' }
+        ]
+      };
+
+      const mockTxnOutputsSum = 300; // manually calculated based on the mockTxn above
+      const mockInputsSum = 500;
+
+      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
+      spyOn(bitcoinClient as any, 'getTransactionOutValueInSatoshi').and.returnValue(Promise.resolve(mockInputsSum));
+
+      const actual = await bitcoinClient.getTransactionFeeInSatoshis('someid');
+      expect(actual).toEqual(mockInputsSum - mockTxnOutputsSum);
     });
   });
 
@@ -217,19 +249,19 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('importPublicKey', () => {
+  describe('addWatchOnlyAddressToWallet', () => {
     it('should call the importpubkey API', async (done) => {
       const publicKeyAsHex = 'some dummy value';
       const rescan = true;
       const spy = mockRpcCall('importpubkey', [publicKeyAsHex, 'sidetree', rescan], []);
 
-      await bitcoinClient['importPublicKey'](publicKeyAsHex, rescan);
+      await bitcoinClient['addWatchOnlyAddressToWallet'](publicKeyAsHex, rescan);
       expect(spy).toHaveBeenCalled();
       done();
     });
   });
 
-  describe('createBcoreTransaction', () => {
+  describe('createBitcoreTransaction', () => {
     it('should create the transaction object using the inputs correctly.', async (done) => {
       const availableSatoshis = 5000;
       const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
@@ -248,29 +280,27 @@ describe('BitcoinClient', async () => {
       const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
       const fee = availableSatoshis / 2;
 
-      const transaction = await bitcoinClient['createBcoreTransaction'](dataToWrite, fee);
+      const transaction = await bitcoinClient['createBitcoreTransaction'](dataToWrite, fee);
       expect(transaction.getFee()).toEqual(fee);
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
       done();
     });
   });
 
-  describe('getUnspentCoins', () => {
+  describe('getBalanceInSatoshis', () => {
     it('should call the unspentoutput API', async (done) => {
       const mockUnspentOutput = {
         satoshis: 12345
       };
 
-      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue([mockUnspentOutput]);
-      const actual = await bitcoinClient.getUnspentCoins();
-      expect(actual).toBeDefined();
-      expect(actual.length).toEqual(1);
-      expect(actual[0].satoshis).toEqual(mockUnspentOutput.satoshis);
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue([mockUnspentOutput, mockUnspentOutput]);
+      const actual = await bitcoinClient.getBalanceInSatoshis();
+      expect(actual).toEqual(mockUnspentOutput.satoshis * 2);
       done();
     });
   });
 
-  describe('walletExists', () => {
+  describe('isAddressAddedToWallet', () => {
     it('should check if the wallet is watch only', async () => {
       const address = 'ADSFAEADSF0934ADF';
       const spy = mockRpcCall('getaddressinfo', [address], {
@@ -288,7 +318,7 @@ describe('BitcoinClient', async () => {
         timestamp: 0,
         labels: []
       });
-      const actual = await bitcoinClient['walletExists'](address);
+      const actual = await bitcoinClient['isAddressAddedToWallet'](address);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
     });
@@ -316,7 +346,7 @@ describe('BitcoinClient', async () => {
           }
         ]
       });
-      const actual = await bitcoinClient['walletExists'](address);
+      const actual = await bitcoinClient['isAddressAddedToWallet'](address);
       expect(actual).toBeTruthy();
       expect(spy).toHaveBeenCalled();
     });
@@ -334,7 +364,7 @@ describe('BitcoinClient', async () => {
         ischange: false,
         labels: []
       });
-      const actual = await bitcoinClient['walletExists'](address);
+      const actual = await bitcoinClient['isAddressAddedToWallet'](address);
       expect(actual).toBeFalsy();
       expect(spy).toHaveBeenCalled();
     });

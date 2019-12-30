@@ -1,6 +1,4 @@
-import BitcoinBlockData from '../models/BitcoinBlockData';
-import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
-import BitcoinUnspentCoinsModel from '../models/BitcoinUnspentCoinsModel';
+import BitcoinBlockModel from '../models/BitcoinBlockModel';
 
 /**
  * Defines functionality for a class which handles the reading/writing data for the bitcoin ledger layer.
@@ -8,16 +6,10 @@ import BitcoinUnspentCoinsModel from '../models/BitcoinUnspentCoinsModel';
 export default interface IBitcoinClient {
 
   /**
-   * Broadcasts a transaction to the bitcoin network
-   * @param transaction Transaction to broadcast
-   */
-  // broadcastTransaction (transaction: Transaction): Promise<boolean>;
-
-  /**
    * Broadcasts a transaction to the bitcoin network.
    * @param transactionData The data to write to the transaction
    * @param feeInSatoshis The fee for the transaction in satoshis
-   * @returns The id of the transaction if broadcasted successfully.
+   * @returns The hash of the transaction if broadcasted successfully.
    */
   broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string>;
 
@@ -25,7 +17,7 @@ export default interface IBitcoinClient {
    * Gets the block data for the given block hash.
    * @param hash The hash of the block
    */
-  getBlock (hash: string): Promise<BitcoinBlockData>;
+  getBlock (hash: string): Promise<BitcoinBlockModel>;
 
   /**
    * Gets the block hash for a given block height.
@@ -47,16 +39,15 @@ export default interface IBitcoinClient {
   getCurrentBlockHeight (): Promise<number>;
 
   /**
-   * Get the raw transaction data.
-   * @param transactionId The target transaction id.
+   * Gets all unspent coins of the wallet which is being watched.
+   * @returns the balance of the wallet
    */
-  getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel>;
+  getBalanceInSatoshis (): Promise<number>;
 
   /**
-   * Gets all unspent coins of a given address
-   * @param address Bitcoin address to get coins for
+   * Gets the transaction fee of a transaction in satoshis.
    */
-  getUnspentCoins (): Promise<BitcoinUnspentCoinsModel[]>;
+  getTransactionFeeInSatoshis (transactionId: string): Promise<number>;
 
   /**
    * Initialize this bitcoin client.

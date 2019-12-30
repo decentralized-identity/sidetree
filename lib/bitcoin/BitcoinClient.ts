@@ -1,9 +1,8 @@
 import * as httpStatus from 'http-status';
-import BitcoinBlockData from './models/BitcoinBlockData';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import BitcoinUnspentCoinsModel from './models/BitcoinUnspentCoinsModel';
 import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
@@ -46,11 +45,11 @@ export default class BitcoinClient implements IBitcoinClient {
   public async initialize (): Promise<void> {
 
     console.debug(`Checking if bitcoin contains a wallet for ${this.privateKeyAddress}`);
-    if (!await this.walletExists(this.privateKeyAddress.toString())) {
+    if (!await this.isAddressAddedToWallet(this.privateKeyAddress.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${this.privateKeyAddress}. This can take up to 10 minutes.`);
 
       const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
-      await this.importPublicKey(publicKeyAsHex, true);
+      await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
     }
@@ -78,7 +77,7 @@ export default class BitcoinClient implements IBitcoinClient {
 
   public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
 
-    const transaction = await this.createBcoreTransaction(transactionData, feeInSatoshis);
+    const transaction = await this.createBitcoreTransaction(transactionData, feeInSatoshis);
     const rawTransaction = transaction.serialize();
 
     console.info(`Broadcasting transaction ${transaction.id}`);
@@ -90,18 +89,10 @@ export default class BitcoinClient implements IBitcoinClient {
       ]
     };
 
-    const response = await this.rpcCall(request, true);
-
-    if (response.length <= 0) {
-      const error = new Error(`Could not broadcast transaction ${transaction.toString()}`);
-      console.error(error);
-      throw error;
-    }
-
-    return transaction.id;
+    return this.rpcCall(request, true);
   }
 
-  public async getBlock (hash: string): Promise<BitcoinBlockData> {
+  public async getBlock (hash: string): Promise<BitcoinBlockModel> {
     const request = {
       method: 'getblock',
       params: [
@@ -113,7 +104,7 @@ export default class BitcoinClient implements IBitcoinClient {
     const hexEncodedResponse = await this.rpcCall(request, true);
     const responseBuffer = Buffer.from(hexEncodedResponse, 'hex');
 
-    const block = BitcoinClient.createBcoreBlockFromBuffer(responseBuffer);
+    const block = BitcoinClient.createBitcoreBlockFromBuffer(responseBuffer);
     const transactionModels = block.transactions.map((txn) => { return BitcoinClient.createBitcoinTransactionModel(txn); });
 
     return {
@@ -159,35 +150,39 @@ export default class BitcoinClient implements IBitcoinClient {
     return response;
   }
 
-  public async getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
-    const request = {
-      method: 'getrawtransaction',
-      params: [
-        transactionId,  // transaction id
-        0   // get the raw hex-encoded string
-      ]
-    };
-
-    const hexEncodedTransaction = await this.rpcCall(request, true);
-    const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
-
-    const bcoreTransaction = BitcoinClient.createBcoreTransactionFromBuffer(transactionBuffer);
-
-    return BitcoinClient.createBitcoinTransactionModel(bcoreTransaction);
-  }
-
-  public async getUnspentCoins (): Promise<BitcoinUnspentCoinsModel[]> {
+  public async getBalanceInSatoshis (): Promise<number> {
 
     const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
 
-    const unspentTransactions = unspentOutputs.map((unspentOutput) => {
-      return { satoshis: unspentOutput.satoshis };
-    });
+    const unspentSatoshis = unspentOutputs.reduce((total, unspentOutput) => {
+      return total + unspentOutput.satoshis;
+    }, 0);
 
-    return unspentTransactions;
+    return unspentSatoshis;
   }
 
-  private async importPublicKey (publicKeyAsHex: string, rescan: boolean): Promise<void> {
+  public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
+
+    const transaction = await this.getRawTransaction(transactionId);
+
+    let inputSatoshiSum = 0;
+    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+
+      const currentInput = transaction.inputs[i];
+      const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);
+
+      inputSatoshiSum += transactionOutValue;
+    }
+
+    // transaction outputs in satoshis
+    const transactionOutputs: number[] = transaction.outputs.map((output) => output.satoshis);
+
+    const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
+
+    return (inputSatoshiSum - outputSatoshiSum);
+  }
+
+  private async addWatchOnlyAddressToWallet (publicKeyAsHex: string, rescan: boolean): Promise<void> {
     const request = {
       method: 'importpubkey',
       params: [
@@ -200,7 +195,7 @@ export default class BitcoinClient implements IBitcoinClient {
     await this.rpcCall(request, false);
   }
 
-  private async walletExists (address: string): Promise<boolean> {
+  private async isAddressAddedToWallet (address: string): Promise<boolean> {
     console.info(`Checking if bitcoin wallet for ${address} exists`);
     const request = {
       method: 'getaddressinfo',
@@ -213,17 +208,48 @@ export default class BitcoinClient implements IBitcoinClient {
     return response.labels.length > 0 || response.iswatchonly;
   }
 
+  /** Get the transaction out value in satoshi, for a specified output index */
+  private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
+    const transaction = await this.getRawTransaction(transactionId);
+
+    // output with the desired index
+    const vout = transaction.outputs[outputIndex];
+
+    return vout.satoshis;
+  }
+
+  /**
+   * Get the raw transaction data.
+   * @param transactionId The target transaction id.
+   */
+  private async getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
+    const request = {
+      method: 'getrawtransaction',
+      params: [
+        transactionId,  // transaction id
+        0   // get the raw hex-encoded string
+      ]
+    };
+
+    const hexEncodedTransaction = await this.rpcCall(request, true);
+    const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
+
+    const bitcoreTransaction = BitcoinClient.createBitcoreTransactionFromBuffer(transactionBuffer);
+
+    return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
+  }
+
   // This function is specifically created to help with unit testing.
-  private static createBcoreTransactionFromBuffer (buffer: Buffer): Transaction {
+  private static createBitcoreTransactionFromBuffer (buffer: Buffer): Transaction {
     return new Transaction(buffer);
   }
 
   // This function is specifically created to help with unit testing.
-  private static createBcoreBlockFromBuffer (buffer: Buffer): Block {
+  private static createBitcoreBlockFromBuffer (buffer: Buffer): Block {
     return new Block(buffer);
   }
 
-  private async createBcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
+  private async createBitcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
     const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
 
     const transaction = new Transaction();
@@ -239,29 +265,29 @@ export default class BitcoinClient implements IBitcoinClient {
     return transaction;
   }
 
-  private static createBitcoinInputModel (bcoreInput: Transaction.Input): BitcoinInputModel {
+  private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
     return {
-      previousTransactionId: bcoreInput.prevTxId.toString('hex'),
-      outputIndexInPreviousTransaction: bcoreInput.outputIndex
+      previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
+      outputIndexInPreviousTransaction: bitcoreInput.outputIndex
     };
   }
 
-  private static createBitcoinOutputModel (bcoreOutput: Transaction.Output): BitcoinOutputModel {
+  private static createBitcoinOutputModel (bitcoreOutput: Transaction.Output): BitcoinOutputModel {
     return {
-      satoshis: bcoreOutput.satoshis,
-      scriptAsmAsString: bcoreOutput.script.toASM()
+      satoshis: bitcoreOutput.satoshis,
+      scriptAsmAsString: bitcoreOutput.script.toASM()
     };
   }
 
-  private static createBitcoinTransactionModel (bcoreTransaction: Transaction): BitcoinTransactionModel {
+  private static createBitcoinTransactionModel (bitcoreTransaction: Transaction): BitcoinTransactionModel {
 
-    const bitcoinInputs = bcoreTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
-    const bitcoinOutputs = bcoreTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
+    const bitcoinInputs = bitcoreTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
+    const bitcoinOutputs = bitcoreTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
 
     return {
       inputs: bitcoinInputs,
       outputs: bitcoinOutputs,
-      id: bcoreTransaction.id
+      id: bitcoreTransaction.id
     };
   }
 

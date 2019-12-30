@@ -3,14 +3,11 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
-import Encoder from './Encoder';
 import FeeManager from './FeeManager';
 import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
-import MerkleTree from './util/MerkleTree';
-import Multihash from './Multihash';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 
@@ -46,18 +43,12 @@ export default class BatchWriter implements IBatchWriter {
     const batchFileHash = await this.cas.write(batchFileBuffer);
     console.info(`Wrote batch file ${batchFileHash} to content addressable store.`);
 
-    // Compute the Merkle root hash.
-    const merkleRoot = MerkleTree.create(operationBuffers).rootHash;
-    const merkleRootAsMultihash = Multihash.encode(merkleRoot, 18);
-    const encodedMerkleRoot = Encoder.encode(merkleRootAsMultihash);
-
     // Construct the DID unique suffixes of each operation to be included in the anchor file.
     const didUniqueSuffixes = batch.map(operation => operation.didUniqueSuffix);
 
     // Construct the 'anchor file'.
     const anchorFileModel: AnchorFileModel = {
       batchFileHash: batchFileHash,
-      merkleRoot: encodedMerkleRoot,
       didUniqueSuffixes
     };
 
