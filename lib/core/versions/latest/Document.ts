@@ -177,13 +177,13 @@ export default class Document {
         }
 
         // 'instance' property is required and must be an array that is not empty.
-        if (!Array.isArray(serviceEndpoint.instance) ||
-            (serviceEndpoint.instance as object[]).length === 0) {
+        if (!Array.isArray(serviceEndpoint.instances) ||
+            (serviceEndpoint.instances as object[]).length === 0) {
           return false;
         }
 
         // Verify each instance entry in array.
-        for (let instanceEntry of serviceEndpoint.instance) {
+        for (let instanceEntry of serviceEndpoint.instances) {
           // 'id' must be string type.
           if (typeof instanceEntry !== 'string') {
             return false;

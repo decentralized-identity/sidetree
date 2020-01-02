@@ -178,7 +178,7 @@ export default class Operation {
           serviceEndpoint: {
             '@context': 'schema.identity.foundation/hub',
             '@type': 'UserServiceEndpoint',
-            instance: patch.serviceEndpoints
+            instances: patch.serviceEndpoints
           }
         };
 
@@ -190,12 +190,12 @@ export default class Operation {
       } else {
         // Else we add to the eixsting service element.
 
-        const serviceEndpointSet = new Set(service.serviceEndpoint.instance);
+        const serviceEndpointSet = new Set(service.serviceEndpoint.instances);
 
         // Loop through all given service endpoints and add them if they don't exist already.
         for (let serviceEndpoint of patch.serviceEndpoints) {
           if (!serviceEndpointSet.has(serviceEndpoint)) {
-            service.serviceEndpoint.instance.push(serviceEndpoint);
+            service.serviceEndpoint.instances.push(serviceEndpoint);
           }
         }
       }
@@ -209,14 +209,14 @@ export default class Operation {
         return;
       }
 
-      const serviceEndpointSet = new Set(service.serviceEndpoint.instance);
+      const serviceEndpointSet = new Set(service.serviceEndpoint.instances);
 
       // Loop through all given public key IDs and add them from the existing public key set.
       for (let serviceEndpoint of patch.serviceEndpoints) {
         serviceEndpointSet.delete(serviceEndpoint);
       }
 
-      service.serviceEndpoint.instance = [...serviceEndpointSet];
+      service.serviceEndpoint.instances = [...serviceEndpointSet];
     }
   }
 

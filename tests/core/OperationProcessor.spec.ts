@@ -126,7 +126,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
-  expect(didDocument!.service![0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  expect(didDocument!.service![0].serviceEndpoint.instances[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
   validateDidDocumentPublicKeys(didDocument as DocumentModel);
 }
 
