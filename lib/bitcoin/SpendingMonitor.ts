@@ -80,7 +80,7 @@ export default class SpendingMonitor {
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
     // filter them to get the transactions that were written only by this node.
     const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(allTxnsSinceStartingBlock);
-    console.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance}`);
+    console.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
 
     const totalFeeForRelatedTxns = txnsWrittenByThisInstance.reduce((total: number, currTxnModel: TransactionModel) => {
       return total + currTxnModel.transactionFeePaid;
