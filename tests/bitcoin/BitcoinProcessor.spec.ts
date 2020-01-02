@@ -428,7 +428,6 @@ describe('BitcoinProcessor', () => {
         done();
       }
     });
-
     it('should fail if the current fee is over the spending limits', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(true));

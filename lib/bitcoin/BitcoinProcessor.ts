@@ -247,7 +247,6 @@ export default class BitcoinProcessor {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
     const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
     console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
-
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
