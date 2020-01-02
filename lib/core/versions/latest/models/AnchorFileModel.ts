@@ -3,6 +3,5 @@
  */
 export default interface AnchorFileModel {
   batchFileHash: string;
-  merkleRoot: string;
   didUniqueSuffixes: string[];
 }
