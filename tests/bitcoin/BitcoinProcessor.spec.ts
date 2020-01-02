@@ -1,13 +1,17 @@
 import * as httpStatus from 'http-status';
-import BlockData from '../../lib/bitcoin/models/BlockData';
+import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
+import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
+import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
+import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../lib/common/SharedErrorCode';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
-import { PrivateKey, Transaction } from 'bitcore-lib';
+import { Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -26,7 +30,7 @@ describe('BitcoinProcessor', () => {
     bitcoinPeerUri: 'http://localhost:18332',
     bitcoinRpcUsername: 'admin',
     bitcoinRpcPassword: '123456789',
-    bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
+    bitcoinWalletImportString: BitcoinClient.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
     requestTimeoutInMilliseconds: 300,
     genesisBlockNumber: 1480000,
@@ -38,11 +42,10 @@ describe('BitcoinProcessor', () => {
     transactionPollPeriodInSeconds: 60
   };
 
-  const privateKey: PrivateKey = (PrivateKey as any).fromWIF(testConfig.bitcoinWalletImportString);
-
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
   let quantileCalculatorInitializeSpy: jasmine.Spy;
+  let bitcoinClientInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForInitializationSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
@@ -52,6 +55,7 @@ describe('BitcoinProcessor', () => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     quantileCalculatorInitializeSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'initialize');
+    bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
 
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
@@ -94,7 +98,7 @@ describe('BitcoinProcessor', () => {
         bitcoinPeerUri: randomString(),
         bitcoinRpcUsername: 'admin',
         bitcoinRpcPassword: 'password123',
-        bitcoinWalletImportString: BitcoinProcessor.generatePrivateKey('testnet'),
+        bitcoinWalletImportString: BitcoinClient.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
         transactionFetchPageSize: randomNumber(),
@@ -145,24 +149,26 @@ describe('BitcoinProcessor', () => {
 
   describe('initialize', () => {
 
-    let walletExistsSpy: jasmine.Spy;
-
     beforeEach(async () => {
-      walletExistsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'walletExists' as any);
       quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
+      bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
       getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
     });
 
-    it('should initialize the transactionStore', async (done) => {
-      walletExistsSpy.and.returnValue(Promise.resolve(true));
+    it('should initialize the internal objects', async (done) => {
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
+      expect(quantileCalculatorInitializeSpy).not.toHaveBeenCalled();
+      expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
+
       await bitcoinProcessor.initialize();
+
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
+      expect(quantileCalculatorInitializeSpy).toHaveBeenCalledWith();
+      expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
       done();
     });
 
     it('should process all the blocks since its last known', async (done) => {
-      walletExistsSpy.and.returnValue(Promise.resolve(true));
       const fromNumber = randomNumber();
       const fromHash = randomString();
 
@@ -190,38 +196,10 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should begin to periodically poll for updates', async (done) => {
-      walletExistsSpy.and.returnValue(Promise.resolve(true));
       expect(periodicPollSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
       expect(periodicPollSpy).toHaveBeenCalled();
       done();
-    });
-
-    it('should import key if the wallet does not exist', async () => {
-      walletExistsSpy.and.returnValue(Promise.resolve(false));
-      const publicKeyHex = privateKey.toPublicKey().toBuffer().toString('hex');
-      const importSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'importPublicKey').and.callFake((key, rescan) => {
-        expect(key).toEqual(publicKeyHex);
-        expect(rescan).toBeTruthy();
-
-        return Promise.resolve(undefined);
-      });
-
-      await bitcoinProcessor.initialize();
-      expect(walletExistsSpy).toHaveBeenCalled();
-      expect(importSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('generatePrivateKey', () => {
-    it('should construct a PrivateKey and export its WIF', () => {
-      const privateKey = BitcoinProcessor.generatePrivateKey('mainnet');
-      expect(privateKey).toBeDefined();
-      expect(typeof privateKey).toEqual('string');
-      expect(privateKey.length).toBeGreaterThan(0);
-      expect(() => {
-        (PrivateKey as any).fromWIF(privateKey);
-      }).not.toThrow();
     });
   });
 
@@ -388,15 +366,10 @@ describe('BitcoinProcessor', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
-      ]));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(bitcoinFee);
-        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
-        return Promise.resolve(true);
-      });
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
+
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
@@ -404,15 +377,9 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning - 1)
-      ]));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(bitcoinFee);
-        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
-        return Promise.resolve(true);
-      });
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
@@ -424,16 +391,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
-      const coin = BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, 0);
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        new Transaction.UnspentOutput({
-          txid: coin.txId,
-          vout: coin.outputIndex,
-          address: coin.address,
-          script: coin.script,
-          amount: 0
-        })
-      ]));
+      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(0));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
@@ -445,29 +403,6 @@ describe('BitcoinProcessor', () => {
         expect(error.message).toContain('Not enough satoshis');
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
-      } finally {
-        done();
-      }
-    });
-
-    it('should fail if broadcastTransaction fails', async (done) => {
-      const bitcoinFee = 4000;
-      const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getUnspentCoins' as any).and.returnValue(Promise.resolve([
-        BitcoinDataGenerator.generateUnspentCoin(testConfig.bitcoinWalletImportString, lowLevelWarning + 1)
-      ]));
-      const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake((transaction: Transaction) => {
-        expect(transaction.getFee()).toEqual(bitcoinFee);
-        expect(transaction.outputs[0].script.getData()).toEqual(Buffer.from(testConfig.sidetreeTransactionPrefix + hash));
-        return Promise.resolve(false);
-      });
-      try {
-        await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
-        fail('should have failed');
-      } catch (error) {
-        expect(error.message).toContain('Could not broadcast');
-        expect(getCoinsSpy).toHaveBeenCalled();
-        expect(broadcastSpy).toHaveBeenCalled();
       } finally {
         done();
       }
@@ -563,6 +498,26 @@ describe('BitcoinProcessor', () => {
       }, 300);
 
       expect(processTransactionsSpy).not.toHaveBeenCalled();
+      done();
+    });
+
+    it('should not throw if the processing throws', async (done) => {
+      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.throwError('Test error');
+
+      try {
+        await bitcoinProcessor['periodicPoll']();
+      } catch (e) {
+        fail('There should not be any exception thrown.');
+      }
+
+      // need to wait for the process call
+      setTimeout(() => {
+        expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
+        // clean up
+        clearTimeout(bitcoinProcessor['pollTimeoutId']);
+        done();
+      }, 300);
+
       done();
     });
 
@@ -920,11 +875,11 @@ describe('BitcoinProcessor', () => {
   describe('processBlock', () => {
 
     // creates a response object for Bitcoin
-    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<BlockData> {
+    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<BitcoinBlockModel> {
       const tx: Transaction[] = [];
       const count = randomNumber(100) + 10;
       for (let i = 0; i < count; i++) {
-        const transaction = BitcoinDataGenerator.generateBitcoinTransaction(BitcoinProcessor.generatePrivateKey('testnet'), 1);
+        const transaction = BitcoinDataGenerator.generateBitcoinTransaction(BitcoinClient.generatePrivateKey('testnet'), 1);
         // data generation
         if (data) {
           const hasData = data();
@@ -942,159 +897,125 @@ describe('BitcoinProcessor', () => {
 
         tx.push(transaction);
       }
+
       return {
         hash: randomString(),
         height: blockHeight,
-        transactions: tx
+        transactions: tx.map((txn) => { return BitcoinClient['createBitcoinTransactionModel'](txn); })
       };
     }
 
-    it('should review all transactions in a block and add them to the transactionStore', async (done) => {
+    it('should review all transactions in a block and add valid sidetree txns to the transactionStore', async (done) => {
       const block = randomNumber();
-      let shouldFindIDs: string[] = [];
-      const blockData = await generateBlock(block, () => {
-        if (Math.random() > 0.8) {
-          const id = randomString();
-          shouldFindIDs.push(id);
-          return testConfig.sidetreeTransactionPrefix + id;
-        }
-        return undefined;
-      });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
-      rpcMock.and.returnValue(Promise.resolve(blockData));
+      const blockData: BitcoinBlockModel = {
+        height: block,
+        hash: blockHash,
+        transactions: [
+          { id: 'id', inputs: [], outputs: [] },
+          { id: 'id2', inputs: [], outputs: [] },
+          { id: 'id3', inputs: [], outputs: [] }
+        ]
+      };
 
-      let seenTransactionNumbers: number[] = [];
-      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
-        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
-          expect(sidetreeTransaction.transactionTime).toEqual(block);
-          expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
-          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
-          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
-          expect(seenTransactionNumbers.includes(sidetreeTransaction.transactionNumber)).toBeFalsy();
-          seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
-          return Promise.resolve(undefined);
-        });
+      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
+
+      const mockSidetreeTxnModels: TransactionModel[] = [
+        // tslint:disable-next-line: max-line-length
+        { anchorString: 'anchor1', transactionTimeHash: 'timehash1', transactionTime: 100, transactionNumber: 200, transactionFeePaid: 300, normalizedTransactionFee: 400 },
+        // tslint:disable-next-line: max-line-length
+        { anchorString: 'anchor2', transactionTimeHash: 'timehash2', transactionTime: 150, transactionNumber: 250, transactionFeePaid: 350, normalizedTransactionFee: 450 }
+      ];
+
+      // Return the mock values one-by-one in order
+      let getSidetreeTxnCallIndex = 0;
+      spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.callFake(() => {
+
+        let retValue: TransactionModel | undefined = undefined;
+
+        if (getSidetreeTxnCallIndex < mockSidetreeTxnModels.length) {
+          retValue = mockSidetreeTxnModels[getSidetreeTxnCallIndex];
+        }
+
+        getSidetreeTxnCallIndex++;
+
+        // Return undefined if we don't have data (to mock no valid sidetree transactions)
+        return Promise.resolve(retValue);
+      });
+
+      // Verify that the add transaction is called with the correct values
+      let addTxnCallIndex = 0;
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
+        expect(sidetreeTransaction).toEqual(mockSidetreeTxnModels[addTxnCallIndex]);
+        addTxnCallIndex++;
+        return Promise.resolve(undefined);
+      });
+
       const actual = await bitcoinProcessor['processBlock'](block);
       expect(actual).toEqual(blockData.hash);
-      expect(rpcMock).toHaveBeenCalled();
-      expect(addTransaction).toHaveBeenCalled();
-      expect(shouldFindIDs.length).toEqual(0);
+      expect(pofCalcSpy).toHaveBeenCalled();
+      expect(addTransaction.calls.count()).toEqual(2);
+      expect(addTxnCallIndex).toEqual(2);
+
       done();
     });
 
-    it('should ignore other data transactions', async (done) => {
+    it('should not add anything to the transaction store if no sidetree transaction is found.', async (done) => {
       const block = randomNumber();
-      let shouldFindIDs: string[] = [];
-      const blockData = await generateBlock(block, () => {
-        if (Math.random() > 0.8) {
-          const id = randomString();
-          shouldFindIDs.push(id);
-          return testConfig.sidetreeTransactionPrefix + id;
-        }
-        return randomString();
-      });
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
-      rpcMock.and.returnValue(Promise.resolve(blockData));
+      const blockData: BitcoinBlockModel = {
+        height: block,
+        hash: blockHash,
+        transactions: [
+          { id: 'id', inputs: [], outputs: [] },
+          { id: 'id2', inputs: [], outputs: [] }
+        ]
+      };
 
-      let seenTransactionNumbers: number[] = [];
-      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
-        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
-          expect(sidetreeTransaction.transactionTime).toEqual(block);
-          expect(sidetreeTransaction.transactionTimeHash).toEqual(blockData.hash);
-          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
-          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
-          expect(seenTransactionNumbers.includes(sidetreeTransaction.transactionNumber)).toBeFalsy();
-          seenTransactionNumbers.push(sidetreeTransaction.transactionNumber);
-          return Promise.resolve(undefined);
-        });
+      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
+      spyOn(bitcoinProcessor as any,'getSidetreeDataFromVOutIfExist').and.returnValue(undefined);
+
+      const addTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction');
+
       const actual = await bitcoinProcessor['processBlock'](block);
       expect(actual).toEqual(blockData.hash);
-      expect(rpcMock).toHaveBeenCalled();
-      expect(addTransaction).toHaveBeenCalled();
-      expect(shouldFindIDs.length).toEqual(0);
+      expect(pofCalcSpy).toHaveBeenCalled();
+      expect(addTransactionSpy).not.toHaveBeenCalled();
+
       done();
     });
 
-    it('should work with transactions that contain no vout parameter', async (done) => {
+    it('should throw if any exception is thrown while going through transactions.', async (done) => {
       const block = randomNumber();
-      const blockData = await generateBlock(block);
       const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
-      rpcMock.and.returnValue(Promise.resolve(blockData));
+      const blockData: BitcoinBlockModel = {
+        height: block,
+        hash: blockHash,
+        transactions: [
+          { id: 'id', inputs: [], outputs: [] }
+        ]
+      };
 
-      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
-        'addTransaction');
-      const actual = await bitcoinProcessor['processBlock'](block);
-      expect(actual).toEqual(blockData.hash);
-      expect(rpcMock).toHaveBeenCalled();
+      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
+      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
+
+      spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.throwError('Test exception');
+
+      const addTransaction = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction');
+
+      try {
+        await bitcoinProcessor['processBlock'](block);
+        fail('Expected exception is not thrown');
+      // tslint:disable-next-line: no-empty
+      } catch (e) { }
+
+      expect(pofCalcSpy).toHaveBeenCalled();
       expect(addTransaction).not.toHaveBeenCalled();
-      done();
-    });
-
-    it('should ignore any transactions that have multiple OP_RETURN in them', async (done) => {
-      const block = randomNumber();
-      let shouldFindIDs: string[] = [];
-      const blockData = await generateBlock(block, () => {
-        const id = randomString();
-        const rand = Math.random();
-
-        // In order to have random data, this code returns one of the following every time it is called:
-        // - 1 sidetree transaction
-        // - 2 sidetree transactions (should be ignored)
-        // - 2 sidetree and 1 other trasaction (should be ignored)
-        //
-        if (rand < 0.3) { // 30% of time
-          shouldFindIDs.push(id);
-          return testConfig.sidetreeTransactionPrefix + id;
-        } else if (rand < 0.7) { // == 40% of the time
-          const id2 = randomString();
-
-          return [ testConfig.sidetreeTransactionPrefix + id, testConfig.sidetreeTransactionPrefix + id2 ];
-        } else { // return 2 sidetree and one other tx
-          const id2 = randomString();
-          const id3 = randomString();
-
-          return [ testConfig.sidetreeTransactionPrefix + id, id2, testConfig.sidetreeTransactionPrefix + id3 ];
-        }
-      });
-
-      const blockHash = randomString();
-      spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
-      spyOn(bitcoinProcessor, 'getTransactionOutValueInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.returnValue(Promise.resolve(1));
-      spyOn(bitcoinProcessor, 'getNormalizedFee' as any).and.returnValue(Promise.resolve({ normalizedTransactionFee: 1 }));
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
-      const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
-      rpcMock.and.returnValue(Promise.resolve(blockData));
-
-      const addTransaction = spyOn(bitcoinProcessor['transactionStore'],
-        'addTransaction').and.callFake((sidetreeTransaction: TransactionModel) => {
-          expect(shouldFindIDs.includes(sidetreeTransaction.anchorString)).toBeTruthy();
-          shouldFindIDs.splice(shouldFindIDs.indexOf(sidetreeTransaction.anchorString),1);
-          return Promise.resolve(undefined);
-        });
-      const actual = await bitcoinProcessor['processBlock'](block);
-      expect(actual).toEqual(blockData.hash);
-      expect(rpcMock).toHaveBeenCalled();
-      expect(addTransaction).toHaveBeenCalled();
-      expect(shouldFindIDs.length).toEqual(0);
       done();
     });
 
@@ -1149,7 +1070,7 @@ describe('BitcoinProcessor', () => {
         spyOn(bitcoinProcessor, 'isGroupBoundary' as any).and.returnValue(true);
 
         let mockedTransactionFees = new Array<number>();
-        spyOn(bitcoinProcessor, 'getTransactionFeeInSatoshi' as any).and.callFake((_id: any) => {
+        spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.callFake((_id: any) => {
           const fee = randomNumber();
           mockedTransactionFees.push(fee);
           return fee;
@@ -1169,6 +1090,157 @@ describe('BitcoinProcessor', () => {
       });
     });
 
+  });
+
+  describe('isSidetreeTransaction', async () => {
+    it('should return true if at least 1 output has sidetree data', async (done) => {
+      const mockTxnModel: BitcoinTransactionModel = {
+        id: 'id',
+        inputs: [],
+        outputs: [
+          { satoshis: 100, scriptAsmAsString: 'script' },
+          { satoshis: 200, scriptAsmAsString: 'script2' }
+        ]
+      };
+
+      // Only return true for the 2nd call
+      let getSidetreeDataCallIndex = 0;
+      spyOn(bitcoinProcessor as any, 'getSidetreeDataFromVOutIfExist').and.callFake(() => {
+        getSidetreeDataCallIndex++;
+
+        if (getSidetreeDataCallIndex === 2) {
+          return randomString();
+        }
+        return undefined;
+      });
+
+      const result = bitcoinProcessor['isSidetreeTransaction'](mockTxnModel);
+      expect(result).toBeTruthy();
+      done();
+    });
+
+    it('should return false if no output has sidetree data', async (done) => {
+      const mockTxnModel: BitcoinTransactionModel = {
+        id: 'id',
+        inputs: [],
+        outputs: [
+          { satoshis: 100, scriptAsmAsString: 'script' },
+          { satoshis: 200, scriptAsmAsString: 'script2' }
+        ]
+      };
+
+      spyOn(bitcoinProcessor as any, 'getSidetreeDataFromVOutIfExist').and.returnValue(undefined);
+
+      const result = bitcoinProcessor['isSidetreeTransaction'](mockTxnModel);
+      expect(result).toBeFalsy();
+      done();
+    });
+  });
+
+  describe('getSidetreeDataFromVOutIfExist', async () => {
+    it('should return the data if the valid sidetree transaction exist', async (done) => {
+      const sidetreeData = 'some test data';
+      const sidetreeDataWithPrefix = testConfig.sidetreeTransactionPrefix + sidetreeData;
+      const sidetreeDataWithPrefixInHex = Buffer.from(sidetreeDataWithPrefix).toString('hex');
+
+      const validOpReturn = `OP_RETURN ${sidetreeDataWithPrefixInHex}`;
+
+      const mockOutput: BitcoinOutputModel = { satoshis:  0, scriptAsmAsString: validOpReturn };
+
+      const actual = bitcoinProcessor['getSidetreeDataFromVOutIfExist'](mockOutput);
+      expect(actual).toBeDefined();
+      expect(actual!).toEqual(sidetreeData);
+      done();
+    });
+
+    it('should return undefined if no valid sidetree transaction exist', async (done) => {
+      const mockOutput: BitcoinOutputModel = { satoshis:  0, scriptAsmAsString: 'some random data' };
+
+      const actual = bitcoinProcessor['getSidetreeDataFromVOutIfExist'](mockOutput);
+      expect(actual).not.toBeDefined();
+      done();
+    });
+  });
+
+  describe('getValidSidetreeTransactionFromOutputs', async () => {
+    it('should only return the sidetree transaction if only a single sidetree transaction exist.', async (done) => {
+
+      const mockOutputs: BitcoinOutputModel[] = [
+        { satoshis:  0, scriptAsmAsString: 'some random data' },
+        { satoshis:  0, scriptAsmAsString: 'some random data 2' }
+      ];
+
+      const mockSidetreeData = 'some test data';
+      // Mock the getSidetreeData function to only return ONE valid transaction
+      let callIndex = 0;
+      spyOn(bitcoinProcessor as any, 'getSidetreeDataFromVOutIfExist').and.callFake((_: BitcoinOutputModel) => {
+
+        // Only return a valid sidetree data for the 2nd call
+        if (callIndex === 1) {
+          return mockSidetreeData;
+        }
+
+        callIndex++;
+        return undefined;
+      });
+
+      const mockTxnFee = 1000;
+      const mockNormalizedFeeModel: TransactionFeeModel = { normalizedTransactionFee: 300 };
+
+      const getTxnFeeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis').and.returnValue(Promise.resolve(mockTxnFee));
+      const getNormalizedFeeSpy = spyOn(bitcoinProcessor, 'getNormalizedFee').and.returnValue(Promise.resolve(mockNormalizedFeeModel));
+
+      const mockTxnNumber = 1000;
+      spyOn(TransactionNumber, 'construct').and.returnValue(1000);
+
+      const mockTxnBlock = 20;
+      const mockTxnHash = 'hash';
+      const mockTxnId = 'transaction id';
+
+      const mockOutputTxnModel: TransactionModel = {
+        anchorString: mockSidetreeData,
+        normalizedTransactionFee: mockNormalizedFeeModel.normalizedTransactionFee,
+        transactionFeePaid: mockTxnFee,
+        transactionNumber: mockTxnNumber,
+        transactionTime: mockTxnBlock,
+        transactionTimeHash: mockTxnHash
+      };
+
+      const output = await bitcoinProcessor['getValidSidetreeTransactionFromOutputs'](mockOutputs, 10, mockTxnBlock, mockTxnHash, mockTxnId);
+      expect(output).toBeDefined();
+      expect(output).toEqual(mockOutputTxnModel);
+      expect(getTxnFeeSpy).toHaveBeenCalled();
+      expect(getNormalizedFeeSpy).toHaveBeenCalled();
+
+      done();
+    });
+
+    it('should return undefined if there are multiple sidetree transaction in the outputs.', async (done) => {
+
+      const mockOutputs: BitcoinOutputModel[] = [
+        { satoshis:  0, scriptAsmAsString: 'some random data' },
+        { satoshis:  0, scriptAsmAsString: 'some random data 2' }
+      ];
+
+      // Mock the getSidetreeData function to only return more than one sidetree transaction
+      spyOn(bitcoinProcessor as any, 'getSidetreeDataFromVOutIfExist').and.returnValue(randomString());
+
+      const getTxnFeeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis');
+      const getNormalizedFeeSpy = spyOn(bitcoinProcessor, 'getNormalizedFee');
+
+      const output = await bitcoinProcessor['getValidSidetreeTransactionFromOutputs'](mockOutputs, 10, 20, 'hash', 'id');
+      expect(output).not.toBeDefined();
+      expect(getTxnFeeSpy).not.toHaveBeenCalled();
+      expect(getNormalizedFeeSpy).not.toHaveBeenCalled();
+
+      done();
+    });
+
+    it('should return undefined if there are no outputs', async (done) => {
+      const output = await bitcoinProcessor['getValidSidetreeTransactionFromOutputs']([], 10, 20, 'hash', 'id');
+      expect(output).not.toBeDefined();
+      done();
+    });
   });
 
   describe('getServiceVersion', () => {
