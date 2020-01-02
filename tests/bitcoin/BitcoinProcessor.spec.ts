@@ -364,7 +364,7 @@ describe('BitcoinProcessor', () => {
 
   describe('writeTransaction', () => {
     const bitcoinFee = 4000;
-    const lowLevelWarning = testConfig.lowBalanceNoticeInDays * 24 * 6 * bitcoinFee;
+    const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
     it('should write a transaction if there are enough Satoshis', async (done) => {
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
       const hash = randomString();

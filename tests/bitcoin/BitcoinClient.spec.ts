@@ -248,18 +248,6 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('importPublicKey', () => {
-    it('should call rpcCall with the expected arguments', async () => {
-      const publicKeyAsHex = '123456';
-      const sidetreeString = 'sidetree';
-      const rescan = true;
-      const params = [publicKeyAsHex, sidetreeString, rescan];
-      const spy = mockRpcCall('importpubkey', params, {});
-      await bitcoinClient.importPublicKey(publicKeyAsHex, rescan);
-      expect(spy).toHaveBeenCalled();
-    });
-  });
-
   describe('addWatchOnlyAddressToWallet', () => {
     it('should call the importpubkey API', async (done) => {
       const publicKeyAsHex = 'some dummy value';
