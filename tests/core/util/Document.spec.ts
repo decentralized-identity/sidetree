@@ -138,7 +138,7 @@ describe('Document', () => {
       defaultOriginalDidDocument.service[0].serviceEndpoint = 123;
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
-    })
+    });
 
     it('returns false if the publickey element has the controller property set.', async () => {
       defaultOriginalDidDocument.publicKey[0].controller = 'somevalue';
