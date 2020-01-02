@@ -241,7 +241,7 @@ export default class BitcoinProcessor {
     if (totalSatoshis < fee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
-      throw error;
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.NotEnoughBalanceForWrite);
     }
 
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;

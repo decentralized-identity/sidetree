@@ -381,6 +381,12 @@ HTTP/1.1 404 NOT FOUND
 ### Write a Sidetree transaction
 Writes a Sidetree transaction to the underlying blockchain.
 
+Returns `HTTP 400 Bad Request` with the following values as the `code` parameter in the JSON body:
+
+| Code                                  | Reason                                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| ```spending_cap_per_period_reached``` | if with the given `fee` this node will exceed the spending limit as configured in the parameters.           |
+| ```not_enough_balace_for_write```     | if the wallet configured in the parameters does not have enough balance to complete the write operation.    |
 
 #### Request path
 ```

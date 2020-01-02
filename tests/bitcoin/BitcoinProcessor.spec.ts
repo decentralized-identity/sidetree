@@ -6,6 +6,7 @@ import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../lib/common/SharedErrorCode';
+import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -420,7 +421,10 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor.writeTransaction(hash, 4000);
         fail('should have thrown');
       } catch (error) {
-        expect(error.message).toContain('Not enough satoshis');
+        expect(error instanceof RequestError).toBeTruthy();
+        expect(error.status).toEqual(400);
+        expect(error.code).toEqual(ErrorCode.NotEnoughBalanceForWrite);
+
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
       } finally {
