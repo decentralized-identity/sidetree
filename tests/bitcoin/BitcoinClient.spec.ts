@@ -4,7 +4,7 @@ import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ReadableStream from '../../lib/common/ReadableStream';
-import { PrivateKey, Address } from 'bitcore-lib';
+import { PrivateKey, Transaction, Address } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
 
@@ -157,6 +157,22 @@ describe('BitcoinClient', async () => {
       expect(actual).toEqual(height);
       expect(mock).toHaveBeenCalled();
       done();
+    });
+  });
+
+  describe('getRawTransaction', () => {
+    it('should make the correct rpc call and return the transaction object', async () => {
+      const txnId = 'transaction_id';
+      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
+      const mockTransactionAsOutputTxn = BitcoinClient['createBitcoinTransactionModel'](mockTransaction);
+
+      const createTransactionFromBufferSpy = spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
+      const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
+
+      const actual = await bitcoinClient['getRawTransaction'](txnId);
+      expect(actual).toEqual(mockTransactionAsOutputTxn);
+      expect(spy).toHaveBeenCalled();
+      expect(createTransactionFromBufferSpy).toHaveBeenCalled();
     });
   });
 
