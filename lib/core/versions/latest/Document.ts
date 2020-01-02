@@ -158,40 +158,6 @@ export default class Document {
     if (keyUsages.get('signing') === undefined) {
       return false;
     }
-
-    // Verify 'service' property if it exists.
-    if (originalDocument.hasOwnProperty('service')) {
-
-      // Verify each service entry in array.
-      for (let serviceEntry of originalDocument.service) {
-        const serviceEndpoint = serviceEntry.serviceEndpoint;
-
-        // Verify required '@context' property.
-        if (serviceEndpoint['@context'] !== 'schema.identity.foundation/hub') {
-          return false;
-        }
-
-        // Verify required '@type' property.
-        if (serviceEndpoint['@type'] !== 'UserServiceEndpoint') {
-          return false;
-        }
-
-        // 'instance' property is required and must be an array that is not empty.
-        if (!Array.isArray(serviceEndpoint.instances) ||
-            (serviceEndpoint.instances as object[]).length === 0) {
-          return false;
-        }
-
-        // Verify each instance entry in array.
-        for (let instanceEntry of serviceEndpoint.instances) {
-          // 'id' must be string type.
-          if (typeof instanceEntry !== 'string') {
-            return false;
-          }
-        }
-      }
-    }
-
     return true;
   }
 
@@ -260,7 +226,7 @@ export default class Document {
         }
 
         // 'serviceEndpoint' is required.
-        if (serviceEntry.serviceEndpoint === undefined) {
+        if (typeof serviceEntry.serviceEndpoint !== 'string' && typeof serviceEntry.serviceEndpoint !== 'object') {
           return false;
         }
       }

@@ -122,33 +122,23 @@ describe('Document', () => {
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if "serviceEndpoint" property does not contain the "@context" property.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint['@context'] = 'invalid-context';
-
+    it('returns false if service is not an array', async () => {
+      defaultOriginalDidDocument.service = 'this is not an array';
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if "serviceEndpoint" property does not contain the "@type" property.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint['@type'] = 'invalid-context';
-
+    it('returns false if type is not a string', async () => {
+      defaultOriginalDidDocument.service[0].type = ['this is not a string'];
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if "instances" property of "serviceEndpoint" is empty.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint.instances = [];
-
+    it('returns false if serviceEndpoint is not a string nor object', async () => {
+      defaultOriginalDidDocument.service[0].serviceEndpoint = 123;
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
-    });
-
-    it('returns false if an element in "instances" property of "serviceEndpoint" is not a string.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint.instances[0] = undefined;
-
-      const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
-      expect(isDocumentValid).toBeFalsy();
-    });
+    })
 
     it('returns false if the publickey element has the controller property set.', async () => {
       defaultOriginalDidDocument.publicKey[0].controller = 'somevalue';
