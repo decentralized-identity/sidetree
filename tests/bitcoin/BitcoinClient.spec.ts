@@ -173,7 +173,6 @@ describe('BitcoinClient', async () => {
       const actual = await bitcoinClient['getRawTransaction'](txnId);
       expect(actual).toEqual(mockTransactionAsOutputTxn);
       expect(spy).toHaveBeenCalled();
-      expect(createTransactionFromBufferSpy).toHaveBeenCalled();
     });
   });
 
