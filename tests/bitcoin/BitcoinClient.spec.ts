@@ -43,7 +43,7 @@ describe('BitcoinClient', async () => {
 
   describe('generatePrivateKey', () => {
     it('should construct a PrivateKey and export its WIF', () => {
-      const privateKey = BitcoinClient.generatePrivateKey('mainnet');
+      const privateKey = BitcoinClient.generatePrivateKey('testnet');
       expect(privateKey).toBeDefined();
       expect(typeof privateKey).toEqual('string');
       expect(privateKey.length).toBeGreaterThan(0);
