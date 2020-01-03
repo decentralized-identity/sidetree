@@ -14,6 +14,7 @@ export default class MockOperationQueue implements IOperationQueue {
 
   async dequeue (count: number): Promise<Buffer[]> {
     // Sort the entries by their timestamp.
+    // If compare function returns < 0, a is before b, vice versa.
     const sortedEntries = Array.from(this.operations.entries()).sort((a, b) => a[1][0] - b[1][0]);
     const sortedKeys = sortedEntries.map(entry => entry[0]);
     const sortedBuffers = sortedEntries.map(entry => entry[1][1]);
@@ -27,7 +28,7 @@ export default class MockOperationQueue implements IOperationQueue {
 
   async peek (count: number): Promise<Buffer[]> {
     // Sort the entries by their timestamp.
-    const sortedValues = Array.from(this.operations.values()).sort((a, b) => b[0] - a[0]);
+    const sortedValues = Array.from(this.operations.values()).sort((a, b) => a[0] - b[0]);
     const sortedBuffers = sortedValues.map(entry => entry[1]);
 
     const bufferBatch = sortedBuffers.slice(0, count);
