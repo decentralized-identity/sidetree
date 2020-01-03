@@ -13,7 +13,7 @@ export default class DidServiceEndpoint {
       serviceEndpoint: {
         '@context': 'schema.identity.foundation/hub',
         '@type': 'UserServiceEndpoint',
-        'instance': instances
+        'instances': instances
       }
     };
   }
