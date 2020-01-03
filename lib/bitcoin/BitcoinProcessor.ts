@@ -224,7 +224,9 @@ export default class BitcoinProcessor {
     fee = Math.max(fee, 1000);
     // ----
 
-    if (await this.spendingMonitor.isCurrentFeeOverSpendingLimit(fee, this.lastProcessedBlock!.height)) {
+    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
+
+    if (!feeWithinSpendingLimits) {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
     }
 

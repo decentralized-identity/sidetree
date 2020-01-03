@@ -380,7 +380,7 @@ describe('BitcoinProcessor', () => {
     it('should write a transaction if there are enough Satoshis', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
-      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
+      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
 
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
@@ -395,7 +395,7 @@ describe('BitcoinProcessor', () => {
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
-      spyOn(bitcoinProcessor['spendingMonitor'],'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
+      spyOn(bitcoinProcessor['spendingMonitor'],'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
@@ -412,7 +412,7 @@ describe('BitcoinProcessor', () => {
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(0));
-      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(false));
+      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
@@ -434,7 +434,7 @@ describe('BitcoinProcessor', () => {
     });
     it('should fail if the current fee is over the spending limits', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
-      const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeOverSpendingLimit').and.returnValue(Promise.resolve(true));
+      const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(false));
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any);
 
       try {

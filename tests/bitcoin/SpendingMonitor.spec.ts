@@ -30,14 +30,6 @@ describe('SpendingMonitor', () => {
       } catch (e) {
         expect(e).toBeDefined();
       }
-
-      try {
-        // tslint:disable-next-line: no-unused-expression
-        new SpendingMonitor(SpendingMonitor['estimatedBlockWritesInOneMonth'] + 1, bitcoinFeeSpendingCutoffInSatoshis, new MockTransactionStore());
-        fail('Expected exception not thrown');
-      } catch (e) {
-        expect(e).toBeDefined();
-      }
       done();
     });
 
@@ -66,25 +58,25 @@ describe('SpendingMonitor', () => {
     });
   });
 
-  describe('isCurrentFeeOverSpendingLimit', () => {
-
-    it('should return true if the spending limit is reached for the cutoff period of 1', async (done) => {
-      spendingMonitor['bitcoinFeeSpendingCutoffPeriodInBlocks'] = 1;
-
-      const result = await spendingMonitor.isCurrentFeeOverSpendingLimit(bitcoinFeeSpendingCutoffInSatoshis + 1, 5);
-      expect(result).toBeTruthy();
-      done();
-    });
+  describe('isCurrentFeeWithinSpendingLimit', () => {
 
     it('should return false if the spending limit is reached for the cutoff period of 1', async (done) => {
       spendingMonitor['bitcoinFeeSpendingCutoffPeriodInBlocks'] = 1;
 
-      const result = await spendingMonitor.isCurrentFeeOverSpendingLimit(bitcoinFeeSpendingCutoffInSatoshis, 5000);
+      const result = await spendingMonitor.isCurrentFeeWithinSpendingLimit(bitcoinFeeSpendingCutoffInSatoshis + 1, 5);
       expect(result).toBeFalsy();
       done();
     });
 
-    it('should return true if the spending limit is reached.', async (done) => {
+    it('should return true if the spending limit is not reached for the cutoff period of 1', async (done) => {
+      spendingMonitor['bitcoinFeeSpendingCutoffPeriodInBlocks'] = 1;
+
+      const result = await spendingMonitor.isCurrentFeeWithinSpendingLimit(bitcoinFeeSpendingCutoffInSatoshis, 5000);
+      expect(result).toBeTruthy();
+      done();
+    });
+
+    it('should return false if the spending limit is reached.', async (done) => {
 
       // Setup fees so that we are over the limit
       const fees = [bitcoinFeeSpendingCutoffInSatoshis / 3, bitcoinFeeSpendingCutoffInSatoshis / 3, (bitcoinFeeSpendingCutoffInSatoshis / 3) + 1000];
@@ -101,18 +93,18 @@ describe('SpendingMonitor', () => {
       const currentFee = fees[2];
       const lastProcessBlockHeight = 5000;
 
-      const result = await spendingMonitor.isCurrentFeeOverSpendingLimit(currentFee, lastProcessBlockHeight);
+      const result = await spendingMonitor.isCurrentFeeWithinSpendingLimit(currentFee, lastProcessBlockHeight);
 
-      expect(result).toBeTruthy();
+      expect(result).toBeFalsy();
       expect(txnStoreSpy).toHaveBeenCalled();
       expect(filterTxnSpy).toHaveBeenCalled();
 
       const expectedTxnNumberForTxnStore = TransactionNumber.construct(lastProcessBlockHeight - bitcoinFeeSpendingCutoffPeriodInBlocks - 2, 0) - 1;
-      expect(txnStoreSpy).toHaveBeenCalledWith(expectedTxnNumberForTxnStore, SpendingMonitor['maxResultsFromTransactionStore']);
+      expect(txnStoreSpy).toHaveBeenCalledWith(expectedTxnNumberForTxnStore, undefined);
       done();
     });
 
-    it('should return false if the spending limit is not reached.', async (done) => {
+    it('should return true if the spending limit is not reached.', async (done) => {
 
       // Setup fees so that we are under the limit
       const fees = [bitcoinFeeSpendingCutoffInSatoshis / 3, bitcoinFeeSpendingCutoffInSatoshis / 3, (bitcoinFeeSpendingCutoffInSatoshis / 3) - 1000];
@@ -128,14 +120,14 @@ describe('SpendingMonitor', () => {
 
       // Pass in the fee which will ensure that the we are going to stay under the limit
       const currentFee = fees[2];
-      const result = await spendingMonitor.isCurrentFeeOverSpendingLimit(currentFee, 5000);
-      expect(result).toBeFalsy();
+      const result = await spendingMonitor.isCurrentFeeWithinSpendingLimit(currentFee, 5000);
+      expect(result).toBeTruthy();
       expect(txnStoreSpy).toHaveBeenCalled();
       expect(filterTxnSpy).toHaveBeenCalled();
       done();
     });
 
-    it('should return false if we are exactly at the spending limit.', async (done) => {
+    it('should return true if we are exactly at the spending limit.', async (done) => {
 
       // Setup fees so that we are exactly at the limit
       const fees = [bitcoinFeeSpendingCutoffInSatoshis / 3, bitcoinFeeSpendingCutoffInSatoshis / 3, bitcoinFeeSpendingCutoffInSatoshis / 3];
@@ -151,8 +143,8 @@ describe('SpendingMonitor', () => {
 
       // Pass in the fee which will ensure that the we are going to stay under the limit
       const currentFee = fees[2];
-      const result = await spendingMonitor.isCurrentFeeOverSpendingLimit(currentFee, 5000);
-      expect(result).toBeFalsy();
+      const result = await spendingMonitor.isCurrentFeeWithinSpendingLimit(currentFee, 5000);
+      expect(result).toBeTruthy();
       expect(txnStoreSpy).toHaveBeenCalled();
       expect(filterTxnSpy).toHaveBeenCalled();
       done();

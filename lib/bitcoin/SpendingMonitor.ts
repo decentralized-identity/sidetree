@@ -8,11 +8,6 @@ import TransactionNumber from './TransactionNumber';
  */
 export default class SpendingMonitor {
 
-  // This is the max number of results that we want from the transaction store
-  private static readonly maxResultsFromTransactionStore = 10000;
-
-  private static readonly estimatedBlockWritesInOneMonth = 6 * 24 * 30;
-
   private anchorStringsWritten: Set<string>;
 
   public constructor (
@@ -20,9 +15,9 @@ export default class SpendingMonitor {
     private bitcoinFeeSpendingCutoffInSatoshis: number,
     private transactionStore: ITransactionStore) {
 
-    if (bitcoinFeeSpendingCutoffPeriodInBlocks < 1 || bitcoinFeeSpendingCutoffPeriodInBlocks > SpendingMonitor.estimatedBlockWritesInOneMonth) {
+    if (bitcoinFeeSpendingCutoffPeriodInBlocks < 1) {
       // tslint:disable-next-line: max-line-length
-      throw new Error(`Bitcoin spending cutoff period: ${bitcoinFeeSpendingCutoffPeriodInBlocks} must be between 1-${SpendingMonitor.estimatedBlockWritesInOneMonth}`);
+      throw new Error(`Bitcoin spending cutoff period: ${bitcoinFeeSpendingCutoffPeriodInBlocks} must be greater than 1`);
     }
 
     if (bitcoinFeeSpendingCutoffInSatoshis <= 0) {
@@ -41,16 +36,16 @@ export default class SpendingMonitor {
   }
 
   /**
-   * Calculates whether the specified fee will result in this node going over the spending limit.
+   * Calculates whether the specified fee will keep this node within the spending limits.
    * @param currentFeeInSatoshis The fee to be added for the next transaction.
    * @param startingBlockHeight The block height to start the check for the cutoff period.
    */
-  public async isCurrentFeeOverSpendingLimit (currentFeeInSatoshis: number, lastProcessedBlockHeight: number): Promise<boolean> {
+  public async isCurrentFeeWithinSpendingLimit (currentFeeInSatoshis: number, lastProcessedBlockHeight: number): Promise<boolean> {
 
     // Special case for when the checking period is 1. Even though the algorithm later will
     // will work for this case, but we will avoid making a DB call.
     if (this.bitcoinFeeSpendingCutoffPeriodInBlocks === 1) {
-      return (currentFeeInSatoshis > this.bitcoinFeeSpendingCutoffInSatoshis);
+      return (currentFeeInSatoshis <= this.bitcoinFeeSpendingCutoffInSatoshis);
     }
 
     // In order to calculate whether we are over the spending limit or not, our algorithm is:
@@ -65,14 +60,14 @@ export default class SpendingMonitor {
     // also included in the cutoff period. So when we go back to the transaction store, we subtract
     // the these 2 blocks from the cutoff period. For example:
     //  - if the cutoff period is 2, then we want transactions from the last-processed-block and the next one.
-    //  - if the cutoff period is 3, then we want transactions from the last-process-block - 1, last-processed-block, and the next one
+    //  - if the cutoff period is 3, then we want transactions from the last-processed-block - 1, last-processed-block, and the next one
     const startingBlockHeight = lastProcessedBlockHeight - this.bitcoinFeeSpendingCutoffPeriodInBlocks - 2;
 
     // Now get the transactions from the store which are included in the above starting block and higher.
     const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlockHeight, 0);
 
     const allTxnsSinceStartingBlock =
-      await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, SpendingMonitor.maxResultsFromTransactionStore);
+      await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, undefined);
 
     // tslint:disable-next-line: max-line-length
     console.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
@@ -91,10 +86,10 @@ export default class SpendingMonitor {
     if (totalFeePlusCurrentFee > this.bitcoinFeeSpendingCutoffInSatoshis) {
       // tslint:disable-next-line: max-line-length
       console.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
-      return true;
+      return false;
     }
 
-    return false;
+    return true;
   }
 
   /**
