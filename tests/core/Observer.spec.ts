@@ -141,15 +141,18 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const didDocumentTemplate = require('../json/didDocumentTemplate.json');
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
-    const [publicKey1, privateKey1] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [publicKey2, privateKey2] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.recovery);
-    const operations = [
-      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey1, privateKey1),
-      await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey2, privateKey2)
+    const [recoveryPublicKey2, recoveryPrivateKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
+    const [signingPublicKey2] = await Cryptography.generateKeyPairHex('#key4', KeyUsage.signing);
+
+    const operationsBuffer = [
+      await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service),
+      await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey2, recoveryPrivateKey2, signingPublicKey2, service)
     ];
-    const operationsBuffer = operations.map((op) => { return Buffer.from(JSON.stringify(op)); });
+
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);
 
     const batchFileFetchResult: FetchResult = {

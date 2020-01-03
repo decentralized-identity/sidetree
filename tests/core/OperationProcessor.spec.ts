@@ -126,7 +126,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
-  expect(didDocument!.service![0].serviceEndpoint.instance[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  expect(didDocument!.service![0].serviceEndpoint.instances[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
   validateDidDocumentPublicKeys(didDocument as DocumentModel);
 }
 
@@ -141,7 +141,6 @@ function validateDidDocumentPublicKeys (didDocument: DocumentModel) {
 
 describe('OperationProcessor', async () => {
   // Load the DID Document template.
-  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
 
   let cas = new MockCas();
   const config = require('../json/config-test.json');
@@ -157,7 +156,8 @@ describe('OperationProcessor', async () => {
   beforeEach(async () => {
     // Generate a unique key-pair used for each test.
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     cas = new MockCas();
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName);
@@ -165,7 +165,7 @@ describe('OperationProcessor', async () => {
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     resolver = new Resolver(versionManager, operationStore);
 
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     didUniqueSuffix = createOp.didUniqueSuffix;
   });
@@ -186,7 +186,10 @@ describe('OperationProcessor', async () => {
     await operationStore.put([createOp!]);
 
     // Create and process a duplicate create op
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
     const duplicateCreateOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([duplicateCreateOp]);
 
@@ -289,8 +292,18 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const operationBufferWithoutSignature = await OperationGenerator.generateCreateOperationBuffer(
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingPublicKey,
+      service
+    );
+
+    const operation = JSON.parse(operationBufferWithoutSignature.toString());
     operation.signature = 'AnInvalidSignature';
 
     // Create and upload the batch file with the invalid operation.
@@ -324,8 +337,12 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service);
+
+    const operation = JSON.parse(createOperationBuffer.toString());
 
     // Replace the protected header with invlaid `kid`.
     const protectedHeader = {

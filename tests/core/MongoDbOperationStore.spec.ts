@@ -36,8 +36,9 @@ async function constructAnchoredCreateOperation (
   transactionNumber: number,
   transactionTime: number,
   operationIndex: number): Promise<AnchoredOperation> {
-  const didDocumentTemplate = require('../json/didDocumentTemplate.json');
-  const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+  const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+  const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+  const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
   const operation = constructAnchoredOperation(operationBuffer, transactionNumber, transactionTime, operationIndex);
   return operation;
 }
