@@ -6,17 +6,13 @@ import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../lib/common/SharedErrorCode';
+import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
-<<<<<<< HEAD
-import { IBitcoinConfig } from '../../lib/bitcoin/interfaces/IBitcoinConfig';
-import { PrivateKey, Transaction } from 'bitcore-lib';
-=======
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { Transaction } from 'bitcore-lib';
->>>>>>> ff7257f... #303 Refactor lib/bitcoin to limit the bitcoin-core package references to only BitcoinClient (#354)
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -32,6 +28,8 @@ function randomBlock (above: number = 0): IBlockInfo {
 
 describe('BitcoinProcessor', () => {
   const testConfig: IBitcoinConfig = {
+    bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
+    bitcoinFeeSpendingCutoff: 1,
     bitcoinPeerUri: 'http://localhost:18332',
     bitcoinRpcUsername: 'admin',
     bitcoinRpcPassword: '123456789',
@@ -100,6 +98,8 @@ describe('BitcoinProcessor', () => {
   describe('constructor', () => {
     it('should use appropriate config values', () => {
       const config: IBitcoinConfig = {
+        bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
+        bitcoinFeeSpendingCutoff: 1,
         bitcoinPeerUri: randomString(),
         bitcoinRpcUsername: 'admin',
         bitcoinRpcPassword: 'password123',
@@ -127,6 +127,8 @@ describe('BitcoinProcessor', () => {
 
     it('should throw if the wallet import string is incorrect', () => {
       const config: IBitcoinConfig = {
+        bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
+        bitcoinFeeSpendingCutoff: 1,
         bitcoinPeerUri: randomString(),
         bitcoinRpcUsername: 'admin',
         bitcoinRpcPassword: '1234',
@@ -370,19 +372,30 @@ describe('BitcoinProcessor', () => {
   describe('writeTransaction', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;
+
+    beforeEach(() => {
+      bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString() };
+    });
+
     it('should write a transaction if there are enough Satoshis', async (done) => {
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
+      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
+
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
 
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
+      expect(monitorAddSpy).toHaveBeenCalledWith(hash);
       done();
     });
 
     it('should warn if the number of Satoshis are under the lowBalance calculation', async (done) => {
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
+      spyOn(bitcoinProcessor['spendingMonitor'],'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
@@ -392,11 +405,14 @@ describe('BitcoinProcessor', () => {
       expect(getCoinsSpy).toHaveBeenCalled();
       expect(broadcastSpy).toHaveBeenCalled();
       expect(errorSpy).toHaveBeenCalled();
+      expect(monitorAddSpy).toHaveBeenCalled();
       done();
     });
 
     it('should fail if there are not enough satoshis to create a transaction', async (done) => {
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(0));
+      spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
       const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
@@ -405,12 +421,34 @@ describe('BitcoinProcessor', () => {
         await bitcoinProcessor.writeTransaction(hash, 4000);
         fail('should have thrown');
       } catch (error) {
-        expect(error.message).toContain('Not enough satoshis');
+        expect(error instanceof RequestError).toBeTruthy();
+        expect(error.status).toEqual(400);
+        expect(error.code).toEqual(ErrorCode.NotEnoughBalanceForWrite);
+
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
       } finally {
+        expect(monitorAddSpy).not.toHaveBeenCalled();
         done();
       }
+    });
+    it('should fail if the current fee is over the spending limits', async (done) => {
+      const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
+      const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(false));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any);
+
+      try {
+        await bitcoinProcessor.writeTransaction('some data', bitcoinFee);
+        fail('expected to throw');
+      } catch (error) {
+        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
+        expect(error.code).toEqual(ErrorCode.SpendingCapPerPeriodReached);
+      }
+
+      expect(broadcastSpy).not.toHaveBeenCalled();
+      expect(spendLimitSpy).toHaveBeenCalledWith(bitcoinFee, bitcoinProcessor['lastProcessedBlock']!.height);
+      expect(monitorAddSpy).not.toHaveBeenCalled();
+      done();
     });
   });
 
