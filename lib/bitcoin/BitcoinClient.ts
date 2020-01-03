@@ -1,9 +1,12 @@
 import * as httpStatus from 'http-status';
-import BlockData from './models/BlockData';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinInputModel from './models/BitcoinInputModel';
+import BitcoinOutputModel from './models/BitcoinOutputModel';
+import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, Block, Transaction } from 'bitcore-lib';
+import { Address, Block, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
@@ -14,33 +17,83 @@ export default class BitcoinClient implements IBitcoinClient {
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
 
+  /** Wallet private key */
+  private readonly privateKey: PrivateKey;
+  private readonly privateKeyAddress: Address;
+
   constructor (
     private bitcoinPeerUri: string,
     bitcoinRpcUsername: string | undefined,
     bitcoinRpcPassword: string | undefined,
+    bitcoinWalletImportString: string,
     private requestTimeout: number,
     private requestMaxRetries: number) {
+
+    // Bitcore has a type file error on PrivateKey
+    try {
+      this.privateKey = (PrivateKey as any).fromWIF(bitcoinWalletImportString);
+    } catch (error) {
+      throw new Error(`Failed creating private key from '${bitcoinWalletImportString}': ${error.message}`);
+    }
+
+    this.privateKeyAddress = this.privateKey.toAddress();
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
     }
   }
 
-  public async broadcastTransaction (transaction: Transaction): Promise<boolean> {
+  public async initialize (): Promise<void> {
+
+    console.debug(`Checking if bitcoin contains a wallet for ${this.privateKeyAddress}`);
+    if (!await this.isAddressAddedToWallet(this.privateKeyAddress.toString())) {
+      console.debug(`Configuring bitcoin peer to watch address ${this.privateKeyAddress}. This can take up to 10 minutes.`);
+
+      const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
+      await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
+    } else {
+      console.debug('Wallet found.');
+    }
+  }
+
+  /**
+   * generates a private key in WIF format
+   * @param network Which bitcoin network to generate this key for
+   */
+  public static generatePrivateKey (network: 'mainnet' | 'livenet' | 'testnet' | undefined): string {
+    let bitcoreNetwork: Networks.Network | undefined;
+    switch (network) {
+      case 'mainnet':
+        bitcoreNetwork = Networks.mainnet;
+        break;
+      case 'livenet':
+        bitcoreNetwork = Networks.livenet;
+        break;
+      case 'testnet':
+        bitcoreNetwork = Networks.testnet;
+        break;
+    }
+    return new PrivateKey(undefined, bitcoreNetwork).toWIF();
+  }
+
+  public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
+
+    const transaction = await this.createBitcoreTransaction(transactionData, feeInSatoshis);
     const rawTransaction = transaction.serialize();
+
     console.info(`Broadcasting transaction ${transaction.id}`);
+
     const request = {
       method: 'sendrawtransaction',
       params: [
         rawTransaction
       ]
     };
-    const response = await this.rpcCall(request, true);
 
-    return response.length > 0;
+    return this.rpcCall(request, true);
   }
 
-  public async getBlock (hash: string): Promise<BlockData> {
+  public async getBlock (hash: string): Promise<BitcoinBlockModel> {
     const request = {
       method: 'getblock',
       params: [
@@ -52,13 +105,14 @@ export default class BitcoinClient implements IBitcoinClient {
     const hexEncodedResponse = await this.rpcCall(request, true);
     const responseBuffer = Buffer.from(hexEncodedResponse, 'hex');
 
-    const block = BitcoinClient.createBlockFromBuffer(responseBuffer);
+    const block = BitcoinClient.createBitcoreBlockFromBuffer(responseBuffer);
+    const transactionModels = block.transactions.map((txn) => { return BitcoinClient.createBitcoinTransactionModel(txn); });
 
     return {
       hash: block.hash,
       height: block.height,
       previousHash: block.header.prevHash,
-      transactions: block.transactions
+      transactions: transactionModels
     };
   }
 
@@ -110,7 +164,79 @@ export default class BitcoinClient implements IBitcoinClient {
     return response;
   }
 
-  public async getRawTransaction (transactionId: string): Promise<Transaction> {
+  public async getBalanceInSatoshis (): Promise<number> {
+
+    const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
+
+    const unspentSatoshis = unspentOutputs.reduce((total, unspentOutput) => {
+      return total + unspentOutput.satoshis;
+    }, 0);
+
+    return unspentSatoshis;
+  }
+
+  public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
+
+    const transaction = await this.getRawTransaction(transactionId);
+
+    let inputSatoshiSum = 0;
+    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+
+      const currentInput = transaction.inputs[i];
+      const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);
+
+      inputSatoshiSum += transactionOutValue;
+    }
+
+    // transaction outputs in satoshis
+    const transactionOutputs: number[] = transaction.outputs.map((output) => output.satoshis);
+
+    const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
+
+    return (inputSatoshiSum - outputSatoshiSum);
+  }
+
+  private async addWatchOnlyAddressToWallet (publicKeyAsHex: string, rescan: boolean): Promise<void> {
+    const request = {
+      method: 'importpubkey',
+      params: [
+        publicKeyAsHex,
+        'sidetree',
+        rescan
+      ]
+    };
+
+    await this.rpcCall(request, false);
+  }
+
+  private async isAddressAddedToWallet (address: string): Promise<boolean> {
+    console.info(`Checking if bitcoin wallet for ${address} exists`);
+    const request = {
+      method: 'getaddressinfo',
+      params: [
+        address
+      ]
+    };
+
+    const response = await this.rpcCall(request, true);
+    return response.labels.length > 0 || response.iswatchonly;
+  }
+
+  /** Get the transaction out value in satoshi, for a specified output index */
+  private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
+    const transaction = await this.getRawTransaction(transactionId);
+
+    // output with the desired index
+    const vout = transaction.outputs[outputIndex];
+
+    return vout.satoshis;
+  }
+
+  /**
+   * Get the raw transaction data.
+   * @param transactionId The target transaction id.
+   */
+  private async getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
     const request = {
       method: 'getrawtransaction',
       params: [
@@ -122,10 +248,64 @@ export default class BitcoinClient implements IBitcoinClient {
     const hexEncodedTransaction = await this.rpcCall(request, true);
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    return BitcoinClient.createTransactionFromBuffer(transactionBuffer);
+    const bitcoreTransaction = BitcoinClient.createBitcoreTransactionFromBuffer(transactionBuffer);
+
+    return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
   }
 
-  public async getUnspentCoins (address: Address): Promise<Transaction.UnspentOutput[]> {
+  // This function is specifically created to help with unit testing.
+  private static createBitcoreTransactionFromBuffer (buffer: Buffer): Transaction {
+    return new Transaction(buffer);
+  }
+
+  // This function is specifically created to help with unit testing.
+  private static createBitcoreBlockFromBuffer (buffer: Buffer): Block {
+    return new Block(buffer);
+  }
+
+  private async createBitcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
+    const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
+
+    const transaction = new Transaction();
+    transaction.from(unspentOutputs);
+    transaction.addOutput(new Transaction.Output({
+      script: Script.buildDataOut(transactionData),
+      satoshis: 0
+    }));
+    transaction.change(this.privateKeyAddress);
+    transaction.fee(feeInSatoshis);
+    transaction.sign(this.privateKey);
+
+    return transaction;
+  }
+
+  private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
+    return {
+      previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
+      outputIndexInPreviousTransaction: bitcoreInput.outputIndex
+    };
+  }
+
+  private static createBitcoinOutputModel (bitcoreOutput: Transaction.Output): BitcoinOutputModel {
+    return {
+      satoshis: bitcoreOutput.satoshis,
+      scriptAsmAsString: bitcoreOutput.script.toASM()
+    };
+  }
+
+  private static createBitcoinTransactionModel (bitcoreTransaction: Transaction): BitcoinTransactionModel {
+
+    const bitcoinInputs = bitcoreTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
+    const bitcoinOutputs = bitcoreTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
+
+    return {
+      inputs: bitcoinInputs,
+      outputs: bitcoinOutputs,
+      id: bitcoreTransaction.id
+    };
+  }
+
+  private async getUnspentOutputs (address: Address): Promise<Transaction.UnspentOutput[]> {
 
     // Retrieve all transactions by addressToSearch via BCoin Node API /tx/address/$address endpoint
     const addressToSearch = address.toString();
@@ -147,42 +327,6 @@ export default class BitcoinClient implements IBitcoinClient {
     console.info(`Returning ${unspentTransactions.length} coins`);
 
     return unspentTransactions;
-  }
-
-  public async importPublicKey (publicKeyAsHex: string, rescan: boolean): Promise<void> {
-    const request = {
-      method: 'importpubkey',
-      params: [
-        publicKeyAsHex,
-        'sidetree',
-        rescan
-      ]
-    };
-
-    await this.rpcCall(request, false);
-  }
-
-  public async walletExists (address: string): Promise<boolean> {
-    console.info(`Checking if bitcoin wallet for ${address} exists`);
-    const request = {
-      method: 'getaddressinfo',
-      params: [
-        address
-      ]
-    };
-
-    const response = await this.rpcCall(request, true);
-    return response.labels.length > 0 || response.iswatchonly;
-  }
-
-  // This function is specifically created to help with unit testing.
-  private static createTransactionFromBuffer (buffer: Buffer): Transaction {
-    return new Transaction(buffer);
-  }
-
-  // This function is specifically created to help with unit testing.
-  private static createBlockFromBuffer (buffer: Buffer): Block {
-    return new Block(buffer);
   }
 
   private async rpcCall (request: any, timeout: boolean): Promise<any> {

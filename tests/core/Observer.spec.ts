@@ -162,8 +162,7 @@ describe('Observer', async () => {
     const operationDids = operationsBuffer.map((op) => { return Operation.create(op).didUniqueSuffix; });
     const anchorFile: AnchorFileModel = {
       batchFileHash: batchFilehash,
-      didUniqueSuffixes: operationDids,
-      merkleRoot: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+      didUniqueSuffixes: operationDids
     };
 
     const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
