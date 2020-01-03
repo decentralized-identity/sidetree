@@ -1,6 +1,6 @@
 import ITransactionStore from '../core/interfaces/ITransactionStore';
 import TransactionModel from './models/TransactionModel';
-import { Collection, Db, Long, MongoClient } from 'mongodb';
+import { Collection, Cursor, Db, Long, MongoClient } from 'mongodb';
 
 /**
  * Implementation of ITransactionStore that stores the transaction data in a MongoDB database.
@@ -54,19 +54,31 @@ export default class MongoDbTransactionStore implements ITransactionStore {
     return transaction;
   }
 
-  public async getTransactionsLaterThan (transactionNumber: number | undefined, max: number): Promise<TransactionModel[]> {
+  public async getTransactionsLaterThan (transactionNumber: number | undefined, max: number | undefined): Promise<TransactionModel[]> {
     let transactions = [];
 
     try {
-      // If given `undefined`, return transactions from the start of sorted transactions.
+
+      let dbCursor: Cursor<any>;
+
+      // If given `undefined`, return transactions from the start.
       if (transactionNumber === undefined) {
-        transactions = await this.transactionCollection!.find().limit(max).sort({ transactionNumber: 1 }).toArray();
+        dbCursor = this.transactionCollection!.find();
       } else {
-        transactions = await this.transactionCollection!.find({ transactionNumber: { $gt: Long.fromNumber(transactionNumber) } })
-                                                        .limit(max)
-                                                        .sort({ transactionNumber: 1 })
-                                                        .toArray();
+        dbCursor = this.transactionCollection!.find({ transactionNumber: { $gt: Long.fromNumber(transactionNumber) } });
       }
+
+      // If a limit is defined then set it.
+      if (max) {
+        dbCursor = dbCursor.limit(max);
+      }
+
+      // Sort the output
+      dbCursor = dbCursor.sort({ transactionNumber: 1 });
+
+      // Fetch the transactions
+      transactions = await dbCursor.toArray();
+
     } catch (error) {
       console.error(error);
     }
