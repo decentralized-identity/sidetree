@@ -14,7 +14,7 @@ export default class MockOperationQueue implements IOperationQueue {
 
   async dequeue (count: number): Promise<Buffer[]> {
     // Sort the entries by their timestamp.
-    const sortedEntries = Array.from(this.operations.entries()).sort((a, b) => b[1][0] - a[1][0]);
+    const sortedEntries = Array.from(this.operations.entries()).sort((a, b) => a[1][0] - b[1][0]);
     const sortedKeys = sortedEntries.map(entry => entry[0]);
     const sortedBuffers = sortedEntries.map(entry => entry[1][1]);
 
