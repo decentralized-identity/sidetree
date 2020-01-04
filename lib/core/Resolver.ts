@@ -1,3 +1,4 @@
+import DidResolutionModel from './models/DidResolutionModel';
 import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
 import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
@@ -26,10 +27,10 @@ export default class Resolver {
   public async resolve (didUniqueSuffix: string): Promise<object | undefined> {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
-    // NOTE: We create an object referencing the DID document to be constructed so that both:
+    // NOTE: We are passing the DID resolution model into apply method so that both:
     // 1. `didDocument` can be `undefined` initially; and
     // 2. `didDocument` can be modified directly in-place in subsequent applying of operations.
-    let didDocumentReference: { didDocument: object | undefined } = { didDocument: undefined };
+    let didResolutionModel: DidResolutionModel = {};
 
     const operations = await this.operationStore.get(didUniqueSuffix);
     const createAndRecoverAndRevokeOperations = operations.filter(
@@ -38,57 +39,37 @@ export default class Resolver {
       op.type === OperationType.Delete);
 
     // Apply "full" operations first.
-    const [lastFullOperation, lastFullOperationHash] =
-      await this.applyOperations(didDocumentReference, createAndRecoverAndRevokeOperations, undefined, undefined);
+    await this.applyOperations(createAndRecoverAndRevokeOperations, didResolutionModel);
 
-    // If no full operation found at all, the DID is not anchored.
-    if (lastFullOperation === undefined) {
+    // If no valid operation full found at all, the DID is not anchored.
+    if (didResolutionModel.didDocument === undefined) {
       return undefined;
     }
 
-    // Get only update operations that came after the create or last recovery operation.
+    // Get only update operations that came after the last full operation.
+    const lastOperationTransactionNumber = didResolutionModel.metadata!.lastOperationTransactionNumber;
     const updateOperations = operations.filter(op => op.type === OperationType.Update);
-    const updateOperationsToBeApplied = updateOperations.filter(
-      op => op.transactionNumber > lastFullOperation.transactionNumber ||
-           (op.transactionNumber === lastFullOperation.transactionNumber && op.operationIndex > lastFullOperation.operationIndex)
-    );
+    const updateOperationsToBeApplied = updateOperations.filter(op => op.transactionNumber > lastOperationTransactionNumber);
 
     // Apply "update/delta" operations.
-    await this.applyOperations(didDocumentReference, updateOperationsToBeApplied, lastFullOperation, lastFullOperationHash);
+    await this.applyOperations(updateOperationsToBeApplied, didResolutionModel);
 
-    return didDocumentReference.didDocument;
+    return didResolutionModel.didDocument;
   }
 
   /**
    * Applies the given operations to the given DID document.
-   * @param didDocumentReference The reference to the DID document to be modified.
    * @param operations The list of operations to be applied in sequence.
-   * @param lastOperation  The last operation that was successfully applied.
-   * @param lastOperationHash The hash of the last operation that was successfully applied.
-   * @returns [last operation that was successfully applied, the hash of the last operation that was successfully applied]
+   * @param didResolutionModel
+   *        The container object that contains the initial metadata needed for applying the operations and the reference to the DID document to be modified.
    */
   private async applyOperations (
-    didDocumentReference: { didDocument: any | undefined },
     operations: NamedAnchoredOperationModel[],
-    lastOperation: NamedAnchoredOperationModel | undefined,
-    lastOperationHash: string | undefined
-  ): Promise<[NamedAnchoredOperationModel | undefined, string | undefined]> {
+    didResolutionModel: DidResolutionModel
+    ) {
     for (const operation of operations) {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const applyResult = await operationProcessor.apply(operation, didDocumentReference);
-
-      if (applyResult.validOperation) {
-        lastOperation = operation;
-        lastOperationHash = applyResult.operationHash;
-      } else {
-        const index = operation.operationIndex;
-        const time = operation.transactionTime;
-        const number = operation.transactionNumber;
-        const did = didDocumentReference.didDocument ? didDocumentReference.didDocument.id : undefined;
-        console.info(`Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
-      }
+      await operationProcessor.apply(operation, didResolutionModel);
     }
-
-    return [lastOperation, lastOperationHash];
   }
 }

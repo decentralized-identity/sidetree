@@ -16,6 +16,7 @@ import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -157,7 +158,7 @@ describe('OperationProcessor', async () => {
     // Generate a unique key-pair used for each test.
     [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     cas = new MockCas();
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName);
@@ -165,12 +166,21 @@ describe('OperationProcessor', async () => {
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     resolver = new Resolver(versionManager, operationStore);
 
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
+    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      publicKey,
+      privateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      services
+    );
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
     didUniqueSuffix = createOp.didUniqueSuffix;
   });
 
-  it('should return a DID Document for resolve(did) for a registered DID', async () => {
+  fit('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationStore.put([createOp!]);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -188,8 +198,17 @@ describe('OperationProcessor', async () => {
     // Create and process a duplicate create op
 
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
+    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      publicKey,
+      privateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      services
+    );
     const duplicateCreateOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([duplicateCreateOp]);
 
@@ -295,12 +314,16 @@ describe('OperationProcessor', async () => {
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
 
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const operationBufferWithoutSignature = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       recoveryPrivateKey,
       signingPublicKey,
-      service
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      services
     );
 
     const operation = JSON.parse(operationBufferWithoutSignature.toString());
@@ -339,8 +362,17 @@ describe('OperationProcessor', async () => {
     // Generate a create operation with an invalid signature.
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      service
+    );
 
     const operation = JSON.parse(createOperationBuffer.toString());
 

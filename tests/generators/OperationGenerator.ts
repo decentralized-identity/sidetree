@@ -1,19 +1,38 @@
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 import Document from '../../lib/core/versions/latest/Document';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
-import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 
 /**
  * A class that can generate valid operations.
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
+  /**
+   * Creates an `AnchoredOperation` given the operation buffer, transaction number, transaction time, and operation index.
+   */
+  public static createAnchoredOperationFromOperationBuffer (
+    operationBuffer: Buffer,
+    transactionNumber: number,
+    transactionTime: number,
+    operationIndex: number): AnchoredOperation {
+
+    const anchoredOperationModel: AnchoredOperationModel = {
+      transactionNumber,
+      transactionTime,
+      operationIndex,
+      operationBuffer
+    };
+
+    return AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
+  }
+
   /**
    * Creates an anchored operation.
    */
@@ -70,21 +89,24 @@ export default class OperationGenerator {
   }
 
   /**
-   * Create a did doc with specified arguments and generate a create operation with it
-   * @param recoveryPublicKey recovery public key
-   * @param recoveryPrivateKey recovery private key
-   * @param signingPublicKey signing public key
-   * @param serviceEndpoints service endpoints
+   * Generates a create operation.
    */
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: DidPublicKeyModel,
     recoveryPrivateKey: string | PrivateKey,
     signingPublicKey: DidPublicKeyModel,
+    nextRecoveryOtpHash: Buffer,
+    nextUpdateOtpHash: Buffer,
     serviceEndpoints?: DidServiceEndpointModel[]
   ): Promise<Buffer> {
     const publicKeys = [recoveryPublicKey, signingPublicKey];
-    const document = Document.create(publicKeys, serviceEndpoints);
-    return this.createOperationBuffer(OperationType.Create, document, recoveryPublicKey.id, recoveryPrivateKey);
+    const payload = {
+      didDocument: Document.create(publicKeys, serviceEndpoints),
+      nextRecoveryOtpHash: Encoder.encode(nextRecoveryOtpHash),
+      nextUpdateOtpHash: Encoder.encode(nextUpdateOtpHash)
+    };
+
+    return this.createOperationBuffer(OperationType.Create, payload, recoveryPublicKey.id, recoveryPrivateKey);
   }
 
   /**

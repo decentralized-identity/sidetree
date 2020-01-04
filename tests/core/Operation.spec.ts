@@ -2,6 +2,7 @@ import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import { SidetreeError } from '../../lib/core/Error';
@@ -15,8 +16,17 @@ describe('Operation', async () => {
     // Generate a unique key-pair used for each test.
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-    const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service);
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      services
+    );
     createRequest = JSON.parse(createRequestBuffer.toString());
   });
 

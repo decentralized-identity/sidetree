@@ -2,30 +2,13 @@ import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation'
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
-import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-
-/**
- * Construct an operation given the payload, transactionNumber, transactionTime, and operationIndex
- */
-function constructAnchoredOperation (
-  operationBuffer: Buffer,
-  transactionNumber: number,
-  transactionTime: number,
-  operationIndex: number): AnchoredOperation {
-
-  const anchoredOperationModel: AnchoredOperationModel = {
-    transactionNumber,
-    transactionTime,
-    operationIndex,
-    operationBuffer
-  };
-
-  return AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
-}
+import OperationType from '../../lib/core/enums/OperationType';
 
 /**
  * Construct a create operation anchored with a transactionNumber, transactionTime, and operationIndex
@@ -38,9 +21,18 @@ async function constructAnchoredCreateOperation (
   operationIndex: number): Promise<AnchoredOperation> {
   const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
   const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-  const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
-  const operation = constructAnchoredOperation(operationBuffer, transactionNumber, transactionTime, operationIndex);
-  return operation;
+  const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+  const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+  const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+    publicKey,
+    privateKey,
+    signingPublicKey,
+    nextRecoveryOtpHash,
+    nextUpdateOtpHash,
+    service
+  );
+  const anchoredOperation = OperationGenerator.createAnchoredOperationFromOperationBuffer(operationBuffer, transactionNumber, transactionTime, operationIndex);
+  return anchoredOperation;
 }
 
 /**
@@ -71,8 +63,17 @@ async function constructAnchoredUpdateOperation (
     ]
   };
 
-  const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
-  return constructAnchoredOperation(updateOperationBuffer, transactionNumber, transactionTime, operationIndex);
+  const anchoredOperation = OperationGenerator.createAnchoredOperation(
+    OperationType.Update,
+    updatePayload,
+    '#key1',
+    privateKey,
+    transactionTime,
+    transactionNumber,
+    operationIndex
+  );
+
+  return anchoredOperation;
 }
 
 const databaseName = 'sidetree-test';

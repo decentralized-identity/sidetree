@@ -274,8 +274,17 @@ POST / HTTP/1.1
 ```json
 {
   "protected": "Encoded protected header.",
-  "payload": "Encoded original DID Document.",
+  "payload": "Encoded create payload JSON object defined by the schema below.",
   "signature": "Encoded signature."
+}
+```
+
+#### Create operation payload schema
+```json
+{
+  "didDocument": "Encoded original DID Document",
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
 
@@ -421,8 +430,9 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID",
-  "patches": ["An array of patches each must adhere to the patch schema defined below."
-  ]
+  "updateOtp": "The one-time password to be used for this update.",
+  "patches": ["An array of patches each must adhere to the patch schema defined below."],
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
 
@@ -623,7 +633,10 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "newDidDocument": "The new DID Document."
+  "recoveryOtp": "The one-time password to be used for this recovery.",
+  "newDidDocument": "The new DID Document.",
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
 }
 ```
 

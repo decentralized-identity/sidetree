@@ -27,6 +27,7 @@ export default {
   DocumentIncorretEncodedFormat: 'document_incorrect_encoded_format',
   DocumentNotJson: 'document_not_json',
   DocumentNotValidOriginalDocument: 'document_not_valid_original_document',
+  MultihashNotLatestSupportedHashAlgorithm: 'multihash_not_latest_supported_hash_algorithm',
   MultihashUnsupportedHashAlgorithm: 'multihash_unsupported_hash_algorithm',
   OperationCreateInvalidDidDocument: 'operation_create_invalid_did_document',
   OperationCountLessThanZero: 'operation_count_less_than_zero',

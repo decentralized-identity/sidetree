@@ -16,12 +16,9 @@ export default class Document {
    * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
    */
   public static async from (
-    encodedOriginalDidDocument: string,
-    didMethodName: string,
-    hashAlgorithmAsMultihashCode: number
+    did: string,
+    encodedOriginalDidDocument: string
   ): Promise<DocumentModel | undefined> {
-    // Compute the hash of the DID Document in the create payload as the DID
-    const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
 
     // Decode the encoded DID Document.
     const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);

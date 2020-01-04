@@ -52,7 +52,7 @@ describe('Document', () => {
       defaultOriginalDidDocument['@context'] = 'invalid-context';
       const originalDidDocumentJson = JSON.stringify(defaultOriginalDidDocument);
       const encodedOriginalDidDocument = Encoder.encode(originalDidDocumentJson);
-      const documentModel = await Document.from(encodedOriginalDidDocument, 'did:sidetree', 18);
+      const documentModel = await Document.from('did:sidetree:someValue', encodedOriginalDidDocument);
 
       expect(documentModel).toBeUndefined();
     });

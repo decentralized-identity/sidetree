@@ -50,7 +50,7 @@ export default class AnchorFile {
     }
 
     const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.batchFileHash);
-    if (!Multihash.isValidHash(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
+    if (!Multihash.isComputedUsingHashAlgorithm(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
       throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashUnsupported, `Batch file hash '${anchorFile.batchFileHash}' is unsupported.`);
     }
 

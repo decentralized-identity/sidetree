@@ -45,9 +45,20 @@ export default class Operation {
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public readonly didDocument?: DocumentModel;
+  /** Encoded DID document - mainly used for DID generation. */
+  public readonly encodedDidDocument?: string;
 
   /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
   public readonly patches?: any[];
+
+  /** One-time password for this update operation. */
+  public readonly updateOtp?: string;
+  /** One-time password for this recovery/checkpoint/revoke operation. */
+  public readonly recoveryOtp?: string;
+  /** Hash of the one-time password for the next update operation. */
+  public readonly nextUpdateOtpHash?: string;
+  /** Hash of the one-time password for this recovery/checkpoint/revoke operation. */
+  public readonly nextRecoveryOtpHash?: string;
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
@@ -75,18 +86,26 @@ export default class Operation {
     switch (this.type) {
       case OperationType.Create:
         this.didUniqueSuffix = this.operationHash;
-        this.didDocument = decodedPayload;
+        this.didDocument = decodedPayload.didDocument;
+        this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
+        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Update:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.patches = decodedPayload.patches;
+        this.updateOtp = decodedPayload.updateOtp;
+        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Recover:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.didDocument = decodedPayload.newDidDocument;
+        this.recoveryOtp = decodedPayload.recoveryOtp;
+        this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
+        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Delete:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
+        this.recoveryOtp = decodedPayload.recoveryOtp;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
@@ -266,10 +285,7 @@ export default class Operation {
     // Verify operation specific payload schema.
     switch (operationType) {
       case OperationType.Create:
-        const validDocument = Document.isObjectValidOriginalDocument(decodedPayload);
-        if (!validDocument) {
-          throw new SidetreeError(ErrorCode.OperationCreateInvalidDidDocument);
-        }
+        Operation.validateCreatePayload(decodedPayload);
         break;
       case OperationType.Update:
         Operation.validateUpdatePayload(decodedPayload);
@@ -282,6 +298,23 @@ export default class Operation {
     }
 
     return [decodedProtectedHeader, decodedPayload];
+  }
+
+  /**
+   * Validates the schema given create operation payload.
+   * @throws Error if given operation payload fails validation.
+   */
+  public static validateCreatePayload (payload: any) {
+    const validDocument = Document.isObjectValidOriginalDocument(payload.didDocument);
+    if (!validDocument) {
+      throw new SidetreeError(ErrorCode.OperationCreateInvalidDidDocument);
+    }
+
+    const nextRecoveryOtpHash = Encoder.decodeAsBuffer(payload.nextRecoveryOtpHash);
+    const nextUpdateOtpHash = Encoder.decodeAsBuffer(payload.nextUpdateOtpHash);
+
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryOtpHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
   }
 
   /**

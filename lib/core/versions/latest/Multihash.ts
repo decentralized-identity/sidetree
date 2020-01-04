@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import { SidetreeError } from '../../Error';
 const multihashes = require('multihashes');
@@ -32,8 +33,8 @@ export default class Multihash {
    * Given a multihash, returns the code of the hash algorithm used.
    * @throws `SidetreeError` if hash algorithm used for the given multihash is unsupported.
    */
-  public static getHashAlgorithmCode (hash: Buffer): number {
-    const multihash = multihashes.decode(hash);
+  public static getHashAlgorithmCode (multihashBuffer: Buffer): number {
+    const multihash = multihashes.decode(multihashBuffer);
 
     // Hash algorithm must be SHA-256.
     if (multihash.code !== 18) {
@@ -41,6 +42,19 @@ export default class Multihash {
     }
 
     return multihash.code;
+  }
+
+  /**
+   * Verifies that the given hash is a multihash computed with the latest supported hash algorithm.
+   * @throws `SidetreeError` if the given hash is not a multihash computed with the latest supported hash algorithm.
+   */
+  public static verifyHashComputedUsingLatestSupportedAlgorithm (hash: Buffer) {
+    const latestSupportedHashAlgorithmCode = 18;
+    const isLatestSupportedHashFormat = Multihash.isComputedUsingHashAlgorithm(hash, latestSupportedHashAlgorithmCode); // SHA-256.
+
+    if (!isLatestSupportedHashFormat) {
+      throw new SidetreeError(ErrorCode.MultihashNotLatestSupportedHashAlgorithm);
+    }
   }
 
   /**
@@ -53,11 +67,33 @@ export default class Multihash {
   /**
    * Checks if the given hash is a multihash with the expected hashing algorithm.
    */
-  public static isValidHash (hash: Buffer, expectedHashAlgorithmInMultihashCode: number) {
+  public static isComputedUsingHashAlgorithm (hash: Buffer, expectedHashAlgorithmInMultihashCode: number): boolean {
     try {
       const multihash = multihashes.decode(hash);
       return (multihash.code === expectedHashAlgorithmInMultihashCode);
     } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Verifies the given content against the given multihash.
+   */
+  public static isValidHash (encodedContent: string, encodedMultihash: string): boolean {
+    try {
+      const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
+      const multihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
+
+      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(multihashBuffer);
+      const actualHashBuffer = Multihash.hash(contentBuffer, hashAlgorithmCode);
+
+      if (Buffer.compare(actualHashBuffer, multihashBuffer) !== 0) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.log(error);
       return false;
     }
   }

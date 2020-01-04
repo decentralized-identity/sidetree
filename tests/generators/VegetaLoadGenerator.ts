@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from './OperationGenerator';
 
 /**
@@ -34,10 +35,20 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-      const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+
+      const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+      const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
 
       // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+        publicKey,
+        privateKey,
+        signingPublicKey,
+        nextRecoveryOtpHash,
+        nextUpdateOtpHash,
+        services
+      );
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 

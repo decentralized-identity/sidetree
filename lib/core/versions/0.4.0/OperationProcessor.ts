@@ -20,20 +20,17 @@ export default class OperationProcessor implements IOperationProcessor {
     anchoredOperationModel: AnchoredOperationModel,
     didDocumentReference: { didDocument: object | undefined }
   ): Promise<ApplyResult> {
-    let operationHash = undefined;
 
     try {
       // NOTE: only used for read interally.
       const didDocument = didDocumentReference.didDocument as (DocumentModel | undefined);
-
       const operation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
-      operationHash = operation.operationHash;
 
       if (operation.type === OperationType.Create) {
 
         // If we have seen a previous create operation.
         if (didDocumentReference.didDocument) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         const originalDidDocument = Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode)!;
@@ -41,60 +38,60 @@ export default class OperationProcessor implements IOperationProcessor {
         const signingKey = Document.getPublicKey(originalDidDocument, operation.signingKeyId);
 
         if (!signingKey) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         if (!(await operation.verifySignature(signingKey))) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         didDocumentReference.didDocument = originalDidDocument;
-        return { validOperation: true, operationHash };
+        return { validOperation: true };
       } else if (operation.type === OperationType.Delete) {
         // Delete can be applied only on valid did with a current document
         if (!didDocument) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         // The current did document should contain the public key mentioned in the operation ...
         const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
         if (!publicKey) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         // ... and the signature should verify
         if (!(await operation.verifySignature(publicKey))) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         // If the delete is valid
         didDocumentReference.didDocument = undefined;
-        return { validOperation: true, operationHash };
+        return { validOperation: true };
       } else {
         // Update operation
 
         // If we have not seen a valid create operation yet.
         if (didDocument === undefined) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         // The current did document should contain the public key mentioned in the operation ...
         const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
         if (!publicKey) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         // ... and the signature should verify
         if (!(await operation.verifySignature(publicKey))) {
-          return { validOperation: false, operationHash };
+          return { validOperation: false };
         }
 
         AnchoredOperation.applyPatchesToDidDocument(didDocument, operation.patches!);
-        return { validOperation: true, operationHash };
+        return { validOperation: true };
       }
     } catch (error) {
       console.log(`Invalid operation ${error}.`);
-      return { validOperation: false, operationHash };
+      return { validOperation: false };
     }
   }
 }
