@@ -918,7 +918,7 @@ describe('BitcoinProcessor', () => {
 
   describe('revertQuantileAndTransactionDbsTo', () => {
     it('should revert the DBs to the correct values.', async () => {
-      const mockFirstBlockInGroup = 450;
+      const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] + 1;
       const firstBlockInGroupSpy = spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.returnValue(mockFirstBlockInGroup);
 
       const txnConstructSpy = spyOn(TransactionNumber, 'construct');
@@ -946,9 +946,29 @@ describe('BitcoinProcessor', () => {
 
       expect(actual).toEqual(mockBlockInfo);
       expect(firstBlockInGroupSpy).toHaveBeenCalledWith(inputBlock);
-      expect(txnConstructSpy).toHaveBeenCalledWith(mockFirstBlockInGroup + 1, 0);
+      expect(txnConstructSpy).toHaveBeenCalledWith(mockFirstBlockInGroup, 0);
       expect(removeTransactions).toHaveBeenCalled();
-      expect(revertQuantileState).toHaveBeenCalledWith(mockGroupIdFromBlock + 1);
+      expect(revertQuantileState).toHaveBeenCalledWith(mockGroupIdFromBlock);
+    });
+
+    it('should return the genesis block if the first block in group goes below the genesis block.', async () => {
+      const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] - 10;
+      spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.returnValue(mockFirstBlockInGroup);
+
+      spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
+
+      const mockBlockInfo: IBlockInfo = {
+        height: randomNumber(),
+        hash: randomString(),
+        previousHash: randomString()
+      };
+      const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any).and.returnValue(Promise.resolve(mockBlockInfo));
+
+      const actual = await bitcoinProcessor['revertQuantileAndTransactionDbsTo'](500);
+
+      expect(actual).toEqual(mockBlockInfo);
+      expect(getBlockSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber']);
     });
   });
 
@@ -967,75 +987,20 @@ describe('BitcoinProcessor', () => {
 
   describe('verifyBlock', () => {
     it('should return true if the hash matches given a block height', async (done) => {
-      const mockBlockInfo: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-
-      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight' as any).and.returnValue(mockBlockInfo);
-
-      const actual = await bitcoinProcessor['verifyBlock'](mockBlockInfo.height, mockBlockInfo.hash);
+      const height = randomNumber();
+      const hash = randomString();
+      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(hash);
+      const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeTruthy();
       expect(mock).toHaveBeenCalled();
       done();
     });
 
     it('should return false if the hash does not match given a block height', async (done) => {
-      const mockBlockInfo: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-
-      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight' as any).and.returnValue(mockBlockInfo);
-
-      const actual = await bitcoinProcessor['verifyBlock'](mockBlockInfo.height, 'some invalid hash');
-      expect(actual).toBeFalsy();
-      expect(mock).toHaveBeenCalled();
-      done();
-    });
-
-    it('should return true if the hash & previous hash matches given a block height', async (done) => {
-      const mockBlockInfo: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-
-      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight' as any).and.returnValue(mockBlockInfo);
-
-      const actual = await bitcoinProcessor['verifyBlock'](mockBlockInfo.height, mockBlockInfo.hash, mockBlockInfo.previousHash);
-      expect(actual).toBeTruthy();
-      expect(mock).toHaveBeenCalled();
-      done();
-    });
-
-    it('should return false if the hash matches but the previous hash does not match given a block height', async (done) => {
-      const mockBlockInfo: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-
-      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight' as any).and.returnValue(mockBlockInfo);
-
-      const actual = await bitcoinProcessor['verifyBlock'](mockBlockInfo.height, mockBlockInfo.hash, 'some invalid hash');
-      expect(actual).toBeFalsy();
-      expect(mock).toHaveBeenCalled();
-      done();
-    });
-
-    it('should return false if the hash does not matche but the previous hash matches given a block height', async (done) => {
-      const mockBlockInfo: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-
-      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight' as any).and.returnValue(mockBlockInfo);
-
-      const actual = await bitcoinProcessor['verifyBlock'](mockBlockInfo.height, 'invalid hash', mockBlockInfo.previousHash);
+      const height = randomNumber();
+      const hash = randomString();
+      const mock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(randomString());
+      const actual = await bitcoinProcessor['verifyBlock'](height, hash);
       expect(actual).toBeFalsy();
       expect(mock).toHaveBeenCalled();
       done();

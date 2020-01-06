@@ -115,20 +115,20 @@ describe('BitcoinClient', async () => {
       const blockData = {
         hash: hash,
         height: 2,
-        transactions: [transaction],
-        header: {
-          prevHash: 'some other hash'
-        }
+        tx: [
+          { hex: Buffer.from(transaction.toString()).toString('hex') }
+        ],
+        previousblockhash: 'some other hash'
       };
 
-      spyOn(BitcoinClient as any, 'createBitcoreBlockFromBuffer').and.returnValue(blockData);
-      const spy = mockRpcCall('getblock', [hash, 0], JSON.stringify(blockData));
+      spyOn(BitcoinClient as any, 'createBitcoreTransactionFromBuffer').and.returnValue(transaction);
+      const spy = mockRpcCall('getblock', [hash, 2], blockData);
       const actual = await bitcoinClient.getBlock(hash);
 
       expect(spy).toHaveBeenCalled();
       expect(actual.hash).toEqual(blockData.hash);
       expect(actual.height).toEqual(blockData.height);
-      expect(actual.previousHash).toEqual(blockData.header.prevHash);
+      expect(actual.previousHash).toEqual(blockData.previousblockhash);
       expect(actual.transactions[0]).toEqual(BitcoinClient['createBitcoinTransactionModel'](transaction));
     });
   });

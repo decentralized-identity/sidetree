@@ -283,8 +283,8 @@ export default class BitcoinProcessor {
    * @param interval Number of seconds between each query
    */
   private async periodicPoll (interval: number = this.pollPeriod) {
-    try {
 
+    try {
       // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
       if (this.pollTimeoutId) {
         clearTimeout(this.pollTimeoutId);
@@ -379,7 +379,7 @@ export default class BitcoinProcessor {
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
 
     const lastProcessedBlockVerified =
-      await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash, this.lastProcessedBlock!.previousHash);
+      await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
 
     // If the last processed block is not verified then that means that we need to
     // revert the blockchain to the correct block
@@ -438,59 +438,65 @@ export default class BitcoinProcessor {
   /**
    * Deletes the correct entries from the system DBs and return the new valid block.
    * @param validBlockNumber The valid block number.
+   * @returns The new valid block after the revert is complete.
    */
   private async revertQuantileAndTransactionDbsTo (validBlockNumber: number): Promise<IBlockInfo> {
 
     console.info(`Reverting quantile and transaction DBs to: ${validBlockNumber}`);
 
-    // Revert all transactions in blocks from validBlockNumber and later. We make make this to be a group
-    // boundary to simplify resetting proof-of-fee state which is maintained per group.
-    const revertToBlockNumber = this.getFirstBlockInGroup(validBlockNumber);
+    // For the transaction DB, we can remove all the transaction greater than the validBlockNumber
+    // but for the quantile DB, we need to remove the full group (corresponding to the given
+    // validBlockNumber). This is because currently there is no way to add/remove individual block's
+    // data to the quantile DB ... it only expects to work with the full groups. Which means that we
+    // need to remove all the transactions which belong to that group (and later ones).
+    //
+    // So what we need to do is:
+    // <code>
+    //   validBlockGroup = findGroupForTheBlock(validBlockNumber);
+    //   firstBlockInGroup = findFirstBlockInGroup(validBlockGroup);
+    //
+    //   deleteAllTransactionsGreaterThanOrEqualTo(firstBlockInGroup);
+    //   deleteAllGroupsGreaterThanOrEqualTo(validBlockGroup);
+    // </code>
+    const firstBlockInGroup = this.getFirstBlockInGroup(validBlockNumber);
 
     // NOTE:
     // *****
     // Make sure that we remove the transaction data BEFORE we remove the quantile data. This is
     // because that if the service stops at any moment after this, the initialize code looks at
     // the transaction store and can revert the quantile db accordingly.
-    //
-    // Remove the transactions which come after the specified valid block number
-    const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber + 1, 0) - 1;
+    const firstTxnOfFirstBlockInGroup = TransactionNumber.construct(firstBlockInGroup, 0);
 
-    console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
-    await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
+    console.debug(`Removing transactions since ${firstBlockInGroup} (transaction id: ${firstTxnOfFirstBlockInGroup})`);
+    await this.transactionStore.removeTransactionsLaterThan(firstTxnOfFirstBlockInGroup - 1);
 
-    // Now revert the quantile calculator. We want to keep the validBlockNumber which means that we should
-    // keep the corresponding group and delete everything greater than that one.
-    const revertToGroupId = this.getGroupIdFromBlock(revertToBlockNumber);
+    // Now revert the corresponding groups (and later) from the quantile calculator.
+    const revertToGroupId = this.getGroupIdFromBlock(firstBlockInGroup);
 
-    console.debug(`Reverting the quantile data greater than: ${revertToGroupId}`);
-    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId + 1);
+    console.debug(`Removing the quantile data greater and equal than: ${revertToGroupId}`);
+    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId);
 
     // Reset transaction sampling
     this.transactionSampler.clear();
 
-    return this.bitcoinClient.getBlockInfoFromHeight(revertToBlockNumber);
+    // The first block in the group is the new starting point after this revert.
+    // Ensure that we are not going below the genesis block
+    const blockDataToReturn = Math.max(firstBlockInGroup, this.genesisBlockNumber);
+    return this.bitcoinClient.getBlockInfoFromHeight(blockDataToReturn);
   }
 
   /**
    * Given a Bitcoin block height and hash, verifies against the blockchain
    * @param height Block height to verify
    * @param hash Block hash to verify
-   * @param previousHash Hash of the previous block (optional)
    * @returns true if valid, false otherwise
    */
-  private async verifyBlock (height: number, hash: string, previousHash?: string): Promise<boolean> {
-    console.info(`Verifying block ${height} (${hash}) (${previousHash})`);
-    const blockFromBitcoin = await this.bitcoinClient.getBlockInfoFromHeight(height);
-    console.debug(`Retrieved block ${height} (${blockFromBitcoin})`);
+  private async verifyBlock (height: number, hash: string): Promise<boolean> {
+    console.info(`Verifying block ${height} (${hash})`);
+    const responseData = await this.bitcoinClient.getBlockHash(height);
 
-    const previousHashIsValid = (previousHash)
-                                ? (previousHash === blockFromBitcoin.previousHash)
-                                : true;
-
-    const hashIsValid = hash === blockFromBitcoin.hash;
-
-    return previousHashIsValid && hashIsValid;
+    console.debug(`Retrieved block ${height} (${responseData})`);
+    return hash === responseData;
   }
 
   private isSidetreeTransaction (transaction: BitcoinTransactionModel): boolean {
