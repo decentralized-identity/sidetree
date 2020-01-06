@@ -144,18 +144,6 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('getBlockHeight', () => {
-    it('should get the block height', async () => {
-      const height = 1234;
-      const hash = 'some_hash_value';
-      const previousHash = 'some other hash value';
-      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash });
-      const actual = await bitcoinClient.getBlockHeight(hash);
-      expect(actual).toEqual(height);
-      expect(spy).toHaveBeenCalled();
-    });
-  });
-
   describe('getBlockInfo', () => {
     it('should get the block info', async () => {
       const height = 1234;

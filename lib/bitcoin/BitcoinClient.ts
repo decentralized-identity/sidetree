@@ -128,10 +128,6 @@ export default class BitcoinClient implements IBitcoinClient {
     return this.rpcCall(hashRequest, true);
   }
 
-  public async getBlockHeight (hash: string): Promise<number> {
-    return (await this.getBlockInfo(hash)).height;
-  }
-
   public async getBlockInfoFromHeight (height: number): Promise<IBlockInfo> {
     return this.getBlockInfo(await this.getBlockHash(height));
   }

@@ -28,12 +28,6 @@ export default interface IBitcoinClient {
   getBlockHash (height: number): Promise<string>;
 
   /**
-   * Gets the block height for the given block hash.
-   * @param hash The hash to get the block height for
-   */
-  getBlockHeight (hash: string): Promise<number>;
-
-  /**
    * Gets the block info for the given block hash.
    * @param hash The hash of the block
    */
