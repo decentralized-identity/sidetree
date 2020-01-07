@@ -72,9 +72,10 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     const did = this.didMethodName + operation.didUniqueSuffix;
-    const didDocument = await Document.from(did, operation.encodedPayload);
-    const signingKey = Document.getPublicKey(didDocument!, operation.signingKeyId);
+    const didDocument = operation.didDocument!;
+    Document.addDidToDocument(didDocument, did);
 
+    const signingKey = Document.getPublicKey(didDocument, operation.signingKeyId);
     if (!signingKey) {
       return false;
     }

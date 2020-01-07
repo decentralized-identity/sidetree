@@ -52,6 +52,7 @@ async function addBatchFileOfOneOperationToCas (
 async function createUpdateSequence (
   didUniqueSuffix: string,
   createOp: AnchoredOperation,
+  firstUpdateOtp: Buffer,
   cas: ICas,
   numberOfUpdates:
   number,
@@ -74,7 +75,10 @@ async function createUpdateSequence (
           serviceType: 'IdentityHub',
           serviceEndpoints: ['did:sidetree:value' + i]
         }
-      ]
+      ],
+      updateOtp: Encoder.encode(firstUpdateOtp),
+      // Reusing the same update OTP again and again currently, we can consider making it different everytime.
+      nextUpdateOtpHash: Encoder.encode(Multihash.hash(firstUpdateOtp, 18))
     };
 
     const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
@@ -153,6 +157,7 @@ describe('OperationProcessor', async () => {
   let publicKey: any;
   let privateKey: any;
   let didUniqueSuffix: string;
+  let firstUpdateOtp: Buffer;
 
   beforeEach(async () => {
     // Generate a unique key-pair used for each test.
@@ -166,8 +171,10 @@ describe('OperationProcessor', async () => {
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     resolver = new Resolver(versionManager, operationStore);
 
+    firstUpdateOtp = Buffer.from(`hardCodedUpdateOtp`);
+
     const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const nextUpdateOtpHash = Multihash.hash(firstUpdateOtp, 18); // 18 = SHA256;
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       publicKey,
       privateKey,
@@ -180,7 +187,7 @@ describe('OperationProcessor', async () => {
     didUniqueSuffix = createOp.didUniqueSuffix;
   });
 
-  fit('should return a DID Document for resolve(did) for a registered DID', async () => {
+  it('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationStore.put([createOp!]);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -273,7 +280,7 @@ describe('OperationProcessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, firstUpdateOtp, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -282,7 +289,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, firstUpdateOtp, cas, numberOfUpdates, privateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
@@ -293,7 +300,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, firstUpdateOtp, cas, numberOfUpdates, privateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
@@ -344,7 +351,7 @@ describe('OperationProcessor', async () => {
 
   it('should return undefined for deleted did', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, firstUpdateOtp, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -441,7 +448,7 @@ describe('OperationProcessor', async () => {
 
   it('should ignore updates to did that is not created', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, firstUpdateOtp, cas, numberOfUpdates, privateKey);
 
     // elide i = 0, the create operation
     for (let i = 1 ; i < ops.length ; ++i) {
@@ -520,7 +527,7 @@ describe('OperationProcessor', async () => {
 
   it('should rollback all', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp!, firstUpdateOtp, cas, numberOfUpdates, privateKey);
     await operationStore.put(ops);
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
@@ -550,9 +557,17 @@ describe('OperationProcessor', async () => {
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
 
       // Create the initial create operation.
-      const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
-      const anchoredCreateOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Create, documentModel, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
+      const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+      const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+        recoveryPublicKey,
+        recoveryPrivateKey,
+        signingPublicKey,
+        nextRecoveryOtpHash,
+        nextUpdateOtpHash,
+        [serviceEndpoint]
+      );
+      const anchoredCreateOperationModel = OperationGenerator.createAnchoredOperationFromOperationBuffer(createOperationBuffer, 1, 1, 1);
       anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
 
       // Apply the initial create operation.
@@ -605,9 +620,17 @@ describe('OperationProcessor', async () => {
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
 
       // Create the initial create operation.
-      const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
-      const anchoredCreateOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Create, documentModel, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
+      const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
+      const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+        recoveryPublicKey,
+        recoveryPrivateKey,
+        signingPublicKey,
+        nextRecoveryOtpHash,
+        nextUpdateOtpHash,
+        [serviceEndpoint]
+      );
+      const anchoredCreateOperationModel = OperationGenerator.createAnchoredOperationFromOperationBuffer(createOperationBuffer, 1, 1, 1);
       anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
 
       // Apply the initial create operation.

@@ -430,8 +430,8 @@ POST / HTTP/1.1
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID",
-  "updateOtp": "The one-time password to be used for this update.",
   "patches": ["An array of patches each must adhere to the patch schema defined below."],
+  "updateOtp": "The one-time password to be used for this update.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```

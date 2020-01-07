@@ -1,19 +1,142 @@
+import * as crypto from 'crypto';
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
+import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 import Document from '../../lib/core/versions/latest/Document';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationType from '../../lib/core/enums/OperationType';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+
+interface AnchoredCreateOperationGenerationInput {
+  transactionNumber: number;
+  transactionTime: number;
+  operationIndex: number;
+}
+
+interface GeneratedAnchoredCreateOperationData {
+  anchoredOperation: AnchoredOperation;
+  recoveryKeyId: string;
+  recoveryPublicKey: DidPublicKeyModel;
+  recoveryPrivateKey: string;
+  signingKeyId: string;
+  signingPublicKey: DidPublicKeyModel;
+  signingPrivateKey: string;
+  nextRecoveryOtpEncodedString: string;
+  nextUpdateOtpEncodedString: string;
+}
+
+interface AnchoredUpdateOperationGenerationInput {
+  transactionNumber: number;
+  transactionTime: number;
+  operationIndex: number;
+  didUniqueSuffix: string;
+  updateOtpEncodedString: string;
+  patches: [];
+  signingKeyId: string;
+  signingPrivateKey: string;
+}
+
+interface GeneratedAnchoredUpdateOperationData {
+  anchoredOperation: AnchoredOperation;
+  nextUpdateOtpEncodedString: string;
+}
 
 /**
  * A class that can generate valid operations.
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
+
+  /**
+   * Generates an anchored create operation.
+   */
+  public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
+    const recoveryKeyId = '#key1';
+    const signingKeyId = '#key2';
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
+    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const hubServiceEndpoint = 'did:sidetree:value0';
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
+
+    // Generate the next update OTP.
+    const nextUpdateOtpBuffer = crypto.randomBytes(32);
+    const nextUpdateOtpEncodedString = Encoder.encode(nextUpdateOtpBuffer);
+    const nextUpdateOtpHash = Multihash.hash(nextUpdateOtpBuffer, 18); // 18 = SHA256;
+
+    // Generate the next update OTP.
+    const nextRecoveryOtpBuffer = crypto.randomBytes(32);
+    const nextRecoveryOtpEncodedString = Encoder.encode(nextRecoveryOtpBuffer);
+    const nextRecoveryOtpHash = Multihash.hash(nextRecoveryOtpBuffer, 18); // 18 = SHA256;
+
+    const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      service
+    );
+
+    const anchoredOperation = OperationGenerator.createAnchoredOperationFromOperationBuffer(
+      operationBuffer,
+      input.transactionNumber,
+      input.transactionTime,
+      input.operationIndex
+    );
+
+    return {
+      anchoredOperation,
+      recoveryKeyId,
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingKeyId,
+      signingPublicKey,
+      signingPrivateKey,
+      nextRecoveryOtpEncodedString,
+      nextUpdateOtpEncodedString
+    };
+  }
+
+  /**
+   * Generates an anchored update operation.
+   */
+  public static async generateAnchoredUpdateOperation (input: AnchoredUpdateOperationGenerationInput): Promise<GeneratedAnchoredUpdateOperationData> {
+    const updateOtpEncodedString = input.updateOtpEncodedString;
+
+    // Generate the next update OTP.
+    const nextUpdateOtpBuffer = crypto.randomBytes(32);
+    const nextUpdateOtpEncodedString = Encoder.encode(nextUpdateOtpBuffer);
+    const nextUpdateOtpHash = Encoder.encode(Multihash.hash(nextUpdateOtpBuffer, 18)); // 18 = SHA256;
+
+    const updatePayload = {
+      didUniqueSuffix: input.didUniqueSuffix,
+      patches: input.patches,
+      updateOtp: updateOtpEncodedString,
+      nextUpdateOtpHash
+    };
+
+    const anchoredOperation = await OperationGenerator.createAnchoredOperation(
+      OperationType.Update,
+      updatePayload,
+      input.signingKeyId,
+      input.signingPrivateKey,
+      input.transactionTime,
+      input.transactionNumber,
+      input.operationIndex
+    );
+
+    return {
+      anchoredOperation,
+      nextUpdateOtpEncodedString
+    };
+  }
+
   /**
    * Creates an `AnchoredOperation` given the operation buffer, transaction number, transaction time, and operation index.
    */

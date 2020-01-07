@@ -323,12 +323,20 @@ export default class Operation {
    */
   public static validateUpdatePayload (payload: any) {
     const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 2) {
+    if (payloadProperties.length !== 4) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
     }
 
     if (typeof payload.didUniqueSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType);
+    }
+
+    if (typeof payload.updateOtp !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidUpdateOtp);
+    }
+
+    if (typeof payload.nextUpdateOtpHash !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidNextUpdateOtpHash);
     }
 
     // Validate schema of every patch to be applied.
