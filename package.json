@@ -16,6 +16,7 @@
     "mongodb": "3.2.3",
     "multihashes": "0.4.14",
     "node-fetch": "2.6.0",
+    "priorityqueue": "^1.0.0",
     "raw-body": "2.3.3",
     "secp256k1": "3.6.2",
     "time-span": "3.1.0",
@@ -46,7 +47,7 @@
   "scripts": {
     "precommit": "npm run lint",
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
-    "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
+    "test": "npm run build && node node_modules/nyc/bin/nyc.js node_modules/jasmine/bin/jasmine.js --config=./tests/jasmine.json",
     "lint": "tslint --fix --project ."
   },
   "nyc": {
