@@ -1,11 +1,43 @@
 import Core from '../../lib/core/Core';
+import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import { ResponseStatus } from '../../lib/common/Response';
+import { ResponseStatus, ResponseModel } from '../../lib/common/Response';
 
 describe('Core', async () => {
 
   const testConfig = require('../json/bitcoin-config-test.json');
   const testVersionConfig = require('../json/core-protocol-versioning-test.json');
+
+  const resolvedRequest: Promise<ResponseModel> = new Promise(resolve => {
+    const responseModel: ResponseModel = { status: ResponseStatus.Succeeded, body: null };
+    resolve(responseModel);
+  });
+
+  describe('initialize', async () => {
+    it('should initialize all required dependencies', async () => {
+      const core = new Core(testConfig, testVersionConfig);
+      const transactionStoreInitSpy = spyOn(core['transactionStore'], 'initialize');
+      const unresolvableTransactionStoreInitSpy = spyOn(core['unresolvableTransactionStore'], 'initialize');
+      const operationStoreInitSpy = spyOn(core['operationStore'], 'initialize');
+      const blockchainInitSpy = spyOn(core['blockchain'], 'initialize');
+      const versionManagerInitSpy = spyOn(core['versionManager'], 'initialize');
+      const observerStartSpy = spyOn(core['observer'], 'startPeriodicProcessing');
+      const batchSchedulerStartSpy = spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
+      const blockchainStartSpy = spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
+      const downloadManagerStartSpy = spyOn(core['downloadManager'], 'start');
+      await core.initialize();
+      expect(transactionStoreInitSpy).toHaveBeenCalled();
+      expect(unresolvableTransactionStoreInitSpy).toHaveBeenCalled();
+      expect(operationStoreInitSpy).toHaveBeenCalled();
+      expect(blockchainInitSpy).toHaveBeenCalled();
+      expect(versionManagerInitSpy).toHaveBeenCalled();
+      expect(observerStartSpy).toHaveBeenCalled();
+      expect(batchSchedulerStartSpy).toHaveBeenCalled();
+      expect(blockchainStartSpy).toHaveBeenCalled();
+      expect(downloadManagerStartSpy).toHaveBeenCalled();
+
+    });
+  });
 
   describe('handleGetVersionRequest()', async () => {
     it('should call all the dependent services', async () => {
@@ -36,6 +68,32 @@ describe('Core', async () => {
       expect(fetchedVersions[0]).toEqual(expectedCoreVersion);
       expect(fetchedVersions[1]).toEqual(expectedBlockchainVersion);
       expect(fetchedVersions[2]).toEqual(expectedCasVersion);
+    });
+  });
+
+  describe('handleResolveRequest', () => {
+    it('should call the needed functions and return a response', async () => {
+      const core = new Core(testConfig, testVersionConfig);
+      const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleResolveRequest']);
+      mockRequestHandler.handleResolveRequest.and.callFake(() => { return resolvedRequest; });
+      core['versionManager']['getRequestHandler'] = () => { return mockRequestHandler; };
+      core['blockchain']['cachedBlockchainTime'] = { time: Number.MAX_SAFE_INTEGER, hash: 'hash' };
+      const response = await core.handleResolveRequest('did:sidetree:abc');
+      expect(mockRequestHandler.handleResolveRequest).toHaveBeenCalled();
+      expect(response).toEqual({ status: ResponseStatus.Succeeded, body: null });
+    });
+  });
+
+  describe('handleOperationRequest', () => {
+    it('should call the needed functions and return a response', async () => {
+      const core = new Core(testConfig, testVersionConfig);
+      const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleOperationRequest']);
+      mockRequestHandler.handleOperationRequest.and.callFake(() => { return resolvedRequest; });
+      core['versionManager']['getRequestHandler'] = () => { return mockRequestHandler; };
+      core['blockchain']['cachedBlockchainTime'] = { time: Number.MAX_SAFE_INTEGER, hash: 'hash' };
+      const response = await core.handleOperationRequest(Buffer.from('some string'));
+      expect(mockRequestHandler.handleOperationRequest).toHaveBeenCalled();
+      expect(response).toEqual({ status: ResponseStatus.Succeeded, body: null });
     });
   });
 });

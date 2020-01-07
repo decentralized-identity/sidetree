@@ -20,7 +20,6 @@ export default class VegetaLoadGenerator {
    * @param hashAlgorithmInMultihashCode The hash algorithm in Multihash code in DEC (not in HEX).
    */
   public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string, hashAlgorithmInMultihashCode: number) {
-    const didDocumentTemplate = require('../json/didDocumentTemplate.json');
     const keyId = '#key1';
 
     // Make directories needed by the request generator.
@@ -34,8 +33,11 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/privateKey${i}.json`, JSON.stringify(privateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+
       // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(didDocumentTemplate, publicKey, privateKey);
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 

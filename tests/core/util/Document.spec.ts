@@ -38,7 +38,7 @@ describe('Document', () => {
           serviceEndpoint: {
             '@context': 'schema.identity.foundation/hub',
             '@type': 'UserServiceEndpoint',
-            instance: [
+            instances: [
               'did:sidetree:value0'
             ]
           }
@@ -82,7 +82,7 @@ describe('Document', () => {
 
   describe('isObjectValidOriginalDocument()', () => {
 
-    it('returns false if DID Document fails generic schema validation.', async () => {
+    it('returns true if DID Document passes generic schema validation.', async () => {
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeTruthy();
     });
@@ -122,30 +122,20 @@ describe('Document', () => {
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if "serviceEndpoint" property does not contain the "@context" property.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint['@context'] = 'invalid-context';
-
+    it('returns false if service is not an array', async () => {
+      defaultOriginalDidDocument.service = 'this is not an array';
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if "serviceEndpoint" property does not contain the "@type" property.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint['@type'] = 'invalid-context';
-
+    it('returns false if type is not a string', async () => {
+      defaultOriginalDidDocument.service[0].type = ['this is not a string'];
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
     });
 
-    it('returns false if "instance" property of "serviceEndpoint" is empty.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint.instance = [];
-
-      const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
-      expect(isDocumentValid).toBeFalsy();
-    });
-
-    it('returns false if an element in "instance" property of "serviceEndpoint" is not a string.', async () => {
-      defaultOriginalDidDocument.service[0].serviceEndpoint.instance[0] = undefined;
-
+    it('returns false if serviceEndpoint is not a string nor object', async () => {
+      defaultOriginalDidDocument.service[0].serviceEndpoint = 123;
       const isDocumentValid = Document.isObjectValidOriginalDocument(defaultOriginalDidDocument);
       expect(isDocumentValid).toBeFalsy();
     });
@@ -184,6 +174,16 @@ describe('Document', () => {
 
       const isDocumentValid = Document.isValid(defaultOriginalDidDocument, false);
       expect(isDocumentValid).toBeFalsy();
+    });
+
+    it('returns false when document has multiple public keys with the same id', async () => {
+      let checkValid = Document.isValid(defaultOriginalDidDocument, false);
+      expect(checkValid).toBeTruthy();
+
+      defaultOriginalDidDocument.publicKey.push(defaultOriginalDidDocument.publicKey[0]);
+      checkValid = Document.isValid(defaultOriginalDidDocument, false);
+      expect(checkValid).toBeFalsy();
+
     });
 
     it('returns false if the "service" property is not an array.', async () => {

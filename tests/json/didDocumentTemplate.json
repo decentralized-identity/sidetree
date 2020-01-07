@@ -29,7 +29,7 @@
       "serviceEndpoint": {
         "@context": "schema.identity.foundation/hub",
         "@type": "UserServiceEndpoint",
-        "instance": [
+        "instances": [
           "did:sidetree:value0"
         ]
       }

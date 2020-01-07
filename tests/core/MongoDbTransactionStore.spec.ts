@@ -119,11 +119,21 @@ describe('MongoDbTransactionStore', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);
 
-    const transactions = await transactionStore.getTransactionsLaterThan(undefined, 100);
+    const transactions = await transactionStore.getTransactionsLaterThan(undefined, undefined);
     expect(transactions.length).toEqual(3);
     expect(transactions[0].transactionNumber).toEqual(1);
     expect(transactions[1].transactionNumber).toEqual(2);
     expect(transactions[2].transactionNumber).toEqual(3);
+  });
+
+  it('should limit the transactions fetched if a limit is defined.', async () => {
+    const transactionCount = 3;
+    await generateAndStoreTransactions(transactionStore, transactionCount);
+
+    const transactions = await transactionStore.getTransactionsLaterThan(undefined, 2);
+    expect(transactions.length).toEqual(2);
+    expect(transactions[0].transactionNumber).toEqual(1);
+    expect(transactions[1].transactionNumber).toEqual(2);
   });
 
   it('should not store duplicated transactions.', async () => {

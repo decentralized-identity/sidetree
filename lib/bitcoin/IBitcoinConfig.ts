@@ -2,6 +2,8 @@
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
 export interface IBitcoinConfig {
+  bitcoinFeeSpendingCutoffPeriodInBlocks: number;
+  bitcoinFeeSpendingCutoff: number;
   bitcoinPeerUri: string;
   bitcoinRpcUsername: string | undefined;
   bitcoinRpcPassword: string | undefined;

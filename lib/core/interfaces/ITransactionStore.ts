@@ -32,7 +32,7 @@ export default interface ITransactionStore {
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber
    * If @param transactionNumber is undefined, returns transactions from index 0 in the store
    */
-  getTransactionsLaterThan (transactionNumber: number | undefined, max: number): Promise<TransactionModel[]>;
+  getTransactionsLaterThan (transactionNumber: number | undefined, max: number | undefined): Promise<TransactionModel[]>;
 
   /**
    * Remove all transactions with transaction number greater than the provided parameter.

@@ -12,6 +12,7 @@ import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
+import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
@@ -73,6 +74,8 @@ export default class BitcoinProcessor {
 
   private bitcoinClient: IBitcoinClient;
 
+  private spendingMonitor: SpendingMonitor;
+
   /** proof of fee configuration */
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
 
@@ -85,6 +88,10 @@ export default class BitcoinProcessor {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
+    this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
+      config.bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin,
+      this.transactionStore);
 
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
     this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
@@ -213,12 +220,17 @@ export default class BitcoinProcessor {
    */
   public async writeTransaction (anchorString: string, fee: number) {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
-
     // ----
     // Issue #347 opened to track the investigation for this hardcoded value.
     // Ensure that we are always paying this minimum fee.
     fee = Math.max(fee, 1000);
     // ----
+
+    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
+
+    if (!feeWithinSpendingLimits) {
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
+    }
 
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
@@ -233,12 +245,13 @@ export default class BitcoinProcessor {
     if (totalSatoshis < fee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
-      throw error;
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.NotEnoughBalanceForWrite);
     }
 
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
     const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
     console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
+    this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
   /**

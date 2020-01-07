@@ -1,11 +1,13 @@
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import Document from '../../lib/core/versions/latest/Document';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 
 /**
  * A class that can generate valid operations.
@@ -68,6 +70,24 @@ export default class OperationGenerator {
   }
 
   /**
+   * Create a did doc with specified arguments and generate a create operation with it
+   * @param recoveryPublicKey recovery public key
+   * @param recoveryPrivateKey recovery private key
+   * @param signingPublicKey signing public key
+   * @param serviceEndpoints service endpoints
+   */
+  public static async generateCreateOperationBuffer (
+    recoveryPublicKey: DidPublicKeyModel,
+    recoveryPrivateKey: string | PrivateKey,
+    signingPublicKey: DidPublicKeyModel,
+    serviceEndpoints?: DidServiceEndpointModel[]
+  ): Promise<Buffer> {
+    const publicKeys = [recoveryPublicKey, signingPublicKey];
+    const document = Document.create(publicKeys, serviceEndpoints);
+    return this.createOperationBuffer(OperationType.Create, document, recoveryPublicKey.id, recoveryPrivateKey);
+  }
+
+  /**
    * Creates an operation.
    *
    * @param payload Unencoded plain object to be stringified and encoded as payload string.
@@ -102,32 +122,6 @@ export default class OperationGenerator {
     };
 
     return operation;
-  }
-
-  /**
-   * Creates a Create Operation with valid signature.
-   * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
-   */
-  public static async generateCreateOperation (
-    didDocumentTemplate: any,
-    publicKey: DidPublicKeyModel,
-    privateKey: string | PrivateKey
-  ): Promise<JwsModel> {
-
-    // Replace the placeholder public-key with the public-key given.
-    didDocumentTemplate.publicKey[0] = publicKey;
-
-    const operationJws = OperationGenerator.createOperationJws(OperationType.Create, didDocumentTemplate, publicKey.id, privateKey);
-    return operationJws;
-  }
-
-  /**
-   * Creates a Create Operation buffer with valid signature.
-   * @param didDocumentTemplate A DID Document used as the template. Must contain at least one public-key.
-   */
-  public static async generateCreateOperationBuffer (didDocumentTemplate: any, publicKey: DidPublicKeyModel, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateCreateOperation(didDocumentTemplate, publicKey, privateKey);
-    return Buffer.from(JSON.stringify(operation));
   }
 
   /**
@@ -241,5 +235,23 @@ export default class OperationGenerator {
 
     const operationJws = await OperationGenerator.createOperationJws(OperationType.Recover, payload, existingRecoveryKeyId, existingRecoveryPrivateKey);
     return Buffer.from(JSON.stringify(operationJws));
+  }
+
+  /**
+   * Generates a single element array with a identity hub service object for DID document
+   * @param instances the instance field in serviceEndpoint. A list of DIDs
+   */
+  public static createIdentityHubUserServiceEndpoints (instances: string[]): any[] {
+    return [
+      {
+        'id': 'IdentityHub',
+        'type': 'IdentityHub',
+        'serviceEndpoint': {
+          '@context': 'schema.identity.foundation/hub',
+          '@type': 'UserServiceEndpoint',
+          'instances': instances
+        }
+      }
+    ];
   }
 }
