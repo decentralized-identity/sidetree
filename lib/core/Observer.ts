@@ -9,6 +9,7 @@ import timeSpan = require('time-span');
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
+import OperationRateLimiter from './versions/latest/OperationRateLimiter';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
@@ -30,6 +31,7 @@ export default class Observer {
    * This is the transaction that is used as a timestamp to fetch newer transaction.
    */
   private lastKnownTransaction: TransactionModel | undefined;
+  private operationRateLimiter: OperationRateLimiter;
 
   public constructor (
     private versionManager: IVersionManager,
@@ -39,6 +41,7 @@ export default class Observer {
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
+    this.operationRateLimiter = new OperationRateLimiter(10000); // temp number TBD
   }
 
   /**
@@ -102,8 +105,9 @@ export default class Observer {
         let transactions = readResult ? readResult.transactions : [];
         moreTransactions = readResult ? readResult.moreTransactions : false;
 
+        const transactionsToProcess = this.operationRateLimiter.getHighestFeeTransactionsPerBlock(transactions);
         // Queue parallel downloading and processing of batch files.
-        for (const transaction of transactions) {
+        for (const transaction of transactionsToProcess) {
           const awaitingTransaction = {
             transaction: transaction,
             processingStatus: TransactionProcessingStatus.Pending
