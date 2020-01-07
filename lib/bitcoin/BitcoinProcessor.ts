@@ -362,31 +362,33 @@ export default class BitcoinProcessor {
 
   private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
 
-    // Assume that we're going to start form the genesis block
-    let startingBlockNumber = this.genesisBlockNumber;
-
     // Look in the transaction store to figure out the last block that we need to
     // start from.
     const lastSavedTransaction = (await this.transactionStore.getLastTransaction());
 
-    if (lastSavedTransaction) {
-      // Since we are initializing, it is quite possible that the last block that we processed
-      // (and saved in the db) has been forked. And if there's a fork there then we have to
-      // revert and start from the new location.
-      const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
-
-      if (!lastSavedBlockIsValid) {
-        // The revert logic peforms all the correct operations to put the system in the correct
-        // state so just return the block-info that it returns.
-        return this.revertBlockchainCache();
-      }
-
-      // There was no fork, update the starting block number
-      startingBlockNumber = lastSavedTransaction.transactionTime;
+    // If there's nothing saved in the DB then let's start from the genesis block
+    if (!lastSavedTransaction) {
+      return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 
-    // Now that we have the correct starting point, let's snap the system DBs back to this valid block.
-    return this.revertQuantileAndTransactionDbsTo(startingBlockNumber);
+    // If we are here then it means that there is a potential starting point in the DB.
+    // Since we are initializing, it is quite possible that the last block that we processed
+    // (and saved in the db) has been forked. Check for the fork.
+    const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
+
+    let lastValidBlock: IBlockInfo;
+
+    if (lastSavedBlockIsValid) {
+      // There was no fork ... let's put the system DBs in the correct state.
+      lastValidBlock = await this.revertQuantileAndTransactionDbsTo(lastSavedTransaction.transactionTime);
+    } else {
+      // There was a fork so we need to revert. The revert function peforms all the correct
+      // operations and puts the system in the correct state and returns the last valid block.
+      lastValidBlock = await this.revertBlockchainCache();
+    }
+
+    // Our starting block is the one after the last-valid-block
+    return this.bitcoinClient.getBlockInfoFromHeight(lastValidBlock.height + 1);
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
@@ -491,10 +493,11 @@ export default class BitcoinProcessor {
     // Reset transaction sampling
     this.transactionSampler.clear();
 
-    // The first block in the group is the new starting point after this revert.
-    // Ensure that we are not going below the genesis block
-    const blockDataToReturn = Math.max(firstBlockInGroup, this.genesisBlockNumber);
-    return this.bitcoinClient.getBlockInfoFromHeight(blockDataToReturn);
+    // The first block in the group is the new starting point so the previous one is the
+    // last 'valid' block. Return it but ensure that we are not going below the genesis block
+    const blockNumberToReturn = Math.max(firstBlockInGroup - 1, this.genesisBlockNumber);
+
+    return this.bitcoinClient.getBlockInfoFromHeight(blockNumberToReturn);
   }
 
   /**
