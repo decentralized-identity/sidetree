@@ -378,8 +378,7 @@ export default class BitcoinProcessor {
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
 
-    const lastProcessedBlockVerified =
-      await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
+    const lastProcessedBlockVerified = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
 
     // If the last processed block is not verified then that means that we need to
     // revert the blockchain to the correct block

@@ -6,7 +6,7 @@ import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, /*Block,*/ Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
