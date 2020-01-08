@@ -54,7 +54,7 @@ describe('OperationRateLimiter', () => {
     ];
   }
 
-  function getTestTransactionsForMultipleBlocks() {
+  function getTestTransactionsForMultipleBlocks () {
     const block1Transactions = getTestTransactionsFor1Block();
     const block2Transactions = [
       {
