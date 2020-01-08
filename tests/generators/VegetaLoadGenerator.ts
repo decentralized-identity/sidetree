@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from './OperationGenerator';
 
 /**
@@ -37,8 +36,8 @@ export default class VegetaLoadGenerator {
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
-      const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-      const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(

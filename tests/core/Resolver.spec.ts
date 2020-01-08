@@ -32,8 +32,8 @@ describe('Resolver', () => {
       const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
-      const [firstRecoveryOtp, firstRecoveryOtpHash] = OperationGenerator.generateOtpEncodedString();
-      const [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtpEncodedString();
+      const [firstRecoveryOtp, firstRecoveryOtpHash] = OperationGenerator.generateOtp();
+      const [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
 
       // Create the initial create operation and insert it to the operation store.
       const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
@@ -48,7 +48,7 @@ describe('Resolver', () => {
       await operationStore.put([anchoredCreateOperation]);
 
       // Create an update operation and insert it to the operation store.
-      const [updateOtpPriorToRecovery2, updateOtpHashPriorToRecovery2] = OperationGenerator.generateOtpEncodedString();
+      const [updateOtpPriorToRecovery2, updateOtpHashPriorToRecovery2] = OperationGenerator.generateOtp();
       const updatePayloadPriorRecovery1 = OperationGenerator.createUpdatePayloadForAddingAKey(
         anchoredCreateOperation,
         firstUpdateOtp,
@@ -78,8 +78,8 @@ describe('Resolver', () => {
       const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
 
       // Create the recover operation and insert it to the operation store.
-      const [update1OtpAfterRecovery, update1OtpHashAfterRecovery] = OperationGenerator.generateOtpEncodedString();
-      const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtpEncodedString();
+      const [update1OtpAfterRecovery, update1OtpHashAfterRecovery] = OperationGenerator.generateOtp();
+      const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
       const recoveryPayload = {
         didUniqueSuffix,
@@ -93,7 +93,7 @@ describe('Resolver', () => {
       await operationStore.put([anchoredRecoveryOperation]);
 
       // Create an update operation after the recovery operation.
-      const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtpEncodedString();
+      const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const update1PayloadAfterRecovery = OperationGenerator.createUpdatePayloadForAddingAKey(
         anchoredRecoveryOperation,
         update1OtpAfterRecovery,

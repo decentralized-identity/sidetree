@@ -148,8 +148,8 @@ describe('Observer', async () => {
     const [recoveryPublicKey2, recoveryPrivateKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
     const [signingPublicKey2] = await Cryptography.generateKeyPairHex('#key4', KeyUsage.signing);
 
-    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const operationsBuffer = [
       await OperationGenerator.generateCreateOperationBuffer(

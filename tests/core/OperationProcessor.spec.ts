@@ -16,7 +16,6 @@ import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -52,7 +51,7 @@ async function addBatchFileOfOneOperationToCas (
 async function createUpdateSequence (
   didUniqueSuffix: string,
   createOp: AnchoredOperation,
-  firstUpdateOtp: Buffer,
+  firstUpdateOtp: string,
   cas: ICas,
   numberOfUpdates:
   number,
@@ -61,7 +60,9 @@ async function createUpdateSequence (
   const ops = new Array(createOp);
   const opHashes = new Array(createOp.operationHash);
 
+  let updateOtp = firstUpdateOtp;
   for (let i = 0; i < numberOfUpdates; ++i) {
+    const [nextUpdateOtp, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const updatePayload = {
       didUniqueSuffix,
       patches: [
@@ -76,10 +77,12 @@ async function createUpdateSequence (
           serviceEndpoints: ['did:sidetree:value' + i]
         }
       ],
-      updateOtp: Encoder.encode(firstUpdateOtp),
-      // Reusing the same update OTP again and again currently, we can consider making it different everytime.
-      nextUpdateOtpHash: Encoder.encode(Multihash.hash(firstUpdateOtp, 18))
+      updateOtp,
+      nextUpdateOtpHash
     };
+
+    // Now that the update payload is created, update the update OTP for the next operation generation to use.
+    updateOtp = nextUpdateOtp;
 
     const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(
@@ -157,7 +160,7 @@ describe('OperationProcessor', async () => {
   let publicKey: any;
   let privateKey: any;
   let didUniqueSuffix: string;
-  let firstUpdateOtp: Buffer;
+  let firstUpdateOtp: string;
   let recoveryOtp: string;
 
   beforeEach(async () => {
@@ -172,18 +175,17 @@ describe('OperationProcessor', async () => {
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     resolver = new Resolver(versionManager, operationStore);
 
-    firstUpdateOtp = Buffer.from(`hardCodedUpdateOtp`);
-    const recoveryOtpBuffer = Buffer.from('hardCodedRecoveryOtp');
-    recoveryOtp = Encoder.encode(recoveryOtpBuffer);
+    let recoveryOtpHash;
+    let firstUpdateOtpHash;
+    [recoveryOtp, recoveryOtpHash] = OperationGenerator.generateOtp();
+    [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
 
-    const nextRecoveryOtpHash = Multihash.hash(recoveryOtpBuffer, 18); // 18 = SHA256;
-    const nextUpdateOtpHash = Multihash.hash(firstUpdateOtp, 18); // 18 = SHA256;
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       publicKey,
       privateKey,
       signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash,
+      recoveryOtpHash,
+      firstUpdateOtpHash,
       services
     );
     createOp = await addBatchFileOfOneOperationToCas(createOperationBuffer, cas, 0, 0, 0);
@@ -208,8 +210,8 @@ describe('OperationProcessor', async () => {
     // Create and process a duplicate create op
 
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       publicKey,
@@ -241,7 +243,7 @@ describe('OperationProcessor', async () => {
           publicKeys: ['#key2']
         }
       ],
-      updateOtp: Encoder.encode(firstUpdateOtp),
+      updateOtp: firstUpdateOtp,
       nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
@@ -328,8 +330,8 @@ describe('OperationProcessor', async () => {
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
 
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const operationBufferWithoutSignature = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
@@ -376,8 +378,8 @@ describe('OperationProcessor', async () => {
     // Generate a create operation with an invalid signature.
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-    const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
@@ -569,12 +571,8 @@ describe('OperationProcessor', async () => {
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
 
       // Create the initial create operation.
-      // const [nextUpdateOtp, nextUpdateOtpHash] = OperationGenerator.generateOtpEncodedString();
-      // const [nextRecoveryOtp, nextRecoveryOtpHash] = OperationGenerator.generateOtpEncodedString();
-      const nextUpdateOtpBuffer = Buffer.from('hardCodedUpdateOtp');
-      nextUpdateOtp = Encoder.encode(nextUpdateOtpBuffer);
-      const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-      const nextUpdateOtpHash = Multihash.hash(nextUpdateOtpBuffer, 18); // 18 = SHA256;
+      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         recoveryPrivateKey,
@@ -637,8 +635,8 @@ describe('OperationProcessor', async () => {
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
 
       // Create the initial create operation.
-      const nextRecoveryOtpHash = Multihash.hash(Buffer.from('hardCodedRecoveryOtp'), 18); // 18 = SHA256;
-      const nextUpdateOtpHash = Multihash.hash(Buffer.from('hardCodedUpdateOtp'), 18); // 18 = SHA256;
+      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         recoveryPrivateKey,

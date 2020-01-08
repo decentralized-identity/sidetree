@@ -57,7 +57,7 @@ export default class OperationGenerator {
    * Generates an one-time password and its hash as encoded strings for use in opertaions.
    * @returns [otpEncodedString, otpHashEncodedString]
    */
-  public static generateOtpEncodedString (): [string, string] {
+  public static generateOtp (): [string, string] {
     const otpBuffer = crypto.randomBytes(32);
     const otpEncodedString = Encoder.encode(otpBuffer);
     const otpHash = Multihash.hash(otpBuffer, 18); // 18 = SHA256;
@@ -77,15 +77,9 @@ export default class OperationGenerator {
     const hubServiceEndpoint = 'did:sidetree:value0';
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
-    // Generate the next update OTP.
-    const nextUpdateOtpBuffer = crypto.randomBytes(32);
-    const nextUpdateOtpEncodedString = Encoder.encode(nextUpdateOtpBuffer);
-    const nextUpdateOtpHash = Multihash.hash(nextUpdateOtpBuffer, 18); // 18 = SHA256;
-
-    // Generate the next update OTP.
-    const nextRecoveryOtpBuffer = crypto.randomBytes(32);
-    const nextRecoveryOtpEncodedString = Encoder.encode(nextRecoveryOtpBuffer);
-    const nextRecoveryOtpHash = Multihash.hash(nextRecoveryOtpBuffer, 18); // 18 = SHA256;
+    // Generate the next update and recovery operation OTP.
+    const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
@@ -226,20 +220,22 @@ export default class OperationGenerator {
 
   /**
    * Generates a create operation.
+   * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
+   * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
    */
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: DidPublicKeyModel,
     recoveryPrivateKey: string | PrivateKey,
     signingPublicKey: DidPublicKeyModel,
-    nextRecoveryOtpHash: Buffer,
-    nextUpdateOtpHash: Buffer,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]
   ): Promise<Buffer> {
     const publicKeys = [recoveryPublicKey, signingPublicKey];
     const payload = {
       didDocument: Document.create(publicKeys, serviceEndpoints),
-      nextRecoveryOtpHash: Encoder.encode(nextRecoveryOtpHash),
-      nextUpdateOtpHash: Encoder.encode(nextUpdateOtpHash)
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash
     };
 
     return this.createOperationBuffer(OperationType.Create, payload, recoveryPublicKey.id, recoveryPrivateKey);
