@@ -595,13 +595,15 @@ POST /
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID to be deleted.",
+  "recoveryOtp": "The current one-time recovery password."
 }
 ```
 
 #### Delete payload example
 ```json
 {
-  "didUniqueSuffix": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+  "didUniqueSuffix": "EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg",
+  "recoveryOtp": "BJzEi4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw"
 }
 ```
 
@@ -635,8 +637,8 @@ POST / HTTP/1.1
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryOtp": "The one-time password to be used for this recovery.",
   "newDidDocument": "The new DID Document.",
-  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
   "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
 

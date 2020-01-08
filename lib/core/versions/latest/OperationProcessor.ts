@@ -110,7 +110,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidUpdateOtp = Multihash.isValidHash(operation.updateOtp!, didResolutionModel.metadata!.nextUpdateOtpHash);
+    const isValidUpdateOtp = Multihash.isValidHash(operation.updateOtp!, didResolutionModel.metadata!.nextUpdateOtpHash!);
     if (!isValidUpdateOtp) {
       return false;
     }
@@ -151,7 +151,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextUpdateOtpHash);
+    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextRecoveryOtpHash!);
     if (!isValidOtp) {
       return false;
     }
@@ -174,7 +174,11 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const newDidDocument = operation.didDocument!;
     newDidDocument.id = this.didMethodName + operation.didUniqueSuffix;
+
     didResolutionModel.didDocument = newDidDocument;
+    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
+    didResolutionModel.metadata!.nextRecoveryOtpHash = operation.nextRecoveryOtpHash!,
+    didResolutionModel.metadata!.nextUpdateOtpHash = operation.nextUpdateOtpHash!;
     return true;
   }
 
@@ -194,7 +198,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextUpdateOtpHash);
+    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextRecoveryOtpHash!);
     if (!isValidOtp) {
       return false;
     }
@@ -212,6 +216,9 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // The operation passes all checks.
     didResolutionModel.didDocument = undefined;
+    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
+    didResolutionModel.metadata!.nextRecoveryOtpHash = undefined,
+    didResolutionModel.metadata!.nextUpdateOtpHash = undefined;
     return true;
   }
 }

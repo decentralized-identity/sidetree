@@ -261,6 +261,8 @@ function generateUpdatePayloadForPublicKeys () {
           'did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'
         ]
       }
-    ]
+    ],
+    updateOtp: 'UnusedUpdateOneTimePassword',
+    nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
   };
 }

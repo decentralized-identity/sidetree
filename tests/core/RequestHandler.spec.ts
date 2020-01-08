@@ -230,7 +230,8 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
     // write operation batch to prevent the violation of 1 operation per DID per batch rule.
     await batchScheduler.writeOperationBatch();
-    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', recoveryPrivateKey);
+    const recoveryOtp = Encoder.encode(Buffer.from('unusedRecoveryOtp'));
+    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -252,7 +253,9 @@ describe('RequestHandler', () => {
     // Construct update payload.
     const updatePayload = {
       didUniqueSuffix,
-      patches
+      patches,
+      updateOtp: 'EiD_UnusedUpdateOneTimePassword_AAAAAAAAAAAAAA',
+      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, recoveryPublicKey.id, recoveryPrivateKey);
@@ -275,7 +278,10 @@ describe('RequestHandler', () => {
     const newDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
     const recoverPayload = {
       didUniqueSuffix,
-      newDidDocument: newDocumentModel
+      recoveryOtp: 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA',
+      newDidDocument: newDocumentModel,
+      nextRecoveryOtpHash: 'EiD_UnusedNextRecoveryOneTimePasswordHash_AAAA',
+      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     const request = await OperationGenerator.createOperationBuffer(OperationType.Recover, recoverPayload, recoveryPublicKey.id, recoveryPrivateKey);

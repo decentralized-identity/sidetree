@@ -37,7 +37,7 @@ interface AnchoredUpdateOperationGenerationInput {
   operationIndex: number;
   didUniqueSuffix: string;
   updateOtpEncodedString: string;
-  patches: [];
+  patches: object[];
   signingKeyId: string;
   signingPrivateKey: string;
 }
@@ -52,6 +52,19 @@ interface GeneratedAnchoredUpdateOperationData {
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
+
+  /**
+   * Generates an one-time password and its hash as encoded strings for use in opertaions.
+   * @returns [otpEncodedString, otpHashEncodedString]
+   */
+  public static generateOtpEncodedString (): [string, string] {
+    const otpBuffer = crypto.randomBytes(32);
+    const otpEncodedString = Encoder.encode(otpBuffer);
+    const otpHash = Multihash.hash(otpBuffer, 18); // 18 = SHA256;
+    const otpHashEncodedString = Encoder.encode(otpHash);
+
+    return [otpEncodedString, otpHashEncodedString];
+  }
 
   /**
    * Generates an anchored create operation.
@@ -279,8 +292,14 @@ export default class OperationGenerator {
 
   /**
    * Creates an update operation for adding a key.
+   * @param nextUpdateOtpHashEncodedString Optional OTP hash for the next update. If not given, one will be generated.
    */
-  public static createUpdatePayloadForAddingAKey (previousOperation: AnchoredOperation, keyId: string, publicKeyHex: string): any {
+  public static createUpdatePayloadForAddingAKey (
+    previousOperation: AnchoredOperation,
+    updateOtpEncodedString: string,
+    keyId: string,
+    publicKeyHex: string,
+    nextUpdateOtpHashEncodedString?: string): any {
     const updatePayload = {
       didUniqueSuffix: previousOperation.didUniqueSuffix,
       patches: [
@@ -295,7 +314,9 @@ export default class OperationGenerator {
             }
           ]
         }
-      ]
+      ],
+      updateOtp: updateOtpEncodedString,
+      nextUpdateOtpHash: nextUpdateOtpHashEncodedString ? nextUpdateOtpHashEncodedString : 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     return updatePayload;
@@ -304,7 +325,11 @@ export default class OperationGenerator {
   /**
    * Creates an update operation for adding and/or removing hub service endpoints.
    */
-  public static createUpdatePayloadForHubEndpoints (didUniqueSuffix: string, endpointsToAdd: string[], endpointsToRemove: string[]): any {
+  public static createUpdatePayloadForHubEndpoints (
+    didUniqueSuffix: string,
+    updateOtpEncodedString: string,
+    endpointsToAdd: string[],
+    endpointsToRemove: string[]): any {
     const patches = [];
 
     if (endpointsToAdd.length > 0) {
@@ -329,7 +354,9 @@ export default class OperationGenerator {
 
     const updatePayload = {
       didUniqueSuffix,
-      patches
+      patches,
+      updateOtp: updateOtpEncodedString,
+      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     return updatePayload;
@@ -346,16 +373,28 @@ export default class OperationGenerator {
   /**
    * Generates a Delete Operation buffer.
    */
-  public static async generateDeleteOperationBuffer (didUniqueSuffix: string, signingKeyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, signingKeyId, privateKey);
+  public static async generateDeleteOperationBuffer (
+    didUniqueSuffix: string,
+    recoveryOtpEncodedSring: string,
+    signingKeyId: string,
+    privateKey: string | PrivateKey): Promise<Buffer> {
+    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (didUniqueSuffix: string, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
-    const operationJws = await OperationGenerator.createOperationJws(OperationType.Delete, { didUniqueSuffix }, signingKeyId, privateKey);
+  public static async generateDeleteOperation (
+    didUniqueSuffix: string,
+    recoveryOtpEncodedSring: string,
+    signingKeyId: string,
+    privateKey: string | PrivateKey): Promise<JwsModel> {
+    const payload = {
+      didUniqueSuffix,
+      recoveryOtp: recoveryOtpEncodedSring
+    };
+    const operationJws = await OperationGenerator.createOperationJws(OperationType.Delete, payload, signingKeyId, privateKey);
     return operationJws;
   }
 

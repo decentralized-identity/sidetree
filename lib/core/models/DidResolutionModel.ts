@@ -5,7 +5,7 @@ export default interface DidResolutionModel {
   didDocument?: any;
   metadata?: {
     lastOperationTransactionNumber: number;
-    nextUpdateOtpHash: string;
-    nextRecoveryOtpHash: string;
+    nextUpdateOtpHash?: string;
+    nextRecoveryOtpHash?: string;
   };
 }

@@ -460,12 +460,24 @@ export default class Operation {
    */
   public static validateRecoverPayload (payload: any) {
     const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 2) {
+    if (payloadProperties.length !== 5) {
       throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrUnknownProperty);
     }
 
     if (typeof payload.didUniqueSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidUniqueSuffixType);
+    }
+
+    if (typeof payload.recoveryOtp !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidRecoveryOtp);
+    }
+
+    if (typeof payload.nextRecoveryOtpHash !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidNextRecoveryOtpHash);
+    }
+
+    if (typeof payload.nextUpdateOtpHash !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidNextUpdateOtpHash);
     }
 
     const validDocument = Document.isObjectValidOriginalDocument(payload.newDidDocument);
