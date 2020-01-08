@@ -72,7 +72,7 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -80,7 +80,15 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '2ndTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '2ndTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 3,
+          'transactionTime': 1001,
+          'transactionTimeHash': '1001',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransaction', numberOfOperations: 1 }),
           'transactionFeePaid': 2,
           'normalizedTransactionFee': 2
         }

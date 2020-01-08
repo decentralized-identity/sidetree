@@ -15,15 +15,17 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
   ) {
 
     const comparator = (a: TransactionModel, b: TransactionModel) => {
-      return a.transactionFeePaid - b.transactionFeePaid;
+      // higher fee comes first. If fees are the same, earlier transaction comes first
+      return a.transactionFeePaid - b.transactionFeePaid || b.transactionNumber - a.transactionNumber;
     };
 
     this.transactionsInCurrentTransactionTime = new PriorityQueue({ comparator });
   }
 
   /**
-   * Returns an array of transactions that should be processed
-   * @param orderedTransactions The transactions that should be ranked
+   * Returns an array of transactions that should be processed. Ranked by highest fee paid per transaction and up to the
+   * max number of operations per block
+   * @param orderedTransactions The transactions that should be ranked and considered to process
    */
   public getHighestFeeTransactionsPerBlock (orderedTransactions: TransactionModel[]): TransactionModel[] {
     let highestFeeTransactions: TransactionModel[] = [];
@@ -42,6 +44,9 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
     return highestFeeTransactions;
   }
 
+  /**
+   * Given transactions within a block, return the ones that should be processed.
+   */
   private getHighestFeeTransactionsFromCurrentTransactionTime (): TransactionModel[] {
     let numberOfOperationsAvailableInCurrentBlock = 0;
     const transactionsToReturn = [];

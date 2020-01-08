@@ -71,7 +71,7 @@ export default class Observer {
 
   /**
    * Processes new transactions if any, then reprocess a set of unresolvable transactions if any,
-   * then scehdules the next round of processing unless `stopPeriodicProcessing()` is invoked.
+   * then schedules the next round of processing unless `stopPeriodicProcessing()` is invoked.
    */
   public async processTransactions () {
     try {
