@@ -45,6 +45,14 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
   }
 
   /**
+   * reset the OperationRateLimiter. Setting current transaction time to undefined and transactionsInCurrentTransactionTime to empty PQ
+   */
+  public clear (): void {
+    this.currentTransactionTime = undefined;
+    this.transactionsInCurrentTransactionTime.clear();
+  }
+
+  /**
    * Given transactions within a block, return the ones that should be processed.
    */
   private getHighestFeeTransactionsFromCurrentTransactionTime (): TransactionModel[] {
@@ -61,6 +69,7 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
       }
     }
 
-    return transactionsToReturn;
+    // sort based on transaction number ascending
+    return transactionsToReturn.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
   }
 }

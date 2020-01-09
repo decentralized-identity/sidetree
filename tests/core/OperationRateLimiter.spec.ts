@@ -26,7 +26,7 @@ describe('OperationRateLimiter', () => {
           anchorFileHash: 'file_hash2',
           numberOfOperations: 11
         }),
-        transactionFeePaid: 999, // highest fee should come first
+        transactionFeePaid: 998, // highest fee should come first
         normalizedTransactionFee: 1
       },
       {
@@ -37,7 +37,7 @@ describe('OperationRateLimiter', () => {
           anchorFileHash: 'file_hash3',
           numberOfOperations: 8
         }),
-        transactionFeePaid: 998, // second highest fee should come second
+        transactionFeePaid: 999, // second highest fee should come second
         normalizedTransactionFee: 1
       },
       {
@@ -159,9 +159,27 @@ describe('OperationRateLimiter', () => {
         }
       ];
       const actualResult = operationRateLimiter.getHighestFeeTransactionsPerBlock(moreTransactions);
-      expect(actualResult).toEqual([moreTransactions[0], transactions[5], transactions[6]]);
+      expect(actualResult).toEqual([transactions[5], transactions[6], moreTransactions[0]]);
       expect(operationRateLimiter['currentTransactionTime']).toEqual(4);
       expect(operationRateLimiter['transactionsInCurrentTransactionTime'].pop()).toEqual(moreTransactions[1]);
+    });
+  });
+
+  describe('reset', () => {
+    it('should reset the rate limiter by setting currentTransactionTime to undefined and transactionsInCurrentTransactionTime to empty priority queue', () => {
+      const transactions = getTestTransactionsFor1Block();
+      operationRateLimiter.getHighestFeeTransactionsPerBlock(transactions);
+      expect(operationRateLimiter['currentTransactionTime']).toBeDefined();
+      expect(operationRateLimiter['transactionsInCurrentTransactionTime'].top()).toBeDefined();
+
+      operationRateLimiter.clear();
+      expect(operationRateLimiter['currentTransactionTime']).toBeUndefined();
+      // top throws error when called on empty priority queue
+      try {
+        operationRateLimiter['transactionsInCurrentTransactionTime'].top();
+      } catch (e) {
+        expect(e.message).toEqual('invalid operation: top() called for empty BinaryHeap');
+      }
     });
   });
 });

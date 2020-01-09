@@ -143,8 +143,8 @@ describe('Observer', async () => {
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
 
-    expect(processedTransactions[0].anchorString).toEqual('1stTransaction');
-    expect(processedTransactions[1].anchorString).toEqual('2ndTransaction');
+    expect(processedTransactions[0].anchorString).toEqual('AQAAAA.1stTransaction');
+    expect(processedTransactions[1].anchorString).toEqual('AQAAAA.2ndTransaction');
   });
 
   it('should process a valid operation batch successfully.', async () => {
@@ -292,7 +292,7 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -300,7 +300,7 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 2000,
           'transactionTimeHash': '2000',
-          'anchorString': '2ndTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '2ndTransaction', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -308,7 +308,7 @@ describe('Observer', async () => {
           'transactionNumber': 3,
           'transactionTime': 3000,
           'transactionTimeHash': '3000',
-          'anchorString': '3rdTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransaction', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
@@ -322,7 +322,7 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 2001,
           'transactionTimeHash': '2001',
-          'anchorString': '2ndTransactionNew',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '2ndTransactionNew', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -330,7 +330,7 @@ describe('Observer', async () => {
           'transactionNumber': 3,
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
-          'anchorString': '3rdTransactionNew',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3ndTransactionNew', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -338,7 +338,7 @@ describe('Observer', async () => {
           'transactionNumber': 4,
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
-          'anchorString': '4thTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '4ndTransactionNew', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
@@ -373,7 +373,7 @@ describe('Observer', async () => {
     };
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
-    // Make the `getFirstValidTransaction` call return the first transaction as the most recent knwon valid transactions.
+    // Make the `getFirstValidTransaction` call return the first transaction as the most recent known valid transactions.
     spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
 
     // Process first set of transactions.
