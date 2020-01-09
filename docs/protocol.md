@@ -561,7 +561,9 @@ Example:
         "did:sidetree:EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg"
       ]
     }
-  ]
+  ],
+  "updateOtp": "iDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLAa",
+  "nextUpdateOtpHash": "EiDJesPq9hAIPrBiDw7PBZG8OUCG4XT5d6debxCUIVFUrg",
 }
 ```
 
