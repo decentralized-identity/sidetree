@@ -58,13 +58,6 @@ export default class Multihash {
   }
 
   /**
-   * Encodes the given hash into a multihash with the specified hashing algorithm.
-   */
-  public static encode (hash: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
-    return multihashes.encode(hash, hashAlgorithmInMultihashCode);
-  }
-
-  /**
    * Checks if the given hash is a multihash with the expected hashing algorithm.
    */
   public static isComputedUsingHashAlgorithm (hash: Buffer, expectedHashAlgorithmInMultihashCode: number): boolean {

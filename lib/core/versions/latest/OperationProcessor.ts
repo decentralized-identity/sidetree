@@ -48,8 +48,8 @@ export default class OperationProcessor implements IOperationProcessor {
         const index = anchoredOperationModel.operationIndex;
         const time = anchoredOperationModel.transactionTime;
         const number = anchoredOperationModel.transactionNumber;
-        const did = didResolutionModel ? didResolutionModel.didDocument.id : undefined;
-        console.info(`Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        const did = didResolutionModel.didDocument ? didResolutionModel.didDocument.id : undefined;
+        console.debug(`Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
       }
     } catch (error) {
       console.log(`Failed logging ${error}.`);
@@ -192,7 +192,7 @@ export default class OperationProcessor implements IOperationProcessor {
     // NOTE: Use only for read interally to this method.
     const didDocument = didResolutionModel.didDocument as (DocumentModel | undefined);
 
-    // Recovation can only be applied on an existing DID.
+    // Revocation can only be applied on an existing DID.
     if (!didDocument) {
       return false;
     }

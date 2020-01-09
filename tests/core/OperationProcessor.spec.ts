@@ -148,10 +148,8 @@ function validateDidDocumentPublicKeys (didDocument: DocumentModel) {
 }
 
 describe('OperationProcessor', async () => {
-  // Load the DID Document template.
-
-  let cas = new MockCas();
   const config = require('../json/config-test.json');
+  let cas = new MockCas();
   let resolver: Resolver;
   let operationStore: IOperationStore;
   let versionManager: IVersionManager;
@@ -551,13 +549,14 @@ describe('OperationProcessor', async () => {
     expect(didDocumentAfterRollback).toBeUndefined();
   });
 
-  describe('applyUpdateOperation()', () => {
+  describe('apply()', () => {
     let recoveryPublicKey: DidPublicKeyModel;
     let recoveryPrivateKey: string;
     let signingPublicKey: DidPublicKeyModel;
     let signingPrivateKey: string;
     let anchoredCreateOperation: AnchoredOperation;
     let didDocumentReference: { didDocument: DocumentModel | undefined };
+    let nextRecoveryOtp: string;
     let nextUpdateOtp: string;
 
     // Create a DID before each test.
@@ -571,8 +570,10 @@ describe('OperationProcessor', async () => {
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
 
       // Create the initial create operation.
-      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+      let nextUpdateOtpHash;
+      let nextRecoveryOtpHash;
+      [nextUpdateOtp, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+      [nextRecoveryOtp, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         recoveryPrivateKey,
@@ -595,181 +596,219 @@ describe('OperationProcessor', async () => {
       didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
     });
 
-    it('should not apply if existing document is undefined.', async () => {
-      // Create an update using the create operation generated in `beforeEach()`.
-      const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
-        anchoredCreateOperation,
-        nextUpdateOtp,
-        '#new-key1',
-        '000000000000000000000000000000000000000000000000000000000000000000'
-      );
-      const anchoredUpdateOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+    it('should continue if logging of an invalid operation application throws for unexpected reason', async () => {
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
-      const result = await operationProcessor.apply(anchoredUpdateOperationModel, { didDocument: undefined });
+      spyOn(console, 'debug').and.throwError('An error message.');
+      const result = await operationProcessor.apply(createOperationData.anchoredOperationModel, didDocumentReference);
       expect(result.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-
-      // The patched/resolved document is expected to contain the `controller` property.
-      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
-    });
-  });
-
-  describe('applyRecoverOperation()', () => {
-    let recoveryPublicKey: DidPublicKeyModel;
-    let recoveryPrivateKey: string;
-    let signingPublicKey: DidPublicKeyModel;
-    let signingPrivateKey: string;
-    let anchoredCreateOperation: AnchoredOperation;
-    let didDocumentReference: { didDocument: DocumentModel | undefined };
-
-    // Create a DID before each test.
-    beforeEach(async () => {
-      // MUST reset the DID document back to `undefined` for each test.
-      didDocumentReference = { didDocument: undefined };
-
-      // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
-      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
-      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
-
-      // Create the initial create operation.
-      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
-      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey,
-        recoveryPrivateKey,
-        signingPublicKey,
-        nextRecoveryOtpHash,
-        nextUpdateOtpHash,
-        [serviceEndpoint]
-      );
-      const anchoredCreateOperationModel = OperationGenerator.createAnchoredOperationFromOperationBuffer(createOperationBuffer, 1, 1, 1);
-      anchoredCreateOperation = AnchoredOperation.createAnchoredOperation(anchoredCreateOperationModel);
-
-      // Apply the initial create operation.
-      const result = await operationProcessor.apply(anchoredCreateOperationModel, didDocumentReference);
-
-      // Sanity check the create operation.
-      expect(result).toBeTruthy();
-      expect(didDocumentReference.didDocument).toBeDefined();
-
-      // Recording DID unique suffix for tests below to use.
-      didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
+      expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
     });
 
-    it('should not apply if existing document is undefined.', async () => {
-      // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
-      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+    describe('applyCreateOperation()', () => {
+      it('should not apply the create operation if there a DID document is already found.', async () => {
+        const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
-      // Create the recover operation and insert it to the operation store.
-      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
-      const recoveryPayload = {
-        didUniqueSuffix,
-        newDidDocument: recoveryDocumentModel
-      };
-      const anchoredRecoveryOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
-
-      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, { didDocument: undefined });
-      expect(recoveryResult.validOperation).toBeFalsy();
-      expect(didDocumentReference.didDocument).toBeDefined();
-
-      // The patched/resolved document is expected to contain the `controller` property.
-      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
+        const result = await operationProcessor.apply(createOperationData.anchoredOperationModel, didDocumentReference);
+        expect(result.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
+        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      });
     });
 
-    it('should not apply if unable to locate recovery key for signature verification.', async () => {
-      // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
-      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+    describe('applyUpdateOperation()', () => {
+      it('should not apply update operation if existing document is undefined.', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
+          anchoredCreateOperation,
+          nextUpdateOtp,
+          '#new-key1',
+          '000000000000000000000000000000000000000000000000000000000000000000'
+        );
+        const anchoredUpdateOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
 
-      // Create the recover operation and insert it to the operation store.
-      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
-      const recoveryPayload = {
-        didUniqueSuffix,
-        newDidDocument: recoveryDocumentModel
-      };
-      const anchoredRecoveryOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, '#non-existent-key-id', recoveryPrivateKey, 2, 2, 2);
+        const result = await operationProcessor.apply(anchoredUpdateOperationModel, { didDocument: undefined });
+        expect(result.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
 
-      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
-      expect(recoveryResult.validOperation).toBeFalsy();
-      expect(didDocumentReference.didDocument).toBeDefined();
+        // The count of public keys should remain 2, not 3.
+        expect(didDocumentReference.didDocument!.publicKey.length).toEqual(2);
+      });
 
-      // The patched/resolved document is expected to contain the `controller` property.
-      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
+      it('should not apply update operation if update OTP is invalid.', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
+          anchoredCreateOperation,
+          'anIncorrectUpdateOtp',
+          '#new-key1',
+          '000000000000000000000000000000000000000000000000000000000000000000'
+        );
+        const anchoredUpdateOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+        const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
+        expect(result.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
+
+        // The count of public keys should remain 2, not 3.
+        expect(didDocumentReference.didDocument!.publicKey.length).toEqual(2);
+      });
+
+      it('should not apply update operation if signature is invalid.', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
+          anchoredCreateOperation,
+          nextUpdateOtp,
+          '#new-key1',
+          '000000000000000000000000000000000000000000000000000000000000000000'
+        );
+        // NTOE: recovery private key to generate an invalid signautre.
+        const anchoredUpdateOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, signingPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+
+        const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
+        expect(result.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
+
+        // The count of public keys should remain 2, not 3.
+        expect(didDocumentReference.didDocument!.publicKey.length).toEqual(2);
+      });
+
+      it('should not apply update operation if specified public key is not found.', async () => {
+        // Create an update using the create operation generated in `beforeEach()`.
+        const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
+          anchoredCreateOperation,
+          nextUpdateOtp,
+          '#new-key1',
+          '000000000000000000000000000000000000000000000000000000000000000000'
+        );
+        // NTOE: recovery private key to generate an invalid signautre.
+        const anchoredUpdateOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Update, updatePayload, '#non-existent-key', signingPrivateKey, 2, 2, 2);
+
+        const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
+        expect(result.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
+
+        // The count of public keys should remain 2, not 3.
+        expect(didDocumentReference.didDocument!.publicKey.length).toEqual(2);
+      });
     });
 
-    it('should not apply if key used to sign is not a recovery key.', async () => {
-      // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
-      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+    describe('applyRecoverOperation()', () => {
+      it('should not apply if existing document is undefined.', async () => {
+        // Generate a recovery operation payload.
+        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
 
-      // Create the recover operation and insert it to the operation store.
-      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
-      const recoveryPayload = {
-        didUniqueSuffix,
-        newDidDocument: recoveryDocumentModel
-      };
-      const anchoredRecoveryOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, payloadData.payload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
 
-      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
-      expect(recoveryResult.validOperation).toBeFalsy();
-      expect(didDocumentReference.didDocument).toBeDefined();
+        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, { didDocument: undefined });
+        expect(recoveryResult.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
 
-      // The patched/resolved document is expected to contain the `controller` property.
-      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
+        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        expect(didDocumentReference.didDocument).toBeDefined();
+        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      });
+
+      it('should not apply if unable to locate recovery key for signature verification.', async () => {
+        // Generate a recovery operation payload.
+        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
+
+        const anchoredRecoveryOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, payloadData.payload, '#non-existent-key', recoveryPrivateKey, 2, 2, 2);
+
+        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        expect(recoveryResult.validOperation).toBeFalsy();
+
+        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        expect(didDocumentReference.didDocument).toBeDefined();
+        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      });
+
+      it('should not apply if key used to sign is not a recovery key.', async () => {
+        // Generate a recovery operation payload.
+        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
+
+        const anchoredRecoveryOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, payloadData.payload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        expect(recoveryResult.validOperation).toBeFalsy();
+
+        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        expect(didDocumentReference.didDocument).toBeDefined();
+        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      });
+
+      it('should not apply if signature does not pass verification.', async () => {
+        // Generate a recovery operation payload.
+        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
+
+        const anchoredRecoveryOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, payloadData.payload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
+
+        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        expect(recoveryResult.validOperation).toBeFalsy();
+
+        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        expect(didDocumentReference.didDocument).toBeDefined();
+        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      });
+
+      it('should not apply if recovery OTP is invalid.', async () => {
+        // Generate a recovery operation payload.
+        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: 'invalidRecoveryOtpValue' });
+
+        const anchoredRecoveryOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, payloadData.payload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+
+        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        expect(recoveryResult.validOperation).toBeFalsy();
+
+        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        expect(didDocumentReference.didDocument).toBeDefined();
+        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      });
+
+      it('should not apply if new Document does not pass verification.', async () => {
+        const recoveryPayload = {
+          didUniqueSuffix,
+          newDidDocument: { invalidDidDocument: 'invalidDidDocument' }
+        };
+        const anchoredRecoveryOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+
+        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        expect(recoveryResult.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
+
+        // The patched/resolved document is expected to contain the `controller` property.
+        const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
+        expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
+      });
     });
 
-    it('should not apply if signature does not pass verification.', async () => {
-      // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
-      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+    describe('applyRevokeOperation()', () => {
+      it('should not apply if recovery OTP is invalid.', async () => {
+        // Create revoke operation payload.
+        const payload = {
+          didUniqueSuffix,
+          recoveryOtp: `invalideRecoveryOtp`
+        };
+        const anchoredUpdateOperationModel =
+          await OperationGenerator.createAnchoredOperationModel(OperationType.Delete, payload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
 
-      // Create the recover operation and insert it to the operation store.
-      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
-      const recoveryPayload = {
-        didUniqueSuffix,
-        newDidDocument: recoveryDocumentModel
-      };
-      const anchoredRecoveryOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
+        const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
+        expect(result.validOperation).toBeFalsy();
+        expect(didDocumentReference.didDocument).toBeDefined();
 
-      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
-      expect(recoveryResult.validOperation).toBeFalsy();
-      expect(didDocumentReference.didDocument).toBeDefined();
-
-      // The patched/resolved document is expected to contain the `controller` property.
-      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
-    });
-
-    it('should not apply if new Document does not pass verification.', async () => {
-      const recoveryPayload = {
-        didUniqueSuffix,
-        newDidDocument: { invalidDidDocument: 'invalidDidDocument' }
-      };
-      const anchoredRecoveryOperationModel =
-        await OperationGenerator.createAnchoredOperationModel(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
-
-      const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
-      expect(recoveryResult.validOperation).toBeFalsy();
-      expect(didDocumentReference.didDocument).toBeDefined();
-
-      // The patched/resolved document is expected to contain the `controller` property.
-      const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-      expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
+        // The count of public keys should remain 2, not 3.
+        expect(didDocumentReference.didDocument!.publicKey.length).toEqual(2);
+      });
     });
   });
 });

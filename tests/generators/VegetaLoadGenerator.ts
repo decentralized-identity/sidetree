@@ -36,16 +36,17 @@ export default class VegetaLoadGenerator {
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
-      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
+      const [update1Otp, update1OtpHash] = OperationGenerator.generateOtp();
+      const [, update2OtpHash] = OperationGenerator.generateOtp();
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         publicKey,
         privateKey,
         signingPublicKey,
-        nextRecoveryOtpHash,
-        nextUpdateOtpHash,
+        recoveryOtpHash,
+        update1OtpHash,
         services
       );
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
@@ -65,7 +66,9 @@ export default class VegetaLoadGenerator {
             type: 'RsaVerificationKey2018',
             publicKeyPem: process.hrtime() // Some dummy value that's not used.
           }
-        }]
+        }],
+        updateOtp: update1Otp,
+        nextUpdateOtpHash: update2OtpHash
       };
 
       // Generate an Update request body and save it on disk.
