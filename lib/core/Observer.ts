@@ -10,6 +10,7 @@ import TransactionModel from '../common/models/TransactionModel';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
 import OperationRateLimiter from './versions/latest/OperationRateLimiter';
+import TransactionNumber from '../bitcoin/TransactionNumber';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
@@ -50,6 +51,11 @@ export default class Observer {
   public async startPeriodicProcessing () {
     // Initialize the last known transaction before starting processing.
     this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
+
+    // roll it back to the first transaction of the block if has lastKnownTransaction so rate limiter can reset
+    if (this.lastKnownTransaction) {
+      await this.revertToFirstTransactionInSameBlockAs(this.lastKnownTransaction);
+    }
 
     console.info(`Starting periodic transactions processing.`);
     setImmediate(async () => {
@@ -279,16 +285,41 @@ export default class Observer {
 
     const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
     console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
+    await this.revertToFirstTransactionInSameBlockAs(bestKnownValidRecentTransaction);
+  }
+
+  /**
+   * revert the observer to the first transaction in the same block as the transaction provided
+   * @param transaction The transaction which exists in the same block as the one that is desired to be reverted to
+   */
+  private async revertToFirstTransactionInSameBlockAs (transaction: TransactionModel | undefined): Promise<void> {
+    // Get the first transaction within the same block of transaction
+    // This allows the rate limiter to consider all transactions in the block in order to find the highest fee transactions
+    let firstTransactionNumberInTheBlock;
+    let firstTransactionInTheBlock;
+    if (transaction) {
+      [firstTransactionNumberInTheBlock, firstTransactionInTheBlock] = await this.getFirstTransactionAndNumberInBlock(transaction.transactionTime);
+    }
 
     // Revert all processed operations that came after the best known valid recent transaction.
     console.info('Reverting operations...');
-    await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
+    await this.operationStore.delete(firstTransactionNumberInTheBlock);
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
-    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
-    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+    await this.transactionStore.removeTransactionsLaterThan(firstTransactionNumberInTheBlock);
+    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(firstTransactionNumberInTheBlock);
 
-    // Reset the in-memory last known good Tranaction so we next processing cycle will fetch from the correct timestamp/maker.
-    this.lastKnownTransaction = bestKnownValidRecentTransaction;
+    // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
+    this.lastKnownTransaction = firstTransactionInTheBlock;
+    this.operationRateLimiter.clear();
+    if (this.lastKnownTransaction) {
+      this.operationRateLimiter.getHighestFeeTransactionsPerBlock([this.lastKnownTransaction]);
+    }
+  }
+
+  private async getFirstTransactionAndNumberInBlock (transactionTime: number): Promise<[number, TransactionModel]> {
+    const transactionNumber = TransactionNumber.construct(transactionTime, 0);
+    const transaction = await this.transactionStore.getTransaction(transactionNumber);
+    return [transactionNumber, transaction!];
   }
 }

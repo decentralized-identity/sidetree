@@ -134,7 +134,7 @@ describe('Observer', async () => {
       }
 
       // NOTE: if anything throws, we retry.
-      throw new Error('No change to the processed transactions list.');
+      throw new Error('No change to the processed transactions list. Expect 2 but got ' + processedTransactionCount);
     }, {
       retries: 10,
       minTimeout: 500, // milliseconds
@@ -330,7 +330,7 @@ describe('Observer', async () => {
           'transactionNumber': 3,
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
-          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3ndTransactionNew', numberOfOperations: 1 }),
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransactionNew', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -338,7 +338,15 @@ describe('Observer', async () => {
           'transactionNumber': 4,
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
-          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '4ndTransactionNew', numberOfOperations: 1 }),
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '4thTransactionNew', numberOfOperations: 1 }),
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
+        },
+        {
+          'transactionNumber': 5,
+          'transactionTime': 5000,
+          'transactionTimeHash': '5000',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '5thTransactionNewToEscapeRateLimiter', numberOfOperations: 1 }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
@@ -387,6 +395,22 @@ describe('Observer', async () => {
       1
     );
 
+    // mocking the return
+    observer['getFirstTransactionAndNumberInBlock'] = (transactionTime: number) => {
+      expect(transactionTime).toEqual(1000);
+      return Promise.resolve([
+        1,
+        {
+          'transactionNumber': 1,
+          'transactionTime': 1000,
+          'transactionTimeHash': '1000',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
+        }
+      ]);
+    };
+
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.
@@ -396,18 +420,18 @@ describe('Observer', async () => {
       if (processedTransactionCount === 4) {
         return;
       }
-
       // NOTE: the `retry` library retries if error is thrown.
-      throw new Error('Block reorganization not handled.');
+      throw new Error('Block reorganization not handled. Expected 4 but got ' + processedTransactionCount);
     }, {
       retries: 10,
       minTimeout: 1000, // milliseconds
       maxTimeout: 1000 // milliseconds
     });
 
-    expect(processedTransactions[1].anchorString).toEqual('2ndTransactionNew');
-    expect(processedTransactions[2].anchorString).toEqual('3rdTransactionNew');
-    expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
+    expect(processedTransactions[0].anchorString).toEqual('AQAAAA.1stTransaction');
+    expect(processedTransactions[1].anchorString).toEqual('AQAAAA.2ndTransactionNew');
+    expect(processedTransactions[2].anchorString).toEqual('AQAAAA.3rdTransactionNew');
+    expect(processedTransactions[3].anchorString).toEqual('AQAAAA.4thTransactionNew');
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
@@ -453,6 +477,22 @@ describe('Observer', async () => {
       transactionStore,
       1
     );
+
+    // mocking the return
+    observer['getFirstTransactionAndNumberInBlock'] = (transactionTime: number) => {
+      expect(transactionTime).toEqual(1000);
+      return Promise.resolve([
+        1,
+        {
+          'transactionNumber': 1,
+          'transactionTime': 1000,
+          'transactionTimeHash': '1000',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
+        }
+      ]);
+    };
 
     const revertInvalidTransactionsSpy = spyOn(observer as any, 'revertInvalidTransactions').and.returnValue(Promise.resolve(undefined));
 

@@ -51,12 +51,12 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     return exponentiallySpacedTransactions;
   }
 
-  public async getTransaction (_transactionNumber: number): Promise<TransactionModel | undefined> {
-    throw new Error('Not implemented.');
+  public async getTransaction (transactionNumber: number): Promise<TransactionModel | undefined> {
+    throw new Error(`getTransaction Not implemented. transactionNumber: ${transactionNumber}`);
   }
 
   public async getTransactionsLaterThan (_transactionNumber: number | undefined, _max: number): Promise<TransactionModel[]> {
-    throw new Error('Not implemented.');
+    throw new Error('getTransactionLaterThan Not implemented.');
   }
 
   async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
