@@ -714,9 +714,9 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should revert the DBs to the last saved transaction block in the transaction store.', async (done) => {
-      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'revertQuantileAndTransactionDbsTo');
+      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToFeeSamplingGroupBoundary');
       const verifySpy = spyOn(bitcoinProcessor as any, 'verifyBlock');
-      const revertChainSpy = spyOn(bitcoinProcessor as any, 'revertBlockchainCache');
+      const revertChainSpy = spyOn(bitcoinProcessor as any, 'revertDatabases');
 
       const mockTxnModel: TransactionModel = {
         anchorString: 'anchor1',
@@ -752,9 +752,9 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should revert the blockchain if the last saved transaction is invalid.', async (done) => {
-      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'revertQuantileAndTransactionDbsTo');
+      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToFeeSamplingGroupBoundary');
       const verifySpy = spyOn(bitcoinProcessor as any, 'verifyBlock');
-      const revertChainSpy = spyOn(bitcoinProcessor as any, 'revertBlockchainCache');
+      const revertChainSpy = spyOn(bitcoinProcessor as any, 'revertDatabases');
 
       const mockTxnModel: TransactionModel = {
         anchorString: 'anchor1',
@@ -827,7 +827,7 @@ describe('BitcoinProcessor', () => {
     it('should revert blockchain if verifyblock fails', async () => {
       const mockHeightAfterRevert = actualLastProcessedBlock.height - 1;
 
-      const revertBlockchainSpy = spyOn(bitcoinProcessor as any, 'revertBlockchainCache');
+      const revertBlockchainSpy = spyOn(bitcoinProcessor as any, 'revertDatabases');
       revertBlockchainSpy.and.returnValue({ height: mockHeightAfterRevert, hash: randomString() });
 
       spyOn(bitcoinProcessor as any, 'verifyBlock').and.returnValue(Promise.resolve(false));
@@ -840,7 +840,7 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('revertBlockchainCache', () => {
+  describe('revertDatabases', () => {
     it('should exponentially revert transactions', async (done) => {
       const transactions = createTransactions(10).sort((a, b) => b.transactionNumber - a.transactionNumber);
       const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
@@ -857,11 +857,11 @@ describe('BitcoinProcessor', () => {
         hash: randomString(),
         previousHash: randomString()
       };
-      spyOn(bitcoinProcessor,'revertQuantileAndTransactionDbsTo' as any).and.returnValue(Promise.resolve(mockRevertReturn));
+      spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any).and.returnValue(Promise.resolve(mockRevertReturn));
 
       const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any);
 
-      const actual = await bitcoinProcessor['revertBlockchainCache']();
+      const actual = await bitcoinProcessor['revertDatabases']();
       expect(actual).toEqual(mockRevertReturn);
       expect(transactionCount).toHaveBeenCalled();
       expect(exponentialTransactions).toHaveBeenCalled();
@@ -894,11 +894,11 @@ describe('BitcoinProcessor', () => {
         hash: randomString(),
         previousHash: randomString()
       };
-      spyOn(bitcoinProcessor,'revertQuantileAndTransactionDbsTo' as any).and.returnValue(Promise.resolve(mockRevertReturn));
+      spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any).and.returnValue(Promise.resolve(mockRevertReturn));
 
       const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any);
 
-      const actual = await bitcoinProcessor['revertBlockchainCache']();
+      const actual = await bitcoinProcessor['revertDatabases']();
       expect(actual).toEqual(mockRevertReturn);
       expect(transactionCount).toHaveBeenCalledTimes(2);
       expect(exponentialTransactions).toHaveBeenCalledTimes(2);
@@ -932,9 +932,9 @@ describe('BitcoinProcessor', () => {
       };
       const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any).and.returnValue(Promise.resolve(mockGetBlockReturn));
 
-      const revertDbsSpy = spyOn(bitcoinProcessor,'revertQuantileAndTransactionDbsTo' as any);
+      const revertDbsSpy = spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any);
 
-      const actual = await bitcoinProcessor['revertBlockchainCache']();
+      const actual = await bitcoinProcessor['revertDatabases']();
       expect(actual).toEqual(mockGetBlockReturn);
       expect(transactionCount).toHaveBeenCalled();
       expect(exponentialTransactions).toHaveBeenCalled();
@@ -946,7 +946,7 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('revertQuantileAndTransactionDbsTo', () => {
+  describe('trimDatabasesToFeeSamplingGroupBoundary', () => {
     it('should revert the DBs to the correct values.', async () => {
       const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] + 100;
       const firstBlockInGroupSpy = spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.returnValue(mockFirstBlockInGroup);
@@ -977,7 +977,7 @@ describe('BitcoinProcessor', () => {
       });
 
       const inputBlock = 500;
-      const actual = await bitcoinProcessor['revertQuantileAndTransactionDbsTo'](inputBlock);
+      const actual = await bitcoinProcessor['trimDatabasesToFeeSamplingGroupBoundary'](inputBlock);
 
       expect(actual).toEqual(mockBlockInfo);
       expect(firstBlockInGroupSpy).toHaveBeenCalledWith(inputBlock);
@@ -1005,7 +1005,7 @@ describe('BitcoinProcessor', () => {
         return Promise.resolve(mockBlockInfo);
       });
 
-      const actual = await bitcoinProcessor['revertQuantileAndTransactionDbsTo'](500);
+      const actual = await bitcoinProcessor['trimDatabasesToFeeSamplingGroupBoundary'](500);
 
       expect(actual).toEqual(mockBlockInfo);
     });
