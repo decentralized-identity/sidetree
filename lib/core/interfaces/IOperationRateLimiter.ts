@@ -11,4 +11,9 @@ export default interface IOperationRateLimiter {
    * @param orderedTransactions An array transactions which are ordered by transactionTime in ascending order
    */
   getHighestFeeTransactionsPerBlock (orderedTransactions: TransactionModel[]): TransactionModel[];
+
+  /**
+   * Clears everything in the rate limiter
+   */
+  clear (): void;
 }

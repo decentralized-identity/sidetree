@@ -56,9 +56,9 @@ export default class VersionManager implements IVersionManager {
     resolver: Resolver
   ) {
     // Instantiate rest of the protocol components.
-    // NOTE: In principal each version of the interface implemtnations can have different constructors,
+    // NOTE: In principal each version of the interface implementations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
-    // but it is not inhernetly "bad" if we have to have conditional constructions for each if we have to.
+    // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
       const version = protocolVersion.version;
 
@@ -97,7 +97,7 @@ export default class VersionManager implements IVersionManager {
     const batchWriter = this.batchWriters.get(version);
 
     if (batchWriter === undefined) {
-      throw new Error(`Unabled to find batch writer for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(`Unable to find batch writer for the given blockchain time ${blockchainTime}, investigate and fix.`);
     }
 
     return batchWriter;
@@ -111,7 +111,7 @@ export default class VersionManager implements IVersionManager {
     const operationProcessor = this.operationProcessors.get(version);
 
     if (operationProcessor === undefined) {
-      throw new Error(`Unabled to find operation processor for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(`Unable to find operation processor for the given blockchain time ${blockchainTime}, investigate and fix.`);
     }
 
     return operationProcessor;
@@ -125,7 +125,7 @@ export default class VersionManager implements IVersionManager {
     const requestHandler = this.requestHandlers.get(version);
 
     if (requestHandler === undefined) {
-      throw new Error(`Unabled to find request handler for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(`Unable to find request handler for the given blockchain time ${blockchainTime}, investigate and fix.`);
     }
 
     return requestHandler;
@@ -139,7 +139,7 @@ export default class VersionManager implements IVersionManager {
     const transactionProcessor = this.transactionProcessors.get(version);
 
     if (transactionProcessor === undefined) {
-      throw new Error(`Unabled to find transaction processor for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(`Unable to find transaction processor for the given blockchain time ${blockchainTime}, investigate and fix.`);
     }
 
     return transactionProcessor;
@@ -156,7 +156,7 @@ export default class VersionManager implements IVersionManager {
       }
     }
 
-    throw new Error(`Unabled to find protocol parameters for the given blockchain time ${blockchainTime}, investigate and fix.`);
+    throw new Error(`Unable to find protocol parameters for the given blockchain time ${blockchainTime}, investigate and fix.`);
   }
 
   private async loadDefaultExportsForVersion (version: string, className: string): Promise<any> {

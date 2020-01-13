@@ -1,7 +1,7 @@
-import IOperationRateLimiter from '../../interfaces/IOperationRateLimiter';
-import TransactionModel from '../../../common/models/TransactionModel';
-import PriorityQueue from 'priorityqueue';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
+import IOperationRateLimiter from '../../interfaces/IOperationRateLimiter';
+import PriorityQueue from 'priorityqueue';
+import TransactionModel from '../../../common/models/TransactionModel';
 
 /**
  * rate limits how many operations is valid per block
@@ -61,12 +61,17 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
 
     while (numberOfOperationsAvailableInCurrentBlock < this.maxNumberOfOperationsPerBlock && this.transactionsInCurrentTransactionTime.length) {
       const currentTransaction = this.transactionsInCurrentTransactionTime.pop();
-      const numOfOperations = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
+      try {
+        const numOfOperations = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
 
-      numberOfOperationsAvailableInCurrentBlock += numOfOperations;
-      if (numberOfOperationsAvailableInCurrentBlock <= this.maxNumberOfOperationsPerBlock) {
+        numberOfOperationsAvailableInCurrentBlock += numOfOperations;
+        if (numberOfOperationsAvailableInCurrentBlock <= this.maxNumberOfOperationsPerBlock) {
+          transactionsToReturn.push(currentTransaction);
+        }
+      } catch (e) {
         transactionsToReturn.push(currentTransaction);
       }
+
     }
 
     // sort based on transaction number ascending

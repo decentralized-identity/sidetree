@@ -1,16 +1,17 @@
 import IBlockchain from './interfaces/IBlockchain';
+import IOperationRateLimiter from './interfaces/IOperationRateLimiter';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
+import OperationRateLimiter from './versions/latest/OperationRateLimiter';
 import SharedErrorCode from '../common/SharedErrorCode';
 import timeSpan = require('time-span');
 import TransactionModel from '../common/models/TransactionModel';
+import TransactionNumber from '../bitcoin/TransactionNumber';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
-import OperationRateLimiter from './versions/latest/OperationRateLimiter';
-import TransactionNumber from '../bitcoin/TransactionNumber';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
@@ -32,7 +33,7 @@ export default class Observer {
    * This is the transaction that is used as a timestamp to fetch newer transaction.
    */
   private lastKnownTransaction: TransactionModel | undefined;
-  private operationRateLimiter: OperationRateLimiter;
+  private operationRateLimiter: IOperationRateLimiter;
 
   public constructor (
     private versionManager: IVersionManager,
@@ -79,7 +80,7 @@ export default class Observer {
    * Processes new transactions if any, then reprocess a set of unresolvable transactions if any,
    * then schedules the next round of processing unless `stopPeriodicProcessing()` is invoked.
    */
-  public async processTransactions () {
+  private async processTransactions () {
     try {
       await this.storeConsecutiveTransactionsProcessed(); // Do this in multiple places
 
@@ -295,19 +296,21 @@ export default class Observer {
   private async revertToFirstTransactionInSameBlockAs (transaction: TransactionModel | undefined): Promise<void> {
     // Get the first transaction within the same block of transaction
     // This allows the rate limiter to consider all transactions in the block in order to find the highest fee transactions
-    let firstTransactionNumberInTheBlock;
+    let transactionNumberToRevertTo: number | undefined;
     let firstTransactionInTheBlock;
     if (transaction) {
+      let firstTransactionNumberInTheBlock: number | undefined;
       [firstTransactionNumberInTheBlock, firstTransactionInTheBlock] = await this.getFirstTransactionAndNumberInBlock(transaction.transactionTime);
+      transactionNumberToRevertTo = firstTransactionNumberInTheBlock - 1; // roll back to right before the transaction
     }
 
     // Revert all processed operations that came after the best known valid recent transaction.
     console.info('Reverting operations...');
-    await this.operationStore.delete(firstTransactionNumberInTheBlock);
+    await this.operationStore.delete(transactionNumberToRevertTo);
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
-    await this.transactionStore.removeTransactionsLaterThan(firstTransactionNumberInTheBlock);
-    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(firstTransactionNumberInTheBlock);
+    await this.transactionStore.removeTransactionsLaterThan(transactionNumberToRevertTo);
+    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(transactionNumberToRevertTo);
 
     // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = firstTransactionInTheBlock;

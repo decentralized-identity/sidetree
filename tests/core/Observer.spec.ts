@@ -24,6 +24,7 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { SidetreeError } from '../../lib/core/Error';
+import OperationRateLimiter from '../../lib/core/versions/latest/OperationRateLimiter';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -414,8 +415,9 @@ describe('Observer', async () => {
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.
-    const processedTransactions = transactionStore.getTransactions();
+    let processedTransactions = transactionStore.getTransactions();
     await retry(async _bail => {
+      processedTransactions = transactionStore.getTransactions();
       const processedTransactionCount = processedTransactions.length;
       if (processedTransactionCount === 4) {
         return;
@@ -514,5 +516,192 @@ describe('Observer', async () => {
 
     expect(revertInvalidTransactionsSpy).toHaveBeenCalledTimes(0);
     expect(getFirstValidTransactionSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it('should remember its state, roll back to the first transaction in the block, and continue processing when the node restarts', async () => {
+    // Prepare the mock response from blockchain service.
+    const initialTransactionFetchResponseBody = {
+      'moreTransactions': false,
+      'transactions': [
+        {
+          'transactionNumber': 1,
+          'transactionTime': 1000,
+          'transactionTimeHash': '1000',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
+        },
+        {
+          'transactionNumber': 2,
+          'transactionTime': 1000,
+          'transactionTimeHash': '1000',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '2ndTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 3,
+          'transactionTime': 1001,
+          'transactionTimeHash': '1001',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 4,
+          'transactionTime': 1001,
+          'transactionTimeHash': '1001',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '4thTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 5,
+          'transactionTime': 1001,
+          'transactionTimeHash': '1001',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '5thTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 6,
+          'transactionTime': 1002,
+          'transactionTimeHash': '1002',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '6thTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        }
+      ]
+    };
+    const subsequentTransactionFetchResponseBody = {
+      'moreTransactions': false,
+      'transactions': []
+    };
+
+    const blockchainClient = new Blockchain(config.blockchainServiceUri);
+
+    let readInvocationCount = 0;
+    const mockReadFunction = async () => {
+      readInvocationCount++;
+      if (readInvocationCount === 1) {
+        return initialTransactionFetchResponseBody;
+      } else {
+        return subsequentTransactionFetchResponseBody;
+      }
+    };
+    spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
+
+    // Start the Observer.
+    let observer = new Observer(
+      versionManager,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
+    await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
+
+    // Monitor the processed transactions list until change is detected or max retries is reached.
+    await retry(async _bail => {
+      const processedTransactionCount = transactionStore.getTransactions().length;
+      if (processedTransactionCount === 5) {
+        return;
+      }
+
+      // NOTE: if anything throws, we retry.
+      throw new Error('No change to the processed transactions list. Expect 5 but got ' + processedTransactionCount);
+    }, {
+      retries: 10,
+      minTimeout: 500, // milliseconds
+      maxTimeout: 500 // milliseconds
+    });
+
+    observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
+
+    // create a new observer to simulate a node restart
+    observer = new Observer(
+      versionManager,
+      blockchainClient,
+      config.maxConcurrentDownloads,
+      operationStore,
+      transactionStore,
+      transactionStore,
+      1
+    );
+
+    // mocking the return
+    observer['getFirstTransactionAndNumberInBlock'] = (transactionTime: number) => {
+      expect(transactionTime).toEqual(1001);
+      return Promise.resolve([
+        3,
+        {
+          'transactionNumber': 3,
+          'transactionTime': 1001,
+          'transactionTimeHash': '1001',
+          'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransaction', numberOfOperations: 1 }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        }
+      ]);
+    };
+
+    // this allows us to check the state right after initialization in startPeriodicProcessing and before it starts processing
+    observer['processTransactions'] = () => {
+      return Promise.resolve();
+    };
+
+    await observer.startPeriodicProcessing();
+    observer.stopPeriodicProcessing();
+
+    expect(observer['lastKnownTransaction']).toEqual({
+      'transactionNumber': 3,
+      'transactionTime': 1001,
+      'transactionTimeHash': '1001',
+      'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransaction', numberOfOperations: 1 }),
+      'transactionFeePaid': 2,
+      'normalizedTransactionFee': 2
+    });
+
+    const operationRateLimiter = observer['operationRateLimiter'] as OperationRateLimiter;
+
+    expect(operationRateLimiter['currentTransactionTime']).toEqual(1001);
+    expect(operationRateLimiter['transactionsInCurrentTransactionTime'].pop()).toEqual({
+      'transactionNumber': 3,
+      'transactionTime': 1001,
+      'transactionTimeHash': '1001',
+      'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '3rdTransaction', numberOfOperations: 1 }),
+      'transactionFeePaid': 2,
+      'normalizedTransactionFee': 2
+    });
+
+    // Expects pop to throw error because it is empty
+    try {
+      operationRateLimiter['transactionsInCurrentTransactionTime'].pop();
+    } catch (e) {
+      expect(e.message).toEqual('invalid operation: pop() called for empty BinaryHeap');
+    }
+
+    const processedTransactions = transactionStore.getTransactions();
+    expect(processedTransactions.length).toEqual(2);
+    expect(processedTransactions[0]).toEqual({
+      'transactionNumber': 1,
+      'transactionTime': 1000,
+      'transactionTimeHash': '1000',
+      'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 }),
+      'transactionFeePaid': 1,
+      'normalizedTransactionFee': 1
+    });
+    expect(processedTransactions[1]).toEqual({
+      'transactionNumber': 2,
+      'transactionTime': 1000,
+      'transactionTimeHash': '1000',
+      'anchorString': AnchoredDataSerializer.serialize({ anchorFileHash: '2ndTransaction', numberOfOperations: 1 }),
+      'transactionFeePaid': 2,
+      'normalizedTransactionFee': 2
+    });
+
   });
 });

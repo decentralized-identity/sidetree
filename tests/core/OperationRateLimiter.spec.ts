@@ -1,5 +1,5 @@
-import OperationRateLimiter from '../../lib/core/versions/latest/OperationRateLimiter';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
+import OperationRateLimiter from '../../lib/core/versions/latest/OperationRateLimiter';
 
 describe('OperationRateLimiter', () => {
 
@@ -113,6 +113,47 @@ describe('OperationRateLimiter', () => {
       // transaction index 1 and 2 have the highest fee and fills up the 25 operation limit
       const expected = [transactions[1], transactions[2]];
       expect(actual).toEqual(expected);
+    });
+
+    it('should let transactions with the old format through no matter the capacity', () => {
+      operationRateLimiter = new OperationRateLimiter(1);
+      const wrongFormatTransactions = [
+        {
+          transactionNumber: 1,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: 'randomString',
+          transactionFeePaid: 333,
+          normalizedTransactionFee: 1
+        },
+        {
+          transactionNumber: 2,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: 'some other random string',
+          transactionFeePaid: 333,
+          normalizedTransactionFee: 1
+        },
+        {
+          transactionNumber: 3,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: 'And another one',
+          transactionFeePaid: 333,
+          normalizedTransactionFee: 1
+        },
+        {
+          transactionNumber: 4,
+          transactionTime: 2,
+          transactionTimeHash: 'some hash',
+          anchorString: 'Exit',
+          transactionFeePaid: 333,
+          normalizedTransactionFee: 1
+        }
+      ];
+
+      const actual = operationRateLimiter.getHighestFeeTransactionsPerBlock(wrongFormatTransactions);
+      expect(actual.length).toEqual(3);
     });
   });
 
