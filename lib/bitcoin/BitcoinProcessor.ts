@@ -37,6 +37,8 @@ export interface IBlockInfo {
   height: number;
   /** Block hash. */
   hash: string;
+  /** Previous block hash. */
+  previousHash: string;
 }
 
 /**
@@ -146,11 +148,11 @@ export default class BitcoinProcessor {
       };
     }
 
-    const height = await this.bitcoinClient.getBlockHeight(hash);
+    const blockInfo = await this.bitcoinClient.getBlockInfo(hash);
 
     return {
       hash: hash,
-      time: height
+      time: blockInfo.height
     };
   }
 
@@ -294,12 +296,13 @@ export default class BitcoinProcessor {
    * @param interval Number of seconds between each query
    */
   private async periodicPoll (interval: number = this.pollPeriod) {
-    // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
-    if (this.pollTimeoutId) {
-      clearTimeout(this.pollTimeoutId);
-    }
 
     try {
+      // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
+      if (this.pollTimeoutId) {
+        clearTimeout(this.pollTimeoutId);
+      }
+
       const startingBlock = await this.getStartingBlockForPeriodicPoll();
 
       if (startingBlock) {
@@ -313,9 +316,8 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Processes transactions from startBlock (or genesis) to endBlockHeight (or tip)
+   * Processes transactions from startBlock (or genesis) to the current blockchain height.
    * @param startBlock The block to begin from (inclusive)
-   * @param endBlockHeight The blockheight to stop on (inclusive)
    * @returns The block height and hash it processed to
    */
   private async processTransactions (startBlock: IBlockInfo): Promise<IBlockInfo> {
@@ -330,13 +332,18 @@ export default class BitcoinProcessor {
     const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
+    let previousBlockHash = startBlock.previousHash;
+
     for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
-      const processedBlockHash = await this.processBlock(blockHeight);
+      const processedBlockHash = await this.processBlock(blockHeight, previousBlockHash);
 
       this.lastProcessedBlock = {
         height: blockHeight,
-        hash: processedBlockHash
+        hash: processedBlockHash,
+        previousHash: previousBlockHash
       };
+
+      previousBlockHash = processedBlockHash;
     }
 
     console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
@@ -355,31 +362,33 @@ export default class BitcoinProcessor {
 
   private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
 
-    // Assume that we're going to start form the genesis block
-    let startingBlock = this.genesisBlockNumber;
+    // Look in the transaction store to figure out the last block that we need to
+    // start from.
+    const lastSavedTransaction = (await this.transactionStore.getLastTransaction());
 
-    // We look at the latest data that we saved in the quantile calculator. The latest
-    // Id in there tells us which group of blocks have been processed.
-    const lastSavedGroupId = await this.quantileCalculator.getLastGroupId();
-
-    if (lastSavedGroupId) {
-      // Then we need to start from the block corresponding to that groupId
-      startingBlock = this.getStartingBlockFromGroupId(lastSavedGroupId);
-
-      // We want to delete the last group Id because we might not have saved all the transaction(s)
-      // in that group. So removing that ensures that we redo this block which will ensure that
-      // all the transactions are processed again.
-      await this.quantileCalculator.removeGroupsGreaterThanOrEqual(lastSavedGroupId);
+    // If there's nothing saved in the DB then let's start from the genesis block
+    if (!lastSavedTransaction) {
+      return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 
-    // Remove everything after the starting block as we are (re)starting from that point
-    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlock, 0);
-    await this.transactionStore.removeTransactionsLaterThan(startingBlockFirstTxnNumber - 1);
+    // If we are here then it means that there is a potential starting point in the DB.
+    // Since we are initializing, it is quite possible that the last block that we processed
+    // (and saved in the db) has been forked. Check for the fork.
+    const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
 
-    return {
-      height: startingBlock,
-      hash: await this.bitcoinClient.getBlockHash(startingBlock)
-    };
+    let lastValidBlock: IBlockInfo;
+
+    if (lastSavedBlockIsValid) {
+      // There was no fork ... let's put the system DBs in the correct state.
+      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
+    } else {
+      // There was a fork so we need to revert. The revert function peforms all the correct
+      // operations and puts the system in the correct state and returns the last valid block.
+      lastValidBlock = await this.revertDatabases();
+    }
+
+    // Our starting block is the one after the last-valid-block
+    return this.bitcoinClient.getBlockInfoFromHeight(lastValidBlock.height + 1);
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
@@ -390,7 +399,7 @@ export default class BitcoinProcessor {
     // revert the blockchain to the correct block
     if (!lastProcessedBlockVerified) {
       // The revert logic will return the last correct processed block
-      this.lastProcessedBlock = await this.revertBlockchainCache();
+      this.lastProcessedBlock = await this.revertDatabases();
     }
 
     // Now that we have the correct last processed block, the new starting block needs
@@ -405,56 +414,25 @@ export default class BitcoinProcessor {
     }
 
     // We have our new starting point
-    return {
-      height: startingBlockHeight,
-      hash: await this.bitcoinClient.getBlockHash(startingBlockHeight)
-    };
+    return this.bitcoinClient.getBlockInfoFromHeight(startingBlockHeight);
   }
 
   /**
-   * Begins to revert the blockchain cache until consistent, returns last good height
+   * Begins to revert databases until consistent with blockchain, returns last good height
    * @returns last valid block height before the fork
    */
-  private async revertBlockchainCache (): Promise<IBlockInfo> {
+  private async revertDatabases (): Promise<IBlockInfo> {
     console.info('Reverting transactions');
 
     // Keep reverting transactions until a valid transaction is found.
     while (await this.transactionStore.getTransactionsCount() > 0) {
       const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
-      const firstValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
+      const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
-      if (firstValidTransaction) {
-        // Revert all transactions in blocks from revertToBlockNumber and later. We make make this to be a group
-        // boundary to simplify resetting proof-of-fee state which is maintained per group.
-        let revertToBlockNumber = this.getFirstBlockInGroup(firstValidTransaction.transactionTime);
-
-        // Revert the quantile calculator. We want to keep the revertToBlock which means that we should
-        // keep the corresponding group and delete everything greater than that one.
-        //
-        // NOTE: Make sure that we remove the groupId data BEFORE we remove the transactions. This is
-        // because that if the service stops at any moment after this, the initialize code looks at
-        // the groupId and can revert the transactions db accordingly.
-        const revertToGroupId = this.getGroupIdFromBlock(revertToBlockNumber);
-
-        console.debug(`Reverting the quantile data greater than: ${revertToGroupId}`);
-        await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId + 1);
-
-        // Reset transaction sampling
-        this.transactionSampler.clear();
-
-        // The number that represents the theoritical last possible transaction written with a block number
-        // less than revertToBlockNumber
-        const revertToTransactionNumber = TransactionNumber.construct(revertToBlockNumber + 1, 0) - 1;
-
-        console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
-        await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
-
-        console.info(`reverted Transactions to block ${revertToBlockNumber}`);
-        return {
-          height: revertToBlockNumber,
-          hash: await this.bitcoinClient.getBlockHash(revertToBlockNumber)
-        };
+      if (lastKnownValidTransaction) {
+        // We have a valid transaction, so revert the DBs to that valid one and return.
+        return this.trimDatabasesToFeeSamplingGroupBoundary(lastKnownValidTransaction.transactionTime);
       }
 
       // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
@@ -468,10 +446,57 @@ export default class BitcoinProcessor {
 
     // there are no transactions stored.
     console.info('Reverted all known transactions.');
-    return {
-      height: this.genesisBlockNumber,
-      hash: await this.bitcoinClient.getBlockHash(this.genesisBlockNumber)
-    };
+    return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
+  }
+
+  /**
+   * Trims entries from the system DBs to the closest full fee sampling group boundary.
+   * @param lastValidBlockNumber The last known valid block number.
+   * @returns The last block of the fee sampling group.
+   */
+  private async trimDatabasesToFeeSamplingGroupBoundary (lastValidBlockNumber: number): Promise<IBlockInfo> {
+
+    console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${lastValidBlockNumber}`);
+
+    // For the quantile DB, we need to remove the full group (corresponding to the given
+    // lastValidBlockNumber). This is because currently there is no way to add/remove individual block's
+    // data to the quantile DB ... it only expects to work with the full groups. Which means that we
+    // need to remove all the transactions which belong to that group (and later ones).
+    //
+    // So what we need to do is:
+    // <code>
+    //   validBlockGroup = findGroupForTheBlock(lastValidBlockNumber);
+    //   firstBlockInGroup = findFirstBlockInGroup(validBlockGroup);
+    //
+    //   deleteAllTransactionsGreaterThanOrEqualTo(firstBlockInGroup);
+    //   deleteAllGroupsGreaterThanOrEqualTo(validBlockGroup);
+    // </code>
+    const firstBlockInGroup = this.getFirstBlockInGroup(lastValidBlockNumber);
+
+    // NOTE:
+    // *****
+    // Make sure that we remove the transaction data BEFORE we remove the quantile data. This is
+    // because that if the service stops at any moment after this, the initialize code looks at
+    // the transaction store and can revert the quantile db accordingly.
+    const firstTxnOfFirstBlockInGroup = TransactionNumber.construct(firstBlockInGroup, 0);
+
+    console.debug(`Removing transactions since ${firstBlockInGroup} (transaction id: ${firstTxnOfFirstBlockInGroup})`);
+    await this.transactionStore.removeTransactionsLaterThan(firstTxnOfFirstBlockInGroup - 1);
+
+    // Now revert the corresponding groups (and later) from the quantile calculator.
+    const revertToGroupId = this.getGroupIdFromBlock(firstBlockInGroup);
+
+    console.debug(`Removing the quantile data greater and equal than: ${revertToGroupId}`);
+    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId);
+
+    // Reset transaction sampling
+    this.transactionSampler.clear();
+
+    // The first block in the group is the new starting point so the previous one is the
+    // last 'valid' block. Return it but ensure that we are not going below the genesis block
+    const blockNumberToReturn = Math.max(firstBlockInGroup - 1, this.genesisBlockNumber);
+
+    return this.bitcoinClient.getBlockInfoFromHeight(blockNumberToReturn);
   }
 
   /**
@@ -535,10 +560,6 @@ export default class BitcoinProcessor {
     return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
   }
 
-  private getStartingBlockFromGroupId (groupId: number): number {
-    return groupId * ProtocolParameters.groupSizeInBlocks;
-  }
-
   private async processBlockForPofCalculation (blockHeight: number, blockData: BitcoinBlockModel): Promise<void> {
 
     const blockHash = blockData.hash;
@@ -586,19 +607,22 @@ export default class BitcoinProcessor {
   /**
    * Given a Bitcoin block height, processes that block for Sidetree transactions
    * @param block Block height to process
+   * @param previousBlockHash Block hash of the previous block
    * @returns the block hash processed
    */
-  private async processBlock (block: number): Promise<string> {
+  private async processBlock (block: number, previousBlockHash: string): Promise<string> {
     console.info(`Processing block ${block}`);
-    const hash = await this.bitcoinClient.getBlockHash(block);
-    const blockData = await this.bitcoinClient.getBlock(hash);
+    const blockHash = await this.bitcoinClient.getBlockHash(block);
+    const blockData = await this.bitcoinClient.getBlock(blockHash);
+
+    // This check detects fork by ensuring the fetched block points to the expected previous block.
+    if (blockData.previousHash !== previousBlockHash) {
+      throw Error(`Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`);
+    }
 
     await this.processBlockForPofCalculation(block, blockData);
 
     const transactions = blockData.transactions;
-    const blockHash = blockData.hash;
-
-    // console.debug(`Block ${block} contains ${transactions.length} transactions`);
 
     // iterate through transactions
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
