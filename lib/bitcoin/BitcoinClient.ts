@@ -6,7 +6,8 @@ import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, Block, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { IBlockInfo } from './BitcoinProcessor';
 
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
@@ -97,19 +98,22 @@ export default class BitcoinClient implements IBitcoinClient {
       method: 'getblock',
       params: [
         hash,
-        0 // get full block data as hex encoded string
+        2 // verbosity value to get block + transactions' info
       ]
     };
 
-    const hexEncodedResponse = await this.rpcCall(request, true);
-    const responseBuffer = Buffer.from(hexEncodedResponse, 'hex');
+    const block = await this.rpcCall(request, true);
 
-    const block = BitcoinClient.createBitcoreBlockFromBuffer(responseBuffer);
-    const transactionModels = block.transactions.map((txn) => { return BitcoinClient.createBitcoinTransactionModel(txn); });
+    const transactionModels = block.tx.map((txn: any) => {
+      const transactionBuffer = Buffer.from(txn.hex, 'hex');
+      const bitcoreTransaction = BitcoinClient.createBitcoreTransactionFromBuffer(transactionBuffer);
+      return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
+    });
 
     return {
       hash: block.hash,
       height: block.height,
+      previousHash: block.previousblockhash,
       transactions: transactionModels
     };
   }
@@ -126,7 +130,11 @@ export default class BitcoinClient implements IBitcoinClient {
     return this.rpcCall(hashRequest, true);
   }
 
-  public async getBlockHeight (hash: string): Promise<number> {
+  public async getBlockInfoFromHeight (height: number): Promise<IBlockInfo> {
+    return this.getBlockInfo(await this.getBlockHash(height));
+  }
+
+  public async getBlockInfo (hash: string): Promise<IBlockInfo> {
     const request = {
       method: 'getblockheader',
       params: [
@@ -137,7 +145,11 @@ export default class BitcoinClient implements IBitcoinClient {
 
     const response = await this.rpcCall(request, true);
 
-    return response.height;
+    return {
+      hash: hash,
+      height: response.height,
+      previousHash: response.previousblockhash
+    };
   }
 
   public async getCurrentBlockHeight (): Promise<number> {
@@ -242,11 +254,6 @@ export default class BitcoinClient implements IBitcoinClient {
   // This function is specifically created to help with unit testing.
   private static createBitcoreTransactionFromBuffer (buffer: Buffer): Transaction {
     return new Transaction(buffer);
-  }
-
-  // This function is specifically created to help with unit testing.
-  private static createBitcoreBlockFromBuffer (buffer: Buffer): Block {
-    return new Block(buffer);
   }
 
   private async createBitcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
