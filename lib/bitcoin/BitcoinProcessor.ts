@@ -380,11 +380,11 @@ export default class BitcoinProcessor {
 
     if (lastSavedBlockIsValid) {
       // There was no fork ... let's put the system DBs in the correct state.
-      lastValidBlock = await this.revertQuantileAndTransactionDbsTo(lastSavedTransaction.transactionTime);
+      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
     } else {
       // There was a fork so we need to revert. The revert function peforms all the correct
       // operations and puts the system in the correct state and returns the last valid block.
-      lastValidBlock = await this.revertBlockchainCache();
+      lastValidBlock = await this.revertDatabases();
     }
 
     // Our starting block is the one after the last-valid-block
@@ -399,7 +399,7 @@ export default class BitcoinProcessor {
     // revert the blockchain to the correct block
     if (!lastProcessedBlockVerified) {
       // The revert logic will return the last correct processed block
-      this.lastProcessedBlock = await this.revertBlockchainCache();
+      this.lastProcessedBlock = await this.revertDatabases();
     }
 
     // Now that we have the correct last processed block, the new starting block needs
@@ -418,21 +418,21 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Begins to revert the blockchain cache until consistent, returns last good height
+   * Begins to revert databases until consistent with blockchain, returns last good height
    * @returns last valid block height before the fork
    */
-  private async revertBlockchainCache (): Promise<IBlockInfo> {
+  private async revertDatabases (): Promise<IBlockInfo> {
     console.info('Reverting transactions');
 
     // Keep reverting transactions until a valid transaction is found.
     while (await this.transactionStore.getTransactionsCount() > 0) {
       const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
-      const firstValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
+      const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
-      if (firstValidTransaction) {
+      if (lastKnownValidTransaction) {
         // We have a valid transaction, so revert the DBs to that valid one and return.
-        return this.revertQuantileAndTransactionDbsTo(firstValidTransaction.transactionTime);
+        return this.trimDatabasesToFeeSamplingGroupBoundary(lastKnownValidTransaction.transactionTime);
       }
 
       // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
@@ -450,29 +450,28 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Deletes the correct entries from the system DBs and return the new valid block.
-   * @param validBlockNumber The valid block number.
-   * @returns The new valid block after the revert is complete.
+   * Trims entries from the system DBs to the closest full fee sampling group boundary.
+   * @param lastValidBlockNumber The last known valid block number.
+   * @returns The last block of the fee sampling group.
    */
-  private async revertQuantileAndTransactionDbsTo (validBlockNumber: number): Promise<IBlockInfo> {
+  private async trimDatabasesToFeeSamplingGroupBoundary (lastValidBlockNumber: number): Promise<IBlockInfo> {
 
-    console.info(`Reverting quantile and transaction DBs to: ${validBlockNumber}`);
+    console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${lastValidBlockNumber}`);
 
-    // For the transaction DB, we can remove all the transaction greater than the validBlockNumber
-    // but for the quantile DB, we need to remove the full group (corresponding to the given
-    // validBlockNumber). This is because currently there is no way to add/remove individual block's
+    // For the quantile DB, we need to remove the full group (corresponding to the given
+    // lastValidBlockNumber). This is because currently there is no way to add/remove individual block's
     // data to the quantile DB ... it only expects to work with the full groups. Which means that we
     // need to remove all the transactions which belong to that group (and later ones).
     //
     // So what we need to do is:
     // <code>
-    //   validBlockGroup = findGroupForTheBlock(validBlockNumber);
+    //   validBlockGroup = findGroupForTheBlock(lastValidBlockNumber);
     //   firstBlockInGroup = findFirstBlockInGroup(validBlockGroup);
     //
     //   deleteAllTransactionsGreaterThanOrEqualTo(firstBlockInGroup);
     //   deleteAllGroupsGreaterThanOrEqualTo(validBlockGroup);
     // </code>
-    const firstBlockInGroup = this.getFirstBlockInGroup(validBlockNumber);
+    const firstBlockInGroup = this.getFirstBlockInGroup(lastValidBlockNumber);
 
     // NOTE:
     // *****
@@ -616,6 +615,7 @@ export default class BitcoinProcessor {
     const blockHash = await this.bitcoinClient.getBlockHash(block);
     const blockData = await this.bitcoinClient.getBlock(blockHash);
 
+    // This check detects fork by ensuring the fetched block points to the expected previous block.
     if (blockData.previousHash !== previousBlockHash) {
       throw Error(`Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`);
     }
