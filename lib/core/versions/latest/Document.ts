@@ -12,33 +12,6 @@ import { SidetreeError } from '../../Error';
  */
 export default class Document {
   /**
-   * Creates a DID Document with a valid Sidetree DID from an encoded original DID Document.
-   * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
-   */
-  public static async from (
-    encodedOriginalDidDocument: string,
-    didMethodName: string,
-    hashAlgorithmAsMultihashCode: number
-  ): Promise<DocumentModel | undefined> {
-    // Compute the hash of the DID Document in the create payload as the DID
-    const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
-
-    // Decode the encoded DID Document.
-    const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
-    const decodedDidDocument = await JsonAsync.parse(decodedJsonString);
-
-    // Return `undefined` if original DID Document is invalid.
-    if (!Document.isObjectValidOriginalDocument(decodedDidDocument)) {
-      return undefined;
-    }
-
-    // Replace the placeholder DID with real DID before returning it.
-    Document.addDidToDocument(decodedDidDocument, did);
-
-    return decodedDidDocument;
-  }
-
-  /**
    * Creates a DID Document from the given long-form DID.
    */
   public static async fromLongFormDid (did: Did): Promise<DocumentModel> {
@@ -264,7 +237,7 @@ export default class Document {
     };
   }
 
-  /*
+  /**
    * Adds DID references in the document using the given DID
    * because client creating the document will not have these value set.
    * Specifically:
@@ -274,7 +247,7 @@ export default class Document {
    * @param didDocument The document to update.
    * @param did The DID which gets added to the document.
    */
-  private static addDidToDocument (didDocument: DocumentModel, did: string): void {
+  public static addDidToDocument (didDocument: DocumentModel, did: string): void {
 
     didDocument.id = did;
 

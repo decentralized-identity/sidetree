@@ -89,8 +89,16 @@ describe('RequestHandler', () => {
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service);
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      services);
 
     await requestHandler.handleOperationRequest(createOperationBuffer);
     await batchScheduler.writeOperationBatch();
@@ -153,7 +161,15 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
-    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey);
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+      recoveryPublicKey,
+      recoveryPrivateKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash
+    );
 
     // Submit the create request twice.
     await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -214,7 +230,8 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
     // write operation batch to prevent the violation of 1 operation per DID per batch rule.
     await batchScheduler.writeOperationBatch();
-    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, '#key1', recoveryPrivateKey);
+    const recoveryOtp = Encoder.encode(Buffer.from('unusedRecoveryOtp'));
+    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -236,7 +253,9 @@ describe('RequestHandler', () => {
     // Construct update payload.
     const updatePayload = {
       didUniqueSuffix,
-      patches
+      patches,
+      updateOtp: 'EiD_UnusedUpdateOneTimePassword_AAAAAAAAAAAAAA',
+      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, recoveryPublicKey.id, recoveryPrivateKey);
@@ -259,7 +278,10 @@ describe('RequestHandler', () => {
     const newDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
     const recoverPayload = {
       didUniqueSuffix,
-      newDidDocument: newDocumentModel
+      recoveryOtp: 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA',
+      newDidDocument: newDocumentModel,
+      nextRecoveryOtpHash: 'EiD_UnusedNextRecoveryOneTimePasswordHash_AAAA',
+      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     const request = await OperationGenerator.createOperationBuffer(OperationType.Recover, recoverPayload, recoveryPublicKey.id, recoveryPrivateKey);

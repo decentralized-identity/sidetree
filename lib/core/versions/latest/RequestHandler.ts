@@ -68,7 +68,9 @@ export default class RequestHandler implements IRequestHandler {
       let response: ResponseModel;
       switch (operation.type) {
         case OperationType.Create:
-          const didDocument = await Document.from(operation.encodedPayload, this.didMethodName, ProtocolParameters.hashAlgorithmInMultihashCode);
+          const did = this.didMethodName + operation.didUniqueSuffix;
+          const didDocument = operation.didDocument!;
+          Document.addDidToDocument(didDocument, did);
 
           response = {
             status: ResponseStatus.Succeeded,

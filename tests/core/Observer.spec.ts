@@ -143,14 +143,29 @@ describe('Observer', async () => {
     // Prepare the mock response from the DownloadManager.
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
     const [recoveryPublicKey2, recoveryPrivateKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
     const [signingPublicKey2] = await Cryptography.generateKeyPairHex('#key4', KeyUsage.signing);
 
+    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+
     const operationsBuffer = [
-      await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey, recoveryPrivateKey, signingPublicKey, service),
-      await OperationGenerator.generateCreateOperationBuffer(recoveryPublicKey2, recoveryPrivateKey2, signingPublicKey2, service)
+      await OperationGenerator.generateCreateOperationBuffer(
+        recoveryPublicKey,
+        recoveryPrivateKey,
+        signingPublicKey,
+        nextRecoveryOtpHash,
+        nextUpdateOtpHash,
+        services),
+      await OperationGenerator.generateCreateOperationBuffer(
+        recoveryPublicKey2,
+        recoveryPrivateKey2,
+        signingPublicKey2,
+        nextRecoveryOtpHash,
+        nextUpdateOtpHash,
+        services)
     ];
 
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);

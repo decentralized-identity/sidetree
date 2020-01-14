@@ -87,15 +87,6 @@ export default class Did {
   }
 
   /**
-   * Calculates the DID from the given DID Document.
-   */
-  public static from (encodedDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): string {
-    const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(encodedDidDocument, hashAlgorithmAsMultihashCode);
-    const did = didMethodName + didUniqueSuffix;
-    return did;
-  }
-
-  /**
    * Creates a long-form DID string.
    * ie. 'did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>'
    */
