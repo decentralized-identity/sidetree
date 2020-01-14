@@ -219,7 +219,7 @@ describe('Operation', async () => {
   describe('applyPatchesToDidDocument()', async () => {
     it('should prevent the same id for multiple keys', async () => {
       const didDocument: DocumentModel = {
-        '@context': 'someContext',
+        '@context': 'https://www.w3.org/ns/did/v1',
         id: 'someId',
         publicKey: [{ id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }],
         service: []

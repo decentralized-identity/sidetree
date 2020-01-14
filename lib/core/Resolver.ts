@@ -41,7 +41,7 @@ export default class Resolver {
     // Apply "full" operations first.
     await this.applyOperations(createAndRecoverAndRevokeOperations, didResolutionModel);
 
-    // If no valid operation full found at all, the DID is not anchored.
+    // If no valid full operation is found at all, the DID is not anchored.
     if (didResolutionModel.didDocument === undefined) {
       return undefined;
     }
