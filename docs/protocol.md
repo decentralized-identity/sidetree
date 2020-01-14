@@ -61,7 +61,7 @@ An update operation to a DID Document contains only the changes from the previou
 
 ### Sidetree Operation Hashes
 
-An _operation hash_ is the hash of the _encoded payload_ of a Sidetree operation request. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section. With the exception of the create operation, each operation must reference the previous operation using the _operation hash_, forming a chain of change history.
+An _operation hash_ is the hash of the _encoded payload_ of a Sidetree operation request. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section.
 
 ## Sidetree DID and Original DID Document
 A Sidetree DID is intentionally the hash of the encoded DID Document given as the create operation payload (_original DID Document_), prefixed by the Sidetree method name. Given how _operation hash_ is computed, A DID is also the operation hash of the initial create operation.
@@ -155,14 +155,13 @@ ECcAAA.QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
-## Batch Scaling & DDoS Mitigation
+## DDoS Attack & Mitigation
 
 Given the protocol was designed to enable operations to be performed at large volumes with cheap unit costs, DDoS is a real threat to the system.
 
-Without any mitigation strategy, each Sidetree batch can be arbitrarily large, allowing malicious, but protocol adherent nodes to create and broadcast 
-massive operation batches that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
+Without any mitigation strategy, malicious but protocol adherent nodes can create and broadcast operation batches that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
 
-Sidetree protocol defines the following two mechanisms to enable scaling, while preventing DDoS attacks:
+Sidetree protocol defines the following mechanisms to enable scaling, while preventing DDoS attacks:
 
 #### Maximum batch size
    
@@ -179,6 +178,18 @@ Sidetree protocol defines the following two mechanisms to enable scaling, while 
       3. Let the target fee F be the average of all the values contained in M.
       4. Let the per operation cost C be F divided by the baseline amount N.
    3. To test the batch for adherence to the Proof of Fee requirement, divide the number of operations in the batch by the fee paid in the host transaction, and ensure that the resulting per operation amount exceeds the required per operation cost C.
+
+### One Operation per DID per Batch
+  Only one operation per DID per batch is allowed, this prevents the operation chain of any DID from growing at an intractable rate.
+
+#### One-Time Password (OTP) for Operations
+  Upon DID creation, the create operation payload must include:
+  1. The hash of a _one-time password_ (OTP) for the next recovery operation.
+  1. The hash of a _one-time password_ (OTP) for the next update operation.
+
+  The DID owner must reproduce and present the correct OTP in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new OTP(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
+
+  See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify OTPs and OTP hashes in each operation.
 
 ## Sidetree Transaction Processing
 A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increasing by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
