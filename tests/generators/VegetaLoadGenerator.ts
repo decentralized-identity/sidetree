@@ -34,10 +34,21 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
 
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-      const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+
+      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
+      const [update1Otp, update1OtpHash] = OperationGenerator.generateOtp();
+      const [, update2OtpHash] = OperationGenerator.generateOtp();
 
       // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(publicKey, privateKey, signingPublicKey, service);
+      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+        publicKey,
+        privateKey,
+        signingPublicKey,
+        recoveryOtpHash,
+        update1OtpHash,
+        services
+      );
       const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
@@ -55,7 +66,9 @@ export default class VegetaLoadGenerator {
             type: 'RsaVerificationKey2018',
             publicKeyPem: process.hrtime() // Some dummy value that's not used.
           }
-        }]
+        }],
+        updateOtp: update1Otp,
+        nextUpdateOtpHash: update2OtpHash
       };
 
       // Generate an Update request body and save it on disk.

@@ -47,17 +47,6 @@ describe('Document', () => {
     };
   });
 
-  describe('from()', () => {
-    it('should return undefined if the given document fails validation.', async () => {
-      defaultOriginalDidDocument['@context'] = 'invalid-context';
-      const originalDidDocumentJson = JSON.stringify(defaultOriginalDidDocument);
-      const encodedOriginalDidDocument = Encoder.encode(originalDidDocumentJson);
-      const documentModel = await Document.from(encodedOriginalDidDocument, 'did:sidetree', 18);
-
-      expect(documentModel).toBeUndefined();
-    });
-  });
-
   describe('isEncodedStringValidOriginalDocument()', () => {
 
     it('should consider an original DID document invalid if it exceeds max allowed size.', async () => {

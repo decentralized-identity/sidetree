@@ -1,4 +1,5 @@
 import AnchoredOperationModel from '../models/AnchoredOperationModel';
+import DidResolutionModel from '../models/DidResolutionModel';
 
 /**
  * Interface that defines a class that can process operations.
@@ -6,24 +7,19 @@ import AnchoredOperationModel from '../models/AnchoredOperationModel';
 export default interface IOperationProcessor {
 
   /**
-   * Applies an operation on top of the given DID document in place.
+   * Applies an operation on top of the given DID document.
    * In the case of an invalid operation, the given DID document will be unchanged.
    * In the case of a (valid) delete operation, the given DID document will be set to `undefined`.
    *
    * MUST NOT throw error.
    *
-   * NOTE: An object referencing the DID document is used so that
-   * `didDocumentReference.didDocument` can be `undefined` initially and be set to an object created.
-   * An alternative approach is to include the DID Document as a return value, but that would give the
-   * misconception that the given DID Document is unchanged.
-   *
    * @param operation The operation to apply against the given DID Document (if any).
-   * @param didDocumentReference The object containing DID document to apply the given operation against.
-   * @returns a boolean that indicates if the operation is valid and applied.
+   * @param didResolutionModel
+   *        The container object that contains the metadata needed for applying the operation and the reference to the DID document to be modified.
    */
   apply (
     operation: AnchoredOperationModel,
-    didDocumentReference: { didDocument: object | undefined }
+    didResolutionModel: DidResolutionModel
   ): Promise<ApplyResult>;
 }
 
@@ -32,6 +28,4 @@ export default interface IOperationProcessor {
  */
 export interface ApplyResult {
   validOperation: boolean;
-  /** The operation hash of the operation being applied. */
-  operationHash: string | undefined;
 }
