@@ -149,7 +149,7 @@ export default class VersionManager implements IVersionManager {
     const throughputLimiter = this.throughputLimiter.get(version);
 
     if (throughputLimiter === undefined) {
-      throw new Error(`Unable to find throughput limiter for the given blockchain time ${blockchainTime}, investigate and fix`)
+      throw new Error(`Unable to find throughput limiter for the given blockchain time ${blockchainTime}, investigate and fix`);
     }
 
     return throughputLimiter;
