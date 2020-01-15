@@ -1,15 +1,12 @@
 import IBlockchain from './interfaces/IBlockchain';
-import IOperationRateLimiter from './interfaces/IOperationRateLimiter';
 import IOperationStore from './interfaces/IOperationStore';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
-import OperationRateLimiter from './versions/latest/OperationRateLimiter';
 import SharedErrorCode from '../common/SharedErrorCode';
 import timeSpan = require('time-span');
 import TransactionModel from '../common/models/TransactionModel';
-import TransactionNumber from '../bitcoin/TransactionNumber';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
 
@@ -33,7 +30,8 @@ export default class Observer {
    * This is the transaction that is used as a timestamp to fetch newer transaction.
    */
   private lastKnownTransaction: TransactionModel | undefined;
-  private operationRateLimiter: IOperationRateLimiter;
+  private currentBlockHeight: number | undefined;
+  private transactionsInCurrentBlock: TransactionModel[] = [];
 
   public constructor (
     private versionManager: IVersionManager,
@@ -43,7 +41,6 @@ export default class Observer {
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
-    this.operationRateLimiter = new OperationRateLimiter(10000); // temp number TBD
   }
 
   /**
@@ -52,11 +49,6 @@ export default class Observer {
   public async startPeriodicProcessing () {
     // Initialize the last known transaction before starting processing.
     this.lastKnownTransaction = await this.transactionStore.getLastTransaction();
-
-    // roll it back to the first transaction of the block if has lastKnownTransaction so rate limiter can reset
-    if (this.lastKnownTransaction) {
-      await this.revertToFirstTransactionInSameBlockAs(this.lastKnownTransaction);
-    }
 
     console.info(`Starting periodic transactions processing.`);
     setImmediate(async () => {
@@ -112,16 +104,27 @@ export default class Observer {
         let transactions = readResult ? readResult.transactions : [];
         moreTransactions = readResult ? readResult.moreTransactions : false;
 
-        const transactionsToProcess = this.operationRateLimiter.getHighestFeeTransactionsPerBlock(transactions);
-        // Queue parallel downloading and processing of batch files.
-        for (const transaction of transactionsToProcess) {
-          const awaitingTransaction = {
-            transaction: transaction,
-            processingStatus: TransactionProcessingStatus.Pending
-          };
-          this.transactionsUnderProcessing.push(awaitingTransaction);
-          // Intentionally not awaiting on downloading and processing each operation batch.
-          void this.processTransaction(transaction, awaitingTransaction);
+        for (const transaction of transactions) {
+          if (transaction.transactionTime === this.currentBlockHeight) {
+            this.transactionsInCurrentBlock.push(transaction);
+          } else {
+            if (this.currentBlockHeight !== undefined) {
+              const throughputLimiter = this.versionManager.getThroughputLimiter(this.currentBlockHeight);
+              const qualifiedTransactionsInCurrentBlock = await throughputLimiter.selectQualifiedTransactions(this.transactionsInCurrentBlock);
+              // Queue parallel downloading and processing of batch files.
+              for (const transaction of qualifiedTransactionsInCurrentBlock) {
+                const awaitingTransaction = {
+                  transaction: transaction,
+                  processingStatus: TransactionProcessingStatus.Pending
+                };
+                this.transactionsUnderProcessing.push(awaitingTransaction);
+                // Intentionally not awaiting on downloading and processing each operation batch.
+                void this.processTransaction(transaction, awaitingTransaction);
+              }
+            }
+            this.currentBlockHeight = transaction.transactionTime;
+            this.transactionsInCurrentBlock = [transaction];
+          }
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -286,43 +289,16 @@ export default class Observer {
 
     const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
     console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);
-    await this.revertToFirstTransactionInSameBlockAs(bestKnownValidRecentTransaction);
-  }
-
-  /**
-   * revert the observer to the first transaction in the same block as the transaction provided
-   * @param transaction The transaction which exists in the same block as the one that is desired to be reverted to
-   */
-  private async revertToFirstTransactionInSameBlockAs (transaction: TransactionModel | undefined): Promise<void> {
-    // Get the first transaction within the same block of transaction
-    // This allows the rate limiter to consider all transactions in the block in order to find the highest fee transactions
-    let transactionNumberToRevertTo: number | undefined;
-    let firstTransactionInTheBlock;
-    if (transaction) {
-      let firstTransactionNumberInTheBlock: number | undefined;
-      [firstTransactionNumberInTheBlock, firstTransactionInTheBlock] = await this.getFirstTransactionAndNumberInBlock(transaction.transactionTime);
-      transactionNumberToRevertTo = firstTransactionNumberInTheBlock - 1; // roll back to right before the transaction
-    }
 
     // Revert all processed operations that came after the best known valid recent transaction.
     console.info('Reverting operations...');
-    await this.operationStore.delete(transactionNumberToRevertTo);
+    await this.operationStore.delete(bestKnownValidRecentTransactionNumber);
 
     // NOTE: MUST do this step LAST to handle incomplete operation rollback due to unexpected scenarios, such as power outage etc.
-    await this.transactionStore.removeTransactionsLaterThan(transactionNumberToRevertTo);
-    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(transactionNumberToRevertTo);
+    await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
+    await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
     // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
-    this.lastKnownTransaction = firstTransactionInTheBlock;
-    this.operationRateLimiter.clear();
-    if (this.lastKnownTransaction) {
-      this.operationRateLimiter.getHighestFeeTransactionsPerBlock([this.lastKnownTransaction]);
-    }
-  }
-
-  private async getFirstTransactionAndNumberInBlock (transactionTime: number): Promise<[number, TransactionModel]> {
-    const transactionNumber = TransactionNumber.construct(transactionTime, 0);
-    const transaction = await this.transactionStore.getTransaction(transactionNumber);
-    return [transactionNumber, transaction!];
+    this.lastKnownTransaction = bestKnownValidRecentTransaction;
   }
 }

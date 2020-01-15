@@ -7,5 +7,6 @@
   "observingIntervalInSeconds": 10,
   "maxConcurrentDownloads": 20,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
-  "transactionFeeMarkupPercentage": 10
+  "transactionFeeMarkupPercentage": 10,
+  "maxNumberOfOperationsPerBlock": 10000 // this is TBD
 }

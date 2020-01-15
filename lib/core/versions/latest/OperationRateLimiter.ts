@@ -1,17 +1,19 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
-import IOperationRateLimiter from '../../interfaces/IOperationRateLimiter';
+import IThroughputLimiter from '../../interfaces/IThroughputLimiter';
+import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
 import TransactionModel from '../../../common/models/TransactionModel';
+import { SidetreeError } from '../../Error';
+import ErrorCode from './ErrorCode';
 
 /**
  * rate limits how many operations is valid per block
  */
-export default class OperationRateLimiter implements IOperationRateLimiter {
-  private currentTransactionTime: number | undefined;
-  private transactionsInCurrentTransactionTime: any;
-
+export default class OperationRateLimiter implements IThroughputLimiter {
+  private transactionsPriorityQueue: any;
   public constructor (
-    private maxNumberOfOperationsPerBlock: number
+    private maxNumberOfOperationsPerBlock: number,
+    private transactionStore: ITransactionStore
   ) {
 
     const comparator = (a: TransactionModel, b: TransactionModel) => {
@@ -19,7 +21,7 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
       return a.transactionFeePaid - b.transactionFeePaid || b.transactionNumber - a.transactionNumber;
     };
 
-    this.transactionsInCurrentTransactionTime = new PriorityQueue({ comparator });
+    this.transactionsPriorityQueue = new PriorityQueue({ comparator });
   }
 
   /**
@@ -27,53 +29,54 @@ export default class OperationRateLimiter implements IOperationRateLimiter {
    * max number of operations per block
    * @param orderedTransactions The transactions that should be ranked and considered to process
    */
-  public getHighestFeeTransactionsPerBlock (orderedTransactions: TransactionModel[]): TransactionModel[] {
-    let highestFeeTransactions: TransactionModel[] = [];
-    for (const transaction of orderedTransactions) {
-      if (transaction.transactionTime === this.currentTransactionTime) {
-        this.transactionsInCurrentTransactionTime.push(transaction);
-      } else {
-        const highestFeeTransactionsInCurrentTransactionTime = this.getHighestFeeTransactionsFromCurrentTransactionTime();
-        highestFeeTransactions = highestFeeTransactions.concat(highestFeeTransactionsInCurrentTransactionTime);
-
-        this.currentTransactionTime = transaction.transactionTime;
-        this.transactionsInCurrentTransactionTime.clear();
-        this.transactionsInCurrentTransactionTime.push(transaction);
-      }
+  public async selectQualifiedTransactions (orderedTransactions: TransactionModel[]): Promise<TransactionModel[]> {
+    if (!orderedTransactions.length) {
+      return [];
     }
-    return highestFeeTransactions;
+
+    const currentBlockHeight = orderedTransactions[0].transactionTime;
+    for (const transaction of orderedTransactions) {
+      if (transaction.transactionTime !== currentBlockHeight) {
+        throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting');
+      }
+      this.transactionsPriorityQueue.push(transaction);
+    }
+
+    let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - await this.getNumberOfOperationsAlreadyInBlock(currentBlockHeight);
+    const transactionsToReturn = this.getHighestFeeTransactionsFromCurrentTransactionTime(numberOfOperationsToQualify);
+    this.transactionsPriorityQueue.clear();
+    return transactionsToReturn;
   }
 
-  /**
-   * reset the OperationRateLimiter. Setting current transaction time to undefined and transactionsInCurrentTransactionTime to empty PQ
-   */
-  public clear (): void {
-    this.currentTransactionTime = undefined;
-    this.transactionsInCurrentTransactionTime.clear();
+  private async getNumberOfOperationsAlreadyInBlock (blockHeight: number): Promise<number> {
+    const transactions = await this.transactionStore.getTransactionsByTransactionTime(blockHeight);
+    let numberOfOperations = 0;
+    if (transactions) {
+      for (const transaction of transactions) {
+        const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(transaction.anchorString).numberOfOperations;
+        numberOfOperations += numOfOperationsInCurrentTransaction;
+      }
+    }
+    return numberOfOperations;
   }
 
   /**
    * Given transactions within a block, return the ones that should be processed.
    */
-  private getHighestFeeTransactionsFromCurrentTransactionTime (): TransactionModel[] {
-    let numberOfOperationsAvailableInCurrentBlock = 0;
+  private getHighestFeeTransactionsFromCurrentTransactionTime (numberOfOperationsToQualify: number): TransactionModel[] {
+    let numberOfOperationsSelected = 0;
     const transactionsToReturn = [];
 
-    while (numberOfOperationsAvailableInCurrentBlock < this.maxNumberOfOperationsPerBlock && this.transactionsInCurrentTransactionTime.length) {
-      const currentTransaction = this.transactionsInCurrentTransactionTime.pop();
-      try {
-        const numOfOperations = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
+    while (numberOfOperationsSelected < numberOfOperationsToQualify && this.transactionsPriorityQueue.length) {
+      const currentTransaction = this.transactionsPriorityQueue.pop();
+      const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
+      numberOfOperationsSelected += numOfOperationsInCurrentTransaction;
 
-        numberOfOperationsAvailableInCurrentBlock += numOfOperations;
-        if (numberOfOperationsAvailableInCurrentBlock <= this.maxNumberOfOperationsPerBlock) {
-          transactionsToReturn.push(currentTransaction);
-        }
-      } catch (e) {
+      if (numberOfOperationsSelected <= numberOfOperationsToQualify) {
         transactionsToReturn.push(currentTransaction);
       }
 
     }
-
     // sort based on transaction number ascending
     return transactionsToReturn.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
   }
