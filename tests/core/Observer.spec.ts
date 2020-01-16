@@ -24,6 +24,7 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { SidetreeError } from '../../lib/core/Error';
+import OperationThroughputLimiter from '../../lib/core/versions/latest/OperationThroughputLimiter';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -50,9 +51,11 @@ describe('Observer', async () => {
     downloadManager.start();
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    const throughputLimiter = new OperationThroughputLimiter(25, transactionStore);
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
+    spyOn(versionManager, 'getThroughputLimiter').and.returnValue(throughputLimiter);
   });
 
   afterAll(() => {
@@ -72,15 +75,32 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash1',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
         {
           'transactionNumber': 2,
-          'transactionTime': 1000,
+          'transactionTime': 1001,
           'transactionTimeHash': '1000',
-          'anchorString': '2ndTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash2',
+            numberOfOperations: 1
+          }),
+          'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 3,
+          'transactionTime': 1111,
+          'transactionTimeHash': '1000',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'Force previous to process',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 2,
           'normalizedTransactionFee': 2
         }
@@ -135,8 +155,8 @@ describe('Observer', async () => {
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
 
-    expect(processedTransactions[0].anchorString).toEqual('1stTransaction');
-    expect(processedTransactions[1].anchorString).toEqual('2ndTransaction');
+    expect(processedTransactions[0].anchorString).toEqual('AQAAAA.hash1');
+    expect(processedTransactions[1].anchorString).toEqual('AQAAAA.hash2');
   });
 
   it('should process a valid operation batch successfully.', async () => {
@@ -299,7 +319,10 @@ describe('Observer', async () => {
           'transactionNumber': 1,
           'transactionTime': 1000,
           'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash1',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -307,7 +330,10 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 2000,
           'transactionTimeHash': '2000',
-          'anchorString': '2ndTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash2',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -315,7 +341,21 @@ describe('Observer', async () => {
           'transactionNumber': 3,
           'transactionTime': 3000,
           'transactionTimeHash': '3000',
-          'anchorString': '3rdTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash3',
+            numberOfOperations: 1
+          }),
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
+        },
+        {
+          'transactionNumber': 4,
+          'transactionTime': 4000,
+          'transactionTimeHash': '4000',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'This should be cut off and not processed',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
@@ -329,7 +369,10 @@ describe('Observer', async () => {
           'transactionNumber': 2,
           'transactionTime': 2001,
           'transactionTimeHash': '2001',
-          'anchorString': '2ndTransactionNew',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash2New',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -337,7 +380,10 @@ describe('Observer', async () => {
           'transactionNumber': 3,
           'transactionTime': 3001,
           'transactionTimeHash': '3000',
-          'anchorString': '3rdTransactionNew',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash3New',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         },
@@ -345,7 +391,21 @@ describe('Observer', async () => {
           'transactionNumber': 4,
           'transactionTime': 4000,
           'transactionTimeHash': '4000',
-          'anchorString': '4thTransaction',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash4New',
+            numberOfOperations: 1
+          }),
+          'transactionFeePaid': 1,
+          'normalizedTransactionFee': 1
+        },
+        {
+          'transactionNumber': 5,
+          'transactionTime': 5000,
+          'transactionTimeHash': '5000',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'This should be cutoff and not processed',
+            numberOfOperations: 1
+          }),
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1
         }
@@ -412,9 +472,11 @@ describe('Observer', async () => {
       maxTimeout: 1000 // milliseconds
     });
 
-    expect(processedTransactions[1].anchorString).toEqual('2ndTransactionNew');
-    expect(processedTransactions[2].anchorString).toEqual('3rdTransactionNew');
-    expect(processedTransactions[3].anchorString).toEqual('4thTransaction');
+    expect(processedTransactions.length).toEqual(4);
+    expect(processedTransactions[0].anchorString).toEqual('AQAAAA.hash1');
+    expect(processedTransactions[1].anchorString).toEqual('AQAAAA.hash2New');
+    expect(processedTransactions[2].anchorString).toEqual('AQAAAA.hash3New');
+    expect(processedTransactions[3].anchorString).toEqual('AQAAAA.hash4New');
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {

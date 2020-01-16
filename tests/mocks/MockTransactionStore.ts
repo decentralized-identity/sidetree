@@ -160,10 +160,6 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
    * @param transactionTime The transaction time to query for
    */
   public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
-    // TODO implement this
-    if (transactionTime) {
-      return [];
-    }
-    return [];
+    return this.processedTransactions.filter((transaction) => { return transaction.transactionTime === transactionTime; });
   }
 }

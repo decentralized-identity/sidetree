@@ -3,7 +3,7 @@ import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
 import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import IThroughputLimiter from '../../lib/core/versions/latest/interfaces/IThroughputLimiter';
+import IThroughputLimiter from '../../lib/core/interfaces/IThroughputLimiter';
 
 /**
  * Mock version manager for testing.

@@ -1,4 +1,4 @@
-import TransactionModel from '../../../../common/models/TransactionModel';
+import TransactionModel from '../../common/models/TransactionModel';
 
 /**
  * Rate limits operations. only allow n number of highest fee transactions to pass.

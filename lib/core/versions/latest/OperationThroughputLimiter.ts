@@ -1,5 +1,5 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
-import IThroughputLimiter from './interfaces/IThroughputLimiter';
+import IThroughputLimiter from '../../interfaces/IThroughputLimiter';
 import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
 import TransactionModel from '../../../common/models/TransactionModel';
@@ -37,6 +37,7 @@ export default class OperationThroughputLimiter implements IThroughputLimiter {
     const currentBlockHeight = orderedTransactions[0].transactionTime;
     for (const transaction of orderedTransactions) {
       if (transaction.transactionTime !== currentBlockHeight) {
+        this.transactionsPriorityQueue.clear();
         throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting');
       }
       this.transactionsPriorityQueue.push(transaction);

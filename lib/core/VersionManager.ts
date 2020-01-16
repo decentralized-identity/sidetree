@@ -6,7 +6,7 @@ import Config from './models/Config';
 import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
-import IThroughputLimiter from './versions/latest/interfaces/IThroughputLimiter';
+import IThroughputLimiter from './interfaces/IThroughputLimiter';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IVersionManager from './interfaces/IVersionManager';

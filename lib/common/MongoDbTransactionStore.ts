@@ -162,11 +162,8 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * @param transactionTime The transaction time to query for
    */
   public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
-    // TODO implement this
-    if (transactionTime) {
-      return [];
-    }
-    return [];
+    const transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(transactionTime) } }).toArray();
+    return transactions;
   }
 
   /**

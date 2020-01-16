@@ -1,7 +1,7 @@
 import IBatchWriter from './IBatchWriter';
 import IOperationProcessor from './IOperationProcessor';
 import IRequestHandler from './IRequestHandler';
-import IThroughputLimiter from '../versions/latest/interfaces/IThroughputLimiter';
+import IThroughputLimiter from './IThroughputLimiter';
 import ITransactionProcessor from './ITransactionProcessor';
 
 /**
