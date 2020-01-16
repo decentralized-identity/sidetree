@@ -62,5 +62,6 @@ export default {
   OperationUpdatePatchServiceTypeMissingOrUnknown: 'operation_update_patch_service_type_missing_or_unknown',
   QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed',
   TransactionFeePaidInvalid: 'transaction_fee_paid_is_invalid',
-  TransactionFeePaidLessThanNormalizedFee: 'transaction_fee_paid_less_than_normalized_fee'
+  TransactionFeePaidLessThanNormalizedFee: 'transaction_fee_paid_less_than_normalized_fee',
+  TransactionsNotInSameBlock: 'transactions_not_in_same_block'
 };

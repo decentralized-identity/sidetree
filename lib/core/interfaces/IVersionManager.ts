@@ -1,6 +1,7 @@
 import IBatchWriter from './IBatchWriter';
 import IOperationProcessor from './IOperationProcessor';
 import IRequestHandler from './IRequestHandler';
+import IThroughputLimiter from '../versions/latest/interfaces/IThroughputLimiter';
 import ITransactionProcessor from './ITransactionProcessor';
 
 /**
@@ -31,4 +32,10 @@ export default interface IVersionManager {
    * @param blockchainTime The blockchain time for which the transaction processor is needed.
    */
   getTransactionProcessor (blockchainTime: number): ITransactionProcessor;
+
+  /**
+   * Gets the throughput limiter for the given blockchain time.
+   * @param blockchainTime The blockchain time for which the throughput limiter is needed
+   */
+  getThroughputLimiter (blockchainTime: number): IThroughputLimiter;
 }

@@ -31,6 +31,13 @@ export default class Observer {
    */
   private lastKnownTransaction: TransactionModel | undefined;
 
+  /**
+   * Used to keep track of which block is currently under processing, required by throughput limiter
+   * because its unit of processing is by block
+   */
+  private currentBlockHeight: number | undefined;
+  private transactionsInCurrentBlock: TransactionModel[] = [];
+
   public constructor (
     private versionManager: IVersionManager,
     private blockchain: IBlockchain,
@@ -68,9 +75,9 @@ export default class Observer {
 
   /**
    * Processes new transactions if any, then reprocess a set of unresolvable transactions if any,
-   * then scehdules the next round of processing unless `stopPeriodicProcessing()` is invoked.
+   * then schedules the next round of processing unless `stopPeriodicProcessing()` is invoked.
    */
-  public async processTransactions () {
+  private async processTransactions () {
     try {
       await this.storeConsecutiveTransactionsProcessed(); // Do this in multiple places
 
@@ -104,13 +111,26 @@ export default class Observer {
 
         // Queue parallel downloading and processing of batch files.
         for (const transaction of transactions) {
-          const awaitingTransaction = {
-            transaction: transaction,
-            processingStatus: TransactionProcessingStatus.Pending
-          };
-          this.transactionsUnderProcessing.push(awaitingTransaction);
-          // Intentionally not awaiting on downloading and processing each operation batch.
-          void this.processTransaction(transaction, awaitingTransaction);
+          if (transaction.transactionTime === this.currentBlockHeight) {
+            this.transactionsInCurrentBlock.push(transaction);
+          } else {
+            if (this.currentBlockHeight !== undefined) {
+              const throughputLimiter = this.versionManager.getThroughputLimiter(this.currentBlockHeight);
+              const qualifiedTransactionsInCurrentBlock = await throughputLimiter.selectQualifiedTransactions(this.transactionsInCurrentBlock);
+              // Queue parallel downloading and processing of batch files.
+              for (const transaction of qualifiedTransactionsInCurrentBlock) {
+                const awaitingTransaction = {
+                  transaction: transaction,
+                  processingStatus: TransactionProcessingStatus.Pending
+                };
+                this.transactionsUnderProcessing.push(awaitingTransaction);
+                // Intentionally not awaiting on downloading and processing each operation batch.
+                void this.processTransaction(transaction, awaitingTransaction);
+              }
+            }
+            this.currentBlockHeight = transaction.transactionTime;
+            this.transactionsInCurrentBlock = [transaction];
+          }
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -244,7 +264,7 @@ export default class Observer {
       const transactionProcessor: ITransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
       transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
-      console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
+      console.error(`Unhandled error encountered processing transaction '${transaction.transactionNumber}'.`);
       console.error(error);
       transactionProcessedSuccessfully = false;
     } finally {
@@ -284,7 +304,7 @@ export default class Observer {
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
-    // Reset the in-memory last known good Tranaction so we next processing cycle will fetch from the correct timestamp/maker.
+    // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
   }
 }
