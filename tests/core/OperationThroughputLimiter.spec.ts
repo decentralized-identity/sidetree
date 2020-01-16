@@ -163,8 +163,8 @@ describe('OperationRateLimiter', () => {
       expect(result).toEqual(expected);
     });
 
-    it('should deduct the number of transactions if some operations in the current block were already in transactions store', async () => {
-      throughputLimiter = new ThroughputLimiter(2, 25, transactionStore);
+    it('should deduct the number of transactions if transactions in the current block were already in transactions store', async () => {
+      throughputLimiter = new ThroughputLimiter(2, 10000, transactionStore);
       const extraTransaction = {
         transactionNumber: 0,
         transactionTime: 1,

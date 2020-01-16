@@ -63,7 +63,7 @@ export default class VersionManager implements IVersionManager {
     // Instantiate rest of the protocol components.
     // NOTE: In principal each version of the interface implemtnations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
-    // but it is not inhernetly "bad" if we have to have conditional constructions for each if we have to.
+    // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
       const version = protocolVersion.version;
 
@@ -79,7 +79,7 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const ThroughputLimiter = await this.loadDefaultExportsForVersion(version, 'ThroughputLimiter');
-      const throughputLimiter = new ThroughputLimiter(this.config.maxNumberOfOperationsPerBlock, transactionStore);
+      const throughputLimiter = new ThroughputLimiter(this.config.maxNumberOfTransactionsPerBlock, this.config.maxNumberOfOperationsPerBlock, transactionStore);
       this.throughputLimiters.set(version, throughputLimiter);
 
       /* tslint:disable-next-line */
