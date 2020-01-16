@@ -104,6 +104,7 @@ export default class BitcoinClient {
   /**
    * Gets the block data for the given block hash.
    * @param hash The hash of the block
+   * @returns the block data.
    */
   public async getBlock (hash: string): Promise<BitcoinBlockModel> {
     const request = {
@@ -150,6 +151,7 @@ export default class BitcoinClient {
   /**
    * Gets the block info for the given block height.
    * @param height The height of the block
+   * @returns the block info.
    */
   public async getBlockInfoFromHeight (height: number): Promise<IBlockInfo> {
     return this.getBlockInfo(await this.getBlockHash(height));
@@ -158,6 +160,7 @@ export default class BitcoinClient {
   /**
    * Gets the block info for the given block hash.
    * @param hash The hash of the block
+   * @returns the block info.
    */
   public async getBlockInfo (hash: string): Promise<IBlockInfo> {
     const request = {
@@ -208,6 +211,8 @@ export default class BitcoinClient {
 
   /**
    * Gets the transaction fee of a transaction in satoshis.
+   * @param transactionId the id of the target transaction.
+   * @returns the transaction fee.
    */
   public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
 
