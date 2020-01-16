@@ -8,5 +8,6 @@
   "maxConcurrentDownloads": 20,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
   "transactionFeeMarkupPercentage": 10,
-  "maxNumberOfOperationsPerBlock": 25
+  "maxNumberOfOperationsPerBlock": 25,
+  "maxNumberOfTransactionsPerBlock": 10
 }

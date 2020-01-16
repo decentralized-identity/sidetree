@@ -9,9 +9,10 @@ import ErrorCode from './ErrorCode';
 /**
  * rate limits how many operations is valid per block
  */
-export default class OperationThroughputLimiter implements IThroughputLimiter {
+export default class ThroughputLimiter implements IThroughputLimiter {
   private transactionsPriorityQueue: any;
   public constructor (
+    private maxNumberOfTransactionsPerBlock: number,
     private maxNumberOfOperationsPerBlock: number,
     private transactionStore: ITransactionStore
   ) {
@@ -43,13 +44,15 @@ export default class OperationThroughputLimiter implements IThroughputLimiter {
       this.transactionsPriorityQueue.push(transaction);
     }
 
-    let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - await this.getNumberOfOperationsAlreadyInBlock(currentBlockHeight);
-    const transactionsToReturn = this.getHighestFeeTransactionsFromCurrentTransactionTime(numberOfOperationsToQualify);
+    const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInBlock(currentBlockHeight);
+    let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
+    let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
+    const transactionsToReturn = this.getHighestFeeTransactionsFromCurrentTransactionTime(numberOfOperationsToQualify, numberOfTransactionsToQualify);
     this.transactionsPriorityQueue.clear();
     return transactionsToReturn;
   }
 
-  private async getNumberOfOperationsAlreadyInBlock (blockHeight: number): Promise<number> {
+  private async getNumberOfOperationsAndTransactionsAlreadyInBlock (blockHeight: number): Promise<number[]> {
     const transactions = await this.transactionStore.getTransactionsByTransactionTime(blockHeight);
     let numberOfOperations = 0;
     if (transactions) {
@@ -58,17 +61,20 @@ export default class OperationThroughputLimiter implements IThroughputLimiter {
         numberOfOperations += numOfOperationsInCurrentTransaction;
       }
     }
-    return numberOfOperations;
+    const numberOfTransactions = transactions ? transactions.length : 0;
+    return [numberOfOperations, numberOfTransactions];
   }
 
   /**
    * Given transactions within a block, return the ones that should be processed.
    */
-  private getHighestFeeTransactionsFromCurrentTransactionTime (numberOfOperationsToQualify: number): TransactionModel[] {
+  private getHighestFeeTransactionsFromCurrentTransactionTime (numberOfOperationsToQualify: number, numberOfTransactionsToQualify: number): TransactionModel[] {
     let numberOfOperationsSelected = 0;
     const transactionsToReturn = [];
 
-    while (numberOfOperationsSelected < numberOfOperationsToQualify && this.transactionsPriorityQueue.length) {
+    while (transactionsToReturn.length < numberOfTransactionsToQualify
+      && numberOfOperationsSelected < numberOfOperationsToQualify
+      && this.transactionsPriorityQueue.length) {
       const currentTransaction = this.transactionsPriorityQueue.pop();
       const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
       numberOfOperationsSelected += numOfOperationsInCurrentTransaction;
@@ -76,8 +82,8 @@ export default class OperationThroughputLimiter implements IThroughputLimiter {
       if (numberOfOperationsSelected <= numberOfOperationsToQualify) {
         transactionsToReturn.push(currentTransaction);
       }
-
     }
+
     // sort based on transaction number ascending
     return transactionsToReturn.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
   }

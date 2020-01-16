@@ -11,4 +11,5 @@ export default interface Config {
   observingIntervalInSeconds: number;
   mongoDbConnectionString: string;
   maxNumberOfOperationsPerBlock: number;
+  maxNumberOfTransactionsPerBlock: number;
 }

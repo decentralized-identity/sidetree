@@ -20,11 +20,11 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
+import ThroughputLimiter from '../../lib/core/versions/latest/ThroughputLimiter';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { SidetreeError } from '../../lib/core/Error';
-import OperationThroughputLimiter from '../../lib/core/versions/latest/OperationThroughputLimiter';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');
@@ -51,7 +51,7 @@ describe('Observer', async () => {
     downloadManager.start();
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
-    const throughputLimiter = new OperationThroughputLimiter(25, transactionStore);
+    const throughputLimiter = new ThroughputLimiter(10, 25, transactionStore);
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);

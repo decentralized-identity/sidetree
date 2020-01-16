@@ -1,12 +1,12 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
-import OperationThroughputLimiter from '../../lib/core/versions/latest/OperationThroughputLimiter';
+import ThroughputLimiter from '../../lib/core/versions/latest/ThroughputLimiter';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 
 describe('OperationRateLimiter', () => {
 
-  let operationThroughputLimiter: OperationThroughputLimiter;
+  let throughputLimiter: ThroughputLimiter;
   let transactionStore: ITransactionStore;
 
   function getTestTransactionsFor1Block () {
@@ -60,13 +60,13 @@ describe('OperationRateLimiter', () => {
 
   beforeEach(() => {
     transactionStore = new MockTransactionStore();
-    operationThroughputLimiter = new OperationThroughputLimiter(25, transactionStore);
+    throughputLimiter = new ThroughputLimiter(10, 25, transactionStore);
   });
 
   describe('selectQualifiedTransactions', () => {
-    it('should return the expected transactions', async () => {
+    it('should return the expected transactions with limit on operation', async () => {
       const transactions = getTestTransactionsFor1Block();
-      const result = await operationThroughputLimiter.selectQualifiedTransactions(transactions);
+      const result = await throughputLimiter.selectQualifiedTransactions(transactions);
       const expected = [
         {
           transactionNumber: 2,
@@ -94,8 +94,28 @@ describe('OperationRateLimiter', () => {
       expect(result).toEqual(expected);
     });
 
+    it('should return the expected transactions with limit on transaction', async () => {
+      throughputLimiter = new ThroughputLimiter(1, 100, transactionStore);
+      const transactions = getTestTransactionsFor1Block();
+      const result = await throughputLimiter.selectQualifiedTransactions(transactions);
+      const expected = [
+        {
+          transactionNumber: 3,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: AnchoredDataSerializer.serialize({
+            anchorFileHash: 'file_hash3',
+            numberOfOperations: 8
+          }),
+          transactionFeePaid: 999, // second highest fee should come second
+          normalizedTransactionFee: 1
+        }
+      ];
+      expect(result).toEqual(expected);
+    });
+
     it('should return an empty array when an empty array is passed in', async () => {
-      const result = await operationThroughputLimiter.selectQualifiedTransactions([]);
+      const result = await throughputLimiter.selectQualifiedTransactions([]);
       const expected: TransactionModel[] = [];
       expect(result).toEqual(expected);
     });
@@ -105,7 +125,7 @@ describe('OperationRateLimiter', () => {
       transactions[transactions.length - 1].transactionTime = 12324;
 
       try {
-        await operationThroughputLimiter.selectQualifiedTransactions(transactions);
+        await throughputLimiter.selectQualifiedTransactions(transactions);
       } catch (e) {
         expect(e.message).toEqual('transactions_not_in_same_block: transaction must be in the same block to perform rate limiting');
       }
@@ -126,7 +146,40 @@ describe('OperationRateLimiter', () => {
 
       await transactionStore.addTransaction(extraTransaction);
       const transactions = getTestTransactionsFor1Block();
-      const result = await operationThroughputLimiter.selectQualifiedTransactions(transactions);
+      const result = await throughputLimiter.selectQualifiedTransactions(transactions);
+      const expected = [
+        {
+          transactionNumber: 3,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: AnchoredDataSerializer.serialize({
+            anchorFileHash: 'file_hash3',
+            numberOfOperations: 8
+          }),
+          transactionFeePaid: 999, // second highest fee should come second
+          normalizedTransactionFee: 1
+        }
+      ];
+      expect(result).toEqual(expected);
+    });
+
+    it('should deduct the number of transactions if some operations in the current block were already in transactions store', async () => {
+      throughputLimiter = new ThroughputLimiter(2, 25, transactionStore);
+      const extraTransaction = {
+        transactionNumber: 0,
+        transactionTime: 1,
+        transactionTimeHash: 'some hash',
+        anchorString: AnchoredDataSerializer.serialize({
+          anchorFileHash: 'file_hash',
+          numberOfOperations: 1
+        }),
+        transactionFeePaid: 9999,
+        normalizedTransactionFee: 1
+      };
+
+      await transactionStore.addTransaction(extraTransaction);
+      const transactions = getTestTransactionsFor1Block();
+      const result = await throughputLimiter.selectQualifiedTransactions(transactions);
       const expected = [
         {
           transactionNumber: 3,
