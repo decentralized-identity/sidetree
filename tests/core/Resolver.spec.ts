@@ -38,12 +38,13 @@ describe('Resolver', () => {
       // Create the initial create operation and insert it to the operation store.
       const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
       const createOperationPayload = {
+        type: OperationType.Create,
         didDocument: documentModel,
         nextRecoveryOtpHash: firstRecoveryOtpHash,
         nextUpdateOtpHash: firstUpdateOtpHash
       };
       const anchoredCreateOperation =
-        await OperationGenerator.createAnchoredOperation(OperationType.Create, createOperationPayload, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
+        await OperationGenerator.createAnchoredOperation(createOperationPayload, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
       const didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
       await operationStore.put([anchoredCreateOperation]);
 
@@ -57,14 +58,14 @@ describe('Resolver', () => {
         updateOtpHashPriorToRecovery2
       );
       const updateOperation1PriorRecovery =
-        await OperationGenerator.createAnchoredOperation(OperationType.Update, updatePayloadPriorRecovery1, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+        await OperationGenerator.createAnchoredOperation(updatePayloadPriorRecovery1, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
       await operationStore.put([updateOperation1PriorRecovery]);
 
       // Create another update operation and insert it to the operation store.
       const updatePayload2PriorRecovery =
         await OperationGenerator.createUpdatePayloadForHubEndpoints(didUniqueSuffix, updateOtpPriorToRecovery2, ['dummyHubUri3'], []);
       const updateOperation2PriorRecovery =
-        await OperationGenerator.createAnchoredOperation(OperationType.Update, updatePayload2PriorRecovery, signingPublicKey.id, signingPrivateKey, 3, 3, 3);
+        await OperationGenerator.createAnchoredOperation(updatePayload2PriorRecovery, signingPublicKey.id, signingPrivateKey, 3, 3, 3);
       await operationStore.put([updateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
@@ -82,6 +83,7 @@ describe('Resolver', () => {
       const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
       const recoveryPayload = {
+        type: OperationType.Recover,
         didUniqueSuffix,
         recoveryOtp: firstRecoveryOtp,
         newDidDocument: recoveryDocumentModel,
@@ -89,7 +91,7 @@ describe('Resolver', () => {
         nextUpdateOtpHash: update1OtpHashAfterRecovery
       };
       const anchoredRecoveryOperation =
-        await OperationGenerator.createAnchoredOperation(OperationType.Recover, recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 4, 4, 4);
+        await OperationGenerator.createAnchoredOperation(recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 4, 4, 4);
       await operationStore.put([anchoredRecoveryOperation]);
 
       // Create an update operation after the recovery operation.
@@ -102,14 +104,14 @@ describe('Resolver', () => {
         update2OtpHashAfterRecovery
       );
       const updateOperation1AfterRecovery = await
-        OperationGenerator.createAnchoredOperation(OperationType.Update, update1PayloadAfterRecovery, newSigningPublicKey.id, newSigningPrivateKey, 5, 5, 5);
+        OperationGenerator.createAnchoredOperation(update1PayloadAfterRecovery, newSigningPublicKey.id, newSigningPrivateKey, 5, 5, 5);
       await operationStore.put([updateOperation1AfterRecovery]);
 
       // Create another update and insert it to the operation store.
       const updatePayload2AfterRecovery =
         await OperationGenerator.createUpdatePayloadForHubEndpoints(didUniqueSuffix, update2OtpAfterRecovery, [], ['newDummyHubUri1']);
       const updateOperation2AfterRecovery = await
-        OperationGenerator.createAnchoredOperation(OperationType.Update, updatePayload2AfterRecovery, newSigningPublicKey.id, newSigningPrivateKey, 6, 6, 6);
+        OperationGenerator.createAnchoredOperation(updatePayload2AfterRecovery, newSigningPublicKey.id, newSigningPrivateKey, 6, 6, 6);
       await operationStore.put([updateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.

@@ -75,7 +75,7 @@ export default class Operation {
     const [decodedHeader, decodedPayload] = Operation.parseAndValidateOperation(operation);
 
     // Initialize common operation properties.
-    this.type = decodedHeader.operation;
+    this.type = decodedPayload.type;
     this.signingKeyId = decodedHeader.kid;
     this.encodedProtectedHeader = operation.protected;
     this.encodedPayload = operation.payload;
@@ -248,29 +248,19 @@ export default class Operation {
     const decodedProtectedHeadJsonString = Encoder.decodeAsString(operation.protected);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
-    // Must contain 'header' property and 'header' property must contain a string 'kid' property.
+    const headerProperties = Object.keys(decodedProtectedHeader);
+    if (headerProperties.length !== 2) {
+      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrUnknownProperty);
+    }
+
+    // 'header' property and 'header' property must contain a string 'kid' property.
     if (typeof decodedProtectedHeader.kid !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationHeaderMissingKid);
+      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectKid);
     }
 
     // 'header' property must contain 'alg' property with value 'ES256k'.
     if (decodedProtectedHeader.alg !== 'ES256K') {
       throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectAlg);
-    }
-
-    // Get the operation type.
-    const operationType = decodedProtectedHeader.operation;
-
-    // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
-    const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
-    if (typeof operationType !== 'string' ||
-        !allowedOperations.has(operationType)) {
-      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectOperation);
-    }
-
-    // Must contain string 'payload' property.
-    if (typeof operation.payload !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationMissingOrIncorrectPayload);
     }
 
     // Must contain string 'signature' property.
@@ -281,6 +271,16 @@ export default class Operation {
     // Decode the encoded operation string.
     const decodedPayloadJson = Encoder.decodeAsString(operation.payload);
     const decodedPayload = JSON.parse(decodedPayloadJson);
+
+    // Get the operation type.
+    const operationType = decodedPayload.type;
+
+    // 'type' property must be one of the allowed strings.
+    const allowedOperations = new Set([OperationType.Create, OperationType.Update, OperationType.Delete, OperationType.Recover]);
+    if (typeof operationType !== 'string' ||
+        !allowedOperations.has(operationType as OperationType)) {
+      throw new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType);
+    }
 
     // Verify operation specific payload schema.
     switch (operationType) {
@@ -305,6 +305,19 @@ export default class Operation {
    * @throws Error if given operation payload fails validation.
    */
   public static validateCreatePayload (payload: any) {
+    const payloadProperties = Object.keys(payload);
+    if (payloadProperties.length !== 4) {
+      throw new SidetreeError(ErrorCode.OperationCreatePayloadMissingOrUnknownProperty);
+    }
+
+    if (typeof payload.nextRecoveryOtpHash !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextRecoveryOtpHash);
+    }
+
+    if (typeof payload.nextUpdateOtpHash !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextUpdateOtpHash);
+    }
+
     const validDocument = Document.isObjectValidOriginalDocument(payload.didDocument);
     if (!validDocument) {
       throw new SidetreeError(ErrorCode.OperationCreateInvalidDidDocument);
@@ -323,7 +336,7 @@ export default class Operation {
    */
   public static validateUpdatePayload (payload: any) {
     const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 4) {
+    if (payloadProperties.length !== 5) {
       throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
     }
 
@@ -460,7 +473,7 @@ export default class Operation {
    */
   public static validateRecoverPayload (payload: any) {
     const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 5) {
+    if (payloadProperties.length !== 6) {
       throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrUnknownProperty);
     }
 

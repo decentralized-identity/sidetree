@@ -252,6 +252,7 @@ describe('RequestHandler', () => {
 
     // Construct update payload.
     const updatePayload = {
+      type: OperationType.Update,
       didUniqueSuffix,
       patches,
       updateOtp: 'EiD_UnusedUpdateOneTimePassword_AAAAAAAAAAAAAA',
@@ -277,6 +278,7 @@ describe('RequestHandler', () => {
     // Create the recover payload.
     const newDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
     const recoverPayload = {
+      type: OperationType.Recover,
       didUniqueSuffix,
       recoveryOtp: 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA',
       newDidDocument: newDocumentModel,
@@ -284,7 +286,7 @@ describe('RequestHandler', () => {
       nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
-    const request = await OperationGenerator.createOperationBuffer(OperationType.Recover, recoverPayload, recoveryPublicKey.id, recoveryPrivateKey);
+    const request = await OperationGenerator.createOperationBuffer(recoverPayload, recoveryPublicKey.id, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
