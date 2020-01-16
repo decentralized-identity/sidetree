@@ -5,7 +5,6 @@ import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from '../common/SharedErrorCode';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import ProtocolParameters from './ProtocolParameters';
-import IBitcoinClient from './interfaces/IBitcoinClient';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
@@ -72,7 +71,7 @@ export default class BitcoinProcessor {
 
   private serviceInfoProvider: ServiceInfoProvider;
 
-  private bitcoinClient: IBitcoinClient;
+  private bitcoinClient: BitcoinClient;
 
   private spendingMonitor: SpendingMonitor;
 

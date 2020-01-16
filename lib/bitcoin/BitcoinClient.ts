@@ -3,7 +3,6 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import IBitcoinClient from './interfaces/IBitcoinClient';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -12,7 +11,7 @@ import { IBlockInfo } from './BitcoinProcessor';
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
  */
-export default class BitcoinClient implements IBitcoinClient {
+export default class BitcoinClient {
 
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
@@ -43,6 +42,9 @@ export default class BitcoinClient implements IBitcoinClient {
     }
   }
 
+  /**
+   * Initialize this bitcoin client.
+   */
   public async initialize (): Promise<void> {
 
     console.debug(`Checking if bitcoin contains a wallet for ${this.privateKeyAddress}`);
@@ -76,6 +78,12 @@ export default class BitcoinClient implements IBitcoinClient {
     return new PrivateKey(undefined, bitcoreNetwork).toWIF();
   }
 
+  /**
+   * Broadcasts a transaction to the bitcoin network.
+   * @param transactionData The data to write to the transaction
+   * @param feeInSatoshis The fee for the transaction in satoshis
+   * @returns The hash of the transaction if broadcasted successfully.
+   */
   public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
 
     const transaction = await this.createBitcoreTransaction(transactionData, feeInSatoshis);
@@ -93,6 +101,11 @@ export default class BitcoinClient implements IBitcoinClient {
     return this.rpcCall(request, true);
   }
 
+  /**
+   * Gets the block data for the given block hash.
+   * @param hash The hash of the block
+   * @returns the block data.
+   */
   public async getBlock (hash: string): Promise<BitcoinBlockModel> {
     const request = {
       method: 'getblock',
@@ -118,6 +131,11 @@ export default class BitcoinClient implements IBitcoinClient {
     };
   }
 
+  /**
+   * Gets the block hash for a given block height.
+   * @param height The height to get a hash for
+   * @returns the block hash
+   */
   public async getBlockHash (height: number): Promise<string> {
     console.info(`Getting hash for block ${height}`);
     const hashRequest = {
@@ -130,10 +148,20 @@ export default class BitcoinClient implements IBitcoinClient {
     return this.rpcCall(hashRequest, true);
   }
 
+  /**
+   * Gets the block info for the given block height.
+   * @param height The height of the block
+   * @returns the block info.
+   */
   public async getBlockInfoFromHeight (height: number): Promise<IBlockInfo> {
     return this.getBlockInfo(await this.getBlockHash(height));
   }
 
+  /**
+   * Gets the block info for the given block hash.
+   * @param hash The hash of the block
+   * @returns the block info.
+   */
   public async getBlockInfo (hash: string): Promise<IBlockInfo> {
     const request = {
       method: 'getblockheader',
@@ -152,6 +180,10 @@ export default class BitcoinClient implements IBitcoinClient {
     };
   }
 
+  /**
+   * Gets the current Bitcoin block height
+   * @returns the latest block number
+   */
   public async getCurrentBlockHeight (): Promise<number> {
     console.info('Getting current block height...');
     const request = {
@@ -162,6 +194,10 @@ export default class BitcoinClient implements IBitcoinClient {
     return response;
   }
 
+  /**
+   * Gets all unspent coins of the wallet which is being watched.
+   * @returns the balance of the wallet
+   */
   public async getBalanceInSatoshis (): Promise<number> {
 
     const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
@@ -173,6 +209,11 @@ export default class BitcoinClient implements IBitcoinClient {
     return unspentSatoshis;
   }
 
+  /**
+   * Gets the transaction fee of a transaction in satoshis.
+   * @param transactionId the id of the target transaction.
+   * @returns the transaction fee.
+   */
   public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
 
     const transaction = await this.getRawTransaction(transactionId);
