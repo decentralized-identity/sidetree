@@ -4,7 +4,6 @@ import MockTransactionStore from '../mocks/MockTransactionStore';
 import OperationThroughputLimiter from '../../lib/core/versions/latest/OperationThroughputLimiter';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 
-
 describe('OperationRateLimiter', () => {
 
   let operationThroughputLimiter: OperationThroughputLimiter;
