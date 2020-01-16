@@ -158,6 +158,18 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   }
 
   /**
+   * Gets a list of transactions that are in the desired transaction time
+   * @param transactionTime The transaction time to query for
+   */
+  public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
+    // TODO implement this
+    if (transactionTime) {
+      return [];
+    }
+    return [];
+  }
+
+  /**
    * Creates the `transaction` collection with indexes if it does not exists.
    * @returns The existing collection if exists, else the newly created collection.
    */

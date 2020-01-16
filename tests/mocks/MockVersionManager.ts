@@ -3,6 +3,7 @@ import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
 import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import IThroughputLimiter from '../../lib/core/versions/latest/interfaces/IThroughputLimiter';
 
 /**
  * Mock version manager for testing.
@@ -22,6 +23,9 @@ export default class MockVersionManager implements IVersionManager {
     throw new Error('Not implemented. Use spyOn to override the funcationality. Input: ' + blockchainTime);
   }
   public getTransactionProcessor (blockchainTime: number): ITransactionProcessor {
+    throw new Error('Not implemented. Use spyOn to override the funcationality. Input: ' + blockchainTime);
+  }
+  public getThroughputLimiter (blockchainTime: number): IThroughputLimiter {
     throw new Error('Not implemented. Use spyOn to override the funcationality. Input: ' + blockchainTime);
   }
 }
