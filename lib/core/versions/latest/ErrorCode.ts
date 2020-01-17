@@ -33,7 +33,7 @@ export default {
   OperationCountLessThanZero: 'operation_count_less_than_zero',
   OperationExceedsMaximumSize: 'operation_exceeds_maximum_size',
   OperationHeaderMissingOrIncorrectAlg: 'operation_header_missing_or_incorrect_alg',
-  OperationHeaderMissingOrIncorrectKid: 'operation_header_missing_kid',
+  OperationHeaderMissingOrIncorrectKid: 'operation_header_missing_or_incorrect_kid',
   OperationHeaderMissingOrUnknownProperty: 'operation_header_missing_or_unknown_property',
   OperationMissingOrIncorrectSignature: 'operation_missing_or_incorrect_signature',
   OperationCreatePayloadHasMissingOrInvalidNextRecoveryOtpHash: 'operation_create_payload_has_missing_or_invalid_next_recovery_otp_hash',
