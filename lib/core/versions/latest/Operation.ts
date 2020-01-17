@@ -276,7 +276,7 @@ export default class Operation {
     const operationType = decodedPayload.type;
 
     // 'type' property must be one of the allowed strings.
-    const allowedOperations = new Set([OperationType.Create, OperationType.Update, OperationType.Delete, OperationType.Recover]);
+    const allowedOperations = new Set(Object.values(OperationType));
     if (typeof operationType !== 'string' ||
         !allowedOperations.has(operationType as OperationType)) {
       throw new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType);
