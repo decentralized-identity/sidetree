@@ -84,7 +84,7 @@ describe('Observer', async () => {
         },
         {
           'transactionNumber': 2,
-          'transactionTime': 1001,
+          'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': AnchoredDataSerializer.serialize({
             anchorFileHash: 'hash2',
