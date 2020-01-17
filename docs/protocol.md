@@ -249,7 +249,6 @@ The JWS operation request header must be protected and be encoded in the followi
 #### Protected header schema
 ```json
 {
-  "operation": "create | update | delete | recover",
   "kid": "ID of the key used to sign the original DID Document.",
   "alg": "ES256K"
 }
@@ -293,9 +292,10 @@ POST / HTTP/1.1
 #### Create operation payload schema
 ```json
 {
+  "type": "create",
   "didDocument": "Encoded original DID Document",
+  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
-  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
 
@@ -440,6 +440,7 @@ POST / HTTP/1.1
 #### Update payload schema
 ```json
 {
+  "type": "update",
   "didUniqueSuffix": "The unique suffix of the DID",
   "patches": ["An array of patches each must adhere to the patch schema defined below."],
   "updateOtp": "The one-time password to be used for this update.",
@@ -547,6 +548,7 @@ Example:
 #### Update payload example
 ```json
 {
+  "type": "update",
   "didUniqueSuffix": "EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A",
   "patches": [
     {
@@ -607,6 +609,7 @@ POST /
 #### Delete payload schema
 ```json
 {
+  "type": "delete",
   "didUniqueSuffix": "The unique suffix of the DID to be deleted.",
   "recoveryOtp": "The current one-time recovery password."
 }
@@ -615,6 +618,7 @@ POST /
 #### Delete payload example
 ```json
 {
+  "type": "delete",
   "didUniqueSuffix": "EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg",
   "recoveryOtp": "BJzEi4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw"
 }
@@ -647,6 +651,7 @@ POST / HTTP/1.1
 #### Recovery payload schema
 ```json
 {
+  "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryOtp": "The one-time password to be used for this recovery.",
   "newDidDocument": "The new DID Document.",

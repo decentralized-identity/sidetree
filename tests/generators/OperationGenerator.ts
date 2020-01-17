@@ -148,6 +148,7 @@ export default class OperationGenerator {
     const nextUpdateOtpHash = Encoder.encode(Multihash.hash(nextUpdateOtpBuffer, 18)); // 18 = SHA256;
 
     const updatePayload = {
+      type: OperationType.Update,
       didUniqueSuffix: input.didUniqueSuffix,
       patches: input.patches,
       updateOtp: updateOtpEncodedString,
@@ -155,7 +156,6 @@ export default class OperationGenerator {
     };
 
     const anchoredOperation = await OperationGenerator.createAnchoredOperation(
-      OperationType.Update,
       updatePayload,
       input.signingKeyId,
       input.signingPrivateKey,
@@ -187,6 +187,7 @@ export default class OperationGenerator {
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const payload = {
+      type: OperationType.Recover,
       didUniqueSuffix: input.didUniqueSuffix,
       recoveryOtp: input.recoveryOtp,
       newDidDocument,
@@ -230,7 +231,6 @@ export default class OperationGenerator {
    * Creates an anchored operation.
    */
   public static async createAnchoredOperation (
-    type: OperationType,
     payload: any,
     publicKeyId: string,
     privateKey: string | PrivateKey,
@@ -239,7 +239,7 @@ export default class OperationGenerator {
     operationIndex: number
   ): Promise<AnchoredOperation> {
     const anchoredOperationModel =
-      await OperationGenerator.createAnchoredOperationModel(type, payload, publicKeyId, privateKey, transactionTime, transactionNumber, operationIndex);
+      await OperationGenerator.createAnchoredOperationModel(payload, publicKeyId, privateKey, transactionTime, transactionNumber, operationIndex);
     const anchoredOperation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
 
     return anchoredOperation;
@@ -249,7 +249,6 @@ export default class OperationGenerator {
    * Creates an anchored operation model.
    */
   public static async createAnchoredOperationModel (
-    type: OperationType,
     payload: any,
     publicKeyId: string,
     privateKey: string | PrivateKey,
@@ -257,7 +256,7 @@ export default class OperationGenerator {
     transactionNumber: number,
     operationIndex: number
   ): Promise<AnchoredOperationModel> {
-    const operationBuffer = await OperationGenerator.createOperationBuffer(type, payload, publicKeyId, privateKey);
+    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
     const anchoredOperationModel: AnchoredOperationModel = {
       operationBuffer,
       operationIndex,
@@ -272,12 +271,16 @@ export default class OperationGenerator {
    * Creates an operation.
    */
   public static async createOperationBuffer (
-    type: OperationType,
     payload: any,
     publicKeyId: string,
     privateKey: string | PrivateKey
   ): Promise<Buffer> {
-    const operationJws = await OperationGenerator.createOperationJws(type, payload, publicKeyId, privateKey);
+    const protectedHeader = {
+      kid: publicKeyId,
+      alg: 'ES256K'
+    };
+
+    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, privateKey);
     return Buffer.from(JSON.stringify(operationJws));
   }
 
@@ -296,12 +299,13 @@ export default class OperationGenerator {
   ): Promise<Buffer> {
     const publicKeys = [recoveryPublicKey, signingPublicKey];
     const payload = {
+      type: OperationType.Create,
       didDocument: Document.create(publicKeys, serviceEndpoints),
       nextRecoveryOtpHash,
       nextUpdateOtpHash
     };
 
-    return this.createOperationBuffer(OperationType.Create, payload, recoveryPublicKey.id, recoveryPrivateKey);
+    return this.createOperationBuffer(payload, recoveryPublicKey.id, recoveryPrivateKey);
   }
 
   /**
@@ -310,18 +314,10 @@ export default class OperationGenerator {
    * @param payload Unencoded plain object to be stringified and encoded as payload string.
    */
   public static async createOperationJws (
-    type: OperationType,
+    protectedHeader: any,
     payload: any,
-    publicKeyId: string,
     privateKey: string | PrivateKey
   ): Promise<JwsModel> {
-
-    // Create the encoded protected header.
-    const protectedHeader = {
-      operation: type,
-      kid: publicKeyId,
-      alg: 'ES256K'
-    };
     const protectedHeaderJsonString = JSON.stringify(protectedHeader);
     const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
 
@@ -360,6 +356,7 @@ export default class OperationGenerator {
     publicKeyHex: string,
     nextUpdateOtpHashEncodedString?: string): any {
     const updatePayload = {
+      type: OperationType.Update,
       didUniqueSuffix: previousOperation.didUniqueSuffix,
       patches: [
         {
@@ -412,6 +409,7 @@ export default class OperationGenerator {
     }
 
     const updatePayload = {
+      type: OperationType.Update,
       didUniqueSuffix,
       patches,
       updateOtp: updateOtpEncodedString,
@@ -425,7 +423,12 @@ export default class OperationGenerator {
    * Generates an Update Operation buffer with valid signature.
    */
   public static async generateUpdateOperation (updatePayload: object, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
-    const operationJws = await OperationGenerator.createOperationJws(OperationType.Update, updatePayload, signingKeyId, privateKey);
+    const protectedHeader = {
+      kid: signingKeyId,
+      alg: 'ES256K'
+    };
+
+    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, updatePayload, privateKey);
     return operationJws;
   }
 
@@ -449,11 +452,19 @@ export default class OperationGenerator {
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
     privateKey: string | PrivateKey): Promise<JwsModel> {
+
+    const protectedHeader = {
+      kid: signingKeyId,
+      alg: 'ES256K'
+    };
+
     const payload = {
+      type: OperationType.Delete,
       didUniqueSuffix,
       recoveryOtp: recoveryOtpEncodedSring
     };
-    const operationJws = await OperationGenerator.createOperationJws(OperationType.Delete, payload, signingKeyId, privateKey);
+
+    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, privateKey);
     return operationJws;
   }
 

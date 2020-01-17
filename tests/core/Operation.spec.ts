@@ -1,57 +1,199 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
+import OperationType from '../../lib/core/enums/OperationType';
 import { SidetreeError } from '../../lib/core/Error';
 
 describe('Operation', async () => {
-  // Load the DID Document template.
+  describe('create()', async () => {
+    let createRequest: any;
 
-  let createRequest: any;
+    beforeAll(async () => {
+      // Generate a unique key-pair used for each test.
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+      const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
+      const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+      const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(
+        recoveryPublicKey,
+        recoveryPrivateKey,
+        signingPublicKey,
+        nextRecoveryOtpHash,
+        nextUpdateOtpHash,
+        services
+      );
+      createRequest = JSON.parse(createRequestBuffer.toString());
+    });
 
-  beforeAll(async () => {
-    // Generate a unique key-pair used for each test.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
-    const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey,
-      recoveryPrivateKey,
-      signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash,
-      services
-    );
-    createRequest = JSON.parse(createRequestBuffer.toString());
+    it('should throw error if unknown property is found when parsing request.', async () => {
+      createRequest.dummyProperty = '123';
+      const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
+
+      expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+    });
+
+    it('should throw error if more than one type of payload is found when parsing request.', async () => {
+      createRequest.updatePayload = '123';
+      const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
+
+      expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+    });
+
+    it('should throw error if signature is not found when parsing request.', async () => {
+      delete createRequest.signature;
+      const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
+
+      expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+    });
+
+    it('should throw error if header contains unexpected property.', async () => {
+      const signingKeyId = '#signingKey';
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+
+      const protectedHeader = {
+        unknownProperty: 'anyValue',
+        kid: signingKeyId,
+        alg: 'ES256K'
+      };
+
+      const payload = {
+        type: OperationType.Delete,
+        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+      };
+
+      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
+      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
+
+      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationHeaderMissingOrUnknownProperty));
+    });
+
+    it('should throw error if `kid` in header is missing or is in incorrect type.', async () => {
+      const signingKeyId = '#signingKey';
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+
+      const protectedHeader = {
+        kid: true, // Incorect type.
+        alg: 'ES256K'
+      };
+
+      const payload = {
+        type: OperationType.Delete,
+        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+      };
+
+      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
+      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
+
+      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectKid));
+    });
+
+    it('should throw error if `alg` in header is missing or is in incorrect type.', async () => {
+      const signingKeyId = '#signingKey';
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+
+      const protectedHeader = {
+        kid: signingKeyId,
+        alg: true // Incorect type.
+      };
+
+      const payload = {
+        type: OperationType.Delete,
+        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+      };
+
+      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
+      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
+
+      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectAlg));
+    });
+
+    it('should throw error if `type` in payload has unknown value.', async () => {
+      const signingKeyId = '#signingKey';
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+
+      const protectedHeader = {
+        kid: signingKeyId,
+        alg: 'ES256K'
+      };
+
+      const payload = {
+        type: 'unknownType',
+        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+      };
+
+      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
+      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
+
+      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType));
+    });
   });
 
-  it('should throw error if unknown property is found when parsing request.', async () => {
-    createRequest.dummyProperty = '123';
-    const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
+  describe('validateCreatePayload()', async () => {
+    it('should throw error if payload contains an additioanl unknown property.', async () => {
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const payload = {
+        type: OperationType.Create,
+        didDocument: Document.create([recoveryPublicKey, signingPublicKey]),
+        nextRecoveryOtpHash: 'Any_recovery_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAA',
+        nextUpdateOtpHash: 'Any_update_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAAAA'
+      };
 
-    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
-  });
+      (payload as any).additionalProperty = true;
 
-  it('should throw error if more than one type of payload is found when parsing request.', async () => {
-    createRequest.updatePayload = '123';
-    const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
+      expect(() => { Operation.validateCreatePayload(payload); }).toThrow(new SidetreeError(ErrorCode.OperationCreatePayloadMissingOrUnknownProperty));
+    });
 
-    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
-  });
+    it('should throw error if payload does not contain `nextRecoveryOtpHash` property.', async () => {
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const payload = {
+        type: OperationType.Create,
+        didDocument: Document.create([recoveryPublicKey, signingPublicKey]),
+        nextRecoveryOtpHash: 'Any_recovery_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAA',
+        nextUpdateOtpHash: 'Any_update_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAAAA'
+      };
 
-  it('should throw error if signature is not found when parsing request.', async () => {
-    delete createRequest.signature;
-    const requestWithUnknownProperty = Buffer.from(JSON.stringify(createRequest));
+      delete payload.nextRecoveryOtpHash;
+      (payload as any).unknownProperty = 'unknown value';
 
-    expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
+      expect(() => { Operation.validateCreatePayload(payload); }).toThrow(
+        new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextRecoveryOtpHash));
+    });
+
+    it('should throw error if payload contains an additioanl unknown property.', async () => {
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const payload = {
+        type: OperationType.Create,
+        didDocument: Document.create([recoveryPublicKey, signingPublicKey]),
+        nextRecoveryOtpHash: 'Any_recovery_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAA',
+        nextUpdateOtpHash: 'Any_update_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAAAA'
+      };
+
+      delete payload.nextUpdateOtpHash;
+      (payload as any).unknownProperty = 'unknown value';
+
+      expect(() => { Operation.validateCreatePayload(payload); }).toThrow(
+        new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextUpdateOtpHash));
+    });
   });
 
   describe('validateUpdatePayload()', async () => {
-    it('should throw error if it contains an additioanl property.', async () => {
+    it('should throw error if payload contains an additioanl unknown property.', async () => {
       const updatePayload = generateUpdatePayloadForPublicKeys();
       (updatePayload as any).additionalProperty = true;
 
@@ -129,6 +271,14 @@ describe('Operation', async () => {
       (updatePayload.patches[0].publicKeys![0] as any).id = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+      expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
+    });
+
+    it('should throw error if the public key in an add-public-keys patch is a declared as a recovery key.', async () => {
+      const updatePayload = generateUpdatePayloadForPublicKeys();
+      (updatePayload.patches[0].publicKeys![0] as any).usage = KeyUsage.recovery;
+
+      const expectedError = new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyAddRecoveryKeyNotAllowed);
       expect(() => { Operation.validateUpdatePayload(updatePayload); }).toThrow(expectedError);
     });
 
@@ -339,6 +489,7 @@ describe('Operation', async () => {
  */
 function generateUpdatePayloadForPublicKeys () {
   return {
+    type: OperationType.Update,
     didUniqueSuffix: 'EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA',
     patches: [
       {
