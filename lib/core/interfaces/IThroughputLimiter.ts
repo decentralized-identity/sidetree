@@ -1,13 +1,13 @@
 import TransactionModel from '../../common/models/TransactionModel';
 
 /**
- * Rate limits operations. only allow n number of highest fee transactions to pass.
+ * Rate limits transactions given a block of data
  */
 export default interface IThroughputLimiter {
 
   /**
-   * Given an array of transactions, return the qualified transactions
-   * @param orderedTransactions An array transactions which are ordered by transactionTime in ascending order
+   * Given an array of transactions in the same block, return the qualified transactions
+   * @param orderedTransactions An array of transactions which are ordered by transactionTime in ascending order
    */
   selectQualifiedTransactions (orderedTransactions: TransactionModel[]): Promise<TransactionModel[]>;
 }
