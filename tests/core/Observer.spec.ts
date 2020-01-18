@@ -51,7 +51,7 @@ describe('Observer', async () => {
     downloadManager.start();
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
-    const throughputLimiter = new ThroughputLimiter(10, 25, transactionStore);
+    const throughputLimiter = new ThroughputLimiter(2, 25, transactionStore);
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
@@ -66,7 +66,7 @@ describe('Observer', async () => {
     transactionStore = new MockTransactionStore();
   });
 
-  it('should record transactions processed.', async () => {
+  it('should record transactions processed with expected outcome.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
       'moreTransactions': false,
@@ -95,13 +95,46 @@ describe('Observer', async () => {
         },
         {
           'transactionNumber': 3,
-          'transactionTime': 1111,
+          'transactionTime': 1000,
           'transactionTimeHash': '1000',
           'anchorString': AnchoredDataSerializer.serialize({
-            anchorFileHash: 'Force previous to process',
+            anchorFileHash: 'hash3',
             numberOfOperations: 1
           }),
           'transactionFeePaid': 2,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 4,
+          'transactionTime': 1111,
+          'transactionTimeHash': '1111',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash4',
+            numberOfOperations: 25
+          }),
+          'transactionFeePaid': 3,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 5,
+          'transactionTime': 1111,
+          'transactionTimeHash': '1111',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash5',
+            numberOfOperations: 25
+          }),
+          'transactionFeePaid': 3,
+          'normalizedTransactionFee': 2
+        },
+        {
+          'transactionNumber': 6,
+          'transactionTime': 2222,
+          'transactionTimeHash': '2222',
+          'anchorString': AnchoredDataSerializer.serialize({
+            anchorFileHash: 'hash6 Force exit throughput limiter',
+            numberOfOperations: 25
+          }),
+          'transactionFeePaid': 3,
           'normalizedTransactionFee': 2
         }
       ]
@@ -141,7 +174,7 @@ describe('Observer', async () => {
     // Monitor the processed transactions list until change is detected or max retries is reached.
     await retry(async _bail => {
       const processedTransactionCount = transactionStore.getTransactions().length;
-      if (processedTransactionCount === 2) {
+      if (processedTransactionCount === 3) {
         return;
       }
 
@@ -155,8 +188,11 @@ describe('Observer', async () => {
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
 
-    expect(processedTransactions[0].anchorString).toEqual('AQAAAA.hash1');
-    expect(processedTransactions[1].anchorString).toEqual('AQAAAA.hash2');
+    // throughput limiter applies logic to filter out some transactions
+    expect(processedTransactions.length).toEqual(3);
+    expect(processedTransactions[0].anchorString).toEqual('AQAAAA.hash2');
+    expect(processedTransactions[1].anchorString).toEqual('AQAAAA.hash3');
+    expect(processedTransactions[2].anchorString).toEqual('GQAAAA.hash4');
   });
 
   it('should process a valid operation batch successfully.', async () => {
