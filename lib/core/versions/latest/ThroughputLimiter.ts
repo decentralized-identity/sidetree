@@ -20,7 +20,7 @@ export default class ThroughputLimiter implements IThroughputLimiter {
     this.maxNumberOfTransactionsPerBlock = ProtocolParameters.maxNumberOfTransactionsPerTransactionTime;
   }
 
-  private static getTransactionPriorityQueue() {
+  private static getTransactionPriorityQueue () {
     const comparator = (a: TransactionModel, b: TransactionModel) => {
       // higher fee comes first. If fees are the same, earlier transaction comes first
       return a.transactionFeePaid - b.transactionFeePaid || b.transactionNumber - a.transactionNumber;
