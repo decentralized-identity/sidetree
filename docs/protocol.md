@@ -179,7 +179,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
       4. Let the per operation cost C be F divided by the baseline amount N.
    3. To test the batch for adherence to the Proof of Fee requirement, divide the number of operations in the batch by the fee paid in the host transaction, and ensure that the resulting per operation amount exceeds the required per operation cost C.
 
-### One Operation per DID per Batch
+#### One Operation per DID per Batch
   Only one operation per DID per batch is allowed, this prevents the operation chain of any DID from growing at an intractable rate.
 
 #### One-Time Password (OTP) for Operations
