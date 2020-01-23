@@ -10,6 +10,4 @@ export default interface Config {
   maxConcurrentDownloads: number;
   observingIntervalInSeconds: number;
   mongoDbConnectionString: string;
-  maxNumberOfOperationsPerBlock: number;
-  maxNumberOfTransactionsPerBlock: number;
 }

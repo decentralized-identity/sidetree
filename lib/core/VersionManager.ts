@@ -79,7 +79,7 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const ThroughputLimiter = await this.loadDefaultExportsForVersion(version, 'ThroughputLimiter');
-      const throughputLimiter = new ThroughputLimiter(this.config.maxNumberOfTransactionsPerBlock, this.config.maxNumberOfOperationsPerBlock, transactionStore);
+      const throughputLimiter = new ThroughputLimiter(transactionStore);
       this.throughputLimiters.set(version, throughputLimiter);
 
       /* tslint:disable-next-line */

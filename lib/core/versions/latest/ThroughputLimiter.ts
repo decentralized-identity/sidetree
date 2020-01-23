@@ -2,6 +2,7 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import IThroughputLimiter from '../../interfaces/IThroughputLimiter';
 import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
+import ProtocolParameters from './ProtocolParameters';
 import TransactionModel from '../../../common/models/TransactionModel';
 import { SidetreeError } from '../../Error';
 import ErrorCode from './ErrorCode';
@@ -10,19 +11,22 @@ import ErrorCode from './ErrorCode';
  * rate limits how many operations is valid per block
  */
 export default class ThroughputLimiter implements IThroughputLimiter {
-  private transactionsPriorityQueue: any;
+  private maxNumberOfOperationsPerBlock: number;
+  private maxNumberOfTransactionsPerBlock: number;
   public constructor (
-    private maxNumberOfTransactionsPerBlock: number,
-    private maxNumberOfOperationsPerBlock: number,
     private transactionStore: ITransactionStore
   ) {
+    this.maxNumberOfOperationsPerBlock = ProtocolParameters.maxNumberOfOpsPerTransactionTime;
+    this.maxNumberOfTransactionsPerBlock = ProtocolParameters.maxNumberOfTransactionsPerTransactionTime;
+  }
 
+  private static getTransactionPriorityQueue() {
     const comparator = (a: TransactionModel, b: TransactionModel) => {
       // higher fee comes first. If fees are the same, earlier transaction comes first
       return a.transactionFeePaid - b.transactionFeePaid || b.transactionNumber - a.transactionNumber;
     };
 
-    this.transactionsPriorityQueue = new PriorityQueue({ comparator });
+    return new PriorityQueue({ comparator });
   }
 
   /**
@@ -35,20 +39,25 @@ export default class ThroughputLimiter implements IThroughputLimiter {
       return [];
     }
 
+    const transactionsPriorityQueue = ThroughputLimiter.getTransactionPriorityQueue();
+
     const currentBlockHeight = orderedTransactions[0].transactionTime;
     for (const transaction of orderedTransactions) {
       if (transaction.transactionTime !== currentBlockHeight) {
-        this.transactionsPriorityQueue.clear();
-        throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting');
+        throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting, investigate and fix');
       }
-      this.transactionsPriorityQueue.push(transaction);
+      transactionsPriorityQueue.push(transaction);
     }
 
     const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInBlock(currentBlockHeight);
     let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
     let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
-    const transactionsToReturn = this.getHighestFeeTransactionsFromCurrentTransactionTime(numberOfOperationsToQualify, numberOfTransactionsToQualify);
-    this.transactionsPriorityQueue.clear();
+
+    const transactionsToReturn = this.getHighestFeeTransactionsFromCurrentTransactionTime(
+      numberOfOperationsToQualify,
+      numberOfTransactionsToQualify,
+      transactionsPriorityQueue);
+
     return transactionsToReturn;
   }
 
@@ -68,18 +77,22 @@ export default class ThroughputLimiter implements IThroughputLimiter {
   /**
    * Given transactions within a block, return the ones that should be processed.
    */
-  private getHighestFeeTransactionsFromCurrentTransactionTime (numberOfOperationsToQualify: number, numberOfTransactionsToQualify: number): TransactionModel[] {
-    let numberOfOperationsSelected = 0;
+  private getHighestFeeTransactionsFromCurrentTransactionTime (
+    numberOfOperationsToQualify: number,
+    numberOfTransactionsToQualify: number,
+    transactionsPriorityQueue: any): TransactionModel[] {
+
+    let numberOfOperationsSeen = 0;
     const transactionsToReturn = [];
 
     while (transactionsToReturn.length < numberOfTransactionsToQualify
-      && numberOfOperationsSelected < numberOfOperationsToQualify
-      && this.transactionsPriorityQueue.length) {
-      const currentTransaction = this.transactionsPriorityQueue.pop();
+      && numberOfOperationsSeen < numberOfOperationsToQualify
+      && transactionsPriorityQueue.length > 0) {
+      const currentTransaction = transactionsPriorityQueue.pop();
       const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
-      numberOfOperationsSelected += numOfOperationsInCurrentTransaction;
+      numberOfOperationsSeen += numOfOperationsInCurrentTransaction;
 
-      if (numberOfOperationsSelected <= numberOfOperationsToQualify) {
+      if (numberOfOperationsSeen <= numberOfOperationsToQualify) {
         transactionsToReturn.push(currentTransaction);
       }
     }

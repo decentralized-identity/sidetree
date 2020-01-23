@@ -60,11 +60,15 @@ describe('ThroughputLimiter', () => {
 
   beforeEach(() => {
     transactionStore = new MockTransactionStore();
-    throughputLimiter = new ThroughputLimiter(10, 25, transactionStore);
+    throughputLimiter = new ThroughputLimiter(transactionStore);
+    // hard set number for ease of testing
+    throughputLimiter['maxNumberOfTransactionsPerBlock'] = 10;
+    throughputLimiter['maxNumberOfOperationsPerBlock'] = 25;
   });
 
   describe('selectQualifiedTransactions', () => {
     it('should return the expected transactions with limit on operation', async () => {
+      // max operation is 25 by default in before each
       const transactions = getTestTransactionsFor1Block();
       const result = await throughputLimiter.selectQualifiedTransactions(transactions);
       const expected = [
@@ -95,7 +99,10 @@ describe('ThroughputLimiter', () => {
     });
 
     it('should return the expected transactions with limit on transaction', async () => {
-      throughputLimiter = new ThroughputLimiter(1, 100, transactionStore);
+      throughputLimiter = new ThroughputLimiter(transactionStore);
+      // set transactions limit to 1 to see proper limiting, and set operation to 100 so it does not filter.
+      throughputLimiter['maxNumberOfTransactionsPerBlock'] = 1;
+      throughputLimiter['maxNumberOfOperationsPerBlock'] = 100;
       const transactions = getTestTransactionsFor1Block();
       const result = await throughputLimiter.selectQualifiedTransactions(transactions);
       const expected = [
@@ -127,7 +134,7 @@ describe('ThroughputLimiter', () => {
       try {
         await throughputLimiter.selectQualifiedTransactions(transactions);
       } catch (e) {
-        expect(e.message).toEqual('transactions_not_in_same_block: transaction must be in the same block to perform rate limiting');
+        expect(e.message).toEqual('transactions_not_in_same_block: transaction must be in the same block to perform rate limiting, investigate and fix');
       }
     });
 
@@ -164,7 +171,10 @@ describe('ThroughputLimiter', () => {
     });
 
     it('should deduct the number of transactions if transactions in the current block were already in transactions store', async () => {
-      throughputLimiter = new ThroughputLimiter(2, 10000, transactionStore);
+      throughputLimiter = new ThroughputLimiter(transactionStore);
+      // set to never reach operation limit but can see transaction limiting
+      throughputLimiter['maxNumberOfTransactionsPerBlock'] = 2;
+      throughputLimiter['maxNumberOfOperationsPerBlock'] = 10000;
       const extraTransaction = {
         transactionNumber: 0,
         transactionTime: 1,
@@ -194,6 +204,17 @@ describe('ThroughputLimiter', () => {
         }
       ];
       expect(result).toEqual(expected);
+    });
+  });
+
+  describe('getNumberOfOperationsAndTransactionsAlreadyInBlock', () => {
+    it('should handle when transactions store returns undefined', async () => {
+      spyOn(transactionStore, 'getTransactionsByTransactionTime').and.returnValue(new Promise((resolve) => {
+        resolve(undefined);
+      }));
+
+      const result = await throughputLimiter['getNumberOfOperationsAndTransactionsAlreadyInBlock'](1);
+      expect(result).toEqual([0, 0]);
     });
   });
 });

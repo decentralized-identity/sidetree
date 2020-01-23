@@ -51,7 +51,10 @@ describe('Observer', async () => {
     downloadManager.start();
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
-    const throughputLimiter = new ThroughputLimiter(2, 25, transactionStore);
+    const throughputLimiter = new ThroughputLimiter(transactionStore);
+    // these number are hard set to make sure observer applies throughput limiter logic
+    throughputLimiter['maxNumberOfOperationsPerBlock'] = 25;
+    throughputLimiter['maxNumberOfTransactionsPerBlock'] = 2;
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
@@ -179,7 +182,7 @@ describe('Observer', async () => {
       }
 
       // NOTE: if anything throws, we retry.
-      throw new Error('No change to the processed transactions list.');
+      throw new Error('Incorrect number of changes to the processed transactions list.');
     }, {
       retries: 10,
       minTimeout: 500, // milliseconds

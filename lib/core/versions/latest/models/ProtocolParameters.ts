@@ -12,6 +12,10 @@ export default interface ProtocolParameters {
   maxEncodedHashStringLength: number;
   /** Maximum operations per batch. */
   maxOperationsPerBatch: number;
+  /** Max number of operations observed per transaction time */
+  maxNumberOfOpsPerTransactionTime: number;
+  /** Max number of transactions observed per transaction time */
+  maxNumberOfTransactionsPerTransactionTime: number;
   /** Maximum size of an operation in bytes. */
   maxOperationByteSize: number;
   /** The multiplier that converts the normalized fee from blockchain into a 'per operation' fee. */
