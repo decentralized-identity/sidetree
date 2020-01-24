@@ -1,5 +1,5 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
-import IThroughputLimiter from '../../interfaces/IThroughputLimiter';
+import ITransactionSelector from '../../interfaces/ITransactionSelector';
 import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
 import ProtocolParameters from './ProtocolParameters';
@@ -10,7 +10,7 @@ import ErrorCode from './ErrorCode';
 /**
  * rate limits how many operations is valid per block
  */
-export default class ThroughputLimiter implements IThroughputLimiter {
+export default class TransactionSelector implements ITransactionSelector {
   private maxNumberOfOperationsPerBlock: number;
   private maxNumberOfTransactionsPerBlock: number;
   public constructor (
@@ -32,17 +32,17 @@ export default class ThroughputLimiter implements IThroughputLimiter {
   /**
    * Returns an array of transactions that should be processed. Ranked by highest fee paid per transaction and up to the
    * max number of operations per block
-   * @param orderedTransactions The transactions that should be ranked and considered to process
+   * @param transactions The transactions that should be ranked and considered to process
    */
-  public async selectQualifiedTransactions (orderedTransactions: TransactionModel[]): Promise<TransactionModel[]> {
-    if (!orderedTransactions.length) {
+  public async selectQualifiedTransactions (transactions: TransactionModel[]): Promise<TransactionModel[]> {
+    if (!transactions.length) {
       return [];
     }
 
-    const transactionsPriorityQueue = ThroughputLimiter.getTransactionPriorityQueue();
+    const transactionsPriorityQueue = TransactionSelector.getTransactionPriorityQueue();
 
-    const currentBlockHeight = orderedTransactions[0].transactionTime;
-    for (const transaction of orderedTransactions) {
+    const currentBlockHeight = transactions[0].transactionTime;
+    for (const transaction of transactions) {
       if (transaction.transactionTime !== currentBlockHeight) {
         throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting, investigate and fix');
       }

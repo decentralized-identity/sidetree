@@ -6,7 +6,7 @@ import Config from './models/Config';
 import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
-import IThroughputLimiter from './interfaces/IThroughputLimiter';
+import ITransactionSelector from './interfaces/ITransactionSelector';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
@@ -32,7 +32,7 @@ export default class VersionManager implements IVersionManager {
   private operationProcessors: Map<string, IOperationProcessor>;
   private requestHandlers: Map<string, IRequestHandler>;
   private transactionProcessors: Map<string, ITransactionProcessor>;
-  private throughputLimiters: Map<string, IThroughputLimiter>;
+  private transactionSelectors: Map<string, ITransactionSelector>;
 
   public constructor (
     private config: Config,
@@ -46,7 +46,7 @@ export default class VersionManager implements IVersionManager {
     this.operationProcessors = new Map();
     this.requestHandlers = new Map();
     this.transactionProcessors = new Map();
-    this.throughputLimiters = new Map();
+    this.transactionSelectors = new Map();
   }
 
   /**
@@ -78,9 +78,9 @@ export default class VersionManager implements IVersionManager {
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */
-      const ThroughputLimiter = await this.loadDefaultExportsForVersion(version, 'ThroughputLimiter');
-      const throughputLimiter = new ThroughputLimiter(transactionStore);
-      this.throughputLimiters.set(version, throughputLimiter);
+      const TransactionSelector = await this.loadDefaultExportsForVersion(version, 'TransactionSelector');
+      const transactionSelector = new TransactionSelector(transactionStore);
+      this.transactionSelectors.set(version, transactionSelector);
 
       /* tslint:disable-next-line */
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
@@ -156,17 +156,17 @@ export default class VersionManager implements IVersionManager {
   }
 
   /**
-   * Gets the corresponding version of the `ThroughputLimiter` based on the given blockchain time.
+   * Gets the corresponding version of the `TransactionSelector` based on the given blockchain time.
    */
-  public getThroughputLimiter (blockchainTime: number): IThroughputLimiter {
+  public getTransactionSelector (blockchainTime: number): ITransactionSelector {
     const version = this.getVersionString(blockchainTime);
-    const throughputLimiter = this.throughputLimiters.get(version);
+    const transactionSelector = this.transactionSelectors.get(version);
 
-    if (throughputLimiter === undefined) {
+    if (transactionSelector === undefined) {
       throw new Error(`Unabled to find throughput limiter for the given blockchain time ${blockchainTime}, investigate and fix.`);
     }
 
-    return throughputLimiter;
+    return transactionSelector;
   }
 
   /**

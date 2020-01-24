@@ -20,7 +20,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
-import ThroughputLimiter from '../../lib/core/versions/latest/ThroughputLimiter';
+import ThroughputLimiter from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
@@ -58,7 +58,7 @@ describe('Observer', async () => {
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
-    spyOn(versionManager, 'getThroughputLimiter').and.returnValue(throughputLimiter);
+    spyOn(versionManager, 'getTransactionSelector').and.returnValue(throughputLimiter);
   });
 
   afterAll(() => {

@@ -6,6 +6,7 @@ import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransaction
 import IVersionManager from './interfaces/IVersionManager';
 import SharedErrorCode from '../common/SharedErrorCode';
 import timeSpan = require('time-span');
+import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
@@ -31,12 +32,7 @@ export default class Observer {
    */
   private lastKnownTransaction: TransactionModel | undefined;
 
-  /**
-   * Used to keep track of which block is currently under processing, required by throughput limiter
-   * because its unit of processing is by block
-   */
-  private currentBlockHeight: number | undefined;
-  private transactionsInCurrentBlock: TransactionModel[] = [];
+  private throughputLimiter: ThroughputLimiter;
 
   public constructor (
     private versionManager: IVersionManager,
@@ -46,6 +42,7 @@ export default class Observer {
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
+    this.throughputLimiter = new ThroughputLimiter(versionManager);
   }
 
   /**
@@ -106,31 +103,19 @@ export default class Observer {
           }
         }
 
-        let transactions = readResult ? readResult.transactions : [];
+        const transactions = readResult ? readResult.transactions : [];
         moreTransactions = readResult ? readResult.moreTransactions : false;
+        const qualifiedTransactions = await this.throughputLimiter.getQualifiedTransactions(transactions);
 
         // Queue parallel downloading and processing of batch files.
-        for (const transaction of transactions) {
-          if (transaction.transactionTime === this.currentBlockHeight) {
-            this.transactionsInCurrentBlock.push(transaction);
-          } else {
-            if (this.currentBlockHeight !== undefined) {
-              const throughputLimiter = this.versionManager.getThroughputLimiter(this.currentBlockHeight);
-              const qualifiedTransactionsInCurrentBlock = await throughputLimiter.selectQualifiedTransactions(this.transactionsInCurrentBlock);
-              // Queue parallel downloading and processing of batch files.
-              for (const transaction of qualifiedTransactionsInCurrentBlock) {
-                const awaitingTransaction = {
-                  transaction: transaction,
-                  processingStatus: TransactionProcessingStatus.Pending
-                };
-                this.transactionsUnderProcessing.push(awaitingTransaction);
-                // Intentionally not awaiting on downloading and processing each operation batch.
-                void this.processTransaction(transaction, awaitingTransaction);
-              }
-            }
-            this.currentBlockHeight = transaction.transactionTime;
-            this.transactionsInCurrentBlock = [transaction];
-          }
+        for (const transaction of qualifiedTransactions) {
+          const awaitingTransaction = {
+            transaction: transaction,
+            processingStatus: TransactionProcessingStatus.Pending
+          };
+          this.transactionsUnderProcessing.push(awaitingTransaction);
+          // Intentionally not awaiting on downloading and processing each operation batch.
+          void this.processTransaction(transaction, awaitingTransaction);
         }
 
         // NOTE: Blockchain reorg has happened for sure only if `invalidTransactionNumberOrTimeHash` AND
@@ -306,7 +291,6 @@ export default class Observer {
 
     // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
-    this.currentBlockHeight = this.lastKnownTransaction ? this.lastKnownTransaction.transactionTime : undefined;
-    this.transactionsInCurrentBlock = [];
+    this.throughputLimiter.reset();
   }
 }
