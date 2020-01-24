@@ -171,7 +171,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
    
    higher fee per transaction comes first, if transaction fee is the same, lower transaction number comes first.
    
-   By picking the transactions with higher transaction fee, it encourages batching, while allowing small transactions to have the opportunity to also be included if they are willing to pay a premium of a couple USD. Alternatives to this approach are highest fee per operation and first comes first serve, but they don't encourage batching and discourage writing near the end of a transaction time.
+   By picking the transactions with higher transaction fee, it encourages batching, while allowing small transactions to have the opportunity to also be included if they are willing to pay a slightly higher transaction fee. Alternatives to this approach are highest fee per operation and first comes first serve, but they don't encourage batching and discourage writing near the end of a transaction time.
 
 #### Maximum batch size
    

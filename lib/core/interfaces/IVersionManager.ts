@@ -4,7 +4,6 @@ import IRequestHandler from './IRequestHandler';
 import ITransactionProcessor from './ITransactionProcessor';
 import ITransactionSelector from './ITransactionSelector';
 
-
 /**
  * Defines an interface to return the correct 'version-ed' objects.
  */
