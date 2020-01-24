@@ -1,8 +1,9 @@
 import IBatchWriter from './IBatchWriter';
 import IOperationProcessor from './IOperationProcessor';
 import IRequestHandler from './IRequestHandler';
-import ITransactionSelector from './ITransactionSelector';
 import ITransactionProcessor from './ITransactionProcessor';
+import ITransactionSelector from './ITransactionSelector';
+
 
 /**
  * Defines an interface to return the correct 'version-ed' objects.

@@ -1,11 +1,11 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
+import ErrorCode from './ErrorCode';
 import ITransactionSelector from '../../interfaces/ITransactionSelector';
 import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
 import ProtocolParameters from './ProtocolParameters';
 import TransactionModel from '../../../common/models/TransactionModel';
 import { SidetreeError } from '../../Error';
-import ErrorCode from './ErrorCode';
 
 /**
  * rate limits how many operations is valid per block
