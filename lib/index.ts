@@ -19,14 +19,9 @@ export {
 import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
 import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/IBitcoinConfig';
 
-export {
-  ISidetreeBitcoinConfig,
-  SidetreeBitcoinProcessor
-};
+export { ISidetreeBitcoinConfig, SidetreeBitcoinProcessor };
 
 // IPFS service exports.
 import SidetreeIpfsService from './ipfs/RequestHandler';
 
-export {
-  SidetreeIpfsService
-};
+export { SidetreeIpfsService };
