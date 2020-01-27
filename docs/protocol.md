@@ -163,6 +163,16 @@ Without any mitigation strategy, malicious but protocol adherent nodes can creat
 
 Sidetree protocol defines the following mechanisms to enable scaling, while preventing DDoS attacks:
 
+#### Rate limiting
+   
+   To prevent spam attack causing transaction and operation stores to grow at an unhealthy rate, rate limiting is put in place. 
+
+   The current implementation caps the number of operations and transactions allowed to be observed and processed. The selection logic when the caps are exceeded is the following:
+   
+   higher fee per transaction comes first, if transaction fee is the same, lower transaction number comes first.
+   
+   By picking the transactions with higher transaction fee, it encourages batching, while allowing small transactions to have the opportunity to also be included if they are willing to pay a slightly higher transaction fee. Alternatives to this approach are highest fee per operation and first comes first serve, but they don't encourage batching and discourage writing near the end of a transaction time.
+
 #### Maximum batch size
    
    By defining a maximum number of operations per batch, the strategy circumvents participants to anchor arbitrarily large trees on the system. At its core, this mitigation strategy forces the attacker to deal with the organic economic pressure exerted by the underlying chain's transactional unit cost. Each instantiation of a Sidetree-based DID Method may select a different maximum batch size; the size for the default configuration is TBD. 

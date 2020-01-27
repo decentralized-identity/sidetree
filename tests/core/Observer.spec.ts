@@ -20,6 +20,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
+import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
@@ -50,9 +51,11 @@ describe('Observer', async () => {
     downloadManager.start();
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
+    spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
   });
 
   afterAll(() => {
@@ -63,7 +66,7 @@ describe('Observer', async () => {
     transactionStore = new MockTransactionStore();
   });
 
-  it('should record transactions processed.', async () => {
+  it('should record transactions processed with expected outcome.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
       'moreTransactions': false,
@@ -115,6 +118,13 @@ describe('Observer', async () => {
       1
     );
 
+    // mocking throughput limiter to make testing easier
+    spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
+      (transactions: TransactionModel[]) => {
+        return new Promise((resolve) => { resolve(transactions); });
+      }
+    );
+
     const processedTransactions = transactionStore.getTransactions();
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
@@ -126,7 +136,7 @@ describe('Observer', async () => {
       }
 
       // NOTE: if anything throws, we retry.
-      throw new Error('No change to the processed transactions list.');
+      throw new Error('Incorrect number of changes to the processed transactions list.');
     }, {
       retries: 10,
       minTimeout: 500, // milliseconds
@@ -135,6 +145,8 @@ describe('Observer', async () => {
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
 
+    // throughput limiter applies logic to filter out some transactions
+    expect(processedTransactions.length).toEqual(2);
     expect(processedTransactions[0].anchorString).toEqual('1stTransaction');
     expect(processedTransactions[1].anchorString).toEqual('2ndTransaction');
   });
@@ -394,6 +406,13 @@ describe('Observer', async () => {
       1
     );
 
+    // mocking throughput limiter to make testing easier
+    spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
+      (transactions: TransactionModel[]) => {
+        return new Promise((resolve) => { resolve(transactions); });
+      }
+    );
+
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.
@@ -412,6 +431,8 @@ describe('Observer', async () => {
       maxTimeout: 1000 // milliseconds
     });
 
+    expect(processedTransactions.length).toEqual(4);
+    expect(processedTransactions[0].anchorString).toEqual('1stTransaction');
     expect(processedTransactions[1].anchorString).toEqual('2ndTransactionNew');
     expect(processedTransactions[2].anchorString).toEqual('3rdTransactionNew');
     expect(processedTransactions[3].anchorString).toEqual('4thTransaction');

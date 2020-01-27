@@ -7,6 +7,8 @@ import IOperationProcessor from './interfaces/IOperationProcessor';
 import IOperationStore from './interfaces/IOperationStore';
 import IRequestHandler from './interfaces/IRequestHandler';
 import ITransactionProcessor from './interfaces/ITransactionProcessor';
+import ITransactionSelector from './interfaces/ITransactionSelector';
+import ITransactionStore from './interfaces/ITransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
 import Resolver from './Resolver';
 
@@ -30,6 +32,7 @@ export default class VersionManager implements IVersionManager {
   private operationProcessors: Map<string, IOperationProcessor>;
   private requestHandlers: Map<string, IRequestHandler>;
   private transactionProcessors: Map<string, ITransactionProcessor>;
+  private transactionSelectors: Map<string, ITransactionSelector>;
 
   public constructor (
     private config: Config,
@@ -43,6 +46,7 @@ export default class VersionManager implements IVersionManager {
     this.operationProcessors = new Map();
     this.requestHandlers = new Map();
     this.transactionProcessors = new Map();
+    this.transactionSelectors = new Map();
   }
 
   /**
@@ -53,12 +57,13 @@ export default class VersionManager implements IVersionManager {
     cas: ICas,
     downloadManager: DownloadManager,
     operationStore: IOperationStore,
-    resolver: Resolver
+    resolver: Resolver,
+    transactionStore: ITransactionStore
   ) {
     // Instantiate rest of the protocol components.
     // NOTE: In principal each version of the interface implemtnations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
-    // but it is not inhernetly "bad" if we have to have conditional constructions for each if we have to.
+    // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
       const version = protocolVersion.version;
 
@@ -71,6 +76,11 @@ export default class VersionManager implements IVersionManager {
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
       const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
       this.transactionProcessors.set(version, transactionProcessor);
+
+      /* tslint:disable-next-line */
+      const TransactionSelector = await this.loadDefaultExportsForVersion(version, 'TransactionSelector');
+      const transactionSelector = new TransactionSelector(transactionStore);
+      this.transactionSelectors.set(version, transactionSelector);
 
       /* tslint:disable-next-line */
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
@@ -143,6 +153,20 @@ export default class VersionManager implements IVersionManager {
     }
 
     return transactionProcessor;
+  }
+
+  /**
+   * Gets the corresponding version of the `TransactionSelector` based on the given blockchain time.
+   */
+  public getTransactionSelector (blockchainTime: number): ITransactionSelector {
+    const version = this.getVersionString(blockchainTime);
+    const transactionSelector = this.transactionSelectors.get(version);
+
+    if (transactionSelector === undefined) {
+      throw new Error(`Unabled to find transaction selector for the given blockchain time ${blockchainTime}, investigate and fix.`);
+    }
+
+    return transactionSelector;
   }
 
   /**

@@ -29,6 +29,12 @@ export default interface ITransactionStore {
   getTransaction (transactionNumber: number): Promise<TransactionModel | undefined>;
 
   /**
+   * Given a transaction time, return a list of transactions that are in that time
+   * @param transactionTime the transaction time to query for
+   */
+  getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[] | undefined>;
+
+  /**
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber
    * If @param transactionNumber is undefined, returns transactions from index 0 in the store
    */

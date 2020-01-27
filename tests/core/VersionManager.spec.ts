@@ -4,9 +4,11 @@ import DownloadManager from '../../lib/core/DownloadManager';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
+import MockTransactionStore from '../mocks/MockTransactionStore';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import VersionManager, { ProtocolVersionModel } from '../../lib/core/VersionManager';
@@ -18,6 +20,7 @@ describe('VersionManager', async () => {
   let cas: ICas;
   let operationStore: IOperationStore;
   let downloadMgr: DownloadManager;
+  let mockTransactionStore: ITransactionStore;
 
   beforeEach(() => {
     config = require('../json/config-test.json');
@@ -25,6 +28,7 @@ describe('VersionManager', async () => {
     cas = new MockCas();
     operationStore = new MockOperationStore();
     downloadMgr = new DownloadManager(1, cas);
+    mockTransactionStore = new MockTransactionStore();
   });
 
   describe('initialize()', async () => {
@@ -41,7 +45,7 @@ describe('VersionManager', async () => {
       });
 
       const resolver = new Resolver(versionMgr, operationStore);
-      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver);
+      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
       // No exception thrown == initialize was successful
     });
@@ -53,7 +57,7 @@ describe('VersionManager', async () => {
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
       const resolver = new Resolver(versionMgr, operationStore);
-      await expectAsync(versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver)).toBeRejected();
+      await expectAsync(versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore)).toBeRejected();
     });
   });
 
@@ -71,7 +75,7 @@ describe('VersionManager', async () => {
 
       const resolver = new Resolver(versionMgr, operationStore);
 
-      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver);
+      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
       // Get the objects for the valid version (see versions/testingversion1 folder) and call
       // functions on the objects to make sure that the correct objects are being returned.
@@ -116,7 +120,7 @@ describe('VersionManager', async () => {
 
       const resolver = new Resolver(versionMgr, operationStore);
 
-      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver);
+      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
       // Expect an invalid blockchain time input to throw
       expect(() => { versionMgr.getBatchWriter(0); }).toThrowError();

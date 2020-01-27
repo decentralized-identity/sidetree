@@ -69,7 +69,8 @@ export default class Core {
       this.cas,
       this.downloadManager,
       this.operationStore,
-      this.resolver
+      this.resolver,
+      this.transactionStore
       ); // `VersionManager` is last initialized component.
 
     await this.observer.startPeriodicProcessing();

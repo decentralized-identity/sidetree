@@ -6,6 +6,7 @@ import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransaction
 import IVersionManager from './interfaces/IVersionManager';
 import SharedErrorCode from '../common/SharedErrorCode';
 import timeSpan = require('time-span');
+import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import { SidetreeError } from './Error';
@@ -31,6 +32,8 @@ export default class Observer {
    */
   private lastKnownTransaction: TransactionModel | undefined;
 
+  private throughputLimiter: ThroughputLimiter;
+
   public constructor (
     private versionManager: IVersionManager,
     private blockchain: IBlockchain,
@@ -39,6 +42,7 @@ export default class Observer {
     private transactionStore: ITransactionStore,
     private unresolvableTransactionStore: IUnresolvableTransactionStore,
     private observingIntervalInSeconds: number) {
+    this.throughputLimiter = new ThroughputLimiter(versionManager);
   }
 
   /**
@@ -68,9 +72,9 @@ export default class Observer {
 
   /**
    * Processes new transactions if any, then reprocess a set of unresolvable transactions if any,
-   * then scehdules the next round of processing unless `stopPeriodicProcessing()` is invoked.
+   * then schedules the next round of processing unless `stopPeriodicProcessing()` is invoked.
    */
-  public async processTransactions () {
+  private async processTransactions () {
     try {
       await this.storeConsecutiveTransactionsProcessed(); // Do this in multiple places
 
@@ -99,11 +103,13 @@ export default class Observer {
           }
         }
 
-        let transactions = readResult ? readResult.transactions : [];
+        const transactions = readResult ? readResult.transactions : [];
         moreTransactions = readResult ? readResult.moreTransactions : false;
+        let qualifiedTransactions = await this.throughputLimiter.getQualifiedTransactions(transactions);
+        qualifiedTransactions = qualifiedTransactions.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
 
         // Queue parallel downloading and processing of batch files.
-        for (const transaction of transactions) {
+        for (const transaction of qualifiedTransactions) {
           const awaitingTransaction = {
             transaction: transaction,
             processingStatus: TransactionProcessingStatus.Pending
@@ -244,7 +250,7 @@ export default class Observer {
       const transactionProcessor: ITransactionProcessor = this.versionManager.getTransactionProcessor(transaction.transactionTime);
       transactionProcessedSuccessfully = await transactionProcessor.processTransaction(transaction);
     } catch (error) {
-      console.error(`Unhandled error encoutnered processing transaction '${transaction.transactionNumber}'.`);
+      console.error(`Unhandled error encountered processing transaction '${transaction.transactionNumber}'.`);
       console.error(error);
       transactionProcessedSuccessfully = false;
     } finally {
@@ -284,7 +290,8 @@ export default class Observer {
     await this.transactionStore.removeTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
     await this.unresolvableTransactionStore.removeUnresolvableTransactionsLaterThan(bestKnownValidRecentTransactionNumber);
 
-    // Reset the in-memory last known good Tranaction so we next processing cycle will fetch from the correct timestamp/maker.
+    // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
+    this.throughputLimiter.reset();
   }
 }

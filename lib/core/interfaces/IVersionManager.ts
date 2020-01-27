@@ -2,6 +2,7 @@ import IBatchWriter from './IBatchWriter';
 import IOperationProcessor from './IOperationProcessor';
 import IRequestHandler from './IRequestHandler';
 import ITransactionProcessor from './ITransactionProcessor';
+import ITransactionSelector from './ITransactionSelector';
 
 /**
  * Defines an interface to return the correct 'version-ed' objects.
@@ -31,4 +32,10 @@ export default interface IVersionManager {
    * @param blockchainTime The blockchain time for which the transaction processor is needed.
    */
   getTransactionProcessor (blockchainTime: number): ITransactionProcessor;
+
+  /**
+   * Gets the transaction selector for the given blockchain time.
+   * @param blockchainTime The blockchain time for which to be filtered
+   */
+  getTransactionSelector (blockchainTime: number): ITransactionSelector;
 }
