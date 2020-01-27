@@ -1,46 +1,33 @@
 {
-  "extends": "tslint-config-standard",
+  "extends": ["tslint-config-standard", "tslint-config-prettier"],
   "linterOptions": {
-    "exclude": [
-      "node_modules/**"
-    ]
+    "exclude": ["node_modules/**"]
   },
   "defaultSeverity": "error",
   "rules": {
-      "max-line-length": [
-          true,
-          160
-      ],
-      "completed-docs": [
-          true,
-          {
-              "classes": {"visibilities": ["exported"]},
-              "enums": {"visibilities": ["exported"]},
-              "functions": {"visibilities": ["exported"]},
-              "interfaces": {"visibilities": ["exported"]},
-              "methods": {"privacies": ["public", "protected"], 
-                  "locations": ["all"]},
-              "properties": {"privacies": ["public", "protected"], 
-                  "locations": ["all"]},
-              "types": {"visibilities": ["all"]}
-          }
-      ],
-      "jsdoc-format": [
-          true,
-          "check-multiline-start"
-      ],
-      "variable-name": [
-        true, 
-        "check-format",
-        "allow-leading-underscore"
-      ],
-      "semicolon": [
-        true,
-        "always"
-      ],
-      "only-arrow-functions": [
-        true,
-        "allow-named-functions"
-      ]
+    "prettier": true,
+    "max-line-length": [true, 160],
+    "completed-docs": [
+      true,
+      {
+        "classes": { "visibilities": ["exported"] },
+        "enums": { "visibilities": ["exported"] },
+        "functions": { "visibilities": ["exported"] },
+        "interfaces": { "visibilities": ["exported"] },
+        "methods": {
+          "privacies": ["public", "protected"],
+          "locations": ["all"]
+        },
+        "properties": {
+          "privacies": ["public", "protected"],
+          "locations": ["all"]
+        },
+        "types": { "visibilities": ["all"] }
+      }
+    ],
+    "jsdoc-format": [true, "check-multiline-start"],
+    "variable-name": [true, "check-format", "allow-leading-underscore"],
+    "semicolon": [true, "always"],
+    "only-arrow-functions": [true, "allow-named-functions"]
   }
 }
