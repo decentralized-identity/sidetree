@@ -52,9 +52,6 @@ describe('Observer', async () => {
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
     const transactionSelector = new TransactionSelector(transactionStore);
-    // these number are hard set to make sure observer applies throughput limiter
-    transactionSelector['maxNumberOfOperationsPerBlock'] = 25;
-    transactionSelector['maxNumberOfTransactionsPerBlock'] = 2;
     versionManager = new MockVersionManager();
 
     spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
