@@ -167,7 +167,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
    
    To prevent spam attack causing transaction and operation stores to grow at an unhealthy rate, rate limiting is put in place. 
 
-   The current implementation caps the number of operations allowed to be observed and processed to 1000 a second, and the cap for transactions is set to 300 per transaction time. The selection logic when the caps are exceeded is the following:
+   The current implementation caps the number of operations and transactions allowed to be observed and processed. The selection logic when the caps are exceeded is the following:
    
    higher fee per transaction comes first, if transaction fee is the same, lower transaction number comes first.
    

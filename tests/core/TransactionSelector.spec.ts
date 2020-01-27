@@ -73,17 +73,6 @@ describe('TransactionSelector', () => {
       const result = await transactionSelector.selectQualifiedTransactions(transactions);
       const expected = [
         {
-          transactionNumber: 2,
-          transactionTime: 1,
-          transactionTimeHash: 'some hash',
-          anchorString: AnchoredDataSerializer.serialize({
-            anchorFileHash: 'file_hash2',
-            numberOfOperations: 11
-          }),
-          transactionFeePaid: 998, // highest fee should come first
-          normalizedTransactionFee: 1
-        },
-        {
           transactionNumber: 3,
           transactionTime: 1,
           transactionTimeHash: 'some hash',
@@ -91,7 +80,18 @@ describe('TransactionSelector', () => {
             anchorFileHash: 'file_hash3',
             numberOfOperations: 8
           }),
-          transactionFeePaid: 999, // second highest fee should come second
+          transactionFeePaid: 999, // highest fee should come first
+          normalizedTransactionFee: 1
+        },
+        {
+          transactionNumber: 2,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: AnchoredDataSerializer.serialize({
+            anchorFileHash: 'file_hash2',
+            numberOfOperations: 11
+          }),
+          transactionFeePaid: 998, // second highest fee should come second
           normalizedTransactionFee: 1
         }
       ];

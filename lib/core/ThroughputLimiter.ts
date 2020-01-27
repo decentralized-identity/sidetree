@@ -26,8 +26,8 @@ export default class ThroughputLimiter {
         this.transactionsInCurrentBlock.push(transaction);
       } else {
         if (this.currentBlockHeight !== undefined) {
-          const throughputLimiter = this.versionManager.getTransactionSelector(this.currentBlockHeight);
-          const qualifiedTransactionsInCurrentBlock = await throughputLimiter.selectQualifiedTransactions(this.transactionsInCurrentBlock);
+          const transactionSelector = this.versionManager.getTransactionSelector(this.currentBlockHeight);
+          const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(this.transactionsInCurrentBlock);
           qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentBlock);
         }
         this.currentBlockHeight = transaction.transactionTime;

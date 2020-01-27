@@ -163,7 +163,7 @@ export default class VersionManager implements IVersionManager {
     const transactionSelector = this.transactionSelectors.get(version);
 
     if (transactionSelector === undefined) {
-      throw new Error(`Unabled to find throughput limiter for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(`Unabled to find transaction selector for the given blockchain time ${blockchainTime}, investigate and fix.`);
     }
 
     return transactionSelector;

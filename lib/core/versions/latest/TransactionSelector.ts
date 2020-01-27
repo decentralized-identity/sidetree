@@ -53,7 +53,7 @@ export default class TransactionSelector implements ITransactionSelector {
     let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
     let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
 
-    const transactionsToReturn = this.getHighestFeeTransactionsFromCurrentTransactionTime(
+    const transactionsToReturn = TransactionSelector.getHighestFeeTransactionsFromCurrentTransactionTime(
       numberOfOperationsToQualify,
       numberOfTransactionsToQualify,
       transactionsPriorityQueue);
@@ -77,7 +77,7 @@ export default class TransactionSelector implements ITransactionSelector {
   /**
    * Given transactions within a block, return the ones that should be processed.
    */
-  private getHighestFeeTransactionsFromCurrentTransactionTime (
+  private static getHighestFeeTransactionsFromCurrentTransactionTime (
     numberOfOperationsToQualify: number,
     numberOfTransactionsToQualify: number,
     transactionsPriorityQueue: any): TransactionModel[] {
@@ -98,6 +98,6 @@ export default class TransactionSelector implements ITransactionSelector {
     }
 
     // sort based on transaction number ascending
-    return transactionsToReturn.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
+    return transactionsToReturn;
   }
 }
