@@ -6,9 +6,11 @@ describe('Value approximator', () => {
   const valueApproximator = new ValueApproximator(approximation, maxValue);
 
   it('should normalize/denormalize with approximation guarantees', () => {
-    for (let i = 0 ; i < maxValue ; i++) {
+    for (let i = 0; i < maxValue; i++) {
       const normalizedValue = valueApproximator.getNormalizedValue(i);
-      const denormalizedValue = valueApproximator.getDenormalizedValue(normalizedValue);
+      const denormalizedValue = valueApproximator.getDenormalizedValue(
+        normalizedValue
+      );
 
       expect(denormalizedValue).toBeGreaterThanOrEqual(i);
       expect(denormalizedValue).toBeLessThan(Math.max(1, i * 2));
@@ -16,7 +18,7 @@ describe('Value approximator', () => {
   });
 
   it('should normalize values to a compact range', () => {
-    for (let i = 0 ; i < maxValue ; i++) {
+    for (let i = 0; i < maxValue; i++) {
       const normalizedValue = valueApproximator.getNormalizedValue(i);
       expect(normalizedValue).toBeGreaterThanOrEqual(0);
       expect(normalizedValue).toBeLessThanOrEqual(11);

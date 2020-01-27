@@ -14,17 +14,19 @@ import { SidetreeError } from '../../Error';
  * Sidetree operation request handler.
  */
 export default class RequestHandler implements IRequestHandler {
-
-  public constructor (
+  public constructor(
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
-    private didMethodName: string) { }
+    private didMethodName: string
+  ) {}
 
   /**
    * Handles an operation request.
    */
-  public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
-    console.info(`Handling operation request of size ${request.length} bytes...`);
+  public async handleOperationRequest(request: Buffer): Promise<ResponseModel> {
+    console.info(
+      `Handling operation request of size ${request.length} bytes...`
+    );
 
     // Perform common validation for any write request and parse it into an `Operation`.
     let operation: Operation;
@@ -33,7 +35,10 @@ export default class RequestHandler implements IRequestHandler {
       if (request.length > ProtocolParameters.maxOperationByteSize) {
         const errorMessage = `Operation byte size of ${request.length} exceeded limit of ${ProtocolParameters.maxOperationByteSize}`;
         console.info(errorMessage);
-        throw new SidetreeError(ErrorCode.OperationExceedsMaximumSize, errorMessage);
+        throw new SidetreeError(
+          ErrorCode.OperationExceedsMaximumSize,
+          errorMessage
+        );
       }
 
       // Parse request into an Operation.
@@ -41,7 +46,9 @@ export default class RequestHandler implements IRequestHandler {
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
       if (await this.operationQueue.contains(operation.didUniqueSuffix)) {
-        throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
+        throw new SidetreeError(
+          ErrorCode.QueueingMultipleOperationsPerDidNotAllowed
+        );
       }
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
@@ -62,7 +69,9 @@ export default class RequestHandler implements IRequestHandler {
     }
 
     try {
-      console.info(`Operation type: '${operation.type}', DID unique suffix: '${operation.didUniqueSuffix}'`);
+      console.info(
+        `Operation type: '${operation.type}', DID unique suffix: '${operation.didUniqueSuffix}'`
+      );
 
       // Passed common operation validation, hand off to specific operation handler.
       let response: ResponseModel;
@@ -93,7 +102,10 @@ export default class RequestHandler implements IRequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        await this.operationQueue.enqueue(operation.didUniqueSuffix, operation.operationBuffer);
+        await this.operationQueue.enqueue(
+          operation.didUniqueSuffix,
+          operation.operationBuffer
+        );
       }
 
       return response;
@@ -120,7 +132,9 @@ export default class RequestHandler implements IRequestHandler {
    *   1. A short-form DID. e.g. 'did:sidetree:abc' or
    *   2. A long-form DID. e.g. 'did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>'.
    */
-  public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
+  public async handleResolveRequest(
+    shortOrLongFormDid: string
+  ): Promise<ResponseModel> {
     try {
       console.log(`Handling resolution request for: ${shortOrLongFormDid}...`);
 
@@ -147,7 +161,9 @@ export default class RequestHandler implements IRequestHandler {
     }
   }
 
-  private async handleResolveRequestWithShortFormDid (did: Did): Promise<ResponseModel> {
+  private async handleResolveRequestWithShortFormDid(
+    did: Did
+  ): Promise<ResponseModel> {
     const didDocument = await this.resolver.resolve(did.uniqueSuffix);
 
     if (!didDocument) {
@@ -162,7 +178,9 @@ export default class RequestHandler implements IRequestHandler {
     };
   }
 
-  private async handleResolveRequestWithLongFormDid (did: Did): Promise<ResponseModel> {
+  private async handleResolveRequestWithLongFormDid(
+    did: Did
+  ): Promise<ResponseModel> {
     // Attempt to resolve the DID by using operations found from the network.
     let didDocument = await this.resolver.resolve(did.uniqueSuffix);
 

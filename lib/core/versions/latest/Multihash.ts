@@ -11,13 +11,19 @@ export default class Multihash {
   /**
    * Hashes the content using the hashing algorithm specified.
    */
-  public static hash (content: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
+  public static hash(
+    content: Buffer,
+    hashAlgorithmInMultihashCode: number
+  ): Buffer {
     const hashAlgorithm = hashAlgorithmInMultihashCode;
 
     let hash;
     switch (hashAlgorithm) {
       case 18: // SHA256
-        hash = crypto.createHash('sha256').update(content).digest();
+        hash = crypto
+          .createHash('sha256')
+          .update(content)
+          .digest();
         break;
       default:
         throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
@@ -33,7 +39,7 @@ export default class Multihash {
    * Given a multihash, returns the code of the hash algorithm used.
    * @throws `SidetreeError` if hash algorithm used for the given multihash is unsupported.
    */
-  public static getHashAlgorithmCode (multihashBuffer: Buffer): number {
+  public static getHashAlgorithmCode(multihashBuffer: Buffer): number {
     const multihash = multihashes.decode(multihashBuffer);
 
     // Hash algorithm must be SHA-256.
@@ -48,22 +54,30 @@ export default class Multihash {
    * Verifies that the given hash is a multihash computed with the latest supported hash algorithm.
    * @throws `SidetreeError` if the given hash is not a multihash computed with the latest supported hash algorithm.
    */
-  public static verifyHashComputedUsingLatestSupportedAlgorithm (hash: Buffer) {
+  public static verifyHashComputedUsingLatestSupportedAlgorithm(hash: Buffer) {
     const latestSupportedHashAlgorithmCode = 18;
-    const isLatestSupportedHashFormat = Multihash.isComputedUsingHashAlgorithm(hash, latestSupportedHashAlgorithmCode); // SHA-256.
+    const isLatestSupportedHashFormat = Multihash.isComputedUsingHashAlgorithm(
+      hash,
+      latestSupportedHashAlgorithmCode
+    ); // SHA-256.
 
     if (!isLatestSupportedHashFormat) {
-      throw new SidetreeError(ErrorCode.MultihashNotLatestSupportedHashAlgorithm);
+      throw new SidetreeError(
+        ErrorCode.MultihashNotLatestSupportedHashAlgorithm
+      );
     }
   }
 
   /**
    * Checks if the given hash is a multihash with the expected hashing algorithm.
    */
-  public static isComputedUsingHashAlgorithm (hash: Buffer, expectedHashAlgorithmInMultihashCode: number): boolean {
+  public static isComputedUsingHashAlgorithm(
+    hash: Buffer,
+    expectedHashAlgorithmInMultihashCode: number
+  ): boolean {
     try {
       const multihash = multihashes.decode(hash);
-      return (multihash.code === expectedHashAlgorithmInMultihashCode);
+      return multihash.code === expectedHashAlgorithmInMultihashCode;
     } catch {
       return false;
     }
@@ -72,7 +86,10 @@ export default class Multihash {
   /**
    * Verifies the given content against the given multihash.
    */
-  public static isValidHash (encodedContent: string, encodedMultihash: string): boolean {
+  public static isValidHash(
+    encodedContent: string,
+    encodedMultihash: string
+  ): boolean {
     try {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
       const multihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);

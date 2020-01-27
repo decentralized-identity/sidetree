@@ -13,17 +13,20 @@ import { SidetreeError } from '../../Error';
 export default class TransactionSelector implements ITransactionSelector {
   private maxNumberOfOperationsPerBlock: number;
   private maxNumberOfTransactionsPerBlock: number;
-  public constructor (
-    private transactionStore: ITransactionStore
-  ) {
-    this.maxNumberOfOperationsPerBlock = ProtocolParameters.maxNumberOfOpsPerTransactionTime;
-    this.maxNumberOfTransactionsPerBlock = ProtocolParameters.maxNumberOfTransactionsPerTransactionTime;
+  public constructor(private transactionStore: ITransactionStore) {
+    this.maxNumberOfOperationsPerBlock =
+      ProtocolParameters.maxNumberOfOpsPerTransactionTime;
+    this.maxNumberOfTransactionsPerBlock =
+      ProtocolParameters.maxNumberOfTransactionsPerTransactionTime;
   }
 
-  private static getTransactionPriorityQueue () {
+  private static getTransactionPriorityQueue() {
     const comparator = (a: TransactionModel, b: TransactionModel) => {
       // higher fee comes first. If fees are the same, earlier transaction comes first
-      return a.transactionFeePaid - b.transactionFeePaid || b.transactionNumber - a.transactionNumber;
+      return (
+        a.transactionFeePaid - b.transactionFeePaid ||
+        b.transactionNumber - a.transactionNumber
+      );
     };
 
     return new PriorityQueue({ comparator });
@@ -34,7 +37,9 @@ export default class TransactionSelector implements ITransactionSelector {
    * max number of operations per block
    * @param transactions The transactions that should be ranked and considered to process
    */
-  public async selectQualifiedTransactions (transactions: TransactionModel[]): Promise<TransactionModel[]> {
+  public async selectQualifiedTransactions(
+    transactions: TransactionModel[]
+  ): Promise<TransactionModel[]> {
     if (!transactions.length) {
       return [];
     }
@@ -44,29 +49,46 @@ export default class TransactionSelector implements ITransactionSelector {
     const currentBlockHeight = transactions[0].transactionTime;
     for (const transaction of transactions) {
       if (transaction.transactionTime !== currentBlockHeight) {
-        throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting, investigate and fix');
+        throw new SidetreeError(
+          ErrorCode.TransactionsNotInSameBlock,
+          'transaction must be in the same block to perform rate limiting, investigate and fix'
+        );
       }
       transactionsPriorityQueue.push(transaction);
     }
 
-    const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInBlock(currentBlockHeight);
-    let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
-    let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
+    const [
+      numberOfOperations,
+      numberOfTransactions
+    ] = await this.getNumberOfOperationsAndTransactionsAlreadyInBlock(
+      currentBlockHeight
+    );
+    let numberOfOperationsToQualify =
+      this.maxNumberOfOperationsPerBlock - numberOfOperations;
+    let numberOfTransactionsToQualify =
+      this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
 
     const transactionsToReturn = TransactionSelector.getHighestFeeTransactionsFromCurrentTransactionTime(
       numberOfOperationsToQualify,
       numberOfTransactionsToQualify,
-      transactionsPriorityQueue);
+      transactionsPriorityQueue
+    );
 
     return transactionsToReturn;
   }
 
-  private async getNumberOfOperationsAndTransactionsAlreadyInBlock (blockHeight: number): Promise<number[]> {
-    const transactions = await this.transactionStore.getTransactionsByTransactionTime(blockHeight);
+  private async getNumberOfOperationsAndTransactionsAlreadyInBlock(
+    blockHeight: number
+  ): Promise<number[]> {
+    const transactions = await this.transactionStore.getTransactionsByTransactionTime(
+      blockHeight
+    );
     let numberOfOperations = 0;
     if (transactions) {
       for (const transaction of transactions) {
-        const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(transaction.anchorString).numberOfOperations;
+        const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(
+          transaction.anchorString
+        ).numberOfOperations;
         numberOfOperations += numOfOperationsInCurrentTransaction;
       }
     }
@@ -77,19 +99,23 @@ export default class TransactionSelector implements ITransactionSelector {
   /**
    * Given transactions within a block, return the ones that should be processed.
    */
-  private static getHighestFeeTransactionsFromCurrentTransactionTime (
+  private static getHighestFeeTransactionsFromCurrentTransactionTime(
     numberOfOperationsToQualify: number,
     numberOfTransactionsToQualify: number,
-    transactionsPriorityQueue: any): TransactionModel[] {
-
+    transactionsPriorityQueue: any
+  ): TransactionModel[] {
     let numberOfOperationsSeen = 0;
     const transactionsToReturn = [];
 
-    while (transactionsToReturn.length < numberOfTransactionsToQualify
-      && numberOfOperationsSeen < numberOfOperationsToQualify
-      && transactionsPriorityQueue.length > 0) {
+    while (
+      transactionsToReturn.length < numberOfTransactionsToQualify &&
+      numberOfOperationsSeen < numberOfOperationsToQualify &&
+      transactionsPriorityQueue.length > 0
+    ) {
       const currentTransaction = transactionsPriorityQueue.pop();
-      const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
+      const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(
+        currentTransaction.anchorString
+      ).numberOfOperations;
       numberOfOperationsSeen += numOfOperationsInCurrentTransaction;
 
       if (numberOfOperationsSeen <= numberOfOperationsToQualify) {

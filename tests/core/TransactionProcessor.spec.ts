@@ -17,9 +17,15 @@ describe('TransactionProcessor', () => {
   beforeEach(() => {
     casClient = new Cas(config.contentAddressableStoreServiceUri);
     operationStore = new MockOperationStore();
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
+    downloadManager = new DownloadManager(
+      config.maxConcurrentDownloads,
+      casClient
+    );
     downloadManager.start();
-    transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    transactionProcessor = new TransactionProcessor(
+      downloadManager,
+      operationStore
+    );
   });
 
   describe('prcoessTransaction', () => {
@@ -33,12 +39,17 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 1,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeTruthy();
     });
 
     it('should ignore error and return true when FeeManager throws a sidetree error', async () => {
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 0 });
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: '1stTransaction',
+        numberOfOperations: 0
+      });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -47,18 +58,25 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 1,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeTruthy();
     });
 
     it('should return true if anchor file hash is not valid', async () => {
-      spyOn(downloadManager, 'download').and.callFake((): Promise<FetchResult> => {
-        const result: FetchResult = { code: FetchResultCode.InvalidHash };
-        return new Promise((resolve) => {
-          resolve(result);
-        });
+      spyOn(downloadManager, 'download').and.callFake(
+        (): Promise<FetchResult> => {
+          const result: FetchResult = { code: FetchResultCode.InvalidHash };
+          return new Promise(resolve => {
+            resolve(result);
+          });
+        }
+      );
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: '1stTransaction',
+        numberOfOperations: 1
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -67,18 +85,25 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 999999,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeTruthy();
     });
 
     it('should return true if fetch result code is max size exceeded', async () => {
-      spyOn(downloadManager, 'download').and.callFake((): Promise<FetchResult> => {
-        const result: FetchResult = { code: FetchResultCode.MaxSizeExceeded };
-        return new Promise((resolve) => {
-          resolve(result);
-        });
+      spyOn(downloadManager, 'download').and.callFake(
+        (): Promise<FetchResult> => {
+          const result: FetchResult = { code: FetchResultCode.MaxSizeExceeded };
+          return new Promise(resolve => {
+            resolve(result);
+          });
+        }
+      );
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: '1stTransaction',
+        numberOfOperations: 1
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -87,18 +112,25 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 999999,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeTruthy();
     });
 
     it('should return true if fetch result code is not a file', async () => {
-      spyOn(downloadManager, 'download').and.callFake((): Promise<FetchResult> => {
-        const result: FetchResult = { code: FetchResultCode.NotAFile };
-        return new Promise((resolve) => {
-          resolve(result);
-        });
+      spyOn(downloadManager, 'download').and.callFake(
+        (): Promise<FetchResult> => {
+          const result: FetchResult = { code: FetchResultCode.NotAFile };
+          return new Promise(resolve => {
+            resolve(result);
+          });
+        }
+      );
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: '1stTransaction',
+        numberOfOperations: 1
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -107,18 +139,25 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 999999,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeTruthy();
     });
 
     it('should return true if fetch result code is cas not reachable', async () => {
-      spyOn(downloadManager, 'download').and.callFake((): Promise<FetchResult> => {
-        const result: FetchResult = { code: FetchResultCode.CasNotReachable };
-        return new Promise((resolve) => {
-          resolve(result);
-        });
+      spyOn(downloadManager, 'download').and.callFake(
+        (): Promise<FetchResult> => {
+          const result: FetchResult = { code: FetchResultCode.CasNotReachable };
+          return new Promise(resolve => {
+            resolve(result);
+          });
+        }
+      );
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: '1stTransaction',
+        numberOfOperations: 1
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -127,18 +166,25 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 999999,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeFalsy();
     });
 
     it('should return true if fetch result code is not found', async () => {
-      spyOn(downloadManager, 'download').and.callFake((): Promise<FetchResult> => {
-        const result: FetchResult = { code: FetchResultCode.NotFound };
-        return new Promise((resolve) => {
-          resolve(result);
-        });
+      spyOn(downloadManager, 'download').and.callFake(
+        (): Promise<FetchResult> => {
+          const result: FetchResult = { code: FetchResultCode.NotFound };
+          return new Promise(resolve => {
+            resolve(result);
+          });
+        }
+      );
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: '1stTransaction',
+        numberOfOperations: 1
       });
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -147,7 +193,9 @@ describe('TransactionProcessor', () => {
         transactionFeePaid: 999999,
         normalizedTransactionFee: 1
       };
-      const result = await transactionProcessor.processTransaction(mockTransaction);
+      const result = await transactionProcessor.processTransaction(
+        mockTransaction
+      );
       expect(result).toBeFalsy();
     });
   });

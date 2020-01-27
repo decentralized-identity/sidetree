@@ -7,7 +7,7 @@ export default class RunLengthTransformer {
    * Run-length encode an array: The array `[0,0,0,1,1]` becomes
    * `[0,3,1,2]`.
    */
-  public static encode (array: number[]): number[] {
+  public static encode(array: number[]): number[] {
     if (array.length === 0) {
       return array;
     }
@@ -16,7 +16,7 @@ export default class RunLengthTransformer {
 
     let value = array[0];
     let count = 1;
-    for (let i = 1 ; i < array.length ; i++) {
+    for (let i = 1; i < array.length; i++) {
       if (array[i] === value) {
         count++;
       } else {
@@ -34,17 +34,19 @@ export default class RunLengthTransformer {
   }
 
   /** Inverse of run-length encode. */
-  public static decode (array: number[]): number[] {
-    if (((array.length) % 2 !== 0) || (array.length === 0)) {
-      throw Error(`Invalid array length for runlength decoding: ${array.length}`);
+  public static decode(array: number[]): number[] {
+    if (array.length % 2 !== 0 || array.length === 0) {
+      throw Error(
+        `Invalid array length for runlength decoding: ${array.length}`
+      );
     }
 
     const retArray = new Array();
-    for (let i = 0 ; i < array.length ;) {
+    for (let i = 0; i < array.length; ) {
       let value = array[i++];
       let count = array[i++];
 
-      for (let j = 0 ; j < count ; j++) {
+      for (let j = 0; j < count; j++) {
         retArray.push(value);
       }
     }

@@ -7,17 +7,18 @@ import TransactionNumber from './TransactionNumber';
  * service is doing.
  */
 export default class SpendingMonitor {
-
   private anchorStringsWritten: Set<string>;
 
-  public constructor (
+  public constructor(
     private bitcoinFeeSpendingCutoffPeriodInBlocks: number,
     private bitcoinFeeSpendingCutoffInSatoshis: number,
-    private transactionStore: ITransactionStore) {
-
+    private transactionStore: ITransactionStore
+  ) {
     if (bitcoinFeeSpendingCutoffPeriodInBlocks < 1) {
       // tslint:disable-next-line: max-line-length
-      throw new Error(`Bitcoin spending cutoff period: ${bitcoinFeeSpendingCutoffPeriodInBlocks} must be greater than 1`);
+      throw new Error(
+        `Bitcoin spending cutoff period: ${bitcoinFeeSpendingCutoffPeriodInBlocks} must be greater than 1`
+      );
     }
 
     if (bitcoinFeeSpendingCutoffInSatoshis <= 0) {
@@ -31,7 +32,7 @@ export default class SpendingMonitor {
    * Add the transaction data to track the spending.
    * @param anchorString The string to be written.
    */
-  public addTransactionDataBeingWritten (anchorString: string): void {
+  public addTransactionDataBeingWritten(anchorString: string): void {
     this.anchorStringsWritten.add(anchorString);
   }
 
@@ -40,12 +41,14 @@ export default class SpendingMonitor {
    * @param currentFeeInSatoshis The fee to be added for the next transaction.
    * @param startingBlockHeight The block height to start the check for the cutoff period.
    */
-  public async isCurrentFeeWithinSpendingLimit (currentFeeInSatoshis: number, lastProcessedBlockHeight: number): Promise<boolean> {
-
+  public async isCurrentFeeWithinSpendingLimit(
+    currentFeeInSatoshis: number,
+    lastProcessedBlockHeight: number
+  ): Promise<boolean> {
     // Special case for when the checking period is 1. Even though the algorithm later will
     // will work for this case, but we will avoid making a DB call.
     if (this.bitcoinFeeSpendingCutoffPeriodInBlocks === 1) {
-      return (currentFeeInSatoshis <= this.bitcoinFeeSpendingCutoffInSatoshis);
+      return currentFeeInSatoshis <= this.bitcoinFeeSpendingCutoffInSatoshis;
     }
 
     // In order to calculate whether we are over the spending limit or not, our algorithm is:
@@ -61,31 +64,51 @@ export default class SpendingMonitor {
     // the these 2 blocks from the cutoff period. For example:
     //  - if the cutoff period is 2, then we want transactions from the last-processed-block and the next one.
     //  - if the cutoff period is 3, then we want transactions from the last-processed-block - 1, last-processed-block, and the next one
-    const startingBlockHeight = lastProcessedBlockHeight - this.bitcoinFeeSpendingCutoffPeriodInBlocks - 2;
+    const startingBlockHeight =
+      lastProcessedBlockHeight -
+      this.bitcoinFeeSpendingCutoffPeriodInBlocks -
+      2;
 
     // Now get the transactions from the store which are included in the above starting block and higher.
-    const startingBlockFirstTxnNumber = TransactionNumber.construct(startingBlockHeight, 0);
+    const startingBlockFirstTxnNumber = TransactionNumber.construct(
+      startingBlockHeight,
+      0
+    );
 
-    const allTxnsSinceStartingBlock =
-      await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, undefined);
+    const allTxnsSinceStartingBlock = await this.transactionStore.getTransactionsLaterThan(
+      startingBlockFirstTxnNumber - 1,
+      undefined
+    );
 
-    // tslint:disable-next-line: max-line-length
-    console.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
+    console.info(
+      // tslint:disable-next-line:max-line-length
+      `SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`
+    );
 
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
     // filter them to get the transactions that were written only by this node.
-    const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(allTxnsSinceStartingBlock);
-    console.info(`Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`);
+    const txnsWrittenByThisInstance = this.findTransactionsWrittenByThisNode(
+      allTxnsSinceStartingBlock
+    );
+    console.info(
+      `Number of transactions written by this instance: ${txnsWrittenByThisInstance.length}`
+    );
 
-    const totalFeeForRelatedTxns = txnsWrittenByThisInstance.reduce((total: number, currTxnModel: TransactionModel) => {
-      return total + currTxnModel.transactionFeePaid;
-    }, 0);
+    const totalFeeForRelatedTxns = txnsWrittenByThisInstance.reduce(
+      (total: number, currTxnModel: TransactionModel) => {
+        return total + currTxnModel.transactionFeePaid;
+      },
+      0
+    );
 
-    const totalFeePlusCurrentFee = totalFeeForRelatedTxns + currentFeeInSatoshis;
+    const totalFeePlusCurrentFee =
+      totalFeeForRelatedTxns + currentFeeInSatoshis;
 
     if (totalFeePlusCurrentFee > this.bitcoinFeeSpendingCutoffInSatoshis) {
-      // tslint:disable-next-line: max-line-length
-      console.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
+      console.error(
+        // tslint:disable-next-line: max-line-length
+        `Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`
+      );
       return false;
     }
 
@@ -96,10 +119,12 @@ export default class SpendingMonitor {
    * Finds the transactions which were written by this node. Really added to help with unit testing.
    * @param transactionsFromStore
    */
-  private findTransactionsWrittenByThisNode (transactionsFromStore: TransactionModel[]): Array<TransactionModel> {
+  private findTransactionsWrittenByThisNode(
+    transactionsFromStore: TransactionModel[]
+  ): Array<TransactionModel> {
     // The transactions written by this node will include the anchor strings that we have been saving
     // so use that data to filter and return.
-    const arraysToReturn = transactionsFromStore.filter((txn) => {
+    const arraysToReturn = transactionsFromStore.filter(txn => {
       return this.anchorStringsWritten.has(txn.anchorString);
     });
 

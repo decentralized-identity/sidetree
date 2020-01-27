@@ -12,7 +12,11 @@ describe('SlidingWindowQuantileCalculator', async () => {
   beforeAll(async () => {
     slidingWindowQuantileStore = new MockSlidingWindowQuantileStore();
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue,
+      slidingWindowSize,
+      medianQuantile,
+      slidingWindowQuantileStore
+    );
     await slidingWindowQuantileCalculator.initialize();
   });
 
@@ -23,7 +27,10 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
   it('should compute correct quantiles for a single group of identical values', async () => {
     const singleValue = 2;
-    await slidingWindowQuantileCalculator.add(0, new Array(100).fill(singleValue));
+    await slidingWindowQuantileCalculator.add(
+      0,
+      new Array(100).fill(singleValue)
+    );
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
     expect(quantile!).toBe(2);
@@ -31,7 +38,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
   it('should compute correct median with distinct values', async () => {
     const values = new Array(100);
-    for (let i = 0 ; i < values.length ; ++i) {
+    for (let i = 0; i < values.length; ++i) {
       values[i] = i;
     }
 
@@ -44,10 +51,10 @@ describe('SlidingWindowQuantileCalculator', async () => {
   it('should compute correct median at boundary', async () => {
     // values has 50x2 and 50x4, so 2 is the median
     const values = new Array(100);
-    for (let i = 0 ; i < 50 ; i++) {
+    for (let i = 0; i < 50; i++) {
       values[i] = 4;
     }
-    for (let i = 50 ; i < 100 ; i++) {
+    for (let i = 50; i < 100; i++) {
       values[i] = 2;
     }
 
@@ -60,10 +67,10 @@ describe('SlidingWindowQuantileCalculator', async () => {
   it('should compute correct median at boundary (higher)', async () => {
     // values has 49x2 and 51x4, so 4 is the median
     const values = new Array(100);
-    for (let i = 0 ; i < 51 ; i++) {
+    for (let i = 0; i < 51; i++) {
       values[i] = 4;
     }
-    for (let i = 51 ; i < 100 ; i++) {
+    for (let i = 51; i < 100; i++) {
       values[i] = 2;
     }
 
@@ -78,7 +85,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     // of using frequency vectors, very unlikely we should have a bug sensitive to the
     // permutation.
     const values = new Array(100);
-    for (let i = 0 ; i < values.length ; ++i) {
+    for (let i = 0; i < values.length; ++i) {
       values[i] = 99 - i;
     }
 
@@ -145,7 +152,11 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     // start a new calculator with the same store
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue,
+      slidingWindowSize,
+      medianQuantile,
+      slidingWindowQuantileStore
+    );
     await slidingWindowQuantileCalculator.initialize();
 
     // quantile of 0 is over [2x100], so 2

@@ -7,12 +7,15 @@ import IOperationQueue from '../../../../lib/core/versions/latest/interfaces/IOp
  * Batch writer.
  */
 export default class BatchWriter implements IBatchWriter {
-
-  public constructor (private operationQueue: IOperationQueue, private blockchain: IBlockchain, private cas: ICas) {
+  public constructor(
+    private operationQueue: IOperationQueue,
+    private blockchain: IBlockchain,
+    private cas: ICas
+  ) {
     console.debug(this.operationQueue, this.blockchain, this.cas);
   }
 
-  async write (): Promise<void> {
+  async write(): Promise<void> {
     throw new Error('BatchWriter: Not implemented. Version: TestVersion1');
   }
 }

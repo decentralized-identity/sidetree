@@ -4,13 +4,15 @@ import { PrivateKey, Transaction } from 'bitcore-lib';
  * Encapsulates the functions that help with generating the test data for the Bitcoin blockchain.
  */
 export default class BitcoinDataGenerator {
-
   /**
    * Generates a new bitcoin transaction.
    * @param wif Input to generate the private key.
    * @param satoshis The amount of satoshis to include in the transaction
    */
-  public static generateBitcoinTransaction (wif: string, satoshis: number = 1): Transaction {
+  public static generateBitcoinTransaction(
+    wif: string,
+    satoshis: number = 1
+  ): Transaction {
     const keyObject: PrivateKey = (PrivateKey as any).fromWIF(wif);
     const address = keyObject.toAddress();
     const transaction = new Transaction();
@@ -24,8 +26,14 @@ export default class BitcoinDataGenerator {
    * @param wif Input to generate the private key.
    * @param satoshis The amount of satoshis to include in the transaction
    */
-  public static generateUnspentCoin (wif: string, satoshis: number): Transaction.UnspentOutput {
-    const transaction = BitcoinDataGenerator.generateBitcoinTransaction(wif, satoshis);
+  public static generateUnspentCoin(
+    wif: string,
+    satoshis: number
+  ): Transaction.UnspentOutput {
+    const transaction = BitcoinDataGenerator.generateBitcoinTransaction(
+      wif,
+      satoshis
+    );
     return new Transaction.UnspentOutput({
       txid: transaction.id,
       vout: 0,

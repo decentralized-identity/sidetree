@@ -11,10 +11,11 @@ import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import VersionManager, { ProtocolVersionModel } from '../../lib/core/VersionManager';
+import VersionManager, {
+  ProtocolVersionModel
+} from '../../lib/core/VersionManager';
 
 describe('VersionManager', async () => {
-
   let config: Config;
   let blockChain: IBlockchain;
   let cas: ICas;
@@ -32,20 +33,27 @@ describe('VersionManager', async () => {
   });
 
   describe('initialize()', async () => {
-
     it('should initialize all the objects correctly.', async () => {
-
       const protocolVersionConfig: ProtocolVersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
-      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
-        return (await import(`./versions/${version}/${className}`)).default;
-      });
+      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(
+        async (version: string, className: string) => {
+          return (await import(`./versions/${version}/${className}`)).default;
+        }
+      );
 
       const resolver = new Resolver(versionMgr, operationStore);
-      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+      await versionMgr.initialize(
+        blockChain,
+        cas,
+        downloadMgr,
+        operationStore,
+        resolver,
+        mockTransactionStore
+      );
 
       // No exception thrown == initialize was successful
     });
@@ -57,25 +65,42 @@ describe('VersionManager', async () => {
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
       const resolver = new Resolver(versionMgr, operationStore);
-      await expectAsync(versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore)).toBeRejected();
+      await expectAsync(
+        versionMgr.initialize(
+          blockChain,
+          cas,
+          downloadMgr,
+          operationStore,
+          resolver,
+          mockTransactionStore
+        )
+      ).toBeRejected();
     });
   });
 
   describe('get* functions.', async () => {
-
     it('should return the correct version-ed objects for valid version.', async () => {
       const protocolVersionConfig: ProtocolVersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
-      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
-        return (await import(`./versions/${version}/${className}`)).default;
-      });
+      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(
+        async (version: string, className: string) => {
+          return (await import(`./versions/${version}/${className}`)).default;
+        }
+      );
 
       const resolver = new Resolver(versionMgr, operationStore);
 
-      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+      await versionMgr.initialize(
+        blockChain,
+        cas,
+        downloadMgr,
+        operationStore,
+        resolver,
+        mockTransactionStore
+      );
 
       // Get the objects for the valid version (see versions/testingversion1 folder) and call
       // functions on the objects to make sure that the correct objects are being returned.
@@ -91,7 +116,9 @@ describe('VersionManager', async () => {
         operationIndex: 0,
         operationBuffer: Buffer.from('')
       };
-      await expectAsync(operationProcessor.apply(anchoredOpModel, { didDocument: undefined })).toBeRejected();
+      await expectAsync(
+        operationProcessor.apply(anchoredOpModel, { didDocument: undefined })
+      ).toBeRejected();
 
       const requestHandler = versionMgr.getRequestHandler(2000);
       await expectAsync(requestHandler.handleResolveRequest('')).toBeRejected();
@@ -114,19 +141,36 @@ describe('VersionManager', async () => {
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
-      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
-        return (await import(`./versions/${version}/${className}`)).default;
-      });
+      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(
+        async (version: string, className: string) => {
+          return (await import(`./versions/${version}/${className}`)).default;
+        }
+      );
 
       const resolver = new Resolver(versionMgr, operationStore);
 
-      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+      await versionMgr.initialize(
+        blockChain,
+        cas,
+        downloadMgr,
+        operationStore,
+        resolver,
+        mockTransactionStore
+      );
 
       // Expect an invalid blockchain time input to throw
-      expect(() => { versionMgr.getBatchWriter(0); }).toThrowError();
-      expect(() => { versionMgr.getOperationProcessor(999); }).toThrowError();
-      expect(() => { versionMgr.getRequestHandler(100); }).toThrowError();
-      expect(() => { versionMgr.getTransactionProcessor(500); }).toThrowError();
+      expect(() => {
+        versionMgr.getBatchWriter(0);
+      }).toThrowError();
+      expect(() => {
+        versionMgr.getOperationProcessor(999);
+      }).toThrowError();
+      expect(() => {
+        versionMgr.getRequestHandler(100);
+      }).toThrowError();
+      expect(() => {
+        versionMgr.getTransactionProcessor(500);
+      }).toThrowError();
     });
   });
 });

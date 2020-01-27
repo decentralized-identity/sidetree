@@ -5,7 +5,7 @@ describe('PsuedoRandomBitStream', () => {
     const psuedoRandomBitStream1 = new PsuedoRandomBitStream('hello world');
     const psuedoRandomBitStream2 = new PsuedoRandomBitStream('hello world');
 
-    for (let i = 0 ; i < 1024 ; ++i) {
+    for (let i = 0; i < 1024; ++i) {
       const bit1 = psuedoRandomBitStream1.getNextBit();
       const bit2 = psuedoRandomBitStream2.getNextBit();
       expect(bit1).toEqual(bit2);
@@ -17,7 +17,7 @@ describe('PsuedoRandomBitStream', () => {
     const psuedoRandomBitStream = new PsuedoRandomBitStream('hello world');
     let zeroCount = 0;
     let oneCount = 0;
-    for (let i = 0 ; i < 1024 ; ++i) {
+    for (let i = 0; i < 1024; ++i) {
       const bit = psuedoRandomBitStream.getNextBit();
       if (bit === 0) {
         zeroCount++;

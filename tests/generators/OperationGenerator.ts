@@ -70,12 +70,11 @@ interface GeneratedRecoveryOperationPayloadData {
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
-
   /**
    * Generates an one-time password and its hash as encoded strings for use in opertaions.
    * @returns [otpEncodedString, otpHashEncodedString]
    */
-  public static generateOtp (): [string, string] {
+  public static generateOtp(): [string, string] {
     const otpBuffer = crypto.randomBytes(32);
     const otpEncodedString = Encoder.encode(otpBuffer);
     const otpHash = Multihash.hash(otpBuffer, 18); // 18 = SHA256;
@@ -87,17 +86,33 @@ export default class OperationGenerator {
   /**
    * Generates an anchored create operation.
    */
-  public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
+  public static async generateAnchoredCreateOperation(
+    input: AnchoredCreateOperationGenerationInput
+  ): Promise<GeneratedAnchoredCreateOperationData> {
     const recoveryKeyId = '#recoveryKey';
     const signingKeyId = '#signingKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
-    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const [
+      recoveryPublicKey,
+      recoveryPrivateKey
+    ] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
+    const [
+      signingPublicKey,
+      signingPrivateKey
+    ] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
     const hubServiceEndpoint = 'did:sidetree:value0';
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints([
+      hubServiceEndpoint
+    ]);
 
     // Generate the next update and recovery operation OTP.
-    const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const [
+      nextRecoveryOtpEncodedString,
+      nextRecoveryOtpHash
+    ] = OperationGenerator.generateOtp();
+    const [
+      nextUpdateOtpEncodedString,
+      nextUpdateOtpHash
+    ] = OperationGenerator.generateOtp();
 
     const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
@@ -139,13 +154,17 @@ export default class OperationGenerator {
   /**
    * Generates an anchored update operation.
    */
-  public static async generateAnchoredUpdateOperation (input: AnchoredUpdateOperationGenerationInput): Promise<GeneratedAnchoredUpdateOperationData> {
+  public static async generateAnchoredUpdateOperation(
+    input: AnchoredUpdateOperationGenerationInput
+  ): Promise<GeneratedAnchoredUpdateOperationData> {
     const updateOtpEncodedString = input.updateOtpEncodedString;
 
     // Generate the next update OTP.
     const nextUpdateOtpBuffer = crypto.randomBytes(32);
     const nextUpdateOtpEncodedString = Encoder.encode(nextUpdateOtpBuffer);
-    const nextUpdateOtpHash = Encoder.encode(Multihash.hash(nextUpdateOtpBuffer, 18)); // 18 = SHA256;
+    const nextUpdateOtpHash = Encoder.encode(
+      Multihash.hash(nextUpdateOtpBuffer, 18)
+    ); // 18 = SHA256;
 
     const updatePayload = {
       type: OperationType.Update,
@@ -173,18 +192,37 @@ export default class OperationGenerator {
   /**
    * Generates a recover operation payload.
    */
-  public static async generateRecoveryOperationPayload (input: RecoveryOperationPayloadGenerationInput): Promise<GeneratedRecoveryOperationPayloadData> {
+  public static async generateRecoveryOperationPayload(
+    input: RecoveryOperationPayloadGenerationInput
+  ): Promise<GeneratedRecoveryOperationPayloadData> {
     const recoveryKeyId = '#newRecoveryKey';
     const signingKeyId = '#newSigningKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
-    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const [
+      recoveryPublicKey,
+      recoveryPrivateKey
+    ] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
+    const [
+      signingPublicKey,
+      signingPrivateKey
+    ] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
     const hubServiceEndpoint = 'did:sidetree:value0';
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
-    const newDidDocument = Document.create([recoveryPublicKey, signingPublicKey], services);
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints([
+      hubServiceEndpoint
+    ]);
+    const newDidDocument = Document.create(
+      [recoveryPublicKey, signingPublicKey],
+      services
+    );
 
     // Generate the next update and recovery operation OTP.
-    const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const [
+      nextRecoveryOtpEncodedString,
+      nextRecoveryOtpHash
+    ] = OperationGenerator.generateOtp();
+    const [
+      nextUpdateOtpEncodedString,
+      nextUpdateOtpHash
+    ] = OperationGenerator.generateOtp();
 
     const payload = {
       type: OperationType.Recover,
@@ -211,12 +249,12 @@ export default class OperationGenerator {
   /**
    * Creates an `AnchoredOperation` given the operation buffer, transaction number, transaction time, and operation index.
    */
-  public static createAnchoredOperationFromOperationBuffer (
+  public static createAnchoredOperationFromOperationBuffer(
     operationBuffer: Buffer,
     transactionNumber: number,
     transactionTime: number,
-    operationIndex: number): AnchoredOperation {
-
+    operationIndex: number
+  ): AnchoredOperation {
     const anchoredOperationModel: AnchoredOperationModel = {
       transactionNumber,
       transactionTime,
@@ -230,7 +268,7 @@ export default class OperationGenerator {
   /**
    * Creates an anchored operation.
    */
-  public static async createAnchoredOperation (
+  public static async createAnchoredOperation(
     payload: any,
     publicKeyId: string,
     privateKey: string | PrivateKey,
@@ -238,9 +276,17 @@ export default class OperationGenerator {
     transactionNumber: number,
     operationIndex: number
   ): Promise<AnchoredOperation> {
-    const anchoredOperationModel =
-      await OperationGenerator.createAnchoredOperationModel(payload, publicKeyId, privateKey, transactionTime, transactionNumber, operationIndex);
-    const anchoredOperation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
+    const anchoredOperationModel = await OperationGenerator.createAnchoredOperationModel(
+      payload,
+      publicKeyId,
+      privateKey,
+      transactionTime,
+      transactionNumber,
+      operationIndex
+    );
+    const anchoredOperation = AnchoredOperation.createAnchoredOperation(
+      anchoredOperationModel
+    );
 
     return anchoredOperation;
   }
@@ -248,7 +294,7 @@ export default class OperationGenerator {
   /**
    * Creates an anchored operation model.
    */
-  public static async createAnchoredOperationModel (
+  public static async createAnchoredOperationModel(
     payload: any,
     publicKeyId: string,
     privateKey: string | PrivateKey,
@@ -256,7 +302,11 @@ export default class OperationGenerator {
     transactionNumber: number,
     operationIndex: number
   ): Promise<AnchoredOperationModel> {
-    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
+    const operationBuffer = await OperationGenerator.createOperationBuffer(
+      payload,
+      publicKeyId,
+      privateKey
+    );
     const anchoredOperationModel: AnchoredOperationModel = {
       operationBuffer,
       operationIndex,
@@ -270,7 +320,7 @@ export default class OperationGenerator {
   /**
    * Creates an operation.
    */
-  public static async createOperationBuffer (
+  public static async createOperationBuffer(
     payload: any,
     publicKeyId: string,
     privateKey: string | PrivateKey
@@ -280,7 +330,11 @@ export default class OperationGenerator {
       alg: 'ES256K'
     };
 
-    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, privateKey);
+    const operationJws = await OperationGenerator.createOperationJws(
+      protectedHeader,
+      payload,
+      privateKey
+    );
     return Buffer.from(JSON.stringify(operationJws));
   }
 
@@ -289,7 +343,7 @@ export default class OperationGenerator {
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
    */
-  public static async generateCreateOperationBuffer (
+  public static async generateCreateOperationBuffer(
     recoveryPublicKey: DidPublicKeyModel,
     recoveryPrivateKey: string | PrivateKey,
     signingPublicKey: DidPublicKeyModel,
@@ -305,7 +359,11 @@ export default class OperationGenerator {
       nextUpdateOtpHash
     };
 
-    return this.createOperationBuffer(payload, recoveryPublicKey.id, recoveryPrivateKey);
+    return this.createOperationBuffer(
+      payload,
+      recoveryPublicKey.id,
+      recoveryPrivateKey
+    );
   }
 
   /**
@@ -313,20 +371,26 @@ export default class OperationGenerator {
    *
    * @param payload Unencoded plain object to be stringified and encoded as payload string.
    */
-  public static async createOperationJws (
+  public static async createOperationJws(
     protectedHeader: any,
     payload: any,
     privateKey: string | PrivateKey
   ): Promise<JwsModel> {
     const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
+    const protectedHeaderEncodedString = Encoder.encode(
+      protectedHeaderJsonString
+    );
 
     // Create the create payload.
     const payloadJsonString = JSON.stringify(payload);
     const createPayload = Encoder.encode(payloadJsonString);
 
     // Generate the signature.
-    const signature = await Jws.sign(protectedHeaderEncodedString, createPayload, privateKey);
+    const signature = await Jws.sign(
+      protectedHeaderEncodedString,
+      createPayload,
+      privateKey
+    );
 
     const operation = {
       protected: protectedHeaderEncodedString,
@@ -340,8 +404,16 @@ export default class OperationGenerator {
   /**
    * Generates an Update Operation buffer with valid signature.
    */
-  public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateUpdateOperation(updatePayload, keyId, privateKey);
+  public static async generateUpdateOperationBuffer(
+    updatePayload: object,
+    keyId: string,
+    privateKey: string | PrivateKey
+  ): Promise<Buffer> {
+    const operation = await OperationGenerator.generateUpdateOperation(
+      updatePayload,
+      keyId,
+      privateKey
+    );
     return Buffer.from(JSON.stringify(operation));
   }
 
@@ -349,12 +421,13 @@ export default class OperationGenerator {
    * Creates an update operation for adding a key.
    * @param nextUpdateOtpHashEncodedString Optional OTP hash for the next update. If not given, one will be generated.
    */
-  public static createUpdatePayloadForAddingAKey (
+  public static createUpdatePayloadForAddingAKey(
     previousOperation: AnchoredOperation,
     updateOtpEncodedString: string,
     keyId: string,
     publicKeyHex: string,
-    nextUpdateOtpHashEncodedString?: string): any {
+    nextUpdateOtpHashEncodedString?: string
+  ): any {
     const updatePayload = {
       type: OperationType.Update,
       didUniqueSuffix: previousOperation.didUniqueSuffix,
@@ -372,7 +445,9 @@ export default class OperationGenerator {
         }
       ],
       updateOtp: updateOtpEncodedString,
-      nextUpdateOtpHash: nextUpdateOtpHashEncodedString ? nextUpdateOtpHashEncodedString : 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
+      nextUpdateOtpHash: nextUpdateOtpHashEncodedString
+        ? nextUpdateOtpHashEncodedString
+        : 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
     };
 
     return updatePayload;
@@ -381,11 +456,12 @@ export default class OperationGenerator {
   /**
    * Creates an update operation for adding and/or removing hub service endpoints.
    */
-  public static createUpdatePayloadForHubEndpoints (
+  public static createUpdatePayloadForHubEndpoints(
     didUniqueSuffix: string,
     updateOtpEncodedString: string,
     endpointsToAdd: string[],
-    endpointsToRemove: string[]): any {
+    endpointsToRemove: string[]
+  ): any {
     const patches = [];
 
     if (endpointsToAdd.length > 0) {
@@ -422,37 +498,51 @@ export default class OperationGenerator {
   /**
    * Generates an Update Operation buffer with valid signature.
    */
-  public static async generateUpdateOperation (updatePayload: object, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+  public static async generateUpdateOperation(
+    updatePayload: object,
+    signingKeyId: string,
+    privateKey: string | PrivateKey
+  ): Promise<JwsModel> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
     };
 
-    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, updatePayload, privateKey);
+    const operationJws = await OperationGenerator.createOperationJws(
+      protectedHeader,
+      updatePayload,
+      privateKey
+    );
     return operationJws;
   }
 
   /**
    * Generates a Delete Operation buffer.
    */
-  public static async generateDeleteOperationBuffer (
+  public static async generateDeleteOperationBuffer(
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
-    privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
+    privateKey: string | PrivateKey
+  ): Promise<Buffer> {
+    const operation = await OperationGenerator.generateDeleteOperation(
+      didUniqueSuffix,
+      recoveryOtpEncodedSring,
+      signingKeyId,
+      privateKey
+    );
     return Buffer.from(JSON.stringify(operation));
   }
 
   /**
    * Generates a Delete Operation.
    */
-  public static async generateDeleteOperation (
+  public static async generateDeleteOperation(
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
-    privateKey: string | PrivateKey): Promise<JwsModel> {
-
+    privateKey: string | PrivateKey
+  ): Promise<JwsModel> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
@@ -464,7 +554,11 @@ export default class OperationGenerator {
       recoveryOtp: recoveryOtpEncodedSring
     };
 
-    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, privateKey);
+    const operationJws = await OperationGenerator.createOperationJws(
+      protectedHeader,
+      payload,
+      privateKey
+    );
     return operationJws;
   }
 
@@ -472,15 +566,17 @@ export default class OperationGenerator {
    * Generates a single element array with a identity hub service object for DID document
    * @param instances the instance field in serviceEndpoint. A list of DIDs
    */
-  public static createIdentityHubUserServiceEndpoints (instances: string[]): any[] {
+  public static createIdentityHubUserServiceEndpoints(
+    instances: string[]
+  ): any[] {
     return [
       {
-        'id': 'IdentityHub',
-        'type': 'IdentityHub',
-        'serviceEndpoint': {
+        id: 'IdentityHub',
+        type: 'IdentityHub',
+        serviceEndpoint: {
           '@context': 'schema.identity.foundation/hub',
           '@type': 'UserServiceEndpoint',
-          'instances': instances
+          instances: instances
         }
       }
     ];

@@ -5,17 +5,16 @@
  * guaranteed to be that of the most recent store for the key.
  */
 export interface Cache<KeyType, ValueType> {
-
   /**
    * Store a key-value pair in the cache.
    */
-  store (key: KeyType, value: ValueType): void;
+  store(key: KeyType, value: ValueType): void;
 
   /**
    * Lookup the value for a specified key with possible false negatives. See comment
    * above the interface definition.
    */
-  lookup (key: KeyType): ValueType | undefined;
+  lookup(key: KeyType): ValueType | undefined;
 }
 
 /**
@@ -25,7 +24,6 @@ export interface Cache<KeyType, ValueType> {
  * policy.
  */
 class FixedSizeCache<KeyType, ValueType> implements Cache<KeyType, ValueType> {
-
   // Array storing the cached values
   private readonly cachedKeys: Array<KeyType>;
 
@@ -35,14 +33,14 @@ class FixedSizeCache<KeyType, ValueType> implements Cache<KeyType, ValueType> {
   // to its slot in the cachedObjects array.
   private readonly keyToValue: Map<KeyType, ValueType> = new Map();
 
-  public constructor (private readonly size: number) {
+  public constructor(private readonly size: number) {
     this.cachedKeys = new Array(size);
     this.cacheSlotValid = new Array(size);
   }
 
   // Store the key-value pair in a random index evicting
   // the current object stored at that index if necessary
-  public store (key: KeyType, value: ValueType): void {
+  public store(key: KeyType, value: ValueType): void {
     const index = Math.floor(Math.random() * this.size);
 
     if (this.cacheSlotValid[index]) {
@@ -55,7 +53,7 @@ class FixedSizeCache<KeyType, ValueType> implements Cache<KeyType, ValueType> {
     this.keyToValue.set(key, value);
   }
 
-  public lookup (key: KeyType): ValueType | undefined {
+  public lookup(key: KeyType): ValueType | undefined {
     return this.keyToValue.get(key);
   }
 }
@@ -63,6 +61,8 @@ class FixedSizeCache<KeyType, ValueType> implements Cache<KeyType, ValueType> {
 /**
  * Factory method to construct a cache.
  */
-export function getCache<KeyType, ValueType> (cacheSize: number): Cache<KeyType, ValueType> {
+export function getCache<KeyType, ValueType>(
+  cacheSize: number
+): Cache<KeyType, ValueType> {
   return new FixedSizeCache<KeyType, ValueType>(cacheSize);
 }

@@ -2,7 +2,6 @@
  * Defines configuration of proof of fee calculation.
  */
 export default interface ProtocolParameters {
-
   /** Number of contiguous blocks that go into a group */
   groupSizeInBlocks: number;
 

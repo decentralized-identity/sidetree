@@ -6,7 +6,6 @@ import { FetchResultCode } from '../common/FetchResultCode';
  * Class that implements the IPFS Storage functionality.
  */
 export default class IpfsStorage {
-
   /**  IPFS node instance  */
   private node: IPFS;
   /**  IPFS Storage class object  */
@@ -15,7 +14,7 @@ export default class IpfsStorage {
   /**
    * Static method to have a single instance of class and mock in unit tests
    */
-  public static create (repo?: any): IpfsStorage {
+  public static create(repo?: any): IpfsStorage {
     if (!IpfsStorage.ipfsStorageInstance) {
       IpfsStorage.ipfsStorageInstance = new IpfsStorage(repo);
     }
@@ -23,7 +22,7 @@ export default class IpfsStorage {
     return IpfsStorage.ipfsStorageInstance;
   }
 
-  private constructor (repo?: any) {
+  private constructor(repo?: any) {
     const repoName = 'sidetree-ipfs';
     const options = {
       repo: repo !== undefined ? repo : repoName
@@ -41,7 +40,10 @@ export default class IpfsStorage {
    *          The result `code` is set to `FetchResultCode.MaxSizeExceeded` if the content exceeds the specified max size.
    *          The result `code` is set to `FetchResultCode.NotAFile` if the content being downloaded is not a file (e.g. a directory).
    */
-  public async read (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
+  public async read(
+    hash: string,
+    maxSizeInBytes: number
+  ): Promise<FetchResult> {
     // If we hit error attempting to fetch the content metadata, return not-found.
     let contentMetadata = undefined;
     try {
@@ -52,7 +54,10 @@ export default class IpfsStorage {
     }
 
     // If content size cannot be found, return not-found.
-    if (contentMetadata === undefined || contentMetadata.CumulativeSize === undefined) {
+    if (
+      contentMetadata === undefined ||
+      contentMetadata.CumulativeSize === undefined
+    ) {
       return { code: FetchResultCode.NotFound };
     }
 
@@ -62,7 +67,9 @@ export default class IpfsStorage {
     // we will track the exact conent size of content later when we fetch the content if the content passes this size check.
     const adjustedMaxSize = maxSizeInBytes * 1.1;
     if (contentMetadata.CumulativeSize > adjustedMaxSize) {
-      console.info(`Cumulative size of ${contentMetadata.CumulativeSize} bytes is greater than the ${adjustedMaxSize} cumulative size limit.`);
+      console.info(
+        `Cumulative size of ${contentMetadata.CumulativeSize} bytes is greater than the ${adjustedMaxSize} cumulative size limit.`
+      );
       return { code: FetchResultCode.MaxSizeExceeded };
     }
 
@@ -82,7 +89,10 @@ export default class IpfsStorage {
    * Fetch the content from IPFS.
    * This method also allows easy mocking in tests.
    */
-  private async fetchContent (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
+  private async fetchContent(
+    hash: string,
+    maxSizeInBytes: number
+  ): Promise<FetchResult> {
     // files.getReadableStream() fetches the content from network if not available in local repo and stores in cache which will be garbage collectable.
     const readableStream = await (this.node as any).getReadableStream(hash);
 
@@ -100,7 +110,9 @@ export default class IpfsStorage {
     readableStream.on('data', (file: any) => {
       // If content is of directory type, set return code as "not a file", no need to setup content stream listeners.
       if (file.type === 'dir') {
-        console.info(`Content is of directory type for hash ${hash}, skipping this bad request.`);
+        console.info(
+          `Content is of directory type for hash ${hash}, skipping this bad request.`
+        );
         fetchResult.code = FetchResultCode.NotAFile;
 
         readableStream.destroy();
@@ -113,7 +125,9 @@ export default class IpfsStorage {
 
         // If content size exceeds the max size limit, immediate stop further stream reading.
         if (currentContentSize > maxSizeInBytes) {
-          console.info(`Content stream reached ${currentContentSize} bytes which is greater than the ${maxSizeInBytes} bytes limit.`);
+          console.info(
+            `Content stream reached ${currentContentSize} bytes which is greater than the ${maxSizeInBytes} bytes limit.`
+          );
           fetchResult.code = FetchResultCode.MaxSizeExceeded;
 
           readableStream.destroy();
@@ -150,7 +164,7 @@ export default class IpfsStorage {
    * @param content Sidetree content to write to IPFS storage.
    * @returns The multihash content identifier of the stored content.
    */
-  public async write (content: Buffer): Promise<string> {
+  public async write(content: Buffer): Promise<string> {
     const files = await this.node.add(content);
     return files[0].hash;
   }
@@ -158,7 +172,7 @@ export default class IpfsStorage {
   /**
    * Stops this IPFS store.
    */
-  public stop () {
+  public stop() {
     this.node.stop();
   }
 }

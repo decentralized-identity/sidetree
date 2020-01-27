@@ -9,7 +9,10 @@ describe('Multihash', async () => {
   describe('getHashAlgorithmCode()', async () => {
     it('should throws if multihash buffer given used an unsupported hash algorithm.', async () => {
       const content = 'any content';
-      const hash = crypto.createHash('sha512').update(content).digest();
+      const hash = crypto
+        .createHash('sha512')
+        .update(content)
+        .digest();
       const multihash = multihashes.encode(hash, 19); // SHA2-512
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
@@ -22,11 +25,15 @@ describe('Multihash', async () => {
   describe('verifyHashComputedUsingLatestSupportedAlgorithm()', async () => {
     it('should throws if multihash buffer given is not the latest supported hash algorithm.', async () => {
       const content = 'any content';
-      const hash = crypto.createHash('sha512').update(content).digest();
+      const hash = crypto
+        .createHash('sha512')
+        .update(content)
+        .digest();
       const multihash = multihashes.encode(hash, 19); // SHA2-512
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(multihash),
+        () =>
+          Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(multihash),
         ErrorCode.MultihashNotLatestSupportedHashAlgorithm
       );
     });
@@ -36,7 +43,9 @@ describe('Multihash', async () => {
     it('should return false if encountered an unexpected error.', async () => {
       const [otp, otpHash] = OperationGenerator.generateOtp();
 
-      const multihashHashSpy = spyOn(Multihash, 'hash').and.throwError('Simulated error message.');
+      const multihashHashSpy = spyOn(Multihash, 'hash').and.throwError(
+        'Simulated error message.'
+      );
       const result = Multihash.isValidHash(otp, otpHash);
 
       expect(multihashHashSpy).toHaveBeenCalled();
@@ -48,7 +57,8 @@ describe('Multihash', async () => {
     it('should throws if given an unsupported hash algorithm.', async () => {
       const unsupportedHashAlgorithm = 19; // SHA2-512
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Multihash.hash(Buffer.from('any content'), unsupportedHashAlgorithm),
+        () =>
+          Multihash.hash(Buffer.from('any content'), unsupportedHashAlgorithm),
         ErrorCode.MultihashUnsupportedHashAlgorithm
       );
     });

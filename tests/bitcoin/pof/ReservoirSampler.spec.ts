@@ -7,9 +7,9 @@ describe('ReservoirSampler', () => {
     const maxValue = 10;
     const sampleCount: number[] = new Array(maxValue).fill(0);
 
-    for (let i = 0 ; i < 10000 ; ++i) {
+    for (let i = 0; i < 10000; ++i) {
       reservoirSampler.clear();
-      for (let j = 0 ; j < maxValue ; ++j) {
+      for (let j = 0; j < maxValue; ++j) {
         reservoirSampler.addElement(j.toString());
       }
 
@@ -32,13 +32,13 @@ describe('ReservoirSampler', () => {
     const reservoirSampler = new ReservoirSampler(sampleSize);
     reservoirSampler.resetPsuedoRandomSeed('hello world');
 
-    for (let i = 0 ; i < sampleSize ; ++i) {
+    for (let i = 0; i < sampleSize; ++i) {
       reservoirSampler.addElement(i.toString());
     }
 
     const sample = reservoirSampler.getSample();
     expect(sample.length).toBe(sampleSize);
-    for (let i = 0 ; i < sampleSize ; ++i) {
+    for (let i = 0; i < sampleSize; ++i) {
       const sampleInteger = parseInt(sample[i], 10);
       expect(sampleInteger).toBe(i);
     }
@@ -51,16 +51,18 @@ describe('ReservoirSampler', () => {
     const maxValue = sampleSize + 1;
     const sampleCount: number[] = new Array(maxValue).fill(0);
 
-    for (let i = 0 ; i < 10000 ; ++i) {
+    for (let i = 0; i < 10000; ++i) {
       reservoirSampler.clear();
-      for (let j = 0 ; j < maxValue ; ++j) {
+      for (let j = 0; j < maxValue; ++j) {
         reservoirSampler.addElement(j.toString());
       }
 
       const sample = reservoirSampler.getSample();
       expect(sample.length).toBe(sampleSize);
 
-      const missingInteger = (sampleSize * maxValue) / 2 - sample.map(s => parseInt(s, 10)).reduce((a,b) => a + b, 0);
+      const missingInteger =
+        (sampleSize * maxValue) / 2 -
+        sample.map(s => parseInt(s, 10)).reduce((a, b) => a + b, 0);
       expect(missingInteger).toBeGreaterThanOrEqual(0);
       expect(missingInteger).toBeLessThan(maxValue);
 

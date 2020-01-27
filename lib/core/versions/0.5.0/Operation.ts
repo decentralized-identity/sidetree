@@ -64,7 +64,7 @@ export default class Operation {
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
    * NOTE: Would love to mark this constructor private to prevent direct calls, but need it to be public for `AnchoredOperation` to inherit from.
    */
-  public constructor (operationBuffer: Buffer) {
+  public constructor(operationBuffer: Buffer) {
     this.operationBuffer = operationBuffer;
 
     // Parse request buffer into a JS object.
@@ -72,7 +72,9 @@ export default class Operation {
     const operation = JSON.parse(operationJson) as JwsModel;
 
     // Ensure that the operation is well-formed.
-    const [decodedHeader, decodedPayload] = Operation.parseAndValidateOperation(operation);
+    const [decodedHeader, decodedPayload] = Operation.parseAndValidateOperation(
+      operation
+    );
 
     // Initialize common operation properties.
     this.type = decodedHeader.operation;
@@ -104,7 +106,7 @@ export default class Operation {
    * Creates an Operation that has not been anchored on the blockchain.
    * @throws Error if given operation buffer fails any validation.
    */
-  public static create (operationBuffer: Buffer) {
+  public static create(operationBuffer: Buffer) {
     return new Operation(operationBuffer);
   }
 
@@ -113,18 +115,27 @@ export default class Operation {
    * @param publicKey The public key used for verification.
    * @returns true if signature is successfully verified, false otherwise.
    */
-  public async verifySignature (publicKey: DidPublicKeyModel): Promise<boolean> {
-    const verified = await Jws.verifySignature(this.encodedProtectedHeader, this.encodedPayload, this.signature, publicKey);
+  public async verifySignature(publicKey: DidPublicKeyModel): Promise<boolean> {
+    const verified = await Jws.verifySignature(
+      this.encodedProtectedHeader,
+      this.encodedPayload,
+      this.signature,
+      publicKey
+    );
     return verified;
   }
 
   /**
    * Computes the cryptographic multihash of the given string.
    */
-  private static computeHash (dataString: string): string {
-    const hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
+  private static computeHash(dataString: string): string {
+    const hashAlgorithmInMultihashCode =
+      ProtocolParameters.hashAlgorithmInMultihashCode;
     const encodedOperationPayloadBuffer = Buffer.from(dataString);
-    const multihash = Multihash.hash(encodedOperationPayloadBuffer, hashAlgorithmInMultihashCode);
+    const multihash = Multihash.hash(
+      encodedOperationPayloadBuffer,
+      hashAlgorithmInMultihashCode
+    );
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }
@@ -133,7 +144,10 @@ export default class Operation {
    * Applies the given patches in order to the given DID Document.
    * NOTE: Assumes no schema validation is needed.
    */
-  public static applyPatchesToDidDocument (didDocument: DocumentModel, patches: any[]) {
+  public static applyPatchesToDidDocument(
+    didDocument: DocumentModel,
+    patches: any[]
+  ) {
     // Loop through and apply all patches.
     for (let patch of patches) {
       Operation.applyPatchToDidDocument(didDocument, patch);
@@ -143,7 +157,10 @@ export default class Operation {
   /**
    * Applies the given patch to the given DID Document.
    */
-  private static applyPatchToDidDocument (didDocument: DocumentModel, patch: any) {
+  private static applyPatchToDidDocument(
+    didDocument: DocumentModel,
+    patch: any
+  ) {
     if (patch.action === 'add-public-keys') {
       const publicKeySet = new Set(didDocument.publicKey.map(key => key.id));
 
@@ -154,7 +171,9 @@ export default class Operation {
         }
       }
     } else if (patch.action === 'remove-public-keys') {
-      const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
+      const publicKeyMap = new Map(
+        didDocument.publicKey.map(publicKey => [publicKey.id, publicKey])
+      );
 
       // Loop through all given public key IDs and add them from the existing public key set.
       for (let publicKey of patch.publicKeys) {
@@ -164,7 +183,9 @@ export default class Operation {
       didDocument.publicKey = [...publicKeyMap.values()];
     } else if (patch.action === 'add-service-endpoints') {
       // Find the service of the given service type.
-      let service = didDocument.service.find(service => service.type === patch.serviceType);
+      let service = didDocument.service.find(
+        service => service.type === patch.serviceType
+      );
 
       // If service not found, create a new service element and add it to the property.
       if (service === undefined) {
@@ -191,7 +212,9 @@ export default class Operation {
         }
       }
     } else if (patch.action === 'remove-service-endpoints') {
-      let service = didDocument.service.find(service => service.type === patch.serviceType);
+      let service = didDocument.service.find(
+        service => service.type === patch.serviceType
+      );
 
       if (service === undefined) {
         return;
@@ -213,8 +236,12 @@ export default class Operation {
    * NOTE: Operation validation does not include signature verification.
    * @returns [decoded protected header JSON object, decoded payload JSON object] if given operation JWS is valid, Error is thrown otherwise.
    */
-  private static parseAndValidateOperation (operation: any): [{ kid: string; operation: OperationType }, any] {
-    const decodedProtectedHeadJsonString = Encoder.decodeAsString(operation.protected);
+  private static parseAndValidateOperation(
+    operation: any
+  ): [{ kid: string; operation: OperationType }, any] {
+    const decodedProtectedHeadJsonString = Encoder.decodeAsString(
+      operation.protected
+    );
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
     // Must contain 'header' property and 'header' property must contain a string 'kid' property.
@@ -231,10 +258,19 @@ export default class Operation {
     const operationType = decodedProtectedHeader.operation;
 
     // 'operation' property must exist inside 'header' property and must be one of the allowed strings.
-    const allowedOperations = new Set(['create', 'update', 'delete', 'recover']);
-    if (typeof operationType !== 'string' ||
-        !allowedOperations.has(operationType)) {
-      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectOperation);
+    const allowedOperations = new Set([
+      'create',
+      'update',
+      'delete',
+      'recover'
+    ]);
+    if (
+      typeof operationType !== 'string' ||
+      !allowedOperations.has(operationType)
+    ) {
+      throw new SidetreeError(
+        ErrorCode.OperationHeaderMissingOrIncorrectOperation
+      );
     }
 
     // Must contain string 'payload' property.
@@ -254,7 +290,9 @@ export default class Operation {
     // Verify operation specific payload schema.
     switch (operationType) {
       case OperationType.Create:
-        const validDocument = Document.isObjectValidOriginalDocument(decodedPayload);
+        const validDocument = Document.isObjectValidOriginalDocument(
+          decodedPayload
+        );
         if (!validDocument) {
           throw new SidetreeError(ErrorCode.OperationCreateInvalidDidDocument);
         }
@@ -274,25 +312,31 @@ export default class Operation {
    * Validates the schema given update operation payload.
    * @throws Error if given operation payload fails validation.
    */
-  public static validateUpdatePayload (payload: any) {
+  public static validateUpdatePayload(payload: any) {
     const payloadProperties = Object.keys(payload);
     if (payloadProperties.length !== 3) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty
+      );
     }
 
     if (typeof payload.didUniqueSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType
+      );
     }
 
     if (typeof payload.previousOperationHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePayloadMissingOrInvalidPreviousOperationHashType
+      );
     }
 
     // Validate schema of every patch to be applied.
     Operation.validateUpdatePatches(payload.patches);
   }
 
-  private static validateUpdatePatches (patches: any) {
+  private static validateUpdatePatches(patches: any) {
     if (!Array.isArray(patches)) {
       throw new SidetreeError(ErrorCode.OperationUpdatePatchesNotArray);
     }
@@ -302,7 +346,7 @@ export default class Operation {
     }
   }
 
-  private static validateUpdatePatch (patch: any) {
+  private static validateUpdatePatch(patch: any) {
     const action = patch.action;
     switch (action) {
       case 'add-public-keys':
@@ -318,14 +362,18 @@ export default class Operation {
         Operation.validateServiceEndpointsPatch(patch);
         break;
       default:
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownAction);
+        throw new SidetreeError(
+          ErrorCode.OperationUpdatePatchMissingOrUnknownAction
+        );
     }
   }
 
-  private static validateAddPublicKeysPatch (patch: any) {
+  private static validateAddPublicKeysPatch(patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePatchMissingOrUnknownProperty
+      );
     }
 
     if (!Array.isArray(patch.publicKeys)) {
@@ -335,29 +383,41 @@ export default class Operation {
     for (let publicKey of patch.publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
       if (publicKeyProperties.length !== 3) {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyMissingOrUnknownProperty);
+        throw new SidetreeError(
+          ErrorCode.OperationUpdatePatchPublicKeyMissingOrUnknownProperty
+        );
       }
 
       if (typeof publicKey.id !== 'string') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+        throw new SidetreeError(
+          ErrorCode.OperationUpdatePatchPublicKeyIdNotString
+        );
       }
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {
         // The key must be in compressed bitcoin-key format.
-        if (typeof publicKey.publicKeyHex !== 'string' ||
-            publicKey.publicKeyHex.length !== 66) {
-          throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyHexMissingOrIncorrect);
+        if (
+          typeof publicKey.publicKeyHex !== 'string' ||
+          publicKey.publicKeyHex.length !== 66
+        ) {
+          throw new SidetreeError(
+            ErrorCode.OperationUpdatePatchPublicKeyHexMissingOrIncorrect
+          );
         }
       } else if (publicKey.type !== 'RsaVerificationKey2018') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyTypeMissingOrUnknown);
+        throw new SidetreeError(
+          ErrorCode.OperationUpdatePatchPublicKeyTypeMissingOrUnknown
+        );
       }
     }
   }
 
-  private static validateRemovePublicKeysPatch (patch: any) {
+  private static validateRemovePublicKeysPatch(patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePatchMissingOrUnknownProperty
+      );
     }
 
     if (!Array.isArray(patch.publicKeys)) {
@@ -366,7 +426,9 @@ export default class Operation {
 
     for (let publicKeyId of patch.publicKeys) {
       if (typeof publicKeyId !== 'string') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
+        throw new SidetreeError(
+          ErrorCode.OperationUpdatePatchPublicKeyIdNotString
+        );
       }
     }
   }
@@ -374,24 +436,31 @@ export default class Operation {
   /**
    * Validates update patch for either adding or removing service endpoints.
    */
-  private static validateServiceEndpointsPatch (patch: any) {
+  private static validateServiceEndpointsPatch(patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 3) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePatchMissingOrUnknownProperty
+      );
     }
 
     if (patch.serviceType !== 'IdentityHub') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceTypeMissingOrUnknown);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePatchServiceTypeMissingOrUnknown
+      );
     }
 
     if (!Array.isArray(patch.serviceEndpoints)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointsNotArray);
+      throw new SidetreeError(
+        ErrorCode.OperationUpdatePatchServiceEndpointsNotArray
+      );
     }
 
     for (let serviceEndpoint of patch.serviceEndpoints) {
-      if (typeof serviceEndpoint !== 'string' ||
-          !Did.isDid(serviceEndpoint)) {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotDid);
+      if (typeof serviceEndpoint !== 'string' || !Did.isDid(serviceEndpoint)) {
+        throw new SidetreeError(
+          ErrorCode.OperationUpdatePatchServiceEndpointNotDid
+        );
       }
     }
   }

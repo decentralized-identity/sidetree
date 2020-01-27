@@ -13,33 +13,42 @@ interface IUnresolvableTransactionInternal {
 /**
  * In-memory implementation of the `TransactionStore`.
  */
-export default class MockTransactionStore implements ITransactionStore, IUnresolvableTransactionStore {
+export default class MockTransactionStore
+  implements ITransactionStore, IUnresolvableTransactionStore {
   private processedTransactions: TransactionModel[] = [];
-  private unresolvableTransactions: Map<number, IUnresolvableTransactionInternal> = new Map();
+  private unresolvableTransactions: Map<
+    number,
+    IUnresolvableTransactionInternal
+  > = new Map();
 
-  async addTransaction (transaction: TransactionModel): Promise<void> {
+  async addTransaction(transaction: TransactionModel): Promise<void> {
     const lastTransaction = await this.getLastTransaction();
 
     // If the last transaction is later or equal to the transaction to add,
     // then we know this is a transaction previously processed, so no need to add it again.
-    if (lastTransaction && lastTransaction.transactionNumber >= transaction.transactionNumber) {
+    if (
+      lastTransaction &&
+      lastTransaction.transactionNumber >= transaction.transactionNumber
+    ) {
       return;
     }
 
     this.processedTransactions.push(transaction);
   }
 
-  async getLastTransaction (): Promise<TransactionModel | undefined> {
+  async getLastTransaction(): Promise<TransactionModel | undefined> {
     if (this.processedTransactions.length === 0) {
       return undefined;
     }
 
     const lastProcessedTransactionIndex = this.processedTransactions.length - 1;
-    const lastProcessedTransaction = this.processedTransactions[lastProcessedTransactionIndex];
+    const lastProcessedTransaction = this.processedTransactions[
+      lastProcessedTransactionIndex
+    ];
     return lastProcessedTransaction;
   }
 
-  async getExponentiallySpacedTransactions (): Promise<TransactionModel[]> {
+  async getExponentiallySpacedTransactions(): Promise<TransactionModel[]> {
     const exponentiallySpacedTransactions: TransactionModel[] = [];
     let index = this.processedTransactions.length - 1;
     let distance = 1;
@@ -51,16 +60,25 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     return exponentiallySpacedTransactions;
   }
 
-  public async getTransaction (_transactionNumber: number): Promise<TransactionModel | undefined> {
+  public async getTransaction(
+    _transactionNumber: number
+  ): Promise<TransactionModel | undefined> {
     throw new Error('Not implemented.');
   }
 
-  public async getTransactionsLaterThan (_transactionNumber: number | undefined, _max: number): Promise<TransactionModel[]> {
+  public async getTransactionsLaterThan(
+    _transactionNumber: number | undefined,
+    _max: number
+  ): Promise<TransactionModel[]> {
     throw new Error('Not implemented.');
   }
 
-  async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
-    const unresolvableTransaction = this.unresolvableTransactions.get(transaction.transactionNumber);
+  async recordUnresolvableTransactionFetchAttempt(
+    transaction: TransactionModel
+  ): Promise<void> {
+    const unresolvableTransaction = this.unresolvableTransactions.get(
+      transaction.transactionNumber
+    );
 
     if (unresolvableTransaction === undefined) {
       const unresolvableTransaction = {
@@ -70,26 +88,38 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
         nextRetryTime: Date.now()
       };
 
-      this.unresolvableTransactions.set(transaction.transactionNumber, unresolvableTransaction);
+      this.unresolvableTransactions.set(
+        transaction.transactionNumber,
+        unresolvableTransaction
+      );
     } else {
       unresolvableTransaction.retryAttempts++;
 
       // Exponentially delay the retry the more attempts are done in the past.
       const exponentialFactorInMilliseconds = 60000;
-      const requiredElapsedTimeSinceFirstFetchBeforeNextRetry = Math.pow(2, unresolvableTransaction.retryAttempts) * exponentialFactorInMilliseconds;
-      const requiredElapsedTimeInSeconds = requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
+      const requiredElapsedTimeSinceFirstFetchBeforeNextRetry =
+        Math.pow(2, unresolvableTransaction.retryAttempts) *
+        exponentialFactorInMilliseconds;
+      const requiredElapsedTimeInSeconds =
+        requiredElapsedTimeSinceFirstFetchBeforeNextRetry / 1000;
       const anchorString = transaction.anchorString;
       const transactionNumber = transaction.transactionNumber;
-      console.info(`Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`);
-      unresolvableTransaction.nextRetryTime = unresolvableTransaction.firstFetchTime + requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
+      console.info(
+        `Record transaction ${transactionNumber} with anchor string ${anchorString} to retry after ${requiredElapsedTimeInSeconds} seconds.`
+      );
+      unresolvableTransaction.nextRetryTime =
+        unresolvableTransaction.firstFetchTime +
+        requiredElapsedTimeSinceFirstFetchBeforeNextRetry;
     }
   }
 
-  async removeUnresolvableTransaction (transaction: TransactionModel): Promise<void> {
+  async removeUnresolvableTransaction(
+    transaction: TransactionModel
+  ): Promise<void> {
     this.unresolvableTransactions.delete(transaction.transactionNumber);
   }
 
-  async getUnresolvableTransactionsDueForRetry (): Promise<TransactionModel[]> {
+  async getUnresolvableTransactionsDueForRetry(): Promise<TransactionModel[]> {
     const now = Date.now();
     const unresolvableTransactionsToRetry = [];
 
@@ -104,7 +134,7 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     return unresolvableTransactionsToRetry;
   }
 
-  async removeTransactionsLaterThan (transactionNumber?: number): Promise<void> {
+  async removeTransactionsLaterThan(transactionNumber?: number): Promise<void> {
     // If given `undefined`, remove all transactions.
     if (transactionNumber === undefined) {
       this.processedTransactions = [];
@@ -112,21 +142,38 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     }
 
     // Locate the index of the given transaction using binary search.
-    const compareTransactionAndTransactionNumber
-      = (transaction: TransactionModel, transactionNumber: number) => { return transaction.transactionNumber - transactionNumber; };
-    const bestKnownValidRecentProcessedTransactionIndex
-      = SortedArray.binarySearch(this.processedTransactions, transactionNumber, compareTransactionAndTransactionNumber);
+    const compareTransactionAndTransactionNumber = (
+      transaction: TransactionModel,
+      transactionNumber: number
+    ) => {
+      return transaction.transactionNumber - transactionNumber;
+    };
+    const bestKnownValidRecentProcessedTransactionIndex = SortedArray.binarySearch(
+      this.processedTransactions,
+      transactionNumber,
+      compareTransactionAndTransactionNumber
+    );
 
     // The following conditions should never be possible.
     if (bestKnownValidRecentProcessedTransactionIndex === undefined) {
-      throw Error(`Unable to locate processed transction: ${transactionNumber}`);
+      throw Error(
+        `Unable to locate processed transction: ${transactionNumber}`
+      );
     }
 
-    console.info(`Reverting ${this.processedTransactions.length - bestKnownValidRecentProcessedTransactionIndex - 1} transactions...`);
-    this.processedTransactions.splice(bestKnownValidRecentProcessedTransactionIndex + 1);
+    console.info(
+      `Reverting ${this.processedTransactions.length -
+        bestKnownValidRecentProcessedTransactionIndex -
+        1} transactions...`
+    );
+    this.processedTransactions.splice(
+      bestKnownValidRecentProcessedTransactionIndex + 1
+    );
   }
 
-  async removeUnresolvableTransactionsLaterThan (transactionNumber?: number): Promise<void> {
+  async removeUnresolvableTransactionsLaterThan(
+    transactionNumber?: number
+  ): Promise<void> {
     // If given `undefined`, remove all unresolvable transactions.
     if (transactionNumber === undefined) {
       this.unresolvableTransactions = new Map();
@@ -151,7 +198,7 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
    * Gets the list of transactions.
    * Mainly used for test purposes.
    */
-  public getTransactions (): TransactionModel[] {
+  public getTransactions(): TransactionModel[] {
     return this.processedTransactions;
   }
 
@@ -159,7 +206,11 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
    * Gets a list of transactions that are in the desired transaction time
    * @param transactionTime The transaction time to query for
    */
-  public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
-    return this.processedTransactions.filter((transaction) => { return transaction.transactionTime === transactionTime; });
+  public async getTransactionsByTransactionTime(
+    transactionTime: number
+  ): Promise<TransactionModel[]> {
+    return this.processedTransactions.filter(transaction => {
+      return transaction.transactionTime === transactionTime;
+    });
   }
 }

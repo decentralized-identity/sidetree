@@ -15,11 +15,15 @@ export default class AnchorFile {
    * Parses and validates the given anchor file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): Promise<AnchorFileModel> {
-
+  public static async parseAndValidate(
+    anchorFileBuffer: Buffer,
+    maxOperationsPerBatch: number
+  ): Promise<AnchorFileModel> {
     let anchorFileDecompressedBuffer;
     try {
-      anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer);
+      anchorFileDecompressedBuffer = await Compressor.decompress(
+        anchorFileBuffer
+      );
     } catch {
       throw new SidetreeError(ErrorCode.AnchorFileDecompressionFailure);
     }
@@ -53,9 +57,19 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashNotString);
     }
 
-    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.batchFileHash);
-    if (!Multihash.isValidHash(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashUnsupported, `Batch file hash '${anchorFile.batchFileHash}' is unsupported.`);
+    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(
+      anchorFile.batchFileHash
+    );
+    if (
+      !Multihash.isValidHash(
+        didUniqueSuffixBuffer,
+        ProtocolParameters.hashAlgorithmInMultihashCode
+      )
+    ) {
+      throw new SidetreeError(
+        ErrorCode.AnchorFileBatchFileHashUnsupported,
+        `Batch file hash '${anchorFile.batchFileHash}' is unsupported.`
+      );
     }
 
     // Merkle root hash validations.
@@ -64,8 +78,16 @@ export default class AnchorFile {
     }
 
     const merkleRootBuffer = Encoder.decodeAsBuffer(anchorFile.merkleRoot);
-    if (!Multihash.isValidHash(merkleRootBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMerkleRootUnsupported, `Merkle root '${anchorFile.merkleRoot}' is unsupported.`);
+    if (
+      !Multihash.isValidHash(
+        merkleRootBuffer,
+        ProtocolParameters.hashAlgorithmInMultihashCode
+      )
+    ) {
+      throw new SidetreeError(
+        ErrorCode.AnchorFileMerkleRootUnsupported,
+        `Merkle root '${anchorFile.merkleRoot}' is unsupported.`
+      );
     }
 
     // DID Unique Suffixes validations.
@@ -78,18 +100,26 @@ export default class AnchorFile {
     }
 
     if (this.hasDuplicates(anchorFile.didUniqueSuffixes)) {
-      throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesHasDuplicates);
+      throw new SidetreeError(
+        ErrorCode.AnchorFileDidUniqueSuffixesHasDuplicates
+      );
     }
 
     // Verify each entry in DID unique suffixes.
     for (let uniqueSuffix of anchorFile.didUniqueSuffixes) {
       if (typeof uniqueSuffix !== 'string') {
-        throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString);
+        throw new SidetreeError(
+          ErrorCode.AnchorFileDidUniqueSuffixEntryNotString
+        );
       }
 
-      const maxEncodedHashStringLength = ProtocolParameters.maxEncodedHashStringLength;
+      const maxEncodedHashStringLength =
+        ProtocolParameters.maxEncodedHashStringLength;
       if (uniqueSuffix.length > maxEncodedHashStringLength) {
-        throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixTooLong, `Unique suffix '${uniqueSuffix}' exceeds length of ${maxEncodedHashStringLength}.`);
+        throw new SidetreeError(
+          ErrorCode.AnchorFileDidUniqueSuffixTooLong,
+          `Unique suffix '${uniqueSuffix}' exceeds length of ${maxEncodedHashStringLength}.`
+        );
       }
     }
 
@@ -99,7 +129,7 @@ export default class AnchorFile {
   /**
    * Checkes to see if there are duplicates in the given array.
    */
-  public static hasDuplicates<T> (array: Array<T>): boolean {
+  public static hasDuplicates<T>(array: Array<T>): boolean {
     const uniqueValues = new Set<T>();
 
     for (let i = 0; i < array.length; i++) {
@@ -116,8 +146,9 @@ export default class AnchorFile {
   /**
    * Creates a buffer from the input so that the buffer can be persisted.
    */
-  public static async createBufferFromAnchorFileModel (anchorFileModel: AnchorFileModel): Promise<Buffer> {
-
+  public static async createBufferFromAnchorFileModel(
+    anchorFileModel: AnchorFileModel
+  ): Promise<Buffer> {
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 

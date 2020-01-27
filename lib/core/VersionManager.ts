@@ -34,13 +34,14 @@ export default class VersionManager implements IVersionManager {
   private transactionProcessors: Map<string, ITransactionProcessor>;
   private transactionSelectors: Map<string, ITransactionSelector>;
 
-  public constructor (
+  public constructor(
     private config: Config,
     protocolVersions: ProtocolVersionModel[]
   ) {
-
     // Reverse sort protocol versions.
-    this.protocolVersionsReverseSorted = protocolVersions.sort((a, b) => b.startingBlockchainTime - a.startingBlockchainTime);
+    this.protocolVersionsReverseSorted = protocolVersions.sort(
+      (a, b) => b.startingBlockchainTime - a.startingBlockchainTime
+    );
 
     this.batchWriters = new Map();
     this.operationProcessors = new Map();
@@ -52,7 +53,7 @@ export default class VersionManager implements IVersionManager {
   /**
    * Loads all the versions of the protocol codebase.
    */
-  public async initialize (
+  public async initialize(
     blockchain: IBlockchain,
     cas: ICas,
     downloadManager: DownloadManager,
@@ -69,12 +70,17 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const MongoDbOperationQueue = await this.loadDefaultExportsForVersion(version, 'MongoDbOperationQueue');
-      const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString);
+      const operationQueue = new MongoDbOperationQueue(
+        this.config.mongoDbConnectionString
+      );
       await operationQueue.initialize();
 
       /* tslint:disable-next-line */
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
-      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+      const transactionProcessor = new TransactionProcessor(
+        downloadManager,
+        operationStore
+      );
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */
@@ -84,17 +90,28 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
-      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this.config.transactionFeeMarkupPercentage);
+      const batchWriter = new BatchWriter(
+        operationQueue,
+        blockchain,
+        cas,
+        this.config.transactionFeeMarkupPercentage
+      );
       this.batchWriters.set(version, batchWriter);
 
       /* tslint:disable-next-line */
       const OperationProcessor = await this.loadDefaultExportsForVersion(version, 'OperationProcessor');
-      const operationProcessor = new OperationProcessor(this.config.didMethodName);
+      const operationProcessor = new OperationProcessor(
+        this.config.didMethodName
+      );
       this.operationProcessors.set(version, operationProcessor);
 
       /* tslint:disable-next-line */
       const RequestHandler = await this.loadDefaultExportsForVersion(version, 'RequestHandler');
-      const requestHandler = new RequestHandler(resolver, operationQueue, this.config.didMethodName);
+      const requestHandler = new RequestHandler(
+        resolver,
+        operationQueue,
+        this.config.didMethodName
+      );
       this.requestHandlers.set(version, requestHandler);
     }
   }
@@ -102,12 +119,14 @@ export default class VersionManager implements IVersionManager {
   /**
    * Gets the corresponding version of the `IBatchWriter` based on the given blockchain time.
    */
-  public getBatchWriter (blockchainTime: number): IBatchWriter {
+  public getBatchWriter(blockchainTime: number): IBatchWriter {
     const version = this.getVersionString(blockchainTime);
     const batchWriter = this.batchWriters.get(version);
 
     if (batchWriter === undefined) {
-      throw new Error(`Unabled to find batch writer for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(
+        `Unabled to find batch writer for the given blockchain time ${blockchainTime}, investigate and fix.`
+      );
     }
 
     return batchWriter;
@@ -116,12 +135,14 @@ export default class VersionManager implements IVersionManager {
   /**
    * Gets the corresponding version of the `IOperationProcessor` based on the given blockchain time.
    */
-  public getOperationProcessor (blockchainTime: number): IOperationProcessor {
+  public getOperationProcessor(blockchainTime: number): IOperationProcessor {
     const version = this.getVersionString(blockchainTime);
     const operationProcessor = this.operationProcessors.get(version);
 
     if (operationProcessor === undefined) {
-      throw new Error(`Unabled to find operation processor for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(
+        `Unabled to find operation processor for the given blockchain time ${blockchainTime}, investigate and fix.`
+      );
     }
 
     return operationProcessor;
@@ -130,12 +151,14 @@ export default class VersionManager implements IVersionManager {
   /**
    * Gets the corresponding version of the `IRequestHandler` based on the given blockchain time.
    */
-  public getRequestHandler (blockchainTime: number): IRequestHandler {
+  public getRequestHandler(blockchainTime: number): IRequestHandler {
     const version = this.getVersionString(blockchainTime);
     const requestHandler = this.requestHandlers.get(version);
 
     if (requestHandler === undefined) {
-      throw new Error(`Unabled to find request handler for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(
+        `Unabled to find request handler for the given blockchain time ${blockchainTime}, investigate and fix.`
+      );
     }
 
     return requestHandler;
@@ -144,12 +167,16 @@ export default class VersionManager implements IVersionManager {
   /**
    * Gets the corresponding version of the `TransactionProcessor` based on the given blockchain time.
    */
-  public getTransactionProcessor (blockchainTime: number): ITransactionProcessor {
+  public getTransactionProcessor(
+    blockchainTime: number
+  ): ITransactionProcessor {
     const version = this.getVersionString(blockchainTime);
     const transactionProcessor = this.transactionProcessors.get(version);
 
     if (transactionProcessor === undefined) {
-      throw new Error(`Unabled to find transaction processor for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(
+        `Unabled to find transaction processor for the given blockchain time ${blockchainTime}, investigate and fix.`
+      );
     }
 
     return transactionProcessor;
@@ -158,12 +185,14 @@ export default class VersionManager implements IVersionManager {
   /**
    * Gets the corresponding version of the `TransactionSelector` based on the given blockchain time.
    */
-  public getTransactionSelector (blockchainTime: number): ITransactionSelector {
+  public getTransactionSelector(blockchainTime: number): ITransactionSelector {
     const version = this.getVersionString(blockchainTime);
     const transactionSelector = this.transactionSelectors.get(version);
 
     if (transactionSelector === undefined) {
-      throw new Error(`Unabled to find transaction selector for the given blockchain time ${blockchainTime}, investigate and fix.`);
+      throw new Error(
+        `Unabled to find transaction selector for the given blockchain time ${blockchainTime}, investigate and fix.`
+      );
     }
 
     return transactionSelector;
@@ -172,7 +201,7 @@ export default class VersionManager implements IVersionManager {
   /**
    * Gets the corresponding protocol version string given the blockchain time.
    */
-  private getVersionString (blockchainTime: number): string {
+  private getVersionString(blockchainTime: number): string {
     // Iterate through each version to find the right version.
     for (const protocolVersion of this.protocolVersionsReverseSorted) {
       if (blockchainTime >= protocolVersion.startingBlockchainTime) {
@@ -180,11 +209,17 @@ export default class VersionManager implements IVersionManager {
       }
     }
 
-    throw new Error(`Unabled to find protocol parameters for the given blockchain time ${blockchainTime}, investigate and fix.`);
+    throw new Error(
+      `Unabled to find protocol parameters for the given blockchain time ${blockchainTime}, investigate and fix.`
+    );
   }
 
-  private async loadDefaultExportsForVersion (version: string, className: string): Promise<any> {
-    const defaults = (await import(`./versions/${version}/${className}`)).default;
+  private async loadDefaultExportsForVersion(
+    version: string,
+    className: string
+  ): Promise<any> {
+    const defaults = (await import(`./versions/${version}/${className}`))
+      .default;
 
     return defaults;
   }

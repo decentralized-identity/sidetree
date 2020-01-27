@@ -3,9 +3,7 @@ import FeeManager from '../../lib/core/versions/latest/FeeManager';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
 describe('FeeManager', async () => {
-
   describe('computeTransactionFee', async () => {
-
     it('should add the markup margin to the transaction fee', async () => {
       const fee = FeeManager.computeTransactionFee(100, 100, 5);
 
@@ -21,16 +19,17 @@ describe('FeeManager', async () => {
     it('should fail if the number of operations is <= 0', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => FeeManager.computeTransactionFee(100, 0, 5),
-        ErrorCode.OperationCountLessThanZero);
+        ErrorCode.OperationCountLessThanZero
+      );
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => FeeManager.computeTransactionFee(100, -1, 5),
-        ErrorCode.OperationCountLessThanZero);
+        ErrorCode.OperationCountLessThanZero
+      );
     });
   });
 
   describe('verifyTransactionFeeAndThrowOnError', async () => {
-
     it('should not throw if the fee paid is at least the expected fee', async () => {
       try {
         const feeToPay = FeeManager.computeTransactionFee(100, 100, 5);
@@ -54,25 +53,29 @@ describe('FeeManager', async () => {
 
       // Make the next call w/ a large number of operations to simulate the error condition.
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 1000, 100),
-        ErrorCode.TransactionFeePaidInvalid);
+        () =>
+          FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 1000, 100),
+        ErrorCode.TransactionFeePaidInvalid
+      );
     });
 
     it('should throw if the fee paid is less than the normalized fee', async () => {
-
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => FeeManager.verifyTransactionFeeAndThrowOnError(99, 10, 100),
-        ErrorCode.TransactionFeePaidLessThanNormalizedFee);
+        ErrorCode.TransactionFeePaidLessThanNormalizedFee
+      );
     });
 
     it('should throw if the number of operations are <= 0', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => FeeManager.verifyTransactionFeeAndThrowOnError(101, 0, 10),
-        ErrorCode.OperationCountLessThanZero);
+        ErrorCode.OperationCountLessThanZero
+      );
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => FeeManager.verifyTransactionFeeAndThrowOnError(101, -1, 10),
-        ErrorCode.OperationCountLessThanZero);
+        ErrorCode.OperationCountLessThanZero
+      );
     });
   });
 });

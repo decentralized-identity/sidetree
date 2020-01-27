@@ -15,15 +15,18 @@ import ProtocolParameters from './ProtocolParameters';
  * Implementation of the `TransactionProcessor`.
  */
 export default class BatchWriter implements IBatchWriter {
-  public constructor (
+  public constructor(
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
     private cas: ICas,
-    private transactionFeeMarkupPercentage: number) { }
+    private transactionFeeMarkupPercentage: number
+  ) {}
 
-  public async write () {
+  public async write() {
     // Get the batch of operations to be anchored on the blockchain.
-    const operationBuffers = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
+    const operationBuffers = await this.operationQueue.peek(
+      ProtocolParameters.maxOperationsPerBatch
+    );
 
     console.info('Batch size = ' + operationBuffers.length);
 
@@ -32,16 +35,18 @@ export default class BatchWriter implements IBatchWriter {
       return;
     }
 
-    const batch = operationBuffers.map(
-      (buffer) => Operation.create(buffer)
-    );
+    const batch = operationBuffers.map(buffer => Operation.create(buffer));
 
     // Create the batch file buffer from the operation batch.
-    const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
+    const batchFileBuffer = await BatchFile.fromOperationBuffers(
+      operationBuffers
+    );
 
     // Write the 'batch file' to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);
-    console.info(`Wrote batch file ${batchFileHash} to content addressable store.`);
+    console.info(
+      `Wrote batch file ${batchFileHash} to content addressable store.`
+    );
 
     // Construct the DID unique suffixes of each operation to be included in the anchor file.
     const didUniqueSuffixes = batch.map(operation => operation.didUniqueSuffix);
@@ -53,9 +58,13 @@ export default class BatchWriter implements IBatchWriter {
     };
 
     // Make the 'anchor file' available in content addressable store.
-    const anchorFileJsonBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
+    const anchorFileJsonBuffer = await AnchorFile.createBufferFromAnchorFileModel(
+      anchorFileModel
+    );
     const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
-    console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
+    console.info(
+      `Wrote anchor file ${anchorFileAddress} to content addressable store.`
+    );
 
     // Anchor the data to the blockchain
     const dataToBeAnchored: AnchoredData = {
@@ -63,10 +72,20 @@ export default class BatchWriter implements IBatchWriter {
       numberOfOperations: operationBuffers.length
     };
 
-    const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
-    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
-    const fee = FeeManager.computeTransactionFee(normalizedFee, operationBuffers.length, this.transactionFeeMarkupPercentage);
-    console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with fee: ${fee}`);
+    const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(
+      dataToBeAnchored
+    );
+    const normalizedFee = await this.blockchain.getFee(
+      this.blockchain.approximateTime.time
+    );
+    const fee = FeeManager.computeTransactionFee(
+      normalizedFee,
+      operationBuffers.length,
+      this.transactionFeeMarkupPercentage
+    );
+    console.info(
+      `Writing data to blockchain: ${stringToWriteToBlockchain} with fee: ${fee}`
+    );
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 

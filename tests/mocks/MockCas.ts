@@ -15,7 +15,7 @@ export default class MockCas implements ICas {
   /** Time taken in seconds for each mock fetch. */
   private mockSecondsTakenForEachCasFetch = 0;
 
-  constructor (mockSecondsTakenForEachCasFetch?: number) {
+  constructor(mockSecondsTakenForEachCasFetch?: number) {
     if (mockSecondsTakenForEachCasFetch !== undefined) {
       this.mockSecondsTakenForEachCasFetch = mockSecondsTakenForEachCasFetch;
     }
@@ -24,22 +24,27 @@ export default class MockCas implements ICas {
   /**
    * Gets the address that can be used to access the given content.
    */
-  public static getAddress (content: Buffer): string {
+  public static getAddress(content: Buffer): string {
     const hash = Multihash.hash(content, 18); // SHA256
     const encodedHash = Encoder.encode(hash);
 
     return encodedHash;
   }
 
-  public async write (content: Buffer): Promise<string> {
+  public async write(content: Buffer): Promise<string> {
     const encodedHash = MockCas.getAddress(content);
     this.storage.set(encodedHash, content);
     return encodedHash;
   }
 
-  public async read (address: string, _maxSizeInBytes: number): Promise<FetchResult> {
+  public async read(
+    address: string,
+    _maxSizeInBytes: number
+  ): Promise<FetchResult> {
     // Wait for configured time before returning.
-    await new Promise(resolve => setTimeout(resolve, this.mockSecondsTakenForEachCasFetch * 1000));
+    await new Promise(resolve =>
+      setTimeout(resolve, this.mockSecondsTakenForEachCasFetch * 1000)
+    );
 
     const content = this.storage.get(address);
 

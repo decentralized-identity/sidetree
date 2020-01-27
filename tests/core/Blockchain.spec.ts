@@ -13,20 +13,28 @@ describe('Blockchain', async () => {
       const mockFetchResponse = {
         status: 200,
         body: {
-          read: () => { return 'Ignored body.'; }
+          read: () => {
+            return 'Ignored body.';
+          }
         }
       };
       const mockReadableStreamReadString = JSON.stringify({
         moreTransactions: false,
-        transactions: [{
-          anchorString: '1',
-          transactionNumber: 1,
-          transactionTime: 1,
-          transactionTimeHash: '1'
-        }]
+        transactions: [
+          {
+            anchorString: '1',
+            transactionNumber: 1,
+            transactionTime: 1,
+            transactionTimeHash: '1'
+          }
+        ]
       });
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockReadableStreamReadString)));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(Buffer.from(mockReadableStreamReadString))
+      );
 
       const readResult = await blockchainClient.read();
       expect(readResult.moreTransactions).toBeFalsy();
@@ -39,13 +47,23 @@ describe('Blockchain', async () => {
       const mockFetchResponse = {
         status: 400,
         body: {
-          read: () => { return 'Ignored body.'; }
+          read: () => {
+            return 'Ignored body.';
+          }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({
-        code: SharedErrorCode.InvalidTransactionNumberOrTimeHash
-      }))));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(
+          Buffer.from(
+            JSON.stringify({
+              code: SharedErrorCode.InvalidTransactionNumberOrTimeHash
+            })
+          )
+        )
+      );
 
       try {
         await blockchainClient.read();
@@ -67,13 +85,23 @@ describe('Blockchain', async () => {
       const mockFetchResponse = {
         status: 500,
         body: {
-          read: () => { return 'Error message in body that gets printed to console.'; }
+          read: () => {
+            return 'Error message in body that gets printed to console.';
+          }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({
-        code: 'unused'
-      }))));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(
+          Buffer.from(
+            JSON.stringify({
+              code: 'unused'
+            })
+          )
+        )
+      );
 
       try {
         await blockchainClient.read(1, 'Unused transaction hash.');
@@ -114,10 +142,14 @@ describe('Blockchain', async () => {
       const mockFetchResponse = {
         status: 500,
         body: {
-          read: () => { return 'Error message in body that gets printed to console.'; }
+          read: () => {
+            return 'Error message in body that gets printed to console.';
+          }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
 
       try {
         await blockchainClient.write('Unused anchor string.', 100);
@@ -149,7 +181,9 @@ describe('Blockchain', async () => {
           }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
 
       await blockchainClient.initialize();
       const approximateTime = blockchainClient.approximateTime;
@@ -175,7 +209,9 @@ describe('Blockchain', async () => {
           }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
 
       const unusedTransactions: TransactionModel[] = [
         {
@@ -187,7 +223,9 @@ describe('Blockchain', async () => {
           normalizedTransactionFee: 1
         }
       ];
-      const firstValidTransaction = await blockchainClient.getFirstValidTransaction(unusedTransactions);
+      const firstValidTransaction = await blockchainClient.getFirstValidTransaction(
+        unusedTransactions
+      );
 
       expect(firstValidTransaction).toBeDefined();
       expect(firstValidTransaction!.anchorString).toEqual('0');
@@ -206,7 +244,9 @@ describe('Blockchain', async () => {
           }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
 
       const unusedTransactions: TransactionModel[] = [
         {
@@ -218,7 +258,9 @@ describe('Blockchain', async () => {
           normalizedTransactionFee: 1
         }
       ];
-      const firstValidTransaction = await blockchainClient.getFirstValidTransaction(unusedTransactions);
+      const firstValidTransaction = await blockchainClient.getFirstValidTransaction(
+        unusedTransactions
+      );
 
       expect(firstValidTransaction).toBeUndefined();
     });
@@ -230,10 +272,14 @@ describe('Blockchain', async () => {
       const mockFetchResponse = {
         status: 500,
         body: {
-          read: () => { return 'Error message in body that gets printed to console.'; }
+          read: () => {
+            return 'Error message in body that gets printed to console.';
+          }
         }
       };
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
 
       try {
         await blockchainClient.getLatestTime();
@@ -255,7 +301,10 @@ describe('Blockchain', async () => {
     it('should initialize the member variables.', async () => {
       const blockchainClient = new Blockchain('unused URI');
 
-      const getTimeSpy = spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
+      const getTimeSpy = spyOn(
+        blockchainClient,
+        'getLatestTime'
+      ).and.returnValue(Promise.resolve({ time: 100, hash: '100' }));
 
       await blockchainClient.initialize();
 
@@ -266,9 +315,15 @@ describe('Blockchain', async () => {
   describe('getCachedVersion', async () => {
     it('should get the version from the service version fetcher', async () => {
       const blockchainClient = new Blockchain('unused');
-      const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
+      const expectedServiceVersion: ServiceVersionModel = {
+        name: 'test-service',
+        version: 'x.y.z'
+      };
 
-      const serviceVersionSpy = spyOn(blockchainClient['serviceVersionFetcher'], 'getVersion').and.returnValue(Promise.resolve(expectedServiceVersion));
+      const serviceVersionSpy = spyOn(
+        blockchainClient['serviceVersionFetcher'],
+        'getVersion'
+      ).and.returnValue(Promise.resolve(expectedServiceVersion));
 
       const fetchedServiceVersion = await blockchainClient.getServiceVersion();
 
@@ -287,8 +342,12 @@ describe('Blockchain', async () => {
         body: `{ "normalizedTransactionFee": ${expectedFee} }`
       };
 
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(Buffer.from(mockFetchResponse.body))
+      );
 
       const feeResponse = await blockchainClient.getFee(7890);
       expect(feeResponse).toEqual(expectedFee);
@@ -302,10 +361,16 @@ describe('Blockchain', async () => {
         body: '{}'
       };
 
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(Buffer.from(mockFetchResponse.body))
+      );
 
-      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk));
+      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(
+        new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk)
+      );
     });
 
     it('should throw if the response is 400 with the specific error code', async () => {
@@ -316,10 +381,16 @@ describe('Blockchain', async () => {
         body: `{"code": "${SharedErrorCode.BlockchainTimeOutOfRange}"}`
       };
 
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(Buffer.from(mockFetchResponse.body))
+      );
 
-      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(SharedErrorCode.BlockchainTimeOutOfRange));
+      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(
+        new SidetreeError(SharedErrorCode.BlockchainTimeOutOfRange)
+      );
     });
 
     it('should throw if the response is 400 but the error code is generic', async () => {
@@ -330,10 +401,16 @@ describe('Blockchain', async () => {
         body: `{"code": "something happened"}`
       };
 
-      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(
+        Promise.resolve(mockFetchResponse)
+      );
+      spyOn(ReadableStream, 'readAll').and.returnValue(
+        Promise.resolve(Buffer.from(mockFetchResponse.body))
+      );
 
-      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk));
+      await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(
+        new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk)
+      );
     });
   });
 });

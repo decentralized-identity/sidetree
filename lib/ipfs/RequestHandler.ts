@@ -23,7 +23,7 @@ export default class RequestHandler {
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
    * @param repo Optional IPFS datastore implementation.
    */
-  public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
+  public constructor(private fetchTimeoutInSeconds: number, repo?: any) {
     this.ipfsStorage = IpfsStorage.create(repo);
     this.serviceInfo = new ServiceInfo('ipfs');
   }
@@ -32,7 +32,10 @@ export default class RequestHandler {
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
    */
-  public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number): Promise<ResponseModel> {
+  public async handleFetchRequest(
+    base64urlEncodedMultihash: string,
+    maxSizeInBytes?: number
+  ): Promise<ResponseModel> {
     console.log(`Handling fetch request for '${base64urlEncodedMultihash}'...`);
 
     if (maxSizeInBytes === undefined) {
@@ -53,10 +56,18 @@ export default class RequestHandler {
     }
 
     try {
-      const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
-      const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString, maxSizeInBytes);
+      const base58EncodedMultihashString = multihashes.toB58String(
+        multihashBuffer
+      );
+      const fetchPromsie = this.ipfsStorage.read(
+        base58EncodedMultihashString,
+        maxSizeInBytes
+      );
 
-      const fetchResult = await Timeout.timeout(fetchPromsie, this.fetchTimeoutInSeconds * 1000);
+      const fetchResult = await Timeout.timeout(
+        fetchPromsie,
+        this.fetchTimeoutInSeconds * 1000
+      );
 
       // Return not-found if fetch timed.
       if (fetchResult instanceof Error) {
@@ -64,8 +75,10 @@ export default class RequestHandler {
         return { status: ResponseStatus.NotFound };
       }
 
-      if (fetchResult.code === FetchResultCode.MaxSizeExceeded ||
-        fetchResult.code === FetchResultCode.NotAFile) {
+      if (
+        fetchResult.code === FetchResultCode.MaxSizeExceeded ||
+        fetchResult.code === FetchResultCode.NotAFile
+      ) {
         return {
           status: ResponseStatus.BadRequest,
           body: { code: fetchResult.code }
@@ -79,13 +92,19 @@ export default class RequestHandler {
       }
 
       // Else fetch was successful.
-      console.log(`Fetched '${base64urlEncodedMultihash}' of size ${fetchResult.content!.length} bytes.`);
+      console.log(
+        `Fetched '${base64urlEncodedMultihash}' of size ${
+          fetchResult.content!.length
+        } bytes.`
+      );
       return {
         status: ResponseStatus.Succeeded,
         body: fetchResult.content
       };
     } catch (error) {
-      console.error(`Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${error}`);
+      console.error(
+        `Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${error}`
+      );
       return {
         status: ResponseStatus.ServerError,
         body: error.message
@@ -97,14 +116,18 @@ export default class RequestHandler {
    * Handles sidetree content write request
    * @param content Sidetree content to write into CAS storage
    */
-  public async handleWriteRequest (content: Buffer): Promise<ResponseModel> {
+  public async handleWriteRequest(content: Buffer): Promise<ResponseModel> {
     console.log(`Writing content of ${content.length} bytes...`);
 
     let response: ResponseModel;
     let base64urlEncodedMultihash;
     try {
-      const base58EncodedMultihashString = await this.ipfsStorage.write(content);
-      const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
+      const base58EncodedMultihashString = await this.ipfsStorage.write(
+        content
+      );
+      const multihashBuffer = multihashes.fromB58String(
+        base58EncodedMultihashString
+      );
       base64urlEncodedMultihash = base64url.encode(multihashBuffer);
 
       response = {
@@ -126,12 +149,12 @@ export default class RequestHandler {
   /**
    * Handles the get version request.
    */
-  public async handleGetVersionRequest (): Promise<ResponseModel> {
+  public async handleGetVersionRequest(): Promise<ResponseModel> {
     const body = JSON.stringify(this.serviceInfo.getServiceVersion());
 
     return {
-      status : ResponseStatus.Succeeded,
-      body : body
+      status: ResponseStatus.Succeeded,
+      body: body
     };
   }
 }

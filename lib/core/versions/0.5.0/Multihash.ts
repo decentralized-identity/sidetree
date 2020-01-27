@@ -10,16 +10,24 @@ export default class Multihash {
   /**
    * Hashes the content using the hashing algorithm specified.
    */
-  public static hash (content: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
+  public static hash(
+    content: Buffer,
+    hashAlgorithmInMultihashCode: number
+  ): Buffer {
     const hashAlgorithm = hashAlgorithmInMultihashCode;
 
     let hash;
     switch (hashAlgorithm) {
       case 18: // SHA256
-        hash = crypto.createHash('sha256').update(content).digest();
+        hash = crypto
+          .createHash('sha256')
+          .update(content)
+          .digest();
         break;
       default:
-        throw new Error(`Hashing algorithm '${hashAlgorithm}' not implemented.`);
+        throw new Error(
+          `Hashing algorithm '${hashAlgorithm}' not implemented.`
+        );
     }
 
     const hashAlgorithmName = multihashes.codes[hashAlgorithm];
@@ -31,17 +39,20 @@ export default class Multihash {
   /**
    * Encodes the given hash into a multihash with the specified hashing algorithm.
    */
-  public static encode (hash: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
+  public static encode(
+    hash: Buffer,
+    hashAlgorithmInMultihashCode: number
+  ): Buffer {
     return multihashes.encode(hash, hashAlgorithmInMultihashCode);
   }
 
   /**
    * Checks if the given hash is a multihash formatted in one of the supported hash algorithms.
    */
-  public static isSupportedHash (hash: Buffer): boolean {
+  public static isSupportedHash(hash: Buffer): boolean {
     try {
       const multihash = multihashes.decode(hash);
-      return (Multihash.acceptedHashAlgorithms.indexOf(multihash.code) >= 0);
+      return Multihash.acceptedHashAlgorithms.indexOf(multihash.code) >= 0;
     } catch {
       return false;
     }
@@ -50,10 +61,13 @@ export default class Multihash {
   /**
    * Checks if the given hash is a multihash with the expected hashing algorithm.
    */
-  public static isValidHash (hash: Buffer, expectedHashAlgorithmInMultihashCode: number) {
+  public static isValidHash(
+    hash: Buffer,
+    expectedHashAlgorithmInMultihashCode: number
+  ) {
     try {
       const multihash = multihashes.decode(hash);
-      return (multihash.code === expectedHashAlgorithmInMultihashCode);
+      return multihash.code === expectedHashAlgorithmInMultihashCode;
     } catch {
       return false;
     }

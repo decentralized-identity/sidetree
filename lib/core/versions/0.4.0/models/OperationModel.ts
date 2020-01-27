@@ -3,8 +3,8 @@
  */
 export default interface IOperation {
   header: {
-    operation: string,
-    kid: string
+    operation: string;
+    kid: string;
   };
   payload: string;
   signature: string;

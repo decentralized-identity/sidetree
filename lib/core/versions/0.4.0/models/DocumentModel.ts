@@ -5,17 +5,17 @@ export default interface DocumentModel {
   '@context': string;
   id: string;
   publicKey: {
-    id: string,
-    type: string,
-    publicKeyJwk?: object
-    publicKeyHex?: object
+    id: string;
+    type: string;
+    publicKeyJwk?: object;
+    publicKeyHex?: object;
   }[];
   service: {
-    type: string,
+    type: string;
     serviceEndpoint: {
       '@context': string;
       '@type': string;
-      instance: string[]
-    }
+      instance: string[];
+    };
   }[];
 }

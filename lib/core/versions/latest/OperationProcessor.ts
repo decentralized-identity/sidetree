@@ -3,7 +3,9 @@ import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import DidResolutionModel from '../../models/DidResolutionModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
-import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
+import IOperationProcessor, {
+  ApplyResult
+} from '../../interfaces/IOperationProcessor';
 import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
@@ -15,29 +17,41 @@ import OperationType from '../../enums/OperationType';
  * simply storing the operation in the store.
  */
 export default class OperationProcessor implements IOperationProcessor {
+  public constructor(private didMethodName: string) {}
 
-  public constructor (private didMethodName: string) { }
-
-  public async apply (
+  public async apply(
     anchoredOperationModel: AnchoredOperationModel,
     didResolutionModel: DidResolutionModel
   ): Promise<ApplyResult> {
     let validOperation = false;
 
     try {
-      const operation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
+      const operation = AnchoredOperation.createAnchoredOperation(
+        anchoredOperationModel
+      );
 
       if (operation.type === OperationType.Create) {
-        validOperation = await this.applyCreateOperation(operation, didResolutionModel);
+        validOperation = await this.applyCreateOperation(
+          operation,
+          didResolutionModel
+        );
       } else if (operation.type === OperationType.Update) {
-        validOperation = await this.applyUpdateOperation(operation, didResolutionModel);
+        validOperation = await this.applyUpdateOperation(
+          operation,
+          didResolutionModel
+        );
       } else if (operation.type === OperationType.Recover) {
-        validOperation = await this.applyRecoverOperation(operation, didResolutionModel);
+        validOperation = await this.applyRecoverOperation(
+          operation,
+          didResolutionModel
+        );
       } else {
         // Revoke operation.
-        validOperation = await this.applyRevokeOperation(operation, didResolutionModel);
+        validOperation = await this.applyRevokeOperation(
+          operation,
+          didResolutionModel
+        );
       }
-
     } catch (error) {
       console.log(`Invalid operation ${error}.`);
     }
@@ -48,8 +62,12 @@ export default class OperationProcessor implements IOperationProcessor {
         const index = anchoredOperationModel.operationIndex;
         const time = anchoredOperationModel.transactionTime;
         const number = anchoredOperationModel.transactionNumber;
-        const did = didResolutionModel.didDocument ? didResolutionModel.didDocument.id : undefined;
-        console.debug(`Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`);
+        const did = didResolutionModel.didDocument
+          ? didResolutionModel.didDocument.id
+          : undefined;
+        console.debug(
+          `Ignored invalid operation for DID '${did}' in transaction '${number}' at time '${time}' at operation index ${index}.`
+        );
       }
     } catch (error) {
       console.log(`Failed logging ${error}.`);
@@ -62,7 +80,7 @@ export default class OperationProcessor implements IOperationProcessor {
   /**
    * @returns `true` if operation was successfully applied, `false` otherwise.
    */
-  private async applyCreateOperation (
+  private async applyCreateOperation(
     operation: AnchoredOperation,
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
@@ -75,7 +93,10 @@ export default class OperationProcessor implements IOperationProcessor {
     const didDocument = operation.didDocument!;
     Document.addDidToDocument(didDocument, did);
 
-    const signingKey = Document.getPublicKey(didDocument, operation.signingKeyId);
+    const signingKey = Document.getPublicKey(
+      didDocument,
+      operation.signingKeyId
+    );
     if (!signingKey) {
       return false;
     }
@@ -97,11 +118,10 @@ export default class OperationProcessor implements IOperationProcessor {
   /**
    * @returns `true` if operation was successfully applied, `false` otherwise.
    */
-  private async applyUpdateOperation (
+  private async applyUpdateOperation(
     operation: AnchoredOperation,
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
-
     const didDocument = didResolutionModel.didDocument;
 
     // If we have not seen a valid create operation yet.
@@ -110,13 +130,19 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidUpdateOtp = Multihash.isValidHash(operation.updateOtp!, didResolutionModel.metadata!.nextUpdateOtpHash!);
+    const isValidUpdateOtp = Multihash.isValidHash(
+      operation.updateOtp!,
+      didResolutionModel.metadata!.nextUpdateOtpHash!
+    );
     if (!isValidUpdateOtp) {
       return false;
     }
 
     // The current did document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
+    const publicKey = Document.getPublicKey(
+      didDocument,
+      operation.signingKeyId
+    );
     if (!publicKey) {
       return false;
     }
@@ -127,9 +153,13 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // The operation passes all checks, apply the patches.
-    AnchoredOperation.applyPatchesToDidDocument(didDocument, operation.patches!);
+    AnchoredOperation.applyPatchesToDidDocument(
+      didDocument,
+      operation.patches!
+    );
 
-    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
+    didResolutionModel.metadata!.lastOperationTransactionNumber =
+      operation.transactionNumber;
     didResolutionModel.metadata!.nextUpdateOtpHash = operation.nextUpdateOtpHash!;
 
     return true;
@@ -138,12 +168,13 @@ export default class OperationProcessor implements IOperationProcessor {
   /**
    * @returns `true` if operation was successfully applied, `false` otherwise.
    */
-  private async applyRecoverOperation (
+  private async applyRecoverOperation(
     operation: AnchoredOperation,
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
-
-    const didDocument = didResolutionModel.didDocument as (DocumentModel | undefined);
+    const didDocument = didResolutionModel.didDocument as
+      | DocumentModel
+      | undefined;
 
     // Recovery can only be applied on an existing DID.
     if (!didDocument) {
@@ -151,13 +182,19 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextRecoveryOtpHash!);
+    const isValidOtp = Multihash.isValidHash(
+      operation.recoveryOtp!,
+      didResolutionModel.metadata!.nextRecoveryOtpHash!
+    );
     if (!isValidOtp) {
       return false;
     }
 
     // The current did document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
+    const publicKey = Document.getPublicKey(
+      didDocument,
+      operation.signingKeyId
+    );
     if (!publicKey) {
       return false;
     }
@@ -176,21 +213,24 @@ export default class OperationProcessor implements IOperationProcessor {
     newDidDocument.id = this.didMethodName + operation.didUniqueSuffix;
 
     didResolutionModel.didDocument = newDidDocument;
-    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
-    didResolutionModel.metadata!.nextRecoveryOtpHash = operation.nextRecoveryOtpHash!,
-    didResolutionModel.metadata!.nextUpdateOtpHash = operation.nextUpdateOtpHash!;
+    didResolutionModel.metadata!.lastOperationTransactionNumber =
+      operation.transactionNumber;
+    (didResolutionModel.metadata!.nextRecoveryOtpHash = operation.nextRecoveryOtpHash!),
+      (didResolutionModel.metadata!.nextUpdateOtpHash = operation.nextUpdateOtpHash!);
     return true;
   }
 
   /**
    * @returns `true` if operation was successfully applied, `false` otherwise.
    */
-  private async applyRevokeOperation (
+  private async applyRevokeOperation(
     operation: AnchoredOperation,
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
     // NOTE: Use only for read interally to this method.
-    const didDocument = didResolutionModel.didDocument as (DocumentModel | undefined);
+    const didDocument = didResolutionModel.didDocument as
+      | DocumentModel
+      | undefined;
 
     // Revocation can only be applied on an existing DID.
     if (!didDocument) {
@@ -198,13 +238,19 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextRecoveryOtpHash!);
+    const isValidOtp = Multihash.isValidHash(
+      operation.recoveryOtp!,
+      didResolutionModel.metadata!.nextRecoveryOtpHash!
+    );
     if (!isValidOtp) {
       return false;
     }
 
     // The current did document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
+    const publicKey = Document.getPublicKey(
+      didDocument,
+      operation.signingKeyId
+    );
     if (!publicKey) {
       return false;
     }
@@ -216,9 +262,10 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // The operation passes all checks.
     didResolutionModel.didDocument = undefined;
-    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
-    didResolutionModel.metadata!.nextRecoveryOtpHash = undefined,
-    didResolutionModel.metadata!.nextUpdateOtpHash = undefined;
+    didResolutionModel.metadata!.lastOperationTransactionNumber =
+      operation.transactionNumber;
+    (didResolutionModel.metadata!.nextRecoveryOtpHash = undefined),
+      (didResolutionModel.metadata!.nextUpdateOtpHash = undefined);
     return true;
   }
 }

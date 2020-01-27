@@ -10,5 +10,5 @@ export default interface ITransactionProcessor {
    * @param transaction Transaction to process.
    * @returns true if the transaction is processed successfully (no retry required), false otherwise (retry required).
    */
-  processTransaction (transaction: TransactionModel): Promise<boolean>;
+  processTransaction(transaction: TransactionModel): Promise<boolean>;
 }

@@ -12,16 +12,16 @@ export default class BatchScheduler {
    */
   private continuePeriodicBatchWriting = false;
 
-  public constructor (
+  public constructor(
     private versionManager: IVersionManager,
     private blockchain: IBlockchain,
-    private batchingIntervalInSeconds: number) {
-  }
+    private batchingIntervalInSeconds: number
+  ) {}
 
   /**
    * The function that starts periodically anchoring operation batches to blockchain.
    */
-  public startPeriodicBatchWriting () {
+  public startPeriodicBatchWriting() {
     this.continuePeriodicBatchWriting = true;
     setImmediate(async () => this.writeOperationBatch());
   }
@@ -30,7 +30,7 @@ export default class BatchScheduler {
    * Stops periodic batch writing.
    * Mainly used for test purposes.
    */
-  public stopPeriodicBatchWriting () {
+  public stopPeriodicBatchWriting() {
     console.info(`Stopped periodic batch writing.`);
     this.continuePeriodicBatchWriting = false;
   }
@@ -38,7 +38,7 @@ export default class BatchScheduler {
   /**
    * Processes the operations in the queue.
    */
-  public async writeOperationBatch () {
+  public async writeOperationBatch() {
     const endTimer = timeSpan(); // For calcuating time taken to write operations.
 
     try {
@@ -50,14 +50,21 @@ export default class BatchScheduler {
 
       await batchWriter.write();
     } catch (error) {
-      console.error('Unexpected and unhandled error during batch writing, investigate and fix:');
+      console.error(
+        'Unexpected and unhandled error during batch writing, investigate and fix:'
+      );
       console.error(error);
     } finally {
       console.info(`End batch writing. Duration: ${endTimer.rounded()} ms.`);
 
       if (this.continuePeriodicBatchWriting) {
-        console.info(`Waiting for ${this.batchingIntervalInSeconds} seconds before writing another batch.`);
-        setTimeout(async () => this.writeOperationBatch(), this.batchingIntervalInSeconds * 1000);
+        console.info(
+          `Waiting for ${this.batchingIntervalInSeconds} seconds before writing another batch.`
+        );
+        setTimeout(
+          async () => this.writeOperationBatch(),
+          this.batchingIntervalInSeconds * 1000
+        );
       }
     }
   }

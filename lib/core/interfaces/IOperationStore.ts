@@ -5,26 +5,29 @@ import NamedAnchoredOperationModel from '../models/NamedAnchoredOperationModel';
  * put and get operations.
  */
 export default interface IOperationStore {
-
   /**
    * Stores a batch of operations
    * @param operations The list of operations to be stored, where the key of the map is the DID unique suffix.
    */
-  put (operations: NamedAnchoredOperationModel[]): Promise<void>;
+  put(operations: NamedAnchoredOperationModel[]): Promise<void>;
 
   /**
    * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
-  get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]>;
+  get(didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]>;
 
   /**
    * Deletes all operations with transaction number greater than the
    * provided parameter.
    */
-  delete (transactionNumber?: number): Promise<void>;
+  delete(transactionNumber?: number): Promise<void>;
 
   /**
    * Deletes all the operations of the given DID earlier than the specified operation.
    */
-  deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void>;
+  deleteUpdatesEarlierThan(
+    didUniqueSuffix: string,
+    transactionNumber: number,
+    operationIndex: number
+  ): Promise<void>;
 }

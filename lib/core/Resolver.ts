@@ -13,8 +13,10 @@ import OperationType from './enums/OperationType';
  * NOTE: Resolver needs to be versioned because it depends on `VersionManager` being constructed to fetch the versioned operation processor.
  */
 export default class Resolver {
-
-  public constructor (private versionManager: IVersionManager, private operationStore: IOperationStore) { }
+  public constructor(
+    private versionManager: IVersionManager,
+    private operationStore: IOperationStore
+  ) {}
 
   /**
    * Resolve the given DID unique suffix to its DID Doducment.
@@ -24,7 +26,7 @@ export default class Resolver {
    * Iterate over all operations in blockchain-time order extending the
    * the operation chain while checking validity.
    */
-  public async resolve (didUniqueSuffix: string): Promise<object | undefined> {
+  public async resolve(didUniqueSuffix: string): Promise<object | undefined> {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
     // NOTE: We are passing the DID resolution model into apply method so that both:
@@ -34,12 +36,17 @@ export default class Resolver {
 
     const operations = await this.operationStore.get(didUniqueSuffix);
     const createAndRecoverAndRevokeOperations = operations.filter(
-      op => op.type === OperationType.Create ||
-      op.type === OperationType.Recover ||
-      op.type === OperationType.Delete);
+      op =>
+        op.type === OperationType.Create ||
+        op.type === OperationType.Recover ||
+        op.type === OperationType.Delete
+    );
 
     // Apply "full" operations first.
-    await this.applyOperations(createAndRecoverAndRevokeOperations, didResolutionModel);
+    await this.applyOperations(
+      createAndRecoverAndRevokeOperations,
+      didResolutionModel
+    );
 
     // If no valid full operation is found at all, the DID is not anchored.
     if (didResolutionModel.didDocument === undefined) {
@@ -47,9 +54,14 @@ export default class Resolver {
     }
 
     // Get only update operations that came after the last full operation.
-    const lastOperationTransactionNumber = didResolutionModel.metadata!.lastOperationTransactionNumber;
-    const updateOperations = operations.filter(op => op.type === OperationType.Update);
-    const updateOperationsToBeApplied = updateOperations.filter(op => op.transactionNumber > lastOperationTransactionNumber);
+    const lastOperationTransactionNumber = didResolutionModel.metadata!
+      .lastOperationTransactionNumber;
+    const updateOperations = operations.filter(
+      op => op.type === OperationType.Update
+    );
+    const updateOperationsToBeApplied = updateOperations.filter(
+      op => op.transactionNumber > lastOperationTransactionNumber
+    );
 
     // Apply "update/delta" operations.
     await this.applyOperations(updateOperationsToBeApplied, didResolutionModel);
@@ -63,12 +75,14 @@ export default class Resolver {
    * @param didResolutionModel
    *        The container object that contains the initial metadata needed for applying the operations and the reference to the DID document to be modified.
    */
-  private async applyOperations (
+  private async applyOperations(
     operations: NamedAnchoredOperationModel[],
     didResolutionModel: DidResolutionModel
-    ) {
+  ) {
     for (const operation of operations) {
-      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
+      const operationProcessor = this.versionManager.getOperationProcessor(
+        operation.transactionTime
+      );
       await operationProcessor.apply(operation, didResolutionModel);
     }
   }

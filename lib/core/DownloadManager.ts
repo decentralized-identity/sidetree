@@ -50,14 +50,13 @@ export default class DownloadManager {
    * Constructs the download manager.
    * @param cas The Content Adressable Store to use for fetching the actual content.
    */
-  public constructor (
-    public maxConcurrentDownloads: number,
-    private cas: ICas) {
-
+  public constructor(public maxConcurrentDownloads: number, private cas: ICas) {
     // If maximum concurrent CAS download count is NaN, set it to a default value.
     if (isNaN(maxConcurrentDownloads)) {
       const defaultmaxConcurrentDownloads = 20;
-      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultmaxConcurrentDownloads}.`);
+      console.info(
+        `Maximum concurrent CAS download count not given, defaulting to ${defaultmaxConcurrentDownloads}.`
+      );
       this.maxConcurrentDownloads = defaultmaxConcurrentDownloads;
     }
   }
@@ -67,13 +66,16 @@ export default class DownloadManager {
    * and resolve downloads that are completed, then invokes this same method again,
    * thus this method must only be invoked once externally as initialization.
    */
-  public start () {
+  public start() {
     try {
       // Move all completed downloads in `activeDownloads` to the `completedDownloads` map.
       const completedDownloadHandles = [];
       for (const [downloadHandle, downloadInfo] of this.activeDownloads) {
         if (downloadInfo.completed) {
-          this.completedDownloads.set(downloadHandle, downloadInfo.fetchResult!);
+          this.completedDownloads.set(
+            downloadHandle,
+            downloadInfo.fetchResult!
+          );
           completedDownloadHandles.push(downloadHandle);
 
           // Resolve the promise associated with the download.
@@ -85,7 +87,8 @@ export default class DownloadManager {
       }
 
       // If maximum concurrent download count is reached, then we can't schedule more downloads.
-      const availableDownloadLanes = this.maxConcurrentDownloads - this.activeDownloads.size;
+      const availableDownloadLanes =
+        this.maxConcurrentDownloads - this.activeDownloads.size;
       if (availableDownloadLanes <= 0) {
         return;
       }
@@ -96,7 +99,11 @@ export default class DownloadManager {
       }
 
       // Keep start downloading the next queued item until all download lanes are full or there is no more item to download.
-      for (let i = 0; i < this.pendingDownloads.length && i < availableDownloadLanes; i++) {
+      for (
+        let i = 0;
+        i < this.pendingDownloads.length && i < availableDownloadLanes;
+        i++
+      ) {
         const downloadInfo = this.pendingDownloads[i];
 
         // Intentionally not awaiting on a download.
@@ -107,7 +114,9 @@ export default class DownloadManager {
       // Remove active downloads from `pendingDownloads` list.
       this.pendingDownloads.splice(0, availableDownloadLanes);
     } catch (error) {
-      console.error(`Encountered unhandled/unexpected error in DownloadManager, must investigate and fix: ${error}`);
+      console.error(
+        `Encountered unhandled/unexpected error in DownloadManager, must investigate and fix: ${error}`
+      );
     } finally {
       setTimeout(async () => this.start(), 1000);
     }
@@ -117,10 +126,20 @@ export default class DownloadManager {
    * Downloads the content of the given content hash.
    * @param contentHash Hash of the content to be downloaded.
    */
-  public async download (contentHash: string, maxSizeInBytes: number): Promise<FetchResult> {
+  public async download(
+    contentHash: string,
+    maxSizeInBytes: number
+  ): Promise<FetchResult> {
     const handle = crypto.randomBytes(32);
     const fetchPromise = new Promise(resolve => {
-      const downloadInfo = { handle, contentHash, maxSizeInBytes, resolve, completed: false, content: undefined };
+      const downloadInfo = {
+        handle,
+        contentHash,
+        maxSizeInBytes,
+        resolve,
+        completed: false,
+        content: undefined
+      };
       this.pendingDownloads.push(downloadInfo);
     });
 
@@ -139,16 +158,21 @@ export default class DownloadManager {
    * @param downloadInfo Data structure containing `completed` flag and `fetchResult`,
    *                     used to signal to the main download manager monitoring loop when the requested download is completed.
    */
-  private async downloadAsync (downloadInfo: DownloadInfo): Promise<void> {
+  private async downloadAsync(downloadInfo: DownloadInfo): Promise<void> {
     let contentHash = '';
     try {
       contentHash = downloadInfo.contentHash;
 
-      const fetchResult = await this.cas.read(contentHash, downloadInfo.maxSizeInBytes);
+      const fetchResult = await this.cas.read(
+        contentHash,
+        downloadInfo.maxSizeInBytes
+      );
 
       downloadInfo.fetchResult = fetchResult;
     } catch (error) {
-      console.error(`Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`);
+      console.error(
+        `Unexpected error while downloading '${contentHash}, investigate and fix ${error}'.`
+      );
     } finally {
       downloadInfo.completed = true;
     }

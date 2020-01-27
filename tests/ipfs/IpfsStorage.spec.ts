@@ -11,7 +11,6 @@ describe('IpfsStorage', () => {
   });
 
   it('should return the pinned content for the given hash.', async () => {
-
     const mockContentStat: IPFS.ObjectStat = {
       Hash: 'dummyHahs',
       NumLinks: 0,
@@ -20,7 +19,9 @@ describe('IpfsStorage', () => {
       DataSize: 1024,
       CumulativeSize: 1024
     };
-    spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
+    spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(
+      Promise.resolve(mockContentStat)
+    );
 
     const mockFetchContentFunction = async () => {
       return {
@@ -28,8 +29,12 @@ describe('IpfsStorage', () => {
         content: Buffer.from('ipfs')
       };
     };
-    spyOn(ipfsStorage as any, 'fetchContent').and.callFake(mockFetchContentFunction);
-    spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+    spyOn(ipfsStorage as any, 'fetchContent').and.callFake(
+      mockFetchContentFunction
+    );
+    spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(
+      Promise.resolve([true])
+    );
 
     const expectedContent = Buffer.from('ipfs');
 

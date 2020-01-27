@@ -8,8 +8,7 @@ export default class JsonAsync {
    * Parses the given operation into a JavaScript object asynchronously,
    * to allow the event loop a chance to handle requests.
    */
-  public static async parse (jsonBuffer: Buffer): Promise<any> {
-
+  public static async parse(jsonBuffer: Buffer): Promise<any> {
     const jsonString = jsonBuffer.toString();
 
     // Create a promise to wrap the successful/failed read events.

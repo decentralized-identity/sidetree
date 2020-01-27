@@ -12,22 +12,19 @@
  * will be approximated by a factor at most 1.1.
  */
 export default class ValueApproximator {
-
-  public constructor (private approximation: number, private maxValue: number) {
-
-  }
+  public constructor(private approximation: number, private maxValue: number) {}
 
   /**
    * Get the maximum normalized value.
    */
-  public getMaximumNormalizedValue (): number {
+  public getMaximumNormalizedValue(): number {
     return this.getNormalizedValue(this.maxValue);
   }
 
   /**
    * Normalize a value.
    */
-  public getNormalizedValue (value: number): number {
+  public getNormalizedValue(value: number): number {
     if (value <= 0) {
       return 0;
     }
@@ -42,7 +39,7 @@ export default class ValueApproximator {
   /**
    * Get the denormalized value of a normalized value.
    */
-  public getDenormalizedValue (normalizedValue: number): number {
+  public getDenormalizedValue(normalizedValue: number): number {
     if (normalizedValue === 0) {
       return 0;
     }
@@ -52,7 +49,7 @@ export default class ValueApproximator {
   /**
    * Get the integer part of logarithm of a number n with base b.
    */
-  private static getLog (n: number, b: number): number {
+  private static getLog(n: number, b: number): number {
     // Just return the number if the base == 1
     if (b === 1) {
       return n;
@@ -60,7 +57,7 @@ export default class ValueApproximator {
 
     let i = 1;
     let log = 0;
-    for (log = 0 ; i < n ; log++) {
+    for (log = 0; i < n; log++) {
       i = i * b;
     }
     return log;

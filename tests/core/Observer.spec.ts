@@ -43,19 +43,31 @@ describe('Observer', async () => {
     casClient = new Cas(config.contentAddressableStoreServiceUri);
 
     // Setting the CAS to always return 404.
-    spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
+    spyOn(casClient, 'read').and.returnValue(
+      Promise.resolve({ code: FetchResultCode.NotFound })
+    );
 
     operationStore = new MockOperationStore();
     transactionStore = new MockTransactionStore();
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
+    downloadManager = new DownloadManager(
+      config.maxConcurrentDownloads,
+      casClient
+    );
     downloadManager.start();
 
-    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    const transactionProcessor = new TransactionProcessor(
+      downloadManager,
+      operationStore
+    );
     const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 
-    spyOn(versionManager, 'getTransactionProcessor').and.returnValue(transactionProcessor);
-    spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
+    spyOn(versionManager, 'getTransactionProcessor').and.returnValue(
+      transactionProcessor
+    );
+    spyOn(versionManager, 'getTransactionSelector').and.returnValue(
+      transactionSelector
+    );
   });
 
   afterAll(() => {
@@ -69,29 +81,29 @@ describe('Observer', async () => {
   it('should record transactions processed with expected outcome.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': [
+      moreTransactions: false,
+      transactions: [
         {
-          'transactionNumber': 1,
-          'transactionTime': 1000,
-          'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 1,
+          transactionTime: 1000,
+          transactionTimeHash: '1000',
+          anchorString: '1stTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         },
         {
-          'transactionNumber': 2,
-          'transactionTime': 1000,
-          'transactionTimeHash': '1000',
-          'anchorString': '2ndTransaction',
-          'transactionFeePaid': 2,
-          'normalizedTransactionFee': 2
+          transactionNumber: 2,
+          transactionTime: 1000,
+          transactionTimeHash: '1000',
+          anchorString: '2ndTransaction',
+          transactionFeePaid: 2,
+          normalizedTransactionFee: 2
         }
       ]
     };
     const subsequentTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': []
+      moreTransactions: false,
+      transactions: []
     };
 
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
@@ -119,29 +131,38 @@ describe('Observer', async () => {
     );
 
     // mocking throughput limiter to make testing easier
-    spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
-      (transactions: TransactionModel[]) => {
-        return new Promise((resolve) => { resolve(transactions); });
-      }
-    );
+    spyOn(
+      observer['throughputLimiter'],
+      'getQualifiedTransactions'
+    ).and.callFake((transactions: TransactionModel[]) => {
+      return new Promise(resolve => {
+        resolve(transactions);
+      });
+    });
 
     const processedTransactions = transactionStore.getTransactions();
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until change is detected or max retries is reached.
-    await retry(async _bail => {
-      const processedTransactionCount = transactionStore.getTransactions().length;
-      if (processedTransactionCount === 2) {
-        return;
-      }
+    await retry(
+      async _bail => {
+        const processedTransactionCount = transactionStore.getTransactions()
+          .length;
+        if (processedTransactionCount === 2) {
+          return;
+        }
 
-      // NOTE: if anything throws, we retry.
-      throw new Error('Incorrect number of changes to the processed transactions list.');
-    }, {
-      retries: 10,
-      minTimeout: 500, // milliseconds
-      maxTimeout: 500 // milliseconds
-    });
+        // NOTE: if anything throws, we retry.
+        throw new Error(
+          'Incorrect number of changes to the processed transactions list.'
+        );
+      },
+      {
+        retries: 10,
+        minTimeout: 500, // milliseconds
+        maxTimeout: 500 // milliseconds
+      }
+    );
 
     observer.stopPeriodicProcessing(); // Asynchronously stops Observer from processing more transactions after the initial processing cycle.
 
@@ -153,12 +174,26 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const [
+      recoveryPublicKey,
+      recoveryPrivateKey
+    ] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex(
+      '#key2',
+      KeyUsage.signing
+    );
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints([
+      'did:sidetree:value0'
+    ]);
 
-    const [recoveryPublicKey2, recoveryPrivateKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
-    const [signingPublicKey2] = await Cryptography.generateKeyPairHex('#key4', KeyUsage.signing);
+    const [
+      recoveryPublicKey2,
+      recoveryPrivateKey2
+    ] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
+    const [signingPublicKey2] = await Cryptography.generateKeyPairHex(
+      '#key4',
+      KeyUsage.signing
+    );
 
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
@@ -170,17 +205,21 @@ describe('Observer', async () => {
         signingPublicKey,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,
-        services),
+        services
+      ),
       await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey2,
         recoveryPrivateKey2,
         signingPublicKey2,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,
-        services)
+        services
+      )
     ];
 
-    const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);
+    const batchFileBuffer = await BatchFile.fromOperationBuffers(
+      operationsBuffer
+    );
 
     const batchFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
@@ -189,13 +228,17 @@ describe('Observer', async () => {
 
     const batchFilehash = Encoder.encode(Multihash.hash(batchFileBuffer, 18));
 
-    const operationDids = operationsBuffer.map((op) => { return Operation.create(op).didUniqueSuffix; });
+    const operationDids = operationsBuffer.map(op => {
+      return Operation.create(op).didUniqueSuffix;
+    });
     const anchorFile: AnchorFileModel = {
       batchFileHash: batchFilehash,
       didUniqueSuffixes: operationDids
     };
 
-    const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
+    const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(
+      anchorFile
+    );
 
     const anchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
@@ -226,7 +269,10 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: anchorFilehash, numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({
+      anchorFileHash: anchorFilehash,
+      numberOfOperations: 1
+    });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
@@ -239,9 +285,12 @@ describe('Observer', async () => {
       transaction: mockTransaction,
       processingStatus: 'pending'
     };
-    await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
+    await (observer as any).processTransaction(
+      mockTransaction,
+      transactionUnderProcessing
+    );
 
-    operationDids.forEach(async (did) => {
+    operationDids.forEach(async did => {
       const operationArray = await operationStore.get(did);
       expect(operationArray.length).toEqual(1);
     });
@@ -269,7 +318,9 @@ describe('Observer', async () => {
         1
       );
 
-      spyOn(downloadManager, 'download').and.returnValue(Promise.resolve({ code: mockFetchReturnCode as FetchResultCode }));
+      spyOn(downloadManager, 'download').and.returnValue(
+        Promise.resolve({ code: mockFetchReturnCode as FetchResultCode })
+      );
 
       let expectedConsoleLogDetected = false;
       spyOn(global.console, 'info').and.callFake((message: string) => {
@@ -281,7 +332,10 @@ describe('Observer', async () => {
       spyOn(transactionStore, 'removeUnresolvableTransaction');
       spyOn(transactionStore, 'recordUnresolvableTransactionFetchAttempt');
 
-      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw', numberOfOperations: 1 });
+      const anchoredData = AnchoredDataSerializer.serialize({
+        anchorFileHash: 'EiA_psBVqsuGjoYXMIRrcW_mPUG1yDXbh84VPXOuVQ5oqw',
+        numberOfOperations: 1
+      });
       const mockTransaction: TransactionModel = {
         transactionNumber: 1,
         transactionTime: 1000000,
@@ -294,85 +348,93 @@ describe('Observer', async () => {
         transaction: mockTransaction,
         processingStatus: 'pending'
       };
-      await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
+      await (observer as any).processTransaction(
+        mockTransaction,
+        transactionUnderProcessing
+      );
 
       expect(expectedConsoleLogDetected).toBeTruthy();
       expect(transactionStore.removeUnresolvableTransaction).toHaveBeenCalled();
-      expect(transactionStore.recordUnresolvableTransactionFetchAttempt).not.toHaveBeenCalled();
+      expect(
+        transactionStore.recordUnresolvableTransactionFetchAttempt
+      ).not.toHaveBeenCalled();
     });
   }
 
   it('should detect and handle block reorganization correctly.', async () => {
     // Prepare the mock response from blockchain service.
     const initialTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': [
+      moreTransactions: false,
+      transactions: [
         {
-          'transactionNumber': 1,
-          'transactionTime': 1000,
-          'transactionTimeHash': '1000',
-          'anchorString': '1stTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 1,
+          transactionTime: 1000,
+          transactionTimeHash: '1000',
+          anchorString: '1stTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         },
         {
-          'transactionNumber': 2,
-          'transactionTime': 2000,
-          'transactionTimeHash': '2000',
-          'anchorString': '2ndTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 2,
+          transactionTime: 2000,
+          transactionTimeHash: '2000',
+          anchorString: '2ndTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         },
         {
-          'transactionNumber': 3,
-          'transactionTime': 3000,
-          'transactionTimeHash': '3000',
-          'anchorString': '3rdTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 3,
+          transactionTime: 3000,
+          transactionTimeHash: '3000',
+          anchorString: '3rdTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         }
       ]
     };
 
     const transactionFetchResponseBodyAfterBlockReorg = {
-      'moreTransactions': false,
-      'transactions': [
+      moreTransactions: false,
+      transactions: [
         {
-          'transactionNumber': 2,
-          'transactionTime': 2001,
-          'transactionTimeHash': '2001',
-          'anchorString': '2ndTransactionNew',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 2,
+          transactionTime: 2001,
+          transactionTimeHash: '2001',
+          anchorString: '2ndTransactionNew',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         },
         {
-          'transactionNumber': 3,
-          'transactionTime': 3001,
-          'transactionTimeHash': '3000',
-          'anchorString': '3rdTransactionNew',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 3,
+          transactionTime: 3001,
+          transactionTimeHash: '3000',
+          anchorString: '3rdTransactionNew',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         },
         {
-          'transactionNumber': 4,
-          'transactionTime': 4000,
-          'transactionTimeHash': '4000',
-          'anchorString': '4thTransaction',
-          'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          transactionNumber: 4,
+          transactionTime: 4000,
+          transactionTimeHash: '4000',
+          anchorString: '4thTransaction',
+          transactionFeePaid: 1,
+          normalizedTransactionFee: 1
         }
       ]
     };
     const subsequentTransactionFetchResponseBody = {
-      'moreTransactions': false,
-      'transactions': []
+      moreTransactions: false,
+      transactions: []
     };
 
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
     // Force blockchain time to be higher than the latest known transaction time by core,
     // such that Observer will consider `InvalidTransactionNumberOrTimeHash` a block reorg.
-    (blockchainClient as any).cachedBlockchainTime = { time: 5000, hash: '5000' };
+    (blockchainClient as any).cachedBlockchainTime = {
+      time: 5000,
+      hash: '5000'
+    };
 
     let readInvocationCount = 0;
     const mockReadFunction = async () => {
@@ -380,10 +442,12 @@ describe('Observer', async () => {
       if (readInvocationCount === 1) {
         // 1st call returns initial set of transactions.
         return initialTransactionFetchResponseBody;
-      } if (readInvocationCount === 2) {
+      }
+      if (readInvocationCount === 2) {
         // 2nd call simulates a block reorganization.
         throw new SidetreeError(ErrorCode.InvalidTransactionNumberOrTimeHash);
-      } if (readInvocationCount === 3) {
+      }
+      if (readInvocationCount === 3) {
         // 3nd call occurs after the 'getFirstValidTransaction' call and returns the 'correct' set of transactions.
         return transactionFetchResponseBodyAfterBlockReorg;
       } else {
@@ -393,7 +457,9 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
     // Make the `getFirstValidTransaction` call return the first transaction as the most recent knwon valid transactions.
-    spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(initialTransactionFetchResponseBody.transactions[0]));
+    spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(
+      Promise.resolve(initialTransactionFetchResponseBody.transactions[0])
+    );
 
     // Process first set of transactions.
     const observer = new Observer(
@@ -407,29 +473,35 @@ describe('Observer', async () => {
     );
 
     // mocking throughput limiter to make testing easier
-    spyOn(observer['throughputLimiter'], 'getQualifiedTransactions').and.callFake(
-      (transactions: TransactionModel[]) => {
-        return new Promise((resolve) => { resolve(transactions); });
-      }
-    );
+    spyOn(
+      observer['throughputLimiter'],
+      'getQualifiedTransactions'
+    ).and.callFake((transactions: TransactionModel[]) => {
+      return new Promise(resolve => {
+        resolve(transactions);
+      });
+    });
 
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the processed transactions list until the expected count or max retries is reached.
     const processedTransactions = transactionStore.getTransactions();
-    await retry(async _bail => {
-      const processedTransactionCount = processedTransactions.length;
-      if (processedTransactionCount === 4) {
-        return;
-      }
+    await retry(
+      async _bail => {
+        const processedTransactionCount = processedTransactions.length;
+        if (processedTransactionCount === 4) {
+          return;
+        }
 
-      // NOTE: the `retry` library retries if error is thrown.
-      throw new Error('Block reorganization not handled.');
-    }, {
-      retries: 10,
-      minTimeout: 1000, // milliseconds
-      maxTimeout: 1000 // milliseconds
-    });
+        // NOTE: the `retry` library retries if error is thrown.
+        throw new Error('Block reorganization not handled.');
+      },
+      {
+        retries: 10,
+        minTimeout: 1000, // milliseconds
+        maxTimeout: 1000 // milliseconds
+      }
+    );
 
     expect(processedTransactions.length).toEqual(4);
     expect(processedTransactions[0].anchorString).toEqual('1stTransaction');
@@ -439,14 +511,17 @@ describe('Observer', async () => {
   });
 
   it('should not rollback if blockchain time in bitcoin service is behind core service.', async () => {
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({
+      anchorFileHash: '1stTransaction',
+      numberOfOperations: 1
+    });
     const transaction = {
-      'transactionNumber': 1,
-      'transactionTime': 1000,
-      'transactionTimeHash': '1000',
-      'anchorString': anchoredData,
-      'transactionFeePaid': 1,
-      'normalizedTransactionFee': 1
+      transactionNumber: 1,
+      transactionTime: 1000,
+      transactionTimeHash: '1000',
+      anchorString: anchoredData,
+      transactionFeePaid: 1,
+      normalizedTransactionFee: 1
     };
 
     // Prep the transaction store with some initial state.
@@ -455,11 +530,16 @@ describe('Observer', async () => {
     const blockchainClient = new Blockchain(config.blockchainServiceUri);
 
     // Always return a blockchain time less than the last transaction known by core to simulate blockchain service being behind core service.
-    spyOn(blockchainClient, 'getLatestTime').and.returnValue(Promise.resolve({ time: 500, hash: '500' }));
+    spyOn(blockchainClient, 'getLatestTime').and.returnValue(
+      Promise.resolve({ time: 500, hash: '500' })
+    );
 
     // Simulate the read response when blockchain service blockchain time is behind core service's.
     let readInvocationCount = 0;
-    const mockReadFunction = async (sinceTransactionNumber?: number, transactionTimeHash?: string) => {
+    const mockReadFunction = async (
+      sinceTransactionNumber?: number,
+      transactionTimeHash?: string
+    ) => {
       readInvocationCount++;
       expect(sinceTransactionNumber).toEqual(1);
       expect(transactionTimeHash).toEqual('1000');
@@ -468,8 +548,10 @@ describe('Observer', async () => {
     spyOn(blockchainClient, 'read').and.callFake(mockReadFunction);
 
     // NOTE: it is irrelvant what getFirstValidTransaction() returns because it is expected to be not called at all.
-    const getFirstValidTransactionSpy =
-      spyOn(blockchainClient, 'getFirstValidTransaction').and.returnValue(Promise.resolve(undefined));
+    const getFirstValidTransactionSpy = spyOn(
+      blockchainClient,
+      'getFirstValidTransaction'
+    ).and.returnValue(Promise.resolve(undefined));
 
     // Process first set of transactions.
     const observer = new Observer(
@@ -482,23 +564,31 @@ describe('Observer', async () => {
       1
     );
 
-    const revertInvalidTransactionsSpy = spyOn(observer as any, 'revertInvalidTransactions').and.returnValue(Promise.resolve(undefined));
+    const revertInvalidTransactionsSpy = spyOn(
+      observer as any,
+      'revertInvalidTransactions'
+    ).and.returnValue(Promise.resolve(undefined));
 
     await observer.startPeriodicProcessing(); // Asynchronously triggers Observer to start processing transactions immediately.
 
     // Monitor the Observer until at two processing cycle has lapsed.
-    await retry(async _bail => {
-      if (readInvocationCount >= 2) {
-        return;
-      }
+    await retry(
+      async _bail => {
+        if (readInvocationCount >= 2) {
+          return;
+        }
 
-      // NOTE: the `retry` library retries if error is thrown.
-      throw new Error('Two transaction processing cycles have not occured yet.');
-    }, {
-      retries: 3,
-      minTimeout: 1000, // milliseconds
-      maxTimeout: 1000 // milliseconds
-    });
+        // NOTE: the `retry` library retries if error is thrown.
+        throw new Error(
+          'Two transaction processing cycles have not occured yet.'
+        );
+      },
+      {
+        retries: 3,
+        minTimeout: 1000, // milliseconds
+        maxTimeout: 1000 // milliseconds
+      }
+    );
 
     expect(revertInvalidTransactionsSpy).toHaveBeenCalledTimes(0);
     expect(getFirstValidTransactionSpy).toHaveBeenCalledTimes(0);

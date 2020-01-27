@@ -14,8 +14,10 @@ export default class Document {
   /**
    * Creates a DID Document from the given long-form DID.
    */
-  public static async fromLongFormDid (did: Did): Promise<DocumentModel> {
-    const originalDidDocument = await this.parseEncodedOriginalDidDocument(did.encodedDidDocument!);
+  public static async fromLongFormDid(did: Did): Promise<DocumentModel> {
+    const originalDidDocument = await this.parseEncodedOriginalDidDocument(
+      did.encodedDidDocument!
+    );
 
     Document.addDidToDocument(originalDidDocument, did.shortForm);
 
@@ -26,13 +28,18 @@ export default class Document {
    * Parses the given string as an encoded original DID document.
    * @throws SidetreeError if unable to parse the given string.
    */
-  public static async parseEncodedOriginalDidDocument (encodedOriginalDidDocument: string): Promise<DocumentModel> {
+  public static async parseEncodedOriginalDidDocument(
+    encodedOriginalDidDocument: string
+  ): Promise<DocumentModel> {
     // Decode the encoded DID Document.
     let decodedJsonString;
     try {
       decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
     } catch (error) {
-      throw SidetreeError.createFromError(ErrorCode.DocumentIncorretEncodedFormat, error);
+      throw SidetreeError.createFromError(
+        ErrorCode.DocumentIncorretEncodedFormat,
+        error
+      );
     }
 
     let decodedDidDocument;
@@ -43,7 +50,9 @@ export default class Document {
     }
 
     // Validate that the given encoded DID Document is a valid original document.
-    const isValidOriginalDocument = Document.isObjectValidOriginalDocument(decodedDidDocument);
+    const isValidOriginalDocument = Document.isObjectValidOriginalDocument(
+      decodedDidDocument
+    );
     if (!isValidOriginalDocument) {
       throw new SidetreeError(ErrorCode.DocumentNotValidOriginalDocument);
     }
@@ -55,12 +64,19 @@ export default class Document {
    * Verifies that the given encoded string is a valid encoded DID Document that can be accepted by the Sidetree create operation.
    * @param allowedMaxSizeInBytes Optional. If specified, the given size limit is validated against the decoded buffer of the original DID document.
    */
-  public static isEncodedStringValidOriginalDocument (encodedOriginalDocument: string, allowedMaxSizeInBytes?: number): boolean {
-    const originalDocumentBuffer = Encoder.decodeAsBuffer(encodedOriginalDocument);
+  public static isEncodedStringValidOriginalDocument(
+    encodedOriginalDocument: string,
+    allowedMaxSizeInBytes?: number
+  ): boolean {
+    const originalDocumentBuffer = Encoder.decodeAsBuffer(
+      encodedOriginalDocument
+    );
 
     // Verify size of each operation does not exceed the maximum allowed limit.
-    if (allowedMaxSizeInBytes !== undefined &&
-      originalDocumentBuffer.length > allowedMaxSizeInBytes) {
+    if (
+      allowedMaxSizeInBytes !== undefined &&
+      originalDocumentBuffer.length > allowedMaxSizeInBytes
+    ) {
       return false;
     }
 
@@ -73,14 +89,16 @@ export default class Document {
     }
 
     // Verify additional Sidetree-specific rules for a valid original DID Document.
-    const isValidOriginalDidDocument = Document.isObjectValidOriginalDocument(originalDocument);
+    const isValidOriginalDidDocument = Document.isObjectValidOriginalDocument(
+      originalDocument
+    );
     return isValidOriginalDidDocument;
   }
 
   /**
    * Verifies that the given JSON object is a valid Sidetree specific encoded DID Document that can be accepted by the Sidetree create operation.
    */
-  public static isObjectValidOriginalDocument (originalDocument: any): boolean {
+  public static isObjectValidOriginalDocument(originalDocument: any): boolean {
     // Original document must pass generic DID Document schema validation.
     const isValidGenericDidDocument = Document.isValid(originalDocument, false);
     if (!isValidGenericDidDocument) {
@@ -88,8 +106,10 @@ export default class Document {
     }
 
     // 'publicKey' property is required and must be an array that is not empty.
-    if (!Array.isArray(originalDocument.publicKey) ||
-        (originalDocument.publicKey as object[]).length === 0) {
+    if (
+      !Array.isArray(originalDocument.publicKey) ||
+      (originalDocument.publicKey as object[]).length === 0
+    ) {
       return false;
     }
 
@@ -138,7 +158,7 @@ export default class Document {
    * Verifies that the given object is a valid generic DID Document (not Sidetree specific).
    * @param requireDid Optional. Specifies if validation rules require the `id` property. Defaults to true if not given.
    */
-  public static isValid (didDocument: any, requireId?: boolean): boolean {
+  public static isValid(didDocument: any, requireId?: boolean): boolean {
     if (requireId === undefined) {
       requireId = true;
     }
@@ -159,7 +179,6 @@ export default class Document {
 
     // Verify 'publicKey' property if it exists.
     if (didDocument.hasOwnProperty('publicKey')) {
-
       if (!Array.isArray(didDocument.publicKey)) {
         return false;
       }
@@ -199,7 +218,10 @@ export default class Document {
         }
 
         // 'serviceEndpoint' is required.
-        if (typeof serviceEntry.serviceEndpoint !== 'string' && typeof serviceEntry.serviceEndpoint !== 'object') {
+        if (
+          typeof serviceEntry.serviceEndpoint !== 'string' &&
+          typeof serviceEntry.serviceEndpoint !== 'object'
+        ) {
           return false;
         }
       }
@@ -213,7 +235,10 @@ export default class Document {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (didDocument: DocumentModel, keyId: string): DidPublicKeyModel | undefined {
+  public static getPublicKey(
+    didDocument: DocumentModel,
+    keyId: string
+  ): DidPublicKeyModel | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 
@@ -228,8 +253,10 @@ export default class Document {
   /**
    * Creates a DID document model.
    */
-  public static create (publicKeys: DidPublicKeyModel[], services?: DidServiceEndpointModel[]): DocumentModel {
-
+  public static create(
+    publicKeys: DidPublicKeyModel[],
+    services?: DidServiceEndpointModel[]
+  ): DocumentModel {
     return {
       '@context': 'https://w3id.org/did/v1',
       publicKey: publicKeys,
@@ -247,8 +274,10 @@ export default class Document {
    * @param didDocument The document to update.
    * @param did The DID which gets added to the document.
    */
-  public static addDidToDocument (didDocument: DocumentModel, did: string): void {
-
+  public static addDidToDocument(
+    didDocument: DocumentModel,
+    did: string
+  ): void {
     didDocument.id = did;
 
     // Only update the publickey if the array is present

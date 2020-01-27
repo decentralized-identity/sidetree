@@ -7,7 +7,6 @@ import ReadableStream from '../../lib/common/ReadableStream';
 import { PrivateKey, Transaction, Address } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
-
   let bitcoinClient: BitcoinClient;
   let fetchSpy: jasmine.Spy;
   let bitcoinWalletImportString: string;
@@ -19,7 +18,14 @@ describe('BitcoinClient', async () => {
 
   beforeEach(() => {
     bitcoinWalletImportString = BitcoinClient.generatePrivateKey('testnet');
-    bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', bitcoinWalletImportString, 10, maxRetries);
+    bitcoinClient = new BitcoinClient(
+      bitcoinPeerUri,
+      'u',
+      'p',
+      bitcoinWalletImportString,
+      10,
+      maxRetries
+    );
 
     privateKeyFromBitcoinClient = bitcoinClient['privateKey'];
     privateKeyAddressFromBitcoinClient = bitcoinClient['privateKeyAddress'];
@@ -28,17 +34,24 @@ describe('BitcoinClient', async () => {
     fetchSpy = spyOn(nodeFetchPackage, 'default');
   });
 
-  function mockRpcCall (method: string, params: any[], returns: any, path?: string): jasmine.Spy {
-    return spyOn(bitcoinClient, 'rpcCall' as any).and.callFake((request: any, requestPath: string) => {
-      if (path) {
-        expect(requestPath).toEqual(path);
+  function mockRpcCall(
+    method: string,
+    params: any[],
+    returns: any,
+    path?: string
+  ): jasmine.Spy {
+    return spyOn(bitcoinClient, 'rpcCall' as any).and.callFake(
+      (request: any, requestPath: string) => {
+        if (path) {
+          expect(requestPath).toEqual(path);
+        }
+        expect(request.method).toEqual(method);
+        if (request.params) {
+          expect(request.params).toEqual(params);
+        }
+        return Promise.resolve(returns);
       }
-      expect(request.method).toEqual(method);
-      if (request.params) {
-        expect(request.params).toEqual(params);
-      }
-      return Promise.resolve(returns);
-    });
+    );
   }
 
   describe('generatePrivateKey', () => {
@@ -55,10 +68,19 @@ describe('BitcoinClient', async () => {
 
   describe('initialize', () => {
     it('should import key if the wallet does not exist', async () => {
-      const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(false));
-      const publicKeyHex = privateKeyFromBitcoinClient.toPublicKey().toBuffer().toString('hex');
+      const walletExistsSpy = spyOn(
+        bitcoinClient as any,
+        'isAddressAddedToWallet'
+      ).and.returnValue(Promise.resolve(false));
+      const publicKeyHex = privateKeyFromBitcoinClient
+        .toPublicKey()
+        .toBuffer()
+        .toString('hex');
 
-      const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet').and.callFake((key: string, rescan: boolean) => {
+      const importSpy = spyOn(
+        bitcoinClient as any,
+        'addWatchOnlyAddressToWallet'
+      ).and.callFake((key: string, rescan: boolean) => {
         expect(key).toEqual(publicKeyHex);
         expect(rescan).toBeTruthy();
 
@@ -72,28 +94,47 @@ describe('BitcoinClient', async () => {
   });
 
   describe('broadcastTransaction', () => {
-    it('should serialize and broadcast a transaction', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+    it('should serialize and broadcast a transaction', async done => {
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(
+        bitcoinWalletImportString
+      );
       const transactionToString = transaction.toString();
 
       spyOn(transaction, 'serialize').and.returnValue(transactionToString);
 
-      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(
+        Promise.resolve(transaction)
+      );
 
-      const spy = mockRpcCall('sendrawtransaction', [transactionToString], transactionToString);
-      const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
+      const spy = mockRpcCall(
+        'sendrawtransaction',
+        [transactionToString],
+        transactionToString
+      );
+      const actual = await bitcoinClient.broadcastTransaction(
+        'data to write',
+        1000
+      );
       expect(actual).toEqual(transactionToString);
       expect(spy).toHaveBeenCalled();
       done();
     });
 
-    it('should throw if the RPC call fails.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+    it('should throw if the RPC call fails.', async done => {
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(
+        bitcoinWalletImportString
+      );
       spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
 
-      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(Promise.resolve(transaction));
+      spyOn(bitcoinClient as any, 'createBitcoreTransaction').and.returnValue(
+        Promise.resolve(transaction)
+      );
 
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
+      const spy = mockRpcCall(
+        'sendrawtransaction',
+        [transaction.toString()],
+        [transaction.toString()]
+      );
       spy.and.throwError('test');
       try {
         await bitcoinClient.broadcastTransaction('data to write', 1000);
@@ -109,19 +150,22 @@ describe('BitcoinClient', async () => {
 
   describe('getBlock', () => {
     it('should get the block data.', async () => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(
+        bitcoinWalletImportString
+      );
       const hash = 'block_hash';
 
       const blockData = {
         hash: hash,
         height: 2,
-        tx: [
-          { hex: Buffer.from(transaction.toString()).toString('hex') }
-        ],
+        tx: [{ hex: Buffer.from(transaction.toString()).toString('hex') }],
         previousblockhash: 'some other hash'
       };
 
-      spyOn(BitcoinClient as any, 'createBitcoreTransactionFromBuffer').and.returnValue(transaction);
+      spyOn(
+        BitcoinClient as any,
+        'createBitcoreTransactionFromBuffer'
+      ).and.returnValue(transaction);
       const spy = mockRpcCall('getblock', [hash, 2], blockData);
       const actual = await bitcoinClient.getBlock(hash);
 
@@ -129,7 +173,9 @@ describe('BitcoinClient', async () => {
       expect(actual.hash).toEqual(blockData.hash);
       expect(actual.height).toEqual(blockData.height);
       expect(actual.previousHash).toEqual(blockData.previousblockhash);
-      expect(actual.transactions[0]).toEqual(BitcoinClient['createBitcoinTransactionModel'](transaction));
+      expect(actual.transactions[0]).toEqual(
+        BitcoinClient['createBitcoinTransactionModel'](transaction)
+      );
     });
   });
 
@@ -148,8 +194,13 @@ describe('BitcoinClient', async () => {
     it('should get the block info', async () => {
       const height = 1234;
       const hash = 'some hash value';
-      const previousHash = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
-      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash });
+      const previousHash = Math.round(
+        Math.random() * Number.MAX_SAFE_INTEGER
+      ).toString(32);
+      const spy = mockRpcCall('getblockheader', [hash, true], {
+        height: height,
+        previousblockhash: previousHash
+      });
       const actual = await bitcoinClient.getBlockInfo(hash);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(height);
@@ -163,11 +214,16 @@ describe('BitcoinClient', async () => {
       const height = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
       const hash = 'some hash value';
       const previousHash = 'some other hash';
-      const heightSpy = spyOn(bitcoinClient, 'getBlockHash').and.callFake((calledHeight: number) => {
-        expect(calledHeight).toEqual(height);
-        return Promise.resolve(hash);
+      const heightSpy = spyOn(bitcoinClient, 'getBlockHash').and.callFake(
+        (calledHeight: number) => {
+          expect(calledHeight).toEqual(height);
+          return Promise.resolve(hash);
+        }
+      );
+      const spy = mockRpcCall('getblockheader', [hash, true], {
+        height: height,
+        previousblockhash: previousHash
       });
-      const spy = mockRpcCall('getblockheader', [hash, true], { height: height, previousblockhash: previousHash });
       const actual = await bitcoinClient.getBlockInfoFromHeight(height);
       expect(actual.hash).toEqual(hash);
       expect(actual.height).toEqual(height);
@@ -178,7 +234,7 @@ describe('BitcoinClient', async () => {
   });
 
   describe('getCurrentBlockHeight', () => {
-    it('should return the latest block', async (done) => {
+    it('should return the latest block', async done => {
       const height = 753;
       const mock = mockRpcCall('getblockcount', [], height);
       const actual = await bitcoinClient.getCurrentBlockHeight();
@@ -191,12 +247,24 @@ describe('BitcoinClient', async () => {
   describe('getRawTransaction', () => {
     it('should make the correct rpc call and return the transaction object', async () => {
       const txnId = 'transaction_id';
-      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
-      const mockTransactionAsOutputTxn = BitcoinClient['createBitcoinTransactionModel'](mockTransaction);
+      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(
+        bitcoinWalletImportString,
+        50
+      );
+      const mockTransactionAsOutputTxn = BitcoinClient[
+        'createBitcoinTransactionModel'
+      ](mockTransaction);
 
-      spyOn(BitcoinClient as any, 'createBitcoreTransactionFromBuffer').and.returnValue(mockTransaction);
+      spyOn(
+        BitcoinClient as any,
+        'createBitcoreTransactionFromBuffer'
+      ).and.returnValue(mockTransaction);
 
-      const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
+      const spy = mockRpcCall(
+        'getrawtransaction',
+        [txnId, 0],
+        mockTransaction.toString()
+      );
 
       const actual = await bitcoinClient['getRawTransaction'](txnId);
       expect(actual).toEqual(mockTransactionAsOutputTxn);
@@ -215,12 +283,18 @@ describe('BitcoinClient', async () => {
         ]
       };
 
-      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(Promise.resolve(mockTxnWithMultipleOutputs));
+      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(
+        Promise.resolve(mockTxnWithMultipleOutputs)
+      );
 
-      const outputFromZeroIdx = await bitcoinClient['getTransactionOutValueInSatoshi']('someId', 0);
+      const outputFromZeroIdx = await bitcoinClient[
+        'getTransactionOutValueInSatoshi'
+      ]('someId', 0);
       expect(outputFromZeroIdx).toEqual(100);
 
-      const outputFromOneIdx = await bitcoinClient['getTransactionOutValueInSatoshi']('someId', 1);
+      const outputFromOneIdx = await bitcoinClient[
+        'getTransactionOutValueInSatoshi'
+      ]('someId', 1);
       expect(outputFromOneIdx).toEqual(200);
     });
   });
@@ -230,7 +304,10 @@ describe('BitcoinClient', async () => {
       const mockTxn: BitcoinTransactionModel = {
         id: 'someid',
         inputs: [
-          { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0 }
+          {
+            previousTransactionId: 'prevTxnId',
+            outputIndexInPreviousTransaction: 0
+          }
         ],
         outputs: [
           { satoshis: 100, scriptAsmAsString: 'script1' },
@@ -241,8 +318,13 @@ describe('BitcoinClient', async () => {
       const mockTxnOutputsSum = 300; // manually calculated based on the mockTxn above
       const mockInputsSum = 500;
 
-      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
-      spyOn(bitcoinClient as any, 'getTransactionOutValueInSatoshi').and.returnValue(Promise.resolve(mockInputsSum));
+      spyOn(bitcoinClient as any, 'getRawTransaction').and.returnValue(
+        Promise.resolve(mockTxn)
+      );
+      spyOn(
+        bitcoinClient as any,
+        'getTransactionOutValueInSatoshi'
+      ).and.returnValue(Promise.resolve(mockInputsSum));
 
       const actual = await bitcoinClient.getTransactionFeeInSatoshis('someid');
       expect(actual).toEqual(mockInputsSum - mockTxnOutputsSum);
@@ -250,27 +332,42 @@ describe('BitcoinClient', async () => {
   });
 
   describe('getUnspentOutputs', () => {
-    it('should query for unspent output coins given an address', async (done) => {
-      const coin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1);
+    it('should query for unspent output coins given an address', async done => {
+      const coin = BitcoinDataGenerator.generateUnspentCoin(
+        bitcoinWalletImportString,
+        1
+      );
 
-      const coinSpy = mockRpcCall('listunspent', [null, null, [privateKeyAddressFromBitcoinClient.toString()]], [
-        {
-          txId: coin.txId,
-          outputIndex: coin.outputIndex,
-          address: coin.address,
-          script: coin.script,
-          satoshis: coin.satoshis
-        }
-      ]);
-      const actual = await bitcoinClient['getUnspentOutputs'](privateKeyAddressFromBitcoinClient);
+      const coinSpy = mockRpcCall(
+        'listunspent',
+        [null, null, [privateKeyAddressFromBitcoinClient.toString()]],
+        [
+          {
+            txId: coin.txId,
+            outputIndex: coin.outputIndex,
+            address: coin.address,
+            script: coin.script,
+            satoshis: coin.satoshis
+          }
+        ]
+      );
+      const actual = await bitcoinClient['getUnspentOutputs'](
+        privateKeyAddressFromBitcoinClient
+      );
       expect(coinSpy).toHaveBeenCalled();
       expect(actual[0].satoshis).toEqual(coin.satoshis);
       done();
     });
 
-    it('should return empty if no coins were found', async (done) => {
-      const coinSpy = mockRpcCall('listunspent', [null, null, [privateKeyAddressFromBitcoinClient.toString()]], []);
-      const actual = await bitcoinClient['getUnspentOutputs'](privateKeyAddressFromBitcoinClient);
+    it('should return empty if no coins were found', async done => {
+      const coinSpy = mockRpcCall(
+        'listunspent',
+        [null, null, [privateKeyAddressFromBitcoinClient.toString()]],
+        []
+      );
+      const actual = await bitcoinClient['getUnspentOutputs'](
+        privateKeyAddressFromBitcoinClient
+      );
       expect(coinSpy).toHaveBeenCalled();
       expect(actual).toEqual([]);
       done();
@@ -278,21 +375,31 @@ describe('BitcoinClient', async () => {
   });
 
   describe('addWatchOnlyAddressToWallet', () => {
-    it('should call the importpubkey API', async (done) => {
+    it('should call the importpubkey API', async done => {
       const publicKeyAsHex = 'some dummy value';
       const rescan = true;
-      const spy = mockRpcCall('importpubkey', [publicKeyAsHex, 'sidetree', rescan], []);
+      const spy = mockRpcCall(
+        'importpubkey',
+        [publicKeyAsHex, 'sidetree', rescan],
+        []
+      );
 
-      await bitcoinClient['addWatchOnlyAddressToWallet'](publicKeyAsHex, rescan);
+      await bitcoinClient['addWatchOnlyAddressToWallet'](
+        publicKeyAsHex,
+        rescan
+      );
       expect(spy).toHaveBeenCalled();
       done();
     });
   });
 
   describe('createBitcoreTransaction', () => {
-    it('should create the transaction object using the inputs correctly.', async (done) => {
+    it('should create the transaction object using the inputs correctly.', async done => {
       const availableSatoshis = 5000;
-      const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
+      const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(
+        bitcoinWalletImportString,
+        availableSatoshis
+      );
       const unspentOutputs = [
         {
           txId: unspentCoin.txId,
@@ -303,12 +410,17 @@ describe('BitcoinClient', async () => {
         }
       ];
 
-      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(
+        Promise.resolve(unspentOutputs)
+      );
       const dataToWrite = 'data to write';
       const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
       const fee = availableSatoshis / 2;
 
-      const transaction = await bitcoinClient['createBitcoreTransaction'](dataToWrite, fee);
+      const transaction = await bitcoinClient['createBitcoreTransaction'](
+        dataToWrite,
+        fee
+      );
       expect(transaction.getFee()).toEqual(fee);
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
       done();
@@ -316,12 +428,15 @@ describe('BitcoinClient', async () => {
   });
 
   describe('getBalanceInSatoshis', () => {
-    it('should call the unspentoutput API', async (done) => {
+    it('should call the unspentoutput API', async done => {
       const mockUnspentOutput = {
         satoshis: 12345
       };
 
-      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue([mockUnspentOutput, mockUnspentOutput]);
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue([
+        mockUnspentOutput,
+        mockUnspentOutput
+      ]);
       const actual = await bitcoinClient.getBalanceInSatoshis();
       expect(actual).toEqual(mockUnspentOutput.satoshis * 2);
       done();
@@ -399,7 +514,7 @@ describe('BitcoinClient', async () => {
   });
 
   describe('rpcCall', () => {
-    it('should call retry-fetch', async (done) => {
+    it('should call retry-fetch', async done => {
       const request: any = {};
       const memberName = 'memberRequestName';
       const memberValue = 'memberRequestValue';
@@ -417,14 +532,20 @@ describe('BitcoinClient', async () => {
           body: bodyIdentifier
         });
       });
-      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake((body: any) => {
-        expect(body).toEqual(bodyIdentifier);
-        return Promise.resolve(Buffer.from(JSON.stringify({
-          result,
-          error: null,
-          id: null
-        })));
-      });
+      const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(
+        (body: any) => {
+          expect(body).toEqual(bodyIdentifier);
+          return Promise.resolve(
+            Buffer.from(
+              JSON.stringify({
+                result,
+                error: null,
+                id: null
+              })
+            )
+          );
+        }
+      );
 
       const actual = await bitcoinClient['rpcCall'](request, true);
       expect(actual).toEqual(result);
@@ -433,9 +554,9 @@ describe('BitcoinClient', async () => {
       done();
     });
 
-    it('should throw if the request failed', async (done) => {
+    it('should throw if the request failed', async done => {
       const request: any = {
-        'test': 'some random string'
+        test: 'some random string'
       };
       const result = 'some result';
       const statusCode = 7890;
@@ -468,9 +589,9 @@ describe('BitcoinClient', async () => {
       }
     });
 
-    it('should throw if the RPC call failed', async (done) => {
+    it('should throw if the RPC call failed', async done => {
       const request: any = {
-        'test': 'some request value'
+        test: 'some request value'
       };
       const result = 'some result';
 
@@ -485,11 +606,15 @@ describe('BitcoinClient', async () => {
       });
 
       const readUtilSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
-        return Promise.resolve(Buffer.from(JSON.stringify({
-          result: null,
-          error: result,
-          id: null
-        })));
+        return Promise.resolve(
+          Buffer.from(
+            JSON.stringify({
+              result: null,
+              error: result,
+              id: null
+            })
+          )
+        );
       });
 
       try {
@@ -507,8 +632,7 @@ describe('BitcoinClient', async () => {
   });
 
   describe('fetchWithRetry', () => {
-
-    it('should fetch the URI with the given requestParameters', async (done) => {
+    it('should fetch the URI with the given requestParameters', async done => {
       const path = 'http://some_random_path';
       const request: any = {
         headers: {}
@@ -530,29 +654,41 @@ describe('BitcoinClient', async () => {
       done();
     });
 
-    it('should retry with an extended time period if the request timed out', async (done) => {
+    it('should retry with an extended time period if the request timed out', async done => {
       const requestId = 'someRequestId';
       let timeout: number;
       fetchSpy.and.callFake((_: any, params: any) => {
-        expect(params.headers.id).toEqual(requestId, 'Fetch was not called with request parameters');
+        expect(params.headers.id).toEqual(
+          requestId,
+          'Fetch was not called with request parameters'
+        );
         if (timeout) {
-          expect(params.timeout).toBeGreaterThan(timeout, 'Fetch was not called with an extended timeout');
+          expect(params.timeout).toBeGreaterThan(
+            timeout,
+            'Fetch was not called with an extended timeout'
+          );
           return Promise.resolve();
         } else {
           timeout = params.timeout;
-          return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+          return Promise.reject(
+            new nodeFetchPackage.FetchError('test', 'request-timeout')
+          );
         }
       });
 
-      await bitcoinClient['fetchWithRetry']('localhost', { headers: { id: requestId } });
+      await bitcoinClient['fetchWithRetry']('localhost', {
+        headers: { id: requestId }
+      });
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       done();
     });
 
-    it('should stop retrying after the max retry limit', async (done) => {
+    it('should stop retrying after the max retry limit', async done => {
       fetchSpy.and.callFake((_: any, __: any) => {
-        return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+        return Promise.reject(
+          new nodeFetchPackage.FetchError('test', 'request-timeout')
+        );
       });
 
       try {
@@ -566,13 +702,15 @@ describe('BitcoinClient', async () => {
       }
     });
 
-    it('should throw non timeout errors immediately', async (done) => {
+    it('should throw non timeout errors immediately', async done => {
       let timeout = true;
       const result = 'some random result';
       fetchSpy.and.callFake((_: any, __: any) => {
         if (timeout) {
           timeout = false;
-          return Promise.reject(new nodeFetchPackage.FetchError('test', 'request-timeout'));
+          return Promise.reject(
+            new nodeFetchPackage.FetchError('test', 'request-timeout')
+          );
         } else {
           return Promise.reject(new Error(result));
         }
@@ -589,7 +727,7 @@ describe('BitcoinClient', async () => {
   });
 
   describe('waitFor', () => {
-    it('should return after the given amount of time', async (done) => {
+    it('should return after the given amount of time', async done => {
       let approved = false;
       setTimeout(() => {
         approved = true;
@@ -600,5 +738,4 @@ describe('BitcoinClient', async () => {
       done();
     }, 500);
   });
-
 });

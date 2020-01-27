@@ -3,7 +3,7 @@
  * NOTE: Not to be confused with RequestError which is used as a response to external requests.
  */
 export class SidetreeError extends Error {
-  constructor (public code: string, message?: string) {
+  constructor(public code: string, message?: string) {
     super(message ? `${code}: ${message}` : code);
 
     // NOTE: Extending 'Error' breaks prototype chain since TypeScript 2.1.
@@ -17,7 +17,7 @@ export class SidetreeError extends Error {
    * @param code The error code.
    * @param err The error exception thrown.
    */
-  public static createFromError (code: string, err: Error): SidetreeError {
+  public static createFromError(code: string, err: Error): SidetreeError {
     return new SidetreeError(code, err ? err.message : undefined);
   }
 }

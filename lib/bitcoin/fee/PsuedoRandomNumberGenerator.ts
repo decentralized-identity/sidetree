@@ -7,10 +7,7 @@ import PsuedoRandomBitStream from './PsuedoRandomBitStream';
  * 0..n-1.
  */
 export default class PsuedoRandomNumberGenerator {
-
-  public constructor (private psuedoRandomBitStream: PsuedoRandomBitStream) {
-
-  }
+  public constructor(private psuedoRandomBitStream: PsuedoRandomBitStream) {}
 
   /**
    * Get a number uniformly at random between 0 and n-1.
@@ -27,7 +24,7 @@ export default class PsuedoRandomNumberGenerator {
    * if these 5 bits encode a value <= 30, we return that value; otherwise,
    * we repeat the process.
    */
-  public getRandomNumber (n: number): number {
+  public getRandomNumber(n: number): number {
     let n2 = 1;
     let s = 0;
 

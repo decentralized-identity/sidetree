@@ -7,7 +7,7 @@ export default interface IRequestHandler {
   /**
    * Handles an operation request.
    */
-  handleOperationRequest (request: Buffer): Promise<ResponseModel>;
+  handleOperationRequest(request: Buffer): Promise<ResponseModel>;
 
   /**
    * Handles resolve operation.
@@ -15,5 +15,5 @@ export default interface IRequestHandler {
    *   1. Fully qualified DID. e.g. 'did:sidetree:abc' or
    *   2. An encoded DID Document prefixed by the DID method name. e.g. 'did:sidetree:<encoded-DID-Document>'.
    */
-  handleResolveRequest (didOrDidDocument: string): Promise<ResponseModel>;
+  handleResolveRequest(didOrDidDocument: string): Promise<ResponseModel>;
 }

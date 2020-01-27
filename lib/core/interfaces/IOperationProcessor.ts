@@ -5,7 +5,6 @@ import DidResolutionModel from '../models/DidResolutionModel';
  * Interface that defines a class that can process operations.
  */
 export default interface IOperationProcessor {
-
   /**
    * Applies an operation on top of the given DID document.
    * In the case of an invalid operation, the given DID document will be unchanged.
@@ -17,7 +16,7 @@ export default interface IOperationProcessor {
    * @param didResolutionModel
    *        The container object that contains the metadata needed for applying the operation and the reference to the DID document to be modified.
    */
-  apply (
+  apply(
     operation: AnchoredOperationModel,
     didResolutionModel: DidResolutionModel
   ): Promise<ApplyResult>;

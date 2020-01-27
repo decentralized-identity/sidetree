@@ -44,7 +44,6 @@ export interface IBlockInfo {
  * Processor for Bitcoin REST API calls
  */
 export default class BitcoinProcessor {
-
   /** Prefix used to identify Sidetree transactions in Bitcoin's blockchain. */
   public readonly sidetreePrefix: string;
 
@@ -83,40 +82,52 @@ export default class BitcoinProcessor {
   /** satoshis per bitcoin */
   private static readonly satoshiPerBitcoin = 100000000;
 
-  public constructor (config: IBitcoinConfig) {
+  public constructor(config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
-    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.transactionStore = new MongoDbTransactionStore(
+      config.mongoDbConnectionString,
+      config.databaseName
+    );
 
-    this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
+    this.spendingMonitor = new SpendingMonitor(
+      config.bitcoinFeeSpendingCutoffPeriodInBlocks,
       config.bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin,
-      this.transactionStore);
+      this.transactionStore
+    );
 
-    const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
-    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
+    const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(
+      config.mongoDbConnectionString,
+      config.databaseName
+    );
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(
+      BitcoinProcessor.satoshiPerBitcoin,
       ProtocolParameters.windowSizeInGroups,
       ProtocolParameters.quantileMeasure,
-      mongoQuantileStore);
-    this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
+      mongoQuantileStore
+    );
+    this.transactionSampler = new ReservoirSampler(
+      ProtocolParameters.sampleSizePerGroup
+    );
 
     this.pageSize = config.transactionFetchPageSize;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
-    this.bitcoinClient =
-      new BitcoinClient(
-        config.bitcoinPeerUri,
-        config.bitcoinRpcUsername,
-        config.bitcoinRpcPassword,
-        config.bitcoinWalletImportString,
-        config.requestTimeoutInMilliseconds || 300,
-        config.requestMaxRetries || 3);
+    this.bitcoinClient = new BitcoinClient(
+      config.bitcoinPeerUri,
+      config.bitcoinRpcUsername,
+      config.bitcoinRpcPassword,
+      config.bitcoinWalletImportString,
+      config.requestTimeoutInMilliseconds || 300,
+      config.requestMaxRetries || 3
+    );
   }
 
   /**
    * Initializes the Bitcoin processor
    */
-  public async initialize () {
+  public async initialize() {
     await this.transactionStore.initialize();
     await this.quantileCalculator.initialize();
     await this.bitcoinClient.initialize();
@@ -124,7 +135,9 @@ export default class BitcoinProcessor {
     console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForInitialization();
 
-    console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+    console.info(
+      `Starting block: ${startingBlock.height} (${startingBlock.hash})`
+    );
     await this.processTransactions(startingBlock);
 
     void this.periodicPoll();
@@ -136,7 +149,7 @@ export default class BitcoinProcessor {
    * @param hash Blockchain time hash.
    * @returns the current or associated blockchain time of the given time hash.
    */
-  public async time (hash?: string): Promise<IBlockchainTime> {
+  public async time(hash?: string): Promise<IBlockchainTime> {
     console.info(`Getting time ${hash ? 'of time hash ' + hash : ''}`);
     if (!hash) {
       const blockHeight = await this.bitcoinClient.getCurrentBlockHeight();
@@ -161,24 +174,38 @@ export default class BitcoinProcessor {
    * @param hash The associated transaction time hash
    * @returns Transactions since given transaction number.
    */
-  public async transactions (since?: number, hash?: string): Promise<{
-    moreTransactions: boolean,
-    transactions: TransactionModel[]
+  public async transactions(
+    since?: number,
+    hash?: string
+  ): Promise<{
+    moreTransactions: boolean;
+    transactions: TransactionModel[];
   }> {
-    if ((since && !hash) ||
-        (!since && hash)) {
+    if ((since && !hash) || (!since && hash)) {
       throw new RequestError(ResponseStatus.BadRequest);
     } else if (since && hash) {
-      if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
+      if (
+        !(await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash))
+      ) {
         console.info('Requested transactions hash mismatched blockchain');
-        throw new RequestError(ResponseStatus.BadRequest, ErrorCode.InvalidTransactionNumberOrTimeHash);
+        throw new RequestError(
+          ResponseStatus.BadRequest,
+          ErrorCode.InvalidTransactionNumberOrTimeHash
+        );
       }
     }
 
-    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
-    let transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+    console.info(
+      `Returning transactions since ${
+        since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'
+      }...`
+    );
+    let transactions = await this.transactionStore.getTransactionsLaterThan(
+      since,
+      this.pageSize
+    );
     // filter the results to only return transactions, and not internal data
-    transactions = transactions.map((transaction) => {
+    transactions = transactions.map(transaction => {
       return {
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime,
@@ -200,7 +227,9 @@ export default class BitcoinProcessor {
    * @param transactions List of transactions to check
    * @returns The first valid transaction, or undefined if none are valid
    */
-  public async firstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
+  public async firstValidTransaction(
+    transactions: TransactionModel[]
+  ): Promise<TransactionModel | undefined> {
     for (let index = 0; index < transactions.length; index++) {
       const transaction = transactions[index];
       const height = transaction.transactionTime;
@@ -217,7 +246,7 @@ export default class BitcoinProcessor {
    * @param anchorString The string to be written as part of the transaction.
    * @param fee The fee to be paid for this transaction.
    */
-  public async writeTransaction (anchorString: string, fee: number) {
+  public async writeTransaction(anchorString: string, fee: number) {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
     // ----
     // Issue #347 opened to track the investigation for this hardcoded value.
@@ -225,46 +254,71 @@ export default class BitcoinProcessor {
     fee = Math.max(fee, 1000);
     // ----
 
-    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
+    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(
+      fee,
+      this.lastProcessedBlock!.height
+    );
 
     if (!feeWithinSpendingLimits) {
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
+      throw new RequestError(
+        ResponseStatus.BadRequest,
+        ErrorCode.SpendingCapPerPeriodReached
+      );
     }
 
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
-    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
+    const lowBalanceAmount =
+      this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
     if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
+      const daysLeft = Math.floor(
+        totalSatoshis / (estimatedBitcoinWritesPerDay * fee)
+      );
       console.error(`Low balance (${daysLeft} days remaining),\
- please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
+ please fund your wallet. Amount: >=${lowBalanceAmount -
+   totalSatoshis} satoshis.`);
     }
     // cannot make the transaction
     if (totalSatoshis < fee) {
-      const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
+      const error = new Error(
+        `Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`
+      );
       console.error(error);
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.NotEnoughBalanceForWrite);
+      throw new RequestError(
+        ResponseStatus.BadRequest,
+        ErrorCode.NotEnoughBalanceForWrite
+      );
     }
 
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
-    console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
+    const transactionHash = await this.bitcoinClient.broadcastTransaction(
+      sidetreeTransactionString,
+      fee
+    );
+    console.info(
+      `Successfully submitted transaction [hash: ${transactionHash}]`
+    );
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
   /**
    * Return proof-of-fee value for a particular block.
    */
-  public async getNormalizedFee (block: number): Promise<TransactionFeeModel> {
-
+  public async getNormalizedFee(block: number): Promise<TransactionFeeModel> {
     if (block < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+      throw new RequestError(
+        ResponseStatus.BadRequest,
+        ErrorCode.BlockchainTimeOutOfRange
+      );
     }
 
-    const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
+    const blockAfterHistoryOffset = Math.max(
+      block - ProtocolParameters.historicalOffsetInBlocks,
+      0
+    );
     const groupId = this.getGroupIdFromBlock(blockAfterHistoryOffset);
     const quantileValue = this.quantileCalculator.getQuantile(groupId);
 
@@ -272,21 +326,26 @@ export default class BitcoinProcessor {
       return { normalizedTransactionFee: quantileValue };
     }
 
-    console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
-    throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    console.error(
+      `Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`
+    );
+    throw new RequestError(
+      ResponseStatus.BadRequest,
+      ErrorCode.BlockchainTimeOutOfRange
+    );
   }
 
   /**
    * Handles the get version operation.
    */
-  public async getServiceVersion (): Promise<ServiceVersionModel> {
+  public async getServiceVersion(): Promise<ServiceVersionModel> {
     return this.serviceInfoProvider.getServiceVersion();
   }
 
   /**
    * Generates a private key for the Bitcoin testnet.
    */
-  public static generatePrivateKeyForTestnet (): string {
+  public static generatePrivateKeyForTestnet(): string {
     return BitcoinClient.generatePrivateKey('testnet');
   }
 
@@ -294,8 +353,7 @@ export default class BitcoinProcessor {
    * Will process transactions every interval seconds.
    * @param interval Number of seconds between each query
    */
-  private async periodicPoll (interval: number = this.pollPeriod) {
-
+  private async periodicPoll(interval: number = this.pollPeriod) {
     try {
       // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
       if (this.pollTimeoutId) {
@@ -310,7 +368,11 @@ export default class BitcoinProcessor {
     } catch (error) {
       console.error(error);
     } finally {
-      this.pollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * interval, interval);
+      this.pollTimeoutId = setTimeout(
+        this.periodicPoll.bind(this),
+        1000 * interval,
+        interval
+      );
     }
   }
 
@@ -319,7 +381,9 @@ export default class BitcoinProcessor {
    * @param startBlock The block to begin from (inclusive)
    * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock: IBlockInfo): Promise<IBlockInfo> {
+  private async processTransactions(
+    startBlock: IBlockInfo
+  ): Promise<IBlockInfo> {
     console.info(`Starting processTransaction at: ${Date.now()}`);
 
     const startBlockHeight = startBlock.height;
@@ -329,12 +393,21 @@ export default class BitcoinProcessor {
     }
 
     const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
+    console.info(
+      `Processing transactions from ${startBlockHeight} to ${endBlockHeight}`
+    );
 
     let previousBlockHash = startBlock.previousHash;
 
-    for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
-      const processedBlockHash = await this.processBlock(blockHeight, previousBlockHash);
+    for (
+      let blockHeight = startBlockHeight;
+      blockHeight <= endBlockHeight;
+      blockHeight++
+    ) {
+      const processedBlockHash = await this.processBlock(
+        blockHeight,
+        previousBlockHash
+      );
 
       this.lastProcessedBlock = {
         height: blockHeight,
@@ -345,7 +418,9 @@ export default class BitcoinProcessor {
       previousBlockHash = processedBlockHash;
     }
 
-    console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
+    console.info(
+      `Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`
+    );
     return this.lastProcessedBlock!;
   }
 
@@ -354,16 +429,15 @@ export default class BitcoinProcessor {
    * This function rounds a block to the first block in its group and returns that
    * value.
    */
-  private getFirstBlockInGroup (block: number): number {
+  private getFirstBlockInGroup(block: number): number {
     const groupId = this.getGroupIdFromBlock(block);
     return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
-  private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
-
+  private async getStartingBlockForInitialization(): Promise<IBlockInfo> {
     // Look in the transaction store to figure out the last block that we need to
     // start from.
-    const lastSavedTransaction = (await this.transactionStore.getLastTransaction());
+    const lastSavedTransaction = await this.transactionStore.getLastTransaction();
 
     // If there's nothing saved in the DB then let's start from the genesis block
     if (!lastSavedTransaction) {
@@ -373,13 +447,18 @@ export default class BitcoinProcessor {
     // If we are here then it means that there is a potential starting point in the DB.
     // Since we are initializing, it is quite possible that the last block that we processed
     // (and saved in the db) has been forked. Check for the fork.
-    const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
+    const lastSavedBlockIsValid = await this.verifyBlock(
+      lastSavedTransaction.transactionTime,
+      lastSavedTransaction.transactionTimeHash
+    );
 
     let lastValidBlock: IBlockInfo;
 
     if (lastSavedBlockIsValid) {
       // There was no fork ... let's put the system DBs in the correct state.
-      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
+      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(
+        lastSavedTransaction.transactionTime
+      );
     } else {
       // There was a fork so we need to revert. The revert function peforms all the correct
       // operations and puts the system in the correct state and returns the last valid block.
@@ -390,9 +469,13 @@ export default class BitcoinProcessor {
     return this.bitcoinClient.getBlockInfoFromHeight(lastValidBlock.height + 1);
   }
 
-  private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
-
-    const lastProcessedBlockVerified = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
+  private async getStartingBlockForPeriodicPoll(): Promise<
+    IBlockInfo | undefined
+  > {
+    const lastProcessedBlockVerified = await this.verifyBlock(
+      this.lastProcessedBlock!.height,
+      this.lastProcessedBlock!.hash
+    );
 
     // If the last processed block is not verified then that means that we need to
     // revert the blockchain to the correct block
@@ -420,27 +503,43 @@ export default class BitcoinProcessor {
    * Begins to revert databases until consistent with blockchain, returns last good height
    * @returns last valid block height before the fork
    */
-  private async revertDatabases (): Promise<IBlockInfo> {
+  private async revertDatabases(): Promise<IBlockInfo> {
     console.info('Reverting transactions');
 
     // Keep reverting transactions until a valid transaction is found.
-    while (await this.transactionStore.getTransactionsCount() > 0) {
+    while ((await this.transactionStore.getTransactionsCount()) > 0) {
       const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
-      const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
+      const lastKnownValidTransaction = await this.firstValidTransaction(
+        exponentiallySpacedTransactions
+      );
 
       if (lastKnownValidTransaction) {
         // We have a valid transaction, so revert the DBs to that valid one and return.
-        return this.trimDatabasesToFeeSamplingGroupBoundary(lastKnownValidTransaction.transactionTime);
+        return this.trimDatabasesToFeeSamplingGroupBoundary(
+          lastKnownValidTransaction.transactionTime
+        );
       }
 
       // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
       // transactions and repeat the process with a new reduced list of transactions.
-      const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
-      const revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
+      const lowestHeight =
+        exponentiallySpacedTransactions[
+          exponentiallySpacedTransactions.length - 1
+        ].transactionTime;
+      const revertToTransactionNumber = TransactionNumber.construct(
+        lowestHeight,
+        0
+      );
 
-      console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
-      await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
+      console.debug(
+        `Removing transactions since ${TransactionNumber.getBlockNumber(
+          revertToTransactionNumber
+        )}`
+      );
+      await this.transactionStore.removeTransactionsLaterThan(
+        revertToTransactionNumber
+      );
     }
 
     // there are no transactions stored.
@@ -453,9 +552,12 @@ export default class BitcoinProcessor {
    * @param lastValidBlockNumber The last known valid block number.
    * @returns The last block of the fee sampling group.
    */
-  private async trimDatabasesToFeeSamplingGroupBoundary (lastValidBlockNumber: number): Promise<IBlockInfo> {
-
-    console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${lastValidBlockNumber}`);
+  private async trimDatabasesToFeeSamplingGroupBoundary(
+    lastValidBlockNumber: number
+  ): Promise<IBlockInfo> {
+    console.info(
+      `Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${lastValidBlockNumber}`
+    );
 
     // For the quantile DB, we need to remove the full group (corresponding to the given
     // lastValidBlockNumber). This is because currently there is no way to add/remove individual block's
@@ -477,23 +579,37 @@ export default class BitcoinProcessor {
     // Make sure that we remove the transaction data BEFORE we remove the quantile data. This is
     // because that if the service stops at any moment after this, the initialize code looks at
     // the transaction store and can revert the quantile db accordingly.
-    const firstTxnOfFirstBlockInGroup = TransactionNumber.construct(firstBlockInGroup, 0);
+    const firstTxnOfFirstBlockInGroup = TransactionNumber.construct(
+      firstBlockInGroup,
+      0
+    );
 
-    console.debug(`Removing transactions since ${firstBlockInGroup} (transaction id: ${firstTxnOfFirstBlockInGroup})`);
-    await this.transactionStore.removeTransactionsLaterThan(firstTxnOfFirstBlockInGroup - 1);
+    console.debug(
+      `Removing transactions since ${firstBlockInGroup} (transaction id: ${firstTxnOfFirstBlockInGroup})`
+    );
+    await this.transactionStore.removeTransactionsLaterThan(
+      firstTxnOfFirstBlockInGroup - 1
+    );
 
     // Now revert the corresponding groups (and later) from the quantile calculator.
     const revertToGroupId = this.getGroupIdFromBlock(firstBlockInGroup);
 
-    console.debug(`Removing the quantile data greater and equal than: ${revertToGroupId}`);
-    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(revertToGroupId);
+    console.debug(
+      `Removing the quantile data greater and equal than: ${revertToGroupId}`
+    );
+    await this.quantileCalculator.removeGroupsGreaterThanOrEqual(
+      revertToGroupId
+    );
 
     // Reset transaction sampling
     this.transactionSampler.clear();
 
     // The first block in the group is the new starting point so the previous one is the
     // last 'valid' block. Return it but ensure that we are not going below the genesis block
-    const blockNumberToReturn = Math.max(firstBlockInGroup - 1, this.genesisBlockNumber);
+    const blockNumberToReturn = Math.max(
+      firstBlockInGroup - 1,
+      this.genesisBlockNumber
+    );
 
     return this.bitcoinClient.getBlockInfoFromHeight(blockNumberToReturn);
   }
@@ -504,7 +620,7 @@ export default class BitcoinProcessor {
    * @param hash Block hash to verify
    * @returns true if valid, false otherwise
    */
-  private async verifyBlock (height: number, hash: string): Promise<boolean> {
+  private async verifyBlock(height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
     const responseData = await this.bitcoinClient.getBlockHash(height);
 
@@ -512,12 +628,17 @@ export default class BitcoinProcessor {
     return hash === responseData;
   }
 
-  private isSidetreeTransaction (transaction: BitcoinTransactionModel): boolean {
+  private isSidetreeTransaction(transaction: BitcoinTransactionModel): boolean {
     const transactionOutputs = transaction.outputs;
 
-    for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
-
-      const data = this.getSidetreeDataFromVOutIfExist(transactionOutputs[outputIndex]);
+    for (
+      let outputIndex = 0;
+      outputIndex < transactionOutputs.length;
+      outputIndex++
+    ) {
+      const data = this.getSidetreeDataFromVOutIfExist(
+        transactionOutputs[outputIndex]
+      );
 
       // We do not check for multiple sidetree anchors; we would treat such
       // transactions as non-sidetree for updating the transaction store, but here
@@ -533,13 +654,15 @@ export default class BitcoinProcessor {
     return false;
   }
 
-  private getSidetreeDataFromVOutIfExist (transactionOutput: BitcoinOutputModel): string | undefined {
-
+  private getSidetreeDataFromVOutIfExist(
+    transactionOutput: BitcoinOutputModel
+  ): string | undefined {
     // check for returned data for sidetree prefix
-    const hexDataMatches = transactionOutput.scriptAsmAsString.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
+    const hexDataMatches = transactionOutput.scriptAsmAsString.match(
+      /\s*OP_RETURN ([0-9a-fA-F]+)$/
+    );
 
     if (hexDataMatches && hexDataMatches.length !== 0) {
-
       const data = Buffer.from(hexDataMatches[1], 'hex').toString();
 
       if (data.startsWith(this.sidetreePrefix)) {
@@ -551,16 +674,18 @@ export default class BitcoinProcessor {
     return undefined;
   }
 
-  private isGroupBoundary (block: number): boolean {
+  private isGroupBoundary(block: number): boolean {
     return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
 
-  private getGroupIdFromBlock (block: number): number {
+  private getGroupIdFromBlock(block: number): number {
     return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
   }
 
-  private async processBlockForPofCalculation (blockHeight: number, blockData: BitcoinBlockModel): Promise<void> {
-
+  private async processBlockForPofCalculation(
+    blockHeight: number,
+    blockData: BitcoinBlockModel
+  ): Promise<void> {
     const blockHash = blockData.hash;
 
     // reseed source of psuedo-randomness to the blockhash
@@ -570,7 +695,11 @@ export default class BitcoinProcessor {
 
     // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
     // so we are going to ignore that transaction in our calculations.
-    for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
+    for (
+      let transactionIndex = 1;
+      transactionIndex < transactions.length;
+      transactionIndex++
+    ) {
       const transaction = transactions[transactionIndex];
 
       const isSidetreeTransaction = this.isSidetreeTransaction(transaction);
@@ -580,19 +709,22 @@ export default class BitcoinProcessor {
       // not worth the cost for an approximate measure. We also filter out sidetree transactions
       const inputsCount = transaction.inputs.length;
 
-      if (!isSidetreeTransaction &&
-          inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
+      if (
+        !isSidetreeTransaction &&
+        inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction
+      ) {
         this.transactionSampler.addElement(transaction.id);
       }
     }
 
     if (this.isGroupBoundary(blockHeight)) {
-
       // Compute the transaction fees for sampled transactions of this group
       const sampledTransactionIds = this.transactionSampler.getSample();
       const sampledTransactionFees = new Array();
       for (let transactionId of sampledTransactionIds) {
-        const transactionFee = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
+        const transactionFee = await this.bitcoinClient.getTransactionFeeInSatoshis(
+          transactionId
+        );
         sampledTransactionFees.push(transactionFee);
       }
 
@@ -610,14 +742,19 @@ export default class BitcoinProcessor {
    * @param previousBlockHash Block hash of the previous block
    * @returns the block hash processed
    */
-  private async processBlock (block: number, previousBlockHash: string): Promise<string> {
+  private async processBlock(
+    block: number,
+    previousBlockHash: string
+  ): Promise<string> {
     console.info(`Processing block ${block}`);
     const blockHash = await this.bitcoinClient.getBlockHash(block);
     const blockData = await this.bitcoinClient.getBlock(blockHash);
 
     // This check detects fork by ensuring the fetched block points to the expected previous block.
     if (blockData.previousHash !== previousBlockHash) {
-      throw Error(`Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`);
+      throw Error(
+        `Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`
+      );
     }
 
     await this.processBlockForPofCalculation(block, blockData);
@@ -625,25 +762,45 @@ export default class BitcoinProcessor {
     const transactions = blockData.transactions;
 
     // iterate through transactions
-    for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+    for (
+      let transactionIndex = 0;
+      transactionIndex < transactions.length;
+      transactionIndex++
+    ) {
       const transaction = transactions[transactionIndex];
 
       // get the output coins in the transaction
       const outputs = transactions[transactionIndex].outputs;
 
       try {
-        const sidetreeTxToAdd = await this.getValidSidetreeTransactionFromOutputs(outputs, transactionIndex, block, blockHash, transaction.id);
+        const sidetreeTxToAdd = await this.getValidSidetreeTransactionFromOutputs(
+          outputs,
+          transactionIndex,
+          block,
+          blockHash,
+          transaction.id
+        );
 
         // If there are transactions found then add them to the transaction store
         if (sidetreeTxToAdd) {
-          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
+          console.debug(
+            `Sidetree transaction found; adding ${JSON.stringify(
+              sidetreeTxToAdd
+            )}`
+          );
           await this.transactionStore.addTransaction(sidetreeTxToAdd);
         }
       } catch (e) {
-        const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
-        console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
-                       JSON.stringify(inputs),
-                       JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        const inputs = {
+          block: block,
+          blockHash: blockHash,
+          transactionIndex: transactionIndex
+        };
+        console.debug(
+          'An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
+          JSON.stringify(inputs),
+          JSON.stringify(e, Object.getOwnPropertyNames(e))
+        );
 
         throw e;
       }
@@ -652,31 +809,34 @@ export default class BitcoinProcessor {
     return blockHash;
   }
 
-  private async getValidSidetreeTransactionFromOutputs (
+  private async getValidSidetreeTransactionFromOutputs(
     allVOuts: BitcoinOutputModel[],
     transactionIndex: number,
     transactionBlock: number,
     transactionHash: string,
-    transactionId: string): Promise<TransactionModel | undefined> {
-
+    transactionId: string
+  ): Promise<TransactionModel | undefined> {
     let sidetreeTxToAdd: TransactionModel | undefined = undefined;
 
     for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
-
-      const sidetreeData = this.getSidetreeDataFromVOutIfExist(allVOuts[outputIndex]);
-      const isSidetreeTx = (sidetreeData !== undefined);
-      const oneSidetreeTxAlreadyFound = (sidetreeTxToAdd !== undefined);
+      const sidetreeData = this.getSidetreeDataFromVOutIfExist(
+        allVOuts[outputIndex]
+      );
+      const isSidetreeTx = sidetreeData !== undefined;
+      const oneSidetreeTxAlreadyFound = sidetreeTxToAdd !== undefined;
 
       if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
         // tslint:disable-next-line: max-line-length
         const message = `The outputs in block: ${transactionBlock} with transaction id: ${transactionId} has multiple sidetree transactions. So ignoring this transaction.`;
         console.debug(message);
         return undefined;
-
       } else if (isSidetreeTx) {
         // we have found a valid sidetree transaction
         sidetreeTxToAdd = {
-          transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
+          transactionNumber: TransactionNumber.construct(
+            transactionBlock,
+            transactionIndex
+          ),
           transactionTime: transactionBlock,
           transactionTimeHash: transactionHash,
           anchorString: sidetreeData as string,
@@ -694,11 +854,14 @@ export default class BitcoinProcessor {
       // If we got to here then everything was good and we found only one sidetree transaction, otherwise
       // we would've returned earlier. So let's fill the missing information for the transaction and
       // return it
-      const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
+      const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(
+        transactionId
+      );
       const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
       sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
-      sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel.normalizedTransactionFee;
+      sidetreeTxToAdd.normalizedTransactionFee =
+        normalizedFeeModel.normalizedTransactionFee;
     }
 
     // non sidetree transaction

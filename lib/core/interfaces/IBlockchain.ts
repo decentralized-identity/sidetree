@@ -11,7 +11,7 @@ export default interface IBlockchain {
    * @param anchorString Data to write to the blockchain.
    * @param fee Fee for the current transaction.
    */
-  write (anchorString: string, fee: number): Promise<void>;
+  write(anchorString: string, fee: number): Promise<void>;
 
   /**
    * Gets Sidetree transactions in chronological order.
@@ -23,7 +23,10 @@ export default interface IBlockchain {
    *                            Required if and only if sinceTransactionNumber is provided.
    * @throws SidetreeError with ErrorCode.InvalidTransactionNumberOrTimeHash if a potential block reorganization is detected.
    */
-  read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{
+  read(
+    sinceTransactionNumber?: number,
+    transactionTimeHash?: string
+  ): Promise<{
     moreTransactions: boolean;
     transactions: TransactionModel[];
   }>;
@@ -32,7 +35,9 @@ export default interface IBlockchain {
    * Given a list of Sidetree transaction in any order, iterate through the list and return the first transaction that is valid.
    * @param transactions List of potentially valid transactions.
    */
-  getFirstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined>;
+  getFirstValidTransaction(
+    transactions: TransactionModel[]
+  ): Promise<TransactionModel | undefined>;
 
   /**
    * Gets the approximate latest time synchronously without requiring to make network call.
@@ -47,5 +52,5 @@ export default interface IBlockchain {
    * @throws SidetreeError with ErrorCode.BlockchainTimeOutOfRange if the input transaction number is less
    * than Sidetree genesis blockchain time or is later than the current blockchain time.
    */
-  getFee (transactionNumber: number): Promise<number>;
+  getFee(transactionNumber: number): Promise<number>;
 }

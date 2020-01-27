@@ -1,12 +1,12 @@
 import MongoDb from '../../common/MongoDb';
 import MongoDbSlidingWindowQuantileStore from '../../../lib/bitcoin/fee/MongoDbSlidingWindowQuantileStore';
 
-function checkArrayEqual (array1: number[], array2: number[]): boolean {
+function checkArrayEqual(array1: number[], array2: number[]): boolean {
   if (array1.length !== array2.length) {
     return false;
   }
 
-  for (let i = 0 ; i < array1.length ; ++i) {
+  for (let i = 0; i < array1.length; ++i) {
     if (array1[i] !== array2[i]) {
       return false;
     }
@@ -22,9 +22,14 @@ describe('SlidingWindowQuantileMongoStore', async () => {
   let mongoServiceAvailable = false;
 
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(mongoDbConnectionString);
+    mongoServiceAvailable = await MongoDb.isServerAvailable(
+      mongoDbConnectionString
+    );
     if (mongoServiceAvailable) {
-      mongoStore = new MongoDbSlidingWindowQuantileStore(mongoDbConnectionString, databaseName);
+      mongoStore = new MongoDbSlidingWindowQuantileStore(
+        mongoDbConnectionString,
+        databaseName
+      );
       await mongoStore.initialize();
     }
   });
@@ -50,11 +55,16 @@ describe('SlidingWindowQuantileMongoStore', async () => {
     expect(quantileInfoRetrieved).toBeDefined();
     expect(quantileInfoRetrieved!.groupId).toBe(quantileInfo.groupId);
     expect(quantileInfoRetrieved!.quantile).toBe(quantileInfo.quantile);
-    expect(checkArrayEqual(quantileInfoRetrieved!.groupFreqVector, quantileInfo.groupFreqVector)).toBe(true);
+    expect(
+      checkArrayEqual(
+        quantileInfoRetrieved!.groupFreqVector,
+        quantileInfo.groupFreqVector
+      )
+    ).toBe(true);
   });
 
   it('should return correct first/last groupid', async () => {
-    for (let groupId = 1 ; groupId <= 10 ; groupId++) {
+    for (let groupId = 1; groupId <= 10; groupId++) {
       await mongoStore.put({
         groupId: groupId,
         quantile: 0.5,

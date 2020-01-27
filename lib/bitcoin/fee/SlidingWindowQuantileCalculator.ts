@@ -19,7 +19,6 @@ type FrequencyVector = Array<number>;
  *
  */
 export default class SlidingWindowQuantileCalculator {
-
   /**
    * Normalize values to a compact range 0..max, which allows
    * a large set of values to be stored compactly as frequency
@@ -62,23 +61,29 @@ export default class SlidingWindowQuantileCalculator {
    * Construct a sliding window quantile computer with specified
    * approximation paramenters.
    */
-  public constructor (
-    maxValue: number,  // all values above maxValue are rounded down by maxValue
+  public constructor(
+    maxValue: number, // all values above maxValue are rounded down by maxValue
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
     private readonly mongoStore: ISlidingWindowQuantileStore
-    ) {
-    this.valueApproximator = new ValueApproximator(this.feeApproximate, maxValue);
-    this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
+  ) {
+    this.valueApproximator = new ValueApproximator(
+      this.feeApproximate,
+      maxValue
+    );
+    this.frequencyVectorSize =
+      1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
-    this.frequencyVectorAggregated = new Array(this.frequencyVectorSize).fill(0);
+    this.frequencyVectorAggregated = new Array(this.frequencyVectorSize).fill(
+      0
+    );
     if (this.quantileMeasure < 0 || this.quantileMeasure > 1) {
       throw Error(`Invalid quantile measure ${quantileMeasure}`);
     }
   }
 
   /** Initialize self from state stored in mongo store */
-  public async initialize (): Promise<void> {
+  public async initialize(): Promise<void> {
     await this.mongoStore.initialize();
     const firstGroupId = await this.mongoStore.getFirstGroupId();
     const lastGroupId = await this.mongoStore.getLastGroupId();
@@ -88,16 +93,18 @@ export default class SlidingWindowQuantileCalculator {
     this.prevgroupId = lastGroupId;
 
     if (firstGroupId !== undefined) {
-      for (let groupId = firstGroupId ; groupId <= lastGroupId! ; groupId++) {
+      for (let groupId = firstGroupId; groupId <= lastGroupId!; groupId++) {
         const quantileInfo = (await this.mongoStore.get(groupId))!;
 
         this.historicalQuantiles.set(groupId, quantileInfo.quantile);
 
         if (groupId + this.slidingWindowSize > lastGroupId!) {
-          const groupFrequencyVector = RunLengthTransformer.decode(quantileInfo.groupFreqVector);
+          const groupFrequencyVector = RunLengthTransformer.decode(
+            quantileInfo.groupFreqVector
+          );
           this.slidingWindow.push(groupFrequencyVector);
 
-          for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
+          for (let i = 0; i < this.frequencyVectorSize; i++) {
             this.frequencyVectorAggregated[i] += groupFrequencyVector[i];
           }
         }
@@ -110,8 +117,7 @@ export default class SlidingWindowQuantileCalculator {
    * identified using a groupId which can be used to retrieve historical
    * quantiles as of a particular groupId.
    */
-  public async add (groupId: number, group: number[]): Promise<void> {
-
+  public async add(groupId: number, group: number[]): Promise<void> {
     // Our historical quantiles storage logic relies on groupIds being
     // consecutive numbers: explicitly check this fact.
     if (this.prevgroupId) {
@@ -129,7 +135,7 @@ export default class SlidingWindowQuantileCalculator {
 
     this.slidingWindow.push(groupFrequencyVector);
 
-    for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
+    for (let i = 0; i < this.frequencyVectorSize; i++) {
       this.frequencyVectorAggregated[i] += groupFrequencyVector[i];
     }
 
@@ -157,7 +163,7 @@ export default class SlidingWindowQuantileCalculator {
    * Remove all groups with ids greater than or equal
    * to a provided groupId.
    */
-  public async removeGroupsGreaterThanOrEqual (groupId: number): Promise<void> {
+  public async removeGroupsGreaterThanOrEqual(groupId: number): Promise<void> {
     await this.mongoStore.removeGroupsGreaterThanEqualTo(groupId);
 
     // Re-initialize - slightly inefficient but simplest way to reset our state to the
@@ -168,21 +174,21 @@ export default class SlidingWindowQuantileCalculator {
   /**
    * Get the quantile as of a specific groupId.
    */
-  public getQuantile (groupId: number): number | undefined {
+  public getQuantile(groupId: number): number | undefined {
     return this.historicalQuantiles.get(groupId);
   }
 
   /**
    * Gets the last group id which is saved in the store.
    */
-  public async getLastGroupId (): Promise<number | undefined> {
+  public async getLastGroupId(): Promise<number | undefined> {
     return this.mongoStore.getLastGroupId();
   }
 
   /**
    * Delete the last group of values from the sliding window.
    */
-  private async deleteLast (): Promise<void> {
+  private async deleteLast(): Promise<void> {
     // We check that slidingWindow size > this.size > 0, so ! should be safe.
     const deletedFrequencyVector = this.slidingWindow.shift()!;
 
@@ -196,15 +202,18 @@ export default class SlidingWindowQuantileCalculator {
   /**
    * Get a specified quantile in the current sliding window.
    */
-  private calculateCurrentQuantile (): number {
+  private calculateCurrentQuantile(): number {
     // Number of elements in the sliding window;
-    const elementCount = this.frequencyVectorAggregated.reduce((a,b) => a + b, 0);
+    const elementCount = this.frequencyVectorAggregated.reduce(
+      (a, b) => a + b,
+      0
+    );
 
     // Rank of the element
     const rankThreshold = this.quantileMeasure * elementCount;
 
     let runSum = 0;
-    for (let i = 0 ; i < this.frequencyVectorSize ; i++) {
+    for (let i = 0; i < this.frequencyVectorSize; i++) {
       runSum += this.frequencyVectorAggregated[i];
       if (runSum >= rankThreshold) {
         return this.valueApproximator.getDenormalizedValue(i);

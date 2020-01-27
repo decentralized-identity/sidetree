@@ -8,11 +8,11 @@ export default interface DocumentModel {
   id: string;
   publicKey: DidPublicKeyModel[];
   service: {
-    type: string,
+    type: string;
     serviceEndpoint: {
       '@context': string;
       '@type': string;
-      instance: string[]
-    }
+      instance: string[];
+    };
   }[];
 }

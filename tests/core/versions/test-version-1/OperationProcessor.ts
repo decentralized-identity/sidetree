@@ -1,16 +1,17 @@
 import AnchoredOperationModel from '../../../../lib/core/models/AnchoredOperationModel';
-import IOperationProcessor, { ApplyResult } from '../../../../lib/core/interfaces/IOperationProcessor';
+import IOperationProcessor, {
+  ApplyResult
+} from '../../../../lib/core/interfaces/IOperationProcessor';
 
 /**
  * Operation processor.
  */
 export default class OperationProcessor implements IOperationProcessor {
-
-  public constructor (private didMethodName: string) {
+  public constructor(private didMethodName: string) {
     console.debug(this.didMethodName);
   }
 
-  async apply (
+  async apply(
     anchoredOperationModel: AnchoredOperationModel,
     didDocumentReference: { didDocument: object | undefined }
   ): Promise<ApplyResult> {

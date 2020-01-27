@@ -5,11 +5,10 @@ import TransactionSelector from '../../lib/core/versions/latest/TransactionSelec
 import TransactionModel from '../../lib/common/models/TransactionModel';
 
 describe('TransactionSelector', () => {
-
   let transactionSelector: TransactionSelector;
   let transactionStore: ITransactionStore;
 
-  function getTestTransactionsFor1Block () {
+  function getTestTransactionsFor1Block() {
     return [
       {
         transactionNumber: 1,
@@ -70,7 +69,9 @@ describe('TransactionSelector', () => {
     it('should return the expected transactions with limit on operation', async () => {
       // max operation is 25 by default in before each
       const transactions = getTestTransactionsFor1Block();
-      const result = await transactionSelector.selectQualifiedTransactions(transactions);
+      const result = await transactionSelector.selectQualifiedTransactions(
+        transactions
+      );
       const expected = [
         {
           transactionNumber: 3,
@@ -104,7 +105,9 @@ describe('TransactionSelector', () => {
       transactionSelector['maxNumberOfTransactionsPerBlock'] = 1;
       transactionSelector['maxNumberOfOperationsPerBlock'] = 100;
       const transactions = getTestTransactionsFor1Block();
-      const result = await transactionSelector.selectQualifiedTransactions(transactions);
+      const result = await transactionSelector.selectQualifiedTransactions(
+        transactions
+      );
       const expected = [
         {
           transactionNumber: 3,
@@ -134,7 +137,9 @@ describe('TransactionSelector', () => {
       try {
         await transactionSelector.selectQualifiedTransactions(transactions);
       } catch (e) {
-        expect(e.message).toEqual('transactions_not_in_same_block: transaction must be in the same block to perform rate limiting, investigate and fix');
+        expect(e.message).toEqual(
+          'transactions_not_in_same_block: transaction must be in the same block to perform rate limiting, investigate and fix'
+        );
       }
     });
 
@@ -153,7 +158,9 @@ describe('TransactionSelector', () => {
 
       await transactionStore.addTransaction(extraTransaction);
       const transactions = getTestTransactionsFor1Block();
-      const result = await transactionSelector.selectQualifiedTransactions(transactions);
+      const result = await transactionSelector.selectQualifiedTransactions(
+        transactions
+      );
       const expected = [
         {
           transactionNumber: 3,
@@ -189,7 +196,9 @@ describe('TransactionSelector', () => {
 
       await transactionStore.addTransaction(extraTransaction);
       const transactions = getTestTransactionsFor1Block();
-      const result = await transactionSelector.selectQualifiedTransactions(transactions);
+      const result = await transactionSelector.selectQualifiedTransactions(
+        transactions
+      );
       const expected = [
         {
           transactionNumber: 3,
@@ -209,11 +218,18 @@ describe('TransactionSelector', () => {
 
   describe('getNumberOfOperationsAndTransactionsAlreadyInBlock', () => {
     it('should handle when transactions store returns undefined', async () => {
-      spyOn(transactionStore, 'getTransactionsByTransactionTime').and.returnValue(new Promise((resolve) => {
-        resolve(undefined);
-      }));
+      spyOn(
+        transactionStore,
+        'getTransactionsByTransactionTime'
+      ).and.returnValue(
+        new Promise(resolve => {
+          resolve(undefined);
+        })
+      );
 
-      const result = await transactionSelector['getNumberOfOperationsAndTransactionsAlreadyInBlock'](1);
+      const result = await transactionSelector[
+        'getNumberOfOperationsAndTransactionsAlreadyInBlock'
+      ](1);
       expect(result).toEqual([0, 0]);
     });
   });

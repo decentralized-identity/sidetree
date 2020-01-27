@@ -18,7 +18,7 @@ export default class MerkleTree {
    * Intermediate structure for storing different sizes of balanced Merkle trees that will eventually form one final tree.
    * [0] stores tree of 1 leaf, [1] stores tree of 2 leaves, [2] -> 4 leaves, [3] -> 8 leaves and so on.
    */
-  private subtrees: (IMerkleNode | undefined) [] = [];
+  private subtrees: (IMerkleNode | undefined)[] = [];
 
   /**
    * A map such that given a value, the corresponding leaf hash node is located.
@@ -30,17 +30,17 @@ export default class MerkleTree {
    * @param values values to be added to the Merkle tree.
    * @param customHashFunction Optional custom hash function. SHA256 is used if not specified.
    */
-  public static create (
+  public static create(
     values: Buffer[],
-    customHashFunction?: (value?: Buffer) => Buffer)
-    : MerkleTree {
+    customHashFunction?: (value?: Buffer) => Buffer
+  ): MerkleTree {
     return new MerkleTree(values, customHashFunction);
   }
 
   /**
    * Gets the Merkle tree root hash.
    */
-  get rootHash (): Buffer {
+  get rootHash(): Buffer {
     // Used the '!' non-null assertion operator because type-checker cannot conclude the fact.
     return this.merkleTreeRootNode!.hash;
   }
@@ -49,7 +49,7 @@ export default class MerkleTree {
    * Create a Merkle receipt for the given value.
    * @returns Merkle receipt in the format specified by the Sidetree protocol.
    */
-  public receipt (value: Buffer): IMerkleReceiptEntry[] {
+  public receipt(value: Buffer): IMerkleReceiptEntry[] {
     const receipt: IMerkleReceiptEntry[] = [];
     let node = this.valueToMerkleNodeMap.get(value);
 
@@ -73,7 +73,7 @@ export default class MerkleTree {
    * @param receipt Merkle receipt in the format specified by the Sidetree protocol.
    * @param customHashFunction Optional custom hash function. SHA256 is used if not specified.
    */
-  public static prove (
+  public static prove(
     value: Buffer,
     merkleRoot: Buffer,
     receipt: IMerkleReceiptEntry[],
@@ -113,9 +113,10 @@ export default class MerkleTree {
    * @param values values to be added to the Merkle tree.
    * @param customHashFunction Optional custom hash function. SHA256 is used if not specified.
    */
-  private constructor (
+  private constructor(
     values: Buffer[],
-    customHashFunction?: (value?: Buffer) => Buffer) {
+    customHashFunction?: (value?: Buffer) => Buffer
+  ) {
     if (!values) {
       throw new Error('No value(s) given to construct a Merkle tree.');
     }
@@ -137,7 +138,7 @@ export default class MerkleTree {
    * The list of balanced Merkle subtrees will be combined to form the final Merkle tree when finalize() is called.
    * Also adds the value to valueToMerkleNodeMap such that the corresponding leaf hash node can be located quickly.
    */
-  private add (value: Buffer) {
+  private add(value: Buffer) {
     // Create a new node and add it to the value -> node lookup map.
     const newNode = { hash: this.hash(value) };
     this.valueToMerkleNodeMap.set(value, newNode);
@@ -150,9 +151,10 @@ export default class MerkleTree {
     while (newSubtree) {
       // If there is already another tree of the same height,
       // then merge the two subtrees to form a taller subtree.
-      if (this.subtrees.length > newSubtreeHeight &&
-          this.subtrees[newSubtreeHeight]) {
-
+      if (
+        this.subtrees.length > newSubtreeHeight &&
+        this.subtrees[newSubtreeHeight]
+      ) {
         // Remove the existing subtree from the list of subtrees
         const existingSubtree = this.subtrees[newSubtreeHeight];
         this.subtrees[newSubtreeHeight] = undefined;
@@ -164,12 +166,14 @@ export default class MerkleTree {
         // Set the parent as a taller new subtree to be inserted into the array of subtrees .
         newSubtree = parent;
         newSubtreeHeight++;
-      } else { // Else there is no existing subtree with the same height.
+      } else {
+        // Else there is no existing subtree with the same height.
         // If the array is already large enough (i.e. the new subtree is not the tallest),
         // just insert it into the array.
         if (this.subtrees.length > newSubtreeHeight) {
           this.subtrees[newSubtreeHeight] = newSubtree;
-        } else { // Else this new subtree is the tallest so far, need to add it to the end of array.
+        } else {
+          // Else this new subtree is the tallest so far, need to add it to the end of array.
           this.subtrees.push(newSubtree);
         }
         newSubtree = undefined;
@@ -180,7 +184,7 @@ export default class MerkleTree {
   /**
    * Combines the list of balanced Merkle subtrees to form the final Merkle tree.
    */
-  private finalize () {
+  private finalize() {
     // Merge all the subtrees of different sizes into one single Merkle tree.
     let smallestSubtree: IMerkleNode | undefined = undefined;
     let i;
@@ -195,7 +199,8 @@ export default class MerkleTree {
 
           // The parent becomes the new smallest subtree.
           smallestSubtree = parent;
-        } else { // There isn't already a smaller subtree, assign subtree as smallest.
+        } else {
+          // There isn't already a smaller subtree, assign subtree as smallest.
           smallestSubtree = this.subtrees[i];
         }
 
@@ -209,7 +214,7 @@ export default class MerkleTree {
   /**
    * Creates a parent Merkle tree node given two child nodes.
    */
-  private createParent (left: IMerkleNode, right: IMerkleNode): IMerkleNode {
+  private createParent(left: IMerkleNode, right: IMerkleNode): IMerkleNode {
     // Calculate hash(bigger subtree hash + smaller subtree hash)
     const combinedHashes = Buffer.concat([left.hash, right.hash]);
     const newHash = this.hash(combinedHashes);

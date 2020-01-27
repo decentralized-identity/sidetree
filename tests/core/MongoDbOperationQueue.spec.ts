@@ -8,8 +8,14 @@ import { SidetreeError } from '../../lib/core/Error';
 /**
  * Creates a MongoDbOperationQueue and initializes it.
  */
-async function createOperationQueue (transactionStoreUri: string, databaseName: string): Promise<MongoDbOperationQueue> {
-  const operationQueue = new MongoDbOperationQueue(transactionStoreUri, databaseName);
+async function createOperationQueue(
+  transactionStoreUri: string,
+  databaseName: string
+): Promise<MongoDbOperationQueue> {
+  const operationQueue = new MongoDbOperationQueue(
+    transactionStoreUri,
+    databaseName
+  );
   await operationQueue.initialize();
   return operationQueue;
 }
@@ -18,8 +24,11 @@ async function createOperationQueue (transactionStoreUri: string, databaseName: 
  * Generates the given count of operations and queues them in the given operation queue.
  * e.g. The DID unique suffix will start from '1', '2', '3'... and buffer will be generated from the DID unique suffix.
  */
-async function generateAndQueueOperations (operationQueue: IOperationQueue, count: number): Promise<{ didUniqueSuffix: string, operationBuffer: Buffer }[]> {
-  const operations: { didUniqueSuffix: string, operationBuffer: Buffer }[] = [];
+async function generateAndQueueOperations(
+  operationQueue: IOperationQueue,
+  count: number
+): Promise<{ didUniqueSuffix: string; operationBuffer: Buffer }[]> {
+  const operations: { didUniqueSuffix: string; operationBuffer: Buffer }[] = [];
   for (let i = 1; i <= count; i++) {
     const didUniqueSuffix = i.toString();
     const operationBuffer = Buffer.from(didUniqueSuffix);
@@ -38,9 +47,14 @@ describe('MongoDbOperationQueue', async () => {
   let mongoServiceAvailable = false;
   let operationQueue: MongoDbOperationQueue;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    mongoServiceAvailable = await MongoDb.isServerAvailable(
+      config.mongoDbConnectionString
+    );
     if (mongoServiceAvailable) {
-      operationQueue = await createOperationQueue(config.mongoDbConnectionString, databaseName);
+      operationQueue = await createOperationQueue(
+        config.mongoDbConnectionString,
+        databaseName
+      );
     }
   });
 
@@ -54,7 +68,10 @@ describe('MongoDbOperationQueue', async () => {
 
   it('should peek with correct count.', async () => {
     const operationCount = 3;
-    const queuedOperations = await generateAndQueueOperations(operationQueue, operationCount);
+    const queuedOperations = await generateAndQueueOperations(
+      operationQueue,
+      operationCount
+    );
 
     // Expect empty array if peeked with count 0.
     let peekedOperations = await operationQueue.peek(0);
@@ -65,14 +82,21 @@ describe('MongoDbOperationQueue', async () => {
     for (let i = 0; i < 5; i++) {
       peekedOperations = await operationQueue.peek(2);
       expect(peekedOperations.length).toEqual(2);
-      expect(peekedOperations[0].toString()).toEqual(queuedOperations[0].operationBuffer.toString());
-      expect(peekedOperations[1].toString()).toEqual(queuedOperations[1].operationBuffer.toString());
+      expect(peekedOperations[0].toString()).toEqual(
+        queuedOperations[0].operationBuffer.toString()
+      );
+      expect(peekedOperations[1].toString()).toEqual(
+        queuedOperations[1].operationBuffer.toString()
+      );
     }
   });
 
   it('should deqeueue with correct count.', async () => {
     const operationCount = 3;
-    const queuedOperations = await generateAndQueueOperations(operationQueue, operationCount);
+    const queuedOperations = await generateAndQueueOperations(
+      operationQueue,
+      operationCount
+    );
 
     // Expect empty array if peeked with count 0.
     let dequeuedOperations = await operationQueue.dequeue(0);
@@ -82,11 +106,17 @@ describe('MongoDbOperationQueue', async () => {
     dequeuedOperations = await operationQueue.dequeue(2);
     let remainingOperations = await operationQueue.peek(operationCount);
     expect(dequeuedOperations.length).toEqual(2);
-    expect(dequeuedOperations[0].toString()).toEqual(queuedOperations[0].operationBuffer.toString());
-    expect(dequeuedOperations[1].toString()).toEqual(queuedOperations[1].operationBuffer.toString());
+    expect(dequeuedOperations[0].toString()).toEqual(
+      queuedOperations[0].operationBuffer.toString()
+    );
+    expect(dequeuedOperations[1].toString()).toEqual(
+      queuedOperations[1].operationBuffer.toString()
+    );
 
     expect(remainingOperations.length).toEqual(1);
-    expect(remainingOperations[0].toString()).toEqual(queuedOperations[2].operationBuffer.toString());
+    expect(remainingOperations[0].toString()).toEqual(
+      queuedOperations[2].operationBuffer.toString()
+    );
   });
 
   it('should check if an operation of the given DID unique suffix exists correctly.', async () => {
@@ -98,7 +128,9 @@ describe('MongoDbOperationQueue', async () => {
       expect(operationExists).toBeTruthy();
     }
 
-    const operationExists = await operationQueue.contains('non-existent-did-unique-suffix');
+    const operationExists = await operationQueue.contains(
+      'non-existent-did-unique-suffix'
+    );
     expect(operationExists).toBeFalsy();
   });
 
@@ -106,19 +138,19 @@ describe('MongoDbOperationQueue', async () => {
     const operationCount = 3;
     await generateAndQueueOperations(operationQueue, operationCount);
 
-    spyOn((operationQueue as any).collection, 'insertOne').and.callFake(
-      () => {
-        const error = new Error(ErrorCode.BatchWriterAlreadyHasOperationForDid);
-        (error as any)['code'] = 11000;
-        throw error;
-      }
-    );
+    spyOn((operationQueue as any).collection, 'insertOne').and.callFake(() => {
+      const error = new Error(ErrorCode.BatchWriterAlreadyHasOperationForDid);
+      (error as any)['code'] = 11000;
+      throw error;
+    });
 
     try {
       await generateAndQueueOperations(operationQueue, operationCount);
     } catch (error) {
-      if (error instanceof SidetreeError &&
-          error.code === ErrorCode.BatchWriterAlreadyHasOperationForDid) {
+      if (
+        error instanceof SidetreeError &&
+        error.code === ErrorCode.BatchWriterAlreadyHasOperationForDid
+      ) {
         return; // Expected Sidetree error.
       } else {
         throw error; // Unexpected error, throw to fail the test.
@@ -127,13 +159,11 @@ describe('MongoDbOperationQueue', async () => {
   });
 
   it('should throw original error if unexpected error is thrown when enqueuing.', async () => {
-    spyOn((operationQueue as any).collection, 'insertOne').and.callFake(
-      () => {
-        const error = new Error(ErrorCode.BatchWriterAlreadyHasOperationForDid);
-        (error as any)['code'] = 'unexpected-error';
-        throw error;
-      }
-    );
+    spyOn((operationQueue as any).collection, 'insertOne').and.callFake(() => {
+      const error = new Error(ErrorCode.BatchWriterAlreadyHasOperationForDid);
+      (error as any)['code'] = 'unexpected-error';
+      throw error;
+    });
 
     try {
       await generateAndQueueOperations(operationQueue, 1);

@@ -11,12 +11,22 @@ export default class Document {
    * Creates a DID Document with a valid Sidetree DID from an encoded original DID Document.
    * @returns DID Document if encoded original DID Document is valid; `undefined` otherwise.
    */
-  public static from (encodedOriginalDidDocument: string, didMethodName: string, hashAlgorithmAsMultihashCode: number): DocumentModel | undefined {
+  public static from(
+    encodedOriginalDidDocument: string,
+    didMethodName: string,
+    hashAlgorithmAsMultihashCode: number
+  ): DocumentModel | undefined {
     // Compute the hash of the DID Document in the create payload as the DID
-    const did = Did.from(encodedOriginalDidDocument, didMethodName, hashAlgorithmAsMultihashCode);
+    const did = Did.from(
+      encodedOriginalDidDocument,
+      didMethodName,
+      hashAlgorithmAsMultihashCode
+    );
 
     // Decode the encoded DID Document.
-    const decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
+    const decodedJsonString = Encoder.decodeAsString(
+      encodedOriginalDidDocument
+    );
     const decodedDidDocument = JSON.parse(decodedJsonString);
 
     // Replace the placeholder DID with real DID before returning it.
@@ -34,12 +44,19 @@ export default class Document {
    * Verifies that the given encoded string is a valid encoded DID Document that can be accepted by the Sidetree create operation.
    * @param allowedMaxSizeInBytes Optional. If specified, the given size limit is validated against the decoded buffer of the original DID document.
    */
-  public static isEncodedStringValidOriginalDocument (encodedOriginalDocument: string, allowedMaxSizeInBytes?: number): boolean {
-    const originalDocumentBuffer = Encoder.decodeAsBuffer(encodedOriginalDocument);
+  public static isEncodedStringValidOriginalDocument(
+    encodedOriginalDocument: string,
+    allowedMaxSizeInBytes?: number
+  ): boolean {
+    const originalDocumentBuffer = Encoder.decodeAsBuffer(
+      encodedOriginalDocument
+    );
 
     // Verify size of each operation does not exceed the maximum allowed limit.
-    if (allowedMaxSizeInBytes !== undefined &&
-      originalDocumentBuffer.length > allowedMaxSizeInBytes) {
+    if (
+      allowedMaxSizeInBytes !== undefined &&
+      originalDocumentBuffer.length > allowedMaxSizeInBytes
+    ) {
       return false;
     }
 
@@ -52,14 +69,16 @@ export default class Document {
     }
 
     // Verify additional Sidetree-specific rules for a valid original DID Document.
-    const isValidOriginalDidDocument = Document.isObjectValidOriginalDocument(originalDocument);
+    const isValidOriginalDidDocument = Document.isObjectValidOriginalDocument(
+      originalDocument
+    );
     return isValidOriginalDidDocument;
   }
 
   /**
    * Verifies that the given JSON object is a valid Sidetree specific encoded DID Document that can be accepted by the Sidetree create operation.
    */
-  public static isObjectValidOriginalDocument (originalDocument: any): boolean {
+  public static isObjectValidOriginalDocument(originalDocument: any): boolean {
     // Original document must pass generic DID Document schema validation.
     const isValidGenericDidDocument = Document.isValid(originalDocument, false);
     if (!isValidGenericDidDocument) {
@@ -67,8 +86,10 @@ export default class Document {
     }
 
     // 'publicKey' property is required and must be an array that is not empty.
-    if (!Array.isArray(originalDocument.publicKey) ||
-        (originalDocument.publicKey as object[]).length === 0) {
+    if (
+      !Array.isArray(originalDocument.publicKey) ||
+      (originalDocument.publicKey as object[]).length === 0
+    ) {
       return false;
     }
 
@@ -108,7 +129,6 @@ export default class Document {
 
     // Verify 'service' property if it exists.
     if (originalDocument.hasOwnProperty('service')) {
-
       // Verify each service entry in array.
       for (let serviceEntry of originalDocument.service) {
         const serviceEndpoint = serviceEntry.serviceEndpoint;
@@ -124,8 +144,10 @@ export default class Document {
         }
 
         // 'instance' property is required and must be an array that is not empty.
-        if (!Array.isArray(serviceEndpoint.instance) ||
-            (serviceEndpoint.instance as object[]).length === 0) {
+        if (
+          !Array.isArray(serviceEndpoint.instance) ||
+          (serviceEndpoint.instance as object[]).length === 0
+        ) {
           return false;
         }
 
@@ -146,7 +168,7 @@ export default class Document {
    * Verifies that the given object is a valid generic DID Document (not Sidetree specific).
    * @param requireDid Optional. Specifies if validation rules require the `id` property. Defaults to true if not given.
    */
-  public static isValid (didDocument: any, requireId?: boolean): boolean {
+  public static isValid(didDocument: any, requireId?: boolean): boolean {
     if (requireId === undefined) {
       requireId = true;
     }
@@ -163,7 +185,6 @@ export default class Document {
 
     // Verify 'publicKey' property if it exists.
     if (didDocument.hasOwnProperty('publicKey')) {
-
       if (!Array.isArray(didDocument.publicKey)) {
         return false;
       }
@@ -215,7 +236,10 @@ export default class Document {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (didDocument: DocumentModel, keyId: string): DidPublicKeyModel | undefined {
+  public static getPublicKey(
+    didDocument: DocumentModel,
+    keyId: string
+  ): DidPublicKeyModel | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 

@@ -17,16 +17,19 @@ export default class BatchFile {
    * Parses and validates the given batch file buffer and all the operations within it.
    * @throws Error if failed parsing or validation.
    */
-  public static async parseAndValidate (
+  public static async parseAndValidate(
     batchFileBuffer: Buffer,
     anchorFile: AnchorFileModel,
     transactionNumber: number,
     transactionTime: number
   ): Promise<NamedAnchoredOperationModel[]> {
-
     let endTimer = timeSpan();
     const batchFileObject = await JsonAsync.parse(batchFileBuffer);
-    console.info(`Parsed batch file ${anchorFile.batchFileHash} in ${endTimer.rounded()} ms.`);
+    console.info(
+      `Parsed batch file ${
+        anchorFile.batchFileHash
+      } in ${endTimer.rounded()} ms.`
+    );
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['operations']);
@@ -38,13 +41,17 @@ export default class BatchFile {
 
     // Make sure operations is an array.
     if (!(batchFileObject.operations instanceof Array)) {
-      throw new Error('Invalid batch file, operations property is not an array.');
+      throw new Error(
+        'Invalid batch file, operations property is not an array.'
+      );
     }
 
     // Make sure all operations are strings.
     batchFileObject.operations.forEach((operation: any) => {
       if (typeof operation !== 'string') {
-        throw new Error('Invalid batch file, operations property is not an array of strings.');
+        throw new Error(
+          'Invalid batch file, operations property is not an array of strings.'
+        );
       }
     });
 
@@ -53,13 +60,17 @@ export default class BatchFile {
 
     // Verify the number of operations does not exceed the maximum allowed limit.
     if (batchSize > ProtocolParameters.maxOperationsPerBatch) {
-      throw new Error(`Batch size of ${batchSize} operations exceeds the allowed limit of ${ProtocolParameters.maxOperationsPerBatch}.`);
+      throw new Error(
+        `Batch size of ${batchSize} operations exceeds the allowed limit of ${ProtocolParameters.maxOperationsPerBatch}.`
+      );
     }
 
     // Verify that the batch size count matches that of the anchor file.
     const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
     if (batchSize !== operationCountInAnchorFile) {
-      throw new Error(`Batch size of ${batchSize} in batch file '${anchorFile.batchFileHash}' does not size of ${operationCountInAnchorFile} in anchor file.`);
+      throw new Error(
+        `Batch size of ${batchSize} in batch file '${anchorFile.batchFileHash}' does not size of ${operationCountInAnchorFile} in anchor file.`
+      );
     }
 
     endTimer = timeSpan();
@@ -71,7 +82,9 @@ export default class BatchFile {
 
       // Verify size of each operation does not exceed the maximum allowed limit.
       if (operationBuffer.length > ProtocolParameters.maxOperationByteSize) {
-        throw new Error(`Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationByteSize} bytes.`);
+        throw new Error(
+          `Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationByteSize} bytes.`
+        );
       }
 
       const anchoredOperationModel: AnchoredOperationModel = {
@@ -81,17 +94,26 @@ export default class BatchFile {
         transactionTime
       };
 
-      const operation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
+      const operation = AnchoredOperation.createAnchoredOperation(
+        anchoredOperationModel
+      );
 
-      const didUniqueSuffixesInAnchorFile = anchorFile.didUniqueSuffixes[operationIndex];
+      const didUniqueSuffixesInAnchorFile =
+        anchorFile.didUniqueSuffixes[operationIndex];
       if (operation.didUniqueSuffix !== didUniqueSuffixesInAnchorFile) {
-        throw new Error(`Operation ${operationIndex}'s DID unique suffix '${operation.didUniqueSuffix}' ` +
-                     `is not the same as '${didUniqueSuffixesInAnchorFile}' seen in anchor file.`);
+        throw new Error(
+          `Operation ${operationIndex}'s DID unique suffix '${operation.didUniqueSuffix}' ` +
+            `is not the same as '${didUniqueSuffixesInAnchorFile}' seen in anchor file.`
+        );
       }
 
       namedAnchoredOperationModels.push(operation);
     }
-    console.info(`Decoded ${batchSize} operations in batch ${anchorFile.batchFileHash}. Time taken: ${endTimer.rounded()} ms.`);
+    console.info(
+      `Decoded ${batchSize} operations in batch ${
+        anchorFile.batchFileHash
+      }. Time taken: ${endTimer.rounded()} ms.`
+    );
 
     return namedAnchoredOperationModels;
   }
@@ -101,8 +123,8 @@ export default class BatchFile {
    * @param operationBuffers Operation buffers in JSON serialized form, NOT encoded in anyway.
    * @returns The Batch File buffer.
    */
-  public static fromOperationBuffers (operationBuffers: Buffer[]): Buffer {
-    const operations = operationBuffers.map((operation) => {
+  public static fromOperationBuffers(operationBuffers: Buffer[]): Buffer {
+    const operations = operationBuffers.map(operation => {
       return Encoder.encode(operation);
     });
 

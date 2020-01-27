@@ -17,18 +17,21 @@ describe('BatchScheduler', async () => {
     batchScheduler.startPeriodicBatchWriting();
 
     // Monitor the Batch Scheduler until the Batch Writer is invoked or max retries is reached.
-    await retry(async _bail => {
-      if (batchWriter.invocationCount >= 2) {
-        return;
-      }
+    await retry(
+      async _bail => {
+        if (batchWriter.invocationCount >= 2) {
+          return;
+        }
 
-      // NOTE: if anything throws, we retry.
-      throw new Error('Batch writer not invoked.');
-    }, {
-      retries: 5,
-      minTimeout: 1000, // milliseconds
-      maxTimeout: 1000 // milliseconds
-    });
+        // NOTE: if anything throws, we retry.
+        throw new Error('Batch writer not invoked.');
+      },
+      {
+        retries: 5,
+        minTimeout: 1000, // milliseconds
+        maxTimeout: 1000 // milliseconds
+      }
+    );
 
     batchScheduler.stopPeriodicBatchWriting();
 

@@ -19,7 +19,10 @@ describe('RequestHandler', () => {
     };
 
     const testSidetreeHash: string = '123abc';
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, maxFileSize);
+    const fetchedResponse = await requestHandler.handleFetchRequest(
+      testSidetreeHash,
+      maxFileSize
+    );
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -29,10 +32,19 @@ describe('RequestHandler', () => {
       status: ResponseStatus.Succeeded,
       body: Buffer.from('dummyContent')
     };
-    const testSidetreeHash: string = 'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw';
-    spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.Success, content: Buffer.from('dummyContent') }));
+    const testSidetreeHash: string =
+      'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw';
+    spyOn(requestHandler.ipfsStorage, 'read').and.returnValue(
+      Promise.resolve({
+        code: FetchResultCode.Success,
+        content: Buffer.from('dummyContent')
+      })
+    );
 
-    const fetchedResponse = await requestHandler.handleFetchRequest(testSidetreeHash, maxFileSize);
+    const fetchedResponse = await requestHandler.handleFetchRequest(
+      testSidetreeHash,
+      maxFileSize
+    );
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -44,10 +56,14 @@ describe('RequestHandler', () => {
     };
 
     // Mock the IPFS storage layer to return a Base58 encoded multihash regardless of content written.
-    spyOn(requestHandler.ipfsStorage, 'write').and.returnValue(Promise.resolve('QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk'));
+    spyOn(requestHandler.ipfsStorage, 'write').and.returnValue(
+      Promise.resolve('QmYtUc4iTCbbfVSDNKvtQqrfyezPPnFvE33wFmutw9PBBk')
+    );
     const mockSidetreeContent: Buffer = Buffer.from('dummyContent');
 
-    const fetchedResponse = await requestHandler.handleWriteRequest(mockSidetreeContent);
+    const fetchedResponse = await requestHandler.handleWriteRequest(
+      mockSidetreeContent
+    );
 
     expect(expectedResponse).toEqual(fetchedResponse);
   });
@@ -64,7 +80,9 @@ describe('RequestHandler', () => {
     };
 
     // Make the handle service version call return the test value
-    spyOn(requestHandler['serviceInfo'], 'getServiceVersion').and.returnValue(expectedVersion);
+    spyOn(requestHandler['serviceInfo'], 'getServiceVersion').and.returnValue(
+      expectedVersion
+    );
 
     const fetchedResponse = await requestHandler.handleGetVersionRequest();
 

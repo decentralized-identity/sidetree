@@ -14,7 +14,6 @@ import { SidetreeError } from './Error';
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
  */
 export default class Blockchain implements IBlockchain {
-
   /** Interval for refreshing the cached blockchain time. */
   static readonly cachedBlockchainTimeRefreshInSeconds = 60;
   /** Used for caching the blockchain time to avoid excessive time fetching over network. */
@@ -28,7 +27,7 @@ export default class Blockchain implements IBlockchain {
   private timeUri: string; // e.g. https://127.0.0.1/time
   private feeUri: string; // e.g. https://127.0.0.1/fee
 
-  public constructor (public uri: string) {
+  public constructor(public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
     this.feeUri = `${uri}/fee`;
@@ -40,18 +39,21 @@ export default class Blockchain implements IBlockchain {
   /**
    * Initializes the blockchain client by initializing the cached blockchain time.
    */
-  public async initialize () {
+  public async initialize() {
     await this.getLatestTime();
   }
 
   /**
    * The function that starts periodically anchoring operation batches to blockchain.
    */
-  public startPeriodicCachedBlockchainTimeRefresh () {
-    setInterval(async () => this.getLatestTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
+  public startPeriodicCachedBlockchainTimeRefresh() {
+    setInterval(
+      async () => this.getLatestTime(),
+      Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000
+    );
   }
 
-  public async write (anchorString: string, fee: number): Promise<void> {
+  public async write(anchorString: string, fee: number): Promise<void> {
     const anchorStringObject = {
       fee,
       anchorString
@@ -65,15 +67,24 @@ export default class Blockchain implements IBlockchain {
     const response = await this.fetch(this.transactionsUri, requestParameters);
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain write error response status: ${response.status}`);
+      console.error(
+        `Blockchain write error response status: ${response.status}`
+      );
       console.error(`Blockchain write error body: ${response.body.read()}`);
       throw new SidetreeError(CoreErrorCode.BlockchainWriteResponseNotOk);
     }
   }
 
-  public async read (sinceTransactionNumber?: number, transactionTimeHash?: string): Promise<{ moreTransactions: boolean, transactions: TransactionModel[]}> {
-    if ((sinceTransactionNumber !== undefined && transactionTimeHash === undefined) ||
-        (sinceTransactionNumber === undefined && transactionTimeHash !== undefined)) {
+  public async read(
+    sinceTransactionNumber?: number,
+    transactionTimeHash?: string
+  ): Promise<{ moreTransactions: boolean; transactions: TransactionModel[] }> {
+    if (
+      (sinceTransactionNumber !== undefined &&
+        transactionTimeHash === undefined) ||
+      (sinceTransactionNumber === undefined &&
+        transactionTimeHash !== undefined)
+    ) {
       throw new SidetreeError(
         CoreErrorCode.BlockchainReadInvalidArguments,
         'Transaction number and time hash must both be given or not given at the same time.'
@@ -81,7 +92,10 @@ export default class Blockchain implements IBlockchain {
     }
 
     let queryString = '';
-    if (sinceTransactionNumber !== undefined && transactionTimeHash !== undefined) {
+    if (
+      sinceTransactionNumber !== undefined &&
+      transactionTimeHash !== undefined
+    ) {
       queryString = `?since=${sinceTransactionNumber}&transaction-time-hash=${transactionTimeHash}`;
     }
 
@@ -94,13 +108,19 @@ export default class Blockchain implements IBlockchain {
     const responseBodyBuffer = await ReadableStream.readAll(response.body);
     const responseBody = JSON.parse(responseBodyBuffer.toString());
 
-    if (response.status === HttpStatus.BAD_REQUEST &&
-        responseBody.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash) {
-      throw new SidetreeError(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
+    if (
+      response.status === HttpStatus.BAD_REQUEST &&
+      responseBody.code === SharedErrorCode.InvalidTransactionNumberOrTimeHash
+    ) {
+      throw new SidetreeError(
+        SharedErrorCode.InvalidTransactionNumberOrTimeHash
+      );
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain read error response status: ${response.status}`);
+      console.error(
+        `Blockchain read error response status: ${response.status}`
+      );
       console.error(`Blockchain read error body: ${responseBody}`);
       throw new SidetreeError(CoreErrorCode.BlockchainReadResponseNotOk);
     }
@@ -108,7 +128,9 @@ export default class Blockchain implements IBlockchain {
     return responseBody;
   }
 
-  public async getFirstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
+  public async getFirstValidTransaction(
+    transactions: TransactionModel[]
+  ): Promise<TransactionModel | undefined> {
     const bodyString = JSON.stringify({ transactions });
     const requestParameters = {
       method: 'post',
@@ -118,9 +140,14 @@ export default class Blockchain implements IBlockchain {
 
     const firstValidTransactionUri = `${this.transactionsUri}/firstValid`;
 
-    console.info(`Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`);
+    console.info(
+      `Posting to first-valid transaction URI '${firstValidTransactionUri} with body: '${bodyString}'...`
+    );
 
-    const response = await this.fetch(firstValidTransactionUri, requestParameters);
+    const response = await this.fetch(
+      firstValidTransactionUri,
+      requestParameters
+    );
 
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
@@ -132,28 +159,31 @@ export default class Blockchain implements IBlockchain {
     return transaction;
   }
 
-  public get approximateTime (): BlockchainTimeModel {
+  public get approximateTime(): BlockchainTimeModel {
     return this.cachedBlockchainTime;
   }
 
   /**
    * Gets the version of the bitcoin service.
    */
-  public async getServiceVersion (): Promise<ServiceVersionModel> {
+  public async getServiceVersion(): Promise<ServiceVersionModel> {
     return this.serviceVersionFetcher.getVersion();
   }
 
   /**
    * Gets the latest blockchain time and updates the cached time.
    */
-  public async getLatestTime (): Promise<BlockchainTimeModel> {
+  public async getLatestTime(): Promise<BlockchainTimeModel> {
     console.info(`Refreshing cached blockchain time...`);
     const response = await this.fetch(this.timeUri);
     const responseBodyString = (response.body.read() as Buffer).toString();
 
     if (response.status !== HttpStatus.OK) {
       const errorMessage = `Encountered an error fetching latest time from blockchain: ${responseBodyString}`;
-      throw new SidetreeError(CoreErrorCode.BlockchainGetLatestTimeResponseNotOk, errorMessage);
+      throw new SidetreeError(
+        CoreErrorCode.BlockchainGetLatestTimeResponseNotOk,
+        errorMessage
+      );
     }
 
     const responseBody = JSON.parse(responseBodyString);
@@ -165,21 +195,24 @@ export default class Blockchain implements IBlockchain {
     return responseBody;
   }
 
-  public async getFee (transactionNumber: number): Promise<number> {
-
+  public async getFee(transactionNumber: number): Promise<number> {
     const readUri = `${this.feeUri}/${transactionNumber}`;
 
     const response = await this.fetch(readUri);
     const responseBodyString = await ReadableStream.readAll(response.body);
     const responseBody = JSON.parse(responseBodyString.toString());
 
-    if (response.status === HttpStatus.BAD_REQUEST &&
-        responseBody.code === SharedErrorCode.BlockchainTimeOutOfRange) {
+    if (
+      response.status === HttpStatus.BAD_REQUEST &&
+      responseBody.code === SharedErrorCode.BlockchainTimeOutOfRange
+    ) {
       throw new SidetreeError(SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
     if (response.status !== HttpStatus.OK) {
-      console.error(`Blockchain read error response status: ${response.status}`);
+      console.error(
+        `Blockchain read error response status: ${response.status}`
+      );
       console.error(`Blockchain read error body: ${responseBodyString}`);
       throw new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk);
     }

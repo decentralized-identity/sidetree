@@ -8,8 +8,14 @@ import { MongoClient } from 'mongodb';
 /**
  * Creates a MongoDbTransactionStore and initializes it.
  */
-async function createTransactionStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbTransactionStore> {
-  const transactionStore = new MongoDbTransactionStore(transactionStoreUri, databaseName);
+async function createTransactionStore(
+  transactionStoreUri: string,
+  databaseName: string
+): Promise<MongoDbTransactionStore> {
+  const transactionStore = new MongoDbTransactionStore(
+    transactionStoreUri,
+    databaseName
+  );
   await transactionStore.initialize();
   return transactionStore;
 }
@@ -20,7 +26,10 @@ async function createTransactionStore (transactionStoreUri: string, databaseName
  * @param transactionStore The transaction store to store the generated transactions.
  * @param count Number of transactions to generate and store.
  */
-async function generateAndStoreTransactions (transactionStore: ITransactionStore, count: number): Promise<TransactionModel[]> {
+async function generateAndStoreTransactions(
+  transactionStore: ITransactionStore,
+  count: number
+): Promise<TransactionModel[]> {
   const transactions: TransactionModel[] = [];
   for (let i = 1; i <= count; i++) {
     const transaction: TransactionModel = {
@@ -47,9 +56,14 @@ describe('MongoDbTransactionStore', async () => {
   let mongoServiceAvailable: boolean | undefined;
   let transactionStore: MongoDbTransactionStore;
   beforeAll(async () => {
-    mongoServiceAvailable = await MongoDb.isServerAvailable(config.mongoDbConnectionString);
+    mongoServiceAvailable = await MongoDb.isServerAvailable(
+      config.mongoDbConnectionString
+    );
     if (mongoServiceAvailable) {
-      transactionStore = await createTransactionStore(config.mongoDbConnectionString, databaseName);
+      transactionStore = await createTransactionStore(
+        config.mongoDbConnectionString,
+        databaseName
+      );
     }
   });
 
@@ -69,8 +83,14 @@ describe('MongoDbTransactionStore', async () => {
 
     console.info(`Verify collections no longer exist.`);
     let collections = await db.collections();
-    let collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)).toBeFalsy();
+    let collectionNames = collections.map(
+      collection => collection.collectionName
+    );
+    expect(
+      collectionNames.includes(
+        MongoDbTransactionStore.transactionCollectionName
+      )
+    ).toBeFalsy();
 
     console.info(`Trigger initialization.`);
     await transactionStore.initialize();
@@ -78,7 +98,11 @@ describe('MongoDbTransactionStore', async () => {
     console.info(`Verify collection exists now.`);
     collections = await db.collections();
     collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(MongoDbTransactionStore.transactionCollectionName)).toBeTruthy();
+    expect(
+      collectionNames.includes(
+        MongoDbTransactionStore.transactionCollectionName
+      )
+    ).toBeTruthy();
   });
 
   it('should be able to fetch the count of transactions.', async () => {
@@ -109,7 +133,10 @@ describe('MongoDbTransactionStore', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);
 
-    const transactions = await transactionStore.getTransactionsLaterThan(1, 100);
+    const transactions = await transactionStore.getTransactionsLaterThan(
+      1,
+      100
+    );
     expect(transactions.length).toEqual(2);
     expect(transactions[0].transactionNumber).toEqual(2);
     expect(transactions[1].transactionNumber).toEqual(3);
@@ -119,7 +146,10 @@ describe('MongoDbTransactionStore', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);
 
-    const transactions = await transactionStore.getTransactionsLaterThan(undefined, undefined);
+    const transactions = await transactionStore.getTransactionsLaterThan(
+      undefined,
+      undefined
+    );
     expect(transactions.length).toEqual(3);
     expect(transactions[0].transactionNumber).toEqual(1);
     expect(transactions[1].transactionNumber).toEqual(2);
@@ -130,7 +160,10 @@ describe('MongoDbTransactionStore', async () => {
     const transactionCount = 3;
     await generateAndStoreTransactions(transactionStore, transactionCount);
 
-    const transactions = await transactionStore.getTransactionsLaterThan(undefined, 2);
+    const transactions = await transactionStore.getTransactionsLaterThan(
+      undefined,
+      2
+    );
     expect(transactions.length).toEqual(2);
     expect(transactions[0].transactionNumber).toEqual(1);
     expect(transactions[1].transactionNumber).toEqual(2);
@@ -189,7 +222,9 @@ describe('MongoDbTransactionStore', async () => {
     // Expecting only transaction 1 & 2 are remaining transactions.
     const remainingTransactions = await transactionStore.getTransactions();
     expect(remainingTransactions.length).toEqual(5);
-    const remainingTransactionNumbers = remainingTransactions.map(transaction => transaction.transactionNumber);
+    const remainingTransactionNumbers = remainingTransactions.map(
+      transaction => transaction.transactionNumber
+    );
     expect(remainingTransactionNumbers.includes(1)).toBeTruthy();
     expect(remainingTransactionNumbers.includes(2)).toBeTruthy();
     expect(remainingTransactionNumbers.includes(3)).toBeTruthy();
@@ -209,8 +244,12 @@ describe('MongoDbTransactionStore', async () => {
   });
 
   it('should default the database name as `sidetree` if not explicitly overriden.', async () => {
-    const transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
-    expect(transactionStore.databaseName).toEqual(MongoDbTransactionStore.defaultDatabaseName);
+    const transactionStore = new MongoDbTransactionStore(
+      config.mongoDbConnectionString
+    );
+    expect(transactionStore.databaseName).toEqual(
+      MongoDbTransactionStore.defaultDatabaseName
+    );
   });
 
   it('should fetch transactions by transactionTime', async () => {

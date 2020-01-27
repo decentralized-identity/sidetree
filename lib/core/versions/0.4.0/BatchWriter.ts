@@ -13,14 +13,17 @@ import ProtocolParameters from './ProtocolParameters';
  * Implementation of the `TransactionProcessor`.
  */
 export default class BatchWriter implements IBatchWriter {
-  public constructor (
+  public constructor(
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
-    private cas: ICas) { }
+    private cas: ICas
+  ) {}
 
-  public async write () {
+  public async write() {
     // Get the batch of operations to be anchored on the blockchain.
-    const operationBuffers = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
+    const operationBuffers = await this.operationQueue.peek(
+      ProtocolParameters.maxOperationsPerBatch
+    );
 
     console.info('Batch size = ' + operationBuffers.length);
 
@@ -29,16 +32,16 @@ export default class BatchWriter implements IBatchWriter {
       return;
     }
 
-    const batch = operationBuffers.map(
-      (buffer) => Operation.create(buffer)
-    );
+    const batch = operationBuffers.map(buffer => Operation.create(buffer));
 
     // Create the batch file buffer from the operation batch.
     const batchFileBuffer = BatchFile.fromOperationBuffers(operationBuffers);
 
     // Write the 'batch file' to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);
-    console.info(`Wrote batch file ${batchFileHash} to content addressable store.`);
+    console.info(
+      `Wrote batch file ${batchFileHash} to content addressable store.`
+    );
 
     // Compute the Merkle root hash.
     const merkleRoot = MerkleTree.create(operationBuffers).rootHash;
@@ -58,7 +61,9 @@ export default class BatchWriter implements IBatchWriter {
     // Make the 'anchor file' available in content addressable store.
     const anchorFileJsonBuffer = Buffer.from(JSON.stringify(anchorFile));
     const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
-    console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
+    console.info(
+      `Wrote anchor file ${anchorFileAddress} to content addressable store.`
+    );
 
     // Anchor the 'anchor file hash' on blockchain.
     //

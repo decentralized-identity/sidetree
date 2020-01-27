@@ -23,7 +23,7 @@ export default class Response {
   /**
    * Converts a Sidetree response status to an HTTP status.
    */
-  public static toHttpStatus (status: ResponseStatus): number {
+  public static toHttpStatus(status: ResponseStatus): number {
     switch (status) {
       case ResponseStatus.Succeeded:
         return 200;

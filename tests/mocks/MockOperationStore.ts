@@ -7,7 +7,10 @@ import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOper
  * is less than, equal, and greater than the second, respectively.
  * Used to sort operations by blockchain 'time' order.
  */
-function compareOperation (op1: AnchoredOperationModel, op2: AnchoredOperationModel): number {
+function compareOperation(
+  op1: AnchoredOperationModel,
+  op2: AnchoredOperationModel
+): number {
   if (op1.transactionNumber < op2.transactionNumber) {
     return -1;
   } else if (op1.transactionNumber > op2.transactionNumber) {
@@ -27,7 +30,10 @@ function compareOperation (op1: AnchoredOperationModel, op2: AnchoredOperationMo
 export default class MockOperationStore implements IOperationStore {
   // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
-  private readonly didToOperations: Map<string, NamedAnchoredOperationModel[]> = new Map();
+  private readonly didToOperations: Map<
+    string,
+    NamedAnchoredOperationModel[]
+  > = new Map();
 
   // Map DID unique suffixes to a boolean indicating if the operations array for the DID is sorted
   // or not.
@@ -36,7 +42,7 @@ export default class MockOperationStore implements IOperationStore {
   /**
    * Inserts an operation into the in-memory store.
    */
-  private async insert (operation: NamedAnchoredOperationModel): Promise<void> {
+  private async insert(operation: NamedAnchoredOperationModel): Promise<void> {
     this.ensureDidContainerExist(operation.didUniqueSuffix);
     // Append the operation to the operation array for the did ...
     this.didToOperations.get(operation.didUniqueSuffix)!.push(operation);
@@ -47,7 +53,7 @@ export default class MockOperationStore implements IOperationStore {
   /**
    * Implements OperationStore.put()
    */
-  public async put (operations: NamedAnchoredOperationModel[]): Promise<void> {
+  public async put(operations: NamedAnchoredOperationModel[]): Promise<void> {
     for (const operation of operations) {
       await this.insert(operation);
     }
@@ -58,20 +64,25 @@ export default class MockOperationStore implements IOperationStore {
    * Get an iterator that returns all operations with a given
    * didUniqueSuffix ordered by (transactionNumber, operationIndex).
    */
-  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
+  public async get(
+    didUniqueSuffix: string
+  ): Promise<NamedAnchoredOperationModel[]> {
     let didOps = this.didToOperations.get(didUniqueSuffix);
 
     if (!didOps) {
       return [];
     }
 
-    const updatedSinceLastSort = this.didUpdatedSinceLastSort.get(didUniqueSuffix)!;
+    const updatedSinceLastSort = this.didUpdatedSinceLastSort.get(
+      didUniqueSuffix
+    )!;
 
     // Sort needed if there was a put operation since last sort.
     if (updatedSinceLastSort) {
-      didOps.sort(compareOperation);       // in-place sort
-      didOps = didOps.filter((elem, index, self) => {  // remove duplicates
-        return (index === 0) || compareOperation(elem, self[index - 1]) !== 0;
+      didOps.sort(compareOperation); // in-place sort
+      didOps = didOps.filter((elem, index, self) => {
+        // remove duplicates
+        return index === 0 || compareOperation(elem, self[index - 1]) !== 0;
       });
       this.didUpdatedSinceLastSort.set(didUniqueSuffix, false);
     }
@@ -82,7 +93,7 @@ export default class MockOperationStore implements IOperationStore {
   /**
    * Delete all operations transactionNumber greater than the given transactionNumber.
    */
-  public async delete (transactionNumber?: number): Promise<void> {
+  public async delete(transactionNumber?: number): Promise<void> {
     if (!transactionNumber) {
       this.didToOperations.clear();
       this.didUpdatedSinceLastSort.clear();
@@ -97,7 +108,11 @@ export default class MockOperationStore implements IOperationStore {
     }
   }
 
-  public async deleteUpdatesEarlierThan (_didUniqueSuffix: string, _transactionNumber: number, _operationIndex: number): Promise<void> {
+  public async deleteUpdatesEarlierThan(
+    _didUniqueSuffix: string,
+    _transactionNumber: number,
+    _operationIndex: number
+  ): Promise<void> {
     return;
   }
 
@@ -105,10 +120,13 @@ export default class MockOperationStore implements IOperationStore {
    * Remove operations. A simple linear scan + filter that leaves the
    * original order intact for non-filters operations.
    */
-  private static removeOperations (operations: AnchoredOperationModel[], transactionNumber: number) {
+  private static removeOperations(
+    operations: AnchoredOperationModel[],
+    transactionNumber: number
+  ) {
     let writeIndex = 0;
 
-    for (let i = 0 ; i < operations.length ; i++) {
+    for (let i = 0; i < operations.length; i++) {
       if (operations[i].transactionNumber <= transactionNumber) {
         operations[writeIndex++] = operations[i];
       }
@@ -119,7 +137,7 @@ export default class MockOperationStore implements IOperationStore {
     }
   }
 
-  private ensureDidContainerExist (did: string) {
+  private ensureDidContainerExist(did: string) {
     if (this.didToOperations.get(did) === undefined) {
       this.didToOperations.set(did, new Array<NamedAnchoredOperationModel>());
       this.didUpdatedSinceLastSort.set(did, false);

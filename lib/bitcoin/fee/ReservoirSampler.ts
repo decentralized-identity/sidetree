@@ -9,7 +9,6 @@ import PsuedoRandomNumberGenerator from './PsuedoRandomNumberGenerator';
  * a sample of preconfigured size over the elements that have been added so far.
  */
 export default class ReservoirSampler {
-
   /**
    * Psuedo-randome generator for various random numbers we need for sampling
    */
@@ -25,7 +24,7 @@ export default class ReservoirSampler {
    */
   private streamSize: number = 0;
 
-  public constructor (private sampleSize: number) {
+  public constructor(private sampleSize: number) {
     this.psuedoRandomGenerator = undefined;
     this.sample = new Array<string>(this.sampleSize);
   }
@@ -33,8 +32,7 @@ export default class ReservoirSampler {
   /**
    * Add a new element to be considered for future sampling
    */
-  public addElement (element: string): void {
-
+  public addElement(element: string): void {
     // If we have not reached our sampling limit, we can simply add
     // the current element to the sample
     if (this.streamSize < this.sampleSize) {
@@ -49,7 +47,9 @@ export default class ReservoirSampler {
 
     // Pick a random index [0 .. streamSize] and if the index < sampleSize, replace
     // the element at that index.
-    const randIndex = this.psuedoRandomGenerator!.getRandomNumber(this.streamSize);
+    const randIndex = this.psuedoRandomGenerator!.getRandomNumber(
+      this.streamSize
+    );
 
     if (randIndex < this.sampleSize) {
       // evict the current element at randIndex and store element instead
@@ -61,9 +61,11 @@ export default class ReservoirSampler {
    * Reset the psuedo-random seed with a new seed for future random
    * value generation.
    */
-  public resetPsuedoRandomSeed (hexSeed: string) {
+  public resetPsuedoRandomSeed(hexSeed: string) {
     const psuedoRandomBitStream = new PsuedoRandomBitStream(hexSeed);
-    this.psuedoRandomGenerator = new PsuedoRandomNumberGenerator(psuedoRandomBitStream);
+    this.psuedoRandomGenerator = new PsuedoRandomNumberGenerator(
+      psuedoRandomBitStream
+    );
   }
 
   /**
@@ -71,13 +73,13 @@ export default class ReservoirSampler {
    * seen less than sampleSize elements, in which case we return all
    * the elements seen.
    */
-  public getSample (): string[] {
+  public getSample(): string[] {
     const currentSampleSize = Math.min(this.sampleSize, this.streamSize);
     return this.sample.slice(0, currentSampleSize);
   }
 
   /** Reset the sampler for a new stream */
-  public clear () {
+  public clear() {
     this.streamSize = 0;
   }
 }

@@ -11,7 +11,9 @@ describe('ThroughputLimiter', () => {
   beforeEach(() => {
     transactionSelector = new TransactionSelector(new MockTransactionStore());
     spyOn(transactionSelector, 'selectQualifiedTransactions');
-    spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
+    spyOn(versionManager, 'getTransactionSelector').and.returnValue(
+      transactionSelector
+    );
     throughputLimiter = new ThroughputLimiter(versionManager);
   });
 
@@ -83,7 +85,9 @@ describe('ThroughputLimiter', () => {
           normalizedTransactionFee: 1
         }
       ]);
-      expect(transactionSelector.selectQualifiedTransactions).toHaveBeenCalledTimes(2);
+      expect(
+        transactionSelector.selectQualifiedTransactions
+      ).toHaveBeenCalledTimes(2);
     });
   });
 });

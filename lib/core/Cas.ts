@@ -11,15 +11,14 @@ import { FetchResultCode } from '../common/FetchResultCode';
  * Class that communicates with the underlying CAS using REST API defined by the protocol document.
  */
 export default class Cas implements ICas {
-
   private fetch = nodeFetch;
   private serviceVersionFetcher: ServiceVersionFetcher;
 
-  public constructor (public uri: string) {
+  public constructor(public uri: string) {
     this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
   }
 
-  public async write (content: Buffer): Promise<string> {
+  public async write(content: Buffer): Promise<string> {
     const requestParameters = {
       method: 'post',
       body: content,
@@ -43,7 +42,10 @@ export default class Cas implements ICas {
     return hash;
   }
 
-  public async read (address: string, maxSizeInBytes: number): Promise<FetchResult> {
+  public async read(
+    address: string,
+    maxSizeInBytes: number
+  ): Promise<FetchResult> {
     try {
       // Fetch the resource.
       const queryUri = `${this.uri}/${address}?max-size=${maxSizeInBytes}`;
@@ -58,14 +60,18 @@ export default class Cas implements ICas {
       }
 
       if (response.status !== HttpStatus.OK) {
-        console.error(`CAS '${address}' read response status: ${response.status}`);
+        console.error(
+          `CAS '${address}' read response status: ${response.status}`
+        );
 
         if (response.body) {
           const errorBody = await ReadableStream.readAll(response.body);
           console.error(`CAS '${address}' read error body: ${errorBody}`);
         }
 
-        console.error(`Treating '${address}' read as not-found, but should investigate.`);
+        console.error(
+          `Treating '${address}' read as not-found, but should investigate.`
+        );
         return { code: FetchResultCode.NotFound };
       }
 
@@ -88,7 +94,7 @@ export default class Cas implements ICas {
   /**
    * Gets the service version.
    */
-  public async getServiceVersion (): Promise<ServiceVersionModel> {
+  public async getServiceVersion(): Promise<ServiceVersionModel> {
     return this.serviceVersionFetcher.getVersion();
   }
 }

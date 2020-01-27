@@ -2,13 +2,12 @@
  * ReadableStream utilities
  */
 export default class ReadableStream {
-
   /**
    * Given a readable stream, reads all data until end or error
    * @param stream Fetch readable stream to read
    * @returns a Buffer of the readable stream data
    */
-  public static async readAll (stream: NodeJS.ReadableStream): Promise<Buffer> {
+  public static async readAll(stream: NodeJS.ReadableStream): Promise<Buffer> {
     // Set callback for the 'readable' event to concatenate chunks of the readable stream.
     let content: Buffer = Buffer.alloc(0);
 

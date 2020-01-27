@@ -35,23 +35,27 @@ export default class MongoDbOperationStore implements IOperationStore {
    */
   private readonly operationCollectionName: string;
 
-  constructor (
+  constructor(
     private serverUrl: string,
     databaseName?: string,
     operationCollectionName?: string
   ) {
     this.databaseName = databaseName ? databaseName : 'sidetree';
-    this.operationCollectionName = operationCollectionName ? operationCollectionName : 'operations';
+    this.operationCollectionName = operationCollectionName
+      ? operationCollectionName
+      : 'operations';
   }
 
   /**
    * Initialize the MongoDB operation store.
    */
-  public async initialize (): Promise<void> {
+  public async initialize(): Promise<void> {
     const client = await MongoClient.connect(this.serverUrl);
     const db = client.db(this.databaseName);
     const collections = await db.collections();
-    const collectionNames = collections.map(collection => collection.collectionName);
+    const collectionNames = collections.map(
+      collection => collection.collectionName
+    );
 
     // If the operation collection exists, use it; else create it then use it.
     if (collectionNames.includes(this.operationCollectionName)) {
@@ -60,18 +64,23 @@ export default class MongoDbOperationStore implements IOperationStore {
       this.collection = await db.createCollection(this.operationCollectionName);
       // create an index on didSuffix, txnNumber, opIndex, and type to make DB operations more efficient.
       // This is an unique index, so duplicate inserts are rejected/ignored.
-      await this.collection.createIndex({ didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 }, { unique: true });
+      await this.collection.createIndex(
+        { didSuffix: 1, txnNumber: 1, opIndex: 1, type: 1 },
+        { unique: true }
+      );
     }
   }
 
   /**
    * Implement OperationStore.put
    */
-  public async put (operations: NamedAnchoredOperationModel[]): Promise<void> {
+  public async put(operations: NamedAnchoredOperationModel[]): Promise<void> {
     let batch = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
-      const mongoOperation = MongoDbOperationStore.convertToMongoOperation(operation);
+      const mongoOperation = MongoDbOperationStore.convertToMongoOperation(
+        operation
+      );
       batch.insert(mongoOperation);
     }
 
@@ -88,37 +97,53 @@ export default class MongoDbOperationStore implements IOperationStore {
   /**
    * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
-  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
-    const mongoOperations = await this.collection!.find({ didSuffix: didUniqueSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
-    return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
+  public async get(
+    didUniqueSuffix: string
+  ): Promise<NamedAnchoredOperationModel[]> {
+    const mongoOperations = await this.collection!.find({
+      didSuffix: didUniqueSuffix
+    })
+      .sort({ txnNumber: 1, opIndex: 1 })
+      .toArray();
+    return mongoOperations.map(operation => {
+      return MongoDbOperationStore.convertToAnchoredOperationModel(operation);
+    });
   }
 
   /**
    * Delete all operations with transaction number greater than the
    * provided parameter.
    */
-  public async delete (transactionNumber?: number): Promise<void> {
+  public async delete(transactionNumber?: number): Promise<void> {
     if (transactionNumber) {
-      await this.collection!.deleteMany({ txnNumber: { $gt: Long.fromNumber(transactionNumber) } });
+      await this.collection!.deleteMany({
+        txnNumber: { $gt: Long.fromNumber(transactionNumber) }
+      });
     } else {
       await this.collection!.deleteMany({});
     }
   }
 
-  public async deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void> {
-    await this.collection!.deleteMany({ $or: [
-      {
-        didSuffix: didUniqueSuffix,
-        txnNumber: { $lt: Long.fromNumber(transactionNumber) },
-        type: OperationType.Update
-      },
-      {
-        didSuffix: didUniqueSuffix,
-        txnNumber: Long.fromNumber(transactionNumber),
-        opIndex: { $lt: operationIndex },
-        type: OperationType.Update
-      }
-    ]});
+  public async deleteUpdatesEarlierThan(
+    didUniqueSuffix: string,
+    transactionNumber: number,
+    operationIndex: number
+  ): Promise<void> {
+    await this.collection!.deleteMany({
+      $or: [
+        {
+          didSuffix: didUniqueSuffix,
+          txnNumber: { $lt: Long.fromNumber(transactionNumber) },
+          type: OperationType.Update
+        },
+        {
+          didSuffix: didUniqueSuffix,
+          txnNumber: Long.fromNumber(transactionNumber),
+          opIndex: { $lt: operationIndex },
+          type: OperationType.Update
+        }
+      ]
+    });
   }
 
   /**
@@ -126,7 +151,9 @@ export default class MongoDbOperationStore implements IOperationStore {
    * that can be stored on MongoDb. The IMongoOperation object has sufficient
    * information to reconstruct the original operation.
    */
-  private static convertToMongoOperation (operation: NamedAnchoredOperationModel): IMongoOperation {
+  private static convertToMongoOperation(
+    operation: NamedAnchoredOperationModel
+  ): IMongoOperation {
     return {
       type: operation.type,
       didSuffix: operation.didUniqueSuffix,
@@ -144,7 +171,9 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
    * hence the type 'any' for mongoOperation.
    */
-  private static convertToAnchoredOperationModel (mongoOperation: any): NamedAnchoredOperationModel {
+  private static convertToAnchoredOperationModel(
+    mongoOperation: any
+  ): NamedAnchoredOperationModel {
     return {
       type: mongoOperation.type,
       didUniqueSuffix: mongoOperation.didSuffix,

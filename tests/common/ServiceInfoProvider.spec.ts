@@ -1,7 +1,6 @@
 import ServiceInfo from '../../lib/common/ServiceInfoProvider';
 
 describe('ServiceInfoProvider', () => {
-
   it('should return the version from the package.json file.', async () => {
     const packageJson = require('../../package.json');
 

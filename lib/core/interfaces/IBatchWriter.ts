@@ -5,5 +5,5 @@ export default interface IBatchWriter {
   /**
    * Writes one or more batches of batches of operations to content addressable storage and blockchain.
    */
-  write (): Promise<void>;
+  write(): Promise<void>;
 }
