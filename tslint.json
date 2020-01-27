@@ -1,5 +1,9 @@
 {
-  "extends": ["tslint-config-standard", "tslint-config-prettier"],
+  "extends": [
+    "tslint-config-standard",
+    "tslint-plugin-prettier",
+    "tslint-config-prettier"
+  ],
   "linterOptions": {
     "exclude": ["node_modules/**"]
   },
