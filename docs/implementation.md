@@ -174,7 +174,7 @@ Get /time/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
 
 
 ### Fetch Sidetree transactions
-Fetches Sidetree transactions in chronological order.
+Fetches Sidetree transactions in chronological order. The transactions array will always end with a complete block of data, but can start in the middle of a block.
 
 > Note: The call may not to return all Sidetree transactions in one batch, in which case the caller can use the transaction number of the last transaction in the returned batch to fetch subsequent transactions.
 
