@@ -4,7 +4,7 @@ import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ReadableStream from '../../lib/common/ReadableStream';
-import { PrivateKey, Transaction, Address } from 'bitcore-lib';
+import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
 
@@ -204,6 +204,17 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('getEstimatedFeePerKb', () => {
+    it('should call the correct rpc and return the fee', async () => {
+      const mockFee = 155;
+      const spy = mockRpcCall('estimatesmartfee', [3], { feerate: mockFee });
+
+      const actual = await bitcoinClient['getEstimatedFeePerKb']();
+      expect(actual).toEqual(mockFee);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
   describe('getTransactionOutValueInSatoshi', () => {
     it('should return the satoshis from the correct output index.', async () => {
       const mockTxnWithMultipleOutputs: BitcoinTransactionModel = {
@@ -312,6 +323,166 @@ describe('BitcoinClient', async () => {
       expect(transaction.getFee()).toEqual(fee);
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
       done();
+    });
+  });
+
+  describe('createFreezeBitcoreTransaction', () => {
+    it('should create the freeze transaction correctly', async () => {
+      const mockFreezeUntilBlock = 987654;
+      const mockFreezeAmount = 1000;
+
+      const mockRedeemScript = Script.empty().add(117);
+      const mockRedeemScriptHash = Script.buildScriptHashOut(mockRedeemScript);
+
+      const mockUnspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, Math.pow(10, 8));
+
+      const createScriptSpy = spyOn(bitcoinClient as any, 'createFreezeBitcoreScript').and.returnValue(mockRedeemScript);
+      const estimateFeeSpy = spyOn(bitcoinClient as any, 'getEstimatedFeePerKb').and.returnValue(200);
+
+      const actual = await bitcoinClient['createFreezeBitcoreTransaction']([mockUnspentOutput], mockFreezeUntilBlock, mockFreezeAmount);
+
+      // There should be 2 outputs
+      expect(actual.outputs.length).toEqual(2);
+
+      // 1st output is the freeze output
+      expect(actual.outputs[0].satoshis).toEqual(mockFreezeAmount);
+      expect(actual.outputs[0].script.toASM()).toEqual(mockRedeemScriptHash.toASM());
+
+      // 2nd output is the difference back to this wallet and this should be the
+      // 'change' script === where the rest of the satoshis will go
+      const expectedPayToScript = Script.buildPublicKeyHashOut(privateKeyFromBitcoinClient.toAddress());
+      expect(actual.outputs[1].script.toASM()).toEqual(expectedPayToScript.toASM());
+      expect(actual.getChangeOutput()).toEqual(actual.outputs[1]);
+
+      expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock);
+      expect(estimateFeeSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('createSpendToFreezeBitcoreTransaction', () => {
+    it('should return the transaction by the utility function', async () => {
+      const mockFreezeTxn1 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeTxn2 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 7890);
+      const mockFreezeUntilPreviousBlock = 12345;
+      const mockFreezeUntilBlock = 987654;
+
+      const mockRedeemScript = Script.empty().add(117);
+      const mockRedeemScriptHash = Script.buildScriptHashOut(mockRedeemScript);
+
+      const createScriptSpy = spyOn(bitcoinClient as any, 'createFreezeBitcoreScript').and.returnValue(mockRedeemScript);
+      const utilFuncSpy = spyOn(bitcoinClient as any, 'createSpendBitcoreTransactionFromFrozenTransaction').and.returnValue(mockFreezeTxn2);
+
+      const actual = await bitcoinClient['createSpendToFreezeBitcoreTransaction'](mockFreezeTxn1, mockFreezeUntilPreviousBlock, mockFreezeUntilBlock);
+      expect(actual).toEqual(mockFreezeTxn2);
+      expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock);
+
+      const expectedPayToScriptAddress = new Address(mockRedeemScriptHash);
+      expect(utilFuncSpy).toHaveBeenCalledWith(mockFreezeTxn1, mockFreezeUntilPreviousBlock, expectedPayToScriptAddress);
+    });
+  });
+
+  describe('createSpendToWalletBitcoreTransaction', () => {
+    it('should return the transaction by the utility function', async () => {
+      const mockFreezeTxn1 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeTxn2 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 7890);
+      const mockFreezeUntilBlock = 987654;
+
+      const utilFuncSpy = spyOn(bitcoinClient as any, 'createSpendBitcoreTransactionFromFrozenTransaction').and.returnValue(mockFreezeTxn2);
+
+      const actual = await bitcoinClient['createSpendToWalletBitcoreTransaction'](mockFreezeTxn1, mockFreezeUntilBlock);
+      expect(actual).toEqual(mockFreezeTxn2);
+      expect(utilFuncSpy).toHaveBeenCalledWith(mockFreezeTxn1, mockFreezeUntilBlock, privateKeyAddressFromBitcoinClient);
+    });
+  });
+
+  describe('createSpendBitcoreTransactionFromFrozenTransaction', () => {
+    it('should create the spend transaction correctly', async () => {
+      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeUntilBlock = 987654;
+
+      const mockPayToAddress = privateKeyAddressFromBitcoinClient;
+      const mockPayToAddressScriptHash = Script.buildPublicKeyHashOut(mockPayToAddress);
+
+      const mockRedeemScript = Script.empty().add(117);
+      const mockRedeemScriptHash = Script.buildScriptHashOut(mockRedeemScript);
+
+      const mockUnspentOutput = Transaction.UnspentOutput.fromObject({
+        txid: mockFreezeTxn.id, vout: 3, scriptPubKey: mockRedeemScriptHash, satoshis: 456789
+      });
+
+      const mockTxnFee = 21897;
+
+      const createUnspentSpy = spyOn(bitcoinClient as any, 'createBitcoreUnspentOutputFromFrozenTransaction').and.returnValue(mockUnspentOutput);
+      const createScriptSpy = spyOn(bitcoinClient as any, 'createFreezeBitcoreScript').and.returnValue(mockRedeemScript);
+      const estimateFeeSpy = spyOn(bitcoinClient as any, 'getEstimatedFeePerKb').and.returnValue(100);
+      const txnGetFeeSpy = spyOn(Transaction.prototype, 'getFee').and.returnValue(mockTxnFee);
+
+      const actual = await bitcoinClient['createSpendBitcoreTransactionFromFrozenTransaction'](mockFreezeTxn, mockFreezeUntilBlock, mockPayToAddress);
+
+      // Txn should go into the unlock block
+      expect(actual.getLockTime()).toEqual(mockFreezeUntilBlock);
+
+      // Output should be to the mock address passed in
+      expect(actual.outputs.length).toEqual(1);
+      expect(actual.outputs[0].script.toASM()).toEqual(mockPayToAddressScriptHash.toASM());
+
+      // The fee should be correctly set as per the estimate
+      expect(estimateFeeSpy).toHaveBeenCalled();
+      expect(txnGetFeeSpy).toHaveBeenCalled();
+      txnGetFeeSpy.and.callThrough();
+      expect(actual.getFee()).toEqual(mockTxnFee);
+
+      // There's only 1 input (from the previous freeze txn)
+      expect(actual.inputs.length).toEqual(1);
+      expect(actual.inputs[0].prevTxId.toString('hex')).toEqual(mockUnspentOutput.txId);
+      expect(actual.inputs[0].outputIndex).toEqual(mockUnspentOutput.outputIndex);
+
+      // The input script should have 3 parts: signature, public key of the bitcoinClient.privateKey, and redeem script
+      const inputScriptAsm = actual.inputs[0].script.toASM();
+      const inputScriptAsmParts = inputScriptAsm.split(' ');
+
+      expect(inputScriptAsmParts.length).toEqual(3);
+      expect(inputScriptAsmParts[0].length).toBeGreaterThan(0); // Signature
+      expect(inputScriptAsmParts[1]).toEqual(bitcoinClient['privateKey'].toPublicKey().toBuffer().toString('hex'));
+      expect(inputScriptAsmParts[2]).toEqual(mockRedeemScript.toBuffer().toString('hex'));
+
+      // Check other function calls
+      expect(createUnspentSpy).toHaveBeenCalledWith(mockFreezeTxn, mockFreezeUntilBlock);
+      expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock);
+    });
+  });
+
+  describe('createBitcoreUnspentOutputFromFrozenTransaction', () => {
+    it('should create unspent output from input transaction', async () => {
+      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeUntilBlock = 987654;
+      const mockRedeemScript = Script.empty().add(117);
+      const mockRedeemScriptHash = Script.buildScriptHashOut(mockRedeemScript);
+
+      const createScriptSpy = spyOn(bitcoinClient as any, 'createFreezeBitcoreScript').and.returnValue(mockRedeemScript);
+
+      const actual = bitcoinClient['createBitcoreUnspentOutputFromFrozenTransaction'](mockFreezeTxn, mockFreezeUntilBlock);
+      expect(actual.txId).toEqual(mockFreezeTxn.id);
+      expect(actual.outputIndex).toEqual(0);
+      expect(actual.script.toASM()).toEqual(mockRedeemScriptHash.toASM());
+      expect(actual.satoshis).toEqual(mockFreezeTxn.outputs[0].satoshis);
+      expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock);
+    });
+  });
+
+  describe('createFreezeBitcoreScript', () => {
+    it('should create the correct redeem script', async () => {
+      const mockLockUntilBlock = 45000;
+      const mockLockUntilBuffer = Buffer.alloc(3);
+      mockLockUntilBuffer.writeIntLE(mockLockUntilBlock, 0, 3);
+
+      const publicKeyHashOutScript = Script.buildPublicKeyHashOut(privateKeyAddressFromBitcoinClient);
+
+      const mockLockUntilBufferAsHex = mockLockUntilBuffer.toString('hex');
+      const expectedScriptAsm = `${mockLockUntilBufferAsHex} OP_NOP2 OP_DROP ${publicKeyHashOutScript.toASM()}`;
+
+      const redeemScript = bitcoinClient['createFreezeBitcoreScript'](mockLockUntilBlock);
+      expect(redeemScript.toASM()).toEqual(expectedScriptAsm);
     });
   });
 

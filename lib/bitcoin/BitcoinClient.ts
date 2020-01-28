@@ -5,7 +5,7 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { Address, crypto, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
@@ -261,6 +261,18 @@ export default class BitcoinClient {
     return response.labels.length > 0 || response.iswatchonly;
   }
 
+  private async getEstimatedFeePerKb (): Promise<number> {
+    const request = {
+      method: 'estimatesmartfee',
+      params: [
+        3 // Number of confirmation targtes
+      ]
+    };
+
+    const response = await this.rpcCall(request, true);
+    return response.feerate;
+  }
+
   /** Get the transaction out value in satoshi, for a specified output index */
   private async getTransactionOutValueInSatoshi (transactionId: string, outputIndex: number) {
     const transaction = await this.getRawTransaction(transactionId);
@@ -311,6 +323,128 @@ export default class BitcoinClient {
     transaction.sign(this.privateKey);
 
     return transaction;
+  }
+
+  // @ts-ignore
+  private async createFreezeBitcoreTransaction (
+    unspentCoins: Transaction.UnspentOutput[],
+    freezeUntilBlock: number,
+    freezeAmountInSatoshis: number): Promise<Transaction> {
+
+    const freezeScript = this.createFreezeBitcoreScript(freezeUntilBlock);
+    const freezeScriptHash = Script.buildScriptHashOut(freezeScript);
+    const payToScriptAddress = new Address(freezeScriptHash);
+
+    const transactionFeePerKb = await this.getEstimatedFeePerKb();
+    const freezeTransaction = new Transaction()
+                              .from(unspentCoins)
+                              .to(payToScriptAddress, freezeAmountInSatoshis)
+                              .feePerKb(transactionFeePerKb)
+                              .change(this.privateKeyAddress)
+                              .sign(this.privateKey);
+
+    return freezeTransaction;
+  }
+
+  // @ts-ignore
+  private async createSpendToFreezeBitcoreTransaction (
+    previousFreezeTransaction: Transaction,
+    previousFreezeUntilBlock: number,
+    freezeUntilBlock: number): Promise<Transaction> {
+
+    const freezeScript = this.createFreezeBitcoreScript(freezeUntilBlock);
+    const freezeScriptHash = Script.buildScriptHashOut(freezeScript);
+    const payToScriptAddress = new Address(freezeScriptHash);
+
+    return this.createSpendBitcoreTransactionFromFrozenTransaction(
+      previousFreezeTransaction,
+      previousFreezeUntilBlock,
+      payToScriptAddress);
+  }
+
+  // @ts-ignore
+  private async createSpendToWalletBitcoreTransaction (
+    previousFreezeTransaction: Transaction,
+    previousFreezeUntilBlock: number): Promise<Transaction> {
+
+    return this.createSpendBitcoreTransactionFromFrozenTransaction(
+      previousFreezeTransaction,
+      previousFreezeUntilBlock,
+      this.privateKeyAddress);
+  }
+
+  // @ts-ignore
+  private async createSpendBitcoreTransactionFromFrozenTransaction (
+    previousFreezeTransaction: Transaction,
+    previousFreezeUntilBlock: number,
+    paytoAddress: Address): Promise<Transaction> {
+
+    // First create an input from the previous frozen transaction output.
+    const frozenOutputAsInput = this.createBitcoreUnspentOutputFromFrozenTransaction(previousFreezeTransaction, previousFreezeUntilBlock);
+    const previousFreezeAmountInSatoshis = frozenOutputAsInput.satoshis;
+
+    // Now create a spend transaction using the frozen output
+    const transactionFeePerKb = await this.getEstimatedFeePerKb();
+    const spendTransaction = new Transaction()
+                                   .from([frozenOutputAsInput])
+                                   .to(paytoAddress, previousFreezeAmountInSatoshis)
+                                   .feePerKb(transactionFeePerKb)
+                                   .lockUntilBlockHeight(previousFreezeUntilBlock);
+
+    // We have set the estimated fee/KB above. The transaction object now will calculate
+    // the estimated total fee based on the size (in KB) of the transaction. We need to
+    // subtract that fee from the satoshis which are going to the 'payToAddress'.
+    const estimatedFee = spendTransaction.getFee();
+
+    // We cannot just update the output (readonly), so we need to first remove it, and add another
+    // one with the correct amount (minus fee).
+    spendTransaction.outputs.shift();
+    spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - estimatedFee);
+
+    // Now update the first input to include it's signature. The previous redeem script is part
+    // of the input so we need that now.
+    const previousFreezeScript = this.createFreezeBitcoreScript(previousFreezeUntilBlock);
+    const signature = (Transaction as any).sighash.sign(spendTransaction, this.privateKey, 0x1, 0, previousFreezeScript);
+
+    const inputScript = Script.empty()
+                              .add(signature.toTxFormat())
+                              .add(this.privateKey.toPublicKey().toBuffer())
+                              .add(previousFreezeScript.toBuffer());
+
+    (spendTransaction.inputs[0] as any).setScript(inputScript);
+
+    return spendTransaction;
+  }
+
+  private createBitcoreUnspentOutputFromFrozenTransaction (
+    previousFreezeTransaction: Transaction,
+    previousFreezeUntilBlock: number): Transaction.UnspentOutput {
+
+    const previousFreezeAmountInSatoshis = previousFreezeTransaction.outputs[0].satoshis;
+    const previousFreezeRedeemScript = this.createFreezeBitcoreScript(previousFreezeUntilBlock);
+    const previousFreezeRedeemScriptHash = Script.buildScriptHashOut(previousFreezeRedeemScript);
+
+    const frozenOutputAsUnspentOutput = Transaction.UnspentOutput.fromObject({
+      txid: previousFreezeTransaction.id,
+      vout: 0,
+      scriptPubKey: previousFreezeRedeemScriptHash,
+      satoshis: previousFreezeAmountInSatoshis
+    });
+
+    return frozenOutputAsUnspentOutput;
+  }
+
+  private createFreezeBitcoreScript (freezeUntilBlock: number): Script {
+    const lockBuffer = (crypto.BN as any).fromNumber(freezeUntilBlock).toScriptNumBuffer();
+    const publicKeyHashOut = Script.buildPublicKeyHashOut(this.privateKeyAddress);
+
+    const redeemScript = Script.empty()
+                         .add(lockBuffer)
+                         .add(177) // OP_CLTV
+                         .add(117) // OP_DROP
+                         .add(publicKeyHashOut);
+
+    return redeemScript;
   }
 
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
