@@ -1,6 +1,6 @@
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
-import SidetreeError from '../../Error';
+import SidetreeError from '../../SidetreeError';
 import { Binary, Collection, MongoClient, Db } from 'mongodb';
 
 /**

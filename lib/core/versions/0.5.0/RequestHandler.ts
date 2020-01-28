@@ -8,7 +8,7 @@ import Multihash from './Multihash';
 import Operation, { OperationType } from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
-import SidetreeError from '../../Error';
+import SidetreeError from '../../SidetreeError';
 import { ResponseModel, ResponseStatus } from '../../../common/Response';
 
 /**

@@ -7,7 +7,7 @@ import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../Error';
+import SidetreeError from '../../SidetreeError';
 import { DidPublicKey } from '@decentralized-identity/did-common-typescript';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 

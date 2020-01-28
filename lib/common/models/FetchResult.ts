@@ -1,4 +1,4 @@
-import { FetchResultCode } from '../FetchResultCode';
+import FetchResultCode from '../FetchResultCode';
 
 /**
  * Data structure representing the result of a content fetch from the Content Addressable Storage.

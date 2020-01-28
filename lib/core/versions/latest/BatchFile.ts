@@ -8,7 +8,7 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../Error';
+import SidetreeError from '../../SidetreeError';
 import timeSpan = require('time-span');
 
 /**
@@ -48,7 +48,7 @@ export default class BatchFile {
     // Make sure all operations are strings.
     batchFileObject.operations.forEach((operation: any) => {
       if (typeof operation !== 'string') {
-        throw new SidetreeError(ErrorCode.BatchFileOperationsNotAllStrings, 'Invalid batch file, operations property is not an array of strings.');
+        throw new SidetreeError(ErrorCode.BatchFileOperationsNotArrayOfStrings, 'Invalid batch file, operations property is not an array of strings.');
       }
     });
 

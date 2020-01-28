@@ -1,6 +1,6 @@
+import FetchResultCode from '../../lib/common/FetchResultCode';
 import RequestHandler from '../../lib/ipfs/RequestHandler';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import { FetchResultCode } from '../../lib/common/FetchResultCode';
 import { Response, ResponseStatus } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {

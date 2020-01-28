@@ -7,7 +7,7 @@ import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
-import SidetreeError from './Error';
+import SidetreeError from './SidetreeError';
 import TransactionModel from '../common/models/TransactionModel';
 
 /**

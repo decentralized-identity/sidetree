@@ -5,14 +5,13 @@ import BatchFile from './BatchFile';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
+import FetchResultCode from '../../../common/FetchResultCode';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../Error';
-import timeSpan = require('time-span');
+import SidetreeError from '../../SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
-import { FetchResultCode } from '../../../common/FetchResultCode';
 
 /**
  * Implementation of the `ITransactionProcessor`.
@@ -34,10 +33,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
       // Download and verify batch file.
       const operations = await this.downloadAndVerifyBatchFile(anchorFile, transaction);
 
-      // If the code reaches here, it means that the batch of operations is valid, process the operations.
-      const endTimer = timeSpan();
+      // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
-      console.info(`Processed batch '${anchorFile.batchFileHash}' of ${operations.length} operations. Time taken: ${endTimer.rounded()} ms.`);
 
       return true;
     } catch (error) {
@@ -61,12 +58,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
     console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
     const anchorFileFetchResult = await this.downloadManager.download(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
 
-    // No thing to process if the file hash is invalid. No retry needed.
     if (anchorFileFetchResult.code === FetchResultCode.InvalidHash) {
       throw new SidetreeError(ErrorCode.AnchorFileHashNotValid, `Anchor file '${anchorFileHash}' is not a valid hash.`);
     }
 
-    // No thing to process if the file size exceeds protocol specified size limit, no retry needed either.
     if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
       throw new SidetreeError(
         ErrorCode.AnchorFileTooLarge,
@@ -74,17 +69,14 @@ export default class TransactionProcessor implements ITransactionProcessor {
       );
     }
 
-    // Content for hash exists but is not a file. No retry needed.
     if (anchorFileFetchResult.code === FetchResultCode.NotAFile) {
       throw new SidetreeError(ErrorCode.AnchorFileNotAFile, `Anchor file hash '${anchorFileHash}' points to a content that is not a file.`);
     }
 
-    // If Content Addressable Storage is not reachable, mark the transaction for retry later.
     if (anchorFileFetchResult.code === FetchResultCode.CasNotReachable) {
       throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for anchor file '${anchorFileHash}', will try again later.`);
     }
 
-    // If file cannot be found, mark it for retry later.
     if (anchorFileFetchResult.code === FetchResultCode.NotFound) {
       throw new SidetreeError(ErrorCode.CasFileNotFound, `Anchor file '${anchorFileHash}' not found, will try again later.`);
     }
@@ -104,12 +96,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const batchFileHash = anchorFile.batchFileHash;
     const batchFileFetchResult = await this.downloadManager.download(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
 
-    // Nothing to process if the file hash is invalid. No retry needed.
     if (batchFileFetchResult.code === FetchResultCode.InvalidHash) {
       throw new SidetreeError(ErrorCode.BatchFileHashNotValid, `Batch file '${batchFileHash}' is not a valid hash.`);
     }
 
-    // Nothing to process if the file size exceeds protocol specified size limit, no retry needed either.
     if (batchFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
       throw new SidetreeError(
         ErrorCode.BatchFileTooLarge,
@@ -117,17 +107,14 @@ export default class TransactionProcessor implements ITransactionProcessor {
       );
     }
 
-    // Content for hash exists but is not a file. No retry needed.
     if (batchFileFetchResult.code === FetchResultCode.NotAFile) {
       throw new SidetreeError(ErrorCode.BatchFileNotAFile, `Batch file hash '${batchFileHash}' points to a content that is not a file.`);
     }
 
-    // If Content Addressable Storage is not reachable, mark the transaction for retry later.
     if (batchFileFetchResult.code === FetchResultCode.CasNotReachable) {
       throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for batch file '${batchFileHash}', will try again later.`);
     }
 
-    // If file cannot be found, mark it for retry later.
     if (batchFileFetchResult.code === FetchResultCode.NotFound) {
       throw new SidetreeError(ErrorCode.CasFileNotFound, `Batch file '${batchFileHash}' not found, will try again later.`);
     }

@@ -4,7 +4,7 @@ import ITransactionSelector from '../../interfaces/ITransactionSelector';
 import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../Error';
+import SidetreeError from '../../SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 
 /**

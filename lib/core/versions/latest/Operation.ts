@@ -9,7 +9,7 @@ import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../Error';
+import SidetreeError from '../../SidetreeError';
 
 /**
  * A class that represents a Sidetree operation.

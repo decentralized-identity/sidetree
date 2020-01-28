@@ -26,7 +26,7 @@ export default {
   BatchFileNotAFile: 'batch_file_not_a_file',
   BatchFileOperationCountExceedsLimit: 'batch_file_operation_count_exceeds_limit',
   BatchFileOperationCountMismatch: 'batch_file_operation_count_mismatch',
-  BatchFileOperationsNotAllStrings: 'batch_file_operations_not_all_strings',
+  BatchFileOperationsNotArrayOfStrings: 'batch_file_operations_not_array_of_string',
   BatchFileOperationsPropertyNotArray: 'batch_file_operations_property_not_array',
   BatchFileOperationMismatch: 'batch_file_operation_mismatch',
   BatchFileOperationSizeExceedsLimit: 'batch_file_operation_size_exceeds_limit',
