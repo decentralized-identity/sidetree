@@ -33,7 +33,7 @@ export default class ThroughputLimiter {
         transactionsInCurrentTransactionTime = [transaction];
       }
 
-      // the last transaction time need to be processed
+      // the last transaction time needs to be processed
       if (Number(idx) === transactions.length - 1) {
         const transactionSelector = this.versionManager.getTransactionSelector(currentTransactionTime);
         const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(transactionsInCurrentTransactionTime);

@@ -336,7 +336,7 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      // the false argument makes all the transaction time the same which make the block incomplete
+      // the false argument makes all the transaction time the same which makes the block incomplete
       const transactions = createTransactions(undefined, undefined, false);
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
         expect(since).toBeUndefined();
