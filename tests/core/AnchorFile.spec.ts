@@ -3,7 +3,7 @@ import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import { SidetreeError } from '../../lib/core/Error';
+import SidetreeError from '../../lib/core/SidetreeError';
 
 describe('AnchorFile', async () => {
   describe('parseAndValidate()', async () => {

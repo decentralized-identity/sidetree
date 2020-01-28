@@ -1,11 +1,11 @@
 import * as HttpStatus from 'http-status';
 import FetchResult from '../common/models/FetchResult';
+import FetchResultCode from '../common/FetchResultCode';
 import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import { FetchResultCode } from '../common/FetchResultCode';
 
 /**
  * Class that communicates with the underlying CAS using REST API defined by the protocol document.

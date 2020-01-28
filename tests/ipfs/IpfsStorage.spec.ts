@@ -1,6 +1,6 @@
 import * as IPFS from 'ipfs';
+import FetchResultCode from '../../lib/common/FetchResultCode';
 import IpfsStorage from '../../lib/ipfs/IpfsStorage';
-import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 describe('IpfsStorage', () => {
   let ipfsStorage: IpfsStorage;

@@ -8,8 +8,8 @@ import Multihash from './Multihash';
 import Operation, { OperationType } from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
+import SidetreeError from '../../SidetreeError';
 import { ResponseModel, ResponseStatus } from '../../../common/Response';
-import { SidetreeError } from '../../Error';
 
 /**
  * Sidetree operation request handler.

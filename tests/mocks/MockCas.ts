@@ -1,8 +1,8 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import FetchResult from '../../lib/common/models/FetchResult';
+import FetchResultCode from '../../lib/common/FetchResultCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-import { FetchResultCode } from '../../lib/common/FetchResultCode';
 
 /**
  * Implementation of a CAS class for testing.
