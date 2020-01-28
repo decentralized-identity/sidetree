@@ -16,31 +16,22 @@ export default class ThroughputLimiter {
    */
   public async getQualifiedTransactions (transactions: TransactionModel[]) {
     let qualifiedTransactions: TransactionModel[] = [];
-    let transactionsInCurrentTransactionTime: TransactionModel[] = [];
     let currentTransactionTime: number | undefined = undefined;
+    const transactionsGroupedByTransactionTime: TransactionModel[][] = [];
 
-    for (const idx in transactions) {
-      const transaction = transactions[idx];
-      if (transaction.transactionTime === currentTransactionTime) {
-        transactionsInCurrentTransactionTime.push(transaction);
-      } else {
-        if (currentTransactionTime !== undefined) {
-          const transactionSelector = this.versionManager.getTransactionSelector(currentTransactionTime);
-          const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(transactionsInCurrentTransactionTime);
-          qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentBlock);
-        }
+    for (const transaction of transactions) {
+      if (transaction.transactionTime !== currentTransactionTime) {
+        transactionsGroupedByTransactionTime.push([]);
         currentTransactionTime = transaction.transactionTime;
-        transactionsInCurrentTransactionTime = [transaction];
       }
-
-      // the last transaction time needs to be processed
-      if (Number(idx) === transactions.length - 1) {
-        const transactionSelector = this.versionManager.getTransactionSelector(currentTransactionTime);
-        const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(transactionsInCurrentTransactionTime);
-        qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentBlock);
-      }
+      transactionsGroupedByTransactionTime[transactionsGroupedByTransactionTime.length - 1].push(transaction);
     }
 
+    for (const transactionGroup of transactionsGroupedByTransactionTime) {
+      const transactionSelector = this.versionManager.getTransactionSelector(transactionGroup[0].transactionTime);
+      const qualifiedTransactionsInCurrentGroup = await transactionSelector.selectQualifiedTransactions(transactionGroup);
+      qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentGroup);
+    }
     return qualifiedTransactions;
   }
 }
