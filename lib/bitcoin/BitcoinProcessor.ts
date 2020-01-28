@@ -159,7 +159,7 @@ export default class BitcoinProcessor {
    * Fetches Sidetree transactions in chronological order from since or genesis.
    * @param since A transaction number
    * @param hash The associated transaction time hash
-   * @returns Transactions since given transaction number.
+   * @returns Transactions in complete blocks since given transaction number.
    */
   public async transactions (since?: number, hash?: string): Promise<{
     moreTransactions: boolean,
@@ -175,11 +175,24 @@ export default class BitcoinProcessor {
       }
     }
 
+    // wait until at least one block is processed
+    if (this.lastProcessedBlock === undefined) {
+      return {
+        transactions: [],
+        moreTransactions: true
+      };
+    }
+
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
     let transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
-    // filter the results to only return transactions, and not internal data
-    transactions = transactions.map((transaction) => {
-      return {
+
+    let currentTransactionTime: number | undefined = undefined;
+    let transactionsInCurrentTransactionTime: TransactionModel[] = [];
+    let transactionsToReturn: TransactionModel[] = [];
+
+    for (const transaction of transactions) {
+      // filter the results to only return transactions, and not internal data
+      const filteredTransaction = {
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
@@ -187,10 +200,29 @@ export default class BitcoinProcessor {
         transactionFeePaid: transaction.transactionFeePaid,
         normalizedTransactionFee: transaction.normalizedTransactionFee
       };
-    });
+
+      if (filteredTransaction.transactionTime === currentTransactionTime) {
+        transactionsInCurrentTransactionTime.push(filteredTransaction);
+      } else {
+        if (currentTransactionTime !== undefined) {
+          transactionsToReturn = transactionsToReturn.concat(transactionsInCurrentTransactionTime);
+        }
+        currentTransactionTime = filteredTransaction.transactionTime;
+        transactionsInCurrentTransactionTime = [filteredTransaction];
+      }
+
+      if (currentTransactionTime > this.lastProcessedBlock.height) {
+        break;
+      }
+    }
+
+    if (transactions.length < this.pageSize && currentTransactionTime === this.lastProcessedBlock.height) {
+      // this means we grabbed the entire last block, we can include it in the return.
+      transactionsToReturn = transactionsToReturn.concat(transactionsInCurrentTransactionTime);
+    }
 
     return {
-      transactions,
+      transactions: transactionsToReturn,
       moreTransactions: transactions.length === this.pageSize
     };
   }

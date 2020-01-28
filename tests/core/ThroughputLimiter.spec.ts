@@ -10,28 +10,14 @@ describe('ThroughputLimiter', () => {
   let transactionSelector: ITransactionSelector;
   beforeEach(() => {
     transactionSelector = new TransactionSelector(new MockTransactionStore());
-    spyOn(transactionSelector, 'selectQualifiedTransactions');
+    spyOn(transactionSelector, 'selectQualifiedTransactions').and.callFake(
+      (transactions) => {
+        // mock selecting the first one
+        return new Promise((resolve) => { resolve([transactions[0]]); });
+      }
+    );
     spyOn(versionManager, 'getTransactionSelector').and.returnValue(transactionSelector);
     throughputLimiter = new ThroughputLimiter(versionManager);
-  });
-
-  describe('reset', () => {
-    it('should reset instance variables to default', () => {
-      throughputLimiter['currentBlockHeight'] = 1;
-      throughputLimiter['transactionsInCurrentBlock'] = [
-        {
-          transactionNumber: 1,
-          transactionTime: 1,
-          transactionTimeHash: 'some hash',
-          anchorString: 'some string',
-          transactionFeePaid: 333,
-          normalizedTransactionFee: 1
-        }
-      ];
-      throughputLimiter.reset();
-      expect(throughputLimiter['currentBlockHeight']).toBeUndefined();
-      expect(throughputLimiter['transactionsInCurrentBlock']).toEqual([]);
-    });
   });
 
   describe('getQualifiedTransactions', () => {
@@ -71,9 +57,25 @@ describe('ThroughputLimiter', () => {
         }
       ];
 
-      await throughputLimiter.getQualifiedTransactions(transactions);
-      expect(throughputLimiter['currentBlockHeight']).toEqual(3);
-      expect(throughputLimiter['transactionsInCurrentBlock']).toEqual([
+      const result = await throughputLimiter.getQualifiedTransactions(transactions);
+
+      const expected = [
+        {
+          transactionNumber: 1,
+          transactionTime: 1,
+          transactionTimeHash: 'some hash',
+          anchorString: 'some string',
+          transactionFeePaid: 333,
+          normalizedTransactionFee: 1
+        },
+        {
+          transactionNumber: 2,
+          transactionTime: 2,
+          transactionTimeHash: 'some hash',
+          anchorString: 'some string',
+          transactionFeePaid: 998,
+          normalizedTransactionFee: 1
+        },
         {
           transactionNumber: 4,
           transactionTime: 3,
@@ -82,8 +84,10 @@ describe('ThroughputLimiter', () => {
           transactionFeePaid: 14,
           normalizedTransactionFee: 1
         }
-      ]);
-      expect(transactionSelector.selectQualifiedTransactions).toHaveBeenCalledTimes(2);
+      ];
+
+      expect(transactionSelector.selectQualifiedTransactions).toHaveBeenCalledTimes(3);
+      expect(result).toEqual(expected);
     });
   });
 });

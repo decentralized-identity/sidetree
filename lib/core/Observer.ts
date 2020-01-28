@@ -292,6 +292,5 @@ export default class Observer {
 
     // Reset the in-memory last known good Transaction so we next processing cycle will fetch from the correct timestamp/maker.
     this.lastKnownTransaction = bestKnownValidRecentTransaction;
-    this.throughputLimiter.reset();
   }
 }

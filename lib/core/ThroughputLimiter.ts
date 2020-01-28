@@ -6,43 +6,41 @@ import TransactionModel from '../common/models/TransactionModel';
  */
 export default class ThroughputLimiter {
 
-  private currentBlockHeight: number | undefined;
-  private transactionsInCurrentBlock: TransactionModel[];
-
   constructor (
     private versionManager: IVersionManager
-  ) {
-    this.transactionsInCurrentBlock = [];
-  }
+  ) {}
 
   /**
-   * given a an array of transactions, return an array of qualified transactions based on current state
+   * given a an array of transactions, return an array of qualified transactions per transaction time.
    * @param transactions array of transactions to filter for
    */
   public async getQualifiedTransactions (transactions: TransactionModel[]) {
     let qualifiedTransactions: TransactionModel[] = [];
-    for (const transaction of transactions) {
-      if (transaction.transactionTime === this.currentBlockHeight) {
-        this.transactionsInCurrentBlock.push(transaction);
+    let transactionsInCurrentTransactionTime: TransactionModel[] = [];
+    let currentTransactionTime: number | undefined = undefined;
+
+    for (const idx in transactions) {
+      const transaction = transactions[idx];
+      if (transaction.transactionTime === currentTransactionTime) {
+        transactionsInCurrentTransactionTime.push(transaction);
       } else {
-        if (this.currentBlockHeight !== undefined) {
-          const transactionSelector = this.versionManager.getTransactionSelector(this.currentBlockHeight);
-          const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(this.transactionsInCurrentBlock);
+        if (currentTransactionTime !== undefined) {
+          const transactionSelector = this.versionManager.getTransactionSelector(currentTransactionTime);
+          const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(transactionsInCurrentTransactionTime);
           qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentBlock);
         }
-        this.currentBlockHeight = transaction.transactionTime;
-        this.transactionsInCurrentBlock = [transaction];
+        currentTransactionTime = transaction.transactionTime;
+        transactionsInCurrentTransactionTime = [transaction];
+      }
+
+      // the last transaction time need to be processed
+      if (Number(idx) === transactions.length - 1) {
+        const transactionSelector = this.versionManager.getTransactionSelector(currentTransactionTime);
+        const qualifiedTransactionsInCurrentBlock = await transactionSelector.selectQualifiedTransactions(transactionsInCurrentTransactionTime);
+        qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentBlock);
       }
     }
 
     return qualifiedTransactions;
-  }
-
-  /**
-   * resets the state of ThroughputLimiter instance
-   */
-  public reset () {
-    this.currentBlockHeight = undefined;
-    this.transactionsInCurrentBlock = [];
   }
 }
