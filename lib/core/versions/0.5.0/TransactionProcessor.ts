@@ -6,10 +6,10 @@ import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
+import SidetreeError from '../../Error';
 import timeSpan = require('time-span');
 import TransactionModel from '../../../common/models/TransactionModel';
 import { FetchResultCode } from '../../../common/FetchResultCode';
-import { SidetreeError } from '../../Error';
 
 /**
  * Implementation of the `ITransactionProcessor`.

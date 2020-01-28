@@ -2,9 +2,9 @@ import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/CoreErrorCode';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import SidetreeError from '../../lib/core/Error';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import { SidetreeError } from '../../lib/core/Error';
 
 describe('Blockchain', async () => {
   describe('read()', async () => {

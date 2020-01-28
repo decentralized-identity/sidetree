@@ -1,4 +1,4 @@
-import { SidetreeError } from '../lib/core/Error';
+import SidetreeError from '../lib/core/Error';
 
 /**
  * Encapsulates the helper functions for the tests.

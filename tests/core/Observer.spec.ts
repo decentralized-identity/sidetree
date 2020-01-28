@@ -20,11 +20,11 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
+import SidetreeError from '../../lib/core/Error';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
 import { FetchResultCode } from '../../lib/common/FetchResultCode';
-import { SidetreeError } from '../../lib/core/Error';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');

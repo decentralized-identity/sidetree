@@ -5,11 +5,11 @@ import ITransactionStore from './interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
 import SharedErrorCode from '../common/SharedErrorCode';
+import SidetreeError from './Error';
 import timeSpan = require('time-span');
 import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
-import { SidetreeError } from './Error';
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.

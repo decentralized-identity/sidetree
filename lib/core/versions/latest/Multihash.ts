@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import { SidetreeError } from '../../Error';
+import SidetreeError from '../../Error';
 const multihashes = require('multihashes');
 
 /**

@@ -8,7 +8,7 @@ import Jws from './util/Jws';
 import JwsModel from './models/JwsModel';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
-import { SidetreeError } from '../../Error';
+import SidetreeError from '../../Error';
 
 /**
  * Sidetree operation types.

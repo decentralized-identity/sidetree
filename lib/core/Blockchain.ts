@@ -7,8 +7,8 @@ import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
+import SidetreeError from './Error';
 import TransactionModel from '../common/models/TransactionModel';
-import { SidetreeError } from './Error';
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
