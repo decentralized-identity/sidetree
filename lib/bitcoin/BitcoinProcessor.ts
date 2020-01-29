@@ -201,16 +201,23 @@ export default class BitcoinProcessor {
         normalizedTransactionFee: transaction.normalizedTransactionFee
       };
 
+      // If this transaction is written at the same time as the previous transaction.
       if (filteredTransaction.transactionTime === currentTransactionTime) {
         transactionsInCurrentTransactionTime.push(filteredTransaction);
       } else {
+        // Else this transaction is transitioning into a new transaction time.
+
+        // If there were transactions seen prior to the new time transition, add them to the list of transactions to be returned.
         if (currentTransactionTime !== undefined) {
           transactionsToReturn = transactionsToReturn.concat(transactionsInCurrentTransactionTime);
         }
+
+        // Initialize state with new transaction data.
         currentTransactionTime = filteredTransaction.transactionTime;
         transactionsInCurrentTransactionTime = [filteredTransaction];
       }
 
+      // NOTE: Only return transactions in blocks that have been COMPLETELY processed.
       if (currentTransactionTime > this.lastProcessedBlock.height) {
         break;
       }

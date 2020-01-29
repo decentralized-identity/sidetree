@@ -15,11 +15,11 @@ export default class ThroughputLimiter {
    * @param transactions array of transactions to filter for
    */
   public async getQualifiedTransactions (transactions: TransactionModel[]) {
-    let qualifiedTransactions: TransactionModel[] = [];
     let currentTransactionTime: number | undefined = undefined;
     const transactionsGroupedByTransactionTime: TransactionModel[][] = [];
 
     for (const transaction of transactions) {
+      // If transaction is transitioning into a new time, create a new grouping.
       if (transaction.transactionTime !== currentTransactionTime) {
         transactionsGroupedByTransactionTime.push([]);
         currentTransactionTime = transaction.transactionTime;
@@ -27,10 +27,11 @@ export default class ThroughputLimiter {
       transactionsGroupedByTransactionTime[transactionsGroupedByTransactionTime.length - 1].push(transaction);
     }
 
+    const qualifiedTransactions: TransactionModel[] = [];
     for (const transactionGroup of transactionsGroupedByTransactionTime) {
       const transactionSelector = this.versionManager.getTransactionSelector(transactionGroup[0].transactionTime);
       const qualifiedTransactionsInCurrentGroup = await transactionSelector.selectQualifiedTransactions(transactionGroup);
-      qualifiedTransactions = qualifiedTransactions.concat(qualifiedTransactionsInCurrentGroup);
+      qualifiedTransactions.push(...qualifiedTransactionsInCurrentGroup);
     }
     return qualifiedTransactions;
   }
