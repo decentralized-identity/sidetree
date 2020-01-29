@@ -6,7 +6,7 @@ import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
-import { SidetreeError } from '../../lib/core/Error';
+import SidetreeError from '../../lib/core/SidetreeError';
 
 describe('Operation', async () => {
   describe('create()', async () => {

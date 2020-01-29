@@ -1,7 +1,7 @@
 import AnchoredData from './models/AnchoredData';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import { SidetreeError } from '../../Error';
+import SidetreeError from '../../SidetreeError';
 
 /**
  * Encapsulates functionality to serialize/deserialize data that read/write to

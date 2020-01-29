@@ -45,10 +45,14 @@
     "typescript": "3.4.3"
   },
   "scripts": {
-    "precommit": "npm run lint",
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
     "lint": "tslint --fix --project ."
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
   },
   "nyc": {
     "all": true,

@@ -5,7 +5,7 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
-import { SidetreeError } from '../../Error';
+import SidetreeError from '../../SidetreeError';
 
 /**
  * Class containing Anchor File related operations.

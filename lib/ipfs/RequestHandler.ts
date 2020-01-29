@@ -1,7 +1,7 @@
 import base64url from 'base64url';
+import FetchResultCode from '../common/FetchResultCode';
 import IpfsStorage from './IpfsStorage';
 import ServiceInfo from '../common/ServiceInfoProvider';
-import { FetchResultCode } from '../common/FetchResultCode';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
 

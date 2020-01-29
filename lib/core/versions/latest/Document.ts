@@ -5,7 +5,7 @@ import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
-import { SidetreeError } from '../../Error';
+import SidetreeError from '../../SidetreeError';
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.

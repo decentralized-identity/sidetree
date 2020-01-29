@@ -1,11 +1,11 @@
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
+import Cas from '../../lib/core/Cas';
+import DownloadManager from '../../lib/core/DownloadManager';
+import FetchResult from '../../lib/common/models/FetchResult';
+import FetchResultCode from '../../lib/common/FetchResultCode';
+import MockOperationStore from '../mocks/MockOperationStore';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
-import MockOperationStore from '../mocks/MockOperationStore';
-import DownloadManager from '../../lib/core/DownloadManager';
-import Cas from '../../lib/core/Cas';
-import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
-import { FetchResultCode } from '../../lib/common/FetchResultCode';
-import FetchResult from '../../lib/common/models/FetchResult';
 
 describe('TransactionProcessor', () => {
   const config = require('../json/config-test.json');

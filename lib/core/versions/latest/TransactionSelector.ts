@@ -4,8 +4,8 @@ import ITransactionSelector from '../../interfaces/ITransactionSelector';
 import ITransactionStore from '../../interfaces/ITransactionStore';
 import PriorityQueue from 'priorityqueue';
 import ProtocolParameters from './ProtocolParameters';
+import SidetreeError from '../../SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
-import { SidetreeError } from '../../Error';
 
 /**
  * rate limits how many operations is valid per block

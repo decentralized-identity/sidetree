@@ -1,7 +1,7 @@
 /**
  * Return code for a content fetch.
  */
-export enum FetchResultCode {
+enum FetchResultCode {
   CasNotReachable = 'cas_not_reachable',
   InvalidHash = 'content_hash_invalid',
   MaxSizeExceeded = 'content_exceeds_maximum_allowed_size',
@@ -10,3 +10,5 @@ export enum FetchResultCode {
   NotFound = 'content_not_found',
   Success = 'success'
 }
+
+export default FetchResultCode;
