@@ -326,6 +326,24 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('calculateTransactionFee', () => {
+    it('should calculate the fee correctly', async () => {
+      let estimatedFee = 1000;
+      spyOn(bitcoinClient as any, 'getEstimatedFeePerKb').and.returnValue(estimatedFee);
+
+      const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10000);
+
+      let txnEstimatedSize = (mockTransaction.inputs.length * 150) + (mockTransaction.outputs.length * 50);
+      txnEstimatedSize += txnEstimatedSize * .2;
+      estimatedFee += estimatedFee * .2;
+
+      const expectedFee = (txnEstimatedSize / 1000) * estimatedFee;
+      const actualFee = await bitcoinClient['calculateTransactionFee'](mockTransaction);
+
+      expect(expectedFee).toEqual(actualFee);
+    });
+  });
+
   describe('createFreezeBitcoreTransaction', () => {
     it('should create the freeze transaction correctly', async () => {
       const mockFreezeUntilBlock = 987654;
@@ -336,10 +354,13 @@ describe('BitcoinClient', async () => {
 
       const mockUnspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, Math.pow(10, 8));
 
+      const mockTxnFee = 2000;
       const createScriptSpy = spyOn(bitcoinClient as any, 'createFreezeBitcoreScript').and.returnValue(mockRedeemScript);
-      const estimateFeeSpy = spyOn(bitcoinClient as any, 'getEstimatedFeePerKb').and.returnValue(200);
+      const estimateFeeSpy = spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(mockTxnFee);
 
       const actual = await bitcoinClient['createFreezeBitcoreTransaction']([mockUnspentOutput], mockFreezeUntilBlock, mockFreezeAmount);
+
+      expect(actual.getFee()).toEqual(mockTxnFee);
 
       // There should be 2 outputs
       expect(actual.outputs.length).toEqual(2);
@@ -414,8 +435,7 @@ describe('BitcoinClient', async () => {
 
       const createUnspentSpy = spyOn(bitcoinClient as any, 'createBitcoreUnspentOutputFromFrozenTransaction').and.returnValue(mockUnspentOutput);
       const createScriptSpy = spyOn(bitcoinClient as any, 'createFreezeBitcoreScript').and.returnValue(mockRedeemScript);
-      const estimateFeeSpy = spyOn(bitcoinClient as any, 'getEstimatedFeePerKb').and.returnValue(100);
-      const txnGetFeeSpy = spyOn(Transaction.prototype, 'getFee').and.returnValue(mockTxnFee);
+      const estimateFeeSpy = spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(mockTxnFee);
 
       const actual = await bitcoinClient['createSpendBitcoreTransactionFromFrozenTransaction'](mockFreezeTxn, mockFreezeUntilBlock, mockPayToAddress);
 
@@ -427,9 +447,6 @@ describe('BitcoinClient', async () => {
       expect(actual.outputs[0].script.toASM()).toEqual(mockPayToAddressScriptHash.toASM());
 
       // The fee should be correctly set as per the estimate
-      expect(estimateFeeSpy).toHaveBeenCalled();
-      expect(txnGetFeeSpy).toHaveBeenCalled();
-      txnGetFeeSpy.and.callThrough();
       expect(actual.getFee()).toEqual(mockTxnFee);
 
       // There's only 1 input (from the previous freeze txn)
@@ -449,6 +466,7 @@ describe('BitcoinClient', async () => {
       // Check other function calls
       expect(createUnspentSpy).toHaveBeenCalledWith(mockFreezeTxn, mockFreezeUntilBlock);
       expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock);
+      expect(estimateFeeSpy).toHaveBeenCalled();
     });
   });
 

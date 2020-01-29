@@ -325,6 +325,17 @@ export default class BitcoinClient {
     return transaction;
   }
 
+  private async calculateTransactionFee (transaction: Transaction): Promise<number> {
+    const estimatedFeeInKb = await this.getEstimatedFeePerKb();
+    const estimatedFeeInKbWithPercentage = estimatedFeeInKb + (estimatedFeeInKb * .2); // Add some percentage
+
+    const estimatedSizeInBytes = (transaction.inputs.length * 150) + (transaction.outputs.length * 50);
+    const estimatedSizeInBytesWithPercentage = estimatedSizeInBytes + (estimatedSizeInBytes * .2); // Add some percentage
+    const estimatedSizeInKb = estimatedSizeInBytesWithPercentage / 1000;
+
+    return estimatedSizeInKb * estimatedFeeInKbWithPercentage;
+  }
+
   // @ts-ignore
   private async createFreezeBitcoreTransaction (
     unspentCoins: Transaction.UnspentOutput[],
@@ -335,13 +346,15 @@ export default class BitcoinClient {
     const freezeScriptHash = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(freezeScriptHash);
 
-    const transactionFeePerKb = await this.getEstimatedFeePerKb();
     const freezeTransaction = new Transaction()
                               .from(unspentCoins)
                               .to(payToScriptAddress, freezeAmountInSatoshis)
-                              .feePerKb(transactionFeePerKb)
-                              .change(this.privateKeyAddress)
-                              .sign(this.privateKey);
+                              .change(this.privateKeyAddress);
+
+    const transactionFee = await this.calculateTransactionFee(freezeTransaction);
+
+    freezeTransaction.fee(transactionFee)
+                     .sign(this.privateKey);
 
     return freezeTransaction;
   }
@@ -393,22 +406,19 @@ export default class BitcoinClient {
     const previousFreezeAmountInSatoshis = frozenOutputAsInput.satoshis;
 
     // Now create a spend transaction using the frozen output
-    const transactionFeePerKb = await this.getEstimatedFeePerKb();
     const spendTransaction = new Transaction()
                                    .from([frozenOutputAsInput])
                                    .to(paytoAddress, previousFreezeAmountInSatoshis)
-                                   .feePerKb(transactionFeePerKb)
                                    .lockUntilBlockHeight(previousFreezeUntilBlock);
 
-    // We have set the estimated fee/KB above. The transaction object now will calculate
-    // the fee based on the size (in KB) of the transaction. We need to subtract that fee
-    // from the satoshis which are going to the 'payToAddress'.
-    const estimatedFee = spendTransaction.getFee();
+    const transactionFee = await this.calculateTransactionFee(spendTransaction);
 
-    // We cannot just update the output (readonly), so we need to first remove it, and add another
-    // one with the correct amount (minus fee).
+    // We need to set the transaction fee and subtract that fee from the freeze amount.
+    // We cannot just update the existing output (it's readonly), so we need to first remove it,
+    // and add another one with the correct amount.
     spendTransaction.outputs.shift();
-    spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - estimatedFee);
+    spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - transactionFee)
+                    .fee(transactionFee);
 
     // Now update the first input to include it's signature. The previous redeem script is part
     // of the input so we need that now.
