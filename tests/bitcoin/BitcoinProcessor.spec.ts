@@ -324,7 +324,7 @@ describe('BitcoinProcessor', () => {
       expect(verifyMock).not.toHaveBeenCalled();
       expect(actual).toEqual({
         transactions: [],
-        moreTransactions: true
+        moreTransactions: false
       });
       done();
     });
