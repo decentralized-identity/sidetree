@@ -183,12 +183,19 @@ export default class BitcoinProcessor {
       };
     }
 
-    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
-    let transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
+    const transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
+
+    if (transactions.length === 0) {
+      return {
+        transactions: [],
+        moreTransactions: false
+      };
+    }
 
     let currentTransactionTime: number | undefined = undefined;
     let transactionsInCurrentTransactionTime: TransactionModel[] = [];
-    let transactionsToReturn: TransactionModel[] = [];
+    const transactionsToReturn: TransactionModel[] = [];
 
     for (const transaction of transactions) {
       // filter the results to only return transactions, and not internal data
@@ -209,7 +216,7 @@ export default class BitcoinProcessor {
 
         // If there were transactions seen prior to the new time transition, add them to the list of transactions to be returned.
         if (currentTransactionTime !== undefined) {
-          transactionsToReturn = transactionsToReturn.concat(transactionsInCurrentTransactionTime);
+          transactionsToReturn.push(...transactionsInCurrentTransactionTime);
         }
 
         // Initialize state with new transaction data.
@@ -223,9 +230,9 @@ export default class BitcoinProcessor {
       }
     }
 
-    if (transactions.length < this.pageSize && currentTransactionTime !== undefined && currentTransactionTime <= this.lastProcessedBlock.height) {
+    if (transactions.length < this.pageSize && currentTransactionTime! <= this.lastProcessedBlock.height) {
       // this means we grabbed the entire last block, we can include it in the return.
-      transactionsToReturn = transactionsToReturn.concat(transactionsInCurrentTransactionTime);
+      transactionsToReturn.push(...transactionsInCurrentTransactionTime);
     }
 
     return {

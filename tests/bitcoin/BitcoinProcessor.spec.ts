@@ -355,6 +355,27 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
+    it('should return default if transactions is empty array', async (done) => {
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
+      bitcoinProcessor['lastProcessedBlock'] = {
+        height: Number.MAX_SAFE_INTEGER,
+        hash: 'some hash',
+        previousHash: 'previous hash'
+      };
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
+        expect(since).toBeUndefined();
+        expect(pages).toEqual(testConfig.transactionFetchPageSize);
+        return Promise.resolve([]);
+      }));
+
+      const actual = await bitcoinProcessor.transactions();
+      expect(verifyMock).not.toHaveBeenCalled();
+      expect(laterThanMock).toHaveBeenCalled();
+      expect(actual.moreTransactions).toBeFalsy();
+      expect(actual.transactions).toEqual([]);
+      done();
+    });
+
     it('should ignore transactions that may not be complete when page size is filled', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       bitcoinProcessor['lastProcessedBlock'] = {
