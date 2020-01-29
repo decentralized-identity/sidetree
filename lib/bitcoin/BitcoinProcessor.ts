@@ -223,7 +223,7 @@ export default class BitcoinProcessor {
       }
     }
 
-    if (transactions.length < this.pageSize && currentTransactionTime === this.lastProcessedBlock.height) {
+    if (transactions.length < this.pageSize && currentTransactionTime !== undefined && currentTransactionTime <= this.lastProcessedBlock.height) {
       // this means we grabbed the entire last block, we can include it in the return.
       transactionsToReturn = transactionsToReturn.concat(transactionsInCurrentTransactionTime);
     }

@@ -246,7 +246,7 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('transactions', () => {
-    it('should get transactions since genesis limited by page size', async (done) => {
+    it('should get transactions since genesis with no filtering if page size is not reached', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       bitcoinProcessor['lastProcessedBlock'] = {
         height: Number.MAX_SAFE_INTEGER,
@@ -264,7 +264,7 @@ describe('BitcoinProcessor', () => {
       expect(verifyMock).not.toHaveBeenCalled();
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy();
-      expect(actual.transactions).toEqual(transactions.slice(0, transactions.length - 1));
+      expect(actual.transactions).toEqual(transactions);
       done();
     });
 
@@ -316,6 +316,32 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
+    it('should get transactions since genesis and handle incomplete last block', async (done) => {
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
+      const transactions = createTransactions(undefined, undefined, true);
+      // making page size the same as transactions length indicates that the last block may not be complete in current page
+      bitcoinProcessor['pageSize'] = transactions.length;
+      // make the last transaction time to be the same as last processed block height
+      const lastProcessedBlockHeight = transactions[transactions.length - 1].transactionTime;
+      bitcoinProcessor['lastProcessedBlock'] = {
+        height: lastProcessedBlockHeight,
+        hash: 'some hash',
+        previousHash: 'previous hash'
+      };
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
+        expect(since).toBeUndefined();
+        expect(pages).toEqual(transactions.length);
+        return Promise.resolve(transactions);
+      }));
+
+      const actual = await bitcoinProcessor.transactions();
+      expect(verifyMock).not.toHaveBeenCalled();
+      expect(laterThanMock).toHaveBeenCalled();
+      expect(actual.moreTransactions).toBeTruthy();
+      expect(actual.transactions).toEqual(transactions.slice(0, transactions.length - 1));
+      done();
+    });
+
     it('should return default if last processed block is not initialized', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       bitcoinProcessor['lastProcessedBlock'] = undefined;
@@ -329,7 +355,7 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should ignore transactions that may not be complete', async (done) => {
+    it('should ignore transactions that may not be complete when page size is filled', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       bitcoinProcessor['lastProcessedBlock'] = {
         height: Number.MAX_SAFE_INTEGER,
@@ -338,17 +364,21 @@ describe('BitcoinProcessor', () => {
       };
       // the false argument makes all the transaction time the same which makes the block incomplete
       const transactions = createTransactions(undefined, undefined, false);
+      // this indicates a complete block for the first transaction thus should be included
+      transactions[0].transactionTime--;
+      // fill up page size
+      bitcoinProcessor['pageSize'] = transactions.length;
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsLaterThan').and.callFake(((since: number, pages: number) => {
         expect(since).toBeUndefined();
-        expect(pages).toEqual(testConfig.transactionFetchPageSize);
+        expect(pages).toEqual(transactions.length);
         return Promise.resolve(transactions);
       }));
 
       const actual = await bitcoinProcessor.transactions();
       expect(verifyMock).not.toHaveBeenCalled();
       expect(laterThanMock).toHaveBeenCalled();
-      expect(actual.moreTransactions).toBeFalsy();
-      expect(actual.transactions).toEqual([]);
+      expect(actual.moreTransactions).toBeTruthy();
+      expect(actual.transactions).toEqual([transactions[0]]);
       done();
     });
 
@@ -376,7 +406,7 @@ describe('BitcoinProcessor', () => {
       expect(verifyMock).toHaveBeenCalled();
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeFalsy();
-      expect(actual.transactions).toEqual(transactions.slice(0, transactions.length - 1));
+      expect(actual.transactions).toEqual(transactions);
       done();
     });
 
