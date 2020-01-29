@@ -207,7 +207,7 @@ describe('BitcoinClient', async () => {
   describe('getEstimatedFeePerKb', () => {
     it('should call the correct rpc and return the fee', async () => {
       const mockFee = 155;
-      const spy = mockRpcCall('estimatesmartfee', [3], { feerate: mockFee });
+      const spy = mockRpcCall('estimatesmartfee', [1], { feerate: mockFee });
 
       const actual = await bitcoinClient['getEstimatedFeePerKb']();
       expect(actual).toEqual(mockFee);

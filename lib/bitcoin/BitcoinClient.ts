@@ -265,7 +265,7 @@ export default class BitcoinClient {
     const request = {
       method: 'estimatesmartfee',
       params: [
-        3 // Number of confirmation targtes
+        1 // Number of confirmation targtes
       ]
     };
 
@@ -374,6 +374,15 @@ export default class BitcoinClient {
   }
 
   // @ts-ignore
+  /**
+   * Creates a spend transaction to spend the previously frozen output. The details
+   * on how to create a spend transactions were taking from the BIP65 demo at:
+   * https://github.com/mruddy/bip65-demos/blob/master/freeze.js.
+   *
+   * @param previousFreezeTransaction The previously frozen transaction.
+   * @param previousFreezeUntilBlock The previously frozen transaction's freeze until block.
+   * @param paytoAddress The address where the spend transaction should go to.
+   */
   private async createSpendBitcoreTransactionFromFrozenTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number,
@@ -392,8 +401,8 @@ export default class BitcoinClient {
                                    .lockUntilBlockHeight(previousFreezeUntilBlock);
 
     // We have set the estimated fee/KB above. The transaction object now will calculate
-    // the estimated total fee based on the size (in KB) of the transaction. We need to
-    // subtract that fee from the satoshis which are going to the 'payToAddress'.
+    // the fee based on the size (in KB) of the transaction. We need to subtract that fee
+    // from the satoshis which are going to the 'payToAddress'.
     const estimatedFee = spendTransaction.getFee();
 
     // We cannot just update the output (readonly), so we need to first remove it, and add another
