@@ -208,7 +208,7 @@ GET /transactions?since=170&transaction-time-hash=00000000000000000000100158f474
 ```
 
 #### Response body schema
-> Note: The transactions array will always end with a complete block of data, but can start in the middle of a block.
+The transactions array must always end with a complete block of data, but can start in the middle of a block if `since` query parameter is provided.
 ```json
 {
   "moreTransactions": "True if there are more transactions beyond the returned batch. False otherwise.",
