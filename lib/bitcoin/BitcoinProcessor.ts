@@ -179,7 +179,7 @@ export default class BitcoinProcessor {
     if (this.lastProcessedBlock === undefined) {
       return {
         transactions: [],
-        moreTransactions: true
+        moreTransactions: false
       };
     }
 
