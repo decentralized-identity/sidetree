@@ -204,13 +204,15 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('getEstimatedFeePerKb', () => {
+  describe('getCurrentEstimatedFeeInSatoshisPerKb', () => {
     it('should call the correct rpc and return the fee', async () => {
-      const mockFee = 155;
-      const spy = mockRpcCall('estimatesmartfee', [1], { feerate: mockFee });
+      const mockFeeInBitcoins = 155;
+      const spy = mockRpcCall('estimatesmartfee', [1], { feerate: mockFeeInBitcoins });
 
-      const actual = await bitcoinClient['getEstimatedFeePerKb']();
-      expect(actual).toEqual(mockFee);
+      const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
+
+      const actual = await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKb']();
+      expect(actual).toEqual(expectedFeeInSatoshis);
       expect(spy).toHaveBeenCalled();
     });
   });
@@ -329,7 +331,7 @@ describe('BitcoinClient', async () => {
   describe('calculateTransactionFee', () => {
     it('should calculate the fee correctly', async () => {
       let estimatedFee = 1000;
-      spyOn(bitcoinClient as any, 'getEstimatedFeePerKb').and.returnValue(estimatedFee);
+      spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKb').and.returnValue(estimatedFee);
 
       const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10000);
 

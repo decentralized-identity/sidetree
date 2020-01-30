@@ -5,7 +5,7 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, crypto, Networks, PrivateKey, Script, Transaction } from 'bitcore-lib';
+import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
@@ -88,8 +88,6 @@ export default class BitcoinClient {
 
     const transaction = await this.createBitcoreTransaction(transactionData, feeInSatoshis);
     const rawTransaction = transaction.serialize();
-
-    console.info(`Broadcasting transaction ${transaction.id}`);
 
     const request = {
       method: 'sendrawtransaction',
@@ -261,7 +259,7 @@ export default class BitcoinClient {
     return response.labels.length > 0 || response.iswatchonly;
   }
 
-  private async getEstimatedFeePerKb (): Promise<number> {
+  private async getCurrentEstimatedFeeInSatoshisPerKb (): Promise<number> {
     const request = {
       method: 'estimatesmartfee',
       params: [
@@ -270,7 +268,9 @@ export default class BitcoinClient {
     };
 
     const response = await this.rpcCall(request, true);
-    return response.feerate;
+    const feerateInBtc = response.feerate;
+
+    return Unit.fromBTC(feerateInBtc).toSatoshis();
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */
@@ -325,12 +325,20 @@ export default class BitcoinClient {
     return transaction;
   }
 
+  /**
+   * Calculates an estimated fee for the given transaction. All the inputs and outputs MUST
+   * be already set to get the estimate more accurate.
+   *
+   * @param transaction The transaction for which the fee is to be calculated.
+   */
   private async calculateTransactionFee (transaction: Transaction): Promise<number> {
-    const estimatedFeeInKb = await this.getEstimatedFeePerKb();
-    const estimatedFeeInKbWithPercentage = estimatedFeeInKb + (estimatedFeeInKb * .2); // Add some percentage
+    // Get esimtated fee from RPC and add some percentage to it.
+    const estimatedFeeInKb = await this.getCurrentEstimatedFeeInSatoshisPerKb();
+    const estimatedFeeInKbWithPercentage = estimatedFeeInKb + (estimatedFeeInKb * .2);
 
+    // Estimate the size of the transaction and add some percentage to it.
     const estimatedSizeInBytes = (transaction.inputs.length * 150) + (transaction.outputs.length * 50);
-    const estimatedSizeInBytesWithPercentage = estimatedSizeInBytes + (estimatedSizeInBytes * .2); // Add some percentage
+    const estimatedSizeInBytesWithPercentage = estimatedSizeInBytes + (estimatedSizeInBytes * .2);
     const estimatedSizeInKb = estimatedSizeInBytesWithPercentage / 1000;
 
     return estimatedSizeInKb * estimatedFeeInKbWithPercentage;
@@ -389,7 +397,7 @@ export default class BitcoinClient {
   // @ts-ignore
   /**
    * Creates a spend transaction to spend the previously frozen output. The details
-   * on how to create a spend transactions were taking from the BIP65 demo at:
+   * on how to create a spend transactions were taken from the BIP65 demo at:
    * https://github.com/mruddy/bip65-demos/blob/master/freeze.js.
    *
    * @param previousFreezeTransaction The previously frozen transaction.
@@ -405,7 +413,8 @@ export default class BitcoinClient {
     const frozenOutputAsInput = this.createBitcoreUnspentOutputFromFrozenTransaction(previousFreezeTransaction, previousFreezeUntilBlock);
     const previousFreezeAmountInSatoshis = frozenOutputAsInput.satoshis;
 
-    // Now create a spend transaction using the frozen output
+    // Now create a spend transaction using the frozen output. Create the transaction with all
+    // inputs and outputs as they are needed to calculate the fee.
     const spendTransaction = new Transaction()
                                    .from([frozenOutputAsInput])
                                    .to(paytoAddress, previousFreezeAmountInSatoshis)
@@ -420,11 +429,11 @@ export default class BitcoinClient {
     spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - transactionFee)
                     .fee(transactionFee);
 
-    // Now update the first input to include it's signature. The previous redeem script is part
-    // of the input so we need that now.
+    // Now update the first input to include it's signature.
+    // Create an input in the format expected for a spend-from-freeze input and set it on the
+    // transaction.
     const previousFreezeScript = this.createFreezeBitcoreScript(previousFreezeUntilBlock);
     const signature = (Transaction as any).sighash.sign(spendTransaction, this.privateKey, 0x1, 0, previousFreezeScript);
-
     const inputScript = Script.empty()
                               .add(signature.toTxFormat())
                               .add(this.privateKey.toPublicKey().toBuffer())
