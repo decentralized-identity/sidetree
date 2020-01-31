@@ -418,7 +418,8 @@ export default class BitcoinClient {
     const spendTransaction = new Transaction()
                                    .from([frozenOutputAsInput])
                                    .to(paytoAddress, previousFreezeAmountInSatoshis)
-                                   .lockUntilBlockHeight(previousFreezeUntilBlock);
+                                   .lockUntilBlockHeight(previousFreezeUntilBlock); // Transaction remains in mempool until specified block height.
+
 
     const transactionFee = await this.calculateTransactionFee(spendTransaction);
 
