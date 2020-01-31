@@ -54,9 +54,6 @@ export default class BitcoinProcessor {
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
 
-  /** Number of items to return per page */
-  public pageSize: number;
-
   /** Number of seconds between transaction queries */
   public pollPeriod: number;
 
@@ -83,6 +80,9 @@ export default class BitcoinProcessor {
   /** satoshis per bitcoin */
   private static readonly satoshiPerBitcoin = 100000000;
 
+  /** at least 10 blocks per page unless reaching the last block */
+  private static readonly pageSizeInBlocks = 10;
+
   public constructor (config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -99,7 +99,6 @@ export default class BitcoinProcessor {
       mongoQuantileStore);
     this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
 
-    this.pageSize = config.transactionFetchPageSize;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
@@ -184,22 +183,16 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
-    const transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
 
-    if (transactions.length === 0) {
+    const groupedTransactions = await this.getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber(since);
+    // if not enough blocks to fill the page then there are no more transactions
+    const moreTransactions = groupedTransactions.length >= BitcoinProcessor.pageSizeInBlocks;
+    let transactions: TransactionModel[] = [];
+    // flatten out transactions into array of transactions instead of array of array
+    transactions = transactions.concat(...groupedTransactions);
+    // filter the results to only return transactions, and not internal data
+    transactions = transactions.map((transaction) => {
       return {
-        transactions: [],
-        moreTransactions: false
-      };
-    }
-
-    let currentTransactionTime: number | undefined = undefined;
-    let transactionsInCurrentTransactionTime: TransactionModel[] = [];
-    const transactionsToReturn: TransactionModel[] = [];
-
-    for (const transaction of transactions) {
-      // filter the results to only return transactions, and not internal data
-      const filteredTransaction = {
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
@@ -207,37 +200,11 @@ export default class BitcoinProcessor {
         transactionFeePaid: transaction.transactionFeePaid,
         normalizedTransactionFee: transaction.normalizedTransactionFee
       };
-
-      // If this transaction is written at the same time as the previous transaction.
-      if (filteredTransaction.transactionTime === currentTransactionTime) {
-        transactionsInCurrentTransactionTime.push(filteredTransaction);
-      } else {
-        // Else this transaction is transitioning into a new transaction time.
-
-        // If there were transactions seen prior to the new time transition, add them to the list of transactions to be returned.
-        if (currentTransactionTime !== undefined) {
-          transactionsToReturn.push(...transactionsInCurrentTransactionTime);
-        }
-
-        // Initialize state with new transaction data.
-        currentTransactionTime = filteredTransaction.transactionTime;
-        transactionsInCurrentTransactionTime = [filteredTransaction];
-      }
-
-      // NOTE: Only return transactions in blocks that have been COMPLETELY processed.
-      if (currentTransactionTime > this.lastProcessedBlock.height) {
-        break;
-      }
-    }
-
-    if (transactions.length < this.pageSize && currentTransactionTime! <= this.lastProcessedBlock.height) {
-      // this means we grabbed the entire last block, we can include it in the return.
-      transactionsToReturn.push(...transactionsInCurrentTransactionTime);
-    }
+    });
 
     return {
-      transactions: transactionsToReturn,
-      moreTransactions: transactions.length === this.pageSize
+      transactions,
+      moreTransactions
     };
   }
 
@@ -749,5 +716,52 @@ export default class BitcoinProcessor {
 
     // non sidetree transaction
     return sidetreeTxToAdd;
+  }
+
+  /**
+   * Return transactions grouped by block height. EX: [[transactions in block1], [transactions in block2], [transactions in block3]]
+   * @param since Transaction number to query since
+   * @param numOfBlocks number of blocks worth of transactions to get at least
+   */
+  private async getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber (since: number | undefined): Promise<TransactionModel[][]> {
+    let beginTransactionNumber = since === undefined ? 0 : TransactionNumber.getBlockNumber(since);
+    let endTransactionNumber = beginTransactionNumber + BitcoinProcessor.pageSizeInBlocks;
+
+    const groupedTransactionsToReturn: TransactionModel[][] = [];
+
+    // while need more blocks and have not reached the processed block
+    while (groupedTransactionsToReturn.length < BitcoinProcessor.pageSizeInBlocks && beginTransactionNumber <= this.lastProcessedBlock!.height) {
+      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsByTransactionTime(beginTransactionNumber, endTransactionNumber);
+
+      transactions = transactions.filter((transaction) => {
+        // filter anything greater than the last processed block because they are not complete
+        return transaction.transactionTime <= this.lastProcessedBlock!.height &&
+          // if there is a since, filter transactions that are less than or equal to since (the first block will have undesired transactions)
+          (since === undefined || transaction.transactionNumber > since);
+      });
+
+      const transactionsGroupedByTransactionTime: TransactionModel[][] = BitcoinProcessor.groupTransactionsByTransactionTime(transactions);
+      beginTransactionNumber = endTransactionNumber;
+      endTransactionNumber = beginTransactionNumber + BitcoinProcessor.pageSizeInBlocks;
+      groupedTransactionsToReturn.push(...transactionsGroupedByTransactionTime);
+    }
+
+    return groupedTransactionsToReturn;
+  }
+
+  private static groupTransactionsByTransactionTime (transactions: TransactionModel[]): TransactionModel[][] {
+    let currentTransactionTime: number | undefined = undefined;
+    const transactionsGroupedByTransactionTime: TransactionModel[][] = [];
+
+    for (const transaction of transactions) {
+      // If transaction is transitioning into a new time, create a new grouping.
+      if (transaction.transactionTime !== currentTransactionTime) {
+        transactionsGroupedByTransactionTime.push([]);
+        currentTransactionTime = transaction.transactionTime;
+      }
+      transactionsGroupedByTransactionTime[transactionsGroupedByTransactionTime.length - 1].push(transaction);
+    }
+
+    return transactionsGroupedByTransactionTime;
   }
 }

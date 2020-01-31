@@ -158,11 +158,30 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   }
 
   /**
-   * Gets a list of transactions that are in the desired transaction time
-   * @param transactionTime The transaction time to query for
+   * Gets a list of transactions between the bounds of transaction time.
+   * @param beginTransactionTime The first transaction time to query for (inclusive)
+   * @param endTransactionTime The transaction time to stop querying for (exclusive). Optional. If not provided, then only query for beginTransactionTime
    */
-  public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
-    const transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(transactionTime) } }).toArray();
+  public async getTransactionsByTransactionTime (beginTransactionTime: number, endTransactionTime?: number): Promise<TransactionModel[]> {
+    let transactions: TransactionModel[] = [];
+
+    if (beginTransactionTime === endTransactionTime || endTransactionTime === undefined) {
+      // if begin === end or end is not provided, query for 1 transaction time
+      transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(beginTransactionTime) } }).toArray();
+    } else if (beginTransactionTime < endTransactionTime) {
+      // if begin < end, query forward in time
+      transactions = await this.transactionCollection!.find({ $and: [
+        { transactionTime: { $gte: Long.fromNumber(beginTransactionTime) } },
+        { transactionTime: { $lt: Long.fromNumber(endTransactionTime) } }
+      ] }).toArray();
+    } else if (beginTransactionTime > endTransactionTime) {
+      // if begin > end, query backward in time
+      transactions = await this.transactionCollection!.find({ $and: [
+        { transactionTime: { $lte: Long.fromNumber(beginTransactionTime) } },
+        { transactionTime: { $gt: Long.fromNumber(endTransactionTime) } }
+      ] }).toArray();
+    }
+
     return transactions;
   }
 
