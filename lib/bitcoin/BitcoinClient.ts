@@ -17,8 +17,8 @@ export default class BitcoinClient {
   private readonly bitcoinAuthorization?: string;
 
   /** Wallet private key */
-  private readonly privateKey: PrivateKey;
-  private readonly privateKeyAddress: Address;
+  private readonly walletPrivateKey: PrivateKey;
+  private readonly walletAddress: Address;
 
   constructor (
     private bitcoinPeerUri: string,
@@ -30,12 +30,12 @@ export default class BitcoinClient {
 
     // Bitcore has a type file error on PrivateKey
     try {
-      this.privateKey = (PrivateKey as any).fromWIF(bitcoinWalletImportString);
+      this.walletPrivateKey = (PrivateKey as any).fromWIF(bitcoinWalletImportString);
     } catch (error) {
       throw new Error(`Failed creating private key from '${bitcoinWalletImportString}': ${error.message}`);
     }
 
-    this.privateKeyAddress = this.privateKey.toAddress();
+    this.walletAddress = this.walletPrivateKey.toAddress();
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
@@ -47,11 +47,11 @@ export default class BitcoinClient {
    */
   public async initialize (): Promise<void> {
 
-    console.debug(`Checking if bitcoin contains a wallet for ${this.privateKeyAddress}`);
-    if (!await this.isAddressAddedToWallet(this.privateKeyAddress.toString())) {
-      console.debug(`Configuring bitcoin peer to watch address ${this.privateKeyAddress}. This can take up to 10 minutes.`);
+    console.debug(`Checking if bitcoin contains a wallet for ${this.walletAddress}`);
+    if (!await this.isAddressAddedToWallet(this.walletAddress.toString())) {
+      console.debug(`Configuring bitcoin peer to watch address ${this.walletAddress}. This can take up to 10 minutes.`);
 
-      const publicKeyAsHex = this.privateKey.toPublicKey().toBuffer().toString('hex');
+      const publicKeyAsHex = this.walletPrivateKey.toPublicKey().toBuffer().toString('hex');
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
@@ -86,7 +86,7 @@ export default class BitcoinClient {
    */
   public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
 
-    const transaction = await this.createBitcoreTransaction(transactionData, feeInSatoshis);
+    const transaction = await this.createTransaction(transactionData, feeInSatoshis);
     const rawTransaction = transaction.serialize();
 
     const request = {
@@ -117,7 +117,7 @@ export default class BitcoinClient {
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
-      const bitcoreTransaction = BitcoinClient.createBitcoreTransactionFromBuffer(transactionBuffer);
+      const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer);
       return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
     });
 
@@ -198,7 +198,7 @@ export default class BitcoinClient {
    */
   public async getBalanceInSatoshis (): Promise<number> {
 
-    const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
+    const unspentOutputs = await this.getUnspentOutputs(this.walletAddress);
 
     const unspentSatoshis = unspentOutputs.reduce((total, unspentOutput) => {
       return total + unspentOutput.satoshis;
@@ -299,18 +299,18 @@ export default class BitcoinClient {
     const hexEncodedTransaction = await this.rpcCall(request, true);
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    const bitcoreTransaction = BitcoinClient.createBitcoreTransactionFromBuffer(transactionBuffer);
+    const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer);
 
     return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
   }
 
   // This function is specifically created to help with unit testing.
-  private static createBitcoreTransactionFromBuffer (buffer: Buffer): Transaction {
+  private static createTransactionFromBuffer (buffer: Buffer): Transaction {
     return new Transaction(buffer);
   }
 
-  private async createBitcoreTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
-    const unspentOutputs = await this.getUnspentOutputs(this.privateKeyAddress);
+  private async createTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
+    const unspentOutputs = await this.getUnspentOutputs(this.walletAddress);
 
     const transaction = new Transaction();
     transaction.from(unspentOutputs);
@@ -318,9 +318,9 @@ export default class BitcoinClient {
       script: Script.buildDataOut(transactionData),
       satoshis: 0
     }));
-    transaction.change(this.privateKeyAddress);
+    transaction.change(this.walletAddress);
     transaction.fee(feeInSatoshis);
-    transaction.sign(this.privateKey);
+    transaction.sign(this.walletPrivateKey);
 
     return transaction;
   }
@@ -332,66 +332,67 @@ export default class BitcoinClient {
    * @param transaction The transaction for which the fee is to be calculated.
    */
   private async calculateTransactionFee (transaction: Transaction): Promise<number> {
-    // Get esimtated fee from RPC and add some percentage to it.
+    // Get esimtated fee from RPC
     const estimatedFeeInKb = await this.getCurrentEstimatedFeeInSatoshisPerKb();
-    const estimatedFeeInKbWithPercentage = estimatedFeeInKb + (estimatedFeeInKb * .2);
 
-    // Estimate the size of the transaction and add some percentage to it.
+    // Estimate the size of the transaction
     const estimatedSizeInBytes = (transaction.inputs.length * 150) + (transaction.outputs.length * 50);
-    const estimatedSizeInBytesWithPercentage = estimatedSizeInBytes + (estimatedSizeInBytes * .2);
-    const estimatedSizeInKb = estimatedSizeInBytesWithPercentage / 1000;
+    const estimatedSizeInKb = estimatedSizeInBytes / 1000;
 
-    return estimatedSizeInKb * estimatedFeeInKbWithPercentage;
+    const estimatedFee = estimatedSizeInKb * estimatedFeeInKb;
+
+    // Add a percentage to the fee (trying to be on the higher end of the estimate)
+    return estimatedFee + (estimatedFee * .4);
   }
 
   // @ts-ignore
-  private async createFreezeBitcoreTransaction (
+  private async createFreezeTransaction (
     unspentCoins: Transaction.UnspentOutput[],
     freezeUntilBlock: number,
     freezeAmountInSatoshis: number): Promise<Transaction> {
 
-    const freezeScript = this.createFreezeBitcoreScript(freezeUntilBlock);
-    const freezeScriptHash = Script.buildScriptHashOut(freezeScript);
-    const payToScriptAddress = new Address(freezeScriptHash);
+    const freezeScript = BitcoinClient.createFreezeScript(freezeUntilBlock, this.walletAddress);
+    const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
+    const payToScriptAddress = new Address(payToScriptHashOutput);
 
     const freezeTransaction = new Transaction()
                               .from(unspentCoins)
                               .to(payToScriptAddress, freezeAmountInSatoshis)
-                              .change(this.privateKeyAddress);
+                              .change(this.walletAddress);
 
     const transactionFee = await this.calculateTransactionFee(freezeTransaction);
 
     freezeTransaction.fee(transactionFee)
-                     .sign(this.privateKey);
+                     .sign(this.walletPrivateKey);
 
     return freezeTransaction;
   }
 
   // @ts-ignore
-  private async createSpendToFreezeBitcoreTransaction (
+  private async createSpendToFreezeTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number,
     freezeUntilBlock: number): Promise<Transaction> {
 
-    const freezeScript = this.createFreezeBitcoreScript(freezeUntilBlock);
-    const freezeScriptHash = Script.buildScriptHashOut(freezeScript);
-    const payToScriptAddress = new Address(freezeScriptHash);
+    const freezeScript = BitcoinClient.createFreezeScript(freezeUntilBlock, this.walletAddress);
+    const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
+    const payToScriptAddress = new Address(payToScriptHashOutput);
 
-    return this.createSpendBitcoreTransactionFromFrozenTransaction(
+    return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeUntilBlock,
       payToScriptAddress);
   }
 
   // @ts-ignore
-  private async createSpendToWalletBitcoreTransaction (
+  private async createSpendToWalletTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number): Promise<Transaction> {
 
-    return this.createSpendBitcoreTransactionFromFrozenTransaction(
+    return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeUntilBlock,
-      this.privateKeyAddress);
+      this.walletAddress);
   }
 
   // @ts-ignore
@@ -404,13 +405,14 @@ export default class BitcoinClient {
    * @param previousFreezeUntilBlock The previously frozen transaction's freeze until block.
    * @param paytoAddress The address where the spend transaction should go to.
    */
-  private async createSpendBitcoreTransactionFromFrozenTransaction (
+  private async createSpendTransactionFromFrozenTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number,
     paytoAddress: Address): Promise<Transaction> {
 
-    // First create an input from the previous frozen transaction output.
-    const frozenOutputAsInput = this.createBitcoreUnspentOutputFromFrozenTransaction(previousFreezeTransaction, previousFreezeUntilBlock);
+    // First create an input from the previous frozen transaction output. Note that we update
+    // this input later to add the relevant information required for a pay-to-script-hash output.
+    const frozenOutputAsInput = this.createUnspentOutputFromFrozenTransaction(previousFreezeTransaction, previousFreezeUntilBlock);
     const previousFreezeAmountInSatoshis = frozenOutputAsInput.satoshis;
 
     // Now create a spend transaction using the frozen output. Create the transaction with all
@@ -419,7 +421,6 @@ export default class BitcoinClient {
                                    .from([frozenOutputAsInput])
                                    .to(paytoAddress, previousFreezeAmountInSatoshis)
                                    .lockUntilBlockHeight(previousFreezeUntilBlock); // Transaction remains in mempool until specified block height.
-
 
     const transactionFee = await this.calculateTransactionFee(spendTransaction);
 
@@ -430,14 +431,18 @@ export default class BitcoinClient {
     spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - transactionFee)
                     .fee(transactionFee);
 
-    // Now update the first input to include it's signature.
-    // Create an input in the format expected for a spend-from-freeze input and set it on the
-    // transaction.
-    const previousFreezeScript = this.createFreezeBitcoreScript(previousFreezeUntilBlock);
-    const signature = (Transaction as any).sighash.sign(spendTransaction, this.privateKey, 0x1, 0, previousFreezeScript);
+    // Now update the first input to add the format expected for a pay-to-script input.
+    const previousFreezeScript = BitcoinClient.createFreezeScript(previousFreezeUntilBlock, this.walletAddress);
+
+    // Create signature
+    const signatureType = 0x1; // https://github.com/bitpay/bitcore-lib/blob/44eb5b264b9a28e376cdcf3506160a95cc499533/lib/crypto/signature.js#L308
+    const inputIndexToSign = 0;
+    const signature = (Transaction as any).sighash.sign(spendTransaction, this.walletPrivateKey, signatureType, inputIndexToSign, previousFreezeScript);
+
+    // Create a script and add it to the input.
     const inputScript = Script.empty()
                               .add(signature.toTxFormat())
-                              .add(this.privateKey.toPublicKey().toBuffer())
+                              .add(this.walletPrivateKey.toPublicKey().toBuffer())
                               .add(previousFreezeScript.toBuffer());
 
     (spendTransaction.inputs[0] as any).setScript(inputScript);
@@ -445,27 +450,29 @@ export default class BitcoinClient {
     return spendTransaction;
   }
 
-  private createBitcoreUnspentOutputFromFrozenTransaction (
+  private createUnspentOutputFromFrozenTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number): Transaction.UnspentOutput {
 
     const previousFreezeAmountInSatoshis = previousFreezeTransaction.outputs[0].satoshis;
-    const previousFreezeRedeemScript = this.createFreezeBitcoreScript(previousFreezeUntilBlock);
-    const previousFreezeRedeemScriptHash = Script.buildScriptHashOut(previousFreezeRedeemScript);
+    const previousFreezeRedeemScript = BitcoinClient.createFreezeScript(previousFreezeUntilBlock, this.walletAddress);
+    const scriptPubKey = Script.buildScriptHashOut(previousFreezeRedeemScript);
 
+    // This output mimics the transaction output and that is why it has inputs such as
+    // txid, vout, scriptPubKey etc ...
     const frozenOutputAsUnspentOutput = Transaction.UnspentOutput.fromObject({
       txid: previousFreezeTransaction.id,
       vout: 0,
-      scriptPubKey: previousFreezeRedeemScriptHash,
+      scriptPubKey: scriptPubKey,
       satoshis: previousFreezeAmountInSatoshis
     });
 
     return frozenOutputAsUnspentOutput;
   }
 
-  private createFreezeBitcoreScript (freezeUntilBlock: number): Script {
+  private static createFreezeScript (freezeUntilBlock: number, walletAddress: Address): Script {
     const lockBuffer = (crypto.BN as any).fromNumber(freezeUntilBlock).toScriptNumBuffer();
-    const publicKeyHashOut = Script.buildPublicKeyHashOut(this.privateKeyAddress);
+    const publicKeyHashOut = Script.buildPublicKeyHashOut(walletAddress);
 
     const redeemScript = Script.empty()
                          .add(lockBuffer)
