@@ -6,6 +6,8 @@ export default interface ProtocolParameters {
   hashAlgorithmInMultihashCode: number;
   /** Maximum allowed size of anchor file stored in Content Addressable Storage. */
   maxAnchorFileSizeInBytes: number;
+  /** Maximum allowed size of map file stored in Content Addressable Storage. */
+  maxMapFileSizeInBytes: number;
   /** Maximum allowed size of batch file stored in Content Addressable Storage. */
   maxBatchFileSizeInBytes: number;
   /** Maximum allowed length of any encoded hash string across all protocol versions until current point in time. */

@@ -30,7 +30,7 @@ export default class BatchFile {
     let endTimer = timeSpan();
     const decompressedBatchFileBuffer = await Compressor.decompress(batchFileBuffer);
     const batchFileObject = await JsonAsync.parse(decompressedBatchFileBuffer);
-    console.info(`Parsed batch file ${anchorFile.batchFileHash} in ${endTimer.rounded()} ms.`);
+    console.info(`Parsed batch file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['operations']);
@@ -68,7 +68,7 @@ export default class BatchFile {
     if (batchSize !== operationCountInAnchorFile) {
       throw new SidetreeError(
         ErrorCode.BatchFileOperationCountMismatch,
-        `Batch size of ${batchSize} in batch file '${anchorFile.batchFileHash}' does not size of ${operationCountInAnchorFile} in anchor file.`
+        `Batch size of ${batchSize} in batch file does not match of size of ${operationCountInAnchorFile} in anchor file.`
       );
     }
 
@@ -106,7 +106,7 @@ export default class BatchFile {
 
       namedAnchoredOperationModels.push(operation);
     }
-    console.info(`Decoded ${batchSize} operations in batch ${anchorFile.batchFileHash}. Time taken: ${endTimer.rounded()} ms.`);
+    console.info(`Decoded ${batchSize} operations in batch file. Time taken: ${endTimer.rounded()} ms.`);
 
     return namedAnchoredOperationModels;
   }

@@ -102,13 +102,15 @@ At such time an ID is published/anchored, a user can provide either the paramete
 
 
 ## Sidetree Operation Batching
-The Sidetree protocol increases operation throughput by batching multiple operations together then anchoring a reference to this batch on the blockchain.
-For every batch of Sidetree operations created, there are two files that are created and stored in the CAS layer: 
-1. Batch file - The file containing the actual change data of all the operations batched together.
-2. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the following:
+The Sidetree protocol increases operation throughput by batching multiple operations together then anchoring a reference to this operation batch on the blockchain.
+For every batch of Sidetree operations created, there are three files that are created and stored in the CAS layer:
 
-    1. Metadata about the associated Sidetree operations, including a content addressable hash of the operation _batch file_.
-    2. Array of DID suffixes (the unique portion of the DID string that differentiates one DID from another) for all DIDs that are declared to have operations within the associated _batch file_.
+1. Batch file - The file containing the actual change data of all the operations batched together.
+1. Map file - This file contain references to one or more _batch files_. Currently this map file only reference one batch file, but this design allows for operation data to be seperated in multiple batch files for optimized on-demand reslution. 
+1. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the following:
+    1. Hash of the _map file_.
+    1. Array of DID suffixes (the unique portion of the DID string that differentiates one DID from another) for all DIDs that are declared to have operations within the associated _batch file_.
+
 
 ### Batch File Schema
 The _batch file_ is a ZIP compressed JSON document of the following schema:

@@ -2,6 +2,6 @@
  * Defines Anchor File structure.
  */
 export default interface AnchorFileModel {
-  batchFileHash: string;
+  mapFileHash: string;
   didUniqueSuffixes: string[];
 }

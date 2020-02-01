@@ -8,6 +8,8 @@ import FeeManager from './FeeManager';
 import FetchResultCode from '../../../common/FetchResultCode';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
+import MapFile from './MapFile';
+import MapFileModel from './models/MapFileModel';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../SidetreeError';
@@ -30,8 +32,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
       // Download and verify anchor file.
       const anchorFile = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash);
 
+      // Download and verify anchor file.
+      const mapFile = await this.downloadAndVerifyMapFile(anchorFile.mapFileHash);
+
       // Download and verify batch file.
-      const operations = await this.downloadAndVerifyBatchFile(anchorFile, transaction);
+      const operations = await this.downloadAndVerifyBatchFile(transaction, anchorFile, mapFile);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
@@ -48,7 +53,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
         console.info(`Ignoring error: ${error.message}`);
         return true;
       } else {
-        console.error(`Unexpected error processing anchor string, MUST investigate and fix: ${error.message}`);
+        console.error(`Unexpected error processing transaction, MUST investigate and fix: ${error.message}`);
         return false;
       }
     }
@@ -56,74 +61,64 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
   private async downloadAndVerifyAnchorFile (anchorFileHash: string): Promise<AnchorFileModel> {
     console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
-    const anchorFileFetchResult = await this.downloadManager.download(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
 
-    if (anchorFileFetchResult.code === FetchResultCode.InvalidHash) {
-      throw new SidetreeError(ErrorCode.AnchorFileHashNotValid, `Anchor file '${anchorFileHash}' is not a valid hash.`);
-    }
+    const fileBuffer = await this.downloadFileFromCas(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
+    const anchorFileModel = await AnchorFile.parseAndValidate(fileBuffer);
 
-    if (anchorFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-      throw new SidetreeError(
-        ErrorCode.AnchorFileTooLarge,
-        `Anchor file '${anchorFileHash}' exceeded max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes.`
-      );
-    }
-
-    if (anchorFileFetchResult.code === FetchResultCode.NotAFile) {
-      throw new SidetreeError(ErrorCode.AnchorFileNotAFile, `Anchor file hash '${anchorFileHash}' points to a content that is not a file.`);
-    }
-
-    if (anchorFileFetchResult.code === FetchResultCode.CasNotReachable) {
-      throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for anchor file '${anchorFileHash}', will try again later.`);
-    }
-
-    if (anchorFileFetchResult.code === FetchResultCode.NotFound) {
-      throw new SidetreeError(ErrorCode.CasFileNotFound, `Anchor file '${anchorFileHash}' not found, will try again later.`);
-    }
-
-    console.info(`Anchor file '${anchorFileHash}' of size ${anchorFileFetchResult.content!.length} bytes downloaded.`);
-    const maxOperationsPerBatch = ProtocolParameters.maxOperationsPerBatch;
-    const anchorFile = await AnchorFile.parseAndValidate(
-      anchorFileFetchResult.content!,
-      maxOperationsPerBatch
-    );
-
-    return anchorFile;
+    return anchorFileModel;
   }
 
-  private async downloadAndVerifyBatchFile (anchorFile: AnchorFileModel, transaction: TransactionModel): Promise<NamedAnchoredOperationModel[]> {
-    console.info(`Downloading batch file '${anchorFile.batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
-    const batchFileHash = anchorFile.batchFileHash;
-    const batchFileFetchResult = await this.downloadManager.download(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
+  private async downloadAndVerifyMapFile (mapFileHash: string): Promise<MapFileModel> {
+    console.info(`Downloading map file '${mapFileHash}', max size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
-    if (batchFileFetchResult.code === FetchResultCode.InvalidHash) {
-      throw new SidetreeError(ErrorCode.BatchFileHashNotValid, `Batch file '${batchFileHash}' is not a valid hash.`);
+    const fileBuffer = await this.downloadFileFromCas(mapFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
+    const mapFileModel = await MapFile.parseAndValidate(fileBuffer);
+
+    return mapFileModel;
+  }
+
+  private async downloadAndVerifyBatchFile (
+    transaction: TransactionModel,
+    anchorFile: AnchorFileModel,
+    mapFile: MapFileModel
+  ): Promise<NamedAnchoredOperationModel[]> {
+    const batchFileHash = mapFile.batchFileHash;
+    console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
+
+    const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
+    const operations = await BatchFile.parseAndValidate(fileBuffer, anchorFile, transaction.transactionNumber, transaction.transactionTime);
+
+    return operations;
+  }
+
+  private async downloadFileFromCas (fileHash: string, maxFileSizeInBytes: number): Promise<Buffer> {
+    console.info(`Downloading file '${fileHash}', max size limit ${maxFileSizeInBytes}...`);
+
+    const fileFetchResult = await this.downloadManager.download(fileHash, maxFileSizeInBytes);
+
+    if (fileFetchResult.code === FetchResultCode.InvalidHash) {
+      throw new SidetreeError(ErrorCode.CasFileHashNotValid, `File hash '${fileHash}' is not a valid hash.`);
     }
 
-    if (batchFileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
-      throw new SidetreeError(
-        ErrorCode.BatchFileTooLarge,
-        `Batch file '${batchFileHash}' exceeded max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`
+    if (fileFetchResult.code === FetchResultCode.MaxSizeExceeded) {
+      throw new SidetreeError(ErrorCode.CasFileTooLarge, `File '${fileHash}' exceeded max size limit of ${maxFileSizeInBytes} bytes.`
       );
     }
 
-    if (batchFileFetchResult.code === FetchResultCode.NotAFile) {
-      throw new SidetreeError(ErrorCode.BatchFileNotAFile, `Batch file hash '${batchFileHash}' points to a content that is not a file.`);
+    if (fileFetchResult.code === FetchResultCode.NotAFile) {
+      throw new SidetreeError(ErrorCode.CasFileNotAFile, `File hash '${fileHash}' points to a content that is not a file.`);
     }
 
-    if (batchFileFetchResult.code === FetchResultCode.CasNotReachable) {
-      throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for batch file '${batchFileHash}', will try again later.`);
+    if (fileFetchResult.code === FetchResultCode.CasNotReachable) {
+      throw new SidetreeError(ErrorCode.CasNotReachable, `CAS not reachable for file '${fileHash}'.`);
     }
 
-    if (batchFileFetchResult.code === FetchResultCode.NotFound) {
-      throw new SidetreeError(ErrorCode.CasFileNotFound, `Batch file '${batchFileHash}' not found, will try again later.`);
+    if (fileFetchResult.code === FetchResultCode.NotFound) {
+      throw new SidetreeError(ErrorCode.CasFileNotFound, `File '${fileHash}' not found.`);
     }
 
-    console.info(`Batch file '${batchFileHash}' of size ${batchFileFetchResult.content!.length} downloaded.`);
+    console.info(`File '${fileHash}' of size ${fileFetchResult.content!.length} downloaded.`);
 
-    const operations
-      = await BatchFile.parseAndValidate(batchFileFetchResult.content!, anchorFile, transaction.transactionNumber, transaction.transactionTime);
-
-    return operations;
+    return fileFetchResult.content!;
   }
 }
