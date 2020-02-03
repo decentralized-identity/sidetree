@@ -714,13 +714,13 @@ export default class BitcoinProcessor {
    */
   private async getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber (since: number | undefined): Promise<[TransactionModel[], number]> {
     let beginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
-    let endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
     let numOfBlocksAcquired = 0;
 
     const transactionsToReturn: TransactionModel[] = [];
 
     // while need more blocks and have not reached the processed block
     while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && beginTransactionTime <= this.lastProcessedBlock!.height) {
+      const endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
       let transactions: TransactionModel[] = await this.transactionStore.getTransactionsByTransactionTime(beginTransactionTime, endTransactionTime);
 
       transactions = transactions.filter((transaction) => {
@@ -730,27 +730,20 @@ export default class BitcoinProcessor {
           (since === undefined || transaction.transactionNumber > since);
       });
 
-      numOfBlocksAcquired += BitcoinProcessor.getNumOfBlocksInTransactions(transactions);
+      numOfBlocksAcquired += BitcoinProcessor.getUniqueNumOfBlocksInTransactions(transactions);
       beginTransactionTime = endTransactionTime;
-      endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
       transactionsToReturn.push(...transactions);
     }
 
     return [transactionsToReturn, numOfBlocksAcquired];
   }
 
-  private static getNumOfBlocksInTransactions (transactions: TransactionModel[]): number {
-    let currentTransactionTime: number | undefined = undefined;
-    let blocksCount = 0;
-
+  private static getUniqueNumOfBlocksInTransactions (transactions: TransactionModel[]): number {
+    const uniqueBlockNumbers = new Set<number>();
     for (const transaction of transactions) {
-      // If transaction is transitioning into a new time, create a new grouping.
-      if (transaction.transactionTime !== currentTransactionTime) {
-        blocksCount++;
-        currentTransactionTime = transaction.transactionTime;
-      }
+      uniqueBlockNumbers.add(transaction.transactionTime);
     }
 
-    return blocksCount;
+    return uniqueBlockNumbers.size;
   }
 }

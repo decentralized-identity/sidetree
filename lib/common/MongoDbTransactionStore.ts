@@ -177,7 +177,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
       ] }).toArray();
     }
 
-    return transactions;
+    return transactions.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
   }
 
   /**
