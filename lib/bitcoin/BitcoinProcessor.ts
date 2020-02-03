@@ -721,7 +721,7 @@ export default class BitcoinProcessor {
     // while need more blocks and have not reached the processed block
     while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && beginTransactionTime <= this.lastProcessedBlock!.height) {
       const endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
-      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsByTransactionTime(beginTransactionTime, endTransactionTime);
+      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(beginTransactionTime, endTransactionTime);
 
       transactions = transactions.filter((transaction) => {
         // filter anything greater than the last processed block because they are not complete

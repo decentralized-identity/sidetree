@@ -162,19 +162,16 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * @param beginTransactionTime The first transaction time to begin querying for
    * @param endTransactionTime The transaction time to stop querying for
    */
-  public async getTransactionsByTransactionTime (beginTransactionTime: number, endTransactionTime: number): Promise<TransactionModel[]> {
+  public async getTransactionsStartingFrom (inclusiveBeginTransactionTime: number, exclusiveEndTransactionTime: number): Promise<TransactionModel[]> {
     let transactions: TransactionModel[] = [];
-    if (beginTransactionTime === endTransactionTime) {
-      // if begin === end or end is not provided, query for 1 transaction time
-      transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(beginTransactionTime) } }).sort({ transactionNumber: 1 })
-      .toArray();
+    if (inclusiveBeginTransactionTime === exclusiveEndTransactionTime) {
+      // if begin === end, query for 1 transaction time
+      transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(inclusiveBeginTransactionTime) } })
+      .sort({ transactionNumber: 1 }).toArray();
     } else {
-      const start = Math.min(beginTransactionTime, endTransactionTime);
-      const end = Math.max(beginTransactionTime, endTransactionTime);
-
       transactions = await this.transactionCollection!.find({ $and: [
-        { transactionTime: { $gte: Long.fromNumber(start) } },
-        { transactionTime: { $lt: Long.fromNumber(end) } }
+        { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
+        { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
       ] }).sort({ transactionNumber: 1 }).toArray();
     }
 

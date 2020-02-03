@@ -159,7 +159,14 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
    * Gets a list of transactions that are in the desired transaction time
    * @param transactionTime The transaction time to query for
    */
-  public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
-    return this.processedTransactions.filter((transaction) => { return transaction.transactionTime === transactionTime; });
+  public async getTransactionsStartingFrom (inclusiveBeginTransactionTime: number, exclusiveEndTransactionTime: number): Promise<TransactionModel[]> {
+    if (inclusiveBeginTransactionTime === exclusiveEndTransactionTime) {
+      return this.processedTransactions.filter((transaction) => { return transaction.transactionTime === inclusiveBeginTransactionTime; });
+    } else {
+      return this.processedTransactions.filter((transaction) => {
+        return transaction.transactionTime >= inclusiveBeginTransactionTime &&
+        transaction.transactionTime < exclusiveEndTransactionTime;
+      });
+    }
   }
 }

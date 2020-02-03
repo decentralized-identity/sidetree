@@ -251,7 +251,7 @@ describe('BitcoinProcessor', () => {
       };
       // return as many as page size
       const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((() => {
         return Promise.resolve(transactions);
       }));
 
@@ -273,7 +273,7 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((() => {
         return Promise.resolve(transactions);
       }));
 
@@ -295,7 +295,7 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((() => {
         return Promise.resolve(transactions);
       }));
 
@@ -317,7 +317,7 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((() => {
         return Promise.resolve(transactions);
       }));
 
@@ -331,14 +331,14 @@ describe('BitcoinProcessor', () => {
 
     it('should group transactions correctly by transaction time', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      // make the last transaction time genesis + 100 so it needs to call getTransactionsByTransactionTime multiple times
+      // make the last transaction time genesis + 100 so it needs to call getTransactionsStartingFrom multiple times
       const lastProcessedBlockHeight = bitcoinProcessor['genesisBlockNumber'] + 100;
       bitcoinProcessor['lastProcessedBlock'] = {
         height: lastProcessedBlockHeight,
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake(((begin) => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake(((begin) => {
         return Promise.resolve(createTransactions(10, begin, false));
       }));
 
@@ -359,7 +359,7 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((() => {
         return Promise.resolve([]);
       }));
 
@@ -386,7 +386,7 @@ describe('BitcoinProcessor', () => {
         previousHash: 'previous hash'
       };
       const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], expectedHeight, true);
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.callFake((() => {
         return Promise.resolve(transactions);
       }));
 
@@ -439,7 +439,7 @@ describe('BitcoinProcessor', () => {
       const expectedTransactionNumber = TransactionNumber.construct(expectedHeight, 0);
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(true));
       const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], expectedHeight, true);
-      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.returnValue(Promise.resolve(transactions));
+      const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsStartingFrom').and.returnValue(Promise.resolve(transactions));
       const actual = await bitcoinProcessor.transactions(expectedTransactionNumber, expectedHash);
       expect(verifyMock).toHaveBeenCalled();
       expect(laterThanMock).toHaveBeenCalled();
