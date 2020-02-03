@@ -166,7 +166,8 @@ export default class MongoDbTransactionStore implements ITransactionStore {
     let transactions: TransactionModel[] = [];
     if (beginTransactionTime === endTransactionTime) {
       // if begin === end or end is not provided, query for 1 transaction time
-      transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(beginTransactionTime) } }).toArray();
+      transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(beginTransactionTime) } }).sort({ transactionNumber: 1 })
+      .toArray();
     } else {
       const start = Math.min(beginTransactionTime, endTransactionTime);
       const end = Math.max(beginTransactionTime, endTransactionTime);
@@ -174,10 +175,10 @@ export default class MongoDbTransactionStore implements ITransactionStore {
       transactions = await this.transactionCollection!.find({ $and: [
         { transactionTime: { $gte: Long.fromNumber(start) } },
         { transactionTime: { $lt: Long.fromNumber(end) } }
-      ] }).toArray();
+      ] }).sort({ transactionNumber: 1 }).toArray();
     }
 
-    return transactions.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
+    return transactions;
   }
 
   /**
