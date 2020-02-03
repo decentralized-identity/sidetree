@@ -124,11 +124,19 @@ The _batch file_ is a ZIP compressed JSON document of the following schema:
 }
 ```
 
+### Map File Schema
+The _map file_ is a JSON document of the following schema:
+```json
+{
+  "batchFileHash": "Encoded multihash of the batch file.",
+}
+```
+
 ### Anchor File Schema
 The _anchor file_ is a JSON document of the following schema:
 ```json
 {
-  "batchFileHash": "Encoded multihash of the batch file.",
+  "mapFileHash": "Encoded multihash of the map file.",
   "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."]
 }
 ```
