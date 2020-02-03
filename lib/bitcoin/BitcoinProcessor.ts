@@ -174,23 +174,11 @@ export default class BitcoinProcessor {
       }
     }
 
-    // wait until at least one block is processed
-    if (this.lastProcessedBlock === undefined) {
-      return {
-        transactions: [],
-        moreTransactions: false
-      };
-    }
-
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
 
-    const groupedTransactions = await this.getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber(since);
+    let [transactions, numOfBlocksAcquired] = await this.getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber(since);
     // if not enough blocks to fill the page then there are no more transactions
-    const moreTransactions = groupedTransactions.length >= BitcoinProcessor.pageSizeInBlocks;
-    let transactions: TransactionModel[] = [];
-    // flatten out transactions into array of transactions instead of array of array
-    transactions = transactions.concat(...groupedTransactions);
-    // filter the results to only return transactions, and not internal data
+    const moreTransactions = numOfBlocksAcquired >= BitcoinProcessor.pageSizeInBlocks;
     transactions = transactions.map((transaction) => {
       return {
         transactionNumber: transaction.transactionNumber,
@@ -719,19 +707,21 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Return transactions grouped by block height. EX: [[transactions in block1], [transactions in block2], [transactions in block3]]
+   * Return transactions since transaction number and number of blocks acquired.
    * @param since Transaction number to query since
    * @param numOfBlocks number of blocks worth of transactions to get at least
+   * @returns a tuple of [transactions, numberOfBlocksContainedInTransactions]
    */
-  private async getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber (since: number | undefined): Promise<TransactionModel[][]> {
-    let beginTransactionNumber = since === undefined ? 0 : TransactionNumber.getBlockNumber(since);
-    let endTransactionNumber = beginTransactionNumber + BitcoinProcessor.pageSizeInBlocks;
+  private async getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber (since: number | undefined): Promise<[TransactionModel[], number]> {
+    let beginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
+    let endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
+    let numOfBlocksAcquired = 0;
 
-    const groupedTransactionsToReturn: TransactionModel[][] = [];
+    const transactionsToReturn: TransactionModel[] = [];
 
     // while need more blocks and have not reached the processed block
-    while (groupedTransactionsToReturn.length < BitcoinProcessor.pageSizeInBlocks && beginTransactionNumber <= this.lastProcessedBlock!.height) {
-      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsByTransactionTime(beginTransactionNumber, endTransactionNumber);
+    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && beginTransactionTime <= this.lastProcessedBlock!.height) {
+      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsByTransactionTime(beginTransactionTime, endTransactionTime);
 
       transactions = transactions.filter((transaction) => {
         // filter anything greater than the last processed block because they are not complete
@@ -740,28 +730,27 @@ export default class BitcoinProcessor {
           (since === undefined || transaction.transactionNumber > since);
       });
 
-      const transactionsGroupedByTransactionTime: TransactionModel[][] = BitcoinProcessor.groupTransactionsByTransactionTime(transactions);
-      beginTransactionNumber = endTransactionNumber;
-      endTransactionNumber = beginTransactionNumber + BitcoinProcessor.pageSizeInBlocks;
-      groupedTransactionsToReturn.push(...transactionsGroupedByTransactionTime);
+      numOfBlocksAcquired += BitcoinProcessor.getNumOfBlocksInTransactions(transactions);
+      beginTransactionTime = endTransactionTime;
+      endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
+      transactionsToReturn.push(...transactions);
     }
 
-    return groupedTransactionsToReturn;
+    return [transactionsToReturn, numOfBlocksAcquired];
   }
 
-  private static groupTransactionsByTransactionTime (transactions: TransactionModel[]): TransactionModel[][] {
+  private static getNumOfBlocksInTransactions (transactions: TransactionModel[]): number {
     let currentTransactionTime: number | undefined = undefined;
-    const transactionsGroupedByTransactionTime: TransactionModel[][] = [];
+    let blocksCount = 0;
 
     for (const transaction of transactions) {
       // If transaction is transitioning into a new time, create a new grouping.
       if (transaction.transactionTime !== currentTransactionTime) {
-        transactionsGroupedByTransactionTime.push([]);
+        blocksCount++;
         currentTransactionTime = transaction.transactionTime;
       }
-      transactionsGroupedByTransactionTime[transactionsGroupedByTransactionTime.length - 1].push(transaction);
     }
 
-    return transactionsGroupedByTransactionTime;
+    return blocksCount;
   }
 }

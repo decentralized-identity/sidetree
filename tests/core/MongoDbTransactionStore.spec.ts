@@ -213,44 +213,6 @@ describe('MongoDbTransactionStore', async () => {
     expect(transactionStore.databaseName).toEqual(MongoDbTransactionStore.defaultDatabaseName);
   });
 
-  it('should fetch transactions by 1 transactionTime when no end time is passed in', async () => {
-    const transaction1: TransactionModel = {
-      anchorString: 'string1',
-      transactionNumber: 1,
-      transactionTime: 1,
-      transactionTimeHash: '1',
-      transactionFeePaid: 1,
-      normalizedTransactionFee: 1
-    };
-
-    const transaction2: TransactionModel = {
-      anchorString: 'string2',
-      transactionNumber: 2,
-      transactionTime: 2,
-      transactionTimeHash: '2',
-      transactionFeePaid: 1,
-      normalizedTransactionFee: 1
-    };
-
-    const transaction3: TransactionModel = {
-      anchorString: 'string3',
-      transactionNumber: 3,
-      transactionTime: 2,
-      transactionTimeHash: '2',
-      transactionFeePaid: 1,
-      normalizedTransactionFee: 1
-    };
-
-    await transactionStore.addTransaction(transaction1);
-    await transactionStore.addTransaction(transaction2);
-    await transactionStore.addTransaction(transaction3);
-
-    const result = await transactionStore.getTransactionsByTransactionTime(2);
-    expect(result.length).toEqual(2);
-    expect(result[0].transactionNumber).toEqual(2);
-    expect(result[1].transactionNumber).toEqual(3);
-  });
-
   it('should fetch transactions by 1 transactionTime when end time is the same as begin time', async () => {
     const transaction1: TransactionModel = {
       anchorString: 'string1',
@@ -361,7 +323,7 @@ describe('MongoDbTransactionStore', async () => {
 
     const result = await transactionStore.getTransactionsByTransactionTime(3, 1);
     expect(result.length).toEqual(2);
-    expect(result[0].transactionNumber).toEqual(2);
-    expect(result[1].transactionNumber).toEqual(3);
+    expect(result[0].transactionNumber).toEqual(1);
+    expect(result[1].transactionNumber).toEqual(2);
   });
 });

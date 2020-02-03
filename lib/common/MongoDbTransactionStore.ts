@@ -158,27 +158,22 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   }
 
   /**
-   * Gets a list of transactions between the bounds of transaction time.
-   * @param beginTransactionTime The first transaction time to query for (inclusive)
-   * @param endTransactionTime The transaction time to stop querying for (exclusive). Optional. If not provided, then only query for beginTransactionTime
+   * Gets a list of transactions between the bounds of transaction time. The smaller value will be inclusive while the bigger be exclusive
+   * @param beginTransactionTime The first transaction time to begin querying for
+   * @param endTransactionTime The transaction time to stop querying for
    */
-  public async getTransactionsByTransactionTime (beginTransactionTime: number, endTransactionTime?: number): Promise<TransactionModel[]> {
+  public async getTransactionsByTransactionTime (beginTransactionTime: number, endTransactionTime: number): Promise<TransactionModel[]> {
     let transactions: TransactionModel[] = [];
-
-    if (beginTransactionTime === endTransactionTime || endTransactionTime === undefined) {
+    if (beginTransactionTime === endTransactionTime) {
       // if begin === end or end is not provided, query for 1 transaction time
       transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(beginTransactionTime) } }).toArray();
-    } else if (beginTransactionTime < endTransactionTime) {
-      // if begin < end, query forward in time
+    } else {
+      const start = Math.min(beginTransactionTime, endTransactionTime);
+      const end = Math.max(beginTransactionTime, endTransactionTime);
+
       transactions = await this.transactionCollection!.find({ $and: [
-        { transactionTime: { $gte: Long.fromNumber(beginTransactionTime) } },
-        { transactionTime: { $lt: Long.fromNumber(endTransactionTime) } }
-      ] }).toArray();
-    } else if (beginTransactionTime > endTransactionTime) {
-      // if begin > end, query backward in time
-      transactions = await this.transactionCollection!.find({ $and: [
-        { transactionTime: { $lte: Long.fromNumber(beginTransactionTime) } },
-        { transactionTime: { $gt: Long.fromNumber(endTransactionTime) } }
+        { transactionTime: { $gte: Long.fromNumber(start) } },
+        { transactionTime: { $lt: Long.fromNumber(end) } }
       ] }).toArray();
     }
 

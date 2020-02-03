@@ -249,7 +249,8 @@ describe('BitcoinProcessor', () => {
         hash: 'some hash',
         previousHash: 'previous hash'
       };
-      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], 0, true); // return as many as page size
+      // return as many as page size
+      const transactions: TransactionModel[] = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
       const laterThanMock = spyOn(bitcoinProcessor['transactionStore'], 'getTransactionsByTransactionTime').and.callFake((() => {
         return Promise.resolve(transactions);
       }));
@@ -264,7 +265,7 @@ describe('BitcoinProcessor', () => {
 
     it('should get transactions since genesis and handle mid block processing', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], 0, true);
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
       // This makes the last transaction in the array "processing"
       const lastProcessedBlockHeightLess = transactions[transactions.length - 1].transactionTime - 1;
       bitcoinProcessor['lastProcessedBlock'] = {
@@ -286,7 +287,7 @@ describe('BitcoinProcessor', () => {
 
     it('should get transactions since genesis and handle complete last block', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], 0, true);
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], bitcoinProcessor['genesisBlockNumber'], true);
       // make the last transaction time to be the same as last processed block height
       const lastProcessedBlockHeight = transactions[transactions.length - 1].transactionTime;
       bitcoinProcessor['lastProcessedBlock'] = {
@@ -308,9 +309,9 @@ describe('BitcoinProcessor', () => {
 
     it('should get transactions since genesis and handle past last block', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], 1, false);
-      // make the last transaction time 0 so the transactions will all be out of bound
-      const lastProcessedBlockHeight = 0;
+      const lastProcessedBlockHeight = bitcoinProcessor['genesisBlockNumber'];
+      const transactions = createTransactions(BitcoinProcessor['pageSizeInBlocks'], lastProcessedBlockHeight + 1, false);
+      // make the last transaction time genesis so the transactions will all be out of bound
       bitcoinProcessor['lastProcessedBlock'] = {
         height: lastProcessedBlockHeight,
         hash: 'some hash',
@@ -330,8 +331,8 @@ describe('BitcoinProcessor', () => {
 
     it('should group transactions correctly by transaction time', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      // make the last transaction time 100 so it needs to call getTransactionsByTransactionTime multiple times
-      const lastProcessedBlockHeight = 100;
+      // make the last transaction time genesis + 100 so it needs to call getTransactionsByTransactionTime multiple times
+      const lastProcessedBlockHeight = bitcoinProcessor['genesisBlockNumber'] + 100;
       bitcoinProcessor['lastProcessedBlock'] = {
         height: lastProcessedBlockHeight,
         hash: 'some hash',
@@ -346,28 +347,15 @@ describe('BitcoinProcessor', () => {
       expect(laterThanMock).toHaveBeenCalled();
       expect(actual.moreTransactions).toBeTruthy(); // more transactions because last block returned is 90
       expect(actual.transactions.length).toEqual(100); // 100 because 10 per query and called 10 times
-      expect(actual.transactions[99].transactionTime).toEqual(90);
-      expect(actual.transactions[0].transactionTime).toEqual(0);
-      done();
-    });
-
-    it('should return default if last processed block is not initialized', async (done) => {
-      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
-      bitcoinProcessor['lastProcessedBlock'] = undefined;
-
-      const actual = await bitcoinProcessor.transactions();
-      expect(verifyMock).not.toHaveBeenCalled();
-      expect(actual).toEqual({
-        transactions: [],
-        moreTransactions: false
-      });
+      expect(actual.transactions[99].transactionTime).toEqual(bitcoinProcessor['genesisBlockNumber'] + 90);
+      expect(actual.transactions[0].transactionTime).toEqual(bitcoinProcessor['genesisBlockNumber']);
       done();
     });
 
     it('should return default if transactions is empty array', async (done) => {
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any);
       bitcoinProcessor['lastProcessedBlock'] = {
-        height: 99999, // loop past this number and get nothing
+        height: bitcoinProcessor['genesisBlockNumber'] + 99999, // loop past this number and get nothing
         hash: 'some hash',
         previousHash: 'previous hash'
       };
