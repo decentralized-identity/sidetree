@@ -113,10 +113,12 @@ describe('AnchorFile', async () => {
       const originalMaxOperationsPerBatch = ProtocolParameters.maxOperationsPerBatch;
       ProtocolParameters.maxOperationsPerBatch = 1;
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed))
+      try {
+        await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed))
         .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileExceededMaxOperationCount));
-
-      ProtocolParameters.maxOperationsPerBatch = originalMaxOperationsPerBatch;
+      } finally {
+        ProtocolParameters.maxOperationsPerBatch = originalMaxOperationsPerBatch;
+      }
     });
 
     it('should throw if DID unique suffixes has duplicates.', async () => {
