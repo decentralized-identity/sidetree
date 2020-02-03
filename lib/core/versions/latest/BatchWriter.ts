@@ -8,6 +8,7 @@ import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
+import MapFile from './MapFile';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 
@@ -39,16 +40,21 @@ export default class BatchWriter implements IBatchWriter {
     // Create the batch file buffer from the operation batch.
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
 
-    // Write the 'batch file' to content addressable store.
+    // Write the batch file to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);
     console.info(`Wrote batch file ${batchFileHash} to content addressable store.`);
+
+    // Write the map file to content addressable store.
+    const mapFileBuffer = await MapFile.createBuffer(batchFileHash);
+    const mapFileHash = await this.cas.write(mapFileBuffer);
+    console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 
     // Construct the DID unique suffixes of each operation to be included in the anchor file.
     const didUniqueSuffixes = batch.map(operation => operation.didUniqueSuffix);
 
     // Construct the 'anchor file'.
     const anchorFileModel: AnchorFileModel = {
-      batchFileHash: batchFileHash,
+      mapFileHash,
       didUniqueSuffixes
     };
 

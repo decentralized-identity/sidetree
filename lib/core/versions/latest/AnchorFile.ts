@@ -15,7 +15,7 @@ export default class AnchorFile {
    * Parses and validates the given anchor file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parseAndValidate (anchorFileBuffer: Buffer, maxOperationsPerBatch: number): Promise<AnchorFileModel> {
+  public static async parseAndValidate (anchorFileBuffer: Buffer): Promise<AnchorFileModel> {
 
     let anchorFileDecompressedBuffer;
     try {
@@ -36,22 +36,22 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
     }
 
-    if (!anchorFile.hasOwnProperty('batchFileHash')) {
-      throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashMissing);
+    if (!anchorFile.hasOwnProperty('mapFileHash')) {
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
     }
 
     if (!anchorFile.hasOwnProperty('didUniqueSuffixes')) {
       throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing);
     }
 
-    // Batch file hash validations.
-    if (typeof anchorFile.batchFileHash !== 'string') {
-      throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashNotString);
+    // Map file hash validations.
+    if (typeof anchorFile.mapFileHash !== 'string') {
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString);
     }
 
-    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.batchFileHash);
+    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.mapFileHash);
     if (!Multihash.isComputedUsingHashAlgorithm(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileBatchFileHashUnsupported, `Batch file hash '${anchorFile.batchFileHash}' is unsupported.`);
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${anchorFile.mapFileHash}' is unsupported.`);
     }
 
     // DID Unique Suffixes validations.
@@ -59,7 +59,7 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesNotArray);
     }
 
-    if (anchorFile.didUniqueSuffixes.length > maxOperationsPerBatch) {
+    if (anchorFile.didUniqueSuffixes.length > ProtocolParameters.maxOperationsPerBatch) {
       throw new SidetreeError(ErrorCode.AnchorFileExceededMaxOperationCount);
     }
 

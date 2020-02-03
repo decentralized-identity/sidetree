@@ -8,7 +8,6 @@ import JwsModel from './models/JwsModel';
 import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
-import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../SidetreeError';
 
 /**
@@ -134,9 +133,8 @@ export default class Operation {
    * Computes the cryptographic multihash of the given string.
    */
   private static computeHash (dataString: string): string {
-    const hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
     const encodedOperationPayloadBuffer = Buffer.from(dataString);
-    const multihash = Multihash.hash(encodedOperationPayloadBuffer, hashAlgorithmInMultihashCode);
+    const multihash = Multihash.hash(encodedOperationPayloadBuffer);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }

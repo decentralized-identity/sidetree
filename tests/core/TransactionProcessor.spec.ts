@@ -150,5 +150,23 @@ describe('TransactionProcessor', () => {
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeFalsy();
     });
+
+    it('should return false to allow retry if unexpected error is thrown', async () => {
+      const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: '1stTransaction', numberOfOperations: 1 });
+      const mockTransaction: TransactionModel = {
+        transactionNumber: 1,
+        transactionTime: 1000000,
+        transactionTimeHash: '1000',
+        anchorString: anchoredData,
+        transactionFeePaid: 999999,
+        normalizedTransactionFee: 1
+      };
+
+      // Mock a method used by `processTransaction` to throw an error.
+      spyOn(AnchoredDataSerializer, 'deserialize').and.throwError('Some unexpected error.');
+
+      const result = await transactionProcessor.processTransaction(mockTransaction);
+      expect(result).toBeFalsy();
+    });
   });
 });

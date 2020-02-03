@@ -14,6 +14,7 @@ import FetchResultCode from '../../lib/common/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
+import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -180,34 +181,41 @@ describe('Observer', async () => {
         services)
     ];
 
+    // Generating batch file data.
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);
-
     const batchFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: batchFileBuffer
     };
+    const mockBatchFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockBatchFileHash')));
 
-    const batchFilehash = Encoder.encode(Multihash.hash(batchFileBuffer, 18));
-
-    const operationDids = operationsBuffer.map((op) => { return Operation.create(op).didUniqueSuffix; });
-    const anchorFile: AnchorFileModel = {
-      batchFileHash: batchFilehash,
-      didUniqueSuffixes: operationDids
+    // Generating map file data.
+    const mapFileBuffer = await MapFile.createBuffer(mockBatchFilehash);
+    const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
+    const mapFileFetchResult: FetchResult = {
+      code: FetchResultCode.Success,
+      content: mapFileBuffer
     };
 
-    const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
-
+    // Generating anchor file data.
+    const operationDids = operationsBuffer.map((op) => { return Operation.create(op).didUniqueSuffix; });
+    const anchorFileModel: AnchorFileModel = {
+      mapFileHash: mockMapFileHash,
+      didUniqueSuffixes: operationDids
+    };
+    const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
     const anchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: anchorFileBuffer
     };
-
-    const anchorFilehash = Encoder.encode(Multihash.hash(anchorFileBuffer, 18));
+    const mockAnchorFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
 
     const mockDownloadFunction = async (hash: string) => {
-      if (hash === anchorFilehash) {
+      if (hash === mockAnchorFilehash) {
         return anchoreFileFetchResult;
-      } else if (hash === batchFilehash) {
+      } else if (hash === mockMapFileHash) {
+        return mapFileFetchResult;
+      } else if (hash === mockBatchFilehash) {
         return batchFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
@@ -226,7 +234,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: anchorFilehash, numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFilehash, numberOfOperations: 1 });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
@@ -241,10 +249,10 @@ describe('Observer', async () => {
     };
     await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
-    operationDids.forEach(async (did) => {
+    for (const did of operationDids) {
       const operationArray = await operationStore.get(did);
       expect(operationArray.length).toEqual(1);
-    });
+    }
   });
 
   // Testing invalid anchor file scenarios:

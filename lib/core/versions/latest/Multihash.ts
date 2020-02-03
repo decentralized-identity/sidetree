@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../SidetreeError';
 const multihashes = require('multihashes');
 
@@ -10,12 +11,15 @@ const multihashes = require('multihashes');
 export default class Multihash {
   /**
    * Hashes the content using the hashing algorithm specified.
+   * @param hashAlgorithmInMultihashCode The hashing algorithm to use. If not given, latest supported hashing algorithm will be used.
    */
-  public static hash (content: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
-    const hashAlgorithm = hashAlgorithmInMultihashCode;
+  public static hash (content: Buffer, hashAlgorithmInMultihashCode?: number): Buffer {
+    if (hashAlgorithmInMultihashCode === undefined) {
+      hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
+    }
 
     let hash;
-    switch (hashAlgorithm) {
+    switch (hashAlgorithmInMultihashCode) {
       case 18: // SHA256
         hash = crypto.createHash('sha256').update(content).digest();
         break;
@@ -23,7 +27,7 @@ export default class Multihash {
         throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
     }
 
-    const hashAlgorithmName = multihashes.codes[hashAlgorithm];
+    const hashAlgorithmName = multihashes.codes[hashAlgorithmInMultihashCode];
     const multihash = multihashes.encode(hash, hashAlgorithmName);
 
     return multihash;
