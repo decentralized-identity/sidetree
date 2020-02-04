@@ -175,8 +175,16 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
+    const currentLastProcessedBlock = this.lastProcessedBlock!;
+    let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock);
 
-    let [transactions, numOfBlocksAcquired] = await this.getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber(since);
+    // make sure the last processed block hasn't changed since before getting transactions
+    // if changed, then a block reorg happened.
+    if (!await this.verifyBlock(currentLastProcessedBlock.height, currentLastProcessedBlock.hash)) {
+      console.info('Requested transactions hash mismatched blockchain');
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.InvalidTransactionNumberOrTimeHash);
+    }
+
     // if not enough blocks to fill the page then there are no more transactions
     const moreTransactions = numOfBlocksAcquired >= BitcoinProcessor.pageSizeInBlocks;
     transactions = transactions.map((transaction) => {
@@ -507,6 +515,13 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
+    const currentBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
+
+    // this means the block height doesn't exist anymore
+    if (currentBlockHeight < height) {
+      return false;
+    }
+
     const responseData = await this.bitcoinClient.getBlockHash(height);
 
     console.debug(`Retrieved block ${height} (${responseData})`);
@@ -707,25 +722,25 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Return transactions since transaction number and number of blocks acquired.
+   * Return transactions since transaction number and number of blocks acquired (Will get at least pageSizeInBlocks)
    * @param since Transaction number to query since
-   * @param numOfBlocks number of blocks worth of transactions to get at least
+   * @param currentLastProcessedBlock The current last processed block. Not using this.lastProcessedBlock to avoid value changing during processing
    * @returns a tuple of [transactions, numberOfBlocksContainedInTransactions]
    */
-  private async getAtLeastPageSizeBlocksWorthOfTransactionsSinceTransactionNumber (since: number | undefined): Promise<[TransactionModel[], number]> {
+  private async getTransactionsSince (since: number | undefined, currentLastProcessedBlock: IBlockInfo): Promise<[TransactionModel[], number]> {
     let beginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
     let numOfBlocksAcquired = 0;
 
     const transactionsToReturn: TransactionModel[] = [];
 
     // while need more blocks and have not reached the processed block
-    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && beginTransactionTime <= this.lastProcessedBlock!.height) {
+    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && beginTransactionTime <= currentLastProcessedBlock.height) {
       const endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
       let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(beginTransactionTime, endTransactionTime);
 
       transactions = transactions.filter((transaction) => {
         // filter anything greater than the last processed block because they are not complete
-        return transaction.transactionTime <= this.lastProcessedBlock!.height &&
+        return transaction.transactionTime <= currentLastProcessedBlock.height &&
           // if there is a since, filter transactions that are less than or equal to since (the first block will have undesired transactions)
           (since === undefined || transaction.transactionNumber > since);
       });
