@@ -1,22 +1,22 @@
 
-import BitcoinLockModel from '../../lib/bitcoin/models/BitcoinLockModel';
-import BitcoinLockType from '../../lib/bitcoin/enums/BitcoinLockType';
+import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
+import BitcoinLockTransactionType from '../../lib/bitcoin/enums/BitcoinLockTransactionType';
 import Config from '../../lib/core/models/Config';
 import MongoDb from '../common/MongoDb';
-import MongoDbLockStore from '../../lib/bitcoin/MongoDbLockStore';
+import MongoDbLockTransactionStore from '../../lib/bitcoin/MongoDbLockTransactionStore';
 import { MongoClient } from 'mongodb';
 
-async function createLockStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbLockStore> {
-  const lockStore = new MongoDbLockStore(transactionStoreUri, databaseName);
+async function createLockStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbLockTransactionStore> {
+  const lockStore = new MongoDbLockTransactionStore(transactionStoreUri, databaseName);
   await lockStore.initialize();
   return lockStore;
 }
 
-async function generateAndStoreLocks (lockStore: MongoDbLockStore, count: number): Promise<BitcoinLockModel[]> {
-  const locks: BitcoinLockModel[] = [];
+async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, count: number): Promise<BitcoinLockTransactionModel[]> {
+  const locks: BitcoinLockTransactionModel[] = [];
 
   for (let i = 1; i <= count; i++) {
-    const lock: BitcoinLockModel = {
+    const lock: BitcoinLockTransactionModel = {
       transactionId: i.toString(),
       redeemScript: `redeem-script-${i}`,
       type: getLockTypeFromIndex(i),
@@ -31,18 +31,18 @@ async function generateAndStoreLocks (lockStore: MongoDbLockStore, count: number
   return locks;
 }
 
-function getLockTypeFromIndex (i: number): BitcoinLockType {
-  return (i % 3 === 0) ? BitcoinLockType.Create :
-         (i % 3 === 1) ? BitcoinLockType.Relock :
-         BitcoinLockType.ReturnToWallet;
+function getLockTypeFromIndex (i: number): BitcoinLockTransactionType {
+  return (i % 3 === 0) ? BitcoinLockTransactionType.Create :
+         (i % 3 === 1) ? BitcoinLockTransactionType.Relock :
+         BitcoinLockTransactionType.ReturnToWallet;
 }
 
-describe('MongoDbLockStore', async () => {
+describe('MongoDbLockTransactionStore', async () => {
   const config: Config = require('../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable: boolean | undefined;
-  let lockStore: MongoDbLockStore;
+  let lockStore: MongoDbLockTransactionStore;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
 
@@ -72,12 +72,12 @@ describe('MongoDbLockStore', async () => {
     console.info(`Deleting collections...`);
     const client = await MongoClient.connect(config.mongoDbConnectionString);
     const db = client.db(databaseName);
-    await db.dropCollection(MongoDbLockStore.lockCollectionName);
+    await db.dropCollection(MongoDbLockTransactionStore.lockCollectionName);
 
     console.info(`Verify collections no longer exist.`);
     let collections = await db.collections();
     let collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(MongoDbLockStore.lockCollectionName)).toBeFalsy();
+    expect(collectionNames.includes(MongoDbLockTransactionStore.lockCollectionName)).toBeFalsy();
 
     console.info(`Trigger initialization.`);
     await lockStore.initialize();
@@ -85,7 +85,7 @@ describe('MongoDbLockStore', async () => {
     console.info(`Verify collection exists now.`);
     collections = await db.collections();
     collectionNames = collections.map(collection => collection.collectionName);
-    expect(collectionNames.includes(MongoDbLockStore.lockCollectionName)).toBeTruthy();
+    expect(collectionNames.includes(MongoDbLockTransactionStore.lockCollectionName)).toBeTruthy();
   });
 
   it('should get the latest lock.', async () => {
