@@ -37,7 +37,7 @@ export default class MongoDbLockTransactionStore {
     const lockInMongoDb = {
       transactionId: bitcoinLock.transactionId,
       redeemScript: bitcoinLock.redeemScript,
-      // NOTE: MUST force `createTimestamp` to be Int64 in MondoDB.
+      // NOTE: MUST force 'createTimestamp' to be Int64 in MondoDB.
       createTimestamp: Long.fromNumber(bitcoinLock.createTimestamp),
       type: bitcoinLock.type
     };
@@ -82,7 +82,7 @@ export default class MongoDbLockTransactionStore {
     } else {
       console.info('Locks collection does not exists, creating...');
       lockCollection = await db.createCollection(MongoDbLockTransactionStore.lockCollectionName);
-      // Note the unique index, so duplicate inserts are rejected.
+
       await lockCollection.createIndex({ createTimestamp: -1 });
       console.info('Locks collection created.');
     }
