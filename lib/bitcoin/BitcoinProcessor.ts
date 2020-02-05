@@ -54,9 +54,6 @@ export default class BitcoinProcessor {
   /** Store for the state of sidetree transactions. */
   private readonly transactionStore: MongoDbTransactionStore;
 
-  /** Number of items to return per page */
-  public pageSize: number;
-
   /** Number of seconds between transaction queries */
   public pollPeriod: number;
 
@@ -83,6 +80,9 @@ export default class BitcoinProcessor {
   /** satoshis per bitcoin */
   private static readonly satoshiPerBitcoin = 100000000;
 
+  /** at least 10 blocks per page unless reaching the last block */
+  private static readonly pageSizeInBlocks = 10;
+
   public constructor (config: IBitcoinConfig) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
@@ -99,7 +99,6 @@ export default class BitcoinProcessor {
       mongoQuantileStore);
     this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
 
-    this.pageSize = config.transactionFetchPageSize;
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
@@ -159,7 +158,7 @@ export default class BitcoinProcessor {
    * Fetches Sidetree transactions in chronological order from since or genesis.
    * @param since A transaction number
    * @param hash The associated transaction time hash
-   * @returns Transactions since given transaction number.
+   * @returns Transactions in complete blocks since given transaction number.
    */
   public async transactions (since?: number, hash?: string): Promise<{
     moreTransactions: boolean,
@@ -175,23 +174,23 @@ export default class BitcoinProcessor {
       }
     }
 
-    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'begining'}...`);
-    let transactions = await this.transactionStore.getTransactionsLaterThan(since, this.pageSize);
-    // filter the results to only return transactions, and not internal data
-    transactions = transactions.map((transaction) => {
-      return {
-        transactionNumber: transaction.transactionNumber,
-        transactionTime: transaction.transactionTime,
-        transactionTimeHash: transaction.transactionTimeHash,
-        anchorString: transaction.anchorString,
-        transactionFeePaid: transaction.transactionFeePaid,
-        normalizedTransactionFee: transaction.normalizedTransactionFee
-      };
-    });
+    console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
+    const currentLastProcessedBlock = this.lastProcessedBlock!;
+    let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
+
+    // make sure the last processed block hasn't changed since before getting transactions
+    // if changed, then a block reorg happened.
+    if (!await this.verifyBlock(currentLastProcessedBlock.height, currentLastProcessedBlock.hash)) {
+      console.info('Requested transactions hash mismatched blockchain');
+      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.InvalidTransactionNumberOrTimeHash);
+    }
+
+    // if not enough blocks to fill the page then there are no more transactions
+    const moreTransactions = numOfBlocksAcquired >= BitcoinProcessor.pageSizeInBlocks;
 
     return {
       transactions,
-      moreTransactions: transactions.length === this.pageSize
+      moreTransactions
     };
   }
 
@@ -506,6 +505,13 @@ export default class BitcoinProcessor {
    */
   private async verifyBlock (height: number, hash: string): Promise<boolean> {
     console.info(`Verifying block ${height} (${hash})`);
+    const currentBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
+
+    // this means the block height doesn't exist anymore
+    if (currentBlockHeight < height) {
+      return false;
+    }
+
     const responseData = await this.bitcoinClient.getBlockHash(height);
 
     console.debug(`Retrieved block ${height} (${responseData})`);
@@ -703,5 +709,47 @@ export default class BitcoinProcessor {
 
     // non sidetree transaction
     return sidetreeTxToAdd;
+  }
+
+  /**
+   * Return transactions since transaction number and number of blocks acquired (Will get at least pageSizeInBlocks)
+   * @param since Transaction number to query since
+   * @param maxBlockHeight The last block height to consider included in transactions
+   * @returns a tuple of [transactions, numberOfBlocksContainedInTransactions]
+   */
+  private async getTransactionsSince (since: number | undefined, maxBlockHeight: number): Promise<[TransactionModel[], number]> {
+    let inclusiveBeginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
+    let numOfBlocksAcquired = 0;
+
+    const transactionsToReturn: TransactionModel[] = [];
+
+    // while need more blocks and have not reached the processed block
+    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && inclusiveBeginTransactionTime <= maxBlockHeight) {
+      const exclusiveEndTransactionTime = inclusiveBeginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
+      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(
+        inclusiveBeginTransactionTime, exclusiveEndTransactionTime);
+
+      transactions = transactions.filter((transaction) => {
+        // filter anything greater than the last processed block because they are not complete
+        return transaction.transactionTime <= maxBlockHeight &&
+          // if there is a since, filter transactions that are less than or equal to since (the first block will have undesired transactions)
+          (since === undefined || transaction.transactionNumber > since);
+      });
+
+      numOfBlocksAcquired += BitcoinProcessor.getUniqueNumOfBlocksInTransactions(transactions);
+      inclusiveBeginTransactionTime = exclusiveEndTransactionTime;
+      transactionsToReturn.push(...transactions);
+    }
+
+    return [transactionsToReturn, numOfBlocksAcquired];
+  }
+
+  private static getUniqueNumOfBlocksInTransactions (transactions: TransactionModel[]): number {
+    const uniqueBlockNumbers = new Set<number>();
+    for (const transaction of transactions) {
+      uniqueBlockNumbers.add(transaction.transactionTime);
+    }
+
+    return uniqueBlockNumbers.size;
   }
 }

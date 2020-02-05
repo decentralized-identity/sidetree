@@ -29,10 +29,11 @@ export default interface ITransactionStore {
   getTransaction (transactionNumber: number): Promise<TransactionModel | undefined>;
 
   /**
-   * Given a transaction time, return a list of transactions that are in that time
-   * @param transactionTime the transaction time to query for
+   * Given a transaction times, return a list of transactions that are between the specified times
+   * @param inclusiveBeginTransactionTime The first transaction time to query for
+   * @param exclusiveEndTransactionTime The transaction time to stop querying for
    */
-  getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[] | undefined>;
+  getTransactionsStartingFrom (inclusiveBeginTransactionTime: number, exclusiveEndTransactionTime: number): Promise<TransactionModel[] | undefined>;
 
   /**
    * Returns at most @param max transactions with transactionNumber greater than @param transactionNumber

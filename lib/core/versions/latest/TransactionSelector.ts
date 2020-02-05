@@ -62,7 +62,7 @@ export default class TransactionSelector implements ITransactionSelector {
   }
 
   private async getNumberOfOperationsAndTransactionsAlreadyInBlock (blockHeight: number): Promise<number[]> {
-    const transactions = await this.transactionStore.getTransactionsByTransactionTime(blockHeight);
+    const transactions = await this.transactionStore.getTransactionsStartingFrom(blockHeight, blockHeight);
     let numberOfOperations = 0;
     if (transactions) {
       for (const transaction of transactions) {
