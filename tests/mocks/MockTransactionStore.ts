@@ -119,7 +119,7 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
 
     // The following conditions should never be possible.
     if (bestKnownValidRecentProcessedTransactionIndex === undefined) {
-      throw Error(`Unable to locate processed transction: ${transactionNumber}`);
+      throw Error(`Unable to locate processed transaction: ${transactionNumber}`);
     }
 
     console.info(`Reverting ${this.processedTransactions.length - bestKnownValidRecentProcessedTransactionIndex - 1} transactions...`);
@@ -155,10 +155,6 @@ export default class MockTransactionStore implements ITransactionStore, IUnresol
     return this.processedTransactions;
   }
 
-  /**
-   * Gets a list of transactions that are in the desired transaction time
-   * @param transactionTime The transaction time to query for
-   */
   public async getTransactionsStartingFrom (inclusiveBeginTransactionTime: number, exclusiveEndTransactionTime: number): Promise<TransactionModel[]> {
     if (inclusiveBeginTransactionTime === exclusiveEndTransactionTime) {
       return this.processedTransactions.filter((transaction) => { return transaction.transactionTime === inclusiveBeginTransactionTime; });

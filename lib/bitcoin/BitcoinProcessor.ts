@@ -187,16 +187,6 @@ export default class BitcoinProcessor {
 
     // if not enough blocks to fill the page then there are no more transactions
     const moreTransactions = numOfBlocksAcquired >= BitcoinProcessor.pageSizeInBlocks;
-    transactions = transactions.map((transaction) => {
-      return {
-        transactionNumber: transaction.transactionNumber,
-        transactionTime: transaction.transactionTime,
-        transactionTimeHash: transaction.transactionTimeHash,
-        anchorString: transaction.anchorString,
-        transactionFeePaid: transaction.transactionFeePaid,
-        normalizedTransactionFee: transaction.normalizedTransactionFee
-      };
-    });
 
     return {
       transactions,
@@ -724,29 +714,30 @@ export default class BitcoinProcessor {
   /**
    * Return transactions since transaction number and number of blocks acquired (Will get at least pageSizeInBlocks)
    * @param since Transaction number to query since
-   * @param currentLastProcessedBlock The current last processed block. Not using this.lastProcessedBlock to avoid value changing during processing
+   * @param lastIncludedBlock The last block to include in the transactions to return
    * @returns a tuple of [transactions, numberOfBlocksContainedInTransactions]
    */
-  private async getTransactionsSince (since: number | undefined, currentLastProcessedBlock: IBlockInfo): Promise<[TransactionModel[], number]> {
-    let beginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
+  private async getTransactionsSince (since: number | undefined, lastIncludedBlock: IBlockInfo): Promise<[TransactionModel[], number]> {
+    let inclusiveBeginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
     let numOfBlocksAcquired = 0;
 
     const transactionsToReturn: TransactionModel[] = [];
 
     // while need more blocks and have not reached the processed block
-    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && beginTransactionTime <= currentLastProcessedBlock.height) {
-      const endTransactionTime = beginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
-      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(beginTransactionTime, endTransactionTime);
+    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && inclusiveBeginTransactionTime <= lastIncludedBlock.height) {
+      const exclusiveEndTransactionTime = inclusiveBeginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
+      let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(
+        inclusiveBeginTransactionTime, exclusiveEndTransactionTime);
 
       transactions = transactions.filter((transaction) => {
         // filter anything greater than the last processed block because they are not complete
-        return transaction.transactionTime <= currentLastProcessedBlock.height &&
+        return transaction.transactionTime <= lastIncludedBlock.height &&
           // if there is a since, filter transactions that are less than or equal to since (the first block will have undesired transactions)
           (since === undefined || transaction.transactionNumber > since);
       });
 
       numOfBlocksAcquired += BitcoinProcessor.getUniqueNumOfBlocksInTransactions(transactions);
-      beginTransactionTime = endTransactionTime;
+      inclusiveBeginTransactionTime = exclusiveEndTransactionTime;
       transactionsToReturn.push(...transactions);
     }
 
