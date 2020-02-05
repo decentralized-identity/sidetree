@@ -176,7 +176,7 @@ export default class BitcoinProcessor {
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
     const currentLastProcessedBlock = this.lastProcessedBlock!;
-    let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock);
+    let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
 
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
@@ -714,24 +714,24 @@ export default class BitcoinProcessor {
   /**
    * Return transactions since transaction number and number of blocks acquired (Will get at least pageSizeInBlocks)
    * @param since Transaction number to query since
-   * @param lastIncludedBlock The last block to include in the transactions to return
+   * @param maxBlockHeight The last block height to consider included in transactions
    * @returns a tuple of [transactions, numberOfBlocksContainedInTransactions]
    */
-  private async getTransactionsSince (since: number | undefined, lastIncludedBlock: IBlockInfo): Promise<[TransactionModel[], number]> {
+  private async getTransactionsSince (since: number | undefined, maxBlockHeight: number): Promise<[TransactionModel[], number]> {
     let inclusiveBeginTransactionTime = since === undefined ? this.genesisBlockNumber : TransactionNumber.getBlockNumber(since);
     let numOfBlocksAcquired = 0;
 
     const transactionsToReturn: TransactionModel[] = [];
 
     // while need more blocks and have not reached the processed block
-    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && inclusiveBeginTransactionTime <= lastIncludedBlock.height) {
+    while (numOfBlocksAcquired < BitcoinProcessor.pageSizeInBlocks && inclusiveBeginTransactionTime <= maxBlockHeight) {
       const exclusiveEndTransactionTime = inclusiveBeginTransactionTime + BitcoinProcessor.pageSizeInBlocks;
       let transactions: TransactionModel[] = await this.transactionStore.getTransactionsStartingFrom(
         inclusiveBeginTransactionTime, exclusiveEndTransactionTime);
 
       transactions = transactions.filter((transaction) => {
         // filter anything greater than the last processed block because they are not complete
-        return transaction.transactionTime <= lastIncludedBlock.height &&
+        return transaction.transactionTime <= maxBlockHeight &&
           // if there is a since, filter transactions that are less than or equal to since (the first block will have undesired transactions)
           (since === undefined || transaction.transactionNumber > since);
       });
