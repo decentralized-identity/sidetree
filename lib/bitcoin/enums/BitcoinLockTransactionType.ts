@@ -1,7 +1,7 @@
 enum BitcoinLockTransactionType {
   Create = 'create',
   Relock = 'relock',
-  ReturnToWallet = 'returntowallet'
+  ReturnToWallet = 'return-to-wallet'
 }
 
 export default BitcoinLockTransactionType;

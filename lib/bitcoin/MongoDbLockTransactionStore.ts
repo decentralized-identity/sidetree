@@ -74,7 +74,7 @@ export default class MongoDbLockTransactionStore {
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 
-    // If 'transactions' collection exists, use it; else create it.
+    // If 'locks' collection exists, use it; else create it.
     let lockCollection;
     if (collectionNames.includes(MongoDbLockTransactionStore.lockCollectionName)) {
       console.info('Locks collection already exists.');
