@@ -1,9 +1,9 @@
 
-import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
-import BitcoinLockTransactionType from '../../lib/bitcoin/enums/BitcoinLockTransactionType';
-import Config from '../../lib/core/models/Config';
-import MongoDb from '../common/MongoDb';
-import MongoDbLockTransactionStore from '../../lib/bitcoin/MongoDbLockTransactionStore';
+import Config from '../../../lib/core/models/Config';
+import MongoDb from '../../common/MongoDb';
+import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
+import SavedLockTransactionModel from '../../../lib/bitcoin/models/SavedLockTransactionModel';
+import SavedLockTransactionType from '../../../lib/bitcoin/enums/SavedLockTransactionType';
 import { MongoClient } from 'mongodb';
 
 async function createLockStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbLockTransactionStore> {
@@ -12,11 +12,11 @@ async function createLockStore (transactionStoreUri: string, databaseName: strin
   return lockStore;
 }
 
-async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, count: number): Promise<BitcoinLockTransactionModel[]> {
-  const locks: BitcoinLockTransactionModel[] = [];
+async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, count: number): Promise<SavedLockTransactionModel[]> {
+  const locks: SavedLockTransactionModel[] = [];
 
   for (let i = 1; i <= count; i++) {
-    const lock: BitcoinLockTransactionModel = {
+    const lock: SavedLockTransactionModel = {
       transactionId: i.toString(),
       redeemScript: `redeem-script-${i}`,
       type: getLockTypeFromIndex(i),
@@ -31,14 +31,14 @@ async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, co
   return locks;
 }
 
-function getLockTypeFromIndex (i: number): BitcoinLockTransactionType {
-  return (i % 3 === 0) ? BitcoinLockTransactionType.Create :
-         (i % 3 === 1) ? BitcoinLockTransactionType.Relock :
-         BitcoinLockTransactionType.ReturnToWallet;
+function getLockTypeFromIndex (i: number): SavedLockTransactionType {
+  return (i % 3 === 0) ? SavedLockTransactionType.Create :
+         (i % 3 === 1) ? SavedLockTransactionType.Relock :
+         SavedLockTransactionType.ReturnToWallet;
 }
 
 describe('MongoDbLockTransactionStore', async () => {
-  const config: Config = require('../json/config-test.json');
+  const config: Config = require('../../json/config-test.json');
   const databaseName = 'sidetree-test';
 
   let mongoServiceAvailable: boolean | undefined;

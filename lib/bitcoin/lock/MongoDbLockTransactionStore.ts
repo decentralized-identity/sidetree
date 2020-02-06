@@ -1,4 +1,4 @@
-import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
+import BitcoinLockTransactionModel from '../models/SavedLockTransactionModel';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 
 /**
