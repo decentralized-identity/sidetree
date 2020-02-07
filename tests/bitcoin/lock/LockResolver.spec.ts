@@ -20,7 +20,7 @@ function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddres
                .add(Script.buildPublicKeyHashOut(targetWalletAddress));
 }
 
-fdescribe('LockResolver', () => {
+describe('LockResolver', () => {
 
   let validTestPrivateKey = new PrivateKey(undefined, Networks.testnet);
   let validTestWalletAddress = validTestPrivateKey.toAddress();
