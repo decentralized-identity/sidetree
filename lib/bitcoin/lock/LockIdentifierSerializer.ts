@@ -4,7 +4,7 @@ import LockIdentifier from '../models/LockIdentifierModel';
 import ErrorCode from '../ErrorCode';
 
 /**
- * Represents a class which uniquely identifies a lock.
+ * Encapsulates functionality to serialize and deserialize a lock identifier.
  */
 export default class LockIdentifierSerializer {
 
@@ -25,7 +25,7 @@ export default class LockIdentifierSerializer {
    * Gets this object from the serialized input.
    * @param serialized The serialized lock.
    */
-  public static fromSerialized (serialized: string): LockIdentifier {
+  public static deserialize (serialized: string): LockIdentifier {
     const decodedString = base64url.decode(serialized);
     const splitDecodedString = decodedString.split(LockIdentifierSerializer.delimiter);
 

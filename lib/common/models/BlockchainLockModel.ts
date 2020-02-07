@@ -1,5 +1,5 @@
 /**
- * Encapsulates data about locks created by the blockchain service.
+ * Encapsulates data about locks created and retrieved by the blockchain service.
  */
 export default interface BlockchainLockModel {
   /** Uniquely identifies a lock */

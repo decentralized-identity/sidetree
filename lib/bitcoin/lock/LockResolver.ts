@@ -16,48 +16,54 @@ export default class LockResolver {
   }
 
   /**
-   * Verifies that the lock identifier represents a lock for the specified wallet address.
+   * Gets the corresponding lock information represented by the specified lock identifier. it also verifies
+   * the lock by making sure that the corresponding transaction is indeed a lock transaction paying to the
+   * wallet in the lockIdentifier upon lock expiry.
+   *
    * @param lockIdentifier The lock identifier.
-   * @returns The blockchain lock model if the specified identifier is verified.
+   * @returns The blockchain lock model if the specified identifier is verified; throws if verification fails.
    */
   public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifier): Promise<BlockchainLockModel> {
 
-    const redeemScriptObj = LockResolver.createScriptFromHexInput(lockIdentifier.redeemScriptAsHex);
+    // The verifictation of a lock-identifier has the following steps:
+    //   (A). The redeem script in the lock-identifier is actually a 'locking' script
+    //   (B). The redeem script in the lock-identifier is paying to the wallet in the lock-identifier
+    //   (C). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier
+    //
+    // With above, we can verify that the amount is/was locked for the specified wallet in
+    // the specified transaction.
 
-    // First perform the verifications which do not require us to fetch the transaction.
-    // This way we can quit earlier if there are any errors.
+    // (A). verify redeem script is a lock script
+    const redeemScriptObj = LockResolver.createScriptFromHexInput(lockIdentifier.redeemScriptAsHex);
     const [isLockScript, lockUntilBlock] = LockResolver.isRedeemScriptALockScript(redeemScriptObj);
 
     if (!isLockScript) {
       throw new BitcoinError(ErrorCode.LockResolverRedeemScriptIsNotLock, `${redeemScriptObj.toASM()}`);
     }
 
-    // Now check to see whether the redeem script is going to pay to the target wallet upon spend
+    // (B). verify that the script is paying to the target wallet
     const walletAddressObj = new Address(lockIdentifier.walletAddressAsBuffer);
     const isLockScriptPayingTargetWallet = LockResolver.isRedeemScriptPayingToTargetWallet(redeemScriptObj, walletAddressObj);
 
     if (!isLockScriptPayingTargetWallet) {
-      throw new BitcoinError(
-        ErrorCode.LockResolverRedeemScriptIsNotPayingToWallet,
-        `Script: ${redeemScriptObj.toASM()}; Wallet: ${walletAddressObj.toString()}`);
+      throw new BitcoinError(ErrorCode.LockResolverRedeemScriptIsNotPayingToWallet,
+                            `Script: ${redeemScriptObj.toASM()}; Wallet: ${walletAddressObj.toString()}`);
     }
 
-    // Now fetch the corresponding transaction and make sure that the transaction is actually paying
-    // to the redeem script.
+    // (C). verify that the transaction is paying to the target redeem script
     const lockTransaction = await this.bitcoinClient.getRawTransaction(lockIdentifier.transactionId);
 
-    const transactionIsPayingToTargetRedeemScript =
-      lockTransaction.outputs.length > 0 &&
-      LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
+    const transactionIsPayingToTargetRedeemScript = lockTransaction.outputs.length > 0 &&
+                                                    LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
 
     if (!transactionIsPayingToTargetRedeemScript) {
-      throw new BitcoinError(
-        ErrorCode.LockResolverTransactionIsNotPayingToScript, `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
+      throw new BitcoinError(ErrorCode.LockResolverTransactionIsNotPayingToScript,
+                             `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
     }
 
+    // Now that the lock identifier has been verified, return the lock information
     const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);
 
-    // Now that the lock identifier has been verified, return
     return {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,

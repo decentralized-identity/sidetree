@@ -1,5 +1,5 @@
 /**
- * Represents an object uniquely identifies a lock.
+ * Represents an internal (bitcoin layer only) object which uniquely identifies a lock.
  */
 export default interface LockIdentifier {
   /** The transaction id of the lock */
