@@ -283,6 +283,7 @@ export default class Operation {
     // Verify operation specific payload schema.
     switch (operationType) {
       case OperationType.Create:
+        decodedPayload.didDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.didDocument));
         Operation.validateCreatePayload(decodedPayload);
         break;
       case OperationType.Update:

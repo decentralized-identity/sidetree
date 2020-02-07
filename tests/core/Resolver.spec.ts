@@ -2,6 +2,7 @@ import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -39,7 +40,7 @@ describe('Resolver', () => {
       const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
       const createOperationPayload = {
         type: OperationType.Create,
-        didDocument: documentModel,
+        didDocument: Encoder.encode(JSON.stringify(documentModel)),
         nextRecoveryOtpHash: firstRecoveryOtpHash,
         nextUpdateOtpHash: firstUpdateOtpHash
       };
