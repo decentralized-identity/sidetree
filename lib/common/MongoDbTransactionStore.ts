@@ -158,11 +158,23 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   }
 
   /**
-   * Gets a list of transactions that are in the desired transaction time
-   * @param transactionTime The transaction time to query for
+   * Gets a list of transactions between the bounds of transaction time. The smaller value will be inclusive while the bigger be exclusive
+   * @param inclusiveBeginTransactionTime The first transaction time to begin querying for
+   * @param exclusiveEndTransactionTime The transaction time to stop querying for
    */
-  public async getTransactionsByTransactionTime (transactionTime: number): Promise<TransactionModel[]> {
-    const transactions = await this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(transactionTime) } }).toArray();
+  public async getTransactionsStartingFrom (inclusiveBeginTransactionTime: number, exclusiveEndTransactionTime: number): Promise<TransactionModel[]> {
+    let cursor: Cursor<any>;
+    if (inclusiveBeginTransactionTime === exclusiveEndTransactionTime) {
+      // if begin === end, query for 1 transaction time
+      cursor = this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(inclusiveBeginTransactionTime) } });
+    } else {
+      cursor = this.transactionCollection!.find({ $and: [
+        { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
+        { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
+      ] });
+    }
+
+    const transactions: TransactionModel[] = await cursor.sort({ transactionNumber: 1 }).toArray();
     return transactions;
   }
 

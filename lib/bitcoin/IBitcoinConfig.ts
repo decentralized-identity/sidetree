@@ -13,7 +13,6 @@ export interface IBitcoinConfig {
   genesisBlockNumber: number;
   mongoDbConnectionString: string;
   databaseName: string | undefined;
-  transactionFetchPageSize: number;
   requestTimeoutInMilliseconds: number | undefined;
   requestMaxRetries: number | undefined;
   transactionPollPeriodInSeconds: number | undefined;

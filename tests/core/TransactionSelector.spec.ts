@@ -209,7 +209,7 @@ describe('TransactionSelector', () => {
 
   describe('getNumberOfOperationsAndTransactionsAlreadyInBlock', () => {
     it('should handle when transactions store returns undefined', async () => {
-      spyOn(transactionStore, 'getTransactionsByTransactionTime').and.returnValue(new Promise((resolve) => {
+      spyOn(transactionStore, 'getTransactionsStartingFrom').and.returnValue(new Promise((resolve) => {
         resolve(undefined);
       }));
 
