@@ -66,8 +66,12 @@ export default class TransactionSelector implements ITransactionSelector {
     let numberOfOperations = 0;
     if (transactions) {
       for (const transaction of transactions) {
-        const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(transaction.anchorString).numberOfOperations;
-        numberOfOperations += numOfOperationsInCurrentTransaction;
+        try {
+          const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(transaction.anchorString).numberOfOperations;
+          numberOfOperations += numOfOperationsInCurrentTransaction;
+        } catch {
+          console.debug(`Unable to deserialize ${transaction.anchorString}, transaction not considered as selected.`);
+        }
       }
     }
     const numberOfTransactions = transactions ? transactions.length : 0;
@@ -89,11 +93,14 @@ export default class TransactionSelector implements ITransactionSelector {
       && numberOfOperationsSeen < numberOfOperationsToQualify
       && transactionsPriorityQueue.length > 0) {
       const currentTransaction = transactionsPriorityQueue.pop();
-      const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
-      numberOfOperationsSeen += numOfOperationsInCurrentTransaction;
-
-      if (numberOfOperationsSeen <= numberOfOperationsToQualify) {
-        transactionsToReturn.push(currentTransaction);
+      try {
+        const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;
+        numberOfOperationsSeen += numOfOperationsInCurrentTransaction;
+        if (numberOfOperationsSeen <= numberOfOperationsToQualify) {
+          transactionsToReturn.push(currentTransaction);
+        }
+      } catch {
+        console.debug(`Unable to deserialize ${currentTransaction.anchorString}, transaction not selected`);
       }
     }
 
