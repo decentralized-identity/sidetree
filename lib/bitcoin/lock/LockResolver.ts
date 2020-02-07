@@ -4,8 +4,8 @@ import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import BlockchainLockModel from '../../common/models/BlockchainLockModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifier from '../models/LockIdentifierModel';
-import { Script, Address } from 'bitcore-lib';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
+import { Script, Address } from 'bitcore-lib';
 
 /**
  * Encapsulates functionality for verifying a bitcoin lock created by this service.
@@ -33,7 +33,7 @@ export default class LockResolver {
     }
 
     // Now check to see whether the redeem script is going to pay to the target wallet upon spend
-    const walletAddressObj = new Address(lockIdentifier.walletAddress);
+    const walletAddressObj = new Address(lockIdentifier.walletAddressAsBuffer);
     const isLockScriptPayingTargetWallet = LockResolver.isRedeemScriptPayingToTargetWallet(redeemScriptObj, walletAddressObj);
 
     if (!isLockScriptPayingTargetWallet) {
@@ -52,8 +52,7 @@ export default class LockResolver {
 
     if (!transactionIsPayingToTargetRedeemScript) {
       throw new BitcoinError(
-        ErrorCode.LockResolverTransactionIsNotPayintToScript,
-        `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
+        ErrorCode.LockResolverTransactionIsNotPayingToScript, `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
     }
 
     const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);

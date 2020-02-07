@@ -74,4 +74,27 @@ export default class JasmineSidetreeErrorValidator {
       fail(`Expected error '${expectedBitcoinErrorCode}' did not occur.`);
     }
   }
+
+  /**
+   * Fails the current spec if the execution of the function does not throw the expected BitcoinError.
+   *
+   * @param functionToExcute The function to execute.
+   * @param expectedBitcoinErrorCode The expected Bitcoin error code.
+   */
+  public static async expectBitcoinErrorToBeThrownAsync (functionToExcute: () => Promise<any>, expectedBitcoinErrorCode: string): Promise<void> {
+    let validated: boolean = false;
+
+    try {
+      await functionToExcute();
+    } catch (e) {
+      if (e instanceof BitcoinError) {
+        expect(e.code).toEqual(expectedBitcoinErrorCode);
+        validated = true;
+      }
+    }
+
+    if (!validated) {
+      fail(`Expected error '${expectedBitcoinErrorCode}' did not occur.`);
+    }
+  }
 }

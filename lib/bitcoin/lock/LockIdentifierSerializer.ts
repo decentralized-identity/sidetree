@@ -14,7 +14,7 @@ export default class LockIdentifierSerializer {
    * Returns the string representation of this identifier.
    */
   public static serialize (lockIdentifier: LockIdentifier): string {
-    const walletAddressAsString = lockIdentifier.walletAddress.toString();
+    const walletAddressAsString = lockIdentifier.walletAddressAsBuffer.toString();
     const delim = LockIdentifierSerializer.delimiter;
 
     const concatenatedData = `${lockIdentifier.transactionId}${delim}${lockIdentifier.redeemScriptAsHex}${delim}${walletAddressAsString}`;
@@ -39,7 +39,7 @@ export default class LockIdentifierSerializer {
     return {
       transactionId: splitDecodedString[0],
       redeemScriptAsHex: splitDecodedString[1],
-      walletAddress: walletAddressAsBuffer
+      walletAddressAsBuffer: walletAddressAsBuffer
     };
   }
 }

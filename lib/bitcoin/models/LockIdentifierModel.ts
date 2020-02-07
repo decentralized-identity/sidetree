@@ -9,5 +9,5 @@ export default interface LockIdentifier {
   redeemScriptAsHex: string;
 
   /** The address to which the redeem script is paying to */
-  walletAddress: Buffer;
+  walletAddressAsBuffer: Buffer;
 }

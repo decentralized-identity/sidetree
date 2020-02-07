@@ -10,7 +10,7 @@ describe('LockIdentifierSerializer', () => {
       const identifier: LockIdentifier = {
         transactionId: 'some transaction id',
         redeemScriptAsHex: 'redeem script -- input',
-        walletAddress: Buffer.from('some weird wallet address')
+        walletAddressAsBuffer: Buffer.from('some weird wallet address')
       };
 
       const serialized = LockIdentifierSerializer.serialize(identifier);
