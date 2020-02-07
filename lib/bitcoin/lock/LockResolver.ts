@@ -1,8 +1,11 @@
 import BitcoinClient from '../BitcoinClient';
+import BitcoinError from '../BitcoinError';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import BlockchainLockModel from '../../common/models/BlockchainLockModel';
-import LockIdentifier from './LockIdentifier';
-import { crypto, Script, Address } from 'bitcore-lib';
+import ErrorCode from '../ErrorCode';
+import LockIdentifier from '../models/LockIdentifierModel';
+import { Script, Address } from 'bitcore-lib';
+import LockIdentifierSerializer from './LockIdentifierSerializer';
 
 /**
  * Encapsulates functionality for verifying a bitcoin lock created by this service.
@@ -17,16 +20,16 @@ export default class LockResolver {
    * @param lockIdentifier The lock identifier.
    * @returns The blockchain lock model if the specified identifier is verified.
    */
-  public async resolveLockAndThrowOnError (lockIdentifier: LockIdentifier): Promise<BlockchainLockModel> {
+  public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifier): Promise<BlockchainLockModel> {
 
-    const redeemScriptObj = new Script(lockIdentifier.redeemScript);
+    const redeemScriptObj = LockResolver.createScriptFromHexInput(lockIdentifier.redeemScriptAsHex);
 
     // First perform the verifications which do not require us to fetch the transaction.
     // This way we can quit earlier if there are any errors.
     const [isLockScript, lockUntilBlock] = LockResolver.isRedeemScriptALockScript(redeemScriptObj);
 
     if (!isLockScript) {
-      // THROW
+      throw new BitcoinError(ErrorCode.LockResolverRedeemScriptIsNotLock, `${redeemScriptObj.toASM()}`);
     }
 
     // Now check to see whether the redeem script is going to pay to the target wallet upon spend
@@ -34,7 +37,9 @@ export default class LockResolver {
     const isLockScriptPayingTargetWallet = LockResolver.isRedeemScriptPayingToTargetWallet(redeemScriptObj, walletAddressObj);
 
     if (!isLockScriptPayingTargetWallet) {
-      // THROW
+      throw new BitcoinError(
+        ErrorCode.LockResolverRedeemScriptIsNotPayingToWallet,
+        `Script: ${redeemScriptObj.toASM()}; Wallet: ${walletAddressObj.toString()}`);
     }
 
     // Now fetch the corresponding transaction and make sure that the transaction is actually paying
@@ -45,13 +50,17 @@ export default class LockResolver {
       lockTransaction.outputs.length > 0 &&
       LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
 
-    if (transactionIsPayingToTargetRedeemScript) {
-      // THROW
+    if (!transactionIsPayingToTargetRedeemScript) {
+      throw new BitcoinError(
+        ErrorCode.LockResolverTransactionIsNotPayintToScript,
+        `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
     }
+
+    const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);
 
     // Now that the lock identifier has been verified, return
     return {
-      identifier: lockIdentifier.serialize(),
+      identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
       lockEndTransactionTime: lockUntilBlock,
       linkedWalletAddress: walletAddressObj.toString()
@@ -80,9 +89,7 @@ export default class LockResolver {
 
     if (isScriptValid) {
       const lockUntilBlockBuffer = Buffer.from(scriptAsmParts[0], 'hex');
-      const lockUntilBlockBN = (crypto.BN as any).fromScriptNumberBuffer(lockUntilBlockBuffer);
-
-      const lockUntilBlock = lockUntilBlockBN.toNumber;
+      const lockUntilBlock = lockUntilBlockBuffer.readIntLE(0, lockUntilBlockBuffer.length);
 
       return [isScriptValid, lockUntilBlock];
     }
@@ -109,9 +116,19 @@ export default class LockResolver {
   private static isRedeemScriptPayingToTargetWallet (redeemScript: Script, targetWalletAddress: Address): boolean {
     // Convert the wallet address into the standard "publickeyhash" bitcoin output
     const publicKeyHashOutput = Script.buildPublicKeyHashOut(targetWalletAddress);
-    const publicKeyHashOutputAsString = publicKeyHashOutput.toASM();
+    const publicKeyHashOutputAsHex = publicKeyHashOutput.toHex();
 
     // If the above output is the suffix in the redeem script then it is paying to the target wallet
-    return redeemScript.toASM().endsWith(publicKeyHashOutputAsString);
+    return redeemScript.toHex().endsWith(publicKeyHashOutputAsHex);
+  }
+
+  private static createScriptFromHexInput (redeemScriptAsHex: string): Script {
+    try {
+      const redeemScriptAsBuffer = Buffer.from(redeemScriptAsHex, 'hex');
+
+      return new Script(redeemScriptAsBuffer);
+    } catch (e) {
+      throw BitcoinError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
+    }
   }
 }

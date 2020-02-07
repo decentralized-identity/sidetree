@@ -123,11 +123,11 @@ export default class BitcoinClient {
   public async createLockTransaction (lockAmountInSatoshis: number, lockUntilBlock: number): Promise<BitcoinLockTransactionModel> {
     const unspentCoins = await this.getUnspentOutputs(this.walletAddress);
 
-    const [freezeTransaction, redeemScript] = await this.createFreezeTransaction(unspentCoins, lockUntilBlock, lockAmountInSatoshis);
+    const [freezeTransaction, redeemScriptAsHex] = await this.createFreezeTransaction(unspentCoins, lockUntilBlock, lockAmountInSatoshis);
 
     return {
       transactionId: freezeTransaction.id,
-      redeemScript: redeemScript,
+      redeemScript: redeemScriptAsHex,
       transactionObject: freezeTransaction
     };
   }
@@ -416,7 +416,7 @@ export default class BitcoinClient {
     freezeTransaction.fee(transactionFee)
                      .sign(this.walletPrivateKey);
 
-    return [freezeTransaction, freezeScript.toASM()];
+    return [freezeTransaction, freezeScript.toHex()];
   }
 
   // @ts-ignore

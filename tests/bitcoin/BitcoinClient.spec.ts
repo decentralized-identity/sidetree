@@ -7,7 +7,7 @@ import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransaction
 import ReadableStream from '../../lib/common/ReadableStream';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
-fdescribe('BitcoinClient', async () => {
+describe('BitcoinClient', async () => {
 
   let bitcoinClient: BitcoinClient;
   let fetchSpy: jasmine.Spy;
@@ -452,7 +452,7 @@ fdescribe('BitcoinClient', async () => {
 
       const [actualTxn, redeemScript] = await bitcoinClient['createFreezeTransaction']([mockUnspentOutput], mockFreezeUntilBlock, mockFreezeAmount);
 
-      expect(redeemScript).toEqual(mockRedeemScript.toASM());
+      expect(redeemScript).toEqual(mockRedeemScript.toHex());
       expect(actualTxn.getFee()).toEqual(mockTxnFee);
 
       // There should be 2 outputs
