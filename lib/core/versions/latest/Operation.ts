@@ -1,3 +1,4 @@
+import CreateOperation from './CreateOperation';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
@@ -9,6 +10,15 @@ import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
+
+/**
+ * Common model for a Sidetree operation.
+ */
+export interface IOperation {
+  didUniqueSuffix: string;
+  type: OperationType;
+  operationBuffer: Buffer;
+}
 
 /**
  * A class that represents a Sidetree operation.
@@ -80,6 +90,22 @@ export default class Operation {
    */
   public static create (operationBuffer: Buffer) {
     return new Operation(operationBuffer);
+  }
+
+  /**
+   * Parses the given buffer into an `IOperation`.
+   */
+  public static async parse (operationBuffer: Buffer): Promise<IOperation> {
+    // Parse request buffer into a JS object.
+    const operationJsonString = operationBuffer.toString();
+    const operation = JSON.parse(operationJsonString);
+    const operationType = operation.type;
+
+    if (operationType === OperationType.Create) {
+      return CreateOperation.parse(operation);
+    } else {
+      throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
+    }
   }
 
   /**

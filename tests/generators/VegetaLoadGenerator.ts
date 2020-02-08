@@ -42,8 +42,7 @@ export default class VegetaLoadGenerator {
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-        publicKey,
-        privateKey,
+        publicKey.publicKeyHex!,
         signingPublicKey,
         recoveryOtpHash,
         update1OtpHash,

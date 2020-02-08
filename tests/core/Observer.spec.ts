@@ -154,11 +154,11 @@ describe('Observer', async () => {
 
   it('should process a valid operation batch successfully.', async () => {
     // Prepare the mock response from the DownloadManager.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
-    const [recoveryPublicKey2, recoveryPrivateKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
+    const [recoveryPublicKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
     const [signingPublicKey2] = await Cryptography.generateKeyPairHex('#key4', KeyUsage.signing);
 
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
@@ -166,15 +166,13 @@ describe('Observer', async () => {
 
     const operationsBuffer = [
       await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey,
-        recoveryPrivateKey,
+        recoveryPublicKey.publicKeyHex!,
         signingPublicKey,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,
         services),
       await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey2,
-        recoveryPrivateKey2,
+        recoveryPublicKey2.publicKeyHex!,
         signingPublicKey2,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,

@@ -30,7 +30,7 @@ export default class Resolver {
     // NOTE: We are passing the DID resolution model into apply method so that both:
     // 1. `didDocument` can be `undefined` initially; and
     // 2. `didDocument` can be modified directly in-place in subsequent applying of operations.
-    let didResolutionModel: DidResolutionModel = {};
+    const didResolutionModel: DidResolutionModel = {};
 
     const operations = await this.operationStore.get(didUniqueSuffix);
     const createAndRecoverAndRevokeOperations = operations.filter(

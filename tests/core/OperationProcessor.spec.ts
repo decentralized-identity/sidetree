@@ -156,8 +156,8 @@ describe('OperationProcessor', async () => {
   let versionManager: IVersionManager;
   let operationProcessor: IOperationProcessor;
   let createOp: AnchoredOperation | undefined;
-  let publicKey: any;
-  let privateKey: any;
+  let publicKey: DidPublicKeyModel;
+  let privateKey: string;
   let didUniqueSuffix: string;
   let firstUpdateOtp: string;
   let recoveryOtp: string;
@@ -180,8 +180,7 @@ describe('OperationProcessor', async () => {
     [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      publicKey,
-      privateKey,
+      publicKey.publicKeyHex!,
       signingPublicKey,
       recoveryOtpHash,
       firstUpdateOtpHash,
@@ -213,8 +212,7 @@ describe('OperationProcessor', async () => {
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      publicKey,
-      privateKey,
+      publicKey.publicKeyHex!,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
@@ -328,15 +326,14 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation failed signature validation.', async () => {
     // Generate a create operation with an invalid signature.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
 
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const operationBufferWithoutSignature = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey,
-      recoveryPrivateKey,
+      recoveryPublicKey.publicKeyHex!,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
@@ -377,14 +374,13 @@ describe('OperationProcessor', async () => {
 
   it('should not resolve the DID if its create operation contains invalid key id.', async () => {
     // Generate a create operation with an invalid signature.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey,
-      recoveryPrivateKey,
+      recoveryPublicKey.publicKeyHex!,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
@@ -579,8 +575,7 @@ describe('OperationProcessor', async () => {
       [nextUpdateOtp, nextUpdateOtpHash] = OperationGenerator.generateOtp();
       [nextRecoveryOtp, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey,
-        recoveryPrivateKey,
+        recoveryPublicKey.publicKeyHex!,
         signingPublicKey,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,
@@ -604,7 +599,7 @@ describe('OperationProcessor', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
       spyOn(console, 'debug').and.throwError('An error message.');
-      const result = await operationProcessor.apply(createOperationData.anchoredOperationModel, didDocumentReference);
+      const result = await operationProcessor.apply(createOperationData.namedAnchoredOperationModel, didDocumentReference);
       expect(result.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
       expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
@@ -614,7 +609,7 @@ describe('OperationProcessor', async () => {
       it('should not apply the create operation if there a DID document is already found.', async () => {
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
-        const result = await operationProcessor.apply(createOperationData.anchoredOperationModel, didDocumentReference);
+        const result = await operationProcessor.apply(createOperationData.namedAnchoredOperationModel, didDocumentReference);
         expect(result.validOperation).toBeFalsy();
         expect(didDocumentReference.didDocument).toBeDefined();
         expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
@@ -630,9 +625,15 @@ describe('OperationProcessor', async () => {
           '#new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000'
         );
-        const anchoredUpdateOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+        const anchoredUpdateOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          anchoredCreateOperation.didUniqueSuffix,
+          OperationType.Update,
+          updatePayload,
+          signingPublicKey.id,
+          signingPrivateKey,
+          2, 2, 2);
 
+        anchoredUpdateOperationModel.didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
         const result = await operationProcessor.apply(anchoredUpdateOperationModel, { didDocument: undefined });
         expect(result.validOperation).toBeFalsy();
         expect(didDocumentReference.didDocument).toBeDefined();
@@ -649,8 +650,13 @@ describe('OperationProcessor', async () => {
           '#new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000'
         );
-        const anchoredUpdateOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(updatePayload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+        const anchoredUpdateOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          anchoredCreateOperation.didUniqueSuffix,
+          OperationType.Update,
+          updatePayload,
+          signingPublicKey.id,
+          signingPrivateKey,
+          2, 2, 2);
 
         const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
         expect(result.validOperation).toBeFalsy();
@@ -660,7 +666,7 @@ describe('OperationProcessor', async () => {
         expect(didDocumentReference.didDocument!.publicKey.length).toEqual(2);
       });
 
-      it('should not apply update operation if signature is invalid.', async () => {
+      fit('should not apply update operation if signature is invalid.', async () => {
         // Create an update using the create operation generated in `beforeEach()`.
         const updatePayload = OperationGenerator.createUpdatePayloadForAddingAKey(
           anchoredCreateOperation,
@@ -669,8 +675,13 @@ describe('OperationProcessor', async () => {
           '000000000000000000000000000000000000000000000000000000000000000000'
         );
         // NTOE: recovery private key to generate an invalid signautre.
-        const anchoredUpdateOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(updatePayload, signingPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+        const anchoredUpdateOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          anchoredCreateOperation.didUniqueSuffix,
+          OperationType.Update,
+          updatePayload,
+          signingPublicKey.id,
+          recoveryPrivateKey,
+          2, 2, 2);
 
         const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
         expect(result.validOperation).toBeFalsy();
@@ -689,8 +700,13 @@ describe('OperationProcessor', async () => {
           '000000000000000000000000000000000000000000000000000000000000000000'
         );
         // NTOE: recovery private key to generate an invalid signautre.
-        const anchoredUpdateOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(updatePayload, '#non-existent-key', signingPrivateKey, 2, 2, 2);
+        const anchoredUpdateOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          anchoredCreateOperation.didUniqueSuffix,
+          OperationType.Update,
+          updatePayload,
+          '#non-existent-key',
+          signingPrivateKey,
+          2, 2, 2);
 
         const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
         expect(result.validOperation).toBeFalsy();
@@ -706,8 +722,13 @@ describe('OperationProcessor', async () => {
         // Generate a recovery operation payload.
         const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
 
-        const anchoredRecoveryOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(payloadData.payload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Recover,
+          payloadData.payload,
+          recoveryPublicKey.id,
+          recoveryPrivateKey,
+          2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, { didDocument: undefined });
         expect(recoveryResult.validOperation).toBeFalsy();
@@ -722,8 +743,13 @@ describe('OperationProcessor', async () => {
         // Generate a recovery operation payload.
         const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
 
-        const anchoredRecoveryOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(payloadData.payload, '#non-existent-key', recoveryPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Recover,
+          payloadData.payload,
+          '#non-existent-key',
+          recoveryPrivateKey,
+          2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
@@ -737,8 +763,13 @@ describe('OperationProcessor', async () => {
         // Generate a recovery operation payload.
         const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
 
-        const anchoredRecoveryOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(payloadData.payload, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Recover,
+          payloadData.payload,
+          signingPublicKey.id,
+          signingPrivateKey,
+          2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
@@ -752,8 +783,13 @@ describe('OperationProcessor', async () => {
         // Generate a recovery operation payload.
         const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
 
-        const anchoredRecoveryOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(payloadData.payload, recoveryPublicKey.id, signingPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Recover,
+          payloadData.payload,
+          recoveryPublicKey.id,
+          signingPrivateKey,
+          2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
@@ -767,8 +803,13 @@ describe('OperationProcessor', async () => {
         // Generate a recovery operation payload.
         const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: 'invalidRecoveryOtpValue' });
 
-        const anchoredRecoveryOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(payloadData.payload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Recover,
+          payloadData.payload,
+          recoveryPublicKey.id,
+          recoveryPrivateKey,
+          2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
@@ -784,8 +825,13 @@ describe('OperationProcessor', async () => {
           didUniqueSuffix,
           newDidDocument: { invalidDidDocument: 'invalidDidDocument' }
         };
-        const anchoredRecoveryOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Recover,
+          recoveryPayload,
+          recoveryPublicKey.id,
+          recoveryPrivateKey,
+          2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
@@ -805,8 +851,13 @@ describe('OperationProcessor', async () => {
           didUniqueSuffix,
           recoveryOtp: `invalideRecoveryOtp`
         };
-        const anchoredUpdateOperationModel =
-          await OperationGenerator.createAnchoredOperationModel(payload, recoveryPublicKey.id, recoveryPrivateKey, 2, 2, 2);
+        const anchoredUpdateOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+          didUniqueSuffix,
+          OperationType.Delete,
+          payload,
+          recoveryPublicKey.id,
+          recoveryPrivateKey,
+          2, 2, 2);
 
         const result = await operationProcessor.apply(anchoredUpdateOperationModel, didDocumentReference);
         expect(result.validOperation).toBeFalsy();

@@ -93,8 +93,7 @@ describe('RequestHandler', () => {
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey,
-      recoveryPrivateKey,
+      recoveryPublicKey.publicKeyHex!,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
@@ -159,13 +158,12 @@ describe('RequestHandler', () => {
 
   it('should return bad request if two operations for the same DID is received.', async () => {
     // Create the initial create operation.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey,
-      recoveryPrivateKey,
+      recoveryPublicKey.publicKeyHex!,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash

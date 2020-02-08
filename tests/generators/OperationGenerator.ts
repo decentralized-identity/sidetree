@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
+import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
@@ -10,6 +11,7 @@ import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
+import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
@@ -20,8 +22,8 @@ interface AnchoredCreateOperationGenerationInput {
 }
 
 interface GeneratedAnchoredCreateOperationData {
-  anchoredOperation: AnchoredOperation;
-  anchoredOperationModel: AnchoredOperationModel;
+  createOperation: CreateOperation;
+  namedAnchoredOperationModel: NamedAnchoredOperationModel;
   recoveryKeyId: string;
   recoveryPublicKey: DidPublicKeyModel;
   recoveryPrivateKey: string;
@@ -100,22 +102,18 @@ export default class OperationGenerator {
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey,
-      recoveryPrivateKey,
+      recoveryPublicKey.publicKeyHex!,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
       service
     );
 
-    const anchoredOperation = OperationGenerator.createAnchoredOperationFromOperationBuffer(
-      operationBuffer,
-      input.transactionNumber,
-      input.transactionTime,
-      input.operationIndex
-    );
+    const createOperation = await CreateOperation.parse(operationBuffer);
 
-    const anchoredOperationModel = {
+    const namedAnchoredOperationModel = {
+      type: OperationType.Create,
+      didUniqueSuffix: createOperation.didUniqueSuffix,
       operationBuffer,
       transactionNumber: input.transactionNumber,
       transactionTime: input.transactionTime,
@@ -123,8 +121,8 @@ export default class OperationGenerator {
     };
 
     return {
-      anchoredOperation,
-      anchoredOperationModel,
+      createOperation,
+      namedAnchoredOperationModel,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,
@@ -268,6 +266,32 @@ export default class OperationGenerator {
   }
 
   /**
+   * Creates a named anchored operation model.
+   */
+  public static async createNamedAnchoredOperationModel (
+    didUniqueSuffix: string,
+    type: OperationType,
+    payload: any,
+    publicKeyId: string,
+    privateKey: string | PrivateKey,
+    transactionTime: number,
+    transactionNumber: number,
+    operationIndex: number
+  ): Promise<NamedAnchoredOperationModel> {
+    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
+    const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
+      didUniqueSuffix,
+      type,
+      operationBuffer,
+      operationIndex,
+      transactionNumber,
+      transactionTime
+    };
+
+    return namedAnchoredOperationModel;
+  }
+
+  /**
    * Creates an operation.
    */
   public static async createOperationBuffer (
@@ -290,22 +314,36 @@ export default class OperationGenerator {
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
    */
   public static async generateCreateOperationBuffer (
-    recoveryPublicKey: DidPublicKeyModel,
-    recoveryPrivateKey: string | PrivateKey,
+    recoveryPublicKey: string,
     signingPublicKey: DidPublicKeyModel,
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]
   ): Promise<Buffer> {
-    const publicKeys = [recoveryPublicKey, signingPublicKey];
-    const payload = {
-      type: OperationType.Create,
-      didDocument: Encoder.encode(JSON.stringify(Document.create(publicKeys, serviceEndpoints))),
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash
+    const document = Document.create([signingPublicKey], serviceEndpoints);
+
+    const operationData = {
+      nextUpdateOtpHash,
+      document
+    };
+    const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
+    const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
+
+    const suffixData = {
+      operationDataHash,
+      recoveryKey: recoveryPublicKey,
+      nextRecoveryOtpHash
     };
 
-    return this.createOperationBuffer(payload, recoveryPublicKey.id, recoveryPrivateKey);
+    const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
+    const operationDataEncodedString = Encoder.encode(operationDataBuffer);
+    const operation = {
+      type: OperationType.Create,
+      suffixData: suffixDataEncodedString,
+      operationData: operationDataEncodedString
+    };
+
+    return Buffer.from(JSON.stringify(operation));
   }
 
   /**
