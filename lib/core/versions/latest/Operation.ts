@@ -9,7 +9,6 @@ import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
-import { decode } from 'punycode';
 
 /**
  * A class that represents a Sidetree operation.

@@ -87,7 +87,7 @@ describe('Resolver', () => {
         type: OperationType.Recover,
         didUniqueSuffix,
         recoveryOtp: firstRecoveryOtp,
-        newDidDocument: recoveryDocumentModel,
+        newDidDocument: Encoder.encode(JSON.stringify(recoveryDocumentModel)),
         nextRecoveryOtpHash: recoveryOtpHashAfterRecovery,
         nextUpdateOtpHash: update1OtpHashAfterRecovery
       };
