@@ -9,6 +9,7 @@ import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
+import { decode } from 'punycode';
 
 /**
  * A class that represents a Sidetree operation.
@@ -280,9 +281,10 @@ export default class Operation {
       throw new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType);
     }
 
-    // Verify operation specific payload schema.
+    // Verify operation specific payload schema and further decode if needed.
     switch (operationType) {
       case OperationType.Create:
+        // additional parsing required because did doc is nest base64url encoded
         decodedPayload.didDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.didDocument));
         Operation.validateCreatePayload(decodedPayload);
         break;
@@ -290,6 +292,8 @@ export default class Operation {
         Operation.validateUpdatePayload(decodedPayload);
         break;
       case OperationType.Recover:
+        // additional parsing required because did doc is nest base64url encoded
+        decodedPayload.newDidDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.newDidDocument));
         Operation.validateRecoverPayload(decodedPayload);
         break;
       case OperationType.Delete:
