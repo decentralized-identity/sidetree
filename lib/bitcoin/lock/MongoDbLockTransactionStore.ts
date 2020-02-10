@@ -36,7 +36,8 @@ export default class MongoDbLockTransactionStore {
   public async addLock (bitcoinLock: BitcoinLockTransactionModel): Promise<void> {
     const lockInMongoDb = {
       transactionId: bitcoinLock.transactionId,
-      redeemScript: bitcoinLock.redeemScript,
+      rawTransaction: bitcoinLock.rawTransaction,
+      redeemScriptAsHex: bitcoinLock.redeemScriptAsHex,
       // NOTE: MUST force 'createTimestamp' to be Int64 in MondoDB.
       createTimestamp: Long.fromNumber(bitcoinLock.createTimestamp),
       type: bitcoinLock.type

@@ -18,7 +18,8 @@ async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, co
   for (let i = 1; i <= count; i++) {
     const lock: SavedLockTransactionModel = {
       transactionId: i.toString(),
-      redeemScript: `redeem-script-${i}`,
+      rawTransaction: `serialized txn - ${i}`,
+      redeemScriptAsHex: `redeem-script-${i}`,
       type: getLockTypeFromIndex(i),
       createTimestamp: (Date.now() + i * 1000)
     };
