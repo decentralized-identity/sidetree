@@ -171,8 +171,6 @@ export default class Blockchain implements IBlockchain {
 
     const response = await this.fetch(readUri);
     const responseBodyString = await ReadableStream.readAll(response.body);
-    const s = responseBodyString.toString();
-    console.log(s);
     const responseBody = JSON.parse(responseBodyString.toString());
 
     if (response.status === HttpStatus.BAD_REQUEST &&

@@ -205,7 +205,7 @@ export default class Operation {
    * NOTE: Operation validation does not include signature verification.
    * @returns [decoded protected header JSON object, decoded payload JSON object] if given operation JWS is valid, Error is thrown otherwise.
    */
-  private parseAndInitializeOperation (operation: any): [{ kid: string; operation: OperationType }, any] {
+  private parseAndInitializeOperation (operation: any){
     const decodedProtectedHeadJsonString = Encoder.decodeAsString(operation.protected);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
@@ -286,8 +286,6 @@ export default class Operation {
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
     }
-
-    return [decodedProtectedHeader, decodedPayload];
   }
 
   /**
