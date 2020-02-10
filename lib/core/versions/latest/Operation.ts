@@ -45,19 +45,19 @@ export default class Operation {
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
   public didDocument?: DocumentModel;
   /** Encoded DID document - mainly used for DID generation. */
-  public encodedDidDocument!: string;
+  public encodedDidDocument?: string;
 
   /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
   public patches?: any[];
 
   /** One-time password for this update operation. */
-  public updateOtp!: string;
+  public updateOtp?: string;
   /** One-time password for this recovery/checkpoint/revoke operation. */
-  public recoveryOtp!: string;
+  public recoveryOtp?: string;
   /** Hash of the one-time password for the next update operation. */
-  public nextUpdateOtpHash!: string;
+  public nextUpdateOtpHash?: string;
   /** Hash of the one-time password for this recovery/checkpoint/revoke operation. */
-  public nextRecoveryOtpHash!: string;
+  public nextRecoveryOtpHash?: string;
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
