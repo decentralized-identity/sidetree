@@ -12,7 +12,7 @@ import SidetreeError from '../../SidetreeError';
 
 /**
  * A class that represents a Sidetree operation.
- * The primary purphose of this class is to provide an abstraction to the underlying JSON data structure.
+ * The primary purpose of this class is to provide an abstraction to the underlying JSON data structure.
  *
  * NOTE: Design choices of:
  * 1. No subclassing of specific operations. The intention here is to keep the hierarchy flat, as most properties are common.
@@ -22,42 +22,42 @@ export default class Operation {
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
   /** The encoded protected header. */
-  public readonly encodedProtectedHeader: string;
+  public encodedProtectedHeader!: string;
   /** The encoded operation payload. */
-  public readonly encodedPayload: string;
+  public encodedPayload!: string;
 
   /**
    * The unique suffix of the DID of the DID document to be created/updated.
    * If this is a create operation waiting to be anchored, a DID unique suffix will be generated based on the current blockchain time.
    */
-  public readonly didUniqueSuffix: string;
+  public didUniqueSuffix!: string;
 
   /** Hash of the operation based on the encoded payload string. */
-  public readonly operationHash: string;
+  public operationHash!: string;
 
   /** The type of operation. */
-  public readonly type: OperationType;
+  public type!: OperationType;
   /** ID of the key used to sign this operation. */
-  public readonly signingKeyId: string;
+  public signingKeyId!: string;
   /** Signature of this operation. */
-  public readonly signature: string;
+  public signature!: string;
 
   /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
-  public readonly didDocument?: DocumentModel;
+  public didDocument?: DocumentModel;
   /** Encoded DID document - mainly used for DID generation. */
-  public readonly encodedDidDocument?: string;
+  public encodedDidDocument!: string;
 
   /** Patches to the DID Document, only applicable to update operations, undefined otherwise. */
-  public readonly patches?: any[];
+  public patches?: any[];
 
   /** One-time password for this update operation. */
-  public readonly updateOtp?: string;
+  public updateOtp!: string;
   /** One-time password for this recovery/checkpoint/revoke operation. */
-  public readonly recoveryOtp?: string;
+  public recoveryOtp!: string;
   /** Hash of the one-time password for the next update operation. */
-  public readonly nextUpdateOtpHash?: string;
+  public nextUpdateOtpHash!: string;
   /** Hash of the one-time password for this recovery/checkpoint/revoke operation. */
-  public readonly nextRecoveryOtpHash?: string;
+  public nextRecoveryOtpHash!: string;
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
@@ -70,45 +70,8 @@ export default class Operation {
     const operationJson = operationBuffer.toString();
     const operation = JSON.parse(operationJson) as JwsModel;
 
-    // Ensure that the operation is well-formed.
-    const [decodedHeader, decodedPayload] = Operation.parseAndValidateOperation(operation);
-
-    // Initialize common operation properties.
-    this.type = decodedPayload.type;
-    this.signingKeyId = decodedHeader.kid;
-    this.encodedProtectedHeader = operation.protected;
-    this.encodedPayload = operation.payload;
-    this.signature = operation.signature;
-    this.operationHash = Operation.computeHash(this.encodedPayload);
-
-    // Initialize operation specific properties.
-    switch (this.type) {
-      case OperationType.Create:
-        this.didUniqueSuffix = this.operationHash;
-        this.didDocument = decodedPayload.didDocument;
-        this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
-        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
-        break;
-      case OperationType.Update:
-        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
-        this.patches = decodedPayload.patches;
-        this.updateOtp = decodedPayload.updateOtp;
-        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
-        break;
-      case OperationType.Recover:
-        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
-        this.didDocument = decodedPayload.newDidDocument;
-        this.recoveryOtp = decodedPayload.recoveryOtp;
-        this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
-        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
-        break;
-      case OperationType.Delete:
-        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
-        this.recoveryOtp = decodedPayload.recoveryOtp;
-        break;
-      default:
-        throw new Error(`Not implemented operation type ${this.type}.`);
-    }
+    // Ensure that the operation is well-formed and initialize instance variables.
+    this.parseAndInitializeOperation(operation);
   }
 
   /**
@@ -242,7 +205,7 @@ export default class Operation {
    * NOTE: Operation validation does not include signature verification.
    * @returns [decoded protected header JSON object, decoded payload JSON object] if given operation JWS is valid, Error is thrown otherwise.
    */
-  private static parseAndValidateOperation (operation: any): [{ kid: string; operation: OperationType }, any] {
+  private parseAndInitializeOperation (operation: any): [{ kid: string; operation: OperationType }, any] {
     const decodedProtectedHeadJsonString = Encoder.decodeAsString(operation.protected);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
@@ -280,23 +243,48 @@ export default class Operation {
       throw new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType);
     }
 
-    // Verify operation specific payload schema and further decode if needed.
-    switch (operationType) {
+    // Initialize common operation properties.
+    this.type = decodedPayload.type;
+    this.signingKeyId = decodedProtectedHeader.kid;
+    this.encodedProtectedHeader = operation.protected;
+    this.encodedPayload = operation.payload;
+    this.signature = operation.signature;
+    this.operationHash = Operation.computeHash(this.encodedPayload);
+
+    // Verify operation specific payload schema and further decode if needed, then initialize.
+    switch (this.type) {
       case OperationType.Create:
         // additional parsing required because did doc is nest base64url encoded
         decodedPayload.didDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.didDocument));
         Operation.validateCreatePayload(decodedPayload);
+        this.didUniqueSuffix = this.operationHash;
+        this.didDocument = decodedPayload.didDocument;
+        this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
+        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Update:
         Operation.validateUpdatePayload(decodedPayload);
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
+        this.patches = decodedPayload.patches;
+        this.updateOtp = decodedPayload.updateOtp;
+        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Recover:
         // additional parsing required because did doc is nest base64url encoded
         decodedPayload.newDidDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.newDidDocument));
         Operation.validateRecoverPayload(decodedPayload);
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
+        this.didDocument = decodedPayload.newDidDocument;
+        this.recoveryOtp = decodedPayload.recoveryOtp;
+        this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
+        this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Delete:
+        this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
+        this.recoveryOtp = decodedPayload.recoveryOtp;
+        break;
       default:
+        throw new Error(`Not implemented operation type ${this.type}.`);
     }
 
     return [decodedProtectedHeader, decodedPayload];
