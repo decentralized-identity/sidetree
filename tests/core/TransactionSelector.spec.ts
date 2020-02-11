@@ -205,6 +205,28 @@ describe('TransactionSelector', () => {
       ];
       expect(result).toEqual(expected);
     });
+
+    it('should skip transactions that are not parsable', async () => {
+      const transactions = getTestTransactionsFor1Block();
+
+      // this makes the parsing fail when reading from db
+      const extraTransaction = {
+        transactionNumber: 0,
+        transactionTime: 1,
+        transactionTimeHash: 'some hash',
+        anchorString: 'thisIsABadString',
+        transactionFeePaid: 9999,
+        normalizedTransactionFee: 1
+      };
+      await transactionStore.addTransaction(extraTransaction);
+
+      // this makes the parsing fail when reading new transactions
+      spyOn(AnchoredDataSerializer, 'deserialize').and.throwError('some error');
+
+      const result = await transactionSelector.selectQualifiedTransactions(transactions);
+      const expected: TransactionModel[] = [];
+      expect(result).toEqual(expected);
+    });
   });
 
   describe('getNumberOfOperationsAndTransactionsAlreadyInBlock', () => {

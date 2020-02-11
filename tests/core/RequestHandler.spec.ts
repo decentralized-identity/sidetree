@@ -276,7 +276,7 @@ describe('RequestHandler', () => {
     const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
 
     // Create the recover payload.
-    const newDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
+    const newDocumentModel = Encoder.encode(JSON.stringify(Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint])));
     const recoverPayload = {
       type: OperationType.Recover,
       didUniqueSuffix,

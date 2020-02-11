@@ -322,21 +322,36 @@ POST / HTTP/1.1
 #### Original DID Document example
 ```json
 {
+  "id": "someIdasdf",
   "@context": "https://w3id.org/did/v1",
-  "publicKey": [{
-    "id": "#key1",
-    "type": "Secp256k1VerificationKey2018",
-    "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1"
-  }],
-  "service": [{
-    "id": "IdentityHub",
-    "type": "IdentityHub",
-    "serviceEndpoint": {
-      "@context": "schema.identity.foundation/hub",
-      "@type": "UserServiceEndpoint",
-      "instance": ["did:bar:456", "did:zaz:789"]
+  "publicKey": [
+    {
+      "id": "#key1",
+      "type": "Secp256k1VerificationKey2018",
+      "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1",
+      "usage": "signing"
+    },
+    {
+      "id": "#key2",
+      "type": "RsaVerificationKey2018",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----",
+      "usage": "recovery"
     }
-  }]
+  ],
+  "service": [
+    {
+      "type": "IdentityHub",
+      "publicKey": "#key1",
+      "serviceEndpoint": {
+        "@context": "schema.identity.foundation/hub",
+        "@type": "UserServiceEndpoint",
+        "instances": [
+          "did:bar:456",
+          "did:zaz:789"
+        ]
+      }
+    }
+  ]
 }
 ```
 
@@ -674,7 +689,7 @@ POST / HTTP/1.1
   "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryOtp": "The one-time password to be used for this recovery.",
-  "newDidDocument": "The new DID Document.",
+  "newDidDocument": "The encoded new DID Document.",
   "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }

@@ -165,9 +165,9 @@ export default class Blockchain implements IBlockchain {
     return responseBody;
   }
 
-  public async getFee (transactionNumber: number): Promise<number> {
+  public async getFee (transactionTime: number): Promise<number> {
 
-    const readUri = `${this.feeUri}/${transactionNumber}`;
+    const readUri = `${this.feeUri}/${transactionTime}`;
 
     const response = await this.fetch(readUri);
     const responseBodyString = await ReadableStream.readAll(response.body);

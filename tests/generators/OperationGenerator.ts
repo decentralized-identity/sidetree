@@ -300,7 +300,7 @@ export default class OperationGenerator {
     const publicKeys = [recoveryPublicKey, signingPublicKey];
     const payload = {
       type: OperationType.Create,
-      didDocument: Document.create(publicKeys, serviceEndpoints),
+      didDocument: Encoder.encode(JSON.stringify(Document.create(publicKeys, serviceEndpoints))),
       nextRecoveryOtpHash,
       nextUpdateOtpHash
     };
