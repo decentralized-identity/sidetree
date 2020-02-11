@@ -4,10 +4,8 @@ import DidResolutionModel from '../../models/DidResolutionModel';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
-import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
-import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 
 /**
@@ -27,20 +25,11 @@ export default class OperationProcessor implements IOperationProcessor {
     let validOperation = false;
 
     try {
-      let operation;
-      // NOTE: This try-catch is temporary and will be removed when issue #266 is completed.
-      try {
-        operation = await Operation.parse(namedAnchoredOperationModel.operationBuffer);
-      } catch {
-        // Parse request into an Operation.
-        operation = AnchoredOperation.createAnchoredOperation(namedAnchoredOperationModel);
-      }
-
-      if (operation.type === OperationType.Create) {
+      if (namedAnchoredOperationModel.type === OperationType.Create) {
         validOperation = await this.applyCreateOperation(namedAnchoredOperationModel, didResolutionModel);
-      } else if (operation.type === OperationType.Update) {
+      } else if (namedAnchoredOperationModel.type === OperationType.Update) {
         validOperation = await this.applyUpdateOperation(namedAnchoredOperationModel, didResolutionModel);
-      } else if (operation.type === OperationType.Recover) {
+      } else if (namedAnchoredOperationModel.type === OperationType.Recover) {
         validOperation = await this.applyRecoverOperation(namedAnchoredOperationModel, didResolutionModel);
       } else {
         // Revoke operation.
@@ -159,7 +148,7 @@ export default class OperationProcessor implements IOperationProcessor {
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
 
-    const didDocument = didResolutionModel.didDocument as (DocumentModel | undefined);
+    const didDocument = didResolutionModel.didDocument;
 
     // Recovery can only be applied on an existing DID.
     if (!didDocument) {
@@ -174,19 +163,8 @@ export default class OperationProcessor implements IOperationProcessor {
       return false;
     }
 
-    // The current did document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
-    if (!publicKey) {
-      return false;
-    }
-
-    // The key must be a recovery key.
-    if (publicKey.usage !== KeyUsage.recovery) {
-      return false;
-    }
-
     // ... and the signature must pass verification.
-    if (!(await operation.verifySignature(publicKey))) {
+    if (!(await operation.verifySignature(didDocument.recoveryKey))) {
       return false;
     }
 

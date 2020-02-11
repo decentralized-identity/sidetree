@@ -63,21 +63,31 @@ export default class CreateOperation implements IOperation {
    */
   public static async parse (operationBuffer: Buffer): Promise<CreateOperation> {
     const operationJsonString = operationBuffer.toString();
-    const operation = await JsonAsync.parse(operationJsonString);
+    const operationObject = await JsonAsync.parse(operationJsonString);
+    const createOperation = await CreateOperation.parseObject(operationObject, operationBuffer);
+    return createOperation;
+  }
 
-    const properties = Object.keys(operation);
+  /**
+   * Parses the given operation object as a `CreateOperation`.
+   * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
+   * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
+   * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
+   */
+  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<CreateOperation> {
+    const properties = Object.keys(operationObject);
     if (properties.length !== 3) {
       throw new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty);
     }
 
-    if (operation.type !== OperationType.Create) {
+    if (operationObject.type !== OperationType.Create) {
       throw new SidetreeError(ErrorCode.CreateOperationTypeIncorrect);
     }
 
-    const suffixData = await CreateOperation.parseSuffixData(operation.suffixData);
-    const operationData = await CreateOperation.parseOperationData(operation.operationData);
+    const suffixData = await CreateOperation.parseSuffixData(operationObject.suffixData);
+    const operationData = await CreateOperation.parseOperationData(operationObject.operationData);
 
-    const didUniqueSuffix = CreateOperation.computeHash(operation.suffixData);
+    const didUniqueSuffix = CreateOperation.computeHash(operationObject.suffixData);
     return new CreateOperation(operationBuffer, didUniqueSuffix, suffixData, operationData);
   }
 
@@ -94,8 +104,14 @@ export default class CreateOperation implements IOperation {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
-    if (typeof suffixData.recoveryKey !== 'string') {
-      throw new SidetreeError(ErrorCode.CreateOperationRecoveryKeyMissingOrNotString);
+    if (suffixData.recoveryKey === undefined) {
+      throw new SidetreeError(ErrorCode.CreateOperationRecoveryKeyMissing);
+    }
+
+    const recoveryKeyObjectPropertyCount = Object.keys(suffixData.recoveryKey);
+    if (recoveryKeyObjectPropertyCount.length !== 1 ||
+        typeof suffixData.recoveryKey.publicKeyHex !== 'string') {
+      throw new SidetreeError(ErrorCode.CreateOperationRecoveryKeyInvalid);
     }
 
     const operationDataHash = Encoder.decodeAsBuffer(suffixData.operationDataHash);

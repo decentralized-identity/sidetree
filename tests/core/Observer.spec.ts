@@ -166,13 +166,13 @@ describe('Observer', async () => {
 
     const operationsBuffer = [
       await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey.publicKeyHex!,
+        recoveryPublicKey,
         signingPublicKey,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,
         services),
       await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey2.publicKeyHex!,
+        recoveryPublicKey2,
         signingPublicKey2,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,

@@ -20,7 +20,7 @@ describe('Operation', async () => {
       const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
       const createRequestBuffer = await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey.publicKeyHex!,
+        recoveryPublicKey,
         signingPublicKey,
         nextRecoveryOtpHash,
         nextUpdateOtpHash,

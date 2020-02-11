@@ -13,7 +13,9 @@ import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
+import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+import { IOperation } from '../../lib/core/versions/latest/Operation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -102,7 +104,7 @@ export default class OperationGenerator {
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey.publicKeyHex!,
+      recoveryPublicKey,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
@@ -207,25 +209,6 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates an `AnchoredOperation` given the operation buffer, transaction number, transaction time, and operation index.
-   */
-  public static createAnchoredOperationFromOperationBuffer (
-    operationBuffer: Buffer,
-    transactionNumber: number,
-    transactionTime: number,
-    operationIndex: number): AnchoredOperation {
-
-    const anchoredOperationModel: AnchoredOperationModel = {
-      transactionNumber,
-      transactionTime,
-      operationIndex,
-      operationBuffer
-    };
-
-    return AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
-  }
-
-  /**
    * Creates an anchored operation.
    */
   public static async createAnchoredOperation (
@@ -309,12 +292,32 @@ export default class OperationGenerator {
   }
 
   /**
+   * Creates a named anchored operation model from `IOperation`.
+   */
+  public static createNamedAnchoredOperationModelFromIOperation (
+    operation: IOperation,
+    transactionTime: number,
+    transactionNumber: number,
+    operationIndex: number
+  ): NamedAnchoredOperationModel {
+    const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
+      didUniqueSuffix: operation.didUniqueSuffix,
+      type: operation.type,
+      operationBuffer: operation.operationBuffer,
+      operationIndex,
+      transactionNumber,
+      transactionTime
+    };
+    return namedAnchoredOperationModel;
+  }
+
+  /**
    * Generates a create operation.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
    */
   public static async generateCreateOperationBuffer (
-    recoveryPublicKey: string,
+    recoveryPublicKey: PublicKeyModel,
     signingPublicKey: DidPublicKeyModel,
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
@@ -331,7 +334,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       operationDataHash,
-      recoveryKey: recoveryPublicKey,
+      recoveryKey: { publicKeyHex: recoveryPublicKey.publicKeyHex },
       nextRecoveryOtpHash
     };
 
@@ -388,14 +391,14 @@ export default class OperationGenerator {
    * @param nextUpdateOtpHashEncodedString Optional OTP hash for the next update. If not given, one will be generated.
    */
   public static createUpdatePayloadForAddingAKey (
-    previousOperation: AnchoredOperation,
+    didUniqueSuffix: string,
     updateOtpEncodedString: string,
     keyId: string,
     publicKeyHex: string,
     nextUpdateOtpHashEncodedString?: string): any {
     const updatePayload = {
       type: OperationType.Update,
-      didUniqueSuffix: previousOperation.didUniqueSuffix,
+      didUniqueSuffix,
       patches: [
         {
           action: 'add-public-keys',

@@ -32,9 +32,7 @@ export default class Document {
       id: didMethodName + internalDocumentModel.didUniqueSuffix,
       publicKey: internalDocumentModel.document.publicKey,
       service: internalDocumentModel.document.service,
-      recoveryKey: internalDocumentModel.recoveryKey,
-      nextRecoveryOtpHash: internalDocumentModel.nextRecoveryOtpHash,
-      nextUpdateOtpHash: internalDocumentModel.nextUpdateOtpHash
+      recoveryKey: internalDocumentModel.recoveryKey
     };
 
     return didDocument;

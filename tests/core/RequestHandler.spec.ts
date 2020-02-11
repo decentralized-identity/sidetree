@@ -1,6 +1,4 @@
 import * as crypto from 'crypto';
-import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
-import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
@@ -24,6 +22,7 @@ import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
+import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -31,6 +30,7 @@ import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import util = require('util');
 import { Response, ResponseStatus } from '../../lib/common/Response';
+import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -93,7 +93,7 @@ describe('RequestHandler', () => {
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey.publicKeyHex!,
+      recoveryPublicKey,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
@@ -107,14 +107,17 @@ describe('RequestHandler', () => {
     batchFileHash = MockCas.getAddress(batchBuffer);
 
     // Now force Operation Processor to process the create operation.
-    const anchoredOperationModel: AnchoredOperationModel = {
+    const createOperation = await CreateOperation.parse(createOperationBuffer);
+    const namedAnchoredCreateOperationModel: NamedAnchoredOperationModel = {
+      didUniqueSuffix: createOperation.didUniqueSuffix,
+      type: OperationType.Create,
       transactionNumber: 1,
       transactionTime: 1,
       operationBuffer: createOperationBuffer,
       operationIndex: 0
     };
-    const createOperation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
-    await operationStore.put([createOperation]);
+
+    await operationStore.put([namedAnchoredCreateOperationModel]);
 
     // NOTE: this is a repeated step already done in beforeEach() earlier,
     // but the same step needed to be in beforeEach() for other tests such as update and delete.
@@ -123,16 +126,14 @@ describe('RequestHandler', () => {
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
-    const currentHashingAlgorithm = 18;
-    didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createOperation.encodedPayload, currentHashingAlgorithm);
-    did = didMethodName + didUniqueSuffix;
+    did = didMethodName + createOperation.didUniqueSuffix;
 
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
     expect((response.body as DocumentModel).id).toEqual(did);
   });
 
-  it('should handle create operation request.', async () => {
+  fit('should handle create operation request.', async () => {
     const blockchainWriteSpy = spyOn(blockchain, 'write');
 
     await batchScheduler.writeOperationBatch();
@@ -163,7 +164,7 @@ describe('RequestHandler', () => {
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      recoveryPublicKey.publicKeyHex!,
+      recoveryPublicKey,
       signingPublicKey,
       nextRecoveryOtpHash,
       nextUpdateOtpHash
