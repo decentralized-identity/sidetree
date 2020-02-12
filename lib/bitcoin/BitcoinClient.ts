@@ -121,6 +121,7 @@ export default class BitcoinClient {
 
     return {
       transactionId: freezeTransaction.id,
+      transactionFee: freezeTransaction.getFee(),
       redeemScriptAsHex: redeemScriptAsHex,
       serializedTransactionObject: freezeTransaction.serialize()
     };
@@ -145,6 +146,7 @@ export default class BitcoinClient {
 
     return {
       transactionId: freezeTransaction.id,
+      transactionFee: freezeTransaction.getFee(),
       redeemScriptAsHex: redeemScriptAsHex,
       serializedTransactionObject: freezeTransaction.serialize()
     };
@@ -164,6 +166,7 @@ export default class BitcoinClient {
 
     return {
       transactionId: releaseLockTransaction.id,
+      transactionFee: releaseLockTransaction.getFee(),
       redeemScriptAsHex: '',
       serializedTransactionObject: releaseLockTransaction.serialize()
     };

@@ -58,7 +58,7 @@ export default class LockMonitor {
       }
 
       if (lockRequired && lastLockExist) {
-        await this.handleExistingLockRenewal(this.desiredLockAmountInSatoshis, this.lastValidBlockchainLock!);
+        await this.handleExistingLockRenewal(this.lastValidBlockchainLock!, this.desiredLockAmountInSatoshis);
       }
 
       if (!lockRequired && lastLockExist) {
@@ -122,7 +122,11 @@ export default class LockMonitor {
     const lockTransactionFromLastSavedLock: BitcoinLockTransactionModel = {
       redeemScriptAsHex: lastSavedLock.redeemScriptAsHex,
       serializedTransactionObject: lastSavedLock.rawTransaction,
-      transactionId: lastSavedLock.transactionId
+      transactionId: lastSavedLock.transactionId,
+
+      // Setting a 'fake' fee because the model requires it but broadcasting does not really
+      // require it so this is not going to have any effect when trying to broadcast.
+      transactionFee: 0
     };
 
     await this.bitcoinClient.broadcastLockTransaction(lockTransactionFromLastSavedLock);
@@ -157,31 +161,29 @@ export default class LockMonitor {
     return this.createNewLockAndSaveItToDb(totalLockAmount);
   }
 
-  private async handleExistingLockRenewal (desireddesiredLockAmountInSatoshis: number, currentLockInfo: BlockchainLockModel): Promise<void> {
+  private async handleExistingLockRenewal (currentLockInfo: BlockchainLockModel, desiredLockAmountInSatoshis: number): Promise<void> {
 
     // If desired amount is < amount already locked ??
 
-    const acceptableDifference = desireddesiredLockAmountInSatoshis * 0.05;
-    const warningDifference = desireddesiredLockAmountInSatoshis * 0.03;
-
-    // Verify that the existing lock amount and the amount desired is within an acceptable range.
-    // First give warning if it is getting close.
-    const desiredMinusCurrentLockAmount = desireddesiredLockAmountInSatoshis - currentLockInfo.amountLocked;
-
-    if (desiredMinusCurrentLockAmount < acceptableDifference) {
-      // THROW
-    }
-
-    if (desiredMinusCurrentLockAmount < warningDifference) {
-      // LOG WARNING
-    }
-
     const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
-    const lockEndMinusCurrentBlockTime = currentLockInfo.lockEndTransactionTime - currentBlockTime;
 
-    // If about to expire then renew
-    if (lockEndMinusCurrentBlockTime <= 1) {
-      await this.renewExistingLockAndSaveItToDb(currentLockInfo);
+    // Just return if we're not close to expiry
+    if (currentLockInfo.lockEndTransactionTime - currentBlockTime > 1) {
+      return;
+    }
+
+    try {
+      // Try to renew
+      await this.renewExistingLockAndSaveItToDb(currentLockInfo, desiredLockAmountInSatoshis);
+    } catch (e) {
+
+      // If there is not enough balance for the relock then return the money back.
+      if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
+        await this.releaseLockAndSaveItToDb(currentLockInfo);
+      } else {
+        // This is an unexpected error at this point ... rethrow as this is needed to be investigated.
+        throw (e);
+      }
     }
   }
 
@@ -205,7 +207,7 @@ export default class LockMonitor {
     return lockInfoToSave;
   }
 
-  private async renewExistingLockAndSaveItToDb (currentLockInfo: BlockchainLockModel): Promise<SavedLockTransactionModel> {
+  private async renewExistingLockAndSaveItToDb (currentLockInfo: BlockchainLockModel, desiredLockAmountInSatoshis: number): Promise<SavedLockTransactionModel> {
 
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentLockInfo.identifier);
     const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
@@ -215,6 +217,14 @@ export default class LockMonitor {
           currentLockIdentifier.transactionId,
           currentLockInfo.lockEndTransactionTime,
           lockUntilBlock);
+
+    // If the transaction fee is making the relock amount less than the desired amount
+    if (currentLockInfo.amountLocked - relockTransaction.transactionFee < desiredLockAmountInSatoshis) {
+      throw new BitcoinError(
+        ErrorCode.LockMonitorNotEnoughBalanceForRelock,
+        // tslint:disable-next-line: max-line-length
+        `The relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);
+    }
 
     const lockInfoToSave: SavedLockTransactionModel = {
       rawTransaction: relockTransaction.serializedTransactionObject,

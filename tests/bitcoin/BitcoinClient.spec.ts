@@ -97,6 +97,7 @@ describe('BitcoinClient', async () => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       const mockInputTxnModel: BitcoinLockTransactionModel = {
         transactionId: 'some txn id',
+        transactionFee: 100,
         redeemScriptAsHex: 'some-redeem-script',
         serializedTransactionObject: transaction.toString()
       };
@@ -134,6 +135,7 @@ describe('BitcoinClient', async () => {
 
       const expectedOutput: BitcoinLockTransactionModel = {
         transactionId: mockFreezeTxn.id,
+        transactionFee: 100,
         redeemScriptAsHex: mockRedeemScript,
         serializedTransactionObject: mockFreezeTxnToString
       };
@@ -164,6 +166,7 @@ describe('BitcoinClient', async () => {
 
       const expectedOutput: BitcoinLockTransactionModel = {
         transactionId: mockFreezeTxn.id,
+        transactionFee: 100,
         redeemScriptAsHex: mockRedeemScript,
         serializedTransactionObject: mockFreezeTxnToString
       };
@@ -190,6 +193,7 @@ describe('BitcoinClient', async () => {
 
       const expectedOutput: BitcoinLockTransactionModel = {
         transactionId: mockFreezeTxn.id,
+        transactionFee: 100,
         redeemScriptAsHex: '',
         serializedTransactionObject: mockFreezeTxnToString
       };

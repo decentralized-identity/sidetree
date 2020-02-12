@@ -64,7 +64,8 @@ fdescribe('LockMonitor', () => {
       const mockLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',
         serializedTransactionObject: 'serialized txn',
-        transactionId: 'transaction id'
+        transactionId: 'transaction id',
+        transactionFee: 100
       };
 
       const createLockTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'createLockTransaction').and.returnValue(Promise.resolve(mockLockTxn));
@@ -110,7 +111,8 @@ fdescribe('LockMonitor', () => {
       const mockRenewLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',
         serializedTransactionObject: 'serialized txn',
-        transactionId: 'transaction id'
+        transactionId: 'transaction id',
+        transactionFee: 100
       };
 
       const createRelockTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'createRelockTransaction').and.returnValue(Promise.resolve(mockRenewLockTxn));
@@ -121,13 +123,15 @@ fdescribe('LockMonitor', () => {
       spyOn(Date, 'now').and.returnValue(mockDateValue);
 
       const currentLockInfoInput: BlockchainLockModel = {
-        amountLocked: 123,
+        amountLocked: 1234,
         identifier: 'abc',
         linkedWalletAddress: 'wallet address',
         lockEndTransactionTime: 1234
       };
 
-      const actual = await lockMonitor['renewExistingLockAndSaveItToDb'](currentLockInfoInput);
+      // Ensure that the desired lock amount is not too much.
+      const desiredLockAmountInput = currentLockInfoInput.amountLocked - mockRenewLockTxn.transactionFee;
+      const actual = await lockMonitor['renewExistingLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput);
 
       const expectedLockInfoSaved: SavedLockTransactionModel = {
         createTimestamp: mockDateValue,
@@ -142,6 +146,50 @@ fdescribe('LockMonitor', () => {
       expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, currentLockInfoInput.lockEndTransactionTime, expectedNewLockBlock);
       expect(lockStoreSpy).toHaveBeenCalledWith(expectedLockInfoSaved);
       expect(broadcastTxnSpy).not.toHaveBeenCalledBefore(lockStoreSpy);
+    });
+
+    it('should throw if the renew fees are causing the new lock amount to be less than the desired lock.', async () => {
+      const mockCurrentLockId: LockIdentifier = {
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id',
+        walletAddressAsBuffer: Buffer.from('wallet address')
+      };
+
+      spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
+
+      const mockCurrentBlockHeight = 455678;
+      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
+
+      const mockRenewLockTxn: BitcoinLockTransactionModel = {
+        redeemScriptAsHex: 'renew lock txn redeem script',
+        serializedTransactionObject: 'serialized txn',
+        transactionId: 'transaction id',
+        transactionFee: 100
+      };
+
+      spyOn(lockMonitor['bitcoinClient'], 'createRelockTransaction').and.returnValue(Promise.resolve(mockRenewLockTxn));
+      const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock');
+      const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction');
+
+      const mockDateValue = Date.now();
+      spyOn(Date, 'now').and.returnValue(mockDateValue);
+
+      const currentLockInfoInput: BlockchainLockModel = {
+        amountLocked: 1234,
+        identifier: 'abc',
+        linkedWalletAddress: 'wallet address',
+        lockEndTransactionTime: 1234
+      };
+
+      // Ensure that the desired lock amount is more to cause the error
+      const desiredLockAmountInput = currentLockInfoInput.amountLocked + mockRenewLockTxn.transactionFee;
+
+      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+        () => lockMonitor['renewExistingLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput),
+        ErrorCode.LockMonitorNotEnoughBalanceForRelock);
+
+      expect(lockStoreSpy).not.toHaveBeenCalled();
+      expect(broadcastTxnSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -158,7 +206,8 @@ fdescribe('LockMonitor', () => {
       const mockReleaseLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'release lock txn redeem script',
         serializedTransactionObject: 'serialized txn',
-        transactionId: 'transaction id'
+        transactionId: 'transaction id',
+        transactionFee: 100
       };
 
       spyOn(lockMonitor['bitcoinClient'], 'createReleaseLockTransaction').and.returnValue(Promise.resolve(mockReleaseLockTxn));
