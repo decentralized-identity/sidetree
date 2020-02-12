@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
+import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
@@ -30,7 +31,6 @@ import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import util = require('util');
 import { Response, ResponseStatus } from '../../lib/common/Response';
-import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -54,7 +54,6 @@ describe('RequestHandler', () => {
   let recoveryPrivateKey: any;
   let did: string; // This DID is created at the beginning of every test.
   let didUniqueSuffix: string;
-  let batchFileHash: string;
 
   // Start a new instance of Operation Processor, and create a DID before every test.
   beforeEach(async () => {
@@ -98,16 +97,18 @@ describe('RequestHandler', () => {
       nextRecoveryOtpHash,
       nextUpdateOtpHash,
       services);
-
-    await requestHandler.handleOperationRequest(createOperationBuffer);
-    await batchScheduler.writeOperationBatch();
-
-    // Generate the batch file and batch file hash.
-    const batchBuffer = await BatchFile.fromOperationBuffers([createOperationBuffer]);
-    batchFileHash = MockCas.getAddress(batchBuffer);
-
-    // Now force Operation Processor to process the create operation.
     const createOperation = await CreateOperation.parse(createOperationBuffer);
+    didUniqueSuffix = createOperation.didUniqueSuffix;
+    did = didMethodName + didUniqueSuffix;
+
+    // Test that the create request gets the correct response.
+    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
+    const httpStatus = Response.toHttpStatus(response.status);
+    expect(httpStatus).toEqual(200);
+    expect(response).toBeDefined();
+    expect((response.body as DocumentModel).id).toEqual(did);
+
+    // Inser the create operation into DB.
     const namedAnchoredCreateOperationModel: NamedAnchoredOperationModel = {
       didUniqueSuffix: createOperation.didUniqueSuffix,
       type: OperationType.Create,
@@ -116,24 +117,17 @@ describe('RequestHandler', () => {
       operationBuffer: createOperationBuffer,
       operationIndex: 0
     };
-
     await operationStore.put([namedAnchoredCreateOperationModel]);
 
-    // NOTE: this is a repeated step already done in beforeEach() earlier,
-    // but the same step needed to be in beforeEach() for other tests such as update and delete.
-    // Issue #325 - Remove the need for calling `handleOperationRequest()` twice in `beforeEach()`
-    // and `batchScheduler.writeOperationBatch()` in multiple tests.
-    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
-    const httpStatus = Response.toHttpStatus(response.status);
-
-    did = didMethodName + createOperation.didUniqueSuffix;
-
-    expect(httpStatus).toEqual(200);
-    expect(response).toBeDefined();
-    expect((response.body as DocumentModel).id).toEqual(did);
+    // Trigger the batch writing to clear the operation queue for future tests.
+    await batchScheduler.writeOperationBatch();
   });
 
-  fit('should handle create operation request.', async () => {
+  it('should queue operation request and have it processed by the batch scheduler correctly.', async () => {
+    const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ operationIndex: 1, transactionNumber: 1, transactionTime: 1 });
+    const createOperationBuffer = createOperationData.namedAnchoredOperationModel.operationBuffer;
+    await requestHandler.handleOperationRequest(createOperationBuffer);
+
     const blockchainWriteSpy = spyOn(blockchain, 'write');
 
     await batchScheduler.writeOperationBatch();
@@ -141,7 +135,9 @@ describe('RequestHandler', () => {
 
     // Verfiy that CAS was invoked to store the batch file.
     const maxBatchFileSize = 20000000;
-    const fetchResult = await cas.read(batchFileHash, maxBatchFileSize);
+    const expectedBatchBuffer = await BatchFile.fromOperationBuffers([createOperationBuffer]);
+    const expectedBatchFileHash = MockCas.getAddress(expectedBatchBuffer);
+    const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
     expect(batchFile.operations.length).toEqual(1);
@@ -226,9 +222,7 @@ describe('RequestHandler', () => {
     expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
   });
 
-  it('should respond with HTTP 200 when DID is delete operation request is successful.', async () => {
-    // write operation batch to prevent the violation of 1 operation per DID per batch rule.
-    await batchScheduler.writeOperationBatch();
+  it('should respond with HTTP 200 when DID delete operation request is successful.', async () => {
     const recoveryOtp = Encoder.encode(Buffer.from('unusedRecoveryOtp'));
     const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
@@ -238,9 +232,6 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
-    // write operation batch to prevent the violation of 1 operation per DID per batch rule.
-    await batchScheduler.writeOperationBatch();
-
     // Create a request that will delete the 2nd public key.
     const patches = [
       {
@@ -266,9 +257,6 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
-    // write operation batch to prevent the violation of 1 operation per DID per batch rule.
-    await batchScheduler.writeOperationBatch();
-
     // Create new keys used for new document for recovery request.
     const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
     const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);

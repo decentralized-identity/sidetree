@@ -12,10 +12,10 @@ import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
+import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
-import { IOperation } from '../../lib/core/versions/latest/Operation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -292,18 +292,18 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates a named anchored operation model from `IOperation`.
+   * Creates a named anchored operation model from `OperationModel`.
    */
-  public static createNamedAnchoredOperationModelFromIOperation (
-    operation: IOperation,
+  public static createNamedAnchoredOperationModelFromOperationModel (
+    operationModel: OperationModel,
     transactionTime: number,
     transactionNumber: number,
     operationIndex: number
   ): NamedAnchoredOperationModel {
     const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
-      didUniqueSuffix: operation.didUniqueSuffix,
-      type: operation.type,
-      operationBuffer: operation.operationBuffer,
+      didUniqueSuffix: operationModel.didUniqueSuffix,
+      type: operationModel.type,
+      operationBuffer: operationModel.operationBuffer,
       operationIndex,
       transactionNumber,
       transactionTime

@@ -61,8 +61,8 @@ async function createUpdateSequence (
   createOp: NamedAnchoredOperationModel,
   firstUpdateOtp: string,
   cas: ICas,
-  numberOfUpdates:
-  number,
+  numberOfUpdates: number,
+  publicKeyId: string,
   privateKey: any): Promise<NamedAnchoredOperationModel[]> {
 
   const ops = new Array(createOp);
@@ -92,7 +92,7 @@ async function createUpdateSequence (
     // Now that the update payload is created, update the update OTP for the next operation generation to use.
     updateOtp = nextUpdateOtp;
 
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, publicKeyId, privateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(
       updateOperationBuffer,
       cas,
@@ -160,17 +160,13 @@ describe('OperationProcessor', async () => {
   let versionManager: IVersionManager;
   let operationProcessor: IOperationProcessor;
   let createOp: NamedAnchoredOperationModel;
-  let publicKey: DidPublicKeyModel;
-  let privateKey: string;
+  let signingPublicKey: DidPublicKeyModel;
+  let signingPrivateKey: string;
   let didUniqueSuffix: string;
   let firstUpdateOtp: string;
   let recoveryOtp: string;
 
   beforeEach(async () => {
-    // Generate a unique key-pair used for each test.
-    [publicKey, privateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     cas = new MockCas();
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor(config.didMethodName);
@@ -178,13 +174,18 @@ describe('OperationProcessor', async () => {
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
     resolver = new Resolver(versionManager, operationStore);
 
+    // Generate a unique key-pair used for each test.
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+    [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+
     let recoveryOtpHash;
     let firstUpdateOtpHash;
     [recoveryOtp, recoveryOtpHash] = OperationGenerator.generateOtp();
     [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
 
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-      publicKey,
+      recoveryPublicKey,
       signingPublicKey,
       recoveryOtpHash,
       firstUpdateOtpHash,
@@ -192,7 +193,7 @@ describe('OperationProcessor', async () => {
     );
     await addOperationsAsBatchFileToCas([createOperationBuffer], cas);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
-    createOp = OperationGenerator.createNamedAnchoredOperationModelFromIOperation(createOperation, 0, 0, 0);
+    createOp = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(createOperation, 0, 0, 0);
     didUniqueSuffix = createOp.didUniqueSuffix;
   });
 
@@ -212,8 +213,8 @@ describe('OperationProcessor', async () => {
     await operationStore.put([createOp]);
 
     // Insert a duplicate create op with a different transaction time.
-    const duplicateCreateOperation = await CreateOperation.parse(createOp.operationBuffer);
-    const duplicateNamedAnchoredCreateOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromIOperation(duplicateCreateOperation, 1, 1, 0);
+    const duplicateOperation = await CreateOperation.parse(createOp.operationBuffer);
+    const duplicateNamedAnchoredCreateOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(duplicateOperation, 1, 1, 0);
     await operationStore.put([duplicateNamedAnchoredCreateOperationModel]);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -241,7 +242,7 @@ describe('OperationProcessor', async () => {
     };
 
     // Generate operation with an invalid key
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, signingPublicKey.id, signingPrivateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([updateOp]);
 
@@ -253,37 +254,9 @@ describe('OperationProcessor', async () => {
     validateDidDocumentPublicKeys(didDocument);
   });
 
-  it('should fail to remove the recovery key', async () => {
-    await operationStore.put([createOp]);
-    const updatePayload = {
-      type: OperationType.Update,
-      didUniqueSuffix,
-      patches: [
-        {
-          action: 'remove-public-keys',
-          publicKeys: ['#key1']
-        }
-      ],
-      updateOtp: 'UnusedUpdateOneTimePassword',
-      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
-    };
-
-    // Generate operation with an invalid key
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#key1', privateKey);
-    const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
-    await operationStore.put([updateOp]);
-
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
-
-    expect(didDocument).toBeDefined();
-    const key1 = Document.getPublicKey(didDocument, '#key1');
-    expect(key1).toBeDefined();
-    validateDidDocumentPublicKeys(didDocument);
-  });
-
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -292,7 +265,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
@@ -303,7 +276,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
@@ -321,13 +294,13 @@ describe('OperationProcessor', async () => {
 
   it('should return undefined for deleted did', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', privateKey);
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
     await operationStore.put([deleteOperation]);
 
@@ -336,7 +309,7 @@ describe('OperationProcessor', async () => {
   });
 
   it('should ignore delete operations of a non-existent did', async () => {
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', privateKey);
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([deleteOperation]);
 
@@ -347,7 +320,7 @@ describe('OperationProcessor', async () => {
   it('should ignore delete operations with invalid signing key id', async () => {
     await operationStore.put([createOp]);
 
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, 'InvalidKeyId', privateKey);
+    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, 'InvalidKeyId', signingPrivateKey);
     const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([deleteOperation]);
 
@@ -360,7 +333,7 @@ describe('OperationProcessor', async () => {
   it('should ignore delete operations with invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const deleteOperation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtp, '#key1', privateKey);
+    const deleteOperation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
     deleteOperation.signature = 'InvalidSignature';
     const deleteOperationBuffer = Buffer.from(JSON.stringify(deleteOperation));
     const anchoredDeleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
@@ -374,7 +347,7 @@ describe('OperationProcessor', async () => {
 
   it('should ignore updates to did that is not created', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
 
     // elide i = 0, the create operation
     for (let i = 1 ; i < ops.length ; ++i) {
@@ -409,7 +382,7 @@ describe('OperationProcessor', async () => {
     };
 
     // Generate operation with an invalid key
-    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#UnresolvableKey', privateKey);
+    const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, '#UnresolvableKey', signingPrivateKey);
     const updateOp = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
     await operationStore.put([updateOp]);
 
@@ -444,7 +417,7 @@ describe('OperationProcessor', async () => {
     };
 
     // Generate operation with an invalid key
-    const updateOperation = await OperationGenerator.generateUpdateOperation(updatePayload, '#key1', privateKey);
+    const updateOperation = await OperationGenerator.generateUpdateOperation(updatePayload, signingPublicKey.id, signingPrivateKey);
     updateOperation.signature = 'InvalidSignature';
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperation));
     const anchoredUpdateOperation = await addBatchFileOfOneOperationToCas(updateOperationBuffer, cas, 1, 1, 0);
@@ -459,7 +432,7 @@ describe('OperationProcessor', async () => {
 
   it('should rollback all', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, privateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
@@ -527,7 +500,7 @@ describe('OperationProcessor', async () => {
       const result = await operationProcessor.apply(createOperationData.namedAnchoredOperationModel, didDocumentReference);
       expect(result.validOperation).toBeFalsy();
       expect(didDocumentReference.didDocument).toBeDefined();
-      expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+      expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
     });
 
     describe('applyCreateOperation()', () => {
@@ -537,7 +510,7 @@ describe('OperationProcessor', async () => {
         const result = await operationProcessor.apply(createOperationData.namedAnchoredOperationModel, didDocumentReference);
         expect(result.validOperation).toBeFalsy();
         expect(didDocumentReference.didDocument).toBeDefined();
-        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
     });
 
@@ -661,27 +634,7 @@ describe('OperationProcessor', async () => {
 
         // Verify that the recovery key is still the same as prior to the application of the recovery operation.
         expect(didDocumentReference.didDocument).toBeDefined();
-        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
-      });
-
-      it('should not apply if unable to locate recovery key for signature verification.', async () => {
-        // Generate a recovery operation payload.
-        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
-
-        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
-          didUniqueSuffix,
-          OperationType.Recover,
-          payloadData.payload,
-          '#non-existent-key',
-          recoveryPrivateKey,
-          2, 2, 2);
-
-        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
-        expect(recoveryResult.validOperation).toBeFalsy();
-
-        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
-        expect(didDocumentReference.didDocument).toBeDefined();
-        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
       it('should not apply if key used to sign is not a recovery key.', async () => {
@@ -701,7 +654,7 @@ describe('OperationProcessor', async () => {
 
         // Verify that the recovery key is still the same as prior to the application of the recovery operation.
         expect(didDocumentReference.didDocument).toBeDefined();
-        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
       it('should not apply if signature does not pass verification.', async () => {
@@ -721,7 +674,7 @@ describe('OperationProcessor', async () => {
 
         // Verify that the recovery key is still the same as prior to the application of the recovery operation.
         expect(didDocumentReference.didDocument).toBeDefined();
-        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
       it('should not apply if recovery OTP is invalid.', async () => {
@@ -741,7 +694,7 @@ describe('OperationProcessor', async () => {
 
         // Verify that the recovery key is still the same as prior to the application of the recovery operation.
         expect(didDocumentReference.didDocument).toBeDefined();
-        expect(didDocumentReference.didDocument!.publicKey[0].publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
       it('should not apply if new Document does not pass verification.', async () => {
@@ -764,7 +717,7 @@ describe('OperationProcessor', async () => {
 
         // The patched/resolved document is expected to contain the `controller` property.
         const expectedRecoveryPublicKey = Object.assign({}, recoveryPublicKey, { controller: config.didMethodName + didUniqueSuffix });
-        expect(didDocumentReference.didDocument!.publicKey[0]).toEqual(expectedRecoveryPublicKey);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(expectedRecoveryPublicKey.publicKeyHex!);
       });
     });
 

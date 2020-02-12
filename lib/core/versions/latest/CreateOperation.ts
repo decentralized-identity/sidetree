@@ -1,10 +1,10 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
+import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
 import JsonAsync from './util/JsonAsync';
-import { IOperation } from './Operation';
 
 interface SuffixDataModel {
   operationDataHash: string;
@@ -20,7 +20,7 @@ interface OperationDataModel {
 /**
  * A class that represents a create operation.
  */
-export default class CreateOperation implements IOperation {
+export default class CreateOperation implements OperationModel {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;

@@ -4,7 +4,8 @@ import Document from './Document';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
-import Operation, { IOperation } from './Operation';
+import Operation from './Operation';
+import OperationModel from './models/OperationModel';
 import OperationProcessor from './OperationProcessor';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
@@ -29,7 +30,7 @@ export default class RequestHandler implements IRequestHandler {
     console.info(`Handling operation request of size ${request.length} bytes...`);
 
     // Perform common validation for any write request and parse it into an `Operation`.
-    let operation: Operation | IOperation;
+    let operation: Operation | OperationModel;
     try {
       // Validate operation request size.
       if (request.length > ProtocolParameters.maxOperationByteSize) {

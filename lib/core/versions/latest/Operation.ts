@@ -7,18 +7,10 @@ import Jws from './util/Jws';
 import JwsModel from './models/JwsModel';
 import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
+import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import SidetreeError from '../../SidetreeError';
 import PublicKeyModel from './models/PublicKeyModel';
-
-/**
- * Common model for a Sidetree operation.
- */
-export interface IOperation {
-  didUniqueSuffix: string;
-  type: OperationType;
-  operationBuffer: Buffer;
-}
+import SidetreeError from '../../SidetreeError';
 
 /**
  * A class that represents a Sidetree operation.
@@ -95,16 +87,21 @@ export default class Operation {
   /**
    * Parses the given buffer into an `IOperation`.
    */
-  public static async parse (operationBuffer: Buffer): Promise<IOperation> {
-    // Parse request buffer into a JS object.
-    const operationJsonString = operationBuffer.toString();
-    const operationObject = JSON.parse(operationJsonString);
-    const operationType = operationObject.type;
+  public static async parse (operationBuffer: Buffer): Promise<OperationModel> {
+    try {
+      // Parse request buffer into a JS object.
+      const operationJsonString = operationBuffer.toString();
+      const operationObject = JSON.parse(operationJsonString);
+      const operationType = operationObject.type;
 
-    if (operationType === OperationType.Create) {
-      return CreateOperation.parseObject(operationObject, operationBuffer);
-    } else {
-      throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
+      if (operationType === OperationType.Create) {
+        return CreateOperation.parseObject(operationObject, operationBuffer);
+      } else {
+        throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
+      }
+    } catch {
+      // NOTE: This is a temporary fork in code path, will be removed once issue #266 is completed.
+      return Operation.create(operationBuffer);
     }
   }
 

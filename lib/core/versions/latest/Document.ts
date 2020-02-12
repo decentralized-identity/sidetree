@@ -27,13 +27,15 @@ export default class Document {
    * Transforms the given internal document model into a DID Document.
    */
   public static transformToDidDocument (didMethodName: string, internalDocumentModel: InternalDocumentModel): any {
+    const did = didMethodName + internalDocumentModel.didUniqueSuffix;
     const didDocument = {
       '@context': 'https://w3id.org/did/v1',
-      id: didMethodName + internalDocumentModel.didUniqueSuffix,
       publicKey: internalDocumentModel.document.publicKey,
       service: internalDocumentModel.document.service,
       recoveryKey: internalDocumentModel.recoveryKey
     };
+
+    Document.addDidToDocument(didDocument, did);
 
     return didDocument;
   }

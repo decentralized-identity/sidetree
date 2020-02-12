@@ -1,5 +1,3 @@
-import AnchoredOperation from './AnchoredOperation';
-import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFileModel from './models/BatchFileModel';
 import Compressor from './util/Compressor';
@@ -10,6 +8,7 @@ import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationMode
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../SidetreeError';
 import timeSpan = require('time-span');
+import Operation from './Operation';
 
 /**
  * Defines the schema of a Batch File and its related operations.
@@ -87,14 +86,15 @@ export default class BatchFile {
         );
       }
 
-      const anchoredOperationModel: AnchoredOperationModel = {
+      const operation = await Operation.parse(operationBuffer);
+      const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
+        didUniqueSuffix: operation.didUniqueSuffix,
+        type: operation.type,
         operationBuffer,
         operationIndex,
         transactionNumber,
         transactionTime
       };
-
-      const operation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
 
       const didUniqueSuffixesInAnchorFile = anchorFile.didUniqueSuffixes[operationIndex];
       if (operation.didUniqueSuffix !== didUniqueSuffixesInAnchorFile) {
@@ -104,7 +104,7 @@ export default class BatchFile {
           `is not the same as '${didUniqueSuffixesInAnchorFile}' seen in anchor file.`);
       }
 
-      namedAnchoredOperationModels.push(operation);
+      namedAnchoredOperationModels.push(namedAnchoredOperationModel);
     }
     console.info(`Decoded ${batchSize} operations in batch file. Time taken: ${endTimer.rounded()} ms.`);
 

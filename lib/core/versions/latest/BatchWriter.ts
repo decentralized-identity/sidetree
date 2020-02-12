@@ -9,7 +9,6 @@ import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
 import MapFile from './MapFile';
-import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 
 /**
@@ -24,18 +23,16 @@ export default class BatchWriter implements IBatchWriter {
 
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.
-    const operationBuffers = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
+    const queuedOperations = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
 
-    console.info('Batch size = ' + operationBuffers.length);
+    console.info('Batch size = ' + queuedOperations.length);
 
     // Do nothing if there is nothing to batch together.
-    if (operationBuffers.length === 0) {
+    if (queuedOperations.length === 0) {
       return;
     }
 
-    const batch = operationBuffers.map(
-      (buffer) => Operation.create(buffer)
-    );
+    const operationBuffers = queuedOperations.map(operation => operation.operationBuffer);
 
     // Create the batch file buffer from the operation batch.
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
@@ -50,7 +47,7 @@ export default class BatchWriter implements IBatchWriter {
     console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 
     // Construct the DID unique suffixes of each operation to be included in the anchor file.
-    const didUniqueSuffixes = batch.map(operation => operation.didUniqueSuffix);
+    const didUniqueSuffixes = queuedOperations.map(operation => operation.didUniqueSuffix);
 
     // Construct the 'anchor file'.
     const anchorFileModel: AnchorFileModel = {
@@ -77,6 +74,6 @@ export default class BatchWriter implements IBatchWriter {
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
     // Remove written operations from queue if batch writing is successful.
-    await this.operationQueue.dequeue(batch.length);
+    await this.operationQueue.dequeue(queuedOperations.length);
   }
 }
