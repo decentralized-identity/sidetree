@@ -35,6 +35,7 @@ export default class MongoDbLockTransactionStore {
    */
   public async addLock (bitcoinLock: BitcoinLockTransactionModel): Promise<void> {
     const lockInMongoDb = {
+      desiredLockAmountInSatoshis : bitcoinLock.desiredLockAmountInSatoshis,
       transactionId: bitcoinLock.transactionId,
       rawTransaction: bitcoinLock.rawTransaction,
       redeemScriptAsHex: bitcoinLock.redeemScriptAsHex,

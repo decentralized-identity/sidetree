@@ -29,6 +29,7 @@ fdescribe('LockMonitor', () => {
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
       const mockLockInfoSaved: SavedLockTransactionModel = {
+        desiredLockAmountInSatoshis: 125,
         createTimestamp: Date.now(),
         rawTransaction: 'raw transaction',
         redeemScriptAsHex: 'redeem script as hex',
@@ -75,11 +76,12 @@ fdescribe('LockMonitor', () => {
       const mockDateValue = Date.now();
       spyOn(Date, 'now').and.returnValue(mockDateValue);
 
-      const lockAmountInput = 987845;
+      const desiredLockAmountInput = 987845;
 
-      const actual = await lockMonitor['createNewLockAndSaveItToDb'](lockAmountInput);
+      const actual = await lockMonitor['createNewLockAndSaveItToDb'](desiredLockAmountInput);
 
       const expectedLockInfoSaved: SavedLockTransactionModel = {
+        desiredLockAmountInSatoshis: desiredLockAmountInput,
         createTimestamp: mockDateValue,
         rawTransaction: mockLockTxn.serializedTransactionObject,
         redeemScriptAsHex: mockLockTxn.redeemScriptAsHex,
@@ -89,7 +91,7 @@ fdescribe('LockMonitor', () => {
       expect(actual).toEqual(expectedLockInfoSaved);
 
       const expectedNewLockBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
-      expect(createLockTxnSpy).toHaveBeenCalledWith(lockAmountInput, expectedNewLockBlock);
+      expect(createLockTxnSpy).toHaveBeenCalledWith(desiredLockAmountInput, expectedNewLockBlock);
       expect(lockStoreSpy).toHaveBeenCalledWith(expectedLockInfoSaved);
       expect(broadcastTxnSpy).not.toHaveBeenCalledBefore(lockStoreSpy);
     });
@@ -134,6 +136,7 @@ fdescribe('LockMonitor', () => {
       const actual = await lockMonitor['renewExistingLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput);
 
       const expectedLockInfoSaved: SavedLockTransactionModel = {
+        desiredLockAmountInSatoshis: desiredLockAmountInput,
         createTimestamp: mockDateValue,
         rawTransaction: mockRenewLockTxn.serializedTransactionObject,
         redeemScriptAsHex: mockRenewLockTxn.redeemScriptAsHex,
@@ -224,9 +227,11 @@ fdescribe('LockMonitor', () => {
         lockEndTransactionTime: 1234
       };
 
-      const actual = await lockMonitor['releaseLockAndSaveItToDb'](currentLockInfoInput);
+      const desiredLockAmountInput = 2500;
+      const actual = await lockMonitor['releaseLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput);
 
       const expectedLockInfoSaved: SavedLockTransactionModel = {
+        desiredLockAmountInSatoshis: desiredLockAmountInput,
         createTimestamp: mockDateValue,
         rawTransaction: mockReleaseLockTxn.serializedTransactionObject,
         redeemScriptAsHex: mockReleaseLockTxn.redeemScriptAsHex,
