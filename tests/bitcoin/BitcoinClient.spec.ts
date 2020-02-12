@@ -143,6 +143,62 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('createRelockTransaction', () => {
+    it('should create the relock transaction.', async () => {
+      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockFreezeTxnToString = mockFreezeTxn.toString();
+
+      const mockPreviousFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockRedeemScript = 'some redeem script';
+
+      const mockCreateFreezeTxnOutput = [mockFreezeTxn, mockRedeemScript];
+      const createFreezeTxnSpy = spyOn(bitcoinClient as any, 'createSpendToFreezeTransaction').and.returnValue(Promise.resolve(mockCreateFreezeTxnOutput));
+
+      spyOn(bitcoinClient as any, 'getRawTransactionRpc').and.returnValue(Promise.resolve(mockPreviousFreezeTxn));
+      spyOn(mockFreezeTxn, 'serialize').and.returnValue(mockFreezeTxnToString);
+
+      const existingLockBlockInput = 123456;
+      const lockUntilBlockInput = 789005;
+
+      const actual = await bitcoinClient.createRelockTransaction('previousFreezeTxnId', existingLockBlockInput, lockUntilBlockInput);
+
+      const expectedOutput: BitcoinLockTransactionModel = {
+        transactionId: mockFreezeTxn.id,
+        redeemScriptAsHex: mockRedeemScript,
+        serializedTransactionObject: mockFreezeTxnToString
+      };
+      expect(actual).toEqual(expectedOutput);
+
+      expect(createFreezeTxnSpy).toHaveBeenCalledWith(mockPreviousFreezeTxn, existingLockBlockInput, lockUntilBlockInput);
+    });
+  });
+
+  describe('createReleaseLockTransaction', () => {
+    it('should create the relock transaction.', async () => {
+      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockFreezeTxnToString = mockFreezeTxn.toString();
+      const mockPreviousFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+
+      const createBack2WalletTxnSpy = spyOn(bitcoinClient as any, 'createSpendToWalletTransaction').and.returnValue(Promise.resolve(mockFreezeTxn));
+
+      spyOn(bitcoinClient as any, 'getRawTransactionRpc').and.returnValue(Promise.resolve(mockPreviousFreezeTxn));
+      spyOn(mockFreezeTxn, 'serialize').and.returnValue(mockFreezeTxnToString);
+
+      const existingLockBlockInput = 123456;
+
+      const actual = await bitcoinClient.createReleaseLockTransaction('previousFreezeTxnId', existingLockBlockInput);
+
+      const expectedOutput: BitcoinLockTransactionModel = {
+        transactionId: mockFreezeTxn.id,
+        redeemScriptAsHex: '',
+        serializedTransactionObject: mockFreezeTxnToString
+      };
+      expect(actual).toEqual(expectedOutput);
+
+      expect(createBack2WalletTxnSpy).toHaveBeenCalledWith(mockPreviousFreezeTxn, existingLockBlockInput);
+    });
+  });
+
   describe('getBlock', () => {
     it('should get the block data.', async () => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);

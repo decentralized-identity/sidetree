@@ -53,7 +53,7 @@ describe('LockResolver', () => {
         ]
       };
 
-      const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTransaction));
+      const getTxnSpy = spyOn(lockResolver as any, 'fetchTransaction').and.returnValue(Promise.resolve(mockTransaction));
       const createScriptSpy = spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(validScript);
       const checkLockScriptSpy = spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([true, lockBlockInput]);
       const payToWalletSpy = spyOn(LockResolver as any, 'isRedeemScriptPayingToTargetWallet').and.returnValue(true);
@@ -87,7 +87,7 @@ describe('LockResolver', () => {
         walletAddressAsBuffer: validTestAddressAsBuffer
       };
 
-      const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction');
+      const getTxnSpy = spyOn(lockResolver as any, 'fetchTransaction');
       spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(Script.empty());
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([false, 0]);
 
@@ -107,7 +107,7 @@ describe('LockResolver', () => {
         walletAddressAsBuffer: validTestAddressAsBuffer
       };
 
-      const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction');
+      const getTxnSpy = spyOn(lockResolver as any, 'fetchTransaction');
       spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(Script.empty());
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([true, 8765]);
       spyOn(LockResolver as any, 'isRedeemScriptPayingToTargetWallet').and.returnValue(false);
@@ -136,7 +136,7 @@ describe('LockResolver', () => {
         ]
       };
 
-      spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTransaction));
+      spyOn(lockResolver as any, 'fetchTransaction').and.returnValue(Promise.resolve(mockTransaction));
       spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(Script.empty());
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([true, 8765]);
       spyOn(LockResolver as any, 'isRedeemScriptPayingToTargetWallet').and.returnValue(true);
@@ -228,6 +228,34 @@ describe('LockResolver', () => {
       JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
         () => LockResolver['createScriptFromHexInput']('some input'),
         ErrorCode.LockResolverRedeemScriptIsInvalid);
+    });
+  });
+
+  describe('fetchTransaction', () => {
+    it('should return the transaction by calling bitcoin client', async () => {
+      const mockTransaction: BitcoinTransactionModel = {
+        id: 'some transaction id',
+        inputs: [],
+        outputs: [
+          { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
+        ]
+      };
+
+      const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTransaction));
+
+      const actual = await lockResolver['fetchTransaction']('someid');
+      expect(actual).toEqual(mockTransaction);
+      expect(getTxnSpy).toHaveBeenCalled();
+    });
+
+    it('should throw if the bitcoin client throws.', async () => {
+
+      spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('some random error.');
+
+      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+         () => lockResolver['fetchTransaction']('someid'),
+         ErrorCode.LockResolverTransactionNotFound
+      );
     });
   });
 

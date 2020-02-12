@@ -1,11 +1,12 @@
 import BitcoinClient from '../BitcoinClient';
 import BitcoinError from '../BitcoinError';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
+import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import BlockchainLockModel from '../../common/models/BlockchainLockModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifier from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
-import { Script, Address } from 'bitcore-lib';
+import { Address, Script } from 'bitcore-lib';
 
 /**
  * Encapsulates functionality for verifying a bitcoin lock created by this service.
@@ -51,7 +52,7 @@ export default class LockResolver {
     }
 
     // (C). verify that the transaction is paying to the target redeem script
-    const lockTransaction = await this.bitcoinClient.getRawTransaction(lockIdentifier.transactionId);
+    const lockTransaction = await this.fetchTransaction(lockIdentifier.transactionId);
 
     const transactionIsPayingToTargetRedeemScript = lockTransaction.outputs.length > 0 &&
                                                     LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
@@ -134,6 +135,14 @@ export default class LockResolver {
       return new Script(redeemScriptAsBuffer);
     } catch (e) {
       throw BitcoinError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
+    }
+  }
+
+  private async fetchTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
+    try {
+      return this.bitcoinClient.getRawTransaction(transactionId);
+    } catch (e) {
+      throw BitcoinError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
     }
   }
 }

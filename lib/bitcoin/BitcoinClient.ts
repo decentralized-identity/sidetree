@@ -460,7 +460,6 @@ export default class BitcoinClient {
     return [freezeTransaction, freezeScript.toHex()];
   }
 
-  // @ts-ignore
   private async createSpendToFreezeTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number,
@@ -478,7 +477,6 @@ export default class BitcoinClient {
     return [freezeTransaction, freezeScript.toHex()];
   }
 
-  // @ts-ignore
   private async createSpendToWalletTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number): Promise<Transaction> {
@@ -489,7 +487,6 @@ export default class BitcoinClient {
       this.walletAddress);
   }
 
-  // @ts-ignore
   /**
    * Creates a spend transaction to spend the previously frozen output. The details
    * on how to create a spend transactions were taken from the BIP65 demo at:
