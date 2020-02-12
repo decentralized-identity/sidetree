@@ -1,10 +1,10 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
-import JsonAsync from './util/JsonAsync';
 
 interface SuffixDataModel {
   operationDataHash: string;

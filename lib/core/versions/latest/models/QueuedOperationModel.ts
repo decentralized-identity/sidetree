@@ -1,5 +1,5 @@
 /**
- * Defines the a queued operation.
+ * Defines a queued operation.
  */
 export default interface QueuedOperationModel {
   didUniqueSuffix: string;

@@ -5,10 +5,10 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
+import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../SidetreeError';
 import timeSpan = require('time-span');
-import Operation from './Operation';
 
 /**
  * Defines the schema of a Batch File and its related operations.

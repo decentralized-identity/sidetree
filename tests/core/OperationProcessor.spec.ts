@@ -1,6 +1,7 @@
 import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
+import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
@@ -19,7 +20,6 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
-import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 
 /**
  * Creates a batch file with single operation given operation buffer,

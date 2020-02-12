@@ -39,13 +39,7 @@ export default class RequestHandler implements IRequestHandler {
         throw new SidetreeError(ErrorCode.OperationExceedsMaximumSize, errorMessage);
       }
 
-      // NOTE: This try-catch is temporary and will be removed when issue #266 is completed.
-      try {
-        operation = await Operation.parse(request);
-      } catch {
-        // Parse request into an Operation.
-        operation = Operation.create(request);
-      }
+      operation = await Operation.parse(request);
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
       if (await this.operationQueue.contains(operation.didUniqueSuffix)) {
@@ -86,7 +80,7 @@ export default class RequestHandler implements IRequestHandler {
             transactionNumber: 0,
             operationIndex: 0,
             operationBuffer: operation.operationBuffer
-          }; // NOTE: The transaction timing does not matter here, we are just computing a "theoritical" document if it were anchored on blockchain.
+          }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
           await operationProcessor.apply(operationWithMockedAnchorTime, didResolutionModel);
 
           const document = didResolutionModel.didDocument;
