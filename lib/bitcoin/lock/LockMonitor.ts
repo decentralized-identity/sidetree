@@ -105,7 +105,7 @@ export default class LockMonitor {
     if (lastSavedLock.type === SavedLockTransactionType.ReturnToWallet) {
       // Check if the transaction is actually written on blockchain
       if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
-        await this.handleLastLockTransactionNotFoundError(lastSavedLock);
+        await this.rebroadcastTransaction(lastSavedLock);
       }
 
       return currentLockInformation;
@@ -128,7 +128,7 @@ export default class LockMonitor {
 
       // If the transaction was not found on the bitcoin
       if (e instanceof BitcoinError && e.code === ErrorCode.LockResolverTransactionNotFound) {
-        await this.handleLastLockTransactionNotFoundError(lastSavedLock);
+        await this.rebroadcastTransaction(lastSavedLock);
 
       } else {
         // This is an unhandle-able error and we need to just rethrow ... the following will
@@ -140,7 +140,7 @@ export default class LockMonitor {
     return currentLockInformation;
   }
 
-  private async handleLastLockTransactionNotFoundError (lastSavedLock: SavedLockTransactionModel): Promise<void> {
+  private async rebroadcastTransaction (lastSavedLock: SavedLockTransactionModel): Promise<void> {
     // So we had some transaction information saved but the transaction was never found on the
     // blockchain. Either the transaction was broadcasted and we're just waiting for it to be
     // actually written or maybe this node died before it could actually broadcast the transaction.
