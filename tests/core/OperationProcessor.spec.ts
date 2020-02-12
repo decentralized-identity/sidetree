@@ -634,7 +634,7 @@ describe('OperationProcessor', async () => {
 
         // Verify that the recovery key is still the same as prior to the application of the recovery operation.
         expect(didDocumentReference.didDocument).toBeDefined();
-        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex!).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
       it('should not apply if key used to sign is not a recovery key.', async () => {
