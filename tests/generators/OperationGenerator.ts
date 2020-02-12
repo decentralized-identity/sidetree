@@ -346,37 +346,6 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a recovery operation buffer
-   * @param recoveryPayload the payload of the recovery
-   * @param keyId the key id
-   * @param privateKey the private key to use
-   */
-  public static async generateRecoveryOperationBuffer (recoveryPayload: any, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const protectedHeader = {
-      kid: keyId,
-      alg: 'ES256K'
-    };
-
-    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
-
-    // Create the create payload.
-    const payloadJsonString = JSON.stringify(recoveryPayload);
-    const encodedPayload = Encoder.encode(payloadJsonString);
-
-    // Generate the signature.
-    const signature = await Jws.sign(protectedHeaderEncodedString, encodedPayload, privateKey);
-
-    const operation = {
-      protected: protectedHeaderEncodedString,
-      payload: encodedPayload,
-      signature
-    };
-
-    return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
    * Creates an update operation for adding a key.
    * @param nextUpdateOtpHashEncodedString Optional OTP hash for the next update. If not given, one will be generated.
    */

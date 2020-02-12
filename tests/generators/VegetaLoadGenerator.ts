@@ -88,7 +88,7 @@ export default class VegetaLoadGenerator {
         nextRecoveryOtpHash: recovery2OtpHash,
         nextUpdateOtpHash: update2OtpHash
       };
-      const recoveryOperationBuffer = await OperationGenerator.generateRecoveryOperationBuffer(recoveryPayload, keyId, privateKey);
+      const recoveryOperationBuffer = await OperationGenerator.createOperationBuffer(recoveryPayload, keyId, privateKey);
       fs.writeFileSync(`${absoluteFolderPath}/requests/recovery${i}.json`, recoveryOperationBuffer);
     }
 
