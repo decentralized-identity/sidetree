@@ -280,7 +280,7 @@ POST / HTTP/1.1
 | ```Content-Type```    | ```application/json``` |
 
 
-#### Create operation request schema
+#### Create operation request body schema
 ```json
 {
   "type": "create",

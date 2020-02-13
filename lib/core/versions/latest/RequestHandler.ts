@@ -29,8 +29,8 @@ export default class RequestHandler implements IRequestHandler {
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
     console.info(`Handling operation request of size ${request.length} bytes...`);
 
-    // Perform common validation for any write request and parse it into an `Operation`.
-    let operation: Operation | OperationModel;
+    // Perform common validation for any write request and parse it into an `OperationModel`.
+    let operation: OperationModel;
     try {
       // Validate operation request size.
       if (request.length > ProtocolParameters.maxOperationByteSize) {

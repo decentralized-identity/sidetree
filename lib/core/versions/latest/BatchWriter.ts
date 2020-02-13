@@ -32,9 +32,9 @@ export default class BatchWriter implements IBatchWriter {
       return;
     }
 
-    const operationBuffers = queuedOperations.map(operation => operation.operationBuffer);
+    const operationBuffers = queuedOperations.map(queuedOperations => queuedOperations.operationBuffer);
 
-    // Create the batch file buffer from the operation batch.
+    // Create the batch file buffer from the operation buffers.
     const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
 
     // Write the batch file to content addressable store.
@@ -47,7 +47,7 @@ export default class BatchWriter implements IBatchWriter {
     console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 
     // Construct the DID unique suffixes of each operation to be included in the anchor file.
-    const didUniqueSuffixes = queuedOperations.map(operation => operation.didUniqueSuffix);
+    const didUniqueSuffixes = queuedOperations.map(queuedOperations => queuedOperations.didUniqueSuffix);
 
     // Construct the 'anchor file'.
     const anchorFileModel: AnchorFileModel = {
@@ -55,7 +55,7 @@ export default class BatchWriter implements IBatchWriter {
       didUniqueSuffixes
     };
 
-    // Make the 'anchor file' available in content addressable store.
+    // Write the anchor file to content addressable store.
     const anchorFileJsonBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
     const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
     console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
@@ -73,7 +73,7 @@ export default class BatchWriter implements IBatchWriter {
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
-    // Remove written operations from queue if batch writing is successful.
+    // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(queuedOperations.length);
   }
 }
