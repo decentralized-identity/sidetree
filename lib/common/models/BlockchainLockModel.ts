@@ -9,7 +9,7 @@ export default interface BlockchainLockModel {
   amountLocked: number;
 
   /** At this transaction time the lock is no longer valid */
-  lockEndTransactionTime: number;
+  unlockTransactionTime: number;
 
   /** The destination where the amount goes upon unlock */
   owner: string;

@@ -372,7 +372,7 @@ describe('BitcoinClient', async () => {
       const spy = mockRpcCall('sendrawtransaction', [mockRawTransaction], mockRpcOutput);
       spy.and.throwError('test');
       try {
-        await await bitcoinClient['broadcastTransactionRpc'](mockRawTransaction);
+        await bitcoinClient['broadcastTransactionRpc'](mockRawTransaction);
         fail('should have thrown');
       } catch (error) {
         expect(error.message).toContain('test');

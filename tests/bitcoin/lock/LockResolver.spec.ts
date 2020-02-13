@@ -4,7 +4,7 @@ import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransact
 import BlockchainLockModel from '../../../lib/common/models/BlockchainLockModel';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
-import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
+import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
@@ -23,7 +23,7 @@ function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddres
 function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, unlockAtBlock: number | undefined): any {
   return {
     isScriptValid: isScriptValid,
-    owner: owner,
+    publicKeyHashOut: owner,
     unlockAtBlock: unlockAtBlock
   };
 }
@@ -51,7 +51,7 @@ describe('LockResolver', () => {
       const lockBlockInput = 1665191;
       const validScript = createValidLockRedeemScript(lockBlockInput, validTestWalletAddress);
 
-      const mockLockIdentifier: LockIdentifier = {
+      const mockLockIdentifier: LockIdentifierModel = {
         transactionId: 'some transactoin id',
         redeemScriptAsHex: validScript.toHex()
       };
@@ -77,7 +77,7 @@ describe('LockResolver', () => {
       const expectedOutput: BlockchainLockModel = {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
-        lockEndTransactionTime: lockBlockInput,
+        unlockTransactionTime: lockBlockInput,
         owner: validPublicKeyHashOutString
       };
 
@@ -92,7 +92,7 @@ describe('LockResolver', () => {
 
     it('should throw if redeem script is not a lock script.', async () => {
 
-      const mockLockIdentifier: LockIdentifier = {
+      const mockLockIdentifier: LockIdentifierModel = {
         transactionId: 'some transactoin id',
         redeemScriptAsHex: 'some mock script as hex'
       };
@@ -113,7 +113,7 @@ describe('LockResolver', () => {
 
     it('should throw if the transaction output is not paying to the linked wallet.', async () => {
 
-      const mockLockIdentifier: LockIdentifier = {
+      const mockLockIdentifier: LockIdentifierModel = {
         transactionId: 'some transactoin id',
         redeemScriptAsHex: 'validScript to - Hex'
       };

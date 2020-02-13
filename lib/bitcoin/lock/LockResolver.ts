@@ -9,8 +9,11 @@ import { Script } from 'bitcore-lib';
 
 /** Structure (internal for this class) to hold the redeem script verification results */
 interface LockScriptVerifyResult {
+  /** whether or not the script was valid */
   isScriptValid: boolean;
-  owner: string | undefined;
+  /** the target address when the script unlcoks; undefined if the script is not valid. */
+  publicKeyHashOut: string | undefined;
+  /** the block at which the amount gets unlocked; undefined if the script is not valid. */
   unlockAtBlock: number | undefined;
 }
 
@@ -64,22 +67,22 @@ export default class LockResolver {
     return {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
-      lockEndTransactionTime: scriptVerifyResult.unlockAtBlock!,
-      owner: scriptVerifyResult.owner!
+      unlockTransactionTime: scriptVerifyResult.unlockAtBlock!,
+      owner: scriptVerifyResult.publicKeyHashOut!
     };
   }
 
   /**
    * Checks whether the redeem script is indeed a lock script.
    * @param redeemScript The script to check.
-   * @returns A touple where [0] = true and [1] = lock-until-block if the script is a lock script; [0] = false and [1] = 0 otherwise.
+   * @returns The verify result object.
    */
   private static isRedeemScriptALockScript (redeemScript: Script): LockScriptVerifyResult {
 
     // Split the script into parts and verify each part
     const scriptAsmParts = redeemScript.toASM().split(' ');
 
-    // Verify different parts
+    // Verify different parts; [0] & [5] indeces are parsed only if the script is valid
     const isScriptValid =
       scriptAsmParts.length === 8 &&
       scriptAsmParts[1] === 'OP_NOP2' &&
@@ -90,18 +93,18 @@ export default class LockResolver {
       scriptAsmParts[7] === 'OP_CHECKSIG';
 
     let unlockAtBlock: number | undefined;
-    let owner: string | undefined;
+    let publicKeyHashOut: string | undefined;
 
     if (isScriptValid) {
       const unlockAtBlockBuffer = Buffer.from(scriptAsmParts[0], 'hex');
       unlockAtBlock = unlockAtBlockBuffer.readIntLE(0, unlockAtBlockBuffer.length);
 
-      owner = scriptAsmParts[5];
+      publicKeyHashOut = scriptAsmParts[5];
     }
 
     return {
       isScriptValid: isScriptValid,
-      owner: owner,
+      publicKeyHashOut: publicKeyHashOut,
       unlockAtBlock: unlockAtBlock
     };
   }

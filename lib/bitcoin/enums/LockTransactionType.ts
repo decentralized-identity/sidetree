@@ -1,7 +1,7 @@
-enum SavedLockTransactionType {
+enum LockTransactionType {
   Create = 'create',
   Relock = 'relock',
   ReturnToWallet = 'return-to-wallet'
 }
 
-export default SavedLockTransactionType;
+export default LockTransactionType;
