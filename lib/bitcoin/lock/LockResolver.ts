@@ -75,7 +75,7 @@ export default class LockResolver {
   /**
    * Checks whether the redeem script is indeed a lock script.
    * @param redeemScript The script to check.
-   * @returns A touple where [0] == true if the script is a lock script; false otherwise, [1] == if [0] is true then the lockUntilBlock.
+   * @returns A touple where [0] = true and [1] = lock-until-block if the script is a lock script; [0] = false and [1] = 0 otherwise.
    */
   private static isRedeemScriptALockScript (redeemScript: Script): [boolean, number] {
 
