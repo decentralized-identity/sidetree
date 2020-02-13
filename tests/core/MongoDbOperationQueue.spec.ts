@@ -65,8 +65,8 @@ describe('MongoDbOperationQueue', async () => {
     for (let i = 0; i < 5; i++) {
       peekedOperations = await operationQueue.peek(2);
       expect(peekedOperations.length).toEqual(2);
-      expect(peekedOperations[0].toString()).toEqual(queuedOperations[0].operationBuffer.toString());
-      expect(peekedOperations[1].toString()).toEqual(queuedOperations[1].operationBuffer.toString());
+      expect(peekedOperations[0].operationBuffer).toEqual(queuedOperations[0].operationBuffer);
+      expect(peekedOperations[1].operationBuffer).toEqual(queuedOperations[1].operationBuffer);
     }
   });
 
@@ -82,11 +82,11 @@ describe('MongoDbOperationQueue', async () => {
     dequeuedOperations = await operationQueue.dequeue(2);
     let remainingOperations = await operationQueue.peek(operationCount);
     expect(dequeuedOperations.length).toEqual(2);
-    expect(dequeuedOperations[0].toString()).toEqual(queuedOperations[0].operationBuffer.toString());
-    expect(dequeuedOperations[1].toString()).toEqual(queuedOperations[1].operationBuffer.toString());
+    expect(dequeuedOperations[0].operationBuffer).toEqual(queuedOperations[0].operationBuffer);
+    expect(dequeuedOperations[1].operationBuffer).toEqual(queuedOperations[1].operationBuffer);
 
     expect(remainingOperations.length).toEqual(1);
-    expect(remainingOperations[0].toString()).toEqual(queuedOperations[2].operationBuffer.toString());
+    expect(remainingOperations[0].operationBuffer).toEqual(queuedOperations[2].operationBuffer);
   });
 
   it('should check if an operation of the given DID unique suffix exists correctly.', async () => {

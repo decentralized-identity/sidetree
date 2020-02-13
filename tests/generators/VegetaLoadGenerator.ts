@@ -1,6 +1,6 @@
 import * as fs from 'fs';
+import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import Did from '../../lib/core/versions/latest/Did';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import OperationGenerator from './OperationGenerator';
 
@@ -19,7 +19,7 @@ export default class VegetaLoadGenerator {
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
    * @param hashAlgorithmInMultihashCode The hash algorithm in Multihash code in DEC (not in HEX).
    */
-  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string, hashAlgorithmInMultihashCode: number) {
+  public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
     const keyId = '#key1';
 
     // Make directories needed by the request generator.
@@ -43,17 +43,16 @@ export default class VegetaLoadGenerator {
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         publicKey,
-        privateKey,
         signingPublicKey,
         recoveryOtpHash,
         update1OtpHash,
         services
       );
-      const createPayload = JSON.parse(createOperationBuffer.toString()).payload;
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
 
       // Compute the DID unique suffix from the generated Create payload.
-      const didUniqueSuffix = Did.getUniqueSuffixFromEncodeDidDocument(createPayload, hashAlgorithmInMultihashCode);
+      const createOperation = await CreateOperation.parse(createOperationBuffer);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
 
       // Generate an Update payload.
       const updatePayload = {

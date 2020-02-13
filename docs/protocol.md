@@ -22,11 +22,10 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 | DID Document          | A document containing metadata of a DID, see [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
 | Operation             | A change to a DID Document.                                                    |
-| Operation hash        | The hash of the encoded payload of an _operation request_.                     |
 | Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
-| Original DID Document | A DID Document that is used in create operation to generate the DID.           |
 | Recovery key          | A key that is used to perform recovery or delete operation.                    |
 | Sidetree node         | A logical server executing Sidetree protocol rules.                            |
+| Suffix data           | Data required to deterministically generate a DID .                            |
 | Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
 
 
@@ -59,23 +58,16 @@ An update operation to a DID Document contains only the changes from the previou
 
 > NOTE: Create and recover operations require a complete DID Document as input.
 
-### Sidetree Operation Hashes
+## Sidetree DID Unique Suffix
+A Sidetree _DID unique suffix_ is the globally unique portion of a DID. It is computed deterministically from the following data (_suffix data) supplied in a create operation request:
 
-An _operation hash_ is the hash of the _encoded payload_ of a Sidetree operation request. The exact request schema for all operations are defined in [Sidetree REST API](#sidetree-rest-api) section.
+1. Recovery key.
+1. Document hash.
+1. Hash of one-time password for recovery.
 
-## Sidetree DID and Original DID Document
-A Sidetree DID is intentionally the hash of the encoded DID Document given as the create operation payload (_original DID Document_), prefixed by the Sidetree method name. Given how _operation hash_ is computed, A DID is also the operation hash of the initial create operation.
+A requester can deterministically compute the DID before the create operation is anchored on the blockchain.
 
-Since the requester is in control of the _original DID Document_, the requester can deterministically calculate the DID before the create operation is anchored on the blockchain.
-
-A valid _original DID Document_ must be a valid generic DID Document that adheres to the following additional Sidetree protocol specific rules:
-1. The document must NOT have the `id` property.
-1. The document must contain at least 1 entry in the `publicKey` array property.
-1. The `id` property of a `publickey` element must be specified and be a fragment (e.g. `#key1`).
-1. Can have `service` property.
-1. If an Identity Hub `serviceEndpoint` is desired, an entry must exist in the `service` array that conforms to the Identity Hub Service Endpoint descriptor schema.
-
-See [DID Create API](#original-did-document-example) section for an example of an original DID Document.
+See [DID Create API](#DID-and-DID-Document-Creation) section for detail on how to construct a create operation request.
 
 
 ## Unpublished DID Resolution
@@ -84,7 +76,7 @@ DIDs may include attached values that are used in resolution and other activitie
 
 Many DID Methods feature a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying trust system (i.e. blockchain, ledger). The community has recognized the need for a mechanism to support resolution and use of identifiers during this period. As such, the community will introduce a _Generic DID Parameter_ `initial-values` that any DID method can use to signify initial state variables during this period. 
 
-Sidetree uses the `initial-values` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `initial-values` DID Parameter to the DID, with the value being the encoded string of the _original DID Document_.
+Sidetree uses the `initial-values` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `initial-values` DID Parameter to the DID, with the value being the encoded string of the _suffix data_.
 
 e.g. `did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>`.
 
@@ -262,33 +254,20 @@ A _Sidetree node_ exposes a set of REST API that enables the creation of new DID
 
 
 ### JSON Web Signature (JWS)
-Every operation request sent to a Sidetree node __must__ be signed using the __flattened JWS JSON serialization__ scheme.
+Sidetree API uses __flattened JWS JSON serialization__ scheme when content need to be protected.
 
 The JWS operation request header must be protected and be encoded in the following schema:
 
 #### Protected header schema
 ```json
 {
-  "kid": "ID of the key used to sign the original DID Document.",
+  "kid": "ID of the signing key.",
   "alg": "ES256K"
-}
-```
-
-#### JWS operation Create Request Example
-```http
-POST / HTTP/1.1
-
-{
-  "header": "ewogICJvcGVyYXRpb24iOiAiY3JlYXRlIiwKICAia2lkIjogImtleTEiLAogICJhbGciOiAiRVMyNTZLIgp9",
-  "payload": "eyJAY29udGV4dCI6Imh0dHBzOi8vdzNpZC5vcmcvZGlkL3YxIiwicHVibGljS2V5IjpbeyJpZCI6IiNrZXkxIiwidHlwZSI6IlNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTgiLCJwdWJsaWNLZXlIZXgiOiIwMmY0OTgwMmZiM2UwOWM2ZGQ0M2YxOWFhNDEyOTNkMWUwZGFkMDQ0YjY4Y2Y4MWNmNzA3OTQ5OWVkZmQwYWE5ZjEifSx7ImlkIjoiI2tleTIiLCJ0eXBlIjoiUnNhVmVyaWZpY2F0aW9uS2V5MjAxOCIsInB1YmxpY0tleVBlbSI6Ii0tLS0tQkVHSU4gUFVCTElDIEtFWS4yLkVORCBQVUJMSUMgS0VZLS0tLS0ifV0sInNlcnZpY2UiOlt7InR5cGUiOiJJZGVudGl0eUh1YiIsInB1YmxpY0tleSI6IiNrZXkxIiwic2VydmljZUVuZHBvaW50Ijp7IkBjb250ZXh0Ijoic2NoZW1hLmlkZW50aXR5LmZvdW5kYXRpb24vaHViIiwiQHR5cGUiOiJVc2VyU2VydmljZUVuZHBvaW50IiwiaW5zdGFuY2VzIjpbImRpZDpiYXI6NDU2IiwiZGlkOnphejo3ODkiXX19XX0",
-  "signature": "mAJp4ZHwY5UMA05OEKvoZreRo0XrYe77s3RLyGKArG85IoBULs4cLDBtdpOToCtSZhPvCC2xOUXMGyGXDmmEHg"
 }
 ```
 
 ### DID and DID Document Creation
 Use this API to create a Sidetree DID and its initial state.
-
-An encoded _original DID Document_ must be supplied as the request payload, see [Original DID Document](#Sidetree-DID-and-Original-DID-Document) section for the requirements of a valid original DID Document.
 
 #### Request path
 ```http
@@ -300,42 +279,44 @@ POST / HTTP/1.1
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
-#### Request body schema
-```json
-{
-  "protected": "Encoded protected header.",
-  "payload": "Encoded create payload JSON object defined by the schema below.",
-  "signature": "Encoded signature."
-}
-```
 
-#### Create operation payload schema
+#### Create operation request body schema
 ```json
 {
   "type": "create",
-  "didDocument": "Encoded original DID Document",
-  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
-  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "suffixData": "Encoded JSON object containing data used to compute the unique DID suffix.",
+  "operationData": "Encoded JSON object containing create operation data."
 }
 ```
 
-#### Original DID Document example
+#### Suffix data schema
 ```json
 {
-  "id": "someIdasdf",
-  "@context": "https://w3id.org/did/v1",
+  "operationDataHash": "Hash of the encoded operation data string.",
+  "recoveryKey": {
+    "publicKeyHex": "The recovery public key as a HEX string."
+  },
+  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
+}
+```
+
+#### Create operation data schema
+```json
+{
+    "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+    "document": "Opaque content."
+}
+```
+
+#### Opaque document example
+```json
+{
   "publicKey": [
     {
       "id": "#key1",
       "type": "Secp256k1VerificationKey2018",
       "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1",
       "usage": "signing"
-    },
-    {
-      "id": "#key2",
-      "type": "RsaVerificationKey2018",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY.2.END PUBLIC KEY-----",
-      "usage": "recovery"
     }
   ],
   "service": [
@@ -401,7 +382,7 @@ Two forms of string can be passed in the URI:
    e.g.
    ```did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A;initial-values=ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ```
 
-   Standard resolution is performed if the DID is found to registered on the blockchain. If the DID Document cannot be found, the encoded DID Document given in the `initial-values` DID parameter is used directly to generate and return as the resolved DID Document, in which case the supplied encoded DID Document is subject to the same validation as an _original DID Document_ in a create operation.
+   Standard resolution is performed if the DID is found to registered on the blockchain. If the DID cannot be found, the data given in the `initial-values` DID parameter is used directly to generate and resolve the DID.
 
 #### Request path
 ```http
@@ -414,12 +395,12 @@ None.
 #### Request body schema
 None.
 
-#### Request example - DID
+#### Request example
 ```http
 GET /did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A HTTP/1.1
 ```
 
-#### Request example - Method name prefixed, encoded original DID Document
+#### Request example - Resolution request with initial values.
 ```http
 GET /did:sidetree:exKwW0HjS5y4zBtJ7vYDwglYhtckdO15JDt1j5F5Q0A;initial-values=ewogICAgICAiQGNvbnRleHQiOiAiaHR0cHM6Ly93M2lkLm9yZy9kaWQvdjEiLAogICAgICAicHVibGljS2V5IjogWwogICAgICAgIHsKICAgICAgICAgICAgImlkIjogIiNrZXkxIiwKICAgICAgICAgICAgInR5cGUiOiAiU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOCIsCiAgICAgICAgICAgICJwdWJsaWNLZXlIZXgiOiAiMDM0ZWUwZjY3MGZjOTZiYjc1ZThiODljMDY4YTE2NjUwMDdhNDFjOTg1MTNkNmE5MTFiNjEzN2UyZDE2ZjFkMzAwIgogICAgICAgIH0KICAgICAgXQogICAgfQ HTTP/1.1
 ```

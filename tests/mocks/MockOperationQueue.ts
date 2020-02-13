@@ -1,4 +1,5 @@
 import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
+import QueuedOperationModel from '../../lib/core/versions/latest/models/QueuedOperationModel';
 
 /**
  * A mock in-memory operation queue used by the Batch Writer.
@@ -12,27 +13,31 @@ export default class MockOperationQueue implements IOperationQueue {
     this.operations.set(didUniqueSuffix, [this.latestTimestamp, operationBuffer]);
   }
 
-  async dequeue (count: number): Promise<Buffer[]> {
+  async dequeue (count: number): Promise<QueuedOperationModel[]> {
     // Sort the entries by their timestamp.
     // If compare function returns < 0, a is before b, vice versa.
     const sortedEntries = Array.from(this.operations.entries()).sort((a, b) => a[1][0] - b[1][0]);
-    const sortedKeys = sortedEntries.map(entry => entry[0]);
-    const sortedBuffers = sortedEntries.map(entry => entry[1][1]);
+    const sortedQueuedOperations = sortedEntries.map(entry => {
+      return { didUniqueSuffix: entry[0], operationBuffer: entry[1][1] };
+    });
 
-    const bufferBatch = sortedBuffers.slice(0, count);
+    const sortedKeys = sortedEntries.map(entry => entry[0]);
     const keyBatch = sortedKeys.slice(0, count);
     keyBatch.forEach((key) => this.operations.delete(key));
 
-    return bufferBatch;
+    const operationBatch = sortedQueuedOperations.slice(0, count);
+    return operationBatch;
   }
 
-  async peek (count: number): Promise<Buffer[]> {
+  async peek (count: number): Promise<QueuedOperationModel[]> {
     // Sort the entries by their timestamp.
-    const sortedValues = Array.from(this.operations.values()).sort((a, b) => a[0] - b[0]);
-    const sortedBuffers = sortedValues.map(entry => entry[1]);
+    const sortedEntries = Array.from(this.operations.entries()).sort((a, b) => a[1][0] - b[1][0]);
+    const sortedQueuedOperations = sortedEntries.map(entry => {
+      return { didUniqueSuffix: entry[0], operationBuffer: entry[1][1] };
+    });
 
-    const bufferBatch = sortedBuffers.slice(0, count);
-    return bufferBatch;
+    const operationBatch = sortedQueuedOperations.slice(0, count);
+    return operationBatch;
   }
 
   async contains (didUniqueSuffix: string): Promise<boolean> {

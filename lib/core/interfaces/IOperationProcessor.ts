@@ -1,4 +1,4 @@
-import AnchoredOperationModel from '../models/AnchoredOperationModel';
+import NamedAnchoredOperationModel from '../models/NamedAnchoredOperationModel';
 import DidResolutionModel from '../models/DidResolutionModel';
 
 /**
@@ -18,7 +18,7 @@ export default interface IOperationProcessor {
    *        The container object that contains the metadata needed for applying the operation and the reference to the DID document to be modified.
    */
   apply (
-    operation: AnchoredOperationModel,
+    operation: NamedAnchoredOperationModel,
     didResolutionModel: DidResolutionModel
   ): Promise<ApplyResult>;
 }

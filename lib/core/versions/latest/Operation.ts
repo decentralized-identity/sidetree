@@ -1,4 +1,4 @@
-import DidPublicKeyModel from './models/DidPublicKeyModel';
+import CreateOperation from './CreateOperation';
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
@@ -7,7 +7,9 @@ import Jws from './util/Jws';
 import JwsModel from './models/JwsModel';
 import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
+import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
+import PublicKeyModel from './models/PublicKeyModel';
 import SidetreeError from '../../SidetreeError';
 
 /**
@@ -83,11 +85,32 @@ export default class Operation {
   }
 
   /**
+   * Parses the given buffer into an `IOperation`.
+   */
+  public static async parse (operationBuffer: Buffer): Promise<OperationModel> {
+    try {
+      // Parse request buffer into a JS object.
+      const operationJsonString = operationBuffer.toString();
+      const operationObject = JSON.parse(operationJsonString);
+      const operationType = operationObject.type;
+
+      if (operationType === OperationType.Create) {
+        return CreateOperation.parseObject(operationObject, operationBuffer);
+      } else {
+        throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
+      }
+    } catch {
+      // NOTE: This is a temporary fork in code path, will be removed once issue #266 is completed.
+      return Operation.create(operationBuffer);
+    }
+  }
+
+  /**
    * Verifies the operation is signed correctly.
    * @param publicKey The public key used for verification.
    * @returns true if signature is successfully verified, false otherwise.
    */
-  public async verifySignature (publicKey: DidPublicKeyModel): Promise<boolean> {
+  public async verifySignature (publicKey: PublicKeyModel): Promise<boolean> {
     const verified = await Jws.verifySignature(this.encodedProtectedHeader, this.encodedPayload, this.signature, publicKey);
     return verified;
   }
