@@ -127,7 +127,8 @@ export default class LockResolver {
     return redeemScript.toHex().endsWith(publicKeyHashOutputAsHex);
   }
 
-  private static createScriptFromHexInput (redeemScriptAsHex: string): Script {
+  private static createScript (redeemScriptAsHex: string): Script {
+
     try {
       const redeemScriptAsBuffer = Buffer.from(redeemScriptAsHex, 'hex');
 
