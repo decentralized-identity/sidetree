@@ -2,6 +2,7 @@ import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import SidetreeError from '../../SidetreeError';
 import { Binary, Collection, MongoClient, Db } from 'mongodb';
+import QueuedOperationModel from './models/QueuedOperationModel';
 
 /**
  * Sidetree operation stored in MongoDb.
@@ -64,7 +65,7 @@ export default class MongoDbOperationQueue implements IOperationQueue {
     }
   }
 
-  async dequeue (count: number): Promise<Buffer[]> {
+  async dequeue (count: number): Promise<QueuedOperationModel[]> {
     if (count <= 0) {
       return [];
     }
@@ -73,10 +74,10 @@ export default class MongoDbOperationQueue implements IOperationQueue {
     const lastOperation = queuedOperations[queuedOperations.length - 1];
     await this.collection!.deleteMany({ _id: { $lte: lastOperation._id } });
 
-    return queuedOperations.map((queuedOperation: IMongoQueuedOperation) => queuedOperation.operationBufferBsonBinary.buffer);
+    return queuedOperations.map((operation) => MongoDbOperationQueue.convertToQueuedOperationModel(operation));
   }
 
-  async peek (count: number): Promise<Buffer[]> {
+  async peek (count: number): Promise<QueuedOperationModel[]> {
     if (count <= 0) {
       return [];
     }
@@ -84,7 +85,7 @@ export default class MongoDbOperationQueue implements IOperationQueue {
     // NOTE: `_id` is the default index that is sorted based by create time.
     const queuedOperations = await this.collection!.find().sort({ _id : 1 }).limit(count).toArray();
 
-    return queuedOperations.map((queuedOperation: IMongoQueuedOperation) => queuedOperation.operationBufferBsonBinary.buffer);
+    return queuedOperations.map((operation) => MongoDbOperationQueue.convertToQueuedOperationModel(operation));
   }
 
   /**
@@ -124,5 +125,12 @@ export default class MongoDbOperationQueue implements IOperationQueue {
     }
 
     return collection;
+  }
+
+  private static convertToQueuedOperationModel (mongoQueuedOperation: IMongoQueuedOperation): QueuedOperationModel {
+    return {
+      didUniqueSuffix: mongoQueuedOperation.didUniqueSuffix,
+      operationBuffer: mongoQueuedOperation.operationBufferBsonBinary.buffer
+    };
   }
 }

@@ -1,3 +1,5 @@
+import QueuedOperationModel from '../models/QueuedOperationModel';
+
 /**
  * An abstraction of a queue of operations used by the Batch Writer.
  */
@@ -12,12 +14,12 @@ export default interface IOperationQueue {
   /**
    * Removes the given count of operation buffers from the beginning of the queue.
    */
-  dequeue (count: number): Promise<Buffer[]>;
+  dequeue (count: number): Promise<QueuedOperationModel[]>;
 
   /**
    * Fetches the given count of operation buffers from the beginning of the queue without removing them.
    */
-  peek (count: number): Promise<Buffer[]>;
+  peek (count: number): Promise<QueuedOperationModel[]>;
 
   /**
    * Checks to see if the queue already contains an operation for the given DID unique suffix.

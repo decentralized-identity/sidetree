@@ -4,6 +4,7 @@ import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import InternalDocumentModel from './models/InternalDocumentModel';
 import JsonAsync from './util/JsonAsync';
 import SidetreeError from '../../SidetreeError';
 
@@ -20,6 +21,23 @@ export default class Document {
     Document.addDidToDocument(originalDidDocument, did.shortForm);
 
     return originalDidDocument;
+  }
+
+  /**
+   * Transforms the given internal document model into a DID Document.
+   */
+  public static transformToDidDocument (didMethodName: string, internalDocumentModel: InternalDocumentModel): any {
+    const did = didMethodName + internalDocumentModel.didUniqueSuffix;
+    const didDocument = {
+      '@context': 'https://w3id.org/did/v1',
+      publicKey: internalDocumentModel.document.publicKey,
+      service: internalDocumentModel.document.service,
+      recoveryKey: internalDocumentModel.recoveryKey
+    };
+
+    Document.addDidToDocument(didDocument, did);
+
+    return didDocument;
   }
 
   /**

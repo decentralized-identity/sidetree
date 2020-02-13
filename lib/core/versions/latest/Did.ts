@@ -97,13 +97,4 @@ export default class Did {
     const did = `${didMethodName}${didUniqueSuffix};${Did.initialValuesParameterPrefix}${encodedOriginalDidDocument}`;
     return did;
   }
-  /**
-   * Gets the unique portion of the DID generated from an encoded DID Document. e.g. "did:sidetree:12345" -> "12345"
-   */
-  public static getUniqueSuffixFromEncodeDidDocument (encodedDidDocument: string, hashAlgorithmAsMultihashCode: number): string {
-    const didDocumentBuffer = Buffer.from(encodedDidDocument);
-    const multihash = Multihash.hash(didDocumentBuffer, hashAlgorithmAsMultihashCode);
-    const encodedMultihash = Encoder.encode(multihash);
-    return encodedMultihash;
-  }
 }
