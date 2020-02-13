@@ -7,7 +7,7 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
-import { Address, Networks, PrivateKey, Script } from 'bitcore-lib';
+import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
 
 function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddress: Address): Script {
   const lockUntilBlockBuffer = Buffer.alloc(3);
@@ -20,12 +20,24 @@ function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddres
                .add(Script.buildPublicKeyHashOut(targetWalletAddress));
 }
 
+function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, unlockAtBlock: number | undefined): any {
+  return {
+    isScriptValid: isScriptValid,
+    owner: owner,
+    unlockAtBlock: unlockAtBlock
+  };
+}
+
 describe('LockResolver', () => {
 
-  let validTestPrivateKey = new PrivateKey(undefined, Networks.testnet);
-  let validTestWalletAddress = validTestPrivateKey.toAddress();
-  let validTestAddressAsBuffer = (validTestWalletAddress as any).toBuffer();
-  let validTestWalletImportString = validTestPrivateKey.toWIF();
+  const validTestPrivateKey = new PrivateKey(undefined, Networks.testnet);
+  const validTestWalletAddress = validTestPrivateKey.toAddress();
+
+  const validTestPublicKey = validTestPrivateKey.toPublicKey();
+  const validPublicKeyHashOutBuffer = crypto.Hash.sha256ripemd160(validTestPublicKey.toBuffer());
+  const validPublicKeyHashOutString = validPublicKeyHashOutBuffer.toString('hex');
+
+  const validTestWalletImportString = validTestPrivateKey.toWIF();
 
   let lockResolver: LockResolver;
 
@@ -41,8 +53,7 @@ describe('LockResolver', () => {
 
       const mockLockIdentifier: LockIdentifier = {
         transactionId: 'some transactoin id',
-        redeemScriptAsHex: validScript.toHex(),
-        walletAddressAsBuffer: validTestAddressAsBuffer
+        redeemScriptAsHex: validScript.toHex()
       };
 
       const mockTransaction: BitcoinTransactionModel = {
@@ -53,10 +64,11 @@ describe('LockResolver', () => {
         ]
       };
 
+      const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockBlockInput);
+
       const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTransaction));
-      const createScriptSpy = spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(validScript);
-      const checkLockScriptSpy = spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([true, lockBlockInput]);
-      const payToWalletSpy = spyOn(LockResolver as any, 'isRedeemScriptPayingToTargetWallet').and.returnValue(true);
+      const createScriptSpy = spyOn(LockResolver as any, 'createScript').and.returnValue(validScript);
+      const checkLockScriptSpy = spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
       const payToScriptSpy = spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(true);
 
       const mockSerializedLockIdentifier = 'mocked-locked-identifier';
@@ -66,7 +78,7 @@ describe('LockResolver', () => {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
         lockEndTransactionTime: lockBlockInput,
-        linkedWalletAddress: validTestWalletAddress.toString()
+        owner: validPublicKeyHashOutString
       };
 
       const actual = await lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier);
@@ -75,7 +87,6 @@ describe('LockResolver', () => {
       expect(getTxnSpy).toHaveBeenCalledWith(mockLockIdentifier.transactionId);
       expect(createScriptSpy).toHaveBeenCalledWith(mockLockIdentifier.redeemScriptAsHex);
       expect(checkLockScriptSpy).toHaveBeenCalled();
-      expect(payToWalletSpy).toHaveBeenCalledWith(validScript, validTestWalletAddress);
       expect(payToScriptSpy).toHaveBeenCalledWith(mockTransaction.outputs[0], validScript);
     });
 
@@ -83,13 +94,14 @@ describe('LockResolver', () => {
 
       const mockLockIdentifier: LockIdentifier = {
         transactionId: 'some transactoin id',
-        redeemScriptAsHex: 'some mock script as hex',
-        walletAddressAsBuffer: validTestAddressAsBuffer
+        redeemScriptAsHex: 'some mock script as hex'
       };
 
+      const mockLockScriptVerifyResult = createLockScriptVerifyResult(false, undefined, undefined);
+
       const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction');
-      spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(Script.empty());
-      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([false, 0]);
+      spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
+      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
 
       await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
         () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
@@ -99,33 +111,11 @@ describe('LockResolver', () => {
       expect(getTxnSpy).not.toHaveBeenCalled();
     });
 
-    it('should throw if redeem script is not paying to the target wallet.', async () => {
-
-      const mockLockIdentifier: LockIdentifier = {
-        transactionId: 'some transactoin id',
-        redeemScriptAsHex: 'validScript to - Hex',
-        walletAddressAsBuffer: validTestAddressAsBuffer
-      };
-
-      const getTxnSpy = spyOn(lockResolver['bitcoinClient'], 'getRawTransaction');
-      spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(Script.empty());
-      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([true, 8765]);
-      spyOn(LockResolver as any, 'isRedeemScriptPayingToTargetWallet').and.returnValue(false);
-
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
-        () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
-        ErrorCode.LockResolverRedeemScriptIsNotPayingToWallet
-      );
-
-      expect(getTxnSpy).not.toHaveBeenCalled();
-    });
-
     it('should throw if the transaction output is not paying to the linked wallet.', async () => {
 
       const mockLockIdentifier: LockIdentifier = {
         transactionId: 'some transactoin id',
-        redeemScriptAsHex: 'validScript to - Hex',
-        walletAddressAsBuffer: validTestAddressAsBuffer
+        redeemScriptAsHex: 'validScript to - Hex'
       };
 
       const mockTransaction: BitcoinTransactionModel = {
@@ -136,10 +126,11 @@ describe('LockResolver', () => {
         ]
       };
 
+      const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, 123);
+
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTransaction));
-      spyOn(LockResolver as any, 'createScriptFromHexInput').and.returnValue(Script.empty());
-      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue([true, 8765]);
-      spyOn(LockResolver as any, 'isRedeemScriptPayingToTargetWallet').and.returnValue(true);
+      spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
+      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
       spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(false);
 
       await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
@@ -155,18 +146,20 @@ describe('LockResolver', () => {
       const lockBlockInput = 1665191;
       const validScript = createValidLockRedeemScript(lockBlockInput, validTestWalletAddress);
 
-      const [isValid, outputBlock] = LockResolver['isRedeemScriptALockScript'](validScript);
-      expect(isValid).toBeTruthy();
-      expect(outputBlock).toEqual(lockBlockInput);
+      const expectedOutput = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockBlockInput);
+
+      const actual = LockResolver['isRedeemScriptALockScript'](validScript);
+      expect(actual).toEqual(expectedOutput);
     });
 
     it('should return false and 0 for block height if the script is invalid', async () => {
       const validScript = createValidLockRedeemScript(1234, validTestWalletAddress);
       const invalidScript = validScript.add(114); // add an invalid op code
 
-      const [isValid, outputBlock] = LockResolver['isRedeemScriptALockScript'](invalidScript);
-      expect(isValid).toBeFalsy();
-      expect(outputBlock).toEqual(0);
+      const expectedOutput = createLockScriptVerifyResult(false, undefined, undefined);
+
+      const actual = LockResolver['isRedeemScriptALockScript'](invalidScript);
+      expect(actual).toEqual(expectedOutput);
     });
   });
 
@@ -195,30 +188,13 @@ describe('LockResolver', () => {
     });
   });
 
-  describe('isRedeemScriptPayingToTargetWallet', () => {
-    it('should return true if the script is paying to the target wallet.', async () => {
-      const validScript = createValidLockRedeemScript(4758759, validTestWalletAddress);
-
-      const result = LockResolver['isRedeemScriptPayingToTargetWallet'](validScript, validTestWalletAddress);
-      expect(result).toBeTruthy();
-    });
-
-    it('should return false for any other address.', async () => {
-      const validScript = createValidLockRedeemScript(198076, validTestWalletAddress);
-      const someOtherWallet = new PrivateKey(undefined, Networks.testnet).toAddress();
-
-      const result = LockResolver['isRedeemScriptPayingToTargetWallet'](validScript, someOtherWallet);
-      expect(result).toBeFalsy();
-    });
-  });
-
-  describe('createScriptFromHexInput', () => {
+  describe('createScript', () => {
     it('should return script from the hex.', async () => {
 
       const validScript = createValidLockRedeemScript(12345, validTestWalletAddress);
       validScript.add(114);
 
-      const actual = LockResolver['createScriptFromHexInput'](validScript.toHex());
+      const actual = LockResolver['createScript'](validScript.toHex());
       expect(actual.toASM()).toEqual(validScript.toASM());
     });
 
@@ -226,7 +202,7 @@ describe('LockResolver', () => {
       spyOn(Buffer,'from').and.throwError('som error');
 
       JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
-        () => LockResolver['createScriptFromHexInput']('some input'),
+        () => LockResolver['createScript']('some input'),
         ErrorCode.LockResolverRedeemScriptIsInvalid);
     });
   });

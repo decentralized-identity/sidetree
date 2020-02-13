@@ -20,7 +20,6 @@ export default class BitcoinClient {
   /** Wallet private key */
   private readonly walletPrivateKey: PrivateKey;
   private readonly walletAddress: Address;
-  private readonly walletAddressAsBuffer: Buffer;
 
   constructor (
     private bitcoinPeerUri: string,
@@ -38,7 +37,6 @@ export default class BitcoinClient {
     }
 
     this.walletAddress = this.walletPrivateKey.toAddress();
-    this.walletAddressAsBuffer = (this.walletAddress as any).toBuffer();
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
@@ -264,13 +262,6 @@ export default class BitcoinClient {
     const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
 
     return (inputSatoshiSum - outputSatoshiSum);
-  }
-
-  /**
-   * Gets the public address for the linked wallet.
-   */
-  public getWalletAddressAsBuffer (): Buffer {
-    return this.walletAddressAsBuffer;
   }
 
   private async addWatchOnlyAddressToWallet (publicKeyAsHex: string, rescan: boolean): Promise<void> {

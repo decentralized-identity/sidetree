@@ -1,3 +1,4 @@
+import base64url from 'base64url';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
@@ -9,8 +10,7 @@ describe('LockIdentifierSerializer', () => {
     it('should serialize and deserialize it correctly.', async () => {
       const identifier: LockIdentifier = {
         transactionId: 'some transaction id',
-        redeemScriptAsHex: 'redeem script -- input',
-        walletAddressAsBuffer: Buffer.from('some weird wallet address')
+        redeemScriptAsHex: 'redeem script -- input'
       };
 
       const serialized = LockIdentifierSerializer.serialize(identifier);
@@ -26,9 +26,10 @@ describe('LockIdentifierSerializer', () => {
       const delimiter = LockIdentifierSerializer['delimiter'];
 
       const incorrectInput = `value1${delimiter}value2${delimiter}value3`;
+      const incorrectInputEncoded = base64url.encode(incorrectInput);
 
       JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
-        () => { LockIdentifierSerializer.deserialize(incorrectInput); },
+        () => { LockIdentifierSerializer.deserialize(incorrectInputEncoded); },
         ErrorCode.LockIdentifierIncorrectFormat);
     });
   });

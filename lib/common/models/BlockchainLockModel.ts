@@ -11,6 +11,6 @@ export default interface BlockchainLockModel {
   /** At this transaction time the lock is no longer valid */
   lockEndTransactionTime: number;
 
-  /** The wallet where the amount goes upon unlock */
-  linkedWalletAddress: string;
+  /** The destination where the amount goes upon unlock */
+  owner: string;
 }
