@@ -61,7 +61,7 @@ export default class MockBlockchain implements IBlockchain {
     this.latestTime = time;
   }
 
-  public async getFee (transactionNumber: number): Promise<number> {
-    throw Error('Not implemented. Inputs: ' + transactionNumber);
+  public async getFee (transactionTime: number): Promise<number> {
+    throw Error('Not implemented. Inputs: ' + transactionTime);
   }
 }

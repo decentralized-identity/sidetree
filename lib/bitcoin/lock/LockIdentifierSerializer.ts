@@ -1,6 +1,6 @@
 import base64url from 'base64url';
 import BitcoinError from '../BitcoinError';
-import LockIdentifier from '../models/LockIdentifierModel';
+import LockIdentifierModel from '../models/LockIdentifierModel';
 import ErrorCode from '../ErrorCode';
 
 /**
@@ -13,11 +13,10 @@ export default class LockIdentifierSerializer {
   /**
    * Returns the string representation of this identifier.
    */
-  public static serialize (lockIdentifier: LockIdentifier): string {
-    const walletAddressAsString = lockIdentifier.walletAddressAsBuffer.toString();
+  public static serialize (lockIdentifier: LockIdentifierModel): string {
     const delim = LockIdentifierSerializer.delimiter;
 
-    const concatenatedData = `${lockIdentifier.transactionId}${delim}${lockIdentifier.redeemScriptAsHex}${delim}${walletAddressAsString}`;
+    const concatenatedData = `${lockIdentifier.transactionId}${delim}${lockIdentifier.redeemScriptAsHex}`;
     return base64url.encode(concatenatedData);
   }
 
@@ -25,21 +24,17 @@ export default class LockIdentifierSerializer {
    * Gets this object from the serialized input.
    * @param serialized The serialized lock.
    */
-  public static deserialize (serialized: string): LockIdentifier {
+  public static deserialize (serialized: string): LockIdentifierModel {
     const decodedString = base64url.decode(serialized);
     const splitDecodedString = decodedString.split(LockIdentifierSerializer.delimiter);
 
-    if (splitDecodedString.length !== 3) {
+    if (splitDecodedString.length !== 2) {
       throw new BitcoinError(ErrorCode.LockIdentifierIncorrectFormat);
     }
 
-    const walletAddressAsString = splitDecodedString[2];
-    const walletAddressAsBuffer = Buffer.from(walletAddressAsString);
-
     return {
       transactionId: splitDecodedString[0],
-      redeemScriptAsHex: splitDecodedString[1],
-      walletAddressAsBuffer: walletAddressAsBuffer
+      redeemScriptAsHex: splitDecodedString[1]
     };
   }
 }

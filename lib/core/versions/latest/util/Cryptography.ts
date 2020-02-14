@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import DidPublicKeyModel from '../models/DidPublicKeyModel';
 import Encoder from '../Encoder';
 import KeyUsage from '../KeyUsage';
+import PublicKeyModel from '../models/PublicKeyModel';
 import { EcPrivateKey, PrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 const secp256k1 = require('secp256k1');
 
@@ -89,12 +90,8 @@ export default class Cryptography {
    * @param publicKey The public key to be used for verification.
    * @returns true if signature is successfully verified, false otherwise.
    */
-  public static async verifySignature (content: string, encodedSignature: string, publicKey: DidPublicKeyModel): Promise<boolean> {
+  public static async verifySignature (content: string, encodedSignature: string, publicKey: PublicKeyModel): Promise<boolean> {
     try {
-      if (publicKey.type !== 'Secp256k1VerificationKey2018') {
-        return false;
-      }
-
       let verified = false;
       if (publicKey.publicKeyHex !== undefined) {
         const hash = Cryptography.sha256hash(Buffer.from(content));

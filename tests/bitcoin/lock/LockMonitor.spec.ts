@@ -1,16 +1,16 @@
 import BitcoinLockTransactionModel from '../../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
-import BlockchainLockModel from '../../../lib/common/models/BlockchainLockModel';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
-import SavedLockTransactionModel from '../../../lib/bitcoin/models/SavedLockTransactionModel';
-import SavedLockTransactionType from '../../../lib/bitcoin/enums/SavedLockTransactionType';
+import LockTransactionModel from '../../../lib/bitcoin/models/LockTransactionModel';
+import LockTransactionType from '../../../lib/bitcoin/enums/LockTransactionType';
+import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
-fdescribe('LockMonitor', () => {
+describe('LockMonitor', () => {
 
   const validTestWalletImportString = 'cTpKFwqu2HqW4y5ByMkNRKAvkPxEcwpax5Qr33ibYvkp1KSxdji6';
 
@@ -28,13 +28,13 @@ fdescribe('LockMonitor', () => {
       const mockWalletBalance = 32430234 + lockMonitor['firstLockFeeAmountInSatoshis'] + 200;
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
-      const mockLockInfoSaved: SavedLockTransactionModel = {
+      const mockLockInfoSaved: LockTransactionModel = {
         desiredLockAmountInSatoshis: 125,
         createTimestamp: Date.now(),
         rawTransaction: 'raw transaction',
         redeemScriptAsHex: 'redeem script as hex',
         transactionId: 'transaction id',
-        type: SavedLockTransactionType.Create
+        type: LockTransactionType.Create
       };
 
       const createLockSpy = spyOn(lockMonitor as any,'createNewLockAndSaveItToDb').and.returnValue(Promise.resolve(mockLockInfoSaved));
@@ -80,13 +80,13 @@ fdescribe('LockMonitor', () => {
 
       const actual = await lockMonitor['createNewLockAndSaveItToDb'](desiredLockAmountInput);
 
-      const expectedLockInfoSaved: SavedLockTransactionModel = {
+      const expectedLockInfoSaved: LockTransactionModel = {
         desiredLockAmountInSatoshis: desiredLockAmountInput,
         createTimestamp: mockDateValue,
         rawTransaction: mockLockTxn.serializedTransactionObject,
         redeemScriptAsHex: mockLockTxn.redeemScriptAsHex,
         transactionId: mockLockTxn.transactionId,
-        type: SavedLockTransactionType.Create
+        type: LockTransactionType.Create
       };
       expect(actual).toEqual(expectedLockInfoSaved);
 
@@ -101,8 +101,7 @@ fdescribe('LockMonitor', () => {
     it('should renew the existing lock and save the updated information to the db', async () => {
       const mockCurrentLockId: LockIdentifier = {
         redeemScriptAsHex: 'redeem script as hex',
-        transactionId: 'transaction id',
-        walletAddressAsBuffer: Buffer.from('wallet address')
+        transactionId: 'transaction id'
       };
 
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
@@ -124,29 +123,29 @@ fdescribe('LockMonitor', () => {
       const mockDateValue = Date.now();
       spyOn(Date, 'now').and.returnValue(mockDateValue);
 
-      const currentLockInfoInput: BlockchainLockModel = {
+      const currentLockInfoInput: ValueTimeLockModel = {
         amountLocked: 1234,
         identifier: 'abc',
-        linkedWalletAddress: 'wallet address',
-        lockEndTransactionTime: 1234
+        unlockTransactionTime: 1234,
+        owner: 'some - owner'
       };
 
       // Ensure that the desired lock amount is not too much.
       const desiredLockAmountInput = currentLockInfoInput.amountLocked - mockRenewLockTxn.transactionFee;
       const actual = await lockMonitor['renewExistingLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput);
 
-      const expectedLockInfoSaved: SavedLockTransactionModel = {
+      const expectedLockInfoSaved: LockTransactionModel = {
         desiredLockAmountInSatoshis: desiredLockAmountInput,
         createTimestamp: mockDateValue,
         rawTransaction: mockRenewLockTxn.serializedTransactionObject,
         redeemScriptAsHex: mockRenewLockTxn.redeemScriptAsHex,
         transactionId: mockRenewLockTxn.transactionId,
-        type: SavedLockTransactionType.Relock
+        type: LockTransactionType.Relock
       };
       expect(actual).toEqual(expectedLockInfoSaved);
 
       const expectedNewLockBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
-      expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, currentLockInfoInput.lockEndTransactionTime, expectedNewLockBlock);
+      expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, currentLockInfoInput.unlockTransactionTime, expectedNewLockBlock);
       expect(lockStoreSpy).toHaveBeenCalledWith(expectedLockInfoSaved);
       expect(broadcastTxnSpy).not.toHaveBeenCalledBefore(lockStoreSpy);
     });
@@ -154,8 +153,7 @@ fdescribe('LockMonitor', () => {
     it('should throw if the renew fees are causing the new lock amount to be less than the desired lock.', async () => {
       const mockCurrentLockId: LockIdentifier = {
         redeemScriptAsHex: 'redeem script as hex',
-        transactionId: 'transaction id',
-        walletAddressAsBuffer: Buffer.from('wallet address')
+        transactionId: 'transaction id'
       };
 
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
@@ -177,11 +175,11 @@ fdescribe('LockMonitor', () => {
       const mockDateValue = Date.now();
       spyOn(Date, 'now').and.returnValue(mockDateValue);
 
-      const currentLockInfoInput: BlockchainLockModel = {
+      const currentLockInfoInput: ValueTimeLockModel = {
         amountLocked: 1234,
         identifier: 'abc',
-        linkedWalletAddress: 'wallet address',
-        lockEndTransactionTime: 1234
+        owner: 'wallet address',
+        unlockTransactionTime: 1234
       };
 
       // Ensure that the desired lock amount is more to cause the error
@@ -200,8 +198,7 @@ fdescribe('LockMonitor', () => {
     it('should release the lock and save the updated information to the db', async () => {
       const mockCurrentLockId: LockIdentifier = {
         redeemScriptAsHex: 'redeem script as hex',
-        transactionId: 'transaction id',
-        walletAddressAsBuffer: Buffer.from('wallet address')
+        transactionId: 'transaction id'
       };
 
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
@@ -220,23 +217,23 @@ fdescribe('LockMonitor', () => {
       const mockDateValue = Date.now();
       spyOn(Date, 'now').and.returnValue(mockDateValue);
 
-      const currentLockInfoInput: BlockchainLockModel = {
+      const currentLockInfoInput: ValueTimeLockModel = {
         amountLocked: 123,
         identifier: 'abc',
-        linkedWalletAddress: 'wallet address',
-        lockEndTransactionTime: 1234
+        owner: 'wallet address',
+        unlockTransactionTime: 1234
       };
 
       const desiredLockAmountInput = 2500;
       const actual = await lockMonitor['releaseLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput);
 
-      const expectedLockInfoSaved: SavedLockTransactionModel = {
+      const expectedLockInfoSaved: LockTransactionModel = {
         desiredLockAmountInSatoshis: desiredLockAmountInput,
         createTimestamp: mockDateValue,
         rawTransaction: mockReleaseLockTxn.serializedTransactionObject,
         redeemScriptAsHex: mockReleaseLockTxn.redeemScriptAsHex,
         transactionId: mockReleaseLockTxn.transactionId,
-        type: SavedLockTransactionType.ReturnToWallet
+        type: LockTransactionType.ReturnToWallet
       };
       expect(actual).toEqual(expectedLockInfoSaved);
 

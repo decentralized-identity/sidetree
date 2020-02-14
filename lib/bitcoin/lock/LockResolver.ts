@@ -1,12 +1,21 @@
 import BitcoinClient from '../BitcoinClient';
 import BitcoinError from '../BitcoinError';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
-import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
-import BlockchainLockModel from '../../common/models/BlockchainLockModel';
 import ErrorCode from '../ErrorCode';
-import LockIdentifier from '../models/LockIdentifierModel';
+import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
-import { Address, Script } from 'bitcore-lib';
+import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
+import { Script } from 'bitcore-lib';
+
+/** Structure (internal for this class) to hold the redeem script verification results */
+interface LockScriptVerifyResult {
+  /** whether or not the script was valid */
+  isScriptValid: boolean;
+  /** the public key hash of the target address when the script unlcoks; undefined if the script is not valid. */
+  publicKeyHash: string | undefined;
+  /** the block at which the amount gets unlocked; undefined if the script is not valid. */
+  unlockAtBlock: number | undefined;
+}
 
 /**
  * Encapsulates functionality for verifying a bitcoin lock created by this service.
@@ -24,35 +33,25 @@ export default class LockResolver {
    * @param lockIdentifier The lock identifier.
    * @returns The blockchain lock model if the specified identifier is verified; throws if verification fails.
    */
-  public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifier): Promise<BlockchainLockModel> {
+  public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<ValueTimeLockModel> {
 
     // The verifictation of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script
-    //   (B). The redeem script in the lock-identifier is paying to the wallet in the lock-identifier
-    //   (C). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier
+    //   (B). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier
     //
     // With above, we can verify that the amount is/was locked for the specified wallet in
     // the specified transaction.
 
     // (A). verify redeem script is a lock script
-    const redeemScriptObj = LockResolver.createScriptFromHexInput(lockIdentifier.redeemScriptAsHex);
-    const [isLockScript, lockUntilBlock] = LockResolver.isRedeemScriptALockScript(redeemScriptObj);
+    const redeemScriptObj = LockResolver.createScript(lockIdentifier.redeemScriptAsHex);
+    const scriptVerifyResult = LockResolver.isRedeemScriptALockScript(redeemScriptObj);
 
-    if (!isLockScript) {
+    if (!scriptVerifyResult.isScriptValid) {
       throw new BitcoinError(ErrorCode.LockResolverRedeemScriptIsNotLock, `${redeemScriptObj.toASM()}`);
     }
 
-    // (B). verify that the script is paying to the target wallet
-    const walletAddressObj = new Address(lockIdentifier.walletAddressAsBuffer);
-    const isLockScriptPayingTargetWallet = LockResolver.isRedeemScriptPayingToTargetWallet(redeemScriptObj, walletAddressObj);
-
-    if (!isLockScriptPayingTargetWallet) {
-      throw new BitcoinError(ErrorCode.LockResolverRedeemScriptIsNotPayingToWallet,
-                            `Script: ${redeemScriptObj.toASM()}; Wallet: ${walletAddressObj.toString()}`);
-    }
-
-    // (C). verify that the transaction is paying to the target redeem script
-    const lockTransaction = await this.fetchTransaction(lockIdentifier.transactionId);
+    // (B). verify that the transaction is paying to the target redeem script
+    const lockTransaction = await this.bitcoinClient.getRawTransaction(lockIdentifier.transactionId);
 
     const transactionIsPayingToTargetRedeemScript = lockTransaction.outputs.length > 0 &&
                                                     LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
@@ -68,22 +67,22 @@ export default class LockResolver {
     return {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
-      lockEndTransactionTime: lockUntilBlock,
-      linkedWalletAddress: walletAddressObj.toString()
+      unlockTransactionTime: scriptVerifyResult.unlockAtBlock!,
+      owner: scriptVerifyResult.publicKeyHash!
     };
   }
 
   /**
    * Checks whether the redeem script is indeed a lock script.
    * @param redeemScript The script to check.
-   * @returns A touple where [0] == true if the script is a lock script; false otherwise, [1] == if [0] is true then the lockUntilBlock.
+   * @returns The verify result object.
    */
-  private static isRedeemScriptALockScript (redeemScript: Script): [boolean, number] {
+  private static isRedeemScriptALockScript (redeemScript: Script): LockScriptVerifyResult {
 
     // Split the script into parts and verify each part
     const scriptAsmParts = redeemScript.toASM().split(' ');
 
-    // Verify different parts
+    // Verify different parts; [0] & [5] indeces are parsed only if the script is valid
     const isScriptValid =
       scriptAsmParts.length === 8 &&
       scriptAsmParts[1] === 'OP_NOP2' &&
@@ -93,14 +92,21 @@ export default class LockResolver {
       scriptAsmParts[6] === 'OP_EQUALVERIFY' &&
       scriptAsmParts[7] === 'OP_CHECKSIG';
 
-    if (isScriptValid) {
-      const lockUntilBlockBuffer = Buffer.from(scriptAsmParts[0], 'hex');
-      const lockUntilBlock = lockUntilBlockBuffer.readIntLE(0, lockUntilBlockBuffer.length);
+    let unlockAtBlock: number | undefined;
+    let publicKeyHash: string | undefined;
 
-      return [isScriptValid, lockUntilBlock];
+    if (isScriptValid) {
+      const unlockAtBlockBuffer = Buffer.from(scriptAsmParts[0], 'hex');
+      unlockAtBlock = unlockAtBlockBuffer.readIntLE(0, unlockAtBlockBuffer.length);
+
+      publicKeyHash = scriptAsmParts[5];
     }
 
-    return [isScriptValid, 0];
+    return {
+      isScriptValid: isScriptValid,
+      publicKeyHash: publicKeyHash,
+      unlockAtBlock: unlockAtBlock
+    };
   }
 
   /**
@@ -114,35 +120,14 @@ export default class LockResolver {
     return bitcoinOutput.scriptAsmAsString === targetScriptHashOut.toASM();
   }
 
-  /**
-   * Checks whether the specified redeem script is paying to the target wallet address.
-   * @param redeemScript The redeem script representing a lock script.
-   * @param targetWalletAddress The wallet address to be verified.
-   */
-  private static isRedeemScriptPayingToTargetWallet (redeemScript: Script, targetWalletAddress: Address): boolean {
-    // Convert the wallet address into the standard "publickeyhash" bitcoin output
-    const publicKeyHashOutput = Script.buildPublicKeyHashOut(targetWalletAddress);
-    const publicKeyHashOutputAsHex = publicKeyHashOutput.toHex();
+  private static createScript (redeemScriptAsHex: string): Script {
 
-    // If the above output is the suffix in the redeem script then it is paying to the target wallet
-    return redeemScript.toHex().endsWith(publicKeyHashOutputAsHex);
-  }
-
-  private static createScriptFromHexInput (redeemScriptAsHex: string): Script {
     try {
       const redeemScriptAsBuffer = Buffer.from(redeemScriptAsHex, 'hex');
 
       return new Script(redeemScriptAsBuffer);
     } catch (e) {
       throw BitcoinError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
-    }
-  }
-
-  private async fetchTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
-    try {
-      return this.bitcoinClient.getRawTransaction(transactionId);
-    } catch (e) {
-      throw BitcoinError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
     }
   }
 }

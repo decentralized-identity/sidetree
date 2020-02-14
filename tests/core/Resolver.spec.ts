@@ -1,7 +1,9 @@
+import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -36,22 +38,30 @@ describe('Resolver', () => {
       const [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
 
       // Create the initial create operation and insert it to the operation store.
-      const documentModel = Document.create([recoveryPublicKey, signingPublicKey], [serviceEndpoint]);
-      const createOperationPayload = {
+      const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+        recoveryPublicKey,
+        signingPublicKey,
+        firstRecoveryOtpHash,
+        firstUpdateOtpHash,
+        [serviceEndpoint]
+      );
+      const createOperation = await CreateOperation.parse(operationBuffer);
+      const namedAnchoredOperationModel = {
         type: OperationType.Create,
-        didDocument: documentModel,
-        nextRecoveryOtpHash: firstRecoveryOtpHash,
-        nextUpdateOtpHash: firstUpdateOtpHash
+        didUniqueSuffix: createOperation.didUniqueSuffix,
+        operationBuffer,
+        transactionNumber: 1,
+        transactionTime: 1,
+        operationIndex: 1
       };
-      const anchoredCreateOperation =
-        await OperationGenerator.createAnchoredOperation(createOperationPayload, recoveryPublicKey.id, recoveryPrivateKey, 1, 1, 1);
-      const didUniqueSuffix = anchoredCreateOperation.didUniqueSuffix;
-      await operationStore.put([anchoredCreateOperation]);
+
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+      await operationStore.put([namedAnchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
       const [updateOtpPriorToRecovery2, updateOtpHashPriorToRecovery2] = OperationGenerator.generateOtp();
       const updatePayloadPriorRecovery1 = OperationGenerator.createUpdatePayloadForAddingAKey(
-        anchoredCreateOperation,
+        didUniqueSuffix,
         firstUpdateOtp,
         '#new-key1',
         '000000000000000000000000000000000000000000000000000000000000000000',
@@ -70,7 +80,7 @@ describe('Resolver', () => {
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
-      expect(didDocument.publicKey.length).toEqual(3);
+      expect(didDocument.publicKey.length).toEqual(2);
       expect(didDocument.service![0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
@@ -86,7 +96,7 @@ describe('Resolver', () => {
         type: OperationType.Recover,
         didUniqueSuffix,
         recoveryOtp: firstRecoveryOtp,
-        newDidDocument: recoveryDocumentModel,
+        newDidDocument: Encoder.encode(JSON.stringify(recoveryDocumentModel)),
         nextRecoveryOtpHash: recoveryOtpHashAfterRecovery,
         nextUpdateOtpHash: update1OtpHashAfterRecovery
       };
@@ -97,7 +107,7 @@ describe('Resolver', () => {
       // Create an update operation after the recovery operation.
       const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const update1PayloadAfterRecovery = OperationGenerator.createUpdatePayloadForAddingAKey(
-        anchoredRecoveryOperation,
+        didUniqueSuffix,
         update1OtpAfterRecovery,
         '#newSigningKey2',
         '111111111111111111111111111111111111111111111111111111111111111111',

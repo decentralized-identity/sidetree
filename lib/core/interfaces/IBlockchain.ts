@@ -42,10 +42,10 @@ export default interface IBlockchain {
 
   /**
    * Fetches the normalized transaction fee used for proof-of-fee calculation, given the blockchain time.
-   * @param transactionNumber A valid Sidetree transaction number.
+   * @param transactionTime A valid Sidetree transaction time.
    *
-   * @throws SidetreeError with ErrorCode.BlockchainTimeOutOfRange if the input transaction number is less
+   * @throws SidetreeError with ErrorCode.BlockchainTimeOutOfRange if the input transaction transactionTime is less
    * than Sidetree genesis blockchain time or is later than the current blockchain time.
    */
-  getFee (transactionNumber: number): Promise<number>;
+  getFee (transactionTime: number): Promise<number>;
 }

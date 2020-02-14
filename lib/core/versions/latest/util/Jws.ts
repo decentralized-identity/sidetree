@@ -1,5 +1,5 @@
 import Cryptography from './Cryptography';
-import DidPublicKeyModel from '../models/DidPublicKeyModel';
+import PublicKeyModel from '../models/PublicKeyModel';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
@@ -14,7 +14,7 @@ export default class Jws {
     encodedProtectedHeader: string,
     encodedPayload: string,
     signature: string,
-    publicKey: DidPublicKeyModel
+    publicKey: PublicKeyModel
   ): Promise<boolean> {
     // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
     const jwsSigningInput = encodedProtectedHeader + '.' + encodedPayload;

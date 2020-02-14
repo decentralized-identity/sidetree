@@ -1,9 +1,12 @@
 import Did from './Did';
+import DidResolutionModel from '../../models/DidResolutionModel';
 import Document from './Document';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
 import Operation from './Operation';
+import OperationModel from './models/OperationModel';
+import OperationProcessor from './OperationProcessor';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
@@ -26,8 +29,8 @@ export default class RequestHandler implements IRequestHandler {
   public async handleOperationRequest (request: Buffer): Promise<ResponseModel> {
     console.info(`Handling operation request of size ${request.length} bytes...`);
 
-    // Perform common validation for any write request and parse it into an `Operation`.
-    let operation: Operation;
+    // Perform common validation for any write request and parse it into an `OperationModel`.
+    let operation: OperationModel;
     try {
       // Validate operation request size.
       if (request.length > ProtocolParameters.maxOperationByteSize) {
@@ -36,8 +39,7 @@ export default class RequestHandler implements IRequestHandler {
         throw new SidetreeError(ErrorCode.OperationExceedsMaximumSize, errorMessage);
       }
 
-      // Parse request into an Operation.
-      operation = Operation.create(request);
+      operation = await Operation.parse(request);
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
       if (await this.operationQueue.contains(operation.didUniqueSuffix)) {
@@ -68,13 +70,24 @@ export default class RequestHandler implements IRequestHandler {
       let response: ResponseModel;
       switch (operation.type) {
         case OperationType.Create:
-          const did = this.didMethodName + operation.didUniqueSuffix;
-          const didDocument = operation.didDocument!;
-          Document.addDidToDocument(didDocument, did);
+
+          const operationProcessor = new OperationProcessor(this.didMethodName);
+          const didResolutionModel: DidResolutionModel = {};
+          const operationWithMockedAnchorTime = {
+            didUniqueSuffix: operation.didUniqueSuffix,
+            type: OperationType.Create,
+            transactionTime: 0,
+            transactionNumber: 0,
+            operationIndex: 0,
+            operationBuffer: operation.operationBuffer
+          }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
+          await operationProcessor.apply(operationWithMockedAnchorTime, didResolutionModel);
+
+          const document = didResolutionModel.didDocument;
 
           response = {
             status: ResponseStatus.Succeeded,
-            body: didDocument
+            body: document
           };
           break;
         case OperationType.Update:

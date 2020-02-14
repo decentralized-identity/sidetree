@@ -5,7 +5,6 @@ import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileMod
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Blockchain from '../../lib/core/Blockchain';
 import Cas from '../../lib/core/Cas';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DownloadManager from '../../lib/core/DownloadManager';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
@@ -13,14 +12,12 @@ import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
-import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/core/SidetreeError';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
@@ -153,32 +150,12 @@ describe('Observer', async () => {
   });
 
   it('should process a valid operation batch successfully.', async () => {
-    // Prepare the mock response from the DownloadManager.
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-
-    const [recoveryPublicKey2, recoveryPrivateKey2] = await Cryptography.generateKeyPairHex('#key3', KeyUsage.recovery);
-    const [signingPublicKey2] = await Cryptography.generateKeyPairHex('#key4', KeyUsage.signing);
-
-    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const operation1Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+    const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
 
     const operationsBuffer = [
-      await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey,
-        recoveryPrivateKey,
-        signingPublicKey,
-        nextRecoveryOtpHash,
-        nextUpdateOtpHash,
-        services),
-      await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey2,
-        recoveryPrivateKey2,
-        signingPublicKey2,
-        nextRecoveryOtpHash,
-        nextUpdateOtpHash,
-        services)
+      operation1Data.createOperation.operationBuffer,
+      operation2Data.createOperation.operationBuffer
     ];
 
     // Generating batch file data.
@@ -198,10 +175,13 @@ describe('Observer', async () => {
     };
 
     // Generating anchor file data.
-    const operationDids = operationsBuffer.map((op) => { return Operation.create(op).didUniqueSuffix; });
+    const didUniqueSuffixes = [
+      operation1Data.createOperation.didUniqueSuffix,
+      operation2Data.createOperation.didUniqueSuffix
+    ];
     const anchorFileModel: AnchorFileModel = {
       mapFileHash: mockMapFileHash,
-      didUniqueSuffixes: operationDids
+      didUniqueSuffixes
     };
     const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
     const anchoreFileFetchResult: FetchResult = {
@@ -210,6 +190,7 @@ describe('Observer', async () => {
     };
     const mockAnchorFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
 
+    // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {
       if (hash === mockAnchorFilehash) {
         return anchoreFileFetchResult;
@@ -249,8 +230,8 @@ describe('Observer', async () => {
     };
     await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
-    for (const did of operationDids) {
-      const operationArray = await operationStore.get(did);
+    for (const didUniqueSuffix of didUniqueSuffixes) {
+      const operationArray = await operationStore.get(didUniqueSuffix);
       expect(operationArray.length).toEqual(1);
     }
   });
