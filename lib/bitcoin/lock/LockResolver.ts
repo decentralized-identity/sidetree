@@ -1,18 +1,18 @@
 import BitcoinClient from '../BitcoinClient';
 import BitcoinError from '../BitcoinError';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
-import BlockchainLockModel from '../../common/models/BlockchainLockModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
+import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 import { Script } from 'bitcore-lib';
 
 /** Structure (internal for this class) to hold the redeem script verification results */
 interface LockScriptVerifyResult {
   /** whether or not the script was valid */
   isScriptValid: boolean;
-  /** the target address when the script unlcoks; undefined if the script is not valid. */
-  publicKeyHashOut: string | undefined;
+  /** the public key hash of the target address when the script unlcoks; undefined if the script is not valid. */
+  publicKeyHash: string | undefined;
   /** the block at which the amount gets unlocked; undefined if the script is not valid. */
   unlockAtBlock: number | undefined;
 }
@@ -33,7 +33,7 @@ export default class LockResolver {
    * @param lockIdentifier The lock identifier.
    * @returns The blockchain lock model if the specified identifier is verified; throws if verification fails.
    */
-  public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<BlockchainLockModel> {
+  public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<ValueTimeLockModel> {
 
     // The verifictation of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script
@@ -68,7 +68,7 @@ export default class LockResolver {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
       unlockTransactionTime: scriptVerifyResult.unlockAtBlock!,
-      owner: scriptVerifyResult.publicKeyHashOut!
+      owner: scriptVerifyResult.publicKeyHash!
     };
   }
 
@@ -93,18 +93,18 @@ export default class LockResolver {
       scriptAsmParts[7] === 'OP_CHECKSIG';
 
     let unlockAtBlock: number | undefined;
-    let publicKeyHashOut: string | undefined;
+    let publicKeyHash: string | undefined;
 
     if (isScriptValid) {
       const unlockAtBlockBuffer = Buffer.from(scriptAsmParts[0], 'hex');
       unlockAtBlock = unlockAtBlockBuffer.readIntLE(0, unlockAtBlockBuffer.length);
 
-      publicKeyHashOut = scriptAsmParts[5];
+      publicKeyHash = scriptAsmParts[5];
     }
 
     return {
       isScriptValid: isScriptValid,
-      publicKeyHashOut: publicKeyHashOut,
+      publicKeyHash: publicKeyHash,
       unlockAtBlock: unlockAtBlock
     };
   }

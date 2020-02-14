@@ -1,12 +1,12 @@
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
 import BitcoinOutputModel from '../../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransactionModel';
-import BlockchainLockModel from '../../../lib/common/models/BlockchainLockModel';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
+import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
 
 function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddress: Address): Script {
@@ -23,7 +23,7 @@ function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddres
 function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, unlockAtBlock: number | undefined): any {
   return {
     isScriptValid: isScriptValid,
-    publicKeyHashOut: owner,
+    publicKeyHash: owner,
     unlockAtBlock: unlockAtBlock
   };
 }
@@ -74,7 +74,7 @@ describe('LockResolver', () => {
       const mockSerializedLockIdentifier = 'mocked-locked-identifier';
       spyOn(LockIdentifierSerializer, 'serialize').and.returnValue(mockSerializedLockIdentifier);
 
-      const expectedOutput: BlockchainLockModel = {
+      const expectedOutput: ValueTimeLockModel = {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
         unlockTransactionTime: lockBlockInput,
