@@ -3,6 +3,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import OperationGenerator from './OperationGenerator';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -36,7 +37,8 @@ export default class VegetaLoadGenerator {
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
-      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
+      const [recover1OTP, recoveryOtpHash] = OperationGenerator.generateOtp();
+      const [, recovery2OtpHash] = OperationGenerator.generateOtp();
       const [update1Otp, update1OtpHash] = OperationGenerator.generateOtp();
       const [, update2OtpHash] = OperationGenerator.generateOtp();
 
@@ -53,6 +55,7 @@ export default class VegetaLoadGenerator {
       // Compute the DID unique suffix from the generated Create payload.
       const createOperation = await CreateOperation.parse(createOperationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
+      const encodedDidDoc = Encoder.encode(JSON.stringify(createOperation.operationData.document));
 
       // Generate an Update payload.
       const updatePayload = {
@@ -73,6 +76,18 @@ export default class VegetaLoadGenerator {
       // Generate an Update request body and save it on disk.
       const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, keyId, privateKey);
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
+
+      // Generate a recovery payload.
+      const recoveryPayload = {
+        type: 'recover',
+        didUniqueSuffix,
+        recoveryOtp: recover1OTP,
+        newDidDocument: encodedDidDoc,
+        nextRecoveryOtpHash: recovery2OtpHash,
+        nextUpdateOtpHash: update2OtpHash
+      };
+      const recoveryOperationBuffer = await OperationGenerator.createOperationBuffer(recoveryPayload, keyId, privateKey);
+      fs.writeFileSync(`${absoluteFolderPath}/requests/recovery${i}.json`, recoveryOperationBuffer);
     }
 
     // Generate Create API calls in a targets file.
@@ -90,5 +105,13 @@ export default class VegetaLoadGenerator {
       updateTargetsFileString += `@${absoluteFolderPath}/requests/update${i}.json\n\n`;
     }
     fs.writeFileSync(absoluteFolderPath + '/updateTargets.txt', updateTargetsFileString);
+
+    // Add Recovery API calls in a targets file.
+    let recoveryTargetsFileString = '';
+    for (let i = 0; i < uniqueDidCount; i++) {
+      recoveryTargetsFileString += `POST ${endpointUrl}\n`;
+      recoveryTargetsFileString += `@${absoluteFolderPath}/requests/recovery${i}.json\n\n`;
+    }
+    fs.writeFileSync(absoluteFolderPath + '/recoveryTargets.txt', recoveryTargetsFileString);
   }
 }
