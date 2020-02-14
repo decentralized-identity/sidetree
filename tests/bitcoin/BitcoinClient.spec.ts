@@ -2,6 +2,7 @@ import * as httpStatus from 'http-status';
 import * as nodeFetchPackage from 'node-fetch';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
+import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
@@ -72,38 +73,87 @@ describe('BitcoinClient', async () => {
   });
 
   describe('broadcastTransaction', () => {
-    it('should serialize and broadcast a transaction', async (done) => {
+    it('should call the utility function.', async (done) => {
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      const transactionToString = transaction.toString();
-
-      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
-
       spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
 
-      const spy = mockRpcCall('sendrawtransaction', [transactionToString], transactionToString);
+      const transactionToString = transaction.toString();
+      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
+
+      const mockUtilFuncResponse = 'mock-response';
+      const spy = spyOn(bitcoinClient as any, 'broadcastTransactionRpc').and.returnValue(Promise.resolve(mockUtilFuncResponse));
+
       const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
-      expect(actual).toEqual(transactionToString);
-      expect(spy).toHaveBeenCalled();
+      expect(actual).toEqual(mockUtilFuncResponse);
+      expect(spy).toHaveBeenCalledWith(transactionToString);
+      done();
+    });
+  });
+
+  describe('broadcastLockTransaction', () => {
+    it('should call the utility function with correct input.', async (done) => {
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockInputTxnModel: BitcoinLockTransactionModel = {
+        transactionId: 'some txn id',
+        redeemScript: 'some-redeem-script',
+        transactionObject: transaction
+      };
+
+      const transactionToString = transaction.toString();
+      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
+
+      const mockUtilFuncResponse = 'mock-response';
+      const spy = spyOn(bitcoinClient as any, 'broadcastTransactionRpc').and.returnValue(Promise.resolve(mockUtilFuncResponse));
+
+      const actual = await bitcoinClient.broadcastLockTransaction(mockInputTxnModel);
+      expect(actual).toEqual(mockUtilFuncResponse);
+      expect(spy).toHaveBeenCalledWith(transactionToString);
       done();
     });
 
-    it('should throw if the RPC call fails.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(transaction, 'serialize').and.returnValue(transaction.toString());
+    it('should throw if the input object does not have the expected Transaction object.', async (done) => {
 
-      spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
+      const mockInputTxnModel: BitcoinLockTransactionModel = {
+        transactionId: 'some txn id',
+        redeemScript: 'some-redeem-script',
+        transactionObject: { key: 'some input' }
+      };
 
-      const spy = mockRpcCall('sendrawtransaction', [transaction.toString()], [transaction.toString()]);
-      spy.and.throwError('test');
       try {
-        await bitcoinClient.broadcastTransaction('data to write', 1000);
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain('test');
-        expect(spy).toHaveBeenCalled();
-      } finally {
-        done();
+        await bitcoinClient.broadcastLockTransaction(mockInputTxnModel);
+        fail('expected exception to be thrown');
+      } catch (e) {
+        expect(e.message).toContain('bitcore-lib.Transaction');
       }
+
+      done();
+    });
+  });
+
+  describe('createLockTransaction', () => {
+    it('should create the lock transaction.', async () => {
+      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockRedeemScript = 'some redeem script';
+
+      const mockUnspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1233423426);
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve([mockUnspentOutput]));
+
+      const mockCreateFreezeTxnOutput = [mockFreezeTxn, mockRedeemScript];
+      const createFreezeTxnSpy = spyOn(bitcoinClient as any, 'createFreezeTransaction').and.returnValue(Promise.resolve(mockCreateFreezeTxnOutput));
+
+      const lockAmountInput = 123456;
+      const lockUntilBlockInput = 789005;
+
+      const actual = await bitcoinClient.createLockTransaction(lockAmountInput, lockUntilBlockInput);
+
+      const expectedOutput: BitcoinLockTransactionModel = {
+        transactionId: mockFreezeTxn.id,
+        redeemScript: mockRedeemScript,
+        transactionObject: mockFreezeTxn
+      };
+      expect(actual).toEqual(expectedOutput);
+
+      expect(createFreezeTxnSpy).toHaveBeenCalledWith([mockUnspentOutput], lockUntilBlockInput, lockAmountInput);
     });
   });
 
@@ -198,7 +248,7 @@ describe('BitcoinClient', async () => {
 
       const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
 
-      const actual = await bitcoinClient['getRawTransaction'](txnId);
+      const actual = await bitcoinClient.getRawTransaction(txnId);
       expect(actual).toEqual(mockTransactionAsOutputTxn);
       expect(spy).toHaveBeenCalled();
     });
@@ -302,6 +352,37 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('broadcastTransactionRpc', () => {
+    it('should call the correct rpc with the input.', async (done) => {
+
+      const mockRawTransaction = 'mocked-raw-transaction';
+      const mockRpcOutput = 'mockRpcOutput';
+
+      const spy = mockRpcCall('sendrawtransaction', [mockRawTransaction], mockRpcOutput);
+      const actual = await bitcoinClient['broadcastTransactionRpc'](mockRawTransaction);
+      expect(actual).toEqual(mockRpcOutput);
+      expect(spy).toHaveBeenCalled();
+      done();
+    });
+
+    it('should throw if the RPC call fails.', async (done) => {
+      const mockRawTransaction = 'mocked-raw-transaction';
+      const mockRpcOutput = 'mockRpcOutput';
+
+      const spy = mockRpcCall('sendrawtransaction', [mockRawTransaction], mockRpcOutput);
+      spy.and.throwError('test');
+      try {
+        await bitcoinClient['broadcastTransactionRpc'](mockRawTransaction);
+        fail('should have thrown');
+      } catch (error) {
+        expect(error.message).toContain('test');
+        expect(spy).toHaveBeenCalled();
+      } finally {
+        done();
+      }
+    });
+  });
+
   describe('createTransaction', () => {
     it('should create the transaction object using the inputs correctly.', async (done) => {
       const availableSatoshis = 5000;
@@ -359,22 +440,23 @@ describe('BitcoinClient', async () => {
       const createScriptSpy = spyOn(BitcoinClient as any, 'createFreezeScript').and.returnValue(mockRedeemScript);
       const estimateFeeSpy = spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(mockTxnFee);
 
-      const actual = await bitcoinClient['createFreezeTransaction']([mockUnspentOutput], mockFreezeUntilBlock, mockFreezeAmount);
+      const [actualTxn, redeemScript] = await bitcoinClient['createFreezeTransaction']([mockUnspentOutput], mockFreezeUntilBlock, mockFreezeAmount);
 
-      expect(actual.getFee()).toEqual(mockTxnFee);
+      expect(redeemScript).toEqual(mockRedeemScript.toHex());
+      expect(actualTxn.getFee()).toEqual(mockTxnFee);
 
       // There should be 2 outputs
-      expect(actual.outputs.length).toEqual(2);
+      expect(actualTxn.outputs.length).toEqual(2);
 
       // 1st output is the freeze output
-      expect(actual.outputs[0].satoshis).toEqual(mockFreezeAmount);
-      expect(actual.outputs[0].script.toASM()).toEqual(mockRedeemScriptHashOutput.toASM());
+      expect(actualTxn.outputs[0].satoshis).toEqual(mockFreezeAmount);
+      expect(actualTxn.outputs[0].script.toASM()).toEqual(mockRedeemScriptHashOutput.toASM());
 
       // 2nd output is the difference back to this wallet and this should be the
       // 'change' script === where the rest of the satoshis will go
       const expectedPayToScript = Script.buildPublicKeyHashOut(privateKeyFromBitcoinClient.toAddress());
-      expect(actual.outputs[1].script.toASM()).toEqual(expectedPayToScript.toASM());
-      expect(actual.getChangeOutput()).toEqual(actual.outputs[1]);
+      expect(actualTxn.outputs[1].script.toASM()).toEqual(expectedPayToScript.toASM());
+      expect(actualTxn.getChangeOutput()).toEqual(actualTxn.outputs[1]);
 
       expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock, walletAddressFromBitcoinClient);
       expect(estimateFeeSpy).toHaveBeenCalled();

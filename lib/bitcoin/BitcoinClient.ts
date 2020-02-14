@@ -1,6 +1,7 @@
 import * as httpStatus from 'http-status';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
+import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
@@ -89,14 +90,44 @@ export default class BitcoinClient {
     const transaction = await this.createTransaction(transactionData, feeInSatoshis);
     const rawTransaction = transaction.serialize();
 
-    const request = {
-      method: 'sendrawtransaction',
-      params: [
-        rawTransaction
-      ]
-    };
+    return this.broadcastTransactionRpc(rawTransaction);
+  }
 
-    return this.rpcCall(request, true);
+  /**
+   * Broadcasts the specified lock transaction.
+   *
+   * @param bitcoinLockTransaction The transaction object.
+   */
+  public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
+    if (!(bitcoinLockTransaction.transactionObject instanceof Transaction)) {
+      throw new Error('Transaction property is not of bitcore-lib.Transaction');
+    }
+
+    const transaction: Transaction = bitcoinLockTransaction.transactionObject;
+    const rawTransaction = transaction.serialize();
+
+    return this.broadcastTransactionRpc(rawTransaction);
+  }
+
+  /**
+   * Creates (and NOT broadcast) a lock transaction using the funds for the linked wallet.
+   *
+   * NOTE: if the linked wallet outputs are spent then this transaction cannot be broadcasted. So broadcast
+   * this transaction before spending from the wallet.
+   *
+   * @param lockAmountInSatoshis The amount to lock.
+   * @param lockUntilBlock  The block until the amount to lock to; the amount becomes spendable AT this block.
+   */
+  public async createLockTransaction (lockAmountInSatoshis: number, lockUntilBlock: number): Promise<BitcoinLockTransactionModel> {
+    const unspentCoins = await this.getUnspentOutputs(this.walletAddress);
+
+    const [freezeTransaction, redeemScriptAsHex] = await this.createFreezeTransaction(unspentCoins, lockUntilBlock, lockAmountInSatoshis);
+
+    return {
+      transactionId: freezeTransaction.id,
+      redeemScript: redeemScriptAsHex,
+      transactionObject: freezeTransaction
+    };
   }
 
   /**
@@ -246,6 +277,18 @@ export default class BitcoinClient {
     await this.rpcCall(request, false);
   }
 
+  private async broadcastTransactionRpc (rawTransaction: string) {
+
+    const request = {
+      method: 'sendrawtransaction',
+      params: [
+        rawTransaction
+      ]
+    };
+
+    return this.rpcCall(request, true);
+  }
+
   private async isAddressAddedToWallet (address: string): Promise<boolean> {
     console.info(`Checking if bitcoin wallet for ${address} exists`);
     const request = {
@@ -287,7 +330,7 @@ export default class BitcoinClient {
    * Get the raw transaction data.
    * @param transactionId The target transaction id.
    */
-  private async getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
+  public async getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
     const request = {
       method: 'getrawtransaction',
       params: [
@@ -345,11 +388,10 @@ export default class BitcoinClient {
     return estimatedFee + (estimatedFee * .4);
   }
 
-  // @ts-ignore
   private async createFreezeTransaction (
     unspentCoins: Transaction.UnspentOutput[],
     freezeUntilBlock: number,
-    freezeAmountInSatoshis: number): Promise<Transaction> {
+    freezeAmountInSatoshis: number): Promise<[Transaction, string]> {
 
     const freezeScript = BitcoinClient.createFreezeScript(freezeUntilBlock, this.walletAddress);
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
@@ -365,7 +407,7 @@ export default class BitcoinClient {
     freezeTransaction.fee(transactionFee)
                      .sign(this.walletPrivateKey);
 
-    return freezeTransaction;
+    return [freezeTransaction, freezeScript.toHex()];
   }
 
   // @ts-ignore
