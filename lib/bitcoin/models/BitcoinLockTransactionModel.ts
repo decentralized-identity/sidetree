@@ -3,6 +3,7 @@
  */
 export default interface BitcoinLockTransactionModel {
   transactionId: string;
-  redeemScript: string;
-  transactionObject: any;
+  transactionFee: number;
+  redeemScriptAsHex: string;
+  serializedTransactionObject: string;
 }
