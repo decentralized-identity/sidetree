@@ -331,17 +331,16 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a create operation.
+   * Generates a create operation request.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
    */
-  public static async generateCreateOperationBuffer (
+  public static async generateCreateOperationRequest (
     recoveryPublicKey: PublicKeyModel,
     signingPublicKey: DidPublicKeyModel,
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]
-  ): Promise<Buffer> {
+    serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = Document.create([signingPublicKey], serviceEndpoints);
 
     const operationData = {
@@ -364,6 +363,29 @@ export default class OperationGenerator {
       suffixData: suffixDataEncodedString,
       operationData: operationDataEncodedString
     };
+
+    return operation;
+  }
+
+  /**
+   * Generates a create operation request buffer.
+   * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
+   * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
+   */
+  public static async generateCreateOperationBuffer (
+    recoveryPublicKey: PublicKeyModel,
+    signingPublicKey: DidPublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    serviceEndpoints?: DidServiceEndpointModel[]
+  ): Promise<Buffer> {
+    const operation = await OperationGenerator.generateCreateOperationRequest(
+      recoveryPublicKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      serviceEndpoints
+    );
 
     return Buffer.from(JSON.stringify(operation));
   }
