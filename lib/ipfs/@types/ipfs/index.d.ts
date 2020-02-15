@@ -5,7 +5,7 @@ declare module 'ipfs' {
 type Callback<T> = (error: Error, result?: T) => void;
 
 declare class IPFS {
-    constructor(options?: IPFS.Options);
+    constructor (options?: IPFS.Options);
 
     types: IPFS.Types;
 
@@ -18,9 +18,8 @@ declare class IPFS {
     isOnline(): boolean;
 
     version(options: any, callback: (error: Error, version: IPFS.Version) => void): void ;
-    version(options: any): Promise<IPFS.Version>;
+    version(options?: any): Promise<IPFS.Version>;
     version(callback: (error: Error, version: IPFS.Version) => void): void ;
-    version(): Promise<IPFS.Version>;
 
     id(options: any, callback: (error: Error, version: IPFS.Id) => void): void ;
     id(options: any): Promise<IPFS.Id>;
@@ -46,24 +45,12 @@ declare class IPFS {
     on(event: string, callback: () => void): IPFS;
     on(event: 'error', callback: (error: { message: any }) => void): IPFS;
     once(event: string, callback: () => void): IPFS;
- 
-    createAddStream(options: any, callback: Callback<any>): void;
-    createAddStream(callback: Callback<any>): void;
 
-    createPullStream(options: any): any;
+    add(data: IPFS.FileContent, options: any): Promise<AsyncIterable<Object>>;
 
-    add(data: IPFS.FileContent, options: any, callback: Callback<IPFS.IPFSFile[]>): void;
-    add(data: IPFS.FileContent, options: any): Promise<IPFS.IPFSFile[]>;
-    add(data: IPFS.FileContent, callback: Callback<IPFS.IPFSFile[]>): void;
-    add(data: IPFS.FileContent): Promise<IPFS.IPFSFile[]>;
+    cat(hash: IPFS.Multihash, options?: any): Promise<AsyncIterable<Object>>;
 
-    cat(hash: IPFS.Multihash, callback: Callback<IPFS.FileContent>): void;
-    cat(hash: IPFS.Multihash): Promise<IPFS.FileContent>;
-
-    get(hash: IPFS.Multihash, callback: Callback<IPFS.Files[]>): void;
-    get(hash: IPFS.Multihash): Promise<IPFS.Files[]>;
-
-    getPull(hash: IPFS.Multihash, callback: Callback<any>): void;
+    get(hash: IPFS.Multihash): Promise<AsyncIterable<Object>>;
 }
 
 declare namespace IPFS {
@@ -292,5 +279,5 @@ declare namespace IPFS {
         tree(cid: string | CID): Promise<any>;
     }
 
-    export function createNode(options: Options): IPFS;
+    export function create (options: Options): IPFS;
 }

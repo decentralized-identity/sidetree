@@ -1,4 +1,4 @@
-import * as IPFS from 'ipfs';
+import * as IPFS from 'ipfs'
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
 
@@ -29,7 +29,7 @@ export default class IpfsStorage {
       repo: repo !== undefined ? repo : repoName
     };
 
-    this.node = new IPFS(options);
+    this.node = IPFS.create(options);
   }
 
   /**
@@ -52,25 +52,20 @@ export default class IpfsStorage {
     }
 
     // If content size cannot be found, return not-found.
-    if (contentMetadata === undefined || contentMetadata.CumulativeSize === undefined) {
+    if (contentMetadata === undefined || contentMetadata.DataSize === undefined) {
       return { code: FetchResultCode.NotFound };
     }
 
-    // NOTE: IPFS API does not have an API for finding out only the content size,
-    // IPFS API only provides the "cumulative size" that includes the additional metadata on how the Merkle DAG is formed.
-    // So here we account for the additional space used by performing a more lenient max size check by 10%,
-    // we will track the exact conent size of content later when we fetch the content if the content passes this size check.
-    const adjustedMaxSize = maxSizeInBytes * 1.1;
-    if (contentMetadata.CumulativeSize > adjustedMaxSize) {
-      console.info(`Cumulative size of ${contentMetadata.CumulativeSize} bytes is greater than the ${adjustedMaxSize} cumulative size limit.`);
+    if (contentMetadata.DataSize > maxSizeInBytes) {
+      console.info(`Size of ${contentMetadata.DataSize} bytes is greater than the ${maxSizeInBytes} data size limit.`);
       return { code: FetchResultCode.MaxSizeExceeded };
     }
 
     // NOTE: it appears that even if we destroy the readable stream half way, IPFS node in the backend will complete fetch of the file,
-    // so the size check above although not 100 accurate, is necessary as an optimzation.
+    // so the size check above although not 100 accurate, is necessary as an optimization.
     const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
 
-    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already exisitng object does not create a duplicate.
+    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
     if (fetchResult.code === FetchResultCode.Success) {
       await this.node.pin.add(hash);
     }
