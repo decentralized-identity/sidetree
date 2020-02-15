@@ -1,3 +1,4 @@
+import CreateOperation from './CreateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
@@ -16,13 +17,14 @@ export default class Did {
   public didMethodName: string;
   /** DID unique suffix. */
   public uniqueSuffix: string;
-  /** Encoded DID Document if given DID is long-form, `undefined` otherwise. */
-  public encodedDidDocument?: string;
+  /** The create operation if the DID given is long-form, `undefined` otherwise. */
+  public createOperation?: CreateOperation;
   /** The short form. */
   public shortForm: string;
 
   /**
    * Parses the input string as Sidetree DID.
+   * NOTE: Must not call this constructor directly, use the factory `create` method instead.
    * @param did Short or long-form DID string.
    * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
    */
@@ -53,48 +55,45 @@ export default class Did {
     }
 
     this.shortForm = didMethodName + this.uniqueSuffix;
-
-    // Get the encoded document if it's long-form.
-    if (!this.isShortForm) {
-      const didParameterString = did.substring(indexOfSemiColonChar + 1);
-
-      if (!didParameterString.startsWith(Did.initialValuesParameterPrefix)) {
-        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
-      }
-
-      // Trim the `initial-values=` string to get the full initial DID DOcument.
-      this.encodedDidDocument = didParameterString.substring(Did.initialValuesParameterPrefix.length);
-
-      // Ensure that the encoded DID document hash matches the DID unique Suffix.
-      const uniqueSuffixBuffer = Encoder.decodeAsBuffer(this.uniqueSuffix);
-      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(uniqueSuffixBuffer);
-      const encodedDidDocumentBuffer = Buffer.from(this.encodedDidDocument);
-      const multihash = Multihash.hash(encodedDidDocumentBuffer, hashAlgorithmCode);
-
-      // If the computed unique suffix is not the same as the unique suffix in given short-form DID.
-      if (Buffer.compare(uniqueSuffixBuffer, multihash) !== 0) {
-        throw new SidetreeError(ErrorCode.DidEncodedDidDocumentHashMismatch);
-      }
-    }
   }
 
   /**
    * Parses the input string as Sidetree DID.
    * @param did Short or long-form DID string.
    */
-  public static create (did: string, didMethodName: string): Did {
-    return new Did(did, didMethodName);
-  }
+  public static async create (didString: string, didMethodName: string): Promise<Did> {
+    const did = new Did(didString, didMethodName);
 
-  /**
-   * Creates a long-form DID string.
-   * ie. 'did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>'
-   */
-  public static createLongFormDidString (didMethodName: string, originalDidDocument: any, hashAlgorithmInMultihashCode: number): string {
-    const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
-    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
-    const didUniqueSuffix = Encoder.encode(documentHash);
-    const did = `${didMethodName}${didUniqueSuffix};${Did.initialValuesParameterPrefix}${encodedOriginalDidDocument}`;
+    // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
+    if (!did.isShortForm) {
+      const indexOfSemiColonChar = didString.indexOf(';');
+      const didParameterString = didString.substring(indexOfSemiColonChar + 1);
+
+      if (!didParameterString.startsWith(Did.initialValuesParameterPrefix)) {
+        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
+      }
+
+      // Trim the `initial-values=` string to get the encoded create operation request body.
+      const encodedCreateRequest = didParameterString.substring(Did.initialValuesParameterPrefix.length);
+      const createRequesBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
+      const createOperation = await CreateOperation.parse(createRequesBuffer);
+
+      // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
+      // becasue the hashing algorithm used maybe different from the short form DID given.
+      // So we compute it here using the hashing algorithm used by the short form.
+      const uniqueSuffixBuffer = Encoder.decodeAsBuffer(did.uniqueSuffix);
+      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(uniqueSuffixBuffer);
+      const didUniqueSuffixDataBuffer = Encoder.decodeAsBuffer(createOperation.encodedSuffixData);
+      const didUniqueSuffixFromInitialValues = Encoder.encode(Multihash.hash(didUniqueSuffixDataBuffer, hashAlgorithmCode));
+
+      // If the computed unique suffix is not the same as the unique suffix in given short-form DID.
+      if (didUniqueSuffixFromInitialValues !== did.uniqueSuffix) {
+        throw new SidetreeError(ErrorCode.DidUniqueSuffixFromInitialValuesMismatch);
+      }
+
+      did.createOperation = createOperation;
+    }
+
     return did;
   }
 }

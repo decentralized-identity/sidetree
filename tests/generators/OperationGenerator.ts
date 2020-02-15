@@ -92,6 +92,35 @@ export default class OperationGenerator {
    * Generates an anchored create operation.
    */
   public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
+    const createOperationData = await OperationGenerator.generateCreateOperation();
+
+    const namedAnchoredOperationModel = {
+      type: OperationType.Create,
+      didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+      operationBuffer: createOperationData.createOperation.operationBuffer,
+      transactionNumber: input.transactionNumber,
+      transactionTime: input.transactionTime,
+      operationIndex: input.operationIndex
+    };
+
+    return {
+      createOperation: createOperationData.createOperation,
+      namedAnchoredOperationModel,
+      recoveryKeyId: createOperationData.recoveryKeyId,
+      recoveryPublicKey: createOperationData.recoveryPublicKey,
+      recoveryPrivateKey: createOperationData.recoveryPrivateKey,
+      signingKeyId: createOperationData.signingKeyId,
+      signingPublicKey: createOperationData.signingPublicKey,
+      signingPrivateKey: createOperationData.signingPrivateKey,
+      nextRecoveryOtpEncodedString: createOperationData.nextRecoveryOtpEncodedString,
+      nextUpdateOtpEncodedString: createOperationData.nextUpdateOtpEncodedString
+    };
+  }
+
+  /**
+   * Generates an create operation.
+   */
+  public static async generateCreateOperation () {
     const recoveryKeyId = '#recoveryKey';
     const signingKeyId = '#signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
@@ -113,18 +142,8 @@ export default class OperationGenerator {
 
     const createOperation = await CreateOperation.parse(operationBuffer);
 
-    const namedAnchoredOperationModel = {
-      type: OperationType.Create,
-      didUniqueSuffix: createOperation.didUniqueSuffix,
-      operationBuffer,
-      transactionNumber: input.transactionNumber,
-      transactionTime: input.transactionTime,
-      operationIndex: input.operationIndex
-    };
-
     return {
       createOperation,
-      namedAnchoredOperationModel,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,

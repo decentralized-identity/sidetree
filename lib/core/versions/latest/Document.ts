@@ -1,4 +1,3 @@
-import Did from './Did';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
@@ -12,17 +11,6 @@ import SidetreeError from '../../SidetreeError';
  * Class containing reusable DID Document related operations specific to Sidetree.
  */
 export default class Document {
-  /**
-   * Creates a DID Document from the given long-form DID.
-   */
-  public static async fromLongFormDid (did: Did): Promise<DocumentModel> {
-    const originalDidDocument = await this.parseEncodedOriginalDidDocument(did.encodedDidDocument!);
-
-    Document.addDidToDocument(originalDidDocument, did.shortForm);
-
-    return originalDidDocument;
-  }
-
   /**
    * Transforms the given internal document model into a DID Document.
    */
