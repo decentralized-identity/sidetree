@@ -14,7 +14,7 @@ describe('BitcoinClient', async () => {
   let bitcoinWalletImportString: string;
   let privateKeyFromBitcoinClient: PrivateKey;
   let walletAddressFromBitcoinClient: Address;
-  let walletAddressBufferFromBitcoinClient: Buffer;
+  let walletPublicKeyHashFromBitcoinClient: string;
 
   const bitcoinPeerUri = 'uri:someuri/';
   const maxRetries = 2;
@@ -25,7 +25,7 @@ describe('BitcoinClient', async () => {
 
     privateKeyFromBitcoinClient = bitcoinClient['walletPrivateKey'];
     walletAddressFromBitcoinClient = bitcoinClient['walletAddress'];
-    walletAddressBufferFromBitcoinClient = bitcoinClient['walletAddressAsBuffer'];
+    walletPublicKeyHashFromBitcoinClient = bitcoinClient['walletPublicKeyHash'];
 
     // this is always mocked to protect against actual calls to the bitcoin network
     fetchSpy = spyOn(nodeFetchPackage, 'default');
@@ -358,10 +358,10 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('getWalletAddressAsBuffer', () => {
+  describe('getWalletPublicKeyHash', () => {
     it('should return the correct value.', async (done) => {
-      const actual = bitcoinClient.getWalletAddressAsBuffer();
-      expect(actual).toEqual(walletAddressBufferFromBitcoinClient);
+      const actual = bitcoinClient.getWalletPublicKeyHash();
+      expect(actual).toEqual(walletPublicKeyHashFromBitcoinClient);
       done();
     });
   });

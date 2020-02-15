@@ -5,9 +5,9 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
-import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import LockTransactionModel from '../../../lib/bitcoin/models/LockTransactionModel';
 import LockTransactionType from '../../../lib/bitcoin/enums/LockTransactionType';
+import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
 describe('LockMonitor', () => {

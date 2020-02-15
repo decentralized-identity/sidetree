@@ -20,7 +20,8 @@ export default class BitcoinClient {
   /** Wallet private key */
   private readonly walletPrivateKey: PrivateKey;
   private readonly walletAddress: Address;
-  private readonly walletAddressAsBuffer: Buffer;
+  private readonly walletPublicKeyAsBuffer: Buffer;
+  private readonly walletPublicKeyHash: string;
 
   constructor (
     private bitcoinPeerUri: string,
@@ -38,7 +39,12 @@ export default class BitcoinClient {
     }
 
     this.walletAddress = this.walletPrivateKey.toAddress();
-    this.walletAddressAsBuffer = (this.walletAddress as any).toBuffer();
+
+    const walletPublicKey = this.walletPrivateKey.toPublicKey();
+    this.walletPublicKeyAsBuffer = walletPublicKey.toBuffer();
+
+    const walletPublicKeyHashAsBuffer = crypto.Hash.sha256ripemd160(this.walletPublicKeyAsBuffer);
+    this.walletPublicKeyHash = walletPublicKeyHashAsBuffer.toString('hex');
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
@@ -54,7 +60,7 @@ export default class BitcoinClient {
     if (!await this.isAddressAddedToWallet(this.walletAddress.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${this.walletAddress}. This can take up to 10 minutes.`);
 
-      const publicKeyAsHex = this.walletPrivateKey.toPublicKey().toBuffer().toString('hex');
+      const publicKeyAsHex = this.walletPublicKeyAsBuffer.toString('hex');
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
@@ -307,10 +313,10 @@ export default class BitcoinClient {
   }
 
   /**
-   * Gets the public address for the linked wallet.
+   * Gets the wallet public key hash as it is presented in a pay-to-publick-key-hash transaction.
    */
-  public getWalletAddressAsBuffer (): Buffer {
-    return this.walletAddressAsBuffer;
+  public getWalletPublicKeyHash (): string {
+    return this.walletPublicKeyHash;
   }
 
   private async addWatchOnlyAddressToWallet (publicKeyAsHex: string, rescan: boolean): Promise<void> {
@@ -536,7 +542,7 @@ export default class BitcoinClient {
     // Create a script and add it to the input.
     const inputScript = Script.empty()
                               .add(signature.toTxFormat())
-                              .add(this.walletPrivateKey.toPublicKey().toBuffer())
+                              .add(this.walletPublicKeyAsBuffer)
                               .add(previousFreezeScript.toBuffer());
 
     (spendTransaction.inputs[0] as any).setScript(inputScript);
