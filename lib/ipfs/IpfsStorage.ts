@@ -1,4 +1,4 @@
-import * as IPFS from 'ipfs'
+import * as IPFS from 'ipfs';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
 
