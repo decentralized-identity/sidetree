@@ -467,12 +467,14 @@ export default class BitcoinClient {
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(payToScriptHashOutput);
 
-    const freezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
+    // We are creating a spend transaction and are paying to another freeze script.
+    // So essentially we are re-freezing ...
+    const reFreezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeUntilBlock,
       payToScriptAddress);
 
-    return [freezeTransaction, freezeScript.toHex()];
+    return [reFreezeTransaction, freezeScript.toHex()];
   }
 
   private async createSpendToWalletTransaction (
