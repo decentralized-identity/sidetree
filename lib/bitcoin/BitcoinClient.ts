@@ -20,6 +20,7 @@ export default class BitcoinClient {
   /** Wallet private key */
   private readonly walletPrivateKey: PrivateKey;
   private readonly walletAddress: Address;
+  private readonly walletPublicKeyAsBuffer: Buffer;
 
   constructor (
     private bitcoinPeerUri: string,
@@ -38,6 +39,9 @@ export default class BitcoinClient {
 
     this.walletAddress = this.walletPrivateKey.toAddress();
 
+    const walletPublicKey = this.walletPrivateKey.toPublicKey();
+    this.walletPublicKeyAsBuffer = walletPublicKey.toBuffer();
+
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
     }
@@ -52,7 +56,7 @@ export default class BitcoinClient {
     if (!await this.isAddressAddedToWallet(this.walletAddress.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${this.walletAddress}. This can take up to 10 minutes.`);
 
-      const publicKeyAsHex = this.walletPrivateKey.toPublicKey().toBuffer().toString('hex');
+      const publicKeyAsHex = this.walletPublicKeyAsBuffer.toString('hex');
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
@@ -99,18 +103,12 @@ export default class BitcoinClient {
    * @param bitcoinLockTransaction The transaction object.
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
-    if (!(bitcoinLockTransaction.transactionObject instanceof Transaction)) {
-      throw new Error('Transaction property is not of bitcore-lib.Transaction');
-    }
 
-    const transaction: Transaction = bitcoinLockTransaction.transactionObject;
-    const rawTransaction = transaction.serialize();
-
-    return this.broadcastTransactionRpc(rawTransaction);
+    return this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
   }
 
   /**
-   * Creates (and NOT broadcast) a lock transaction using the funds for the linked wallet.
+   * Creates (and NOT broadcasts) a lock transaction using the funds from the linked wallet.
    *
    * NOTE: if the linked wallet outputs are spent then this transaction cannot be broadcasted. So broadcast
    * this transaction before spending from the wallet.
@@ -125,8 +123,54 @@ export default class BitcoinClient {
 
     return {
       transactionId: freezeTransaction.id,
-      redeemScript: redeemScriptAsHex,
-      transactionObject: freezeTransaction
+      transactionFee: freezeTransaction.getFee(),
+      redeemScriptAsHex: redeemScriptAsHex,
+      serializedTransactionObject: freezeTransaction.serialize()
+    };
+  }
+
+  /**
+   * Creates (and NOT broadcasts) a lock transaction using the funds from the previously locked transaction.
+   *
+   * @param existingLockTransactionId The existing transaction with locked output.
+   * @param existingLockUntilBlock The block when the output becomes spendable.
+   * @param newLockUntilBlock The new target block for locking (the amount becomes spendable at this block).
+   */
+  public async createRelockTransaction (
+    existingLockTransactionId: string,
+    existingLockUntilBlock: number,
+    newLockUntilBlock: number): Promise<BitcoinLockTransactionModel> {
+
+    const existingLockTransaction = await this.getRawTransactionRpc(existingLockTransactionId);
+
+    const [freezeTransaction, redeemScriptAsHex] =
+      await this.createSpendToFreezeTransaction(existingLockTransaction, existingLockUntilBlock, newLockUntilBlock);
+
+    return {
+      transactionId: freezeTransaction.id,
+      transactionFee: freezeTransaction.getFee(),
+      redeemScriptAsHex: redeemScriptAsHex,
+      serializedTransactionObject: freezeTransaction.serialize()
+    };
+  }
+
+  /**
+   * Creates (and NOT broadcasts) a transaction which outputs the previously locked amount into the linked
+   * wallet.
+   *
+   * @param existingLockTransactionId The existing transaction with locked amount.
+   * @param existingLockUntilBlock The block when the amount becomes spendable.
+   */
+  public async createReleaseLockTransaction (existingLockTransactionId: string, existingLockUntilBlock: number): Promise<BitcoinLockTransactionModel> {
+    const existingLockTransaction = await this.getRawTransactionRpc(existingLockTransactionId);
+
+    const releaseLockTransaction = await this.createSpendToWalletTransaction(existingLockTransaction, existingLockUntilBlock);
+
+    return {
+      transactionId: releaseLockTransaction.id,
+      transactionFee: releaseLockTransaction.getFee(),
+      redeemScriptAsHex: '',
+      serializedTransactionObject: releaseLockTransaction.serialize()
     };
   }
 
@@ -331,6 +375,12 @@ export default class BitcoinClient {
    * @param transactionId The target transaction id.
    */
   public async getRawTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
+    const bitcoreTransaction = await this.getRawTransactionRpc(transactionId);
+
+    return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
+  }
+
+  private async getRawTransactionRpc (transactionId: string): Promise<Transaction> {
     const request = {
       method: 'getrawtransaction',
       params: [
@@ -342,9 +392,7 @@ export default class BitcoinClient {
     const hexEncodedTransaction = await this.rpcCall(request, true);
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer);
-
-    return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
+    return BitcoinClient.createTransactionFromBuffer(transactionBuffer);
   }
 
   // This function is specifically created to help with unit testing.
@@ -410,23 +458,25 @@ export default class BitcoinClient {
     return [freezeTransaction, freezeScript.toHex()];
   }
 
-  // @ts-ignore
   private async createSpendToFreezeTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number,
-    freezeUntilBlock: number): Promise<Transaction> {
+    freezeUntilBlock: number): Promise<[Transaction, string]> {
 
     const freezeScript = BitcoinClient.createFreezeScript(freezeUntilBlock, this.walletAddress);
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(payToScriptHashOutput);
 
-    return this.createSpendTransactionFromFrozenTransaction(
+    // We are creating a spend transaction and are paying to another freeze script.
+    // So essentially we are re-freezing ...
+    const reFreezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeUntilBlock,
       payToScriptAddress);
+
+    return [reFreezeTransaction, freezeScript.toHex()];
   }
 
-  // @ts-ignore
   private async createSpendToWalletTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number): Promise<Transaction> {
@@ -437,7 +487,6 @@ export default class BitcoinClient {
       this.walletAddress);
   }
 
-  // @ts-ignore
   /**
    * Creates a spend transaction to spend the previously frozen output. The details
    * on how to create a spend transactions were taken from the BIP65 demo at:
@@ -484,7 +533,7 @@ export default class BitcoinClient {
     // Create a script and add it to the input.
     const inputScript = Script.empty()
                               .add(signature.toTxFormat())
-                              .add(this.walletPrivateKey.toPublicKey().toBuffer())
+                              .add(this.walletPublicKeyAsBuffer)
                               .add(previousFreezeScript.toBuffer());
 
     (spendTransaction.inputs[0] as any).setScript(inputScript);
