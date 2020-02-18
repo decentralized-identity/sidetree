@@ -107,7 +107,6 @@ export default class BitcoinClient {
    * @param bitcoinLockTransaction The transaction object.
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
-
     return this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
   }
 
@@ -478,12 +477,14 @@ export default class BitcoinClient {
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(payToScriptHashOutput);
 
-    const freezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
+    // We are creating a spend transaction and are paying to another freeze script.
+    // So essentially we are re-freezing ...
+    const reFreezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeUntilBlock,
       payToScriptAddress);
 
-    return [freezeTransaction, freezeScript.toHex()];
+    return [reFreezeTransaction, freezeScript.toHex()];
   }
 
   private async createSpendToWalletTransaction (

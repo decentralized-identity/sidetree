@@ -290,12 +290,25 @@ describe('BitcoinClient', async () => {
       const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
       const mockTransactionAsOutputTxn = BitcoinClient['createBitcoinTransactionModel'](mockTransaction);
 
+      const spy = spyOn(bitcoinClient as any, 'getRawTransactionRpc').and.returnValue(mockTransaction);
+
+      const actual = await bitcoinClient.getRawTransaction(txnId);
+      expect(actual).toEqual(mockTransactionAsOutputTxn);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getRawTransactionRpc', () => {
+    it('should make the correct rpc call and return the transaction object', async () => {
+      const txnId = 'transaction_id';
+      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
+
       spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
 
       const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
 
-      const actual = await bitcoinClient.getRawTransaction(txnId);
-      expect(actual).toEqual(mockTransactionAsOutputTxn);
+      const actual = await bitcoinClient['getRawTransactionRpc'](txnId);
+      expect(actual).toEqual(mockTransaction);
       expect(spy).toHaveBeenCalled();
     });
   });
