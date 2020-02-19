@@ -72,7 +72,7 @@ export default class LockMonitor {
 
     this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
 
-      // Not: ALSO need to check the state (pending/confirmed etc) below
+    // Note: ALSO need to check the state (pending/confirmed etc) below when the support is added.
     const validCurrentLockExist = this.currentValueTimeLock.currentValueTimeLock !== undefined;
 
     const lockRequired = this.desiredLockAmountInSatoshis > 0;
@@ -143,6 +143,8 @@ export default class LockMonitor {
     };
 
     currentLockInformation.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
+
+    console.info(`Found a valid current lock: ${JSON.stringify(currentLockInformation.currentValueTimeLock)}`);
 
     return currentLockInformation;
   }
@@ -220,7 +222,7 @@ export default class LockMonitor {
     // the wallet and let the next poll iteration start a new lock.
     if (latestSavedLockInfo.desiredLockAmountInSatoshis !== desiredLockAmountInSatoshis) {
       // tslint:disable-next-line: max-line-length
-      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis.`);
+      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to releast the lock.`);
 
       await this.releaseLockAndSaveItToDb(currentValueTimeLock, desiredLockAmountInSatoshis);
       return;
