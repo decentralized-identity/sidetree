@@ -21,18 +21,12 @@ describe('IpfsStorage', () => {
         DataSize: 1024,
         CumulativeSize: 1024
       };
+      const mockContent = Buffer.from('ipfs');
       spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
-
-      const mockFetchContentFunction = async () => {
-        return {
-          code: FetchResultCode.Success,
-          content: Buffer.from('ipfs')
-        };
-      };
-      spyOn(ipfsStorage as any, 'fetchContent').and.callFake(mockFetchContentFunction);
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+      spyOn(ipfsStorage['node'], 'cat').and.returnValue(new MockAsyncIterable(mockContent, mockContent, 1));
 
-      const expectedContent = Buffer.from('ipfs');
+      const expectedContent = mockContent;
 
       const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
       expect(expectedContent).toEqual(fetchedContent.content!);
@@ -97,6 +91,26 @@ describe('IpfsStorage', () => {
       const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
       expect(expectedErrorCode).toEqual(fetchedContent.code);
     });
+
+    it('should return size exceeded if content size exceeds maxFileSize during download.', async () => {
+      const mockContentStat = {
+        Hash: 'dummyHahs',
+        NumLinks: 0,
+        BlockSize: 1,
+        LinksSize: 0,
+        DataSize: 1024,
+        CumulativeSize: 1024
+      };
+      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
+      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+
+      const mockCatValue = Buffer.from('some kind of string value');
+      spyOn(ipfsStorage['node'], 'cat').and.returnValue(new MockAsyncIterable(mockCatValue, mockCatValue));
+
+      const expectedErrorCode = FetchResultCode.MaxSizeExceeded;
+      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
+      expect(expectedErrorCode).toEqual(fetchedContent.code);
+    });
   });
 
   describe('write', () => {
@@ -121,5 +135,13 @@ describe('IpfsStorage', () => {
       const fetchedHash = await ipfsStorage.write(bufferContent);
       expect(expectedHash).toEqual(fetchedHash);
     });
-  })
+  });
+
+  describe('stop', () => {
+    it('should call node stop', () => {
+      const stopSpy = spyOn(ipfsStorage['node'], 'stop').and.returnValue(undefined);
+      ipfsStorage.stop();
+      expect(stopSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });

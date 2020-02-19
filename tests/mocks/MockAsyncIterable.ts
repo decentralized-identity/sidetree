@@ -13,9 +13,17 @@ export default class MockAsyncIterable implements AsyncIterator<any>, AsyncItera
     done: false
   };
 
-  public constructor (doneValue?: any, notDoneValue?: any) {
+  private indexTracker = {
+    numOfElements: Number.MAX_SAFE_INTEGER,
+    currentIndex: 0
+  };
+
+  public constructor (doneValue?: any, notDoneValue?: any, numOfElements?: number) {
     this.doneValue.value = doneValue;
     this.notDoneValue.value = notDoneValue;
+    if (numOfElements !== undefined) {
+      this.indexTracker.numOfElements = numOfElements;
+    }
   }
 
   /**
@@ -39,6 +47,17 @@ export default class MockAsyncIterable implements AsyncIterator<any>, AsyncItera
    * iterator function of an iterable
    */
   public [Symbol.asyncIterator] (): AsyncIterator<any> {
-    return this;
+    const notDoneValue = this.notDoneValue;
+    const indexTracker = this.indexTracker;
+    const doneValue = this.doneValue;
+    return {
+      next () {
+        if (indexTracker.currentIndex < indexTracker.numOfElements) {
+          indexTracker.currentIndex++;
+          return Promise.resolve(notDoneValue);
+        }
+        return Promise.resolve(doneValue);
+      }
+    };
   }
 }
