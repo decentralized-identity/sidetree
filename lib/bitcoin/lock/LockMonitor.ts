@@ -291,10 +291,10 @@ export default class LockMonitor {
       type: lockTransactionType
     };
 
-    console.info(`Saving the ${lockTransactionType} type lock with transaction id: ${lockTransaction.transactionId}.`)
+    console.info(`Saving the ${lockTransactionType} type lock with transaction id: ${lockTransaction.transactionId}.`);
     await this.lockTransactionStore.addLock(lockInfoToSave);
 
-    console.info(`Broadcasting the transaction id: ${lockTransaction.transactionId}`)
+    console.info(`Broadcasting the transaction id: ${lockTransaction.transactionId}`);
     await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
 
     return lockInfoToSave;
