@@ -72,7 +72,7 @@ export default class IpfsStorage {
    */
   private async fetchContent (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
 
-    let fetchResult: FetchResult = { code: FetchResultCode.Success };
+    const fetchResult: FetchResult = { code: FetchResultCode.Success };
     let bufferChunks: Buffer[] = [];
     let currentContentSize = 0;
 
