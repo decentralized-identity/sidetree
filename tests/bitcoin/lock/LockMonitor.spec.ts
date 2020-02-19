@@ -31,6 +31,119 @@ fdescribe('LockMonitor', () => {
     lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1000, 50, 1200);
   });
 
+  describe('handlePeriodicPolling', () => {
+    it('should not do anything if a lock is not required and none exist.', async () => {
+      const mockCurrentLockInfo = createLockInformation(undefined, undefined);
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+
+      const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
+
+      lockMonitor['desiredLockAmountInSatoshis'] = 0;
+      await lockMonitor['handlePeriodicPolling']();
+
+      expect(createNewLockSpy).not.toHaveBeenCalled();
+      expect(existingLockSpy).not.toHaveBeenCalled();
+      expect(releaseLockSpy).not.toHaveBeenCalled();
+      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call the new lock routine if a lock is required but does not exist.', async () => {
+      const mockCurrentLockInfo = createLockInformation(undefined, undefined);
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+
+      const mockSavedLock: LockTransactionModel = {
+        createTimestamp: 1212,
+        desiredLockAmountInSatoshis: 300,
+        rawTransaction: 'raw transaction',
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id',
+        type: LockTransactionType.Create
+      };
+
+      const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock').and.returnValue(Promise.resolve(mockSavedLock));
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
+
+      lockMonitor['desiredLockAmountInSatoshis'] = 50;
+      await lockMonitor['handlePeriodicPolling']();
+
+      expect(createNewLockSpy).toHaveBeenCalled();
+      expect(existingLockSpy).not.toHaveBeenCalled();
+      expect(releaseLockSpy).not.toHaveBeenCalled();
+      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should call the renew lock routine if a lock is required and one does exist.', async () => {
+
+      const mockSavedLock: LockTransactionModel = {
+        createTimestamp: 1212,
+        desiredLockAmountInSatoshis: 300,
+        rawTransaction: 'raw transaction',
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id',
+        type: LockTransactionType.Create
+      };
+
+      const mockCurrentValueLock: ValueTimeLockModel = {
+        amountLocked: 300,
+        identifier: 'identifier',
+        owner: 'owner',
+        unlockTransactionTime: 12323
+      };
+
+      const mockCurrentLockInfo = createLockInformation(mockSavedLock, mockCurrentValueLock);
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+
+      const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal').and.returnValue(Promise.resolve());
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
+
+      lockMonitor['desiredLockAmountInSatoshis'] = 50;
+      await lockMonitor['handlePeriodicPolling']();
+
+      expect(createNewLockSpy).not.toHaveBeenCalled();
+      expect(existingLockSpy).toHaveBeenCalled();
+      expect(releaseLockSpy).not.toHaveBeenCalled();
+      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should call the release lock routine if a lock is not required but one does exist.', async () => {
+
+      const mockSavedLock: LockTransactionModel = {
+        createTimestamp: 1212,
+        desiredLockAmountInSatoshis: 300,
+        rawTransaction: 'raw transaction',
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id',
+        type: LockTransactionType.Create
+      };
+
+      const mockCurrentValueLock: ValueTimeLockModel = {
+        amountLocked: 300,
+        identifier: 'identifier',
+        owner: 'owner',
+        unlockTransactionTime: 12323
+      };
+
+      const mockCurrentLockInfo = createLockInformation(mockSavedLock, mockCurrentValueLock);
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+
+      const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb').and.returnValue(Promise.resolve(mockSavedLock));
+
+      lockMonitor['desiredLockAmountInSatoshis'] = 0;
+      await lockMonitor['handlePeriodicPolling']();
+
+      expect(createNewLockSpy).not.toHaveBeenCalled();
+      expect(existingLockSpy).not.toHaveBeenCalled();
+      expect(releaseLockSpy).toHaveBeenCalled();
+      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('resolveCurrentValueTimeLock', () => {
     it('should return an empty object if no locks were found in the db.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction');
@@ -124,63 +237,6 @@ fdescribe('LockMonitor', () => {
       const actual = await lockMonitor['resolveCurrentValueTimeLock']();
 
       expect(actual).toEqual(expected);
-      expect(rebroadcastSpy).not.toHaveBeenCalled();
-      expect(resolveLockSpy).toHaveBeenCalled();
-    });
-
-    it('should rebroadcast if the resolution throws transaction-not-found error.', async () => {
-      const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
-
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
-        throw new BitcoinError(ErrorCode.LockResolverTransactionNotFound);
-      });
-
-      const mockLastLock: LockTransactionModel = {
-        createTimestamp: 121314,
-        desiredLockAmountInSatoshis: 98974,
-        rawTransaction: 'raw transaction',
-        redeemScriptAsHex: 'redeem script as hex',
-        transactionId: 'transaction id',
-        type: LockTransactionType.Relock
-      };
-
-      spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
-
-      spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
-
-      const expected = createLockInformation(mockLastLock, undefined);
-      const actual = await lockMonitor['resolveCurrentValueTimeLock']();
-
-      expect(actual).toEqual(expected);
-      expect(rebroadcastSpy).toHaveBeenCalled();
-      expect(resolveLockSpy).toHaveBeenCalledBefore(rebroadcastSpy);
-    });
-
-    it('should bubble up any unhandled errors by the lock resolver.', async () => {
-      const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
-
-      const mockUnhandledError = new BitcoinError('some unhandled error');
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
-        throw mockUnhandledError;
-      });
-
-      const mockLastLock: LockTransactionModel = {
-        createTimestamp: 121314,
-        desiredLockAmountInSatoshis: 98974,
-        rawTransaction: 'raw transaction',
-        redeemScriptAsHex: 'redeem script as hex',
-        transactionId: 'transaction id',
-        type: LockTransactionType.Create
-      };
-
-      spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
-
-      spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
-
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
-        () => lockMonitor['resolveCurrentValueTimeLock'](),
-        mockUnhandledError.code);
-
       expect(rebroadcastSpy).not.toHaveBeenCalled();
       expect(resolveLockSpy).toHaveBeenCalled();
     });

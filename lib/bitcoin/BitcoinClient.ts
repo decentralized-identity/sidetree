@@ -21,7 +21,6 @@ export default class BitcoinClient {
   private readonly walletPrivateKey: PrivateKey;
   private readonly walletAddress: Address;
   private readonly walletPublicKeyAsBuffer: Buffer;
-  private readonly walletPublicKeyHash: string;
 
   constructor (
     private bitcoinPeerUri: string,
@@ -42,9 +41,6 @@ export default class BitcoinClient {
 
     const walletPublicKey = this.walletPrivateKey.toPublicKey();
     this.walletPublicKeyAsBuffer = walletPublicKey.toBuffer();
-
-    const walletPublicKeyHashAsBuffer = crypto.Hash.sha256ripemd160(this.walletPublicKeyAsBuffer);
-    this.walletPublicKeyHash = walletPublicKeyHashAsBuffer.toString('hex');
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
@@ -309,13 +305,6 @@ export default class BitcoinClient {
     const outputSatoshiSum = transactionOutputs.reduce((sum, value) => sum + value, 0);
 
     return (inputSatoshiSum - outputSatoshiSum);
-  }
-
-  /**
-   * Gets the wallet public key hash as it is presented in a pay-to-publick-key-hash transaction.
-   */
-  public getWalletPublicKeyHash (): string {
-    return this.walletPublicKeyHash;
   }
 
   private async addWatchOnlyAddressToWallet (publicKeyAsHex: string, rescan: boolean): Promise<void> {

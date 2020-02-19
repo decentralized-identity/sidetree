@@ -58,34 +58,49 @@ export default class LockMonitor {
         clearTimeout(this.periodicPollTimeoutId);
       }
 
-      this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
+      await this.handlePeriodicPolling();
 
-      // Not: ALSO need to check the state (pending/confirmed etc) below
-      const validCurrentLockExist = this.currentValueTimeLock.currentValueTimeLock !== undefined;
-
-      const lockRequired = this.desiredLockAmountInSatoshis > 0;
-
-      if (lockRequired && !validCurrentLockExist) {
-        await this.handleCreatingNewLock(this.desiredLockAmountInSatoshis);
-      }
-
-      if (lockRequired && validCurrentLockExist) {
-        await this.handleExistingLockRenewal(
-          this.currentValueTimeLock.currentValueTimeLock!,
-          this.currentValueTimeLock.latestSavedLockInfo!,
-          this.desiredLockAmountInSatoshis);
-      }
-
-      if (!lockRequired && validCurrentLockExist) {
-        await this.releaseLockAndSaveItToDb(this.currentValueTimeLock.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
-      }
-
-      this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
     } catch (e) {
       const message = `An error occured during periodic poll: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`;
       console.error(message);
     } finally {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * intervalInSeconds);
+    }
+  }
+
+  private async handlePeriodicPolling (): Promise<void> {
+
+    this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
+
+      // Not: ALSO need to check the state (pending/confirmed etc) below
+    const validCurrentLockExist = this.currentValueTimeLock.currentValueTimeLock !== undefined;
+
+    const lockRequired = this.desiredLockAmountInSatoshis > 0;
+
+    let resolveCurrentLockAgain = false;
+
+    if (lockRequired && !validCurrentLockExist) {
+      await this.handleCreatingNewLock(this.desiredLockAmountInSatoshis);
+      resolveCurrentLockAgain = true;
+    }
+
+    if (lockRequired && validCurrentLockExist) {
+      await this.handleExistingLockRenewal(
+        this.currentValueTimeLock.currentValueTimeLock!,
+        this.currentValueTimeLock.latestSavedLockInfo!,
+        this.desiredLockAmountInSatoshis);
+
+      resolveCurrentLockAgain = true;
+    }
+
+    if (!lockRequired && validCurrentLockExist) {
+      await this.releaseLockAndSaveItToDb(this.currentValueTimeLock.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
+
+      resolveCurrentLockAgain = true;
+    }
+
+    if (resolveCurrentLockAgain) {
+      this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
     }
   }
 
@@ -118,28 +133,14 @@ export default class LockMonitor {
       return currentLockInformation;
     }
 
-    try {
-      // If we're here then it means that we have saved some information about a lock (which we
-      // still need to resolve) which is confirmed to be on the blockchain.
-      const lastLockIdentifier: LockIdentifier = {
-        transactionId: lastSavedLock.transactionId,
-        redeemScriptAsHex: lastSavedLock.redeemScriptAsHex
-      };
+    // If we're here then it means that we have saved some information about a lock (which we
+    // still need to resolve) which is confirmed to be on the blockchain.
+    const lastLockIdentifier: LockIdentifier = {
+      transactionId: lastSavedLock.transactionId,
+      redeemScriptAsHex: lastSavedLock.redeemScriptAsHex
+    };
 
-      currentLockInformation.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
-
-    } catch (e) {
-
-      // If the transaction was not found on the bitcoin
-      if (e instanceof BitcoinError && e.code === ErrorCode.LockResolverTransactionNotFound) {
-        await this.rebroadcastTransaction(lastSavedLock);
-
-      } else {
-        // This is an unhandle-able error and we need to just rethrow ... the following will
-        // mantain the original stacktrace
-        throw (e);
-      }
-    }
+    currentLockInformation.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
 
     return currentLockInformation;
   }
