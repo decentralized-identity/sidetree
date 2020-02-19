@@ -189,7 +189,10 @@ export default class LockMonitor {
                              `Lock amount: ${totalLockAmount}; Wallet balance: ${walletBalance}`);
     }
 
-    return this.createNewLockAndSaveItToDb(totalLockAmount);
+    const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
+    const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, lockUntilBlock);
+
+    return this.saveAndThenBroadcastTransaction(lockTransaction, LockTransactionType.Create, desiredLockAmountInSatoshis);
   }
 
   private async handleExistingLockRenewal (
@@ -228,20 +231,6 @@ export default class LockMonitor {
     }
   }
 
-  private async createNewLockAndSaveItToDb (desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
-
-    const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
-    const lockTransaction = await this.bitcoinClient.createLockTransaction(desiredLockAmountInSatoshis, lockUntilBlock);
-
-    const lockInfoToSave = this.createLockInfoToSave(lockTransaction, LockTransactionType.Create, desiredLockAmountInSatoshis);
-
-    await this.lockTransactionStore.addLock(lockInfoToSave);
-
-    await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
-
-    return lockInfoToSave;
-  }
-
   private async renewExistingLockAndSaveItToDb (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
 
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
@@ -261,13 +250,7 @@ export default class LockMonitor {
         `The current locked amount (${currentValueTimeLock.amountLocked} satoshis) minus the relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);
     }
 
-    const lockInfoToSave = this.createLockInfoToSave(relockTransaction, LockTransactionType.Relock, desiredLockAmountInSatoshis);
-
-    await this.lockTransactionStore.addLock(lockInfoToSave);
-
-    await this.bitcoinClient.broadcastLockTransaction(relockTransaction);
-
-    return lockInfoToSave;
+    return this.saveAndThenBroadcastTransaction(relockTransaction, LockTransactionType.Relock, desiredLockAmountInSatoshis);
   }
 
   private async releaseLockAndSaveItToDb (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
@@ -278,27 +261,27 @@ export default class LockMonitor {
         currentLockIdentifier.transactionId,
         currentValueTimeLock.unlockTransactionTime);
 
-    const lockInfoToSave = this.createLockInfoToSave(releaseLockTransaction, LockTransactionType.ReturnToWallet, desiredLockAmountInSatoshis);
+    return this.saveAndThenBroadcastTransaction(releaseLockTransaction, LockTransactionType.ReturnToWallet, desiredLockAmountInSatoshis);
+  }
+
+  private async saveAndThenBroadcastTransaction (
+    lockTransaction: BitcoinLockTransactionModel,
+    lockTransactionType: LockTransactionType,
+    desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
+
+    const lockInfoToSave: LockTransactionModel = {
+      desiredLockAmountInSatoshis: desiredLockAmountInSatoshis,
+      rawTransaction: lockTransaction.serializedTransactionObject,
+      transactionId: lockTransaction.transactionId,
+      redeemScriptAsHex: lockTransaction.redeemScriptAsHex,
+      createTimestamp: Date.now(),
+      type: lockTransactionType
+    };
 
     await this.lockTransactionStore.addLock(lockInfoToSave);
 
-    await this.bitcoinClient.broadcastLockTransaction(releaseLockTransaction);
+    await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
 
     return lockInfoToSave;
-  }
-
-  private createLockInfoToSave (
-    lockTxn: BitcoinLockTransactionModel,
-    lockTxnType: LockTransactionType,
-    desiredLockAmountInSatoshis: number): LockTransactionModel {
-
-    return {
-      desiredLockAmountInSatoshis: desiredLockAmountInSatoshis,
-      rawTransaction: lockTxn.serializedTransactionObject,
-      transactionId: lockTxn.transactionId,
-      redeemScriptAsHex: lockTxn.redeemScriptAsHex,
-      createTimestamp: Date.now(),
-      type: lockTxnType
-    };
   }
 }

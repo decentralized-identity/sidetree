@@ -333,6 +333,17 @@ describe('LockMonitor', () => {
       const mockWalletBalance = 32430234 + lockMonitor['firstLockFeeAmountInSatoshis'] + 200;
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
+      const mockCurrentBlockHeight = 455678;
+      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
+
+      const mockLockTxn: BitcoinLockTransactionModel = {
+        redeemScriptAsHex: 'renew lock txn redeem script',
+        serializedTransactionObject: 'serialized txn',
+        transactionId: 'transaction id',
+        transactionFee: 100
+      };
+      const createLockTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'createLockTransaction').and.returnValue(Promise.resolve(mockLockTxn));
+
       const mockLockInfoSaved: LockTransactionModel = {
         desiredLockAmountInSatoshis: 125,
         createTimestamp: Date.now(),
@@ -342,12 +353,18 @@ describe('LockMonitor', () => {
         type: LockTransactionType.Create
       };
 
-      const createLockSpy = spyOn(lockMonitor as any,'createNewLockAndSaveItToDb').and.returnValue(Promise.resolve(mockLockInfoSaved));
+      const saveBroadcastSpy = spyOn(lockMonitor as any,'saveAndThenBroadcastTransaction').and.returnValue(Promise.resolve(mockLockInfoSaved));
 
       const desiredLockAmount = mockWalletBalance - (mockWalletBalance * 0.5);
       const actual = await lockMonitor['handleCreatingNewLock'](desiredLockAmount);
+
       expect(actual).toEqual(mockLockInfoSaved);
-      expect(createLockSpy).toHaveBeenCalledWith(desiredLockAmount + lockMonitor['firstLockFeeAmountInSatoshis']);
+
+      const expectedLockAmount = desiredLockAmount + lockMonitor['firstLockFeeAmountInSatoshis'];
+      const expectedLockUntilBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
+      expect(createLockTxnSpy).toHaveBeenCalledWith(expectedLockAmount, expectedLockUntilBlock);
+
+      expect(saveBroadcastSpy).toHaveBeenCalledWith(mockLockTxn, LockTransactionType.Create, desiredLockAmount);
     });
 
     it('should throw if the wallet balance is less than the desired lock amount', async () => {
@@ -525,47 +542,6 @@ describe('LockMonitor', () => {
     });
   });
 
-  describe('createNewLockAndSaveItToDb', () => {
-    it('should create a new lock and save the updated information to the db', async () => {
-
-      const mockCurrentBlockHeight = 455678;
-      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
-
-      const mockLockTxn: BitcoinLockTransactionModel = {
-        redeemScriptAsHex: 'renew lock txn redeem script',
-        serializedTransactionObject: 'serialized txn',
-        transactionId: 'transaction id',
-        transactionFee: 100
-      };
-
-      const createLockTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'createLockTransaction').and.returnValue(Promise.resolve(mockLockTxn));
-      const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock').and.returnValue(Promise.resolve());
-      const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction').and.returnValue(Promise.resolve('id'));
-
-      const mockLockInfo: LockTransactionModel = {
-        desiredLockAmountInSatoshis: 2345,
-        createTimestamp: 12323425,
-        rawTransaction: 'raw transaction',
-        redeemScriptAsHex: 'redeem script as hex',
-        transactionId: 'transaction id',
-        type: LockTransactionType.ReturnToWallet
-      };
-
-      const createLockInfoSpy = spyOn(lockMonitor as any, 'createLockInfoToSave').and.returnValue(mockLockInfo);
-
-      const desiredLockAmountInput = 987845;
-      const actual = await lockMonitor['createNewLockAndSaveItToDb'](desiredLockAmountInput);
-
-      expect(actual).toEqual(mockLockInfo);
-
-      const expectedNewLockBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
-      expect(createLockTxnSpy).toHaveBeenCalledWith(desiredLockAmountInput, expectedNewLockBlock);
-      expect(lockStoreSpy).toHaveBeenCalledWith(mockLockInfo);
-      expect(broadcastTxnSpy).not.toHaveBeenCalledBefore(lockStoreSpy);
-      expect(createLockInfoSpy).toHaveBeenCalledWith(mockLockTxn, LockTransactionType.Create, desiredLockAmountInput);
-    });
-  });
-
   describe('renewExistingLockAndSaveItToDb', () => {
     it('should renew the existing lock and save the updated information to the db', async () => {
       const mockCurrentLockId: LockIdentifier = {
@@ -586,8 +562,6 @@ describe('LockMonitor', () => {
       };
 
       const createRelockTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'createRelockTransaction').and.returnValue(Promise.resolve(mockRenewLockTxn));
-      const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock').and.returnValue(Promise.resolve());
-      const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction').and.returnValue(Promise.resolve('id'));
 
       const mockLockInfo: LockTransactionModel = {
         desiredLockAmountInSatoshis: 2345,
@@ -598,7 +572,7 @@ describe('LockMonitor', () => {
         type: LockTransactionType.ReturnToWallet
       };
 
-      const createLockInfoSpy = spyOn(lockMonitor as any, 'createLockInfoToSave').and.returnValue(mockLockInfo);
+      const saveBroadcastSpy = spyOn(lockMonitor as any, 'saveAndThenBroadcastTransaction').and.returnValue(mockLockInfo);
 
       const currentLockInfoInput: ValueTimeLockModel = {
         amountLocked: 1234,
@@ -615,9 +589,7 @@ describe('LockMonitor', () => {
 
       const expectedNewLockBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
       expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, currentLockInfoInput.unlockTransactionTime, expectedNewLockBlock);
-      expect(lockStoreSpy).toHaveBeenCalledWith(mockLockInfo);
-      expect(broadcastTxnSpy).not.toHaveBeenCalledBefore(lockStoreSpy);
-      expect(createLockInfoSpy).toHaveBeenCalledWith(mockRenewLockTxn, LockTransactionType.Relock, desiredLockAmountInput);
+      expect(saveBroadcastSpy).toHaveBeenCalledWith(mockRenewLockTxn, LockTransactionType.Relock, desiredLockAmountInput);
     });
 
     it('should throw if the renew fees are causing the new lock amount to be less than the desired lock.', async () => {
@@ -639,8 +611,7 @@ describe('LockMonitor', () => {
       };
 
       spyOn(lockMonitor['bitcoinClient'], 'createRelockTransaction').and.returnValue(Promise.resolve(mockRenewLockTxn));
-      const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock');
-      const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction');
+      const saveBroadcastSpy = spyOn(lockMonitor as any, 'saveAndThenBroadcastTransaction');
 
       const currentLockInfoInput: ValueTimeLockModel = {
         amountLocked: 1234,
@@ -656,8 +627,7 @@ describe('LockMonitor', () => {
         () => lockMonitor['renewExistingLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput),
         ErrorCode.LockMonitorNotEnoughBalanceForRelock);
 
-      expect(lockStoreSpy).not.toHaveBeenCalled();
-      expect(broadcastTxnSpy).not.toHaveBeenCalled();
+      expect(saveBroadcastSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -678,8 +648,6 @@ describe('LockMonitor', () => {
       };
 
       spyOn(lockMonitor['bitcoinClient'], 'createReleaseLockTransaction').and.returnValue(Promise.resolve(mockReleaseLockTxn));
-      const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock').and.returnValue(Promise.resolve());
-      const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction').and.returnValue(Promise.resolve('id'));
 
       const mockLockInfo: LockTransactionModel = {
         desiredLockAmountInSatoshis: 2345,
@@ -690,7 +658,7 @@ describe('LockMonitor', () => {
         type: LockTransactionType.ReturnToWallet
       };
 
-      const createLockInfoSpy = spyOn(lockMonitor as any, 'createLockInfoToSave').and.returnValue(mockLockInfo);
+      const saveBroadcastSpy = spyOn(lockMonitor as any, 'saveAndThenBroadcastTransaction').and.returnValue(mockLockInfo);
 
       const currentLockInfoInput: ValueTimeLockModel = {
         amountLocked: 123,
@@ -702,15 +670,12 @@ describe('LockMonitor', () => {
       const desiredLockAmountInput = 2500;
       const actual = await lockMonitor['releaseLockAndSaveItToDb'](currentLockInfoInput, desiredLockAmountInput);
       expect(actual).toEqual(mockLockInfo);
-
-      expect(lockStoreSpy).toHaveBeenCalledWith(mockLockInfo);
-      expect(broadcastTxnSpy).not.toHaveBeenCalledBefore(lockStoreSpy);
-      expect(createLockInfoSpy).toHaveBeenCalledWith(mockReleaseLockTxn, LockTransactionType.ReturnToWallet, desiredLockAmountInput);
+      expect(saveBroadcastSpy).toHaveBeenCalledWith(mockReleaseLockTxn, LockTransactionType.ReturnToWallet, desiredLockAmountInput);
     });
   });
 
-  describe('createLockInfoToSave', () => {
-    it('should create the lock info correctly using the inputs.', async () => {
+  describe('saveAndThenBroadcastTransaction', () => {
+    it('save the transaction first and then broadcast it.', async () => {
 
       const mockBitcoinLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'redeem script hex',
@@ -722,12 +687,15 @@ describe('LockMonitor', () => {
       const mockDateValue = Date.now();
       spyOn(Date,'now').and.returnValue(mockDateValue);
 
+      const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock').and.returnValue(Promise.resolve());
+      const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction').and.returnValue(Promise.resolve('id'));
+
       const desiredLockAmtInput = 98985;
       const lockTxnTypeInput = LockTransactionType.Relock;
 
-      const actual = lockMonitor['createLockInfoToSave'](mockBitcoinLockTxn, lockTxnTypeInput, desiredLockAmtInput);
+      const actual = await lockMonitor['saveAndThenBroadcastTransaction'](mockBitcoinLockTxn, lockTxnTypeInput, desiredLockAmtInput);
 
-      const expectedValue: LockTransactionModel = {
+      const expectedLockSaved: LockTransactionModel = {
         desiredLockAmountInSatoshis: desiredLockAmtInput,
         rawTransaction: mockBitcoinLockTxn.serializedTransactionObject,
         createTimestamp: mockDateValue,
@@ -736,7 +704,10 @@ describe('LockMonitor', () => {
         type: lockTxnTypeInput
       };
 
-      expect(actual).toEqual(expectedValue);
+      expect(actual).toEqual(expectedLockSaved);
+      expect(lockStoreSpy).toHaveBeenCalledWith(expectedLockSaved);
+      expect(lockStoreSpy).toHaveBeenCalledBefore(broadcastTxnSpy);
+      expect(broadcastTxnSpy).toHaveBeenCalledWith(mockBitcoinLockTxn);
     });
   });
 });
