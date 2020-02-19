@@ -91,36 +91,42 @@ export default class LockMonitor {
 
   private async resolveCurrentValueTimeLock (): Promise<LockInformation> {
 
-    const currentValueTimeLockrmation: LockInformation = {
+    const currentLockInformation: LockInformation = {
       currentValueTimeLock: undefined,
       latestSavedLockInfo: undefined
     };
 
     const lastSavedLock = await this.lockTransactionStore.getLastLock();
-    currentValueTimeLockrmation.latestSavedLockInfo = lastSavedLock;
+    currentLockInformation.latestSavedLockInfo = lastSavedLock;
 
+    // Nothing to do if there's nothing found.
     if (!lastSavedLock) {
-      return currentValueTimeLockrmation;
+      return currentLockInformation;
+    }
+
+    // Make sure that the last lock txn is actually written to the blockchain. Rebroadcast
+    // if it is not as we don't want to do anything until last lock information is fully
+    // confirmed to be on the blockchain.
+    if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
+
+      await this.rebroadcastTransaction(lastSavedLock);
+      return currentLockInformation;
     }
 
     if (lastSavedLock.type === LockTransactionType.ReturnToWallet) {
-      // Check if the transaction is actually written on blockchain
-      if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
-        await this.rebroadcastTransaction(lastSavedLock);
-      }
-
-      return currentValueTimeLockrmation;
+      // This means that there's no current lock for this node. Just return
+      return currentLockInformation;
     }
 
     try {
       // If we're here then it means that we have saved some information about a lock (which we
-      // still need to resolve)
+      // still need to resolve) which is confirmed to be on the blockchain.
       const lastLockIdentifier: LockIdentifier = {
         transactionId: lastSavedLock.transactionId,
         redeemScriptAsHex: lastSavedLock.redeemScriptAsHex
       };
 
-      currentValueTimeLockrmation.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
+      currentLockInformation.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
 
     } catch (e) {
 
@@ -135,7 +141,7 @@ export default class LockMonitor {
       }
     }
 
-    return currentValueTimeLockrmation;
+    return currentLockInformation;
   }
 
   private async rebroadcastTransaction (lastSavedLock: LockTransactionModel): Promise<void> {
@@ -190,8 +196,6 @@ export default class LockMonitor {
     currentValueTimeLock: ValueTimeLockModel,
     latestSavedLockInfo: LockTransactionModel,
     desiredLockAmountInSatoshis: number): Promise<void> {
-
-    // If desired amount is < amount already locked ??
 
     const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
 
@@ -254,7 +258,7 @@ export default class LockMonitor {
       throw new BitcoinError(
         ErrorCode.LockMonitorNotEnoughBalanceForRelock,
         // tslint:disable-next-line: max-line-length
-        `The relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);
+        `The current locked amount (${currentValueTimeLock.amountLocked} satoshis) minus the relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);
     }
 
     const lockInfoToSave = this.createLockInfoToSave(relockTransaction, LockTransactionType.Relock, desiredLockAmountInSatoshis);

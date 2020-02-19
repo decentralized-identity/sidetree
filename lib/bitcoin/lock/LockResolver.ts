@@ -1,5 +1,6 @@
 import BitcoinClient from '../BitcoinClient';
 import BitcoinError from '../BitcoinError';
+import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
@@ -51,7 +52,7 @@ export default class LockResolver {
     }
 
     // (B). verify that the transaction is paying to the target redeem script
-    const lockTransaction = await this.bitcoinClient.getRawTransaction(lockIdentifier.transactionId);
+    const lockTransaction = await this.getTransactionFromBitcoin(lockIdentifier.transactionId);
 
     const transactionIsPayingToTargetRedeemScript = lockTransaction.outputs.length > 0 &&
                                                     LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
@@ -128,6 +129,14 @@ export default class LockResolver {
       return new Script(redeemScriptAsBuffer);
     } catch (e) {
       throw BitcoinError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
+    }
+  }
+
+  private async getTransactionFromBitcoin (transactionId: string): Promise<BitcoinTransactionModel> {
+    try {
+      return this.bitcoinClient.getRawTransaction(transactionId);
+    } catch (e) {
+      throw BitcoinError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
     }
   }
 }
