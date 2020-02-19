@@ -440,6 +440,8 @@ export default class BitcoinClient {
     freezeUntilBlock: number,
     freezeAmountInSatoshis: number): Promise<[Transaction, string]> {
 
+    console.info(`Creating a freeze transaction for amount: ${freezeAmountInSatoshis} satoshis with freeze until block: ${freezeUntilBlock}`);
+
     const freezeScript = BitcoinClient.createFreezeScript(freezeUntilBlock, this.walletAddress);
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(payToScriptHashOutput);
@@ -462,6 +464,9 @@ export default class BitcoinClient {
     previousFreezeUntilBlock: number,
     freezeUntilBlock: number): Promise<[Transaction, string]> {
 
+    // tslint:disable-next-line: max-line-length
+    console.info(`Creating a freeze transaction with freeze until block: ${freezeUntilBlock} from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
+
     const freezeScript = BitcoinClient.createFreezeScript(freezeUntilBlock, this.walletAddress);
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(payToScriptHashOutput);
@@ -479,6 +484,9 @@ export default class BitcoinClient {
   private async createSpendToWalletTransaction (
     previousFreezeTransaction: Transaction,
     previousFreezeUntilBlock: number): Promise<Transaction> {
+
+    // tslint:disable-next-line: max-line-length
+    console.info(`Returning preivously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen until block: ${previousFreezeUntilBlock}`);
 
     return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,

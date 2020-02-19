@@ -36,6 +36,8 @@ export default class LockResolver {
    */
   public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<ValueTimeLockModel> {
 
+    console.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
+
     // The verifictation of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script
     //   (B). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier

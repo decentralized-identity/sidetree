@@ -57,6 +57,7 @@ export default class LockMonitor {
         clearTimeout(this.periodicPollTimeoutId);
       }
 
+      console.info(`Starting periodic polling for the lock monitor.`);
       await this.handlePeriodicPolling();
 
     } catch (e) {
@@ -118,6 +119,8 @@ export default class LockMonitor {
       return currentLockInformation;
     }
 
+    console.info(`Found last saved lock of type: ${lastSavedLock.type} with transaction id: ${lastSavedLock.transactionId}.`);
+
     // Make sure that the last lock txn is actually written to the blockchain. Rebroadcast
     // if it is not as we don't want to do anything until last lock information is fully
     // confirmed to be on the blockchain.
@@ -145,6 +148,8 @@ export default class LockMonitor {
   }
 
   private async rebroadcastTransaction (lastSavedLock: LockTransactionModel): Promise<void> {
+    console.info(`Rebroadcasting the transaction id: ${lastSavedLock.transactionId}`);
+
     // So we had some transaction information saved but the transaction was never found on the
     // blockchain. Either the transaction was broadcasted and we're just waiting for it to be
     // actually written or maybe this node died before it could actually broadcast the transaction.
@@ -170,7 +175,7 @@ export default class LockMonitor {
       // no exception thrown == transaction found.
       return true;
     } catch (e) {
-      console.info(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      console.warn(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }
 
     return false;
@@ -189,6 +194,8 @@ export default class LockMonitor {
                              `Lock amount: ${totalLockAmount}; Wallet balance: ${walletBalance}`);
     }
 
+    console.info(`Going to create a new lock for amount: ${totalLockAmount} satoshis. Current wallet balance: ${walletBalance}`);
+
     const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
     const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, lockUntilBlock);
 
@@ -202,6 +209,8 @@ export default class LockMonitor {
 
     const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
 
+    console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${currentValueTimeLock.unlockTransactionTime}`);
+
     // Just return if we're not close to expiry
     if (currentValueTimeLock.unlockTransactionTime - currentBlockTime > 1) {
       return;
@@ -210,6 +219,9 @@ export default class LockMonitor {
     // If the desired lock amount is different from prevoius then just return the amount to
     // the wallet and let the next poll iteration start a new lock.
     if (latestSavedLockInfo.desiredLockAmountInSatoshis !== desiredLockAmountInSatoshis) {
+      // tslint:disable-next-line: max-line-length
+      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis.`);
+
       await this.releaseLockAndSaveItToDb(currentValueTimeLock, desiredLockAmountInSatoshis);
       return;
     }
@@ -223,6 +235,7 @@ export default class LockMonitor {
       // If there is not enough balance for the relock then just release the lock. Let the next
       // iteration of the polling to try and create a new lock.
       if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
+        console.warn(`There is not enough balance for relocking so going to release the lock. Error: ${e.message}`);
         await this.releaseLockAndSaveItToDb(currentValueTimeLock, desiredLockAmountInSatoshis);
       } else {
         // This is an unexpected error at this point ... rethrow as this is needed to be investigated.
@@ -278,8 +291,10 @@ export default class LockMonitor {
       type: lockTransactionType
     };
 
+    console.info(`Saving the ${lockTransactionType} type lock with transaction id: ${lockTransaction.transactionId}.`)
     await this.lockTransactionStore.addLock(lockInfoToSave);
 
+    console.info(`Broadcasting the transaction id: ${lockTransaction.transactionId}`)
     await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
 
     return lockInfoToSave;
