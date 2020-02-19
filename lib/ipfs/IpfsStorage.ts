@@ -56,8 +56,6 @@ export default class IpfsStorage {
       return { code: FetchResultCode.MaxSizeExceeded };
     }
 
-    // NOTE: it appears that even if we destroy the readable stream half way, IPFS node in the backend will complete fetch of the file,
-    // so the size check above although not 100 accurate, is necessary as an optimization.
     const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
 
     // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
