@@ -46,11 +46,11 @@ declare class IPFS {
     on(event: 'error', callback: (error: { message: any }) => void): IPFS;
     once(event: string, callback: () => void): IPFS;
 
-    add(data: IPFS.FileContent, options: any): Promise<AsyncIterable<Object>>;
+    add(data: IPFS.FileContent, options?: any): AsyncIterator<any>;
 
-    cat(hash: IPFS.Multihash, options?: any): Promise<AsyncIterable<Object>>;
+    cat(hash: IPFS.Multihash, options?: any): AsyncIterable<Buffer>;
 
-    get(hash: IPFS.Multihash): Promise<AsyncIterable<Object>>;
+    get(hash: IPFS.Multihash): AsyncIterable<any>;
 }
 
 declare namespace IPFS {
@@ -253,7 +253,7 @@ declare namespace IPFS {
         stat(multihash: Multihash, options: GetObjectOptions, callback: Callback<ObjectStat>): void;
         stat(multihash: Multihash, options: GetObjectOptions): Promise<ObjectStat>;
         stat(multihash: Multihash, callback: Callback<ObjectStat>): void;
-        stat(multihash: Multihash): Promise<ObjectStat>;
+        stat(multihash: Multihash): Promise<any>;
 
         patch: ObjectPatchAPI;
     }
@@ -279,5 +279,5 @@ declare namespace IPFS {
         tree(cid: string | CID): Promise<any>;
     }
 
-    export function create (options: Options): IPFS;
+    export function create (options: Options): Promise<IPFS>;
 }

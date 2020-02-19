@@ -8,8 +8,8 @@ describe('RequestHandler', () => {
   const maxFileSize = 20000000; // 20MB
   const fetchTimeoutInSeconds = 1;
 
-  beforeEach(() => {
-    requestHandler = new RequestHandler(fetchTimeoutInSeconds);
+  beforeEach(async () => {
+    requestHandler = await RequestHandler.initialize(fetchTimeoutInSeconds);
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {

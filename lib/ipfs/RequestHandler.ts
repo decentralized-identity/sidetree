@@ -19,12 +19,22 @@ export default class RequestHandler {
   private serviceInfo: ServiceInfo;
 
   /**
+   * initializes an instance of request handler
+   * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
+   * @param repo Optional IPFS datastore implementation.
+   */
+  public static async initialize (fetchTimeoutInSeconds: number, repo?: any) {
+    const ipfsStorage = await IpfsStorage.create(repo);
+    return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
+  }
+
+  /**
    * Constructs the Sidetree IPFS request handler.
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
    * @param repo Optional IPFS datastore implementation.
    */
-  public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
-    this.ipfsStorage = IpfsStorage.create(repo);
+  public constructor (private fetchTimeoutInSeconds: number, ipfsStorage: IpfsStorage) {
+    this.ipfsStorage = ipfsStorage;
     this.serviceInfo = new ServiceInfo('ipfs');
   }
 

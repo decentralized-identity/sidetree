@@ -15,21 +15,21 @@ export default class IpfsStorage {
   /**
    * Static method to have a single instance of class and mock in unit tests
    */
-  public static create (repo?: any): IpfsStorage {
+  public static async create (repo?: any): Promise<IpfsStorage> {
     if (!IpfsStorage.ipfsStorageInstance) {
-      IpfsStorage.ipfsStorageInstance = new IpfsStorage(repo);
+      const repoName = 'sidetree-ipfs';
+      const options = {
+        repo: repo !== undefined ? repo : repoName
+      };
+      const node = await IPFS.create(options);
+      IpfsStorage.ipfsStorageInstance = new IpfsStorage(node);
     }
 
     return IpfsStorage.ipfsStorageInstance;
   }
 
-  private constructor (repo?: any) {
-    const repoName = 'sidetree-ipfs';
-    const options = {
-      repo: repo !== undefined ? repo : repoName
-    };
-
-    this.node = IPFS.create(options);
+  private constructor (node: IPFS) {
+    this.node = node;
   }
 
   /**
@@ -45,14 +45,9 @@ export default class IpfsStorage {
     // If we hit error attempting to fetch the content metadata, return not-found.
     let contentMetadata = undefined;
     try {
-      contentMetadata = await (this.node as any).object.stat(hash);
+      contentMetadata = await this.node.object.stat(hash);
     } catch (error) {
       console.info(error);
-      return { code: FetchResultCode.NotFound };
-    }
-
-    // If content size cannot be found, return not-found.
-    if (contentMetadata === undefined || contentMetadata.DataSize === undefined) {
       return { code: FetchResultCode.NotFound };
     }
 
@@ -78,64 +73,28 @@ export default class IpfsStorage {
    * This method also allows easy mocking in tests.
    */
   private async fetchContent (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
-    // files.getReadableStream() fetches the content from network if not available in local repo and stores in cache which will be garbage collectable.
-    const readableStream = await (this.node as any).getReadableStream(hash);
 
     let fetchResult: FetchResult = { code: FetchResultCode.Success };
     let bufferChunks: Buffer[] = [];
     let currentContentSize = 0;
-    let resolveFunction: any;
-    let rejectFunction: any;
 
-    const fetchContent = new Promise((resolve, reject) => {
-      resolveFunction = resolve;
-      rejectFunction = reject;
-    });
-
-    readableStream.on('data', (file: any) => {
-      // If content is of directory type, set return code as "not a file", no need to setup content stream listeners.
-      if (file.type === 'dir') {
-        console.info(`Content is of directory type for hash ${hash}, skipping this bad request.`);
-        fetchResult.code = FetchResultCode.NotAFile;
-
-        readableStream.destroy();
-        return;
-      }
-
-      // Else setting all the even listners and resume content stream fetching.
-      file.content.on('data', (chunk: Buffer) => {
-        currentContentSize += chunk.length;
-
-        // If content size exceeds the max size limit, immediate stop further stream reading.
-        if (currentContentSize > maxSizeInBytes) {
-          console.info(`Content stream reached ${currentContentSize} bytes which is greater than the ${maxSizeInBytes} bytes limit.`);
-          fetchResult.code = FetchResultCode.MaxSizeExceeded;
-
-          readableStream.destroy();
-          return;
+    try {
+      for await (const chunk of this.node.cat(hash)) {
+        // this loop has the potential to get stuck forever if hash is invalid or node is super slow
+        currentContentSize += chunk.byteLength;
+        if (maxSizeInBytes < currentContentSize) {
+          console.info(`Max size of ${maxSizeInBytes} bytes exceeded by CID ${hash}`);
+          return { code: FetchResultCode.MaxSizeExceeded };
         }
-
         bufferChunks.push(chunk);
-      });
-
-      file.content.on('error', () => {
-        rejectFunction();
-      });
-      file.content.on('close', () => {
-        resolveFunction();
-      });
-      file.content.on('end', () => {
-        resolveFunction();
-      });
-
-      file.content.resume();
-    });
-
-    await fetchContent;
-
-    if (fetchResult.code === FetchResultCode.Success) {
-      fetchResult.content = Buffer.concat(bufferChunks);
+      }
+    } catch (e) {
+      // when an error is thrown, that means the hash points to something that is not a file
+      console.log(`Error thrown while downloading content from IPFS: ${e}`);
+      return { code: FetchResultCode.NotAFile };
     }
+
+    fetchResult.content = Buffer.concat(bufferChunks);
 
     return fetchResult;
   }
@@ -146,8 +105,8 @@ export default class IpfsStorage {
    * @returns The multihash content identifier of the stored content.
    */
   public async write (content: Buffer): Promise<string> {
-    const files = await this.node.add(content);
-    return files[0].hash;
+    const file = await this.node.add(content).next();
+    return file.value.cid.toString();
   }
 
   /**
