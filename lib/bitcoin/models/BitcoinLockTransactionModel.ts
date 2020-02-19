@@ -6,4 +6,5 @@ export default interface BitcoinLockTransactionModel {
   serializedTransactionObject: string;
   transactionId: string;
   transactionFee: number;
+
 }

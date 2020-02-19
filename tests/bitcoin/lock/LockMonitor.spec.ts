@@ -19,7 +19,7 @@ function createLockInformation (latestSavedLockInfo: LockTransactionModel | unde
   };
 }
 
-fdescribe('LockMonitor', () => {
+describe('LockMonitor', () => {
 
   const validTestWalletImportString = 'cTpKFwqu2HqW4y5ByMkNRKAvkPxEcwpax5Qr33ibYvkp1KSxdji6';
 
@@ -29,6 +29,49 @@ fdescribe('LockMonitor', () => {
     const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1);
     const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
     lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1000, 50, 1200);
+  });
+
+  describe('initialize', () => {
+    it('should call the periodic poll function', async () => {
+      const pollSpy = spyOn(lockMonitor as any, 'periodicPoll').and.returnValue(Promise.resolve());
+
+      await lockMonitor.initialize();
+
+      expect(pollSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('PerioicPoll', () => {
+    it('should call set timeout at the end of the execution.', async () => {
+      const clearTimeoutSpy = spyOn(global, 'clearTimeout').and.returnValue();
+      const handlePollingSpy = spyOn(lockMonitor as any, 'handlePeriodicPolling').and.returnValue(Promise.resolve());
+
+      const setTimeoutOutput = 985023;
+      const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(setTimeoutOutput as any);
+
+      const mockPeriodicPollTimeoutId = 123;
+      lockMonitor['periodicPollTimeoutId'] = mockPeriodicPollTimeoutId;
+      await lockMonitor['periodicPoll']();
+
+      expect(clearTimeoutSpy).toHaveBeenCalledBefore(setTimeoutSpy);
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(mockPeriodicPollTimeoutId);
+      expect(handlePollingSpy).toHaveBeenCalled();
+      expect(setTimeoutSpy).toHaveBeenCalled();
+      expect(lockMonitor['periodicPollTimeoutId']).toEqual(setTimeoutOutput);
+    });
+
+    it('should call set timeout at the end of the execution even if an exception is thrown.', async () => {
+      const handlePollingSpy = spyOn(lockMonitor as any, 'handlePeriodicPolling').and.throwError('unhandled exception');
+
+      const setTimeoutOutput = 985023;
+      const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(setTimeoutOutput as any);
+
+      lockMonitor['periodicPollTimeoutId'] = undefined;
+      await lockMonitor['periodicPoll']();
+
+      expect(handlePollingSpy).toHaveBeenCalled();
+      expect(setTimeoutSpy).toHaveBeenCalled();
+    });
   });
 
   describe('handlePeriodicPolling', () => {

@@ -216,11 +216,12 @@ describe('LockResolver', () => {
       expect(actual).toBeTruthy();
     });
 
-    it('should return false if there is an exception thrown by the bitcoin client', async () => {
-      spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('not found error.');
+    it('should throw not-found error if there is an exception thrown by the bitcoin client', async () => {
+      spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('not found custom error.');
 
-      const actual = await lockResolver['getTransactionFromBitcoin']('input id');
-      expect(actual).toBeFalsy();
+      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      () => lockResolver['getTransactionFromBitcoin']('input id'),
+      ErrorCode.LockResolverTransactionNotFound);
     });
   });
 });

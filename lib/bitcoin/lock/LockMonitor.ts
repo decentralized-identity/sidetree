@@ -43,14 +43,13 @@ export default class LockMonitor {
   }
 
   /**
-   * Initializes this object by either creating a lock/relock or returning the amount
-   * back to the target bitcoin wallet if needed.
+   * Initializes this object by performing the periodic poll tasks.
    */
   public async initialize (): Promise<void> {
     await this.periodicPoll();
   }
 
-  private async periodicPoll (intervalInSeconds: number = this.pollPeriodInSeconds) {
+  private async periodicPoll (intervalInSeconds: number = this.pollPeriodInSeconds): Promise<void> {
 
     try {
       // Defensive programming to prevent multiple polling loops even if this method is externally called multiple times.
@@ -64,7 +63,7 @@ export default class LockMonitor {
       const message = `An error occured during periodic poll: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`;
       console.error(message);
     } finally {
-      this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * intervalInSeconds);
+      this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * intervalInSeconds, intervalInSeconds);
     }
   }
 
