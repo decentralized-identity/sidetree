@@ -8,6 +8,7 @@ import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
+import BitcoinDataTransactionModel from './models/BitcoinDataTransactionModel';
 
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
@@ -84,17 +85,13 @@ export default class BitcoinClient {
   }
 
   /**
-   * Broadcasts a transaction to the bitcoin network.
-   * @param transactionData The data to write to the transaction
-   * @param feeInSatoshis The fee for the transaction in satoshis
-   * @returns The hash of the transaction if broadcasted successfully.
+   * Broadcasts the specified data transaction.
+   *
+   * @param bitcoinDataTransaction The transaction object.
    */
-  public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
+  public async broadcastDataTransaction (bitcoinDataTransaction: BitcoinDataTransactionModel): Promise<string> {
 
-    const transaction = await this.createTransaction(transactionData, feeInSatoshis);
-    const rawTransaction = transaction.serialize();
-
-    return this.broadcastTransactionRpc(rawTransaction);
+    return this.broadcastTransactionRpc(bitcoinDataTransaction.serializedTransactionObject);
   }
 
   /**
@@ -105,6 +102,22 @@ export default class BitcoinClient {
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
 
     return this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+  }
+
+  /**
+   * Creates (and NOT broadcasts) a transaction to write data to the bitcoin.
+   *
+   * @param transactionData The data to write in the transaction.
+   * @param minimumFeeInSatoshis The minimum fee for the transaction in satoshis.
+   */
+  public async createDataTransaction (transactionData: string, minimumFeeInSatoshis: number): Promise<BitcoinDataTransactionModel> {
+    const transaction = await this.createTransaction(transactionData, minimumFeeInSatoshis);
+
+    return {
+      transactionId: transaction.id,
+      transactionFee: transaction.getFee(),
+      serializedTransactionObject: transaction.serialize()
+    };
   }
 
   /**
@@ -400,7 +413,7 @@ export default class BitcoinClient {
     return new Transaction(buffer);
   }
 
-  private async createTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
+  private async createTransaction (transactionData: string, minFeeInSatoshis: number): Promise<Transaction> {
     const unspentOutputs = await this.getUnspentOutputs(this.walletAddress);
 
     const transaction = new Transaction();
@@ -410,7 +423,11 @@ export default class BitcoinClient {
       satoshis: 0
     }));
     transaction.change(this.walletAddress);
-    transaction.fee(feeInSatoshis);
+
+    const estimatedFeeInSatoshis = await this.calculateTransactionFee(transaction);
+    const feeToPay = Math.max(minFeeInSatoshis, estimatedFeeInSatoshis);
+
+    transaction.fee(feeToPay);
     transaction.sign(this.walletPrivateKey);
 
     return transaction;

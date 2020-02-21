@@ -218,36 +218,35 @@ export default class BitcoinProcessor {
    */
   public async writeTransaction (anchorString: string, fee: number) {
     console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
-    // ----
-    // Issue #347 opened to track the investigation for this hardcoded value.
-    // Ensure that we are always paying this minimum fee.
-    fee = Math.max(fee, 1000);
-    // ----
 
-    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
+    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
+    const dataTransaction = await this.bitcoinClient.createDataTransaction(sidetreeTransactionString, fee);
+    const transactionFee = dataTransaction.transactionFee;
 
-    if (!feeWithinSpendingLimits) {
+    const isFeeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(transactionFee, this.lastProcessedBlock!.height);
+
+    if (!isFeeWithinSpendingLimits) {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
     }
 
+    // Write a warning if the balance is running low
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
     const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
     if (totalSatoshis < lowBalanceAmount) {
       const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
-      console.error(`Low balance (${daysLeft} days remaining),\
- please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
+      console.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
     }
+
     // cannot make the transaction
-    if (totalSatoshis < fee) {
+    if (totalSatoshis < transactionFee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.NotEnoughBalanceForWrite);
     }
 
-    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
+    const transactionHash = await this.bitcoinClient.broadcastDataTransaction(dataTransaction);
     console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
