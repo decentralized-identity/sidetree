@@ -10,6 +10,13 @@ import LockTransactionType from './../enums/LockTransactionType';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
+/** Enum (internal to this class) to track the state of the lock. */
+enum LockState {
+  Confirmed = 'confirmed',
+  None = 'none',
+  Pending = 'pending'
+}
+
 /**
  * Structure (internal to this class) to track the information about lock.
  */
@@ -17,7 +24,7 @@ interface LockInformation {
   currentValueTimeLock: ValueTimeLockModel | undefined;
   latestSavedLockInfo: LockTransactionModel | undefined;
 
-  // Need to add a 'state'
+  state: LockState;
 }
 
 /**
@@ -27,7 +34,7 @@ export default class LockMonitor {
 
   private periodicPollTimeoutId: number | undefined;
 
-  private currentValueTimeLock: LockInformation | undefined;
+  private currentLockInformation: LockInformation | undefined;
 
   private lockResolver: LockResolver;
 
@@ -47,6 +54,21 @@ export default class LockMonitor {
    */
   public async initialize (): Promise<void> {
     await this.periodicPoll();
+  }
+
+  /**
+   * Gets the current lock information if exist; undefined otherwise. Throws an error
+   * if the lock information is not confirmed on the blockchain.
+   */
+  public getCurrentValueTimeLock (): ValueTimeLockModel | undefined {
+    if (this.currentLockInformation!.state === LockState.Pending) {
+      // Throw a very specific error so that the caller can do something
+      // about it if they have to
+      throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+    }
+
+    // Make a copy of the state and return it
+    return Object.assign({}, this.currentLockInformation!.currentValueTimeLock);
   }
 
   private async periodicPoll (intervalInSeconds: number = this.pollPeriodInSeconds): Promise<void> {
@@ -70,11 +92,9 @@ export default class LockMonitor {
 
   private async handlePeriodicPolling (): Promise<void> {
 
-    this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
+    this.currentLockInformation = await this.resolveCurrentValueTimeLock();
 
-    // Note: ALSO need to check the state (pending/confirmed etc) below when the support is added.
-    const validCurrentLockExist = this.currentValueTimeLock.currentValueTimeLock !== undefined;
-
+    const validCurrentLockExist = this.currentLockInformation.currentValueTimeLock !== undefined;
     const lockRequired = this.desiredLockAmountInSatoshis > 0;
 
     let resolveCurrentLockAgain = false;
@@ -86,21 +106,21 @@ export default class LockMonitor {
 
     if (lockRequired && validCurrentLockExist) {
       await this.handleExistingLockRenewal(
-        this.currentValueTimeLock.currentValueTimeLock!,
-        this.currentValueTimeLock.latestSavedLockInfo!,
+        this.currentLockInformation.currentValueTimeLock!,
+        this.currentLockInformation.latestSavedLockInfo!,
         this.desiredLockAmountInSatoshis);
 
       resolveCurrentLockAgain = true;
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      await this.releaseLockAndSaveItToDb(this.currentValueTimeLock.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
+      await this.releaseLockAndSaveItToDb(this.currentLockInformation.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
 
       resolveCurrentLockAgain = true;
     }
 
     if (resolveCurrentLockAgain) {
-      this.currentValueTimeLock = await this.resolveCurrentValueTimeLock();
+      this.currentLockInformation = await this.resolveCurrentValueTimeLock();
     }
   }
 
@@ -108,7 +128,8 @@ export default class LockMonitor {
 
     const currentLockInformation: LockInformation = {
       currentValueTimeLock: undefined,
-      latestSavedLockInfo: undefined
+      latestSavedLockInfo: undefined,
+      state: LockState.None
     };
 
     const lastSavedLock = await this.lockTransactionStore.getLastLock();
@@ -127,6 +148,8 @@ export default class LockMonitor {
     if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
 
       await this.rebroadcastTransaction(lastSavedLock);
+
+      currentLockInformation.state = LockState.Pending;
       return currentLockInformation;
     }
 
@@ -143,6 +166,7 @@ export default class LockMonitor {
     };
 
     currentLockInformation.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
+    currentLockInformation.state = LockState.Confirmed;
 
     console.info(`Found a valid current lock: ${JSON.stringify(currentLockInformation.currentValueTimeLock)}`);
 

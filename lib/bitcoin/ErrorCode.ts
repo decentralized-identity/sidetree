@@ -1,5 +1,6 @@
 export default {
   LockIdentifierIncorrectFormat: 'lock_identifier_incorrect_format',
+  LockMonitorCurrentValueTimeLockInPendingState: 'lock_monitor_current_value_time_lock_in_pending_state',
   LockMonitorNotEnoughBalanceForFirstLock: 'lock_monitor_not_enough_balance_for_first_lock',
   LockMonitorNotEnoughBalanceForRelock: 'lock_monitor_not_enough_balance_for_relock',
   LockResolverRedeemScriptIsInvalid: 'lock_resolver_redeem_script_is_invalid',

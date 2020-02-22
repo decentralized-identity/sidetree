@@ -8,6 +8,8 @@ export default class MongoDbLockTransactionStore {
   private db: Db | undefined;
   private lockCollection: Collection<any> | undefined;
 
+  private static readonly defaultDatabaseName: string = 'sidetree';
+
   /** The collection name */
   public static readonly lockCollectionName = 'locks';
 
@@ -16,7 +18,8 @@ export default class MongoDbLockTransactionStore {
    * @param serverUrl The target server url.
    * @param databaseName The database name where the collection should be saved.
    */
-  public constructor (private serverUrl: string, private databaseName: string) {
+  public constructor (private serverUrl: string, private databaseName?: string) {
+    this.databaseName = this.databaseName ? this.databaseName : MongoDbLockTransactionStore.defaultDatabaseName;
   }
 
   /**

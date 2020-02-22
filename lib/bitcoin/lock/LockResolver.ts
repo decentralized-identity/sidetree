@@ -27,7 +27,17 @@ export default class LockResolver {
   }
 
   /**
-   * Gets the corresponding lock information represented by the specified lock identifier. it also verifies
+   * Gets the corresponding lock information represented by the specified lock identifier.
+   * @param serializedLockIdentifier The serialized lock identifier.
+   */
+  public async resolveSerializedLockIdentifierAndThrowOnError (serializedLockIdentifier: string): Promise<ValueTimeLockModel> {
+    const lockIdentifier = LockIdentifierSerializer.deserialize(serializedLockIdentifier);
+
+    return this.resolveLockIdentifierAndThrowOnError(lockIdentifier);
+  }
+
+  /**
+   * Gets the corresponding lock information represented by the specified lock identifier. It also verifies
    * the lock by making sure that the corresponding transaction is indeed a lock transaction paying to the
    * wallet in the lockIdentifier upon lock expiry.
    *
