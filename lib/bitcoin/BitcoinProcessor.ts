@@ -131,9 +131,8 @@ export default class BitcoinProcessor {
         this.bitcoinClient,
         this.mongoDbLockTransactionStore,
         this.pollPeriod,
-        10000,
-        144,
-        1000);
+        1000,
+        config.maxNumOfOperationsForValueTimeLock);
   }
 
   /**

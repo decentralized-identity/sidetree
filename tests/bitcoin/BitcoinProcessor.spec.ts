@@ -39,6 +39,7 @@ describe('BitcoinProcessor', () => {
     genesisBlockNumber: 1480000,
     lowBalanceNoticeInDays: 28,
     requestMaxRetries: 3,
+    maxNumOfOperationsForValueTimeLock: 1000,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
     transactionPollPeriodInSeconds: 60
@@ -52,12 +53,16 @@ describe('BitcoinProcessor', () => {
   let getStartingBlockForInitializationSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
   let periodicPollSpy: jasmine.Spy;
+  let mongoLockTxnStoreSpy: jasmine.Spy;
+  let lockMonitorSpy: jasmine.Spy;
 
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     quantileCalculatorInitializeSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'initialize');
     bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
+    mongoLockTxnStoreSpy = spyOn(bitcoinProcessor['mongoDbLockTransactionStore'], 'initialize');
+    lockMonitorSpy = spyOn(bitcoinProcessor['lockMonitor'], 'initialize');
 
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
@@ -105,6 +110,7 @@ describe('BitcoinProcessor', () => {
         bitcoinWalletImportString: BitcoinClient.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
+        maxNumOfOperationsForValueTimeLock: 1000,
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
@@ -132,6 +138,7 @@ describe('BitcoinProcessor', () => {
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
+        maxNumOfOperationsForValueTimeLock: 1000,
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
@@ -156,18 +163,24 @@ describe('BitcoinProcessor', () => {
       quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
       bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
       getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
+      mongoLockTxnStoreSpy.and.returnValue(Promise.resolve());
+      lockMonitorSpy.and.returnValue(Promise.resolve());
     });
 
     it('should initialize the internal objects', async (done) => {
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
       expect(quantileCalculatorInitializeSpy).not.toHaveBeenCalled();
       expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
+      expect(mongoLockTxnStoreSpy).not.toHaveBeenCalled();
+      expect(lockMonitorSpy).not.toHaveBeenCalled();
 
       await bitcoinProcessor.initialize();
 
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
       expect(quantileCalculatorInitializeSpy).toHaveBeenCalledWith();
       expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
+      expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
+      expect(lockMonitorSpy).toHaveBeenCalled();
       done();
     });
 

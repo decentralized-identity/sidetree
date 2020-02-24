@@ -8,6 +8,7 @@ import LockResolver from './LockResolver';
 import LockTransactionModel from './../models/LockTransactionModel';
 import LockTransactionType from './../enums/LockTransactionType';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
+import ValueTimeLockConfigProvider from '../../common/ValueTimeLockConfigProvider';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
 /** Enum (internal to this class) to track the state of the lock. */
@@ -33,6 +34,8 @@ interface LockInformation {
 export default class LockMonitor {
 
   private periodicPollTimeoutId: number | undefined;
+  private desiredLockAmountInSatoshis: number;
+  private lockPeriodInBlocks: number;
 
   private currentLockInformation: LockInformation | undefined;
 
@@ -42,9 +45,11 @@ export default class LockMonitor {
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
     private pollPeriodInSeconds: number,
-    private desiredLockAmountInSatoshis: number,
-    private lockPeriodInBlocks: number,
-    private firstLockFeeAmountInSatoshis: number) {
+    private firstLockFeeAmountInSatoshis: number,
+    maxNumOfOperationsForValueTimeLock: number) {
+
+    this.desiredLockAmountInSatoshis = ValueTimeLockConfigProvider.getRequiredLockAmountForOps(maxNumOfOperationsForValueTimeLock);
+    this.lockPeriodInBlocks = ValueTimeLockConfigProvider.getRequiredLockTransactionTimeForOps(maxNumOfOperationsForValueTimeLock);
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
   }

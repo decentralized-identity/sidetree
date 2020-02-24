@@ -11,6 +11,7 @@ export interface IBitcoinConfig {
   lowBalanceNoticeInDays: number | undefined;
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;
+  maxNumOfOperationsForValueTimeLock: number;
   mongoDbConnectionString: string;
   databaseName: string | undefined;
   requestTimeoutInMilliseconds: number | undefined;
