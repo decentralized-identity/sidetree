@@ -1,28 +1,13 @@
-import Did from './Did';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
-import ErrorCode from './ErrorCode';
 import InternalDocumentModel from './models/InternalDocumentModel';
-import JsonAsync from './util/JsonAsync';
-import SidetreeError from '../../SidetreeError';
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
  */
 export default class Document {
-  /**
-   * Creates a DID Document from the given long-form DID.
-   */
-  public static async fromLongFormDid (did: Did): Promise<DocumentModel> {
-    const originalDidDocument = await this.parseEncodedOriginalDidDocument(did.encodedDidDocument!);
-
-    Document.addDidToDocument(originalDidDocument, did.shortForm);
-
-    return originalDidDocument;
-  }
-
   /**
    * Transforms the given internal document model into a DID Document.
    */
@@ -38,35 +23,6 @@ export default class Document {
     Document.addDidToDocument(didDocument, did);
 
     return didDocument;
-  }
-
-  /**
-   * Parses the given string as an encoded original DID document.
-   * @throws SidetreeError if unable to parse the given string.
-   */
-  public static async parseEncodedOriginalDidDocument (encodedOriginalDidDocument: string): Promise<DocumentModel> {
-    // Decode the encoded DID Document.
-    let decodedJsonString;
-    try {
-      decodedJsonString = Encoder.decodeAsString(encodedOriginalDidDocument);
-    } catch (error) {
-      throw SidetreeError.createFromError(ErrorCode.DocumentIncorretEncodedFormat, error);
-    }
-
-    let decodedDidDocument;
-    try {
-      decodedDidDocument = await JsonAsync.parse(decodedJsonString);
-    } catch (error) {
-      throw SidetreeError.createFromError(ErrorCode.DocumentNotJson, error);
-    }
-
-    // Validate that the given encoded DID Document is a valid original document.
-    const isValidOriginalDocument = Document.isObjectValidOriginalDocument(decodedDidDocument);
-    if (!isValidOriginalDocument) {
-      throw new SidetreeError(ErrorCode.DocumentNotValidOriginalDocument);
-    }
-
-    return decodedDidDocument;
   }
 
   /**

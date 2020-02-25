@@ -92,6 +92,35 @@ export default class OperationGenerator {
    * Generates an anchored create operation.
    */
   public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
+    const createOperationData = await OperationGenerator.generateCreateOperation();
+
+    const namedAnchoredOperationModel = {
+      type: OperationType.Create,
+      didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+      operationBuffer: createOperationData.createOperation.operationBuffer,
+      transactionNumber: input.transactionNumber,
+      transactionTime: input.transactionTime,
+      operationIndex: input.operationIndex
+    };
+
+    return {
+      createOperation: createOperationData.createOperation,
+      namedAnchoredOperationModel,
+      recoveryKeyId: createOperationData.recoveryKeyId,
+      recoveryPublicKey: createOperationData.recoveryPublicKey,
+      recoveryPrivateKey: createOperationData.recoveryPrivateKey,
+      signingKeyId: createOperationData.signingKeyId,
+      signingPublicKey: createOperationData.signingPublicKey,
+      signingPrivateKey: createOperationData.signingPrivateKey,
+      nextRecoveryOtpEncodedString: createOperationData.nextRecoveryOtpEncodedString,
+      nextUpdateOtpEncodedString: createOperationData.nextUpdateOtpEncodedString
+    };
+  }
+
+  /**
+   * Generates an create operation.
+   */
+  public static async generateCreateOperation () {
     const recoveryKeyId = '#recoveryKey';
     const signingKeyId = '#signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
@@ -113,18 +142,8 @@ export default class OperationGenerator {
 
     const createOperation = await CreateOperation.parse(operationBuffer);
 
-    const namedAnchoredOperationModel = {
-      type: OperationType.Create,
-      didUniqueSuffix: createOperation.didUniqueSuffix,
-      operationBuffer,
-      transactionNumber: input.transactionNumber,
-      transactionTime: input.transactionTime,
-      operationIndex: input.operationIndex
-    };
-
     return {
       createOperation,
-      namedAnchoredOperationModel,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,
@@ -312,17 +331,16 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a create operation.
+   * Generates a create operation request.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
    */
-  public static async generateCreateOperationBuffer (
+  public static async generateCreateOperationRequest (
     recoveryPublicKey: PublicKeyModel,
     signingPublicKey: DidPublicKeyModel,
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]
-  ): Promise<Buffer> {
+    serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = Document.create([signingPublicKey], serviceEndpoints);
 
     const operationData = {
@@ -345,6 +363,29 @@ export default class OperationGenerator {
       suffixData: suffixDataEncodedString,
       operationData: operationDataEncodedString
     };
+
+    return operation;
+  }
+
+  /**
+   * Generates a create operation request buffer.
+   * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
+   * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
+   */
+  public static async generateCreateOperationBuffer (
+    recoveryPublicKey: PublicKeyModel,
+    signingPublicKey: DidPublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    serviceEndpoints?: DidServiceEndpointModel[]
+  ): Promise<Buffer> {
+    const operation = await OperationGenerator.generateCreateOperationRequest(
+      recoveryPublicKey,
+      signingPublicKey,
+      nextRecoveryOtpHash,
+      nextUpdateOtpHash,
+      serviceEndpoints
+    );
 
     return Buffer.from(JSON.stringify(operation));
   }
