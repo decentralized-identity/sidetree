@@ -14,7 +14,7 @@ declare class IPFS {
 
   preStart (callback: Callback<any>): void;
   start (callback?: Callback<any>): void;
-  stop (callback?: (error?: Error) => void): void;
+  stop (callback?: (error?: Error) => void): Promise<void>;
   isOnline (): boolean;
 
   version (options: any, callback: (error: Error, version: IPFS.Version) => void): void ;
@@ -47,9 +47,9 @@ declare class IPFS {
 
   add (data: IPFS.FileContent, options?: any): AsyncIterator<any>;
 
-  cat (hash: IPFS.Multihash, options?: any): AsyncIterable<Buffer>;
+  cat (hash: IPFS.Multihash, options?: any): AsyncIterator<Buffer>;
 
-  get (hash: IPFS.Multihash): AsyncIterable<any>;
+  get (hash: IPFS.Multihash): AsyncIterator<any>;
 }
 
 declare namespace IPFS {
