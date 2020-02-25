@@ -125,5 +125,4 @@ export default class IpfsStorage {
     await this.node.stop();
   }
 
-
 }
