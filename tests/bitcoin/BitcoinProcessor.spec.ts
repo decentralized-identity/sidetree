@@ -523,10 +523,15 @@ describe('BitcoinProcessor', () => {
     it('should write a transaction if there are enough Satoshis', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'createDataTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: bitcoinFee,
+        serializedTransactionObject: 'string'
+      }));
       spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
 
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastDataTransaction' as any).and.returnValue(Promise.resolve('someHash'));
 
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
@@ -540,7 +545,12 @@ describe('BitcoinProcessor', () => {
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
       spyOn(bitcoinProcessor['spendingMonitor'],'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastDataTransaction' as any).and.returnValue(Promise.resolve('someHash'));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'createDataTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: bitcoinFee,
+        serializedTransactionObject: 'string'
+      }));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
@@ -557,7 +567,12 @@ describe('BitcoinProcessor', () => {
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(0));
       spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
+      spyOn(bitcoinProcessor['bitcoinClient'], 'createDataTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: Number.MAX_SAFE_INTEGER,
+        serializedTransactionObject: 'string'
+      }));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastDataTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
       try {
@@ -578,7 +593,12 @@ describe('BitcoinProcessor', () => {
     it('should fail if the current fee is over the spending limits', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(false));
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any);
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastDataTransaction' as any);
+      const createDataTransactionSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'createDataTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: bitcoinFee,
+        serializedTransactionObject: 'string'
+      }));
 
       try {
         await bitcoinProcessor.writeTransaction('some data', bitcoinFee);
@@ -591,6 +611,7 @@ describe('BitcoinProcessor', () => {
       expect(broadcastSpy).not.toHaveBeenCalled();
       expect(spendLimitSpy).toHaveBeenCalledWith(bitcoinFee, bitcoinProcessor['lastProcessedBlock']!.height);
       expect(monitorAddSpy).not.toHaveBeenCalled();
+      expect(createDataTransactionSpy).toHaveBeenCalledTimes(1);
       done();
     });
   });

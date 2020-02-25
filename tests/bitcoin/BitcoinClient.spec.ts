@@ -72,20 +72,11 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('broadcastTransaction', () => {
-    it('should call the utility function.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
-
-      const transactionToString = transaction.toString();
-      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
-
-      const mockUtilFuncResponse = 'mock-response';
-      const spy = spyOn(bitcoinClient as any, 'broadcastTransactionRpc').and.returnValue(Promise.resolve(mockUtilFuncResponse));
-
-      const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
-      expect(actual).toEqual(mockUtilFuncResponse);
-      expect(spy).toHaveBeenCalledWith(transactionToString);
+  describe('broadcastDataTransaction', () => {
+    it('should call broadcastTransactionRpc with expected argument', async (done) => {
+      const mockRpcCall = spyOn<any>(bitcoinClient, 'broadcastTransactionRpc').and.returnValue('some value');
+      await bitcoinClient.broadcastDataTransaction({ transactionId: 'someId', transactionFee: 1223, serializedTransactionObject: 'abc' });
+      expect(mockRpcCall).toHaveBeenCalledTimes(1);
       done();
     });
   });
@@ -441,7 +432,7 @@ describe('BitcoinClient', async () => {
   });
 
   describe('createTransaction', () => {
-    it('should create the transaction object using the inputs correctly.', async (done) => {
+    it('should create the transaction object using fee passed in if it is greater', async (done) => {
       const availableSatoshis = 5000;
       const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
       const unspentOutputs = [
@@ -455,12 +446,40 @@ describe('BitcoinClient', async () => {
       ];
 
       spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      // The calculated fee is less than the one passed in
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(1));
       const dataToWrite = 'data to write';
       const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
       const fee = availableSatoshis / 2;
 
       const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
       expect(transaction.getFee()).toEqual(fee);
+      expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
+      done();
+    });
+
+    it('should create the transaction object using calculated fee if it is greater', async (done) => {
+      const availableSatoshis = 5000;
+      const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
+      const unspentOutputs = [
+        {
+          txId: unspentCoin.txId,
+          outputIndex: unspentCoin.outputIndex,
+          address: unspentCoin.address,
+          script: unspentCoin.script,
+          satoshis: unspentCoin.satoshis
+        }
+      ];
+
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      // The calculated fee is greater than the fee passed in
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(3000));
+      const dataToWrite = 'data to write';
+      const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
+      const fee = availableSatoshis / 2;
+
+      const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
+      expect(transaction.getFee()).toEqual(3000);
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
       done();
     });
