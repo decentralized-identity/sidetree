@@ -8,3 +8,6 @@ coverage/
 
 # sidetree-ipfs data folder
 sidetree-ipfs/
+
+# report created by IPFS store test
+ipfsStoreTestRepo/

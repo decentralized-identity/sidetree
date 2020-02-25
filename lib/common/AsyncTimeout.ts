@@ -5,7 +5,7 @@ export default class AsyncTimeout {
 
   /**
    * Set a timeout on async function
-   * @param asyncCall the async call the time on
+   * @param asyncCall the async call to timeout on
    * @param timeOutInMilliseconds how long to wait for
    */
   public static async timeoutAsyncCall (asyncCall: Promise<any>, timeOutInMilliseconds: number): Promise<AsyncTimeoutResult> {

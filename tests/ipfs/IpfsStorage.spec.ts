@@ -10,7 +10,7 @@ describe('IpfsStorage', () => {
   let maxFileSize: number;
 
   beforeAll(async () => {
-    ipfsStorage = await IpfsStorage.create();
+    ipfsStorage = await IpfsStorage.create('ipfsStoreTestRepo');
     maxFileSize = 20000000; // 20MB
   });
 
