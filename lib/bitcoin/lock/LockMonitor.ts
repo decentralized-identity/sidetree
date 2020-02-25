@@ -5,9 +5,9 @@ import ErrorCode from '../ErrorCode';
 import LockIdentifier from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
 import LockResolver from './LockResolver';
-import LockTransactionModel from './../models/LockTransactionModel';
-import LockTransactionType from './../enums/LockTransactionType';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
+import SavedLockModel from '../models/SavedLockedModel';
+import SavedLockType from '../enums/SavedLockType';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
 /**
@@ -15,7 +15,7 @@ import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
  */
 interface LockInfo {
   currentValueTimeLock: ValueTimeLockModel | undefined;
-  latestSavedLockInfo: LockTransactionModel | undefined;
+  latestSavedLockInfo: SavedLockModel | undefined;
 
   // Need to add a 'state'
 }
@@ -94,7 +94,7 @@ export default class LockMonitor {
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      await this.releaseLockAndSaveItToDb(this.currentLockInfo!.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
+      await this.releaseLock(this.currentLockInfo!.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
 
       resolveCurrentLockAgain = true;
     }
@@ -130,7 +130,7 @@ export default class LockMonitor {
       return currentLockInfo;
     }
 
-    if (lastSavedLock.type === LockTransactionType.ReturnToWallet) {
+    if (lastSavedLock.type === SavedLockType.ReturnToWallet) {
       // This means that there's no current lock for this node. Just return
       return currentLockInfo;
     }
@@ -149,13 +149,13 @@ export default class LockMonitor {
     return currentLockInfo;
   }
 
-  private async rebroadcastTransaction (lastSavedLock: LockTransactionModel): Promise<void> {
+  private async rebroadcastTransaction (lastSavedLock: SavedLockModel): Promise<void> {
     console.info(`Rebroadcasting the transaction id: ${lastSavedLock.transactionId}`);
 
     // So we had some transaction information saved but the transaction was never found on the
     // blockchain. Either the transaction was broadcasted and we're just waiting for it to be
     // actually written or maybe this node died before it could actually broadcast the transaction.
-    // Since we don't which case it is and bitcoin will prevent 'double-spending' the same
+    // Since we don't know which case it is and bitcoin will prevent 'double-spending' the same
     // transaction, we can just rebroadcast the same transaction.
     const lockTransactionFromLastSavedLock: BitcoinLockTransactionModel = {
       redeemScriptAsHex: lastSavedLock.redeemScriptAsHex,
@@ -183,7 +183,7 @@ export default class LockMonitor {
     return false;
   }
 
-  private async handleCreatingNewLock (desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
+  private async handleCreatingNewLock (desiredLockAmountInSatoshis: number): Promise<SavedLockModel> {
 
     // When creating the first lock, we are going to lock an amount more than the desired-amount
     // to account for the fee(s) required when relocking etc. So check whether the target
@@ -201,7 +201,7 @@ export default class LockMonitor {
     const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
     const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, lockUntilBlock);
 
-    return this.saveAndThenBroadcastTransaction(lockTransaction, LockTransactionType.Create, desiredLockAmountInSatoshis);
+    return this.saveThenBroadcastTransaction(lockTransaction, SavedLockType.Create, desiredLockAmountInSatoshis);
   }
 
   /**
@@ -213,7 +213,7 @@ export default class LockMonitor {
    */
   private async handleExistingLockRenewal (
     currentValueTimeLock: ValueTimeLockModel,
-    latestSavedLockInfo: LockTransactionModel,
+    latestSavedLockInfo: SavedLockModel,
     desiredLockAmountInSatoshis: number): Promise<boolean> {
 
     const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
@@ -231,21 +231,21 @@ export default class LockMonitor {
       // tslint:disable-next-line: max-line-length
       console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to releast the lock.`);
 
-      await this.releaseLockAndSaveItToDb(currentValueTimeLock, desiredLockAmountInSatoshis);
+      await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       return true;
     }
 
     // If we have gotten to here then we need to try renew.
     try {
 
-      await this.renewExistingLockAndSaveItToDb(currentValueTimeLock, desiredLockAmountInSatoshis);
+      await this.renewLock(currentValueTimeLock, desiredLockAmountInSatoshis);
     } catch (e) {
 
       // If there is not enough balance for the relock then just release the lock. Let the next
       // iteration of the polling to try and create a new lock.
       if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
         console.warn(`There is not enough balance for relocking so going to release the lock. Error: ${e.message}`);
-        await this.releaseLockAndSaveItToDb(currentValueTimeLock, desiredLockAmountInSatoshis);
+        await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       } else {
         // This is an unexpected error at this point ... rethrow as this is needed to be investigated.
         throw (e);
@@ -255,7 +255,7 @@ export default class LockMonitor {
     return true;
   }
 
-  private async renewExistingLockAndSaveItToDb (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
+  private async renewLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<SavedLockModel> {
 
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
     const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
@@ -274,10 +274,10 @@ export default class LockMonitor {
         `The current locked amount (${currentValueTimeLock.amountLocked} satoshis) minus the relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);
     }
 
-    return this.saveAndThenBroadcastTransaction(relockTransaction, LockTransactionType.Relock, desiredLockAmountInSatoshis);
+    return this.saveThenBroadcastTransaction(relockTransaction, SavedLockType.Relock, desiredLockAmountInSatoshis);
   }
 
-  private async releaseLockAndSaveItToDb (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
+  private async releaseLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<SavedLockModel> {
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
 
     const releaseLockTransaction =
@@ -285,29 +285,28 @@ export default class LockMonitor {
         currentLockIdentifier.transactionId,
         currentValueTimeLock.unlockTransactionTime);
 
-    return this.saveAndThenBroadcastTransaction(releaseLockTransaction, LockTransactionType.ReturnToWallet, desiredLockAmountInSatoshis);
+    return this.saveThenBroadcastTransaction(releaseLockTransaction, SavedLockType.ReturnToWallet, desiredLockAmountInSatoshis);
   }
 
-  private async saveAndThenBroadcastTransaction (
+  private async saveThenBroadcastTransaction (
     lockTransaction: BitcoinLockTransactionModel,
-    lockTransactionType: LockTransactionType,
-    desiredLockAmountInSatoshis: number): Promise<LockTransactionModel> {
+    lockType: SavedLockType,
+    desiredLockAmountInSatoshis: number): Promise<SavedLockModel> {
 
-    const lockInfoToSave: LockTransactionModel = {
+    const lockInfoToSave: SavedLockModel = {
       desiredLockAmountInSatoshis: desiredLockAmountInSatoshis,
       rawTransaction: lockTransaction.serializedTransactionObject,
       transactionId: lockTransaction.transactionId,
       redeemScriptAsHex: lockTransaction.redeemScriptAsHex,
       createTimestamp: Date.now(),
-      type: lockTransactionType
+      type: lockType
     };
 
-    console.info(`Saving the ${lockTransactionType} type lock with transaction id: ${lockTransaction.transactionId}.`);
+    console.info(`Saving the ${lockType} type lock with transaction id: ${lockTransaction.transactionId}.`);
 
     // Make sure that we save the lock info to the db BEFORE trying to broadcast it. The reason being is
     // that if the service crashes right after saving then we can just rebroadcast. But if we broadcast first
-    // and the service crashes then we won't have anything saved and will try to create a new txn which would
-    // be invalid.
+    // and the service crashes then we won't have anything saved and will try to create yet another txn.
     await this.lockTransactionStore.addLock(lockInfoToSave);
 
     console.info(`Broadcasting the transaction id: ${lockTransaction.transactionId}`);

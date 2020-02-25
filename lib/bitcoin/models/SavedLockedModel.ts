@@ -1,9 +1,9 @@
-import LockTransactionType from '../enums/LockTransactionType';
+import LockTransactionType from '../enums/SavedLockType';
 
 /**
  * Encapsulates the data about a bitcoin 'lock' transaction saved in the database.
  */
-export default interface LockTransactionModel {
+export default interface SavedLockModel {
   transactionId: string;
   rawTransaction: string;
   redeemScriptAsHex: string;

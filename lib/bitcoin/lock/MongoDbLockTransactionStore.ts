@@ -1,4 +1,4 @@
-import LockTransactionModel from '../models/LockTransactionModel';
+import SavedLockModel from './../models/SavedLockedModel';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
 
 /**
@@ -33,7 +33,7 @@ export default class MongoDbLockTransactionStore {
    *
    * @param bitcoinLock The lock information to be added.
    */
-  public async addLock (bitcoinLock: LockTransactionModel): Promise<void> {
+  public async addLock (bitcoinLock: SavedLockModel): Promise<void> {
     const lockInMongoDb = {
       desiredLockAmountInSatoshis : bitcoinLock.desiredLockAmountInSatoshis,
       transactionId: bitcoinLock.transactionId,
@@ -58,7 +58,7 @@ export default class MongoDbLockTransactionStore {
   /**
    * Gets the latest lock (highest create timestamp) saved in the db; or undefined if nothing saved.
    */
-  public async getLastLock (): Promise<LockTransactionModel | undefined> {
+  public async getLastLock (): Promise<SavedLockModel | undefined> {
     const lastLocks = await this.lockCollection!
                             .find()
                             .limit(1)
@@ -69,10 +69,10 @@ export default class MongoDbLockTransactionStore {
       return undefined;
     }
 
-    return lastLocks[0] as LockTransactionModel;
+    return lastLocks[0] as SavedLockModel;
   }
 
-  private static async creatLockCollectionIfNotExist (db: Db): Promise<Collection<LockTransactionModel>> {
+  private static async creatLockCollectionIfNotExist (db: Db): Promise<Collection<SavedLockModel>> {
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);
 

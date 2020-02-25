@@ -2,8 +2,8 @@
 import Config from '../../../lib/core/models/Config';
 import MongoDb from '../../common/MongoDb';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
-import LockTransactionModel from '../../../lib/bitcoin/models/LockTransactionModel';
-import LockTransactionType from '../../../lib/bitcoin/enums/LockTransactionType';
+import SavedLockModel from '../../../lib/bitcoin/models/SavedLockedModel';
+import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
 import { MongoClient } from 'mongodb';
 
 async function createLockStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbLockTransactionStore> {
@@ -12,11 +12,11 @@ async function createLockStore (transactionStoreUri: string, databaseName: strin
   return lockStore;
 }
 
-async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, count: number): Promise<LockTransactionModel[]> {
-  const locks: LockTransactionModel[] = [];
+async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, count: number): Promise<SavedLockModel[]> {
+  const locks: SavedLockModel[] = [];
 
   for (let i = 1; i <= count; i++) {
-    const lock: LockTransactionModel = {
+    const lock: SavedLockModel = {
       transactionId: i.toString(),
       desiredLockAmountInSatoshis: i * 1000,
       rawTransaction: `serialized txn - ${i}`,
@@ -33,10 +33,10 @@ async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, co
   return locks;
 }
 
-function getLockTypeFromIndex (i: number): LockTransactionType {
-  return (i % 3 === 0) ? LockTransactionType.Create :
-         (i % 3 === 1) ? LockTransactionType.Relock :
-         LockTransactionType.ReturnToWallet;
+function getLockTypeFromIndex (i: number): SavedLockType {
+  return (i % 3 === 0) ? SavedLockType.Create :
+         (i % 3 === 1) ? SavedLockType.Relock :
+         SavedLockType.ReturnToWallet;
 }
 
 describe('MongoDbLockTransactionStore', async () => {
