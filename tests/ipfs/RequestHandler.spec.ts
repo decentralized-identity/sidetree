@@ -9,9 +9,15 @@ describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
 
   beforeAll(async () => {
-    maxFileSize = 20000000; // 20MB
-    fetchTimeoutInSeconds = 1;
-    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    console.log('BEGINNING OF BEFORE ALL!!!!!!');
+    try {
+      maxFileSize = 20000000; // 20MB
+      fetchTimeoutInSeconds = 1;
+      requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    } catch (e) {
+      console.log(`${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+    }
+    console.log('END OF BEFORE ALL!!!!!!');
   });
 
   afterAll(async () => {
@@ -19,6 +25,7 @@ describe('RequestHandler', () => {
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
+    console.log('IN FIRST TEST!!!!!!');
     const expectedResponse: Response = {
       status: ResponseStatus.BadRequest,
       body: { code: FetchResultCode.InvalidHash }
