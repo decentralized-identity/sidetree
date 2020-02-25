@@ -8,7 +8,7 @@ describe('RequestHandler', () => {
   let fetchTimeoutInSeconds: number;
   let requestHandler: RequestHandler;
 
-  beforeAll(async () => {
+  beforeAll(async (done) => {
     console.log('BEGINNING OF BEFORE ALL!!!!!!');
     try {
       maxFileSize = 20000000; // 20MB
@@ -18,6 +18,7 @@ describe('RequestHandler', () => {
       console.log(`${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }
     console.log('END OF BEFORE ALL!!!!!!');
+    done();
   });
 
   afterAll(async () => {
