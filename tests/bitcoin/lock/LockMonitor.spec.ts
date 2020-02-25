@@ -12,7 +12,7 @@ import LockTransactionType from '../../../lib/bitcoin/enums/LockTransactionType'
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
-function createLockInformation (latestSavedLockInfo: LockTransactionModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined) {
+function createLockInfo (latestSavedLockInfo: LockTransactionModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined) {
   return {
     currentValueTimeLock: currentValueTimeLock,
     latestSavedLockInfo: latestSavedLockInfo
@@ -33,23 +33,26 @@ describe('LockMonitor', () => {
 
   describe('initialize', () => {
     it('should call the periodic poll function', async () => {
+      const mockLockInfo = createLockInfo(undefined, undefined);
+      const resolveSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockLockInfo));
       const pollSpy = spyOn(lockMonitor as any, 'periodicPoll').and.returnValue(Promise.resolve());
 
       await lockMonitor.initialize();
 
+      expect(resolveSpy).toHaveBeenCalledBefore(pollSpy);
       expect(pollSpy).toHaveBeenCalled();
     });
   });
 
-  describe('PerioicPoll', () => {
-    it('should call set timeout at the end of the execution.', async () => {
+  describe('periodicPoll', () => {
+    it('should call setTimeout() at the end of the execution.', async () => {
       const clearTimeoutSpy = spyOn(global, 'clearTimeout').and.returnValue();
       const handlePollingSpy = spyOn(lockMonitor as any, 'handlePeriodicPolling').and.returnValue(Promise.resolve());
 
-      const setTimeoutOutput = 985023;
+      const setTimeoutOutput: NodeJS.Timeout = 12344 as any;
       const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(setTimeoutOutput as any);
 
-      const mockPeriodicPollTimeoutId = 123;
+      const mockPeriodicPollTimeoutId: NodeJS.Timeout = 98765 as any;
       lockMonitor['periodicPollTimeoutId'] = mockPeriodicPollTimeoutId;
       await lockMonitor['periodicPoll']();
 
@@ -60,7 +63,7 @@ describe('LockMonitor', () => {
       expect(lockMonitor['periodicPollTimeoutId']).toEqual(setTimeoutOutput);
     });
 
-    it('should call set timeout at the end of the execution even if an exception is thrown.', async () => {
+    it('should call setTimeout() at the end of the execution even if an exception is thrown.', async () => {
       const handlePollingSpy = spyOn(lockMonitor as any, 'handlePeriodicPolling').and.throwError('unhandled exception');
 
       const setTimeoutOutput = 985023;
@@ -76,9 +79,10 @@ describe('LockMonitor', () => {
 
   describe('handlePeriodicPolling', () => {
     it('should not do anything if a lock is not required and none exist.', async () => {
-      const mockCurrentLockInfo = createLockInformation(undefined, undefined);
-      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+      const mockCurrentLockInfo = createLockInfo(undefined, undefined);
+      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
 
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock');
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
       const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
@@ -89,11 +93,13 @@ describe('LockMonitor', () => {
       expect(createNewLockSpy).not.toHaveBeenCalled();
       expect(existingLockSpy).not.toHaveBeenCalled();
       expect(releaseLockSpy).not.toHaveBeenCalled();
-      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(1);
+      expect(resolveCurrentLockSpy).not.toHaveBeenCalled();
     });
 
     it('should call the new lock routine if a lock is required but does not exist.', async () => {
-      const mockCurrentLockInfo = createLockInformation(undefined, undefined);
+      const mockCurrentLockInfo = createLockInfo(undefined, undefined);
+      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const mockSavedLock: LockTransactionModel = {
@@ -115,7 +121,7 @@ describe('LockMonitor', () => {
       expect(createNewLockSpy).toHaveBeenCalled();
       expect(existingLockSpy).not.toHaveBeenCalled();
       expect(releaseLockSpy).not.toHaveBeenCalled();
-      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(2);
+      expect(resolveCurrentLockSpy).toHaveBeenCalled();
     });
 
     it('should call the renew lock routine if a lock is required and one does exist.', async () => {
@@ -136,11 +142,13 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockInformation(mockSavedLock, mockCurrentValueLock);
+      const mockCurrentLockInfo = createLockInfo(mockSavedLock, mockCurrentValueLock);
+      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
-      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal').and.returnValue(Promise.resolve());
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal').and.returnValue(Promise.resolve(true));
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
 
       lockMonitor['desiredLockAmountInSatoshis'] = 50;
@@ -149,7 +157,7 @@ describe('LockMonitor', () => {
       expect(createNewLockSpy).not.toHaveBeenCalled();
       expect(existingLockSpy).toHaveBeenCalled();
       expect(releaseLockSpy).not.toHaveBeenCalled();
-      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(2);
+      expect(resolveCurrentLockSpy).toHaveBeenCalled();
     });
 
     it('should call the release lock routine if a lock is not required but one does exist.', async () => {
@@ -170,7 +178,9 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockInformation(mockSavedLock, mockCurrentValueLock);
+      const mockCurrentLockInfo = createLockInfo(mockSavedLock, mockCurrentValueLock);
+      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
@@ -183,7 +193,7 @@ describe('LockMonitor', () => {
       expect(createNewLockSpy).not.toHaveBeenCalled();
       expect(existingLockSpy).not.toHaveBeenCalled();
       expect(releaseLockSpy).toHaveBeenCalled();
-      expect(resolveCurrentLockSpy).toHaveBeenCalledTimes(2);
+      expect(resolveCurrentLockSpy).toHaveBeenCalled();
     });
   });
 
@@ -194,7 +204,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(undefined));
 
-      const expected = createLockInformation(undefined, undefined);
+      const expected = createLockInfo(undefined, undefined);
       const actual = await lockMonitor['resolveCurrentValueTimeLock']();
 
       expect(actual).toEqual(expected);
@@ -219,7 +229,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(false));
 
-      const expected = createLockInformation(mockLastLock, undefined);
+      const expected = createLockInfo(mockLastLock, undefined);
       const actual = await lockMonitor['resolveCurrentValueTimeLock']();
 
       expect(actual).toEqual(expected);
@@ -244,7 +254,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
 
-      const expected = createLockInformation(mockLastLock, undefined);
+      const expected = createLockInfo(mockLastLock, undefined);
       const actual = await lockMonitor['resolveCurrentValueTimeLock']();
 
       expect(actual).toEqual(expected);
@@ -276,7 +286,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
 
-      const expected = createLockInformation(mockLastLock, mockValueTimeLock);
+      const expected = createLockInfo(mockLastLock, mockValueTimeLock);
       const actual = await lockMonitor['resolveCurrentValueTimeLock']();
 
       expect(actual).toEqual(expected);
@@ -404,8 +414,9 @@ describe('LockMonitor', () => {
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
       const renewLockSpy = spyOn(lockMonitor as any, 'renewExistingLockAndSaveItToDb');
 
-      await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, 50);
+      const actual = await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, 50);
 
+      expect(actual).toBeFalsy();
       expect(releaseLockSpy).not.toHaveBeenCalled();
       expect(renewLockSpy).not.toHaveBeenCalled();
     });
@@ -434,8 +445,9 @@ describe('LockMonitor', () => {
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb').and.returnValue(Promise.resolve());
       const renewLockSpy = spyOn(lockMonitor as any, 'renewExistingLockAndSaveItToDb');
 
-      await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount - 1);
+      const actual = await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount - 1);
 
+      expect(actual).toBeTruthy();
       expect(releaseLockSpy).toHaveBeenCalled();
       expect(renewLockSpy).not.toHaveBeenCalled();
     });
@@ -464,8 +476,9 @@ describe('LockMonitor', () => {
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLockAndSaveItToDb');
       const renewLockSpy = spyOn(lockMonitor as any, 'renewExistingLockAndSaveItToDb').and.returnValue(Promise.resolve());
 
-      await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount);
+      const actual = await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount);
 
+      expect(actual).toBeTruthy();
       expect(releaseLockSpy).not.toHaveBeenCalled();
       expect(renewLockSpy).toHaveBeenCalled();
     });
@@ -497,8 +510,9 @@ describe('LockMonitor', () => {
         throw new BitcoinError(ErrorCode.LockMonitorNotEnoughBalanceForRelock);
       });
 
-      await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount);
+      const actual = await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount);
 
+      expect(actual).toBeTruthy();
       expect(renewLockSpy).toHaveBeenCalledBefore(releaseLockSpy);
       expect(releaseLockSpy).toHaveBeenCalled();
     });

@@ -486,7 +486,7 @@ export default class BitcoinClient {
     previousFreezeUntilBlock: number): Promise<Transaction> {
 
     // tslint:disable-next-line: max-line-length
-    console.info(`Creating preivously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen until block: ${previousFreezeUntilBlock}`);
+    console.info(`Creating a transaction to return (to the wallet) the preivously frozen amount from transaction with id: ${previousFreezeTransaction.id} which was frozen until block: ${previousFreezeUntilBlock}`);
 
     return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
