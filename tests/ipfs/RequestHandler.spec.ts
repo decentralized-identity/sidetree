@@ -3,19 +3,17 @@ import RequestHandler from '../../lib/ipfs/RequestHandler';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import { Response, ResponseStatus } from '../../lib/common/Response';
 
-describe('RequestHandler', () => {
+describe('RequestHandler', async () => {
   let maxFileSize: number;
   let fetchTimeoutInSeconds: number;
   let requestHandler: RequestHandler;
 
   beforeAll(async (done) => {
-    try {
-      maxFileSize = 20000000; // 20MB
-      fetchTimeoutInSeconds = 1;
-      requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
-    } catch (e) {
-      console.log(`${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
-    }
+    console.log('IN BEFORE ALL!!!!');
+    maxFileSize = 20000000; // 20MB
+    fetchTimeoutInSeconds = 1;
+    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    console.log('END OF BEFORE ALL!!!!');
     done();
   });
 
@@ -24,6 +22,7 @@ describe('RequestHandler', () => {
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
+    console.log('IN FIRST TEST!!!!');
     const expectedResponse: Response = {
       status: ResponseStatus.BadRequest,
       body: { code: FetchResultCode.InvalidHash }
