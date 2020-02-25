@@ -12,8 +12,13 @@ describe('RequestHandler', async () => {
     console.log('IN BEFORE ALL!!!!');
     maxFileSize = 20000000; // 20MB
     fetchTimeoutInSeconds = 1;
-    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
-    console.log('END OF BEFORE ALL!!!!');
+    try {
+      requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      console.log('END OF BEFORE ALL!!!!');
+    }
     done();
   });
 
