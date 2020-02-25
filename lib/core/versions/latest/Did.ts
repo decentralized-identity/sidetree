@@ -59,7 +59,7 @@ export default class Did {
 
   /**
    * Parses the input string as Sidetree DID.
-   * @param did Short or long-form DID string.
+   * @param didString Short or long-form DID string.
    */
   public static async create (didString: string, didMethodName: string): Promise<Did> {
     const did = new Did(didString, didMethodName);
@@ -75,8 +75,8 @@ export default class Did {
 
       // Trim the `initial-values=` string to get the encoded create operation request body.
       const encodedCreateRequest = didParameterString.substring(Did.initialValuesParameterPrefix.length);
-      const createRequesBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
-      const createOperation = await CreateOperation.parse(createRequesBuffer);
+      const createRequestBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
+      const createOperation = await CreateOperation.parse(createRequestBuffer);
 
       // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
       // becasue the hashing algorithm used maybe different from the short form DID given.

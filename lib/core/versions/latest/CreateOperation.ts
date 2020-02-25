@@ -42,7 +42,7 @@ export default class CreateOperation implements OperationModel {
 
   /**
    * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
-   * NOTE: should only be used by `parse()` and `parseObject()`. because
+   * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
    */
   private constructor (
     operationBuffer: Buffer,

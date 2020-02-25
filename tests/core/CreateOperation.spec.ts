@@ -1,12 +1,12 @@
-import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import SidetreeError from '../../lib/core/SidetreeError';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import OperationGenerator from '../generators/OperationGenerator';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
-import OperationType from '../../lib/core/enums/OperationType';
 import Encoder from '../../lib/core/versions/latest/Encoder';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
+import OperationGenerator from '../generators/OperationGenerator';
+import OperationType from '../../lib/core/enums/OperationType';
+import SidetreeError from '../../lib/core/SidetreeError';
 
 describe('CreateOperation', async () => {
   describe('parse()', async () => {
