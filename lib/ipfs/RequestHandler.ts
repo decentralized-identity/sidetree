@@ -24,7 +24,12 @@ export default class RequestHandler {
    * @param repo Optional IPFS datastore implementation.
    */
   public static async create (fetchTimeoutInSeconds: number, repo?: any) {
-    const ipfsStorage = await IpfsStorage.create(repo);
+    let ipfsStorage: IpfsStorage;
+    try {
+      ipfsStorage = await IpfsStorage.createSingleton(repo);
+    } catch {
+      ipfsStorage = IpfsStorage.getSingleton();
+    }
     return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
   }
 

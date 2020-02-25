@@ -9,25 +9,13 @@ describe('RequestHandler', async () => {
   let requestHandler: RequestHandler;
 
   beforeAll(async (done) => {
-    console.log('IN BEFORE ALL!!!!');
     maxFileSize = 20000000; // 20MB
     fetchTimeoutInSeconds = 1;
-    try {
-      requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
-    } catch (e) {
-      console.log(e);
-    } finally {
-      console.log('END OF BEFORE ALL!!!!');
-    }
+    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
     done();
   });
 
-  afterAll(async () => {
-    await requestHandler.ipfsStorage.stop();
-  });
-
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
-    console.log('IN FIRST TEST!!!!');
     const expectedResponse: Response = {
       status: ResponseStatus.BadRequest,
       body: { code: FetchResultCode.InvalidHash }

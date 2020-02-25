@@ -10,12 +10,12 @@ describe('IpfsStorage', () => {
   let maxFileSize: number;
 
   beforeAll(async () => {
-    ipfsStorage = await IpfsStorage.create('ipfsStoreTestRepo');
+    try {
+      ipfsStorage = await IpfsStorage.createSingleton();
+    } catch {
+      ipfsStorage = IpfsStorage.getSingleton();
+    }
     maxFileSize = 20000000; // 20MB
-  });
-
-  afterAll(async () => {
-    await ipfsStorage.stop();
   });
 
   describe('read', () => {
@@ -218,6 +218,23 @@ describe('IpfsStorage', () => {
       const stopSpy = spyOn(ipfsStorage['node'], 'stop').and.returnValue(Promise.resolve(undefined));
       await ipfsStorage.stop();
       expect(stopSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getSingleton', () => {
+    it('should throw error if instance does not exist', () => {
+      const ipfsStorageHolder = IpfsStorage['ipfsStorageSingleton'];
+      // set it to undefined for now so get will throw error (mocking as undefined)
+      IpfsStorage['ipfsStorageSingleton'] = undefined;
+
+      try {
+        IpfsStorage.getSingleton();
+      } catch (error) {
+        expect(error.message).toEqual('IpfsStorage is a singleton, Please use the createSingleton method before get');
+      }
+
+      // reset the mocking
+      IpfsStorage['ipfsStorageSingleton'] = ipfsStorageHolder;
     });
   });
 });

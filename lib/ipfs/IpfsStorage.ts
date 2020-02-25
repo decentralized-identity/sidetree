@@ -12,16 +12,34 @@ export default class IpfsStorage {
   /**  IPFS node instance  */
   private node: IPFS;
 
+  /** singleton holding the instance of ipfsStorage to use */
+  private static ipfsStorageSingleton: IpfsStorage | undefined;
+
   /**
-   * Static method to return an instance if IpfsStorage. If no argument passed in, it uses default local repo
+   * Create and return the singleton instance of the ipfsStorage if doesn't already exist
    */
-  public static async create (repo?: any): Promise<IpfsStorage> {
-    const localRepoName = 'sidetree-ipfs';
-    const options = {
-      repo: repo !== undefined ? repo : localRepoName
-    };
-    const node = await IPFS.create(options);
-    return new IpfsStorage(node);
+  public static async createSingleton (repo?: any): Promise<IpfsStorage> {
+    if (IpfsStorage.ipfsStorageSingleton === undefined) {
+      const localRepoName = 'sidetree-ipfs';
+      const options = {
+        repo: repo !== undefined ? repo : localRepoName
+      };
+      const node = await IPFS.create(options);
+      IpfsStorage.ipfsStorageSingleton = new IpfsStorage(node);
+      return IpfsStorage.ipfsStorageSingleton;
+    } else {
+      throw Error('IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
+    }
+  }
+
+  /**
+   * Get the singleton instance of the ipfsStorage if exists.
+   */
+  public static getSingleton (): IpfsStorage {
+    if (IpfsStorage.ipfsStorageSingleton === undefined) {
+      throw Error('IpfsStorage is a singleton, Please use the createSingleton method before get');
+    }
+    return IpfsStorage.ipfsStorageSingleton;
   }
 
   private constructor (node: IPFS) {
