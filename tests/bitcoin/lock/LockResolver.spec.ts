@@ -66,7 +66,7 @@ describe('LockResolver', () => {
 
       const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockBlockInput);
 
-      const getTxnSpy = spyOn(lockResolver as any, 'getTransactionFromBitcoin').and.returnValue(Promise.resolve(mockTransaction));
+      const getTxnSpy = spyOn(lockResolver as any, 'getTransaction').and.returnValue(Promise.resolve(mockTransaction));
       const createScriptSpy = spyOn(LockResolver as any, 'createScript').and.returnValue(validScript);
       const checkLockScriptSpy = spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
       const payToScriptSpy = spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(true);
@@ -99,7 +99,7 @@ describe('LockResolver', () => {
 
       const mockLockScriptVerifyResult = createLockScriptVerifyResult(false, undefined, undefined);
 
-      const getTxnSpy = spyOn(lockResolver as any, 'getTransactionFromBitcoin');
+      const getTxnSpy = spyOn(lockResolver as any, 'getTransaction');
       spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
 
@@ -128,7 +128,7 @@ describe('LockResolver', () => {
 
       const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, 123);
 
-      spyOn(lockResolver as any, 'getTransactionFromBitcoin').and.returnValue(Promise.resolve(mockTransaction));
+      spyOn(lockResolver as any, 'getTransaction').and.returnValue(Promise.resolve(mockTransaction));
       spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
       spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(false);
@@ -207,12 +207,12 @@ describe('LockResolver', () => {
     });
   });
 
-  describe('getTransactionFromBitcoin', () => {
+  describe('getTransaction', () => {
     it('should return true if the bitcoin client returns the transaction', async () => {
       const mockTxn: BitcoinTransactionModel = { id: 'id', inputs: [], outputs: [] };
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
 
-      const actual = await lockResolver['getTransactionFromBitcoin']('input id');
+      const actual = await lockResolver['getTransaction']('input id');
       expect(actual).toBeTruthy();
     });
 
@@ -220,7 +220,7 @@ describe('LockResolver', () => {
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('not found custom error.');
 
       await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
-      () => lockResolver['getTransactionFromBitcoin']('input id'),
+      () => lockResolver['getTransaction']('input id'),
       ErrorCode.LockResolverTransactionNotFound);
     });
   });

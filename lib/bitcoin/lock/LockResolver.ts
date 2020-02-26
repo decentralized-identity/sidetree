@@ -64,7 +64,7 @@ export default class LockResolver {
     }
 
     // (B). verify that the transaction is paying to the target redeem script
-    const lockTransaction = await this.getTransactionFromBitcoin(lockIdentifier.transactionId);
+    const lockTransaction = await this.getTransaction(lockIdentifier.transactionId);
 
     const transactionIsPayingToTargetRedeemScript = lockTransaction.outputs.length > 0 &&
                                                     LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
@@ -144,7 +144,7 @@ export default class LockResolver {
     }
   }
 
-  private async getTransactionFromBitcoin (transactionId: string): Promise<BitcoinTransactionModel> {
+  private async getTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
     try {
       return this.bitcoinClient.getRawTransaction(transactionId);
     } catch (e) {
