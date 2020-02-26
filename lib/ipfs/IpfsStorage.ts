@@ -1,9 +1,9 @@
 import * as IPFS from 'ipfs';
+import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
-import { AsyncExecutor, AsyncTimeoutError } from '../common/async/AsyncExecutor';
-import ErrorCode from '../ipfs/ErrorCode';
 import IpfsError from './IpfsError';
+import { AsyncExecutor, AsyncTimeoutError } from '../common/async/AsyncExecutor';
 
 /**
  * Class that implements the IPFS Storage functionality.
@@ -104,7 +104,7 @@ export default class IpfsStorage {
       return { code: FetchResultCode.NotAFile };
     }
 
-    let result: IteratorResult<Buffer, any>;
+    let result: IteratorResult<Buffer>;
     do {
       try {
         result = await AsyncExecutor.executeWithTimeout(iterator.next(), IpfsStorage.timeoutDuration);
@@ -116,7 +116,7 @@ export default class IpfsStorage {
         console.error(`unexpected error thrown, please investigate and fix: ${e}`);
         throw e;
       }
-      if (result.value !== undefined) {
+      if (result.value instanceof Buffer) {
         const chunk = result.value;
         currentContentSize += chunk.byteLength;
         if (maxSizeInBytes < currentContentSize) {

@@ -1,11 +1,11 @@
 import base64url from 'base64url';
+import ErrorCode from '../ipfs/ErrorCode';
 import FetchResultCode from '../common/FetchResultCode';
+import IpfsError from './IpfsError';
 import IpfsStorage from './IpfsStorage';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
-import IpfsError from './IpfsError';
-import ErrorCode from '../ipfs/ErrorCode';
 
 const multihashes = require('multihashes');
 
@@ -33,6 +33,7 @@ export default class RequestHandler {
       if (e instanceof IpfsError && e.code === ErrorCode.ipfsRedundantCreate) {
         ipfsStorage = IpfsStorage.getSingleton();
       } else {
+        console.error('unexpected error, please investigate and fix.', e);
         throw e;
       }
     }
