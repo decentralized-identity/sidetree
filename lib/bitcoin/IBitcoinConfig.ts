@@ -16,5 +16,5 @@ export interface IBitcoinConfig {
   requestTimeoutInMilliseconds: number | undefined;
   requestMaxRetries: number | undefined;
   transactionPollPeriodInSeconds: number | undefined;
-  transactionFeeMarkupPercentage: number | undefined;
+  sidetreeTransactionFeeMarkupPercentage: number;
 }

@@ -492,8 +492,8 @@ describe('BitcoinClient', async () => {
       spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
       // The calculated fee is less than the one passed in
       spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(1));
-      const originalFeeMarkupHolder = bitcoinClient['transactionFeeMarkupPercentage'];
-      bitcoinClient['transactionFeeMarkupPercentage'] = 10;
+      const originalFeeMarkupHolder = bitcoinClient['sidetreeTransactionFeeMarkupPercentage'];
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = 10;
       const dataToWrite = 'data to write';
       const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
       const fee = availableSatoshis / 2;
@@ -501,7 +501,7 @@ describe('BitcoinClient', async () => {
       const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
       expect(transaction.getFee()).toEqual(Math.ceil(fee * 110 / 100));
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
-      bitcoinClient['transactionFeeMarkupPercentage'] = originalFeeMarkupHolder;
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = originalFeeMarkupHolder;
       done();
     });
 
@@ -546,8 +546,8 @@ describe('BitcoinClient', async () => {
         }
       ];
 
-      const markupFeeHolder = bitcoinClient['transactionFeeMarkupPercentage'];
-      bitcoinClient['transactionFeeMarkupPercentage'] = 10;
+      const markupFeeHolder = bitcoinClient['sidetreeTransactionFeeMarkupPercentage'];
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = 10;
       spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
       // The calculated fee is greater than the fee passed in
       spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(calculatedFee));
@@ -558,7 +558,7 @@ describe('BitcoinClient', async () => {
       const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
       expect(transaction.getFee()).toEqual(Math.ceil(calculatedFee * 110 / 100));
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
-      bitcoinClient['transactionFeeMarkupPercentage'] = markupFeeHolder;
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = markupFeeHolder;
       done();
     });
   });

@@ -110,7 +110,7 @@ export default class BitcoinProcessor {
         config.bitcoinWalletImportString,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3,
-        config.transactionFeeMarkupPercentage || 0);
+        config.sidetreeTransactionFeeMarkupPercentage || 0);
   }
 
   /**

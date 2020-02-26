@@ -386,7 +386,7 @@ Returns `HTTP 400 Bad Request` with the following values as the `code` parameter
 
 | Code                            | Description                                                                                                 |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| spending_cap_per_period_reached | if with the given `fee` this node will exceed the spending limit as configured in the parameters.           |
+| spending_cap_per_period_reached | if with the given fee (derived from minFee) this node will exceed the spending limit as configured in the parameters.           |
 | not_enough_balace_for_write     | if the wallet configured in the parameters does not have enough balance to complete the write operation.    |
 
 #### Request path
@@ -402,7 +402,7 @@ POST /transactions
 #### Request body schema
 ```json
 {
-  "fee": "A number representing the transaction fee to be paid to write this transaction to the blockchain.",
+  "minFee": "A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee paid can fluctuate deterministically.",
   "anchorString": "The string to be written to the blockchain for this transaction."
 }
 ```
@@ -412,7 +412,7 @@ POST /transactions
 POST /transactions HTTP/1.1
 
 {
-  "fee": 200000,
+  "minFee": 200000,
   "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
 }
 ```

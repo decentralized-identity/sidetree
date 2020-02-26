@@ -1,5 +1,6 @@
 import * as httpStatus from 'http-status';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinDataTransactionModel from './models/BitcoinDataTransactionModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
@@ -8,7 +9,6 @@ import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
-import BitcoinDataTransactionModel from './models/BitcoinDataTransactionModel';
 
 /**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
@@ -30,7 +30,7 @@ export default class BitcoinClient {
     bitcoinWalletImportString: string,
     private requestTimeout: number,
     private requestMaxRetries: number,
-    private transactionFeeMarkupPercentage: number) {
+    private sidetreeTransactionFeeMarkupPercentage: number) {
 
     // Bitcore has a type file error on PrivateKey
     try {
@@ -429,7 +429,7 @@ export default class BitcoinClient {
     // choose the max between bitcoin estimated fee or passed in min fee to pay
     let feeToPay = Math.max(minFeeInSatoshis, estimatedFeeInSatoshis);
     // mark up the fee by specified percentage
-    feeToPay += (feeToPay * this.transactionFeeMarkupPercentage / 100);
+    feeToPay += (feeToPay * this.sidetreeTransactionFeeMarkupPercentage / 100);
     // round up to the nearest integer because satoshis don't have floating points
     feeToPay = Math.ceil(feeToPay);
 
