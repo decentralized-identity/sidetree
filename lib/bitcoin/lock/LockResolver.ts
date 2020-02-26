@@ -1,5 +1,6 @@
 import BitcoinClient from '../BitcoinClient';
 import BitcoinError from '../BitcoinError';
+import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
@@ -35,6 +36,8 @@ export default class LockResolver {
    */
   public async resolveLockIdentifierAndThrowOnError (lockIdentifier: LockIdentifierModel): Promise<ValueTimeLockModel> {
 
+    console.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
+
     // The verifictation of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script
     //   (B). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier
@@ -51,7 +54,7 @@ export default class LockResolver {
     }
 
     // (B). verify that the transaction is paying to the target redeem script
-    const lockTransaction = await this.bitcoinClient.getRawTransaction(lockIdentifier.transactionId);
+    const lockTransaction = await this.getTransaction(lockIdentifier.transactionId);
 
     const transactionIsPayingToTargetRedeemScript = lockTransaction.outputs.length > 0 &&
                                                     LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
@@ -128,6 +131,14 @@ export default class LockResolver {
       return new Script(redeemScriptAsBuffer);
     } catch (e) {
       throw BitcoinError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
+    }
+  }
+
+  private async getTransaction (transactionId: string): Promise<BitcoinTransactionModel> {
+    try {
+      return this.bitcoinClient.getRawTransaction(transactionId);
+    } catch (e) {
+      throw BitcoinError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
     }
   }
 }
