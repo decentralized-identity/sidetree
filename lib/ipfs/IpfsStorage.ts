@@ -104,7 +104,7 @@ export default class IpfsStorage {
       return { code: FetchResultCode.NotAFile };
     }
 
-    let result: IteratorResult<Buffer>;
+    let result: IteratorResult<Buffer, any>;
     do {
       try {
         result = await AsyncExecutor.executeWithTimeout(iterator.next(), IpfsStorage.timeoutDuration);

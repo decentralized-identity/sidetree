@@ -26,7 +26,7 @@ describe('AsyncExecutor', () => {
     const timeoutDuration = 100;
     const result = await AsyncExecutor.executeWithTimeout(shortWait, timeoutDuration);
 
-    const expected = 'this should be returned because the wait is short'
+    const expected = 'this should be returned because the wait is short';
     expect(result).toEqual(expected);
   });
 
@@ -39,7 +39,7 @@ describe('AsyncExecutor', () => {
     const timeoutDuration = 100;
     try {
       await AsyncExecutor.executeWithTimeout(shortWait, timeoutDuration);
-      fail('Test should throw but did not')
+      fail('Test should throw but did not');
     } catch (e) {
       expect(e.message).toEqual('Failed, which is expected');
     }
