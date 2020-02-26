@@ -215,14 +215,13 @@ export default class BitcoinProcessor {
   /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorString The string to be written as part of the transaction.
-   * @param fee The fee to be paid for this transaction.
+   * @param minFee The minimum fee to be paid for this transaction.
    */
-  public async writeTransaction (anchorString: string, fee: number) {
-    console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
-
+  public async writeTransaction (anchorString: string, minFee: number) {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const dataTransaction = await this.bitcoinClient.createDataTransaction(sidetreeTransactionString, fee);
+    const dataTransaction = await this.bitcoinClient.createDataTransaction(sidetreeTransactionString, minFee);
     const transactionFee = dataTransaction.transactionFee;
+    console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
 
     const isFeeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(transactionFee, this.lastProcessedBlock!.height);
 
@@ -234,9 +233,9 @@ export default class BitcoinProcessor {
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
-    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
+    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * transactionFee;
     if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
+      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * transactionFee));
       console.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
     }
 
