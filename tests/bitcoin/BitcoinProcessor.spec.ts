@@ -45,7 +45,10 @@ describe('BitcoinProcessor', () => {
     requestMaxRetries: 3,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
-    transactionPollPeriodInSeconds: 60
+    transactionPollPeriodInSeconds: 60,
+    valueTimeLockPollPeriodInSeconds: 60,
+    valueTimeLockAmountInBitcoins: 1,
+    valueTimeLockTransactionFeesAmountInBitcoins: undefined
   };
 
   let bitcoinProcessor: BitcoinProcessor;
@@ -118,7 +121,10 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        valueTimeLockPollPeriodInSeconds: 60,
+        valueTimeLockAmountInBitcoins: 1,
+        valueTimeLockTransactionFeesAmountInBitcoins: undefined
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
@@ -145,7 +151,10 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        valueTimeLockPollPeriodInSeconds: 60,
+        valueTimeLockAmountInBitcoins: 1,
+        valueTimeLockTransactionFeesAmountInBitcoins: undefined
       };
 
       try {
