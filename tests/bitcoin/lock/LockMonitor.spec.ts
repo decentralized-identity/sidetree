@@ -26,7 +26,7 @@ describe('LockMonitor', () => {
   let lockMonitor: LockMonitor;
 
   beforeEach(() => {
-    const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1);
+    const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
     const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
     lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1000, 50, 1200);
   });
