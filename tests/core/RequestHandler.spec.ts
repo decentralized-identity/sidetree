@@ -61,7 +61,7 @@ describe('RequestHandler', () => {
     spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
 
     cas = new MockCas();
-    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, 0);
+    const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
     const operationProcessor = new OperationProcessor(config.didMethodName);
 
     versionManager = new MockVersionManager();

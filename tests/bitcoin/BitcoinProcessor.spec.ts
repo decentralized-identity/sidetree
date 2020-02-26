@@ -41,7 +41,8 @@ describe('BitcoinProcessor', () => {
     requestMaxRetries: 3,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
-    transactionPollPeriodInSeconds: 60
+    transactionPollPeriodInSeconds: 60,
+    transactionFeeMarkupPercentage: 0
   };
 
   let bitcoinProcessor: BitcoinProcessor;
@@ -110,7 +111,8 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        transactionFeeMarkupPercentage: undefined
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
@@ -120,6 +122,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName!);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
+      expect(bitcoinProcessor['bitcoinClient']['transactionFeeMarkupPercentage']).toEqual(0);
     });
 
     it('should throw if the wallet import string is incorrect', () => {
@@ -137,7 +140,8 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        transactionFeeMarkupPercentage: undefined
       };
 
       try {

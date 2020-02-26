@@ -5,5 +5,6 @@
   "genesisBlockNumber": 1500000,
   "databaseName": "sidetree-bitcoin",
   "mongoDbConnectionString": "mongodb://localhost:27017/",
-  "port": 3002
+  "port": 3002,
+  "transactionFeeMarkupPercentage": 10
 }

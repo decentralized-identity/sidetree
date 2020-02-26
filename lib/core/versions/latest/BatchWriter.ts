@@ -18,8 +18,7 @@ export default class BatchWriter implements IBatchWriter {
   public constructor (
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
-    private cas: ICas,
-    private transactionFeeMarkupPercentage: number) { }
+    private cas: ICas) { }
 
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.
@@ -68,7 +67,7 @@ export default class BatchWriter implements IBatchWriter {
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
-    const fee = FeeManager.computeTransactionFee(normalizedFee, operationBuffers.length, this.transactionFeeMarkupPercentage);
+    const fee = FeeManager.computeTransactionFee(normalizedFee, operationBuffers.length);
     console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with fee: ${fee}`);
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);

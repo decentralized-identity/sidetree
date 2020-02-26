@@ -29,7 +29,8 @@ export default class BitcoinClient {
     bitcoinRpcPassword: string | undefined,
     bitcoinWalletImportString: string,
     private requestTimeout: number,
-    private requestMaxRetries: number) {
+    private requestMaxRetries: number,
+    private transactionFeeMarkupPercentage: number) {
 
     // Bitcore has a type file error on PrivateKey
     try {
@@ -425,7 +426,12 @@ export default class BitcoinClient {
     transaction.change(this.walletAddress);
 
     const estimatedFeeInSatoshis = await this.calculateTransactionFee(transaction);
-    const feeToPay = Math.max(minFeeInSatoshis, estimatedFeeInSatoshis);
+    // choose the max between bitcoin estimated fee or passed in min fee to pay
+    let feeToPay = Math.max(minFeeInSatoshis, estimatedFeeInSatoshis);
+    // mark up the fee by specified percentage
+    feeToPay += (feeToPay * this.transactionFeeMarkupPercentage / 100);
+    // round up to the nearest integer because satoshis don't have floating points
+    feeToPay = Math.ceil(feeToPay);
 
     transaction.fee(feeToPay);
     transaction.sign(this.walletPrivateKey);

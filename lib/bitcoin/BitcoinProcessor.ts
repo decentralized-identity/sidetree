@@ -109,7 +109,8 @@ export default class BitcoinProcessor {
         config.bitcoinRpcPassword,
         config.bitcoinWalletImportString,
         config.requestTimeoutInMilliseconds || 300,
-        config.requestMaxRetries || 3);
+        config.requestMaxRetries || 3,
+        config.transactionFeeMarkupPercentage || 0);
   }
 
   /**
