@@ -376,7 +376,7 @@ describe('LockMonitor', () => {
   describe('handleCreatingNewLock', () => {
     it('should create the first lock', async () => {
       // Make sure that there's enough wallet balance available
-      const mockWalletBalance = 32430234 + lockMonitor['firstLockFeeAmountInSatoshis'] + 200;
+      const mockWalletBalance = 32430234 + lockMonitor['transactionFeesAmountInSatoshis'] + 200;
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
       const mockCurrentBlockHeight = 455678;
@@ -406,7 +406,7 @@ describe('LockMonitor', () => {
 
       expect(actual).toEqual(mockLockInfoSaved);
 
-      const expectedLockAmount = desiredLockAmount + lockMonitor['firstLockFeeAmountInSatoshis'];
+      const expectedLockAmount = desiredLockAmount + lockMonitor['transactionFeesAmountInSatoshis'];
       const expectedLockUntilBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
       expect(createLockTxnSpy).toHaveBeenCalledWith(expectedLockAmount, expectedLockUntilBlock);
 
@@ -417,7 +417,7 @@ describe('LockMonitor', () => {
       const mockWalletBalance = 32430234;
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
-      const desiredLockAmount = mockWalletBalance - lockMonitor['firstLockFeeAmountInSatoshis'];
+      const desiredLockAmount = mockWalletBalance - lockMonitor['transactionFeesAmountInSatoshis'];
       await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
         () => lockMonitor['handleCreatingNewLock'](desiredLockAmount),
         ErrorCode.LockMonitorNotEnoughBalanceForFirstLock);

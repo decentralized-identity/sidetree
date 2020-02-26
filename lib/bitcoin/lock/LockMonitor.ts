@@ -37,7 +37,7 @@ export default class LockMonitor {
     private pollPeriodInSeconds: number,
     private desiredLockAmountInSatoshis: number,
     private lockPeriodInBlocks: number,
-    private firstLockFeeAmountInSatoshis: number) {
+    private transactionFeesAmountInSatoshis: number) {
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
   }
@@ -77,16 +77,16 @@ export default class LockMonitor {
 
     const lockRequired = this.desiredLockAmountInSatoshis > 0;
 
-    let resolveCurrentLockAgain = false;
+    let currentLockUpdated = false;
 
     if (lockRequired && !validCurrentLockExist) {
       await this.handleCreatingNewLock(this.desiredLockAmountInSatoshis);
-      resolveCurrentLockAgain = true;
+      currentLockUpdated = true;
     }
 
     if (lockRequired && validCurrentLockExist) {
       // The routine will true only if there were any changes made to the lock
-      resolveCurrentLockAgain =
+      currentLockUpdated =
         await this.handleExistingLockRenewal(
           this.currentLockState!.currentValueTimeLock!,
           this.currentLockState!.latestSavedLockInfo!,
@@ -96,10 +96,10 @@ export default class LockMonitor {
     if (!lockRequired && validCurrentLockExist) {
       await this.releaseLock(this.currentLockState!.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
 
-      resolveCurrentLockAgain = true;
+      currentLockUpdated = true;
     }
 
-    if (resolveCurrentLockAgain) {
+    if (currentLockUpdated) {
       this.currentLockState = await this.getCurrentLockState();
     }
   }
@@ -188,7 +188,7 @@ export default class LockMonitor {
     // When creating the first lock, we are going to lock an amount more than the desired-amount
     // to account for the fee(s) required when relocking etc. So check whether the target
     // wallet has enough balance.
-    const totalLockAmount = desiredLockAmountInSatoshis + this.firstLockFeeAmountInSatoshis;
+    const totalLockAmount = desiredLockAmountInSatoshis + this.transactionFeesAmountInSatoshis;
     const walletBalance = await this.bitcoinClient.getBalanceInSatoshis();
 
     if (walletBalance <= totalLockAmount) {
