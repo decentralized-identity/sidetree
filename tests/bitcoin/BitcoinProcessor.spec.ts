@@ -2,21 +2,21 @@ import * as httpStatus from 'http-status';
 import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
+import BitcoinError from '../../lib/bitcoin/BitcoinError';
 import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
-import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
-import { Transaction } from 'bitcore-lib';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { ResponseStatus } from '../../lib/common/Response';
-import SharedErrorCode from '../../lib/common/SharedErrorCode';
-import BitcoinError from '../../lib/bitcoin/BitcoinError';
+import { Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);

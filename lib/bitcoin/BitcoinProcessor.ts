@@ -201,7 +201,8 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
-    const currentLastProcessedBlock = this.lastProcessedBlock!;
+    // deep copy last processed block
+    const currentLastProcessedBlock = Object.assign({}, this.lastProcessedBlock!);
     let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
 
     // make sure the last processed block hasn't changed since before getting transactions

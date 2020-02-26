@@ -22,7 +22,6 @@ import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
@@ -185,25 +184,20 @@ describe('RequestHandler', () => {
   });
 
   it('should return a resolved DID Document given a valid long-form DID.', async () => {
-    // Create an original DID Document.
-    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
-    const originalDidDocument = {
-      '@context': 'https://w3id.org/did/v1',
-      publicKey: [recoveryPublicKey, signingPublicKey]
-    };
-    const encodedOriginalDidDocument = Encoder.encode(JSON.stringify(originalDidDocument));
-    const hashAlgorithmInMultihashCode = 18;
-    const documentHash = Multihash.hash(Buffer.from(encodedOriginalDidDocument), hashAlgorithmInMultihashCode);
-    const expectedDid = didMethodName + Encoder.encode(documentHash);
+    // Create a long-form DID string.
+    const createOperationData = await OperationGenerator.generateCreateOperation();
+    const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
+    const didMethodName = 'did:sidetree:';
+    const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
+    const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
+    const longFormDid = `${shortFormDid};initial-values=${encodedCreateOperationRequest}`;
 
-    const longFormDid = Did.createLongFormDidString(didMethodName, originalDidDocument, hashAlgorithmInMultihashCode);
     const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body).id).toEqual(expectedDid);
+    expect((response.body).id).toEqual(shortFormDid);
   });
 
   it('should return NotFound given an unknown DID.', async () => {
