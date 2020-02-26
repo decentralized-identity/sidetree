@@ -5,7 +5,7 @@ import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
-import ErrorCode from '../../lib/common/SharedErrorCode';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
@@ -13,6 +13,10 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
 import { Transaction } from 'bitcore-lib';
+import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import { ResponseStatus } from '../../lib/common/Response';
+import SharedErrorCode from '../../lib/common/SharedErrorCode';
+import BitcoinError from '../../lib/bitcoin/BitcoinError';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -39,7 +43,6 @@ describe('BitcoinProcessor', () => {
     genesisBlockNumber: 1480000,
     lowBalanceNoticeInDays: 28,
     requestMaxRetries: 3,
-    maxNumOfOperationsForValueTimeLock: 1000,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
     transactionPollPeriodInSeconds: 60
@@ -110,7 +113,6 @@ describe('BitcoinProcessor', () => {
         bitcoinWalletImportString: BitcoinClient.generatePrivateKey('testnet'),
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
-        maxNumOfOperationsForValueTimeLock: 1000,
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
@@ -138,7 +140,6 @@ describe('BitcoinProcessor', () => {
         bitcoinWalletImportString: 'wrong!',
         databaseName: randomString(),
         genesisBlockNumber: randomNumber(),
-        maxNumOfOperationsForValueTimeLock: 1000,
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
         lowBalanceNoticeInDays: undefined,
@@ -420,7 +421,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).not.toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
+        expect(error.code).not.toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
       } finally {
         done();
       }
@@ -436,7 +437,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
+        expect(error.code).toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
         expect(verifyMock).toHaveBeenCalledTimes(1);
       } finally {
         done();
@@ -459,7 +460,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
+        expect(error.code).toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
         expect(getTransactionsSinceMock).toHaveBeenCalled();
         expect(verifyMock).toHaveBeenCalledTimes(2);
       } finally {
@@ -579,7 +580,7 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error instanceof RequestError).toBeTruthy();
         expect(error.status).toEqual(400);
-        expect(error.code).toEqual(ErrorCode.NotEnoughBalanceForWrite);
+        expect(error.code).toEqual(SharedErrorCode.NotEnoughBalanceForWrite);
 
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
@@ -598,7 +599,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.SpendingCapPerPeriodReached);
+        expect(error.code).toEqual(SharedErrorCode.SpendingCapPerPeriodReached);
       }
 
       expect(broadcastSpy).not.toHaveBeenCalled();
@@ -626,7 +627,7 @@ describe('BitcoinProcessor', () => {
         fail('should have failed');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+        expect(error.code).toEqual(SharedErrorCode.BlockchainTimeOutOfRange);
       }
     });
 
@@ -638,7 +639,7 @@ describe('BitcoinProcessor', () => {
         fail('should have failed');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+        expect(error.code).toEqual(SharedErrorCode.BlockchainTimeOutOfRange);
       }
     });
 
@@ -1640,6 +1641,101 @@ describe('BitcoinProcessor', () => {
 
       expect(fetchedVersion.name).toEqual(expectedVersion.name);
       expect(fetchedVersion.version).toEqual(expectedVersion.version);
+    });
+  });
+
+  describe('getValueTimeLock', () => {
+    it('should call the lock resolver and return the value from it.', async (done) => {
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1000,
+        identifier: 'lock identifier',
+        owner: 'owner',
+        unlockTransactionTime: 1233
+      };
+
+      spyOn(bitcoinProcessor['lockResolver'], 'resolveSerializedLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
+
+      const actual = await bitcoinProcessor.getValueTimeLock('some serialized input');
+      expect(actual).toEqual(mockValueTimeLock);
+      done();
+    });
+
+    it('should throw request error if lockresolver throws any exception', async (done) => {
+      spyOn(bitcoinProcessor['lockResolver'], 'resolveSerializedLockIdentifierAndThrowOnError').and.throwError('no lock found.');
+
+      try {
+        await bitcoinProcessor.getValueTimeLock('some serialized input');
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+        expect(e).toEqual(expectedError);
+      }
+
+      done();
+    });
+  });
+
+  describe('generatePrivateKeyForTestnet', () => {
+    it('should return a private key string by calling the BitcoinClient', () => {
+      const mockPrivateKey = 'mocked private key';
+      spyOn(BitcoinClient, 'generatePrivateKey').and.returnValue(mockPrivateKey);
+
+      const actual = BitcoinProcessor.generatePrivateKeyForTestnet();
+      expect(actual).toEqual(mockPrivateKey);
+    });
+  });
+
+  describe('getActiveValueTimeLockForThisNode', () => {
+    it('should return the value-time-lock from the lockmonitor', () => {
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1000,
+        identifier: 'lock identifier',
+        owner: 'owner',
+        unlockTransactionTime: 1233
+      };
+
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.returnValue(mockValueTimeLock);
+
+      const actual = bitcoinProcessor.getActiveValueTimeLockForThisNode();
+      expect(actual).toEqual(mockValueTimeLock);
+    });
+
+    it('should throw not-found error if the lock monitor returns undefined.', () => {
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.returnValue(undefined);
+
+      try {
+        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+        expect(e).toEqual(expectedError);
+      }
+    });
+
+    it('should throw pending-state exception if the lock monitor throws pending-state error', () => {
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.callFake(() => {
+        throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+      });
+
+      try {
+        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
+        expect(e).toEqual(expectedError);
+      }
+    });
+
+    it('should bubble up any other errors.', () => {
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.throwError('no lock found.');
+
+      try {
+        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.ServerError);
+        expect(e).toEqual(expectedError);
+      }
     });
   });
 });

@@ -132,7 +132,8 @@ export default class BitcoinProcessor {
         this.mongoDbLockTransactionStore,
         this.pollPeriod,
         1000,
-        config.maxNumOfOperationsForValueTimeLock);
+        4,
+        1000);
   }
 
   /**
@@ -313,25 +314,24 @@ export default class BitcoinProcessor {
    *
    * @param lockIdentifier The identifier of the lock to look up; should be null for the current node's lock information.
    */
-  public async getValueTimeLock (lockIdentifier?: string): Promise<ValueTimeLockModel> {
-
-    if (lockIdentifier) {
-      try {
-        return this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
-      } catch (e) {
-        console.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
-        throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
-      }
-    }
+  public async getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel> {
 
     try {
-      const currentLock = this.lockMonitor.getCurrentValueTimeLock();
+      return this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
+    } catch (e) {
+      console.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+    }
+  }
 
-      if (!currentLock) {
-        throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
-      }
+  /**
+   * Gets the lock information which is currently held by this node. It throws an RequestError if none exist.
+   */
+  public getActiveValueTimeLockForThisNode (): ValueTimeLockModel {
+    let currentLock: ValueTimeLockModel | undefined;
 
-      return currentLock;
+    try {
+      currentLock = this.lockMonitor.getCurrentValueTimeLock();
     } catch (e) {
 
       if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
@@ -341,6 +341,12 @@ export default class BitcoinProcessor {
       console.error(`Current value time lock retrieval failed with error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       throw new RequestError(ResponseStatus.ServerError);
     }
+
+    if (!currentLock) {
+      throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+    }
+
+    return currentLock;
   }
 
   /**

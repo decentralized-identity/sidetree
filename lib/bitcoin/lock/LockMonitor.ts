@@ -8,10 +8,9 @@ import LockResolver from './LockResolver';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
 import SavedLockModel from '../models/SavedLockedModel';
 import SavedLockType from '../enums/SavedLockType';
-import ValueTimeLockConfigProvider from '../../common/ValueTimeLockConfigProvider';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
-/** Enum (internal to this class) to track the state of the lock. */
+/** Enum (internal to this class) to track the status of the lock. */
 enum LockStatus {
   Confirmed = 'confirmed',
   None = 'none',
@@ -19,7 +18,7 @@ enum LockStatus {
 }
 
 /**
- * Structure (internal to this class) to track the information about lock.
+ * Structure (internal to this class) to track the state of the lock.
  */
 interface LockState {
   currentValueTimeLock: ValueTimeLockModel | undefined;
@@ -34,8 +33,6 @@ interface LockState {
 export default class LockMonitor {
 
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
-  private desiredLockAmountInSatoshis: number;
-  private lockPeriodInBlocks: number;
 
   private currentLockState: LockState | undefined;
 
@@ -45,10 +42,9 @@ export default class LockMonitor {
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
     private pollPeriodInSeconds: number,
-    maxNumOfOperationsForValueTimeLock: number,
+    private desiredLockAmountInSatoshis: number,
+    private lockPeriodInBlocks: number,
     private transactionFeesAmountInSatoshis: number) {
-    this.desiredLockAmountInSatoshis = ValueTimeLockConfigProvider.getRequiredLockAmountForOps(maxNumOfOperationsForValueTimeLock);
-    this.lockPeriodInBlocks = ValueTimeLockConfigProvider.getRequiredLockTransactionTimeForOps(maxNumOfOperationsForValueTimeLock);
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
   }
@@ -72,7 +68,7 @@ export default class LockMonitor {
     const currentLockState = Object.assign({}, this.currentLockState!);
 
     // If there's no lock then return undefined
-    if (!currentLockState.currentValueTimeLock || currentLockState.status === LockStatus.None) {
+    if (currentLockState.status === LockStatus.None) {
       return undefined;
     }
 
@@ -105,13 +101,17 @@ export default class LockMonitor {
 
   private async handlePeriodicPolling (): Promise<void> {
 
-    // If the current lock is in pending state then we cannot do anything and need to just return
+    // If the current lock is in pending state then we cannot do anything and need to just return.
     if (this.currentLockState!.status === LockStatus.Pending) {
+      console.info(`The current lock status is in pending state; going to skip rest of the routine.`);
+
+      // But refresh the lock state before returning so that the next polling has the new value.
+      this.currentLockState = await this.getCurrentLockState();
       return;
     }
 
-    const validCurrentLockExist = this.currentLockState!.currentValueTimeLock !== undefined;
-
+    // Now that we are not pending, check what do we have to do about the lock next.
+    const validCurrentLockExist = this.currentLockState!.status === LockStatus.Confirmed;
     const lockRequired = this.desiredLockAmountInSatoshis > 0;
 
     let currentLockUpdated = false;
@@ -132,7 +132,6 @@ export default class LockMonitor {
 
     if (!lockRequired && validCurrentLockExist) {
       await this.releaseLock(this.currentLockState!.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
-
       currentLockUpdated = true;
     }
 
@@ -165,8 +164,8 @@ export default class LockMonitor {
     if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
 
       await this.rebroadcastTransaction(lastSavedLock);
-
       currentLockState.status = LockStatus.Pending;
+
       return currentLockState;
     }
 
