@@ -12,7 +12,7 @@ import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
-function createLockInfo (latestSavedLockInfo: SavedLockedModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined) {
+function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined) {
   return {
     currentValueTimeLock: currentValueTimeLock,
     latestSavedLockInfo: latestSavedLockInfo
@@ -33,8 +33,8 @@ describe('LockMonitor', () => {
 
   describe('initialize', () => {
     it('should call the periodic poll function', async () => {
-      const mockLockInfo = createLockInfo(undefined, undefined);
-      const resolveSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockLockInfo));
+      const mockLockInfo = createLockState(undefined, undefined);
+      const resolveSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockLockInfo));
       const pollSpy = spyOn(lockMonitor as any, 'periodicPoll').and.returnValue(Promise.resolve());
 
       await lockMonitor.initialize();
@@ -79,10 +79,10 @@ describe('LockMonitor', () => {
 
   describe('handlePeriodicPolling', () => {
     it('should not do anything if a lock is not required and none exist.', async () => {
-      const mockCurrentLockInfo = createLockInfo(undefined, undefined);
-      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+      const mockCurrentLockInfo = createLockState(undefined, undefined);
+      lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
-      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock');
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState');
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
       const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLock');
@@ -97,10 +97,10 @@ describe('LockMonitor', () => {
     });
 
     it('should call the new lock routine if a lock is required but does not exist.', async () => {
-      const mockCurrentLockInfo = createLockInfo(undefined, undefined);
-      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+      const mockCurrentLockInfo = createLockState(undefined, undefined);
+      lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
-      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const mockSavedLock: SavedLockedModel = {
         createTimestamp: 1212,
@@ -142,10 +142,10 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockInfo(mockSavedLock, mockCurrentValueLock);
-      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock);
+      lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
-      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
       const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal').and.returnValue(Promise.resolve(true));
@@ -178,10 +178,10 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockInfo(mockSavedLock, mockCurrentValueLock);
-      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock);
+      lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
-      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
       const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal').and.returnValue(Promise.resolve(false));
@@ -214,10 +214,10 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockInfo(mockSavedLock, mockCurrentValueLock);
-      lockMonitor['currentLockInfo'] = mockCurrentLockInfo;
+      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock);
+      lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
-      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'resolveCurrentValueTimeLock').and.returnValue(Promise.resolve(mockCurrentLockInfo));
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
 
       const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
       const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
@@ -233,15 +233,15 @@ describe('LockMonitor', () => {
     });
   });
 
-  describe('resolveCurrentValueTimeLock', () => {
+  describe('getCurrentLockState', () => {
     it('should return an empty object if no locks were found in the db.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction');
       const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError');
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(undefined));
 
-      const expected = createLockInfo(undefined, undefined);
-      const actual = await lockMonitor['resolveCurrentValueTimeLock']();
+      const expected = createLockState(undefined, undefined);
+      const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
       expect(rebroadcastSpy).not.toHaveBeenCalled();
@@ -265,8 +265,8 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(false));
 
-      const expected = createLockInfo(mockLastLock, undefined);
-      const actual = await lockMonitor['resolveCurrentValueTimeLock']();
+      const expected = createLockState(mockLastLock, undefined);
+      const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
       expect(rebroadcastSpy).toHaveBeenCalled();
@@ -290,8 +290,8 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
 
-      const expected = createLockInfo(mockLastLock, undefined);
-      const actual = await lockMonitor['resolveCurrentValueTimeLock']();
+      const expected = createLockState(mockLastLock, undefined);
+      const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
       expect(rebroadcastSpy).not.toHaveBeenCalled();
@@ -322,8 +322,8 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
 
-      const expected = createLockInfo(mockLastLock, mockValueTimeLock);
-      const actual = await lockMonitor['resolveCurrentValueTimeLock']();
+      const expected = createLockState(mockLastLock, mockValueTimeLock);
+      const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
       expect(rebroadcastSpy).not.toHaveBeenCalled();
