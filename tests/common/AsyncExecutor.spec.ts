@@ -1,4 +1,5 @@
-import { AsyncExecutor, AsyncTimeoutError } from '../../lib/common/async/AsyncExecutor';
+import AsyncExecutor from '../../lib/common/async/AsyncExecutor';
+import AsyncTimeoutError from '../../lib/common/async/AsyncTimeoutError';
 
 describe('AsyncExecutor', () => {
   it('should time out if async call takes more time than timeout limit', async () => {

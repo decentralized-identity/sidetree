@@ -1,9 +1,10 @@
 import * as IPFS from 'ipfs';
+import AsyncExecutor from '../common/async/AsyncExecutor';
+import AsyncTimeoutError from '../common/async/AsyncTimeoutError';
 import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
 import IpfsError from './IpfsError';
-import { AsyncExecutor, AsyncTimeoutError } from '../common/async/AsyncExecutor';
 
 /**
  * Class that implements the IPFS Storage functionality.

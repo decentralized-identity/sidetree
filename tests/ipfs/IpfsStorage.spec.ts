@@ -1,5 +1,6 @@
 import * as IPFS from 'ipfs';
-import { AsyncExecutor, AsyncTimeoutError } from '../../lib/common/async/AsyncExecutor';
+import AsyncExecutor from '../../lib/common/async/AsyncExecutor';
+import AsyncTimeoutError from '../../lib/common/async/AsyncTimeoutError';
 import FetchResultCode from '../../lib/common/FetchResultCode';
 import IpfsStorage from '../../lib/ipfs/IpfsStorage';
 import MockAsyncIterable from '../mocks/MockAsyncIterable';

@@ -1,7 +1,9 @@
+import AsyncTimeoutError from './AsyncTimeoutError';
+
 /**
  * utility class to help time out an async function
  */
-export class AsyncExecutor {
+export default class AsyncExecutor {
 
   /**
    * Set a timeout on async function. Throws AsyncTimeoutError when async call times out
@@ -32,8 +34,3 @@ export class AsyncExecutor {
       }) as Promise<T>;
   }
 }
-
-/**
- * this is used to differentiate timeout from other errors
- */
-export class AsyncTimeoutError extends Error {}
