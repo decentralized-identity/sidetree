@@ -1,21 +1,21 @@
 /**
  * utility class to help time out an async function
  */
-export default class AsyncTimeout {
+export class AsyncExecutor {
 
   /**
-   * Set a timeout on async function
+   * Set a timeout on async function. Throws AsyncTimeoutError when async call times out
    * @param asyncCall the async call to timeout on
    * @param timeOutInMilliseconds how long to wait for
    */
-  public static async timeoutAsyncCall (asyncCall: Promise<any>, timeOutInMilliseconds: number): Promise<AsyncTimeoutResult> {
+  public static async executeWithTimeout<T> (asyncCall: Promise<T>, timeOutInMilliseconds: number): Promise<T> {
     // remember the timeout so it can be stopped later;
     let timeoutReference: NodeJS.Timeout;
 
     // create a promise to reject and throw on timeout
     const startTiming = new Promise((_resolve, reject) => {
       timeoutReference = setTimeout(() => {
-        reject(new TimeoutError('Async call timed out'));
+        reject(new AsyncTimeoutError('Async call timed out'));
       }, timeOutInMilliseconds);
     });
 
@@ -24,23 +24,16 @@ export default class AsyncTimeout {
       .then((res) => {
         // if resolved, clear the timeout and return
         clearTimeout(timeoutReference);
-        return { timedOut: false, result: res };
+        return res;
       }).catch((e) => {
+        // clear timeout before throwing just in case the error is thrown by the async call
         clearTimeout(timeoutReference);
-        // if thrown, determine if it's a timeout error or async call threw and error
-        if (e instanceof TimeoutError) {
-          return { timedOut: true, result: undefined };
-        }
         throw e;
-      });
+      }) as Promise<T>;
   }
 }
 
-// this is used to differentiate timeout from other errors
-class TimeoutError extends Error {}
-
-// model for the return of the timeoutAsuncCall function
-interface AsyncTimeoutResult {
-  timedOut: boolean;
-  result: any;
-}
+/**
+ * this is used to differentiate timeout from other errors
+ */
+export class AsyncTimeoutError extends Error {}

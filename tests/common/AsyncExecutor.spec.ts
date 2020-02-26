@@ -1,6 +1,6 @@
-import AsyncTimeout from '../../lib/common/AsyncTimeout';
+import { AsyncExecutor, AsyncTimeoutError } from '../../lib/common/async/AsyncExecutor';
 
-describe('AsyncTimeout', () => {
+describe('AsyncExecutor', () => {
   it('should time out if async call takes more time than timeout limit', async () => {
     const aLongTime = 9999;
     const longWait = new Promise((resolve) => setTimeout(() => {
@@ -8,10 +8,13 @@ describe('AsyncTimeout', () => {
     }, aLongTime));
 
     const timeoutDuration = 100;
-    const result = await AsyncTimeout.timeoutAsyncCall(longWait, timeoutDuration);
-
-    const expected = { timedOut: true, result: undefined };
-    expect(result).toEqual(expected);
+    try {
+      await AsyncExecutor.executeWithTimeout(longWait, timeoutDuration);
+      fail('should throw in test but did not');
+    } catch (e) {
+      expect(e.message).toEqual('Async call timed out');
+      expect(e instanceof AsyncTimeoutError).toBeTruthy();
+    }
   });
 
   it('should return expected result if async call takes less time than timeout limit', async () => {
@@ -21,9 +24,9 @@ describe('AsyncTimeout', () => {
     }, aShortTime));
 
     const timeoutDuration = 100;
-    const result = await AsyncTimeout.timeoutAsyncCall(shortWait, timeoutDuration);
+    const result = await AsyncExecutor.executeWithTimeout(shortWait, timeoutDuration);
 
-    const expected = { timedOut: false, result: 'this should be returned because the wait is short' };
+    const expected = 'this should be returned because the wait is short'
     expect(result).toEqual(expected);
   });
 
@@ -35,8 +38,8 @@ describe('AsyncTimeout', () => {
 
     const timeoutDuration = 100;
     try {
-      await AsyncTimeout.timeoutAsyncCall(shortWait, timeoutDuration);
-      expect('expect to throw').toEqual('but did not throw');
+      await AsyncExecutor.executeWithTimeout(shortWait, timeoutDuration);
+      fail('Test should throw but did not')
     } catch (e) {
       expect(e.message).toEqual('Failed, which is expected');
     }

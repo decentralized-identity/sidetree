@@ -4,6 +4,8 @@ import IpfsStorage from './IpfsStorage';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
+import IpfsError from './IpfsError';
+import ErrorCode from '../ipfs/ErrorCode';
 
 const multihashes = require('multihashes');
 
@@ -27,8 +29,12 @@ export default class RequestHandler {
     let ipfsStorage: IpfsStorage;
     try {
       ipfsStorage = await IpfsStorage.createSingleton(repo);
-    } catch {
-      ipfsStorage = IpfsStorage.getSingleton();
+    } catch (e) {
+      if (e instanceof IpfsError && e.code === ErrorCode.ipfsRedundantCreate) {
+        ipfsStorage = IpfsStorage.getSingleton();
+      } else {
+        throw e;
+      }
     }
     return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
   }

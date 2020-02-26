@@ -1,7 +1,9 @@
 import * as IPFS from 'ipfs';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
-import AsyncTimeout from '../common/AsyncTimeout';
+import { AsyncExecutor, AsyncTimeoutError } from '../common/async/AsyncExecutor';
+import ErrorCode from '../ipfs/ErrorCode';
+import IpfsError from './IpfsError';
 
 /**
  * Class that implements the IPFS Storage functionality.
@@ -20,7 +22,8 @@ export default class IpfsStorage {
    */
   public static async createSingleton (repo?: any): Promise<IpfsStorage> {
     if (IpfsStorage.ipfsStorageSingleton !== undefined) {
-      throw Error('IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
+      throw new IpfsError(ErrorCode.ipfsRedundantCreate,
+        'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
     }
 
     const localRepoName = 'sidetree-ipfs';
@@ -37,7 +40,7 @@ export default class IpfsStorage {
    */
   public static getSingleton (): IpfsStorage {
     if (IpfsStorage.ipfsStorageSingleton === undefined) {
-      throw Error('IpfsStorage is a singleton, Please use the createSingleton method before get');
+      throw new IpfsError(ErrorCode.ipfsGetBeforeCreate, 'IpfsStorage is a singleton, Please use the createSingleton method before get');
     }
     return IpfsStorage.ipfsStorageSingleton;
   }
@@ -59,9 +62,8 @@ export default class IpfsStorage {
     // If we hit error attempting to fetch the content metadata, return not-found.
     let contentMetadata = undefined;
     try {
-      contentMetadata = (await AsyncTimeout.timeoutAsyncCall(this.node.object.stat(hash), IpfsStorage.timeoutDuration)).result;
+      contentMetadata = await AsyncExecutor.executeWithTimeout(this.node.object.stat(hash), IpfsStorage.timeoutDuration);
     } catch (error) {
-      console.info(error);
       return { code: FetchResultCode.NotFound };
     }
 
@@ -93,33 +95,37 @@ export default class IpfsStorage {
     const fetchResult: FetchResult = { code: FetchResultCode.Success };
     let bufferChunks: Buffer[] = [];
     let currentContentSize = 0;
-
+    let iterator: AsyncIterator<Buffer>;
     try {
-      const iterator = this.node.cat(hash);
-      // IteratorResult<Buffer, any> | IteratorYieldResult<Buffer> | undefined
-      // are the possible types but iterator results are not exposed
-      let result: any;
-      do {
-        result = (await AsyncTimeout.timeoutAsyncCall(iterator.next(), IpfsStorage.timeoutDuration)).result;
-        if (result === undefined) {
-          return { code: FetchResultCode.NotFound };
-        }
-
-        if (result.value !== undefined) {
-          const chunk = result.value;
-          currentContentSize += chunk.byteLength;
-          if (maxSizeInBytes < currentContentSize) {
-            console.info(`Max size of ${maxSizeInBytes} bytes exceeded by CID ${hash}`);
-            return { code: FetchResultCode.MaxSizeExceeded };
-          }
-          bufferChunks.push(chunk);
-        }
-      } while (!result.done);
+      iterator = this.node.cat(hash);
     } catch (e) {
       // when an error is thrown, that means the hash points to something that is not a file
-      console.log(`Error thrown while downloading content from IPFS: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      console.error(`Error thrown while downloading content from IPFS: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       return { code: FetchResultCode.NotAFile };
     }
+
+    let result: IteratorResult<Buffer>;
+    do {
+      try {
+        result = await AsyncExecutor.executeWithTimeout(iterator.next(), IpfsStorage.timeoutDuration);
+      } catch (e) {
+        if (e instanceof AsyncTimeoutError) {
+          return { code: FetchResultCode.NotFound };
+        }
+        // this should never happen
+        console.error(`unexpected error thrown, please investigate and fix: ${e}`);
+        throw e;
+      }
+      if (result.value !== undefined) {
+        const chunk = result.value;
+        currentContentSize += chunk.byteLength;
+        if (maxSizeInBytes < currentContentSize) {
+          console.info(`Max size of ${maxSizeInBytes} bytes exceeded by CID ${hash}`);
+          return { code: FetchResultCode.MaxSizeExceeded };
+        }
+        bufferChunks.push(chunk);
+      }
+    } while (!result.done);
 
     fetchResult.content = Buffer.concat(bufferChunks);
 

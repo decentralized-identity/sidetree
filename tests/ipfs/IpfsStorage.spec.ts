@@ -1,5 +1,5 @@
 import * as IPFS from 'ipfs';
-import AsyncTimeout from '../../lib/common/AsyncTimeout';
+import { AsyncExecutor, AsyncTimeoutError } from '../../lib/common/async/AsyncExecutor';
 import FetchResultCode from '../../lib/common/FetchResultCode';
 import IpfsStorage from '../../lib/ipfs/IpfsStorage';
 import MockAsyncIterable from '../mocks/MockAsyncIterable';
@@ -40,7 +40,7 @@ describe('IpfsStorage', () => {
     });
 
     it('should return not found if stat throws error', async () => {
-      spyOn(ipfsStorage['node'].object, 'stat').and.throwError('error thrown by test');
+      spyOn(ipfsStorage['node'].object, 'stat').and.throwError('A test error thrown by unit test');
 
       const mockFetchContentFunction = async () => {
         return {
@@ -142,6 +142,56 @@ describe('IpfsStorage', () => {
       expect(expectedErrorCode).toEqual(fetchedContent.code);
     });
 
+    it('should return not found if cat.next throws an AsyncTimeoutError', async () => {
+      const mockContentStat = {
+        Hash: 'dummyHahs',
+        NumLinks: 0,
+        BlockSize: 1,
+        LinksSize: 0,
+        DataSize: 1024,
+        CumulativeSize: 1024
+      };
+      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
+      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+
+      const mockIterable = new MockAsyncIterable();
+      mockIterable.next = () => {
+        throw new AsyncTimeoutError();
+      };
+
+      spyOn(ipfsStorage['node'], 'cat').and.returnValue(mockIterable);
+
+      const expectedErrorCode = FetchResultCode.NotFound;
+      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
+      expect(expectedErrorCode).toEqual(fetchedContent.code);
+    });
+
+    it('should throw unexpected error if cat.next throws an unexpected error', async () => {
+      const mockContentStat = {
+        Hash: 'dummyHahs',
+        NumLinks: 0,
+        BlockSize: 1,
+        LinksSize: 0,
+        DataSize: 1024,
+        CumulativeSize: 1024
+      };
+      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
+      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+
+      const mockIterable = new MockAsyncIterable();
+      mockIterable.next = () => {
+        throw new Error('A test error thrown by unit test');
+      };
+
+      spyOn(ipfsStorage['node'], 'cat').and.returnValue(mockIterable);
+      try {
+        await ipfsStorage.read('abc123', maxFileSize);
+        fail('expect test to throw error but did not');
+      } catch (e) {
+        expect(e.message).toEqual('A test error thrown by unit test');
+      }
+    });
+
     it('should return size exceeded if content size exceeds maxFileSize during download.', async () => {
       const mockContentStat = {
         Hash: 'dummyHahs',
@@ -180,7 +230,7 @@ describe('IpfsStorage', () => {
       const mockCatValue = randomBytes(maxFileSize);
       const mockIterator = new MockAsyncIterable(mockCatValue, mockCatValue);
       spyOn(ipfsStorage['node'], 'cat').and.returnValue(mockIterator);
-      spyOn(AsyncTimeout, 'timeoutAsyncCall')
+      spyOn(AsyncExecutor, 'executeWithTimeout')
       .and.returnValues(Promise.resolve({ result: mockContentStat, timedOut: true }), Promise.resolve({ result: undefined, timedOut: true }));
 
       const expectedErrorCode = FetchResultCode.NotFound;
@@ -230,7 +280,7 @@ describe('IpfsStorage', () => {
       try {
         IpfsStorage.getSingleton();
       } catch (error) {
-        expect(error.message).toEqual('IpfsStorage is a singleton, Please use the createSingleton method before get');
+        expect(error.message).toEqual('ipfs_get_before_create: IpfsStorage is a singleton, Please use the createSingleton method before get');
       }
 
       // reset the mocking
