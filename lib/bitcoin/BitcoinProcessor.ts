@@ -216,11 +216,11 @@ export default class BitcoinProcessor {
   /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorString The string to be written as part of the transaction.
-   * @param minFee The minimum fee to be paid for this transaction.
+   * @param minimumFee The minimum fee to be paid for this transaction.
    */
-  public async writeTransaction (anchorString: string, minFee: number) {
+  public async writeTransaction (anchorString: string, minimumFee: number) {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const dataTransaction = await this.bitcoinClient.createDataTransaction(sidetreeTransactionString, minFee);
+    const dataTransaction = await this.bitcoinClient.createDataTransaction(sidetreeTransactionString, minimumFee);
     const transactionFee = dataTransaction.transactionFee;
     console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
 
