@@ -66,8 +66,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const anchorFileModel = await AnchorFile.parseAndValidate(fileBuffer);
 
     if (anchorFileModel.didUniqueSuffixes.length !== expectedCountOfUniqueSuffixes) {
-      // tslint:disable-next-line: max-line-length
-      throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesCountIncorrect, `Did unique suffixes count: ${anchorFileModel.didUniqueSuffixes.length} is different from the expected count: ${expectedCountOfUniqueSuffixes}`);
+      throw new SidetreeError(
+        ErrorCode.AnchorFileDidUniqueSuffixesCountIncorrect,
+        `Did unique suffixes count: ${anchorFileModel.didUniqueSuffixes.length} is different from the expected count: ${expectedCountOfUniqueSuffixes}`);
     }
 
     return anchorFileModel;
