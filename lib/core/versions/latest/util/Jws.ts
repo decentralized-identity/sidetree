@@ -81,26 +81,31 @@ export default class Jws {
   /**
    * Signs the given protected header and payload as a JWS.
    *
-   * @param payload Unencoded plain object to be stringified and encoded as payload string.
+   * @param payload If the given payload is of string type, it is assumed to be encoded string;
+   *                else the object will be stringified and encoded.
    */
   public static async sign (
     protectedHeader: any,
-    payload: any,
+    payload: any | string,
     privateKey: string | PrivateKey
   ): Promise<JwsModel> {
     const protectedHeaderJsonString = JSON.stringify(protectedHeader);
     const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
 
-    // Create the create payload.
-    const payloadJsonString = JSON.stringify(payload);
-    const payload = Encoder.encode(payloadJsonString);
+    let encodedPayload: string;
+    if (typeof payload === 'string') {
+      encodedPayload = payload;
+    } else {
+      const payloadJsonString = JSON.stringify(payload);
+      encodedPayload = Encoder.encode(payloadJsonString);
+    }
 
     // Generate the signature.
-    const signature = await Jws.signInternal(protectedHeaderEncodedString, createPayload, privateKey);
+    const signature = await Jws.signInternal(protectedHeaderEncodedString, encodedPayload, privateKey);
 
     const jws = {
       protected: protectedHeaderEncodedString,
-      payload: createPayload,
+      payload: encodedPayload,
       signature
     };
 

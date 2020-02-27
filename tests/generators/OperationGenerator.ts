@@ -386,7 +386,8 @@ export default class OperationGenerator {
     const encodedOperationDataString = Encoder.encode(operationDataJsonString);
 
     const operationDataHash = Multihash.hash(Buffer.from(operationDataJsonString));
-    const signedOperationDataHash = await OperationGenerator.signUsingEs256k(operationDataHash, signingKeyId, signingPrivateKey);
+    const encodedOperationDataHash = Encoder.encode(operationDataHash);
+    const signedOperationDataHash = await OperationGenerator.signUsingEs256k(encodedOperationDataHash, signingKeyId, signingPrivateKey);
 
     const updateOperationRequest = {
       type: OperationType.Update,
@@ -516,7 +517,7 @@ export default class OperationGenerator {
   /**
    * Signs the given payload as a ES256K JWS.
    */
-  public static async signUsingEs256k (payload: object, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'

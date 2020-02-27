@@ -231,7 +231,7 @@ describe('OperationProcessor', async () => {
     expect(publicKey2).toBeDefined();
   });
 
-  fit('should process update to remove a public key correctly', async () => {
+  it('should process update to remove a public key correctly', async () => {
     await operationStore.put([createOp]);
 
     const documentPatch = [
