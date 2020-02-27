@@ -402,7 +402,7 @@ POST /transactions
 #### Request body schema
 ```json
 {
-  "minFee": "A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee paid can fluctuate deterministically.",
+  "minFee": "A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee is dynamically calculated and can be higher than this amount (but not lower).",
   "anchorString": "The string to be written to the blockchain for this transaction."
 }
 ```
