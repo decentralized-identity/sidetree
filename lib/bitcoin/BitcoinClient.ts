@@ -87,7 +87,6 @@ export default class BitcoinClient {
 
   /**
    * Broadcasts the specified data transaction.
-   *
    * @param bitcoinDataTransaction The transaction object.
    */
   public async broadcastDataTransaction (bitcoinDataTransaction: BitcoinDataTransactionModel): Promise<string> {
