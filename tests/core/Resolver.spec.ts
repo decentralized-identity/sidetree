@@ -8,6 +8,7 @@ import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
+import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -59,24 +60,47 @@ describe('Resolver', () => {
       await operationStore.put([namedAnchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
-      const [updateOtpPriorToRecovery2, updateOtpHashPriorToRecovery2] = OperationGenerator.generateOtp();
-      const updatePayloadPriorRecovery1 = OperationGenerator.createUpdatePayloadForAddingAKey(
+      const [update2OtpPriorToRecovery, update2OtpHashPriorToRecovery] = OperationGenerator.generateOtp();
+      const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         firstUpdateOtp,
         '#new-key1',
         '000000000000000000000000000000000000000000000000000000000000000000',
-        updateOtpHashPriorToRecovery2
+        update2OtpHashPriorToRecovery,
+        signingPublicKey.id,
+        signingPrivateKey
       );
-      const updateOperation1PriorRecovery =
-        await OperationGenerator.createAnchoredOperation(updatePayloadPriorRecovery1, signingPublicKey.id, signingPrivateKey, 2, 2, 2);
-      await operationStore.put([updateOperation1PriorRecovery]);
+      const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
+      const anchoredUpdateOperation1PriorRecovery: NamedAnchoredOperationModel = {
+        type: OperationType.Update,
+        didUniqueSuffix,
+        operationBuffer: updateOperation1BufferPriorRecovery,
+        transactionTime: 2,
+        transactionNumber: 2,
+        operationIndex: 2
+      };
+      await operationStore.put([anchoredUpdateOperation1PriorRecovery]);
 
       // Create another update operation and insert it to the operation store.
-      const updatePayload2PriorRecovery =
-        await OperationGenerator.createUpdatePayloadForHubEndpoints(didUniqueSuffix, updateOtpPriorToRecovery2, ['dummyHubUri3'], []);
-      const updateOperation2PriorRecovery =
-        await OperationGenerator.createAnchoredOperation(updatePayload2PriorRecovery, signingPublicKey.id, signingPrivateKey, 3, 3, 3);
-      await operationStore.put([updateOperation2PriorRecovery]);
+      const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+        didUniqueSuffix,
+        update2OtpPriorToRecovery,
+        'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA',
+        ['dummyHubUri3'],
+        [],
+        signingPublicKey.id,
+        signingPrivateKey
+      );
+      const updateOperation2BufferPriorRecovery = Buffer.from(JSON.stringify(updatePayload2PriorRecovery));
+      const anchoredUpdateOperation2PriorRecovery: NamedAnchoredOperationModel = {
+        type: OperationType.Update,
+        didUniqueSuffix,
+        operationBuffer: updateOperation2BufferPriorRecovery,
+        transactionTime: 3,
+        transactionNumber: 3,
+        operationIndex: 3
+      };
+      await operationStore.put([anchoredUpdateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -106,23 +130,46 @@ describe('Resolver', () => {
 
       // Create an update operation after the recovery operation.
       const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
-      const update1PayloadAfterRecovery = OperationGenerator.createUpdatePayloadForAddingAKey(
+      const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         update1OtpAfterRecovery,
         '#newSigningKey2',
         '111111111111111111111111111111111111111111111111111111111111111111',
-        update2OtpHashAfterRecovery
+        update2OtpHashAfterRecovery,
+        newSigningPublicKey.id,
+        newSigningPrivateKey
       );
-      const updateOperation1AfterRecovery = await
-        OperationGenerator.createAnchoredOperation(update1PayloadAfterRecovery, newSigningPublicKey.id, newSigningPrivateKey, 5, 5, 5);
-      await operationStore.put([updateOperation1AfterRecovery]);
+      const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
+      const anchoredUpdateOperation1AfterRecovery: NamedAnchoredOperationModel = {
+        type: OperationType.Update,
+        didUniqueSuffix,
+        operationBuffer: updateOperation1BufferAfterRecovery,
+        transactionTime: 5,
+        transactionNumber: 5,
+        operationIndex: 5
+      };
+      await operationStore.put([anchoredUpdateOperation1AfterRecovery]);
 
       // Create another update and insert it to the operation store.
-      const updatePayload2AfterRecovery =
-        await OperationGenerator.createUpdatePayloadForHubEndpoints(didUniqueSuffix, update2OtpAfterRecovery, [], ['newDummyHubUri1']);
-      const updateOperation2AfterRecovery = await
-        OperationGenerator.createAnchoredOperation(updatePayload2AfterRecovery, newSigningPublicKey.id, newSigningPrivateKey, 6, 6, 6);
-      await operationStore.put([updateOperation2AfterRecovery]);
+      const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
+        didUniqueSuffix,
+        update2OtpAfterRecovery,
+        'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA',
+        [],
+        ['newDummyHubUri1'],
+        newSigningPublicKey.id,
+        newSigningPrivateKey
+      );
+      const updateOperation2BufferAfterRecovery = Buffer.from(JSON.stringify(updatePayload2AfterRecovery));
+      const anchoredUpdateOperation2AfterRecovery: NamedAnchoredOperationModel = {
+        type: OperationType.Update,
+        didUniqueSuffix,
+        operationBuffer: updateOperation2BufferAfterRecovery,
+        transactionTime: 6,
+        transactionNumber: 6,
+        operationIndex: 6
+      };
+      await operationStore.put([anchoredUpdateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.
       didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;

@@ -2,11 +2,13 @@ import AnchoredOperation from './AnchoredOperation';
 import CreateOperation from './CreateOperation';
 import DidResolutionModel from '../../models/DidResolutionModel';
 import Document from './Document';
+import DocumentComposer from './DocumnetComposer';
 import DocumentModel from './models/DocumentModel';
 import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
 import Multihash from './Multihash';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import OperationType from '../../enums/OperationType';
+import UpdateOperation from './UpdateOperation';
 
 /**
  * Implementation of OperationProcessor. Uses a OperationStore
@@ -16,7 +18,11 @@ import OperationType from '../../enums/OperationType';
  */
 export default class OperationProcessor implements IOperationProcessor {
 
-  public constructor (private didMethodName: string) { }
+  private documentComposer: DocumentComposer;
+
+  public constructor (private didMethodName: string) {
+    this.documentComposer = new DocumentComposer();
+  }
 
   public async apply (
     namedAnchoredOperationModel: NamedAnchoredOperationModel,
@@ -35,7 +41,6 @@ export default class OperationProcessor implements IOperationProcessor {
         // Revoke operation.
         validOperation = await this.applyRevokeOperation(namedAnchoredOperationModel, didResolutionModel);
       }
-
     } catch (error) {
       console.log(`Invalid operation ${error}.`);
     }
@@ -74,6 +79,10 @@ export default class OperationProcessor implements IOperationProcessor {
     const document = operation.operationData.document;
 
     // Ensure actual operation data hash matches expected operation data hash.
+    const isValidOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.suffixData.operationDataHash);
+    if (!isValidOperationData) {
+      return false;
+    }
 
     const internalDocumentModel = {
       didUniqueSuffix: operation.didUniqueSuffix,
@@ -84,7 +93,7 @@ export default class OperationProcessor implements IOperationProcessor {
     };
 
     // Transform the internal document state to a DID document.
-    // NOTE: this transformation will be moved out and only apply to the final internal document state.
+    // NOTE: this transformation will be moved out and only apply to the final internal document state by the time #266 is completed.
     const didDocument = Document.transformToDidDocument(this.didMethodName, internalDocumentModel);
 
     didResolutionModel.didDocument = didDocument;
@@ -112,30 +121,25 @@ export default class OperationProcessor implements IOperationProcessor {
       return false;
     }
 
-    const operation = AnchoredOperation.createAnchoredOperation(namedAnchoredOperationModel);
+    const operation = await UpdateOperation.parse(namedAnchoredOperationModel.operationBuffer);
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidUpdateOtp = Multihash.isValidHash(operation.updateOtp!, didResolutionModel.metadata!.nextUpdateOtpHash!);
-    if (!isValidUpdateOtp) {
+    const isValidOtp = Multihash.isValidHash(operation.updateOtp, didResolutionModel.metadata!.nextUpdateOtpHash!);
+    if (!isValidOtp) {
       return false;
     }
 
-    // The current did document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
-    if (!publicKey) {
+    // Verify the operation data hash against the expected operation data hash.
+    const isValidOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.signedOperationDataHash.payload);
+    if (!isValidOperationData) {
       return false;
     }
 
-    // ... and the signature must pass verification.
-    if (!(await operation.verifySignature(publicKey))) {
-      return false;
-    }
+    const resultingDocument = await this.documentComposer.applyUpdateOperation(operation, didResolutionModel.didDocument);
 
-    // The operation passes all checks, apply the patches.
-    AnchoredOperation.applyPatchesToDidDocument(didDocument, operation.patches!);
-
-    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
-    didResolutionModel.metadata!.nextUpdateOtpHash = operation.nextUpdateOtpHash!;
+    didResolutionModel.didDocument = resultingDocument;
+    didResolutionModel.metadata!.lastOperationTransactionNumber = namedAnchoredOperationModel.transactionNumber;
+    didResolutionModel.metadata!.nextUpdateOtpHash = operation.operationData.nextUpdateOtpHash;
 
     return true;
   }

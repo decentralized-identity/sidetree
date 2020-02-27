@@ -306,7 +306,7 @@ export default class OperationGenerator {
       alg: 'ES256K'
     };
 
-    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, privateKey);
+    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
     return Buffer.from(JSON.stringify(operationJws));
   }
 
@@ -368,6 +368,38 @@ export default class OperationGenerator {
   }
 
   /**
+   * Generates an update operation request.
+   */
+  public static async generateUpdateOperationRequest (
+    didUniqueSuffix: string,
+    updateOtp: string,
+    nextUpdateOtpHash: string,
+    documentPatch: any,
+    signingKeyId: string,
+    signingPrivateKey: string | PrivateKey
+  ) {
+    const operationData = {
+      documentPatch,
+      nextUpdateOtpHash
+    };
+    const operationDataJsonString = JSON.stringify(operationData);
+    const encodedOperationDataString = Encoder.encode(operationDataJsonString);
+
+    const operationDataHash = Multihash.hash(Buffer.from(operationDataJsonString));
+    const signedOperationDataHash = await OperationGenerator.signUsingEs256k(operationDataHash, signingKeyId, signingPrivateKey);
+
+    const updateOperationRequest = {
+      type: OperationType.Update,
+      didUniqueSuffix,
+      updateOtp,
+      operationData: encodedOperationDataString,
+      signedOperationDataHash
+    };
+
+    return updateOperationRequest;
+  }
+
+  /**
    * Generates a create operation request buffer.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
@@ -391,84 +423,63 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates an operation.
-   *
-   * @param payload Unencoded plain object to be stringified and encoded as payload string.
-   */
-  public static async createOperationJws (
-    protectedHeader: any,
-    payload: any,
-    privateKey: string | PrivateKey
-  ): Promise<JwsModel> {
-    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
-
-    // Create the create payload.
-    const payloadJsonString = JSON.stringify(payload);
-    const createPayload = Encoder.encode(payloadJsonString);
-
-    // Generate the signature.
-    const signature = await Jws.sign(protectedHeaderEncodedString, createPayload, privateKey);
-
-    const operation = {
-      protected: protectedHeaderEncodedString,
-      payload: createPayload,
-      signature
-    };
-
-    return operation;
-  }
-
-  /**
    * Generates an Update Operation buffer with valid signature.
    */
   public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateUpdateOperation(updatePayload, keyId, privateKey);
+    const operation = await OperationGenerator.signUsingEs256k(updatePayload, keyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 
   /**
    * Creates an update operation for adding a key.
-   * @param nextUpdateOtpHashEncodedString Optional OTP hash for the next update. If not given, one will be generated.
    */
-  public static createUpdatePayloadForAddingAKey (
+  public static async createUpdateOperationRequestForAddingAKey (
     didUniqueSuffix: string,
-    updateOtpEncodedString: string,
-    keyId: string,
-    publicKeyHex: string,
-    nextUpdateOtpHashEncodedString?: string): any {
-    const updatePayload = {
-      type: OperationType.Update,
-      didUniqueSuffix,
-      patches: [
-        {
-          action: 'add-public-keys',
-          publicKeys: [
-            {
-              id: keyId,
-              type: 'Secp256k1VerificationKey2018',
-              usage: 'signing',
-              publicKeyHex: publicKeyHex
-            }
-          ]
-        }
-      ],
-      updateOtp: updateOtpEncodedString,
-      nextUpdateOtpHash: nextUpdateOtpHashEncodedString ? nextUpdateOtpHashEncodedString : 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
-    };
+    updateOtp: string,
+    idOfNewKey: string,
+    newPublicKeyHex: string,
+    nextUpdateOtpHash: string,
+    signingKeyId: string,
+    signingPrivateKey: string | PrivateKey) {
 
-    return updatePayload;
+    const documentPatch = [
+      {
+        action: 'add-public-keys',
+        publicKeys: [
+          {
+            id: idOfNewKey,
+            type: 'Secp256k1VerificationKey2018',
+            usage: 'signing',
+            publicKeyHex: newPublicKeyHex
+          }
+        ]
+      }
+    ];
+
+    const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+      didUniqueSuffix,
+      updateOtp,
+      nextUpdateOtpHash,
+      documentPatch,
+      signingKeyId,
+      signingPrivateKey
+    );
+
+    return updateOperationRequest;
   }
 
   /**
    * Creates an update operation for adding and/or removing hub service endpoints.
    */
-  public static createUpdatePayloadForHubEndpoints (
+  public static async createUpdateOperationRequestForHubEndpoints (
     didUniqueSuffix: string,
-    updateOtpEncodedString: string,
+    updateOtp: string,
+    nextUpdateOtpHash: string,
     endpointsToAdd: string[],
-    endpointsToRemove: string[]): any {
-    const patches = [];
+    endpointsToRemove: string[],
+    signingKeyId: string,
+    signingPrivateKey: string) {
+    const documentPatch = [];
 
     if (endpointsToAdd.length > 0) {
       const patch = {
@@ -477,7 +488,7 @@ export default class OperationGenerator {
         serviceEndpoints: endpointsToAdd
       };
 
-      patches.push(patch);
+      documentPatch.push(patch);
     }
 
     if (endpointsToRemove.length > 0) {
@@ -487,30 +498,31 @@ export default class OperationGenerator {
         serviceEndpoints: endpointsToRemove
       };
 
-      patches.push(patch);
+      documentPatch.push(patch);
     }
 
-    const updatePayload = {
-      type: OperationType.Update,
+    const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
       didUniqueSuffix,
-      patches,
-      updateOtp: updateOtpEncodedString,
-      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
-    };
+      updateOtp,
+      nextUpdateOtpHash,
+      documentPatch,
+      signingKeyId,
+      signingPrivateKey
+    );
 
-    return updatePayload;
+    return updateOperationRequest;
   }
 
   /**
-   * Generates an Update Operation buffer with valid signature.
+   * Signs the given payload as a ES256K JWS.
    */
-  public static async generateUpdateOperation (updatePayload: object, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+  public static async signUsingEs256k (payload: object, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
     };
 
-    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, updatePayload, privateKey);
+    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
     return operationJws;
   }
 
@@ -546,7 +558,7 @@ export default class OperationGenerator {
       recoveryOtp: recoveryOtpEncodedSring
     };
 
-    const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, privateKey);
+    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
     return operationJws;
   }
 

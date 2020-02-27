@@ -11,6 +11,7 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PublicKeyModel from './models/PublicKeyModel';
 import SidetreeError from '../../SidetreeError';
+import UpdateOperation from './UpdateOperation';
 
 /**
  * A class that represents a Sidetree operation.
@@ -96,6 +97,8 @@ export default class Operation {
 
       if (operationType === OperationType.Create) {
         return CreateOperation.parseObject(operationObject, operationBuffer);
+      } else if (operationType === OperationType.Update) {
+        return UpdateOperation.parseObject(operationObject, operationBuffer);
       } else {
         throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
       }
@@ -229,28 +232,7 @@ export default class Operation {
    * @returns [decoded protected header JSON object, decoded payload JSON object] if given operation JWS is valid, Error is thrown otherwise.
    */
   private parseAndInitializeOperation (operation: any) {
-    const decodedProtectedHeadJsonString = Encoder.decodeAsString(operation.protected);
-    const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
-
-    const headerProperties = Object.keys(decodedProtectedHeader);
-    if (headerProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrUnknownProperty);
-    }
-
-    // 'header' property and 'header' property must contain a string 'kid' property.
-    if (typeof decodedProtectedHeader.kid !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectKid);
-    }
-
-    // 'header' property must contain 'alg' property with value 'ES256k'.
-    if (decodedProtectedHeader.alg !== 'ES256K') {
-      throw new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectAlg);
-    }
-
-    // Must contain string 'signature' property.
-    if (typeof operation.signature !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationMissingOrIncorrectSignature);
-    }
+    const jws = Jws.parse(operation);
 
     // Decode the encoded operation string.
     const decodedPayloadJson = Encoder.decodeAsString(operation.payload);
@@ -268,7 +250,7 @@ export default class Operation {
 
     // Initialize common operation properties.
     this.type = decodedPayload.type;
-    this.signingKeyId = decodedProtectedHeader.kid;
+    this.signingKeyId = jws.kid;
     this.encodedProtectedHeader = operation.protected;
     this.encodedPayload = operation.payload;
     this.signature = operation.signature;
