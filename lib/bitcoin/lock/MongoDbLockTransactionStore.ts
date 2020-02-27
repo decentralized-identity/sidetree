@@ -18,8 +18,9 @@ export default class MongoDbLockTransactionStore {
    * @param serverUrl The target server url.
    * @param databaseName The database name where the collection should be saved.
    */
-  public constructor (private serverUrl: string, private databaseName?: string) {
-    this.databaseName = this.databaseName ? this.databaseName : MongoDbLockTransactionStore.defaultDatabaseName;
+  public constructor (
+    private serverUrl: string,
+    private databaseName: string = MongoDbLockTransactionStore.defaultDatabaseName) {
   }
 
   /**
