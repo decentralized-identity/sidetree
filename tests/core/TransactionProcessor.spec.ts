@@ -1,8 +1,12 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
+import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
 import Cas from '../../lib/core/Cas';
 import DownloadManager from '../../lib/core/DownloadManager';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/FetchResultCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MockOperationStore from '../mocks/MockOperationStore';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
@@ -167,6 +171,38 @@ describe('TransactionProcessor', () => {
 
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeFalsy();
+    });
+  });
+
+  describe('downloadAndVerifyAnchorFile', () => {
+    it('should throw if the downloaded file has incorrect number of the unique suffixes.', async (done) => {
+      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.alloc(0)));
+
+      const mockAnchorFile: AnchorFileModel = {
+        didUniqueSuffixes: [ 'suffix 1', 'suffix2' ],
+        mapFileHash: 'map_file_hash'
+      };
+      spyOn(AnchorFile, 'parseAndValidate').and.returnValue(Promise.resolve(mockAnchorFile));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', mockAnchorFile.didUniqueSuffixes.length + 5),
+        ErrorCode.AnchorFileDidUniqueSuffixesCountIncorrect);
+
+      done();
+    });
+
+    it('should return the parsed file.', async (done) => {
+      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.alloc(0)));
+
+      const mockAnchorFile: AnchorFileModel = {
+        didUniqueSuffixes: [ 'suffix 1', 'suffix2' ],
+        mapFileHash: 'map_file_hash'
+      };
+      spyOn(AnchorFile, 'parseAndValidate').and.returnValue(Promise.resolve(mockAnchorFile));
+
+      const actual = await transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', mockAnchorFile.didUniqueSuffixes.length);
+      expect(actual).toEqual(mockAnchorFile);
+      done();
     });
   });
 });

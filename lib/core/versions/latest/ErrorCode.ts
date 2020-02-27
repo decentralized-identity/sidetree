@@ -12,6 +12,7 @@ export default {
   AnchorFileMapFileHashUnsupported: 'anchor_file_map_file_hash_unsupported',
   AnchorFileDecompressionFailure: 'anchor_file_decompression_failed',
   AnchorFileDidUniqueSuffixEntryNotString: 'anchor_file_did_unique_suffix_entry_not_string',
+  AnchorFileDidUniqueSuffixesCountIncorrect: 'anchor_file_did_unique_suffixes_count_incorrect',
   AnchorFileDidUniqueSuffixesHasDuplicates: 'anchor_file_did_unique_suffixes_has_duplicates',
   AnchorFileDidUniqueSuffixesMissing: 'anchor_file_did_unique_suffixes_missing',
   AnchorFileDidUniqueSuffixesNotArray: 'anchor_file_did_unique_suffixes_not_array',

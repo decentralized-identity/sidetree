@@ -30,7 +30,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
 
       // Download and verify anchor file.
-      const anchorFile = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash);
+      const anchorFile = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash, anchoredData.numberOfOperations);
 
       // Download and verify anchor file.
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile.mapFileHash);
@@ -59,11 +59,17 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
   }
 
-  private async downloadAndVerifyAnchorFile (anchorFileHash: string): Promise<AnchorFileModel> {
+  private async downloadAndVerifyAnchorFile (anchorFileHash: string, expectedCountOfUniqueSuffixes: number): Promise<AnchorFileModel> {
     console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
 
     const fileBuffer = await this.downloadFileFromCas(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
     const anchorFileModel = await AnchorFile.parseAndValidate(fileBuffer);
+
+    if (anchorFileModel.didUniqueSuffixes.length !== expectedCountOfUniqueSuffixes) {
+      throw new SidetreeError(
+        ErrorCode.AnchorFileDidUniqueSuffixesCountIncorrect,
+        `Did unique suffixes count: ${anchorFileModel.didUniqueSuffixes.length} is different from the expected count: ${expectedCountOfUniqueSuffixes}`);
+    }
 
     return anchorFileModel;
   }
