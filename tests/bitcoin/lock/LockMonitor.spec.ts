@@ -24,12 +24,27 @@ describe('LockMonitor', () => {
 
   const validTestWalletImportString = 'cTpKFwqu2HqW4y5ByMkNRKAvkPxEcwpax5Qr33ibYvkp1KSxdji6';
 
+  const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1);
+  const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
+
   let lockMonitor: LockMonitor;
 
   beforeEach(() => {
-    const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1);
-    const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
     lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1200, 100, 2000);
+  });
+
+  describe('constructor', () => {
+    it('should throw if the desired lock amount is not a whole number', () => {
+      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000.34, 25, 1234),
+        ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber);
+    });
+
+    it('should throw if the txn fees amount is not a whole number', () => {
+      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 25, 1234.56),
+        ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
+    });
   });
 
   describe('initialize', () => {

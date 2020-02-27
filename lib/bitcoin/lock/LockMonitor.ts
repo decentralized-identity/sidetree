@@ -46,6 +46,14 @@ export default class LockMonitor {
     private lockPeriodInBlocks: number,
     private transactionFeesAmountInSatoshis: number) {
 
+    if (!Number.isInteger(desiredLockAmountInSatoshis)) {
+      throw new BitcoinError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
+    }
+
+    if (!Number.isInteger(transactionFeesAmountInSatoshis)) {
+      throw new BitcoinError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
+    }
+
     this.lockResolver = new LockResolver(this.bitcoinClient);
   }
 

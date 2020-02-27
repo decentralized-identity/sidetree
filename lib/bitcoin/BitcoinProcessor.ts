@@ -127,7 +127,9 @@ export default class BitcoinProcessor {
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
-    const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
+    const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
+                                              : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
+
     const numberOfBlocksInOneMonth = BitcoinClient.estimatedNumberOfBlocksInOneHour * 24 * 30;
 
     this.lockMonitor =
