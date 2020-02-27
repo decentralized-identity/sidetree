@@ -1,4 +1,4 @@
 export default {
-  ipfsRedundantCreate: 'ipfs_redundant_create',
-  ipfsGetBeforeCreate: 'ipfs_get_before_create'
+  ipfsStorageInstanceCanOnlyBeCreatedOnce: 'ipfs_storage_instance_can_only_be_created_once',
+  ipfsStorageInstanceGetHasToBeCalledAfterCreate: 'ipfs_storage_instance_get_has_to_be_called_after_create'
 };

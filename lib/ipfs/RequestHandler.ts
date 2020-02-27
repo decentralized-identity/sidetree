@@ -30,10 +30,11 @@ export default class RequestHandler {
     try {
       ipfsStorage = await IpfsStorage.createSingleton(repo);
     } catch (e) {
-      if (e instanceof IpfsError && e.code === ErrorCode.ipfsRedundantCreate) {
+      if (e instanceof IpfsError && e.code === ErrorCode.ipfsStorageInstanceCanOnlyBeCreatedOnce) {
+        console.debug('IpfsStorage create was called twice, attempting to call get instead: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
         ipfsStorage = IpfsStorage.getSingleton();
       } else {
-        console.error('unexpected error, please investigate and fix.', e);
+        console.error('unexpected error, please investigate and fix: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
         throw e;
       }
     }
@@ -76,9 +77,9 @@ export default class RequestHandler {
 
     try {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
-      const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString, maxSizeInBytes);
+      const fetchPromise = this.ipfsStorage.read(base58EncodedMultihashString, maxSizeInBytes);
 
-      const fetchResult = await Timeout.timeout(fetchPromsie, this.fetchTimeoutInSeconds * 1000);
+      const fetchResult = await Timeout.timeout(fetchPromise, this.fetchTimeoutInSeconds * 1000);
 
       // Return not-found if fetch timed.
       if (fetchResult instanceof Error) {

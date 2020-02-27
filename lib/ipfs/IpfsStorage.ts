@@ -1,6 +1,4 @@
 import * as IPFS from 'ipfs';
-import AsyncExecutor from '../common/async/AsyncExecutor';
-import AsyncTimeoutError from '../common/async/AsyncTimeoutError';
 import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
@@ -11,7 +9,6 @@ import IpfsError from './IpfsError';
  */
 export default class IpfsStorage {
 
-  private static timeoutDuration: number = 10000; // 10 seconds timeout
   /**  IPFS node instance  */
   private node: IPFS;
 
@@ -23,7 +20,7 @@ export default class IpfsStorage {
    */
   public static async createSingleton (repo?: any): Promise<IpfsStorage> {
     if (IpfsStorage.ipfsStorageSingleton !== undefined) {
-      throw new IpfsError(ErrorCode.ipfsRedundantCreate,
+      throw new IpfsError(ErrorCode.ipfsStorageInstanceCanOnlyBeCreatedOnce,
         'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
     }
 
@@ -41,7 +38,8 @@ export default class IpfsStorage {
    */
   public static getSingleton (): IpfsStorage {
     if (IpfsStorage.ipfsStorageSingleton === undefined) {
-      throw new IpfsError(ErrorCode.ipfsGetBeforeCreate, 'IpfsStorage is a singleton, Please use the createSingleton method before get');
+      throw new IpfsError(ErrorCode.ipfsStorageInstanceGetHasToBeCalledAfterCreate,
+        'IpfsStorage is a singleton, Please use the createSingleton method before get');
     }
     return IpfsStorage.ipfsStorageSingleton;
   }
@@ -63,8 +61,9 @@ export default class IpfsStorage {
     // If we hit error attempting to fetch the content metadata, return not-found.
     let contentMetadata = undefined;
     try {
-      contentMetadata = await AsyncExecutor.executeWithTimeout(this.node.object.stat(hash), IpfsStorage.timeoutDuration);
+      contentMetadata = await this.node.object.stat(hash);
     } catch (error) {
+      console.debug(`Error thrown while executing ipfs.stat: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
       return { code: FetchResultCode.NotFound };
     }
 
@@ -73,7 +72,7 @@ export default class IpfsStorage {
     }
 
     if (contentMetadata.DataSize > maxSizeInBytes) {
-      console.info(`Size of ${contentMetadata.DataSize} bytes is greater than the ${maxSizeInBytes} data size limit.`);
+      console.info(`Size of ${contentMetadata.DataSize} bytes is greater than the ${maxSizeInBytes} data size limit for hash ${hash}.`);
       return { code: FetchResultCode.MaxSizeExceeded };
     }
 
@@ -101,20 +100,16 @@ export default class IpfsStorage {
       iterator = this.node.cat(hash);
     } catch (e) {
       // when an error is thrown, that means the hash points to something that is not a file
-      console.error(`Error thrown while downloading content from IPFS: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      console.debug(`Error thrown while downloading content from IPFS: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       return { code: FetchResultCode.NotAFile };
     }
 
     let result: IteratorResult<Buffer>;
     do {
       try {
-        result = await AsyncExecutor.executeWithTimeout(iterator.next(), IpfsStorage.timeoutDuration);
+        result = await iterator.next();
       } catch (e) {
-        if (e instanceof AsyncTimeoutError) {
-          return { code: FetchResultCode.NotFound };
-        }
-        // this should never happen
-        console.error(`unexpected error thrown, please investigate and fix: ${e}`);
+        console.error(`unexpected error thrown, please investigate and fix: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
         throw e;
       }
       if (result.value instanceof Buffer) {
@@ -127,6 +122,10 @@ export default class IpfsStorage {
         bufferChunks.push(chunk);
       }
     } while (!result.done);
+
+    if (bufferChunks.length === 0) {
+      return { code: FetchResultCode.NotFound };
+    }
 
     fetchResult.content = Buffer.concat(bufferChunks);
 
