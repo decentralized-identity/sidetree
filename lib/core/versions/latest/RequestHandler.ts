@@ -1,6 +1,5 @@
 import Did from './Did';
 import DidResolutionModel from '../../models/DidResolutionModel';
-import Document from './Document';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
@@ -18,10 +17,14 @@ import { ResponseModel, ResponseStatus } from '../../../common/Response';
  */
 export default class RequestHandler implements IRequestHandler {
 
+  private operationProcessor: OperationProcessor;
+
   public constructor (
     private resolver: Resolver,
     private operationQueue: IOperationQueue,
-    private didMethodName: string) { }
+    private didMethodName: string) {
+    this.operationProcessor = new OperationProcessor(didMethodName);
+  }
 
   /**
    * Handles an operation request.
@@ -71,19 +74,7 @@ export default class RequestHandler implements IRequestHandler {
       switch (operation.type) {
         case OperationType.Create:
 
-          const operationProcessor = new OperationProcessor(this.didMethodName);
-          const didResolutionModel: DidResolutionModel = {};
-          const operationWithMockedAnchorTime = {
-            didUniqueSuffix: operation.didUniqueSuffix,
-            type: OperationType.Create,
-            transactionTime: 0,
-            transactionNumber: 0,
-            operationIndex: 0,
-            operationBuffer: operation.operationBuffer
-          }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
-          await operationProcessor.apply(operationWithMockedAnchorTime, didResolutionModel);
-
-          const document = didResolutionModel.didDocument;
+          const document = await this.applyCreateOperation(operation);
 
           response = {
             status: ResponseStatus.Succeeded,
@@ -137,7 +128,7 @@ export default class RequestHandler implements IRequestHandler {
     try {
       console.log(`Handling resolution request for: ${shortOrLongFormDid}...`);
 
-      const did = Did.create(shortOrLongFormDid, this.didMethodName);
+      const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 
       if (did.isShortForm) {
         return this.handleResolveRequestWithShortFormDid(did);
@@ -189,11 +180,26 @@ export default class RequestHandler implements IRequestHandler {
 
     // The code reaches here if this DID is not registered on the ledger.
 
-    didDocument = await Document.fromLongFormDid(did);
+    const document = await this.applyCreateOperation(did.createOperation!);
 
     return {
       status: ResponseStatus.Succeeded,
-      body: didDocument
+      body: document
     };
+  }
+
+  private async applyCreateOperation (createOpertion: OperationModel): Promise<any> {
+    const didResolutionModel: DidResolutionModel = {};
+    const operationWithMockedAnchorTime = {
+      didUniqueSuffix: createOpertion.didUniqueSuffix,
+      type: OperationType.Create,
+      transactionTime: 0,
+      transactionNumber: 0,
+      operationIndex: 0,
+      operationBuffer: createOpertion.operationBuffer
+    }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
+
+    await this.operationProcessor.apply(operationWithMockedAnchorTime, didResolutionModel);
+    return didResolutionModel.didDocument;
   }
 }
