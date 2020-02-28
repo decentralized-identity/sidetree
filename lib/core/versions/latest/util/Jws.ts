@@ -80,13 +80,14 @@ export default class Jws {
 
   /**
    * Signs the given protected header and payload as a JWS.
+   * NOTE: this is mainly used by tests to create valid test data.
    *
    * @param payload If the given payload is of string type, it is assumed to be encoded string;
    *                else the object will be stringified and encoded.
    */
   public static async sign (
     protectedHeader: any,
-    payload: any | string,
+    payload: any,
     privateKey: string | PrivateKey
   ): Promise<JwsModel> {
     const protectedHeaderJsonString = JSON.stringify(protectedHeader);

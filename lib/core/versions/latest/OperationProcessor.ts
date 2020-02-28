@@ -2,7 +2,7 @@ import AnchoredOperation from './AnchoredOperation';
 import CreateOperation from './CreateOperation';
 import DidResolutionModel from '../../models/DidResolutionModel';
 import Document from './Document';
-import DocumentComposer from './DocumnetComposer';
+import DocumentComposer from './DocumentComposer';
 import DocumentModel from './models/DocumentModel';
 import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
 import Multihash from './Multihash';

@@ -63,12 +63,12 @@ export default class UpdateOperation implements OperationModel {
   public static async parse (operationBuffer: Buffer): Promise<UpdateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const createOperation = await UpdateOperation.parseObject(operationObject, operationBuffer);
-    return createOperation;
+    const updateOperation = await UpdateOperation.parseObject(operationObject, operationBuffer);
+    return updateOperation;
   }
 
   /**
-   * Parses the given operation object as a `CreateOperation`.
+   * Parses the given operation object as a `UpdateOperation`.
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
