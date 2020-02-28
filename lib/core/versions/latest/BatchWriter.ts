@@ -68,7 +68,7 @@ export default class BatchWriter implements IBatchWriter {
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const fee = FeeManager.computeTransactionFee(normalizedFee, operationBuffers.length);
-    console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with fee: ${fee}`);
+    console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with minimum fee of: ${fee}`);
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
