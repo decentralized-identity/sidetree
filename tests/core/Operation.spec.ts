@@ -2,6 +2,7 @@ import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import Jws from '../../lib/core/versions/latest/util/Jws';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -50,73 +51,6 @@ describe('Operation', async () => {
       expect(() => { Operation.create(requestWithUnknownProperty); }).toThrowError();
     });
 
-    it('should throw error if header contains unexpected property.', async () => {
-      const signingKeyId = '#signingKey';
-      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
-
-      const protectedHeader = {
-        unknownProperty: 'anyValue',
-        kid: signingKeyId,
-        alg: 'ES256K'
-      };
-
-      const payload = {
-        type: OperationType.Delete,
-        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-
-      };
-
-      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
-      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
-
-      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationHeaderMissingOrUnknownProperty));
-    });
-
-    it('should throw error if `kid` in header is missing or is in incorrect type.', async () => {
-      const signingKeyId = '#signingKey';
-      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
-
-      const protectedHeader = {
-        kid: true, // Incorect type.
-        alg: 'ES256K'
-      };
-
-      const payload = {
-        type: OperationType.Delete,
-        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-
-      };
-
-      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
-      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
-
-      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectKid));
-    });
-
-    it('should throw error if `alg` in header is missing or is in incorrect type.', async () => {
-      const signingKeyId = '#signingKey';
-      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
-
-      const protectedHeader = {
-        kid: signingKeyId,
-        alg: true // Incorect type.
-      };
-
-      const payload = {
-        type: OperationType.Delete,
-        didUniqueSuffix: 'EiA_Any_DID_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'Any_OTP_Unused_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-
-      };
-
-      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
-      const operationBuffer = Buffer.from(JSON.stringify(operationJws));
-
-      expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationHeaderMissingOrIncorrectAlg));
-    });
-
     it('should throw error if `type` in payload has unknown value.', async () => {
       const signingKeyId = '#signingKey';
       const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
@@ -133,7 +67,7 @@ describe('Operation', async () => {
 
       };
 
-      const operationJws = await OperationGenerator.createOperationJws(protectedHeader, payload, signingPrivateKey);
+      const operationJws = await Jws.sign(protectedHeader, payload, signingPrivateKey);
       const operationBuffer = Buffer.from(JSON.stringify(operationJws));
 
       expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType));
