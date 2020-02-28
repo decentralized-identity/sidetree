@@ -34,7 +34,7 @@ export default class LockMonitor {
 
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
-  private currentLockState: LockState | undefined;
+  private currentLockState: LockState;
 
   private lockResolver: LockResolver;
 
@@ -43,8 +43,8 @@ export default class LockMonitor {
     private lockTransactionStore: MongoDbLockTransactionStore,
     private pollPeriodInSeconds: number,
     private desiredLockAmountInSatoshis: number,
-    private lockPeriodInBlocks: number,
-    private transactionFeesAmountInSatoshis: number) {
+    private transactionFeesAmountInSatoshis: number,
+    private lockPeriodInBlocks: number) {
 
     if (!Number.isInteger(desiredLockAmountInSatoshis)) {
       throw new BitcoinError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
@@ -55,6 +55,11 @@ export default class LockMonitor {
     }
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
+    this.currentLockState = {
+      currentValueTimeLock: undefined,
+      latestSavedLockInfo: undefined,
+      status: LockStatus.None
+    };
   }
 
   /**
@@ -73,7 +78,7 @@ export default class LockMonitor {
   public getCurrentValueTimeLock (): ValueTimeLockModel | undefined {
 
     // Make a copy of the state so in case it gets changed between now and the function return
-    const currentLockState = Object.assign({}, this.currentLockState!);
+    const currentLockState = Object.assign({}, this.currentLockState);
 
     // If there's no lock then return undefined
     if (currentLockState.status === LockStatus.None) {
@@ -110,7 +115,7 @@ export default class LockMonitor {
   private async handlePeriodicPolling (): Promise<void> {
 
     // If the current lock is in pending state then we cannot do anything and need to just return.
-    if (this.currentLockState!.status === LockStatus.Pending) {
+    if (this.currentLockState.status === LockStatus.Pending) {
       console.info(`The current lock status is in pending state; going to skip rest of the routine.`);
 
       // But refresh the lock state before returning so that the next polling has the new value.
@@ -119,7 +124,7 @@ export default class LockMonitor {
     }
 
     // Now that we are not pending, check what do we have to do about the lock next.
-    const validCurrentLockExist = this.currentLockState!.status === LockStatus.Confirmed;
+    const validCurrentLockExist = this.currentLockState.status === LockStatus.Confirmed;
     const lockRequired = this.desiredLockAmountInSatoshis > 0;
 
     let currentLockUpdated = false;
@@ -133,13 +138,13 @@ export default class LockMonitor {
       // The routine will true only if there were any changes made to the lock
       currentLockUpdated =
         await this.handleExistingLockRenewal(
-          this.currentLockState!.currentValueTimeLock!,
-          this.currentLockState!.latestSavedLockInfo!,
+          this.currentLockState.currentValueTimeLock!,
+          this.currentLockState.latestSavedLockInfo!,
           this.desiredLockAmountInSatoshis);
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      await this.releaseLock(this.currentLockState!.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
+      await this.releaseLock(this.currentLockState.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
       currentLockUpdated = true;
     }
 
@@ -150,18 +155,15 @@ export default class LockMonitor {
 
   private async getCurrentLockState (): Promise<LockState> {
 
-    const currentLockState: LockState = {
-      currentValueTimeLock: undefined,
-      latestSavedLockInfo: undefined,
-      status: LockStatus.None
-    };
-
     const lastSavedLock = await this.lockTransactionStore.getLastLock();
-    currentLockState.latestSavedLockInfo = lastSavedLock;
 
     // Nothing to do if there's nothing found.
     if (!lastSavedLock) {
-      return currentLockState;
+      return {
+        currentValueTimeLock: undefined,
+        latestSavedLockInfo: undefined,
+        status: LockStatus.None
+      };
     }
 
     console.info(`Found last saved lock of type: ${lastSavedLock.type} with transaction id: ${lastSavedLock.transactionId}.`);
@@ -172,29 +174,40 @@ export default class LockMonitor {
     if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
 
       await this.rebroadcastTransaction(lastSavedLock);
-      currentLockState.status = LockStatus.Pending;
 
-      return currentLockState;
+      return {
+        currentValueTimeLock: undefined,
+        latestSavedLockInfo: lastSavedLock,
+        status: LockStatus.Pending
+      };
     }
 
     if (lastSavedLock.type === SavedLockType.ReturnToWallet) {
       // This means that there's no current lock for this node. Just return
-      return currentLockState;
+      return {
+        currentValueTimeLock: undefined,
+        latestSavedLockInfo: lastSavedLock,
+        status: LockStatus.None
+      };
     }
 
-    // If we're here then it means that we have saved some information about a lock (which we
-    // still need to resolve) which is confirmed to be on the blockchain.
+    // If we're here then it means that we have saved some information about a lock
+    // which is confirmed to be on the blockchain. Let's resolve it to make sure that
+    // we have all the information.
     const lastLockIdentifier: LockIdentifier = {
       transactionId: lastSavedLock.transactionId,
       redeemScriptAsHex: lastSavedLock.redeemScriptAsHex
     };
 
-    currentLockState.currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
-    currentLockState.status = LockStatus.Confirmed;
+    const currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
 
-    console.info(`Found a valid current lock: ${JSON.stringify(currentLockState.currentValueTimeLock)}`);
+    console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
 
-    return currentLockState;
+    return {
+      currentValueTimeLock: currentValueTimeLock,
+      latestSavedLockInfo: lastSavedLock,
+      status: LockStatus.Confirmed
+    };
   }
 
   private async rebroadcastTransaction (lastSavedLock: SavedLockModel): Promise<void> {

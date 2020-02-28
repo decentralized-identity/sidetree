@@ -42,7 +42,7 @@ describe('LockMonitor', () => {
 
     it('should throw if the txn fees amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 25, 1234.56),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 1234.56, 45),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
     });
   });

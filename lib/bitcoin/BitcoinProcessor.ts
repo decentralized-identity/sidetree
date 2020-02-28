@@ -138,8 +138,8 @@ export default class BitcoinProcessor {
         this.mongoDbLockTransactionStore,
         config.valueTimeLockPollPeriodInSeconds || 10 * 60,
         config.valueTimeLockAmountInBitcoins * BitcoinProcessor.satoshiPerBitcoin, // Desired lock amount in satoshis
-        numberOfBlocksInOneMonth,                                                  // Desired lock duration in blocks
-        valueTimeLockTransactionFeesInBtc * BitcoinProcessor.satoshiPerBitcoin);   // Txn Fees amoount in satoshis
+        valueTimeLockTransactionFeesInBtc * BitcoinProcessor.satoshiPerBitcoin,    // Txn Fees amoount in satoshis
+        numberOfBlocksInOneMonth);                                                 // Desired lock duration in blocks
   }
 
   /**
