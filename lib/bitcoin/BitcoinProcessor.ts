@@ -1,20 +1,26 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
+import BitcoinError from './BitcoinError';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import ErrorCode from '../common/SharedErrorCode';
+import ErrorCode from './ErrorCode';
+import LockMonitor from './lock/LockMonitor';
+import LockResolver from './lock/LockResolver';
+import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
-import ProtocolParameters from './ProtocolParameters';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
+import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import SharedErrorCode from '../common/SharedErrorCode';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
 import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
+import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import { IBitcoinConfig } from './IBitcoinConfig';
 import { ResponseStatus } from '../common/Response';
 
@@ -72,6 +78,12 @@ export default class BitcoinProcessor {
 
   private spendingMonitor: SpendingMonitor;
 
+  private mongoDbLockTransactionStore: MongoDbLockTransactionStore;
+
+  private lockResolver: LockResolver;
+
+  private lockMonitor: LockMonitor;
+
   /** proof of fee configuration */
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
 
@@ -110,6 +122,24 @@ export default class BitcoinProcessor {
         config.bitcoinWalletImportString,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3);
+
+    this.lockResolver = new LockResolver(this.bitcoinClient);
+
+    this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
+    const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
+                                              : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
+
+    const numberOfBlocksInOneMonth = BitcoinClient.estimatedNumberOfBlocksInOneHour * 24 * 30;
+
+    this.lockMonitor =
+      new LockMonitor(
+        this.bitcoinClient,
+        this.mongoDbLockTransactionStore,
+        config.valueTimeLockPollPeriodInSeconds || 10 * 60,
+        config.valueTimeLockAmountInBitcoins * BitcoinProcessor.satoshiPerBitcoin, // Desired lock amount in satoshis
+        valueTimeLockTransactionFeesInBtc * BitcoinProcessor.satoshiPerBitcoin,    // Txn Fees amoount in satoshis
+        numberOfBlocksInOneMonth);                                                 // Desired lock duration in blocks
   }
 
   /**
@@ -119,6 +149,8 @@ export default class BitcoinProcessor {
     await this.transactionStore.initialize();
     await this.quantileCalculator.initialize();
     await this.bitcoinClient.initialize();
+    await this.mongoDbLockTransactionStore.initialize();
+    await this.lockMonitor.initialize();
 
     console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForInitialization();
@@ -170,7 +202,7 @@ export default class BitcoinProcessor {
     } else if (since && hash) {
       if (!await this.verifyBlock(TransactionNumber.getBlockNumber(since), hash)) {
         console.info('Requested transactions hash mismatched blockchain');
-        throw new RequestError(ResponseStatus.BadRequest, ErrorCode.InvalidTransactionNumberOrTimeHash);
+        throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
       }
     }
 
@@ -183,7 +215,7 @@ export default class BitcoinProcessor {
     // if changed, then a block reorg happened.
     if (!await this.verifyBlock(currentLastProcessedBlock.height, currentLastProcessedBlock.hash)) {
       console.info('Requested transactions hash mismatched blockchain');
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.InvalidTransactionNumberOrTimeHash);
+      throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.InvalidTransactionNumberOrTimeHash);
     }
 
     // if not enough blocks to fill the page then there are no more transactions
@@ -228,7 +260,7 @@ export default class BitcoinProcessor {
     const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
 
     if (!feeWithinSpendingLimits) {
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.SpendingCapPerPeriodReached);
+      throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.SpendingCapPerPeriodReached);
     }
 
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
@@ -244,7 +276,7 @@ export default class BitcoinProcessor {
     if (totalSatoshis < fee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.NotEnoughBalanceForWrite);
+      throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.NotEnoughBalanceForWrite);
     }
 
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
@@ -261,7 +293,7 @@ export default class BitcoinProcessor {
     if (block < this.genesisBlockNumber) {
       const error = `The input block number must be greater than or equal to: ${this.genesisBlockNumber}`;
       console.error(error);
-      throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+      throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
     const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
@@ -273,7 +305,7 @@ export default class BitcoinProcessor {
     }
 
     console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
-    throw new RequestError(ResponseStatus.BadRequest, ErrorCode.BlockchainTimeOutOfRange);
+    throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
   }
 
   /**
@@ -281,6 +313,47 @@ export default class BitcoinProcessor {
    */
   public async getServiceVersion (): Promise<ServiceVersionModel> {
     return this.serviceInfoProvider.getServiceVersion();
+  }
+
+  /**
+   * Gets the lock information for the specified identifier (if specified); if nothing is passed in then
+   * it returns the current lock information (if one exist).
+   *
+   * @param lockIdentifier The identifier of the lock to look up.
+   */
+  public async getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel> {
+
+    try {
+      return this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
+    } catch (e) {
+      console.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+    }
+  }
+
+  /**
+   * Gets the lock information which is currently held by this node. It throws an RequestError if none exist.
+   */
+  public getActiveValueTimeLockForThisNode (): ValueTimeLockModel {
+    let currentLock: ValueTimeLockModel | undefined;
+
+    try {
+      currentLock = this.lockMonitor.getCurrentValueTimeLock();
+    } catch (e) {
+
+      if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
+        throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
+      }
+
+      console.error(`Current value time lock retrieval failed with error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      throw new RequestError(ResponseStatus.ServerError);
+    }
+
+    if (!currentLock) {
+      throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+    }
+
+    return currentLock;
   }
 
   /**

@@ -7,15 +7,16 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
+import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
-import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
-function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined) {
+function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined, status: any) {
   return {
     currentValueTimeLock: currentValueTimeLock,
-    latestSavedLockInfo: latestSavedLockInfo
+    latestSavedLockInfo: latestSavedLockInfo,
+    status: status
   };
 }
 
@@ -23,17 +24,32 @@ describe('LockMonitor', () => {
 
   const validTestWalletImportString = 'cTpKFwqu2HqW4y5ByMkNRKAvkPxEcwpax5Qr33ibYvkp1KSxdji6';
 
+  const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1);
+  const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
+
   let lockMonitor: LockMonitor;
 
   beforeEach(() => {
-    const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1);
-    const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
-    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1000, 50, 1200);
+    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1200, 100, 2000);
+  });
+
+  describe('constructor', () => {
+    it('should throw if the desired lock amount is not a whole number', () => {
+      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000.34, 25, 1234),
+        ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber);
+    });
+
+    it('should throw if the txn fees amount is not a whole number', () => {
+      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 1234.56, 45),
+        ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
+    });
   });
 
   describe('initialize', () => {
     it('should call the periodic poll function', async () => {
-      const mockLockInfo = createLockState(undefined, undefined);
+      const mockLockInfo = createLockState(undefined, undefined, 'none');
       const resolveSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockLockInfo));
       const pollSpy = spyOn(lockMonitor as any, 'periodicPoll').and.returnValue(Promise.resolve());
 
@@ -77,9 +93,65 @@ describe('LockMonitor', () => {
     });
   });
 
+  describe('getCurrentValueTimeLock', () => {
+    it('should return undefined if there is no current lock', () => {
+      lockMonitor['currentLockState'] = createLockState(undefined, undefined, 'none');
+
+      const actual = lockMonitor.getCurrentValueTimeLock();
+      expect(actual).toBeUndefined();
+    });
+
+    it('should throw if the current lock status is pending', () => {
+      lockMonitor['currentLockState'] = createLockState(undefined, undefined, 'pending');
+
+      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+        () => lockMonitor.getCurrentValueTimeLock(),
+        ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+    });
+
+    it('should return the current value time lock', () => {
+      const mockCurrentValueLock: ValueTimeLockModel = {
+        amountLocked: 300,
+        identifier: 'identifier',
+        owner: 'owner',
+        unlockTransactionTime: 12323
+      };
+
+      lockMonitor['currentLockState'] = createLockState(undefined, mockCurrentValueLock, 'confirmed');
+
+      const actual = lockMonitor.getCurrentValueTimeLock();
+      expect(actual).toEqual(mockCurrentValueLock);
+    });
+  });
+
   describe('handlePeriodicPolling', () => {
+    it('should only update the lock state if the current lock status is pending.', async () => {
+      const mockCurrentValueLock: ValueTimeLockModel = {
+        amountLocked: 300,
+        identifier: 'identifier',
+        owner: 'owner',
+        unlockTransactionTime: 12323
+      };
+
+      const mockCurrentLockInfo = createLockState(undefined, mockCurrentValueLock, 'pending');
+      lockMonitor['currentLockState'] = mockCurrentLockInfo;
+
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState');
+      const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLock');
+
+      lockMonitor['desiredLockAmountInSatoshis'] = 1000;
+      await lockMonitor['handlePeriodicPolling']();
+
+      expect(resolveCurrentLockSpy).toHaveBeenCalled();
+      expect(createNewLockSpy).not.toHaveBeenCalled();
+      expect(existingLockSpy).not.toHaveBeenCalled();
+      expect(releaseLockSpy).not.toHaveBeenCalled();
+    });
+
     it('should not do anything if a lock is not required and none exist.', async () => {
-      const mockCurrentLockInfo = createLockState(undefined, undefined);
+      const mockCurrentLockInfo = createLockState(undefined, undefined, 'none');
       lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState');
@@ -97,7 +169,7 @@ describe('LockMonitor', () => {
     });
 
     it('should call the new lock routine if a lock is required but does not exist.', async () => {
-      const mockCurrentLockInfo = createLockState(undefined, undefined);
+      const mockCurrentLockInfo = createLockState(undefined, undefined, 'none');
       lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
@@ -142,7 +214,7 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock);
+      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock, 'confirmed');
       lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
@@ -178,7 +250,7 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock);
+      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock, 'confirmed');
       lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
@@ -214,7 +286,7 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 12323
       };
 
-      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock);
+      const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock, 'confirmed');
       lockMonitor['currentLockState'] = mockCurrentLockInfo;
 
       const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockCurrentLockInfo));
@@ -240,7 +312,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(undefined));
 
-      const expected = createLockState(undefined, undefined);
+      const expected = createLockState(undefined, undefined, 'none');
       const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
@@ -265,7 +337,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(false));
 
-      const expected = createLockState(mockLastLock, undefined);
+      const expected = createLockState(mockLastLock, undefined, 'pending');
       const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
@@ -290,7 +362,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
 
-      const expected = createLockState(mockLastLock, undefined);
+      const expected = createLockState(mockLastLock, undefined, 'none');
       const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
@@ -322,7 +394,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
 
-      const expected = createLockState(mockLastLock, mockValueTimeLock);
+      const expected = createLockState(mockLastLock, mockValueTimeLock, 'confirmed');
       const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
