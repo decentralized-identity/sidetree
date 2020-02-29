@@ -17,7 +17,7 @@ export default class FeeManager {
    *
    * @throws if the number of operations are <= 0.
    */
-  public static computeTransactionFee (normalizedFee: number, numberOfOperations: number): number {
+  public static computeMinimumTransactionFee (normalizedFee: number, numberOfOperations: number): number {
 
     if (numberOfOperations <= 0) {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `Fee cannot be calculated for the given number of operations: ${numberOfOperations}`);

@@ -4,27 +4,27 @@ import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
 describe('FeeManager', async () => {
 
-  describe('computeTransactionFee', async () => {
+  describe('computeMinimumTransactionFee', async () => {
 
     it('should return calculated fee if it is greater', async () => {
-      const fee = FeeManager.computeTransactionFee(2, 10000);
+      const fee = FeeManager.computeMinimumTransactionFee(2, 10000);
 
       expect(fee).toEqual(200);
     });
 
     it('should return at least the normalized fee if the calculated fee is lower', async () => {
-      const fee = FeeManager.computeTransactionFee(100, 1);
+      const fee = FeeManager.computeMinimumTransactionFee(100, 1);
 
       expect(fee).toEqual(100);
     });
 
     it('should fail if the number of operations is <= 0', async () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => FeeManager.computeTransactionFee(100, 0),
+        () => FeeManager.computeMinimumTransactionFee(100, 0),
         ErrorCode.OperationCountLessThanZero);
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => FeeManager.computeTransactionFee(100, -1),
+        () => FeeManager.computeMinimumTransactionFee(100, -1),
         ErrorCode.OperationCountLessThanZero);
     });
   });
@@ -33,7 +33,7 @@ describe('FeeManager', async () => {
 
     it('should not throw if the fee paid is at least the expected fee', async () => {
       try {
-        const feeToPay = FeeManager.computeTransactionFee(100, 100);
+        const feeToPay = FeeManager.computeMinimumTransactionFee(100, 100);
         FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 100, 100);
       } catch (e) {
         fail();
@@ -42,7 +42,7 @@ describe('FeeManager', async () => {
 
     it('should not throw if the fee paid is at least the expected fee (0% markup)', async () => {
       try {
-        const feeToPay = FeeManager.computeTransactionFee(100, 100);
+        const feeToPay = FeeManager.computeMinimumTransactionFee(100, 100);
         FeeManager.verifyTransactionFeeAndThrowOnError(feeToPay, 100, 100);
       } catch (e) {
         fail();
@@ -50,7 +50,7 @@ describe('FeeManager', async () => {
     });
 
     it('should throw if the fee paid is less than the expected fee', async () => {
-      const feeToPay = FeeManager.computeTransactionFee(100, 100);
+      const feeToPay = FeeManager.computeMinimumTransactionFee(100, 100);
 
       // Make the next call w/ a large number of operations to simulate the error condition.
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(

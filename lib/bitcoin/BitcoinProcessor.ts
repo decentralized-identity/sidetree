@@ -220,8 +220,8 @@ export default class BitcoinProcessor {
    */
   public async writeTransaction (anchorString: string, minimumFee: number) {
     const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const dataTransaction = await this.bitcoinClient.createDataTransaction(sidetreeTransactionString, minimumFee);
-    const transactionFee = dataTransaction.transactionFee;
+    const sidetreeTransaction = await this.bitcoinClient.createSidetreeTransaction(sidetreeTransactionString, minimumFee);
+    const transactionFee = sidetreeTransaction.transactionFee;
     console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
 
     const isFeeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(transactionFee, this.lastProcessedBlock!.height);
@@ -247,7 +247,7 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, ErrorCode.NotEnoughBalanceForWrite);
     }
 
-    const transactionHash = await this.bitcoinClient.broadcastDataTransaction(dataTransaction);
+    const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
     console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }

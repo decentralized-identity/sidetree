@@ -1,6 +1,6 @@
 import * as httpStatus from 'http-status';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
-import BitcoinDataTransactionModel from './models/BitcoinDataTransactionModel';
+import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
@@ -87,11 +87,11 @@ export default class BitcoinClient {
 
   /**
    * Broadcasts the specified data transaction.
-   * @param bitcoinDataTransaction The transaction object.
+   * @param bitcoinSidetreeTransaction The transaction object.
    */
-  public async broadcastDataTransaction (bitcoinDataTransaction: BitcoinDataTransactionModel): Promise<string> {
+  public async broadcastSidetreeTransaction (bitcoinSidetreeTransaction: BitcoinSidetreeTransactionModel): Promise<string> {
 
-    return this.broadcastTransactionRpc(bitcoinDataTransaction.serializedTransactionObject);
+    return this.broadcastTransactionRpc(bitcoinSidetreeTransaction.serializedTransactionObject);
   }
 
   /**
@@ -109,7 +109,7 @@ export default class BitcoinClient {
    * @param transactionData The data to write in the transaction.
    * @param minimumFeeInSatoshis The minimum fee for the transaction in satoshis.
    */
-  public async createDataTransaction (transactionData: string, minimumFeeInSatoshis: number): Promise<BitcoinDataTransactionModel> {
+  public async createSidetreeTransaction (transactionData: string, minimumFeeInSatoshis: number): Promise<BitcoinSidetreeTransactionModel> {
     const transaction = await this.createTransaction(transactionData, minimumFeeInSatoshis);
 
     return {

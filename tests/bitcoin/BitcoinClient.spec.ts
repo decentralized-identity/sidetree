@@ -42,7 +42,7 @@ describe('BitcoinClient', async () => {
     });
   }
 
-  describe('createDataTransaction', () => {
+  describe('createSidetreeTransaction', () => {
     it('should return the expected result', async () => {
       const createTransactionSpy = spyOn(bitcoinClient, 'createTransaction' as any).and.returnValue({
         id: 'someId',
@@ -50,7 +50,7 @@ describe('BitcoinClient', async () => {
         serialize: () => { return 'someString'; }
       });
 
-      const result = await bitcoinClient.createDataTransaction('transactionData', 123);
+      const result = await bitcoinClient.createSidetreeTransaction('transactionData', 123);
 
       expect(createTransactionSpy).toHaveBeenCalledWith('transactionData', 123);
       expect(result).toEqual({
@@ -90,10 +90,10 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('broadcastDataTransaction', () => {
+  describe('broadcastSidetreeTransaction', () => {
     it('should call broadcastTransactionRpc with expected argument', async (done) => {
       const mockRpcCall = spyOn<any>(bitcoinClient, 'broadcastTransactionRpc').and.returnValue('some value');
-      await bitcoinClient.broadcastDataTransaction({ transactionId: 'someId', transactionFee: 1223, serializedTransactionObject: 'abc' });
+      await bitcoinClient.broadcastSidetreeTransaction({ transactionId: 'someId', transactionFee: 1223, serializedTransactionObject: 'abc' });
       expect(mockRpcCall).toHaveBeenCalledTimes(1);
       done();
     });
