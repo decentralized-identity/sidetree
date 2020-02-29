@@ -63,7 +63,7 @@ export default class IpfsStorage {
     try {
       contentMetadata = await this.node.object.stat(hash);
     } catch (error) {
-      console.debug(`Error thrown while executing ipfs.stat: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+      console.debug(`Error thrown while executing ipfs.stat for CID ${hash}: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
       return { code: FetchResultCode.NotFound };
     }
 
@@ -72,7 +72,7 @@ export default class IpfsStorage {
     }
 
     if (contentMetadata.DataSize > maxSizeInBytes) {
-      console.info(`Size of ${contentMetadata.DataSize} bytes is greater than the ${maxSizeInBytes} data size limit for hash ${hash}.`);
+      console.info(`Size of ${contentMetadata.DataSize} bytes is greater than the ${maxSizeInBytes} data size limit for CID ${hash}.`);
       return { code: FetchResultCode.MaxSizeExceeded };
     }
 
@@ -100,7 +100,7 @@ export default class IpfsStorage {
       iterator = this.node.cat(hash);
     } catch (e) {
       // when an error is thrown, that means the hash points to something that is not a file
-      console.debug(`Error thrown while downloading content from IPFS: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      console.debug(`Error thrown while downloading content from IPFS for CID ${hash}: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       return { code: FetchResultCode.NotAFile };
     }
 
@@ -109,7 +109,7 @@ export default class IpfsStorage {
       try {
         result = await iterator.next();
       } catch (e) {
-        console.error(`unexpected error thrown, please investigate and fix: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+        console.error(`unexpected error thrown for CID ${hash}, please investigate and fix: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
         throw e;
       }
       if (result.value instanceof Buffer) {
