@@ -319,7 +319,7 @@ export default class BitcoinProcessor {
    * Gets the lock information for the specified identifier (if specified); if nothing is passed in then
    * it returns the current lock information (if one exist).
    *
-   * @param lockIdentifier The identifier of the lock to look up; should be null for the current node's lock information.
+   * @param lockIdentifier The identifier of the lock to look up.
    */
   public async getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel> {
 
