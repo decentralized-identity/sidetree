@@ -15,6 +15,9 @@ import { IBlockInfo } from './BitcoinProcessor';
  */
 export default class BitcoinClient {
 
+  /** The estimated number of blocks written on bitcoin in one hour */
+  public static estimatedNumberOfBlocksInOneHour = 6;
+
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
 

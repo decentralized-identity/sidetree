@@ -51,9 +51,9 @@ export default class Blockchain implements IBlockchain {
     setInterval(async () => this.getLatestTime(), Blockchain.cachedBlockchainTimeRefreshInSeconds * 1000);
   }
 
-  public async write (anchorString: string, fee: number): Promise<void> {
+  public async write (anchorString: string, minimumFee: number): Promise<void> {
     const anchorStringObject = {
-      fee,
+      minimumFee,
       anchorString
     };
 

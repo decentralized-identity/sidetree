@@ -215,7 +215,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFilehash, numberOfOperations: 1 });
+    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFilehash, numberOfOperations: operationsBuffer.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,

@@ -46,6 +46,33 @@ describe('LockResolver', () => {
     lockResolver = new LockResolver(bitcoinClient);
   });
 
+  describe('resolveSerializedLockIdentifierAndThrowOnError', () => {
+    it('should deserialize the identifier and call the other function', async (done) => {
+
+      const mockLockIdentifier: LockIdentifierModel = {
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id'
+      };
+      const deserializeSpy = spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockLockIdentifier);
+
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1000,
+        identifier: 'identifier',
+        owner: 'owner',
+        unlockTransactionTime: 1900
+      };
+      const resolveSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
+
+      const serializedIdInput = 'mock serialized identifier';
+      const actual = await lockResolver.resolveSerializedLockIdentifierAndThrowOnError(serializedIdInput);
+
+      expect(actual).toEqual(mockValueTimeLock);
+      expect(deserializeSpy).toHaveBeenCalledWith(serializedIdInput);
+      expect(resolveSpy).toHaveBeenCalled();
+      done();
+    });
+  });
+
   describe('resolveLockIdentifierAndThrowOnError', () => {
     it('should correctly resolve a valid lock identifier.', async () => {
       const lockBlockInput = 1665191;
