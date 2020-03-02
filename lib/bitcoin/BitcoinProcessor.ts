@@ -121,7 +121,8 @@ export default class BitcoinProcessor {
         config.bitcoinRpcPassword,
         config.bitcoinWalletImportString,
         config.requestTimeoutInMilliseconds || 300,
-        config.requestMaxRetries || 3);
+        config.requestMaxRetries || 3,
+        config.sidetreeTransactionFeeMarkupPercentage || 0);
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
 
@@ -247,40 +248,39 @@ export default class BitcoinProcessor {
   /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorString The string to be written as part of the transaction.
-   * @param fee The fee to be paid for this transaction.
+   * @param minimumFee The minimum fee to be paid for this transaction.
    */
-  public async writeTransaction (anchorString: string, fee: number) {
-    console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
-    // ----
-    // Issue #347 opened to track the investigation for this hardcoded value.
-    // Ensure that we are always paying this minimum fee.
-    fee = Math.max(fee, 1000);
-    // ----
+  public async writeTransaction (anchorString: string, minimumFee: number) {
+    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
+    const sidetreeTransaction = await this.bitcoinClient.createSidetreeTransaction(sidetreeTransactionString, minimumFee);
+    const transactionFee = sidetreeTransaction.transactionFee;
+    console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
 
-    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
+    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(transactionFee, this.lastProcessedBlock!.height);
 
     if (!feeWithinSpendingLimits) {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.SpendingCapPerPeriodReached);
+
     }
 
+    // Write a warning if the balance is running low
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
-    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
+    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * transactionFee;
     if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
-      console.error(`Low balance (${daysLeft} days remaining),\
- please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
+      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * transactionFee));
+      console.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
     }
+
     // cannot make the transaction
-    if (totalSatoshis < fee) {
+    if (totalSatoshis < transactionFee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.NotEnoughBalanceForWrite);
     }
 
-    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
+    const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
     console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }

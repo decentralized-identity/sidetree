@@ -17,7 +17,7 @@ export default class FeeManager {
    *
    * @throws if the number of operations are <= 0.
    */
-  public static computeTransactionFee (normalizedFee: number, numberOfOperations: number, feeMarkupPercentage: number): number {
+  public static computeMinimumTransactionFee (normalizedFee: number, numberOfOperations: number): number {
 
     if (numberOfOperations <= 0) {
       throw new SidetreeError(ErrorCode.OperationCountLessThanZero, `Fee cannot be calculated for the given number of operations: ${numberOfOperations}`);
@@ -31,10 +31,7 @@ export default class FeeManager {
     // return at-least the normalized fee.
     const transactionFee = Math.max(feeForAllOperations, normalizedFee);
 
-    // Add some markup to the fee as defined by the caller.
-    const markupToAdd = transactionFee * (feeMarkupPercentage / 100);
-
-    return transactionFee + markupToAdd;
+    return transactionFee;
   }
 
   /**

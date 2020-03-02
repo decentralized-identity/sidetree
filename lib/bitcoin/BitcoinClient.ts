@@ -1,5 +1,6 @@
 import * as httpStatus from 'http-status';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinSidetreeTransactionModel from './models/BitcoinSidetreeTransactionModel';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
@@ -31,7 +32,8 @@ export default class BitcoinClient {
     bitcoinRpcPassword: string | undefined,
     bitcoinWalletImportString: string,
     private requestTimeout: number,
-    private requestMaxRetries: number) {
+    private requestMaxRetries: number,
+    private sidetreeTransactionFeeMarkupPercentage: number) {
 
     // Bitcore has a type file error on PrivateKey
     try {
@@ -87,17 +89,12 @@ export default class BitcoinClient {
   }
 
   /**
-   * Broadcasts a transaction to the bitcoin network.
-   * @param transactionData The data to write to the transaction
-   * @param feeInSatoshis The fee for the transaction in satoshis
-   * @returns The hash of the transaction if broadcasted successfully.
+   * Broadcasts the specified data transaction.
+   * @param bitcoinSidetreeTransaction The transaction object.
    */
-  public async broadcastTransaction (transactionData: string, feeInSatoshis: number): Promise<string> {
+  public async broadcastSidetreeTransaction (bitcoinSidetreeTransaction: BitcoinSidetreeTransactionModel): Promise<string> {
 
-    const transaction = await this.createTransaction(transactionData, feeInSatoshis);
-    const rawTransaction = transaction.serialize();
-
-    return this.broadcastTransactionRpc(rawTransaction);
+    return this.broadcastTransactionRpc(bitcoinSidetreeTransaction.serializedTransactionObject);
   }
 
   /**
@@ -107,6 +104,22 @@ export default class BitcoinClient {
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
     return this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+  }
+
+  /**
+   * Creates (and NOT broadcasts) a transaction to write data to the bitcoin.
+   *
+   * @param transactionData The data to write in the transaction.
+   * @param minimumFeeInSatoshis The minimum fee for the transaction in satoshis.
+   */
+  public async createSidetreeTransaction (transactionData: string, minimumFeeInSatoshis: number): Promise<BitcoinSidetreeTransactionModel> {
+    const transaction = await this.createTransaction(transactionData, minimumFeeInSatoshis);
+
+    return {
+      transactionId: transaction.id,
+      transactionFee: transaction.getFee(),
+      serializedTransactionObject: transaction.serialize()
+    };
   }
 
   /**
@@ -402,7 +415,7 @@ export default class BitcoinClient {
     return new Transaction(buffer);
   }
 
-  private async createTransaction (transactionData: string, feeInSatoshis: number): Promise<Transaction> {
+  private async createTransaction (transactionData: string, minFeeInSatoshis: number): Promise<Transaction> {
     const unspentOutputs = await this.getUnspentOutputs(this.walletAddress);
 
     const transaction = new Transaction();
@@ -412,7 +425,16 @@ export default class BitcoinClient {
       satoshis: 0
     }));
     transaction.change(this.walletAddress);
-    transaction.fee(feeInSatoshis);
+
+    const estimatedFeeInSatoshis = await this.calculateTransactionFee(transaction);
+    // choose the max between bitcoin estimated fee or passed in min fee to pay
+    let feeToPay = Math.max(minFeeInSatoshis, estimatedFeeInSatoshis);
+    // mark up the fee by specified percentage
+    feeToPay += (feeToPay * this.sidetreeTransactionFeeMarkupPercentage / 100);
+    // round up to the nearest integer because satoshis don't have floating points
+    feeToPay = Math.ceil(feeToPay);
+
+    transaction.fee(feeToPay);
     transaction.sign(this.walletPrivateKey);
 
     return transaction;
