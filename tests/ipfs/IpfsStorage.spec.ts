@@ -29,11 +29,29 @@ describe('IpfsStorage', () => {
       expect(expectedContent).toEqual(fetchedContent.content!);
     });
 
-    it('should return not a file if cat throws an error', async () => {
+    it('should return not a file if cat throws is a directory error', async () => {
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
-      spyOn(ipfsStorage['node'], 'cat').and.throwError('error thrown by test');
+      spyOn(ipfsStorage['node'], 'cat').and.throwError('this dag node is a directory');
 
       const expectedErrorCode = FetchResultCode.NotAFile;
+      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
+      expect(expectedErrorCode).toEqual(fetchedContent.code);
+    });
+
+    it('should return not a file if cat throws no content error', async () => {
+      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+      spyOn(ipfsStorage['node'], 'cat').and.throwError('this dag node has no content');
+
+      const expectedErrorCode = FetchResultCode.NotAFile;
+      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
+      expect(expectedErrorCode).toEqual(fetchedContent.code);
+    });
+
+    it('should return not found for any other unexpected error', async () => {
+      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
+      spyOn(ipfsStorage['node'], 'cat').and.throwError('some unexpected error');
+
+      const expectedErrorCode = FetchResultCode.NotFound;
       const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
       expect(expectedErrorCode).toEqual(fetchedContent.code);
     });

@@ -15,6 +15,9 @@ export default class IpfsStorage {
   /** singleton holding the instance of ipfsStorage to use */
   private static ipfsStorageSingleton: IpfsStorage | undefined;
 
+  // a set of error texts ipfs use to denote not a file
+  private static notAFileErrorTextSet = new Set(['this dag node is a directory', 'this dag node has no content']);
+
   /**
    * Create and return the singleton instance of the ipfsStorage if doesn't already exist
    */
@@ -81,29 +84,36 @@ export default class IpfsStorage {
     try {
       iterator = this.node.cat(hash);
     } catch (e) {
-      // when an error is thrown, that means the hash points to something that is not a file
+      // when an error is thrown, certain error message denote that the CID is not a file, anything else is unexpected error from ipfs
       console.debug(`Error thrown while downloading content from IPFS for CID ${hash}: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
-      return { code: FetchResultCode.NotAFile };
+      if (IpfsStorage.isIpfsErrorNotAFileError(e.message)) {
+        return { code: FetchResultCode.NotAFile };
+      } else {
+        return { code: FetchResultCode.NotFound };
+      }
     }
 
     let result: IteratorResult<Buffer>;
-    do {
-      try {
+    try {
+      do {
         result = await iterator.next();
-      } catch (e) {
-        console.error(`unexpected error thrown for CID ${hash}, please investigate and fix: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
-        throw e;
-      }
-      if (result.value instanceof Buffer) {
-        const chunk = result.value;
-        currentContentSize += chunk.byteLength;
-        if (maxSizeInBytes < currentContentSize) {
-          console.info(`Max size of ${maxSizeInBytes} bytes exceeded by CID ${hash}`);
-          return { code: FetchResultCode.MaxSizeExceeded };
+        // the linter cannot detect that result.value can be undefined, so we disable it. The code should still compile
+        /* tslint:disable-next-line */
+        if (result.value !== undefined) {
+          const chunk = result.value;
+          currentContentSize += chunk.byteLength;
+          if (maxSizeInBytes < currentContentSize) {
+            console.info(`Max size of ${maxSizeInBytes} bytes exceeded by CID ${hash}`);
+            return { code: FetchResultCode.MaxSizeExceeded };
+          }
+          bufferChunks.push(chunk);
         }
-        bufferChunks.push(chunk);
-      }
-    } while (!result.done);
+      // done will always be true if it is the last element. When it is not, it can be false or undefined, which in js !undefined === true
+      } while (!result.done);
+    } catch (e) {
+      console.error(`unexpected error thrown for CID ${hash}, please investigate and fix: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      throw e;
+    }
 
     if (bufferChunks.length === 0) {
       return { code: FetchResultCode.NotFound };
@@ -129,6 +139,14 @@ export default class IpfsStorage {
    */
   public async stop () {
     await this.node.stop();
+  }
+
+  /**
+   * Checks if a certain error message corresponds to the not a file error from ipfs
+   * @param errorText the error text that matches the ipfs implementation of not a file error
+   */
+  private static isIpfsErrorNotAFileError (errorText: string) {
+    return IpfsStorage.notAFileErrorTextSet.has(errorText);
   }
 
 }
