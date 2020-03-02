@@ -3,13 +3,16 @@ import RequestHandler from '../../lib/ipfs/RequestHandler';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import { Response, ResponseStatus } from '../../lib/common/Response';
 
-describe('RequestHandler', () => {
+describe('RequestHandler', async () => {
+  let maxFileSize: number;
+  let fetchTimeoutInSeconds: number;
   let requestHandler: RequestHandler;
-  const maxFileSize = 20000000; // 20MB
-  const fetchTimeoutInSeconds = 1;
 
-  beforeEach(() => {
-    requestHandler = new RequestHandler(fetchTimeoutInSeconds);
+  beforeAll(async (done) => {
+    maxFileSize = 20000000; // 20MB
+    fetchTimeoutInSeconds = 1;
+    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    done();
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
