@@ -19,16 +19,7 @@ describe('IpfsStorage', () => {
 
   describe('read', () => {
     it('should return the pinned content for the given hash.', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: 1024,
-        CumulativeSize: 1024
-      };
       const mockContent = Buffer.from('ipfs');
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
       spyOn(ipfsStorage['node'], 'cat').and.returnValue(new MockAsyncIterable(mockContent, mockContent, 1));
 
@@ -38,101 +29,7 @@ describe('IpfsStorage', () => {
       expect(expectedContent).toEqual(fetchedContent.content!);
     });
 
-    it('should return not found if stat throws error', async () => {
-      spyOn(ipfsStorage['node'].object, 'stat').and.throwError('A test error thrown by unit test');
-
-      const mockFetchContentFunction = async () => {
-        return {
-          code: FetchResultCode.Success,
-          content: Buffer.from('ipfs')
-        };
-      };
-      spyOn(ipfsStorage as any, 'fetchContent').and.callFake(mockFetchContentFunction);
-      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
-
-      const expectedErrorCode = FetchResultCode.NotFound;
-      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
-      expect(expectedErrorCode).toEqual(fetchedContent.code);
-    });
-
-    it('should return size exceeded if size labeled is greater than maxFileSize limit.', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: 9999999999,
-        CumulativeSize: 999999999999
-      };
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
-
-      const mockFetchContentFunction = async () => {
-        return {
-          code: FetchResultCode.Success,
-          content: Buffer.from('ipfs')
-        };
-      };
-      spyOn(ipfsStorage as any, 'fetchContent').and.callFake(mockFetchContentFunction);
-      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
-
-      const expectedErrorCode = FetchResultCode.MaxSizeExceeded;
-      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
-      expect(expectedErrorCode).toEqual(fetchedContent.code);
-    });
-
-    it('should return not found if size labeled is undefined.', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: undefined,
-        CumulativeSize: 999999999999
-      };
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
-
-      const mockFetchContentFunction = async () => {
-        return {
-          code: FetchResultCode.Success,
-          content: Buffer.from('ipfs')
-        };
-      };
-      spyOn(ipfsStorage as any, 'fetchContent').and.callFake(mockFetchContentFunction);
-      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
-
-      const expectedErrorCode = FetchResultCode.NotFound;
-      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
-      expect(expectedErrorCode).toEqual(fetchedContent.code);
-    });
-
-    it('should return not found if stat returns undefined.', async () => {
-      const mockContentStat = undefined;
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
-
-      const mockFetchContentFunction = async () => {
-        return {
-          code: FetchResultCode.Success,
-          content: Buffer.from('ipfs')
-        };
-      };
-      spyOn(ipfsStorage as any, 'fetchContent').and.callFake(mockFetchContentFunction);
-      spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
-
-      const expectedErrorCode = FetchResultCode.NotFound;
-      const fetchedContent = await ipfsStorage.read('abc123', maxFileSize);
-      expect(expectedErrorCode).toEqual(fetchedContent.code);
-    });
-
     it('should return not a file if cat throws an error', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: 1024,
-        CumulativeSize: 1024
-      };
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
       spyOn(ipfsStorage['node'], 'cat').and.throwError('error thrown by test');
 
@@ -142,15 +39,6 @@ describe('IpfsStorage', () => {
     });
 
     it('should throw unexpected error if cat.next throws an unexpected error', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: 1024,
-        CumulativeSize: 1024
-      };
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
 
       const mockIterable = new MockAsyncIterable();
@@ -168,15 +56,6 @@ describe('IpfsStorage', () => {
     });
 
     it('should return size exceeded if content size exceeds maxFileSize during download.', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: 1024,
-        CumulativeSize: 1024
-      };
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
 
       // this creates a buffer with size 1 bigger than max allowed
@@ -190,15 +69,6 @@ describe('IpfsStorage', () => {
     });
 
     it('should return not found if cat next result is undefined', async () => {
-      const mockContentStat = {
-        Hash: 'dummyHahs',
-        NumLinks: 0,
-        BlockSize: 1,
-        LinksSize: 0,
-        DataSize: 1024,
-        CumulativeSize: 1024
-      };
-      spyOn(ipfsStorage['node'].object, 'stat').and.returnValue(Promise.resolve(mockContentStat));
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
 
       const mockIterator = new MockAsyncIterable(undefined, undefined);

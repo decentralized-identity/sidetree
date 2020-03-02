@@ -30,7 +30,7 @@ export default class RequestHandler {
     try {
       ipfsStorage = await IpfsStorage.createSingleton(repo);
     } catch (e) {
-      if (e instanceof IpfsError && e.code === ErrorCode.ipfsStorageInstanceCanOnlyBeCreatedOnce) {
+      if (e instanceof IpfsError && e.code === ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce) {
         console.debug('IpfsStorage create was called twice, attempting to call get instead: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
         ipfsStorage = IpfsStorage.getSingleton();
       } else {

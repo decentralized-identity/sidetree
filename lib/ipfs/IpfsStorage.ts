@@ -20,7 +20,7 @@ export default class IpfsStorage {
    */
   public static async createSingleton (repo?: any): Promise<IpfsStorage> {
     if (IpfsStorage.ipfsStorageSingleton !== undefined) {
-      throw new IpfsError(ErrorCode.ipfsStorageInstanceCanOnlyBeCreatedOnce,
+      throw new IpfsError(ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce,
         'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
     }
 
@@ -38,7 +38,7 @@ export default class IpfsStorage {
    */
   public static getSingleton (): IpfsStorage {
     if (IpfsStorage.ipfsStorageSingleton === undefined) {
-      throw new IpfsError(ErrorCode.ipfsStorageInstanceGetHasToBeCalledAfterCreate,
+      throw new IpfsError(ErrorCode.IpfsStorageInstanceGetHasToBeCalledAfterCreate,
         'IpfsStorage is a singleton, Please use the createSingleton method before get');
     }
     return IpfsStorage.ipfsStorageSingleton;
@@ -58,24 +58,6 @@ export default class IpfsStorage {
    *          The result `code` is set to `FetchResultCode.NotAFile` if the content being downloaded is not a file (e.g. a directory).
    */
   public async read (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
-    // If we hit error attempting to fetch the content metadata, return not-found.
-    let contentMetadata = undefined;
-    try {
-      contentMetadata = await this.node.object.stat(hash);
-    } catch (error) {
-      console.debug(`Error thrown while executing ipfs.stat for CID ${hash}: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
-      return { code: FetchResultCode.NotFound };
-    }
-
-    if (contentMetadata === undefined || contentMetadata.DataSize === undefined) {
-      return { code: FetchResultCode.NotFound };
-    }
-
-    if (contentMetadata.DataSize > maxSizeInBytes) {
-      console.info(`Size of ${contentMetadata.DataSize} bytes is greater than the ${maxSizeInBytes} data size limit for CID ${hash}.`);
-      return { code: FetchResultCode.MaxSizeExceeded };
-    }
-
     const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
 
     // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
