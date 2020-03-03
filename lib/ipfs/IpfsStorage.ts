@@ -1,6 +1,8 @@
 import * as IPFS from 'ipfs';
+import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
+import IpfsError from './IpfsError';
 
 /**
  * Class that implements the IPFS Storage functionality.
@@ -9,27 +11,41 @@ export default class IpfsStorage {
 
   /**  IPFS node instance  */
   private node: IPFS;
-  /**  IPFS Storage class object  */
-  static ipfsStorageInstance: IpfsStorage;
+
+  /** singleton holding the instance of ipfsStorage to use */
+  private static ipfsStorageSingleton: IpfsStorage | undefined;
 
   /**
-   * Static method to have a single instance of class and mock in unit tests
+   * Create and return the singleton instance of the ipfsStorage if doesn't already exist
    */
-  public static create (repo?: any): IpfsStorage {
-    if (!IpfsStorage.ipfsStorageInstance) {
-      IpfsStorage.ipfsStorageInstance = new IpfsStorage(repo);
+  public static async createSingleton (repo?: any): Promise<IpfsStorage> {
+    if (IpfsStorage.ipfsStorageSingleton !== undefined) {
+      throw new IpfsError(ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce,
+        'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
     }
 
-    return IpfsStorage.ipfsStorageInstance;
+    const localRepoName = 'sidetree-ipfs';
+    const options = {
+      repo: repo !== undefined ? repo : localRepoName
+    };
+    const node = await IPFS.create(options);
+    IpfsStorage.ipfsStorageSingleton = new IpfsStorage(node);
+    return IpfsStorage.ipfsStorageSingleton;
   }
 
-  private constructor (repo?: any) {
-    const repoName = 'sidetree-ipfs';
-    const options = {
-      repo: repo !== undefined ? repo : repoName
-    };
+  /**
+   * Get the singleton instance of the ipfsStorage if exists.
+   */
+  public static getSingleton (): IpfsStorage {
+    if (IpfsStorage.ipfsStorageSingleton === undefined) {
+      throw new IpfsError(ErrorCode.IpfsStorageInstanceGetHasToBeCalledAfterCreate,
+        'IpfsStorage is a singleton, Please use the createSingleton method before get');
+    }
+    return IpfsStorage.ipfsStorageSingleton;
+  }
 
-    this.node = new IPFS(options);
+  private constructor (node: IPFS) {
+    this.node = node;
   }
 
   /**
@@ -42,35 +58,9 @@ export default class IpfsStorage {
    *          The result `code` is set to `FetchResultCode.NotAFile` if the content being downloaded is not a file (e.g. a directory).
    */
   public async read (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
-    // If we hit error attempting to fetch the content metadata, return not-found.
-    let contentMetadata = undefined;
-    try {
-      contentMetadata = await (this.node as any).object.stat(hash);
-    } catch (error) {
-      console.info(error);
-      return { code: FetchResultCode.NotFound };
-    }
-
-    // If content size cannot be found, return not-found.
-    if (contentMetadata === undefined || contentMetadata.CumulativeSize === undefined) {
-      return { code: FetchResultCode.NotFound };
-    }
-
-    // NOTE: IPFS API does not have an API for finding out only the content size,
-    // IPFS API only provides the "cumulative size" that includes the additional metadata on how the Merkle DAG is formed.
-    // So here we account for the additional space used by performing a more lenient max size check by 10%,
-    // we will track the exact conent size of content later when we fetch the content if the content passes this size check.
-    const adjustedMaxSize = maxSizeInBytes * 1.1;
-    if (contentMetadata.CumulativeSize > adjustedMaxSize) {
-      console.info(`Cumulative size of ${contentMetadata.CumulativeSize} bytes is greater than the ${adjustedMaxSize} cumulative size limit.`);
-      return { code: FetchResultCode.MaxSizeExceeded };
-    }
-
-    // NOTE: it appears that even if we destroy the readable stream half way, IPFS node in the backend will complete fetch of the file,
-    // so the size check above although not 100 accurate, is necessary as an optimzation.
     const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
 
-    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already exisitng object does not create a duplicate.
+    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
     if (fetchResult.code === FetchResultCode.Success) {
       await this.node.pin.add(hash);
     }
@@ -83,64 +73,50 @@ export default class IpfsStorage {
    * This method also allows easy mocking in tests.
    */
   private async fetchContent (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
-    // files.getReadableStream() fetches the content from network if not available in local repo and stores in cache which will be garbage collectable.
-    const readableStream = await (this.node as any).getReadableStream(hash);
 
-    let fetchResult: FetchResult = { code: FetchResultCode.Success };
+    const fetchResult: FetchResult = { code: FetchResultCode.Success };
     let bufferChunks: Buffer[] = [];
     let currentContentSize = 0;
-    let resolveFunction: any;
-    let rejectFunction: any;
-
-    const fetchContent = new Promise((resolve, reject) => {
-      resolveFunction = resolve;
-      rejectFunction = reject;
-    });
-
-    readableStream.on('data', (file: any) => {
-      // If content is of directory type, set return code as "not a file", no need to setup content stream listeners.
-      if (file.type === 'dir') {
-        console.info(`Content is of directory type for hash ${hash}, skipping this bad request.`);
-        fetchResult.code = FetchResultCode.NotAFile;
-
-        readableStream.destroy();
-        return;
+    let iterator: AsyncIterator<Buffer>;
+    try {
+      iterator = this.node.cat(hash);
+    } catch (e) {
+      // when an error is thrown, certain error message denote that the CID is not a file, anything else is unexpected error from ipfs
+      console.debug(`Error thrown while downloading content from IPFS for CID ${hash}: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      if (IpfsStorage.isIpfsErrorNotAFileError(e.message)) {
+        return { code: FetchResultCode.NotAFile };
+      } else {
+        return { code: FetchResultCode.NotFound };
       }
-
-      // Else setting all the even listners and resume content stream fetching.
-      file.content.on('data', (chunk: Buffer) => {
-        currentContentSize += chunk.length;
-
-        // If content size exceeds the max size limit, immediate stop further stream reading.
-        if (currentContentSize > maxSizeInBytes) {
-          console.info(`Content stream reached ${currentContentSize} bytes which is greater than the ${maxSizeInBytes} bytes limit.`);
-          fetchResult.code = FetchResultCode.MaxSizeExceeded;
-
-          readableStream.destroy();
-          return;
-        }
-
-        bufferChunks.push(chunk);
-      });
-
-      file.content.on('error', () => {
-        rejectFunction();
-      });
-      file.content.on('close', () => {
-        resolveFunction();
-      });
-      file.content.on('end', () => {
-        resolveFunction();
-      });
-
-      file.content.resume();
-    });
-
-    await fetchContent;
-
-    if (fetchResult.code === FetchResultCode.Success) {
-      fetchResult.content = Buffer.concat(bufferChunks);
     }
+
+    let result: IteratorResult<Buffer>;
+    try {
+      do {
+        result = await iterator.next();
+        // the linter cannot detect that result.value can be undefined, so we disable it. The code should still compile
+        /* tslint:disable-next-line */
+        if (result.value !== undefined) {
+          const chunk = result.value;
+          currentContentSize += chunk.byteLength;
+          if (maxSizeInBytes < currentContentSize) {
+            console.info(`Max size of ${maxSizeInBytes} bytes exceeded by CID ${hash}`);
+            return { code: FetchResultCode.MaxSizeExceeded };
+          }
+          bufferChunks.push(chunk);
+        }
+      // done will always be true if it is the last element. When it is not, it can be false or undefined, which in js !undefined === true
+      } while (!result.done);
+    } catch (e) {
+      console.error(`unexpected error thrown for CID ${hash}, please investigate and fix: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
+      throw e;
+    }
+
+    if (bufferChunks.length === 0) {
+      return { code: FetchResultCode.NotFound };
+    }
+
+    fetchResult.content = Buffer.concat(bufferChunks);
 
     return fetchResult;
   }
@@ -151,14 +127,25 @@ export default class IpfsStorage {
    * @returns The multihash content identifier of the stored content.
    */
   public async write (content: Buffer): Promise<string> {
-    const files = await this.node.add(content);
-    return files[0].hash;
+    const file = await this.node.add(content).next();
+    return file.value.cid.toString();
   }
 
   /**
    * Stops this IPFS store.
    */
-  public stop () {
-    this.node.stop();
+  public async stop () {
+    await this.node.stop();
   }
+
+  /**
+   * Checks if a certain error message corresponds to the not a file error from ipfs
+   * @param errorText the error text that matches the ipfs implementation of not a file error
+   */
+  private static isIpfsErrorNotAFileError (errorText: string) {
+    // a set of error texts ipfs use to denote not a file
+    const notAFileErrorTextSet = new Set(['this dag node is a directory', 'this dag node has no content']);
+    return notAFileErrorTextSet.has(errorText);
+  }
+
 }

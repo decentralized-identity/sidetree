@@ -1,5 +1,7 @@
 import base64url from 'base64url';
+import ErrorCode from '../ipfs/ErrorCode';
 import FetchResultCode from '../common/FetchResultCode';
+import IpfsError from './IpfsError';
 import IpfsStorage from './IpfsStorage';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import { ResponseModel, ResponseStatus } from '../common/Response';
@@ -19,12 +21,33 @@ export default class RequestHandler {
   private serviceInfo: ServiceInfo;
 
   /**
+   * create an instance of request handler
+   * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
+   * @param repo Optional IPFS datastore implementation.
+   */
+  public static async create (fetchTimeoutInSeconds: number, repo?: any) {
+    let ipfsStorage: IpfsStorage;
+    try {
+      ipfsStorage = await IpfsStorage.createSingleton(repo);
+    } catch (e) {
+      if (e instanceof IpfsError && e.code === ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce) {
+        console.debug('IpfsStorage create was called twice, attempting to call get instead: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        ipfsStorage = IpfsStorage.getSingleton();
+      } else {
+        console.error('unexpected error, please investigate and fix: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        throw e;
+      }
+    }
+    return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
+  }
+
+  /**
    * Constructs the Sidetree IPFS request handler.
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
    * @param repo Optional IPFS datastore implementation.
    */
-  public constructor (private fetchTimeoutInSeconds: number, repo?: any) {
-    this.ipfsStorage = IpfsStorage.create(repo);
+  private constructor (private fetchTimeoutInSeconds: number, ipfsStorage: IpfsStorage) {
+    this.ipfsStorage = ipfsStorage;
     this.serviceInfo = new ServiceInfo('ipfs');
   }
 
@@ -54,9 +77,9 @@ export default class RequestHandler {
 
     try {
       const base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
-      const fetchPromsie = this.ipfsStorage.read(base58EncodedMultihashString, maxSizeInBytes);
+      const fetchPromise = this.ipfsStorage.read(base58EncodedMultihashString, maxSizeInBytes);
 
-      const fetchResult = await Timeout.timeout(fetchPromsie, this.fetchTimeoutInSeconds * 1000);
+      const fetchResult = await Timeout.timeout(fetchPromise, this.fetchTimeoutInSeconds * 1000);
 
       // Return not-found if fetch timed.
       if (fetchResult instanceof Error) {
