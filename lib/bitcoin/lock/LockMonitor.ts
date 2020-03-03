@@ -60,6 +60,11 @@ export default class LockMonitor {
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
+
+    this.pollPeriodInSeconds = 60;
+    this.lockPeriodInBlocks = 5;
+    this.desiredLockAmountInSatoshis = 1000;
+    this.transactionFeesAmountInSatoshis = 2000;
   }
 
   /**
@@ -233,10 +238,9 @@ export default class LockMonitor {
 
   private async isTransactionWrittenOnBitcoin (transactionId: string): Promise<boolean> {
     try {
-      await this.bitcoinClient.getRawTransaction(transactionId);
+      const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
 
-      // no exception thrown == transaction found.
-      return true;
+      return transaction.numberOfConfirmations > 0;
     } catch (e) {
       console.warn(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }

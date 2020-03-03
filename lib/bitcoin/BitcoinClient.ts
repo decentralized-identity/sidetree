@@ -18,6 +18,8 @@ export default class BitcoinClient {
   /** The estimated number of blocks written on bitcoin in one hour */
   public static estimatedNumberOfBlocksInOneHour = 6;
 
+  private static readonly confirmationsPropertyName = 'confirmations';
+
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
 
@@ -161,11 +163,13 @@ export default class BitcoinClient {
     const [freezeTransaction, redeemScriptAsHex] =
       await this.createSpendToFreezeTransaction(existingLockTransaction, existingLockUntilBlock, newLockUntilBlock);
 
+    const serializedTransaction = BitcoinClient.serializeSpendTransaction(freezeTransaction);
+
     return {
       transactionId: freezeTransaction.id,
       transactionFee: freezeTransaction.getFee(),
       redeemScriptAsHex: redeemScriptAsHex,
-      serializedTransactionObject: freezeTransaction.serialize()
+      serializedTransactionObject: serializedTransaction
     };
   }
 
@@ -181,11 +185,13 @@ export default class BitcoinClient {
 
     const releaseLockTransaction = await this.createSpendToWalletTransaction(existingLockTransaction, existingLockUntilBlock);
 
+    const serializedTransaction = BitcoinClient.serializeSpendTransaction(releaseLockTransaction);
+
     return {
       transactionId: releaseLockTransaction.id,
       transactionFee: releaseLockTransaction.getFee(),
       redeemScriptAsHex: '',
-      serializedTransactionObject: releaseLockTransaction.serialize()
+      serializedTransactionObject: serializedTransaction
     };
   }
 
@@ -207,7 +213,7 @@ export default class BitcoinClient {
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
-      const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer);
+      const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer, block.confirmations);
       return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
     });
 
@@ -400,19 +406,27 @@ export default class BitcoinClient {
       method: 'getrawtransaction',
       params: [
         transactionId,  // transaction id
-        0   // get the raw hex-encoded string
+        true            // verbose output   // get the raw hex-encoded string
       ]
     };
 
-    const hexEncodedTransaction = await this.rpcCall(request, true);
+    const rawTransactionData = await this.rpcCall(request, true);
+    const hexEncodedTransaction = rawTransactionData.hex;
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    return BitcoinClient.createTransactionFromBuffer(transactionBuffer);
+    return BitcoinClient.createTransactionFromBuffer(transactionBuffer, rawTransactionData.confirmations);
   }
 
   // This function is specifically created to help with unit testing.
-  private static createTransactionFromBuffer (buffer: Buffer): Transaction {
-    return new Transaction(buffer);
+  private static createTransactionFromBuffer (buffer: Buffer, confirmations?: any): Transaction {
+
+    const transaction = new Transaction(buffer);
+
+    // Ensure that confirmations is a number and assign it to the outgoing object
+    const confirmationsValue = Number.isNaN(confirmations) ? 0 : confirmations;
+    Object.defineProperty(transaction, BitcoinClient.confirmationsPropertyName, { value: confirmationsValue, writable: false });
+
+    return transaction;
   }
 
   private async createTransaction (transactionData: string, minFeeInSatoshis: number): Promise<Transaction> {
@@ -606,6 +620,14 @@ export default class BitcoinClient {
     return redeemScript;
   }
 
+  private static serializeSpendTransaction (spendTransaction: Transaction): string {
+    // bitcore-lib does not support creating the freeze transaction natively so we have to manually modify the
+    // inputs to add signatures/scripts etc. This means that when we try to serialize, the bitcore-lib throws
+    // as it is unable to verify the signatures. So for serialization, we will pass in special options to
+    // disable those checks.
+    return (spendTransaction as any).serialize({ disableIsFullySigned: true });
+  }
+
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
     return {
       previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
@@ -622,13 +644,23 @@ export default class BitcoinClient {
 
   private static createBitcoinTransactionModel (bitcoreTransaction: Transaction): BitcoinTransactionModel {
 
+    // We are adding the 'confirmations' property to the Transaction object internally so we want
+    // to make sure that the caller has this property set. Since this is a private function and
+    // cannot be called by outside, we are just throwing a generic error.
+    const confirmationsValue = (bitcoreTransaction as any)['confirmations'];
+
+    if (!confirmationsValue) {
+      throw new Error(`Expected property not present on the object: ${BitcoinClient.confirmationsPropertyName}`);
+    }
+
     const bitcoinInputs = bitcoreTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
     const bitcoinOutputs = bitcoreTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
 
     return {
       inputs: bitcoinInputs,
       outputs: bitcoinOutputs,
-      id: bitcoreTransaction.id
+      id: bitcoreTransaction.id,
+      numberOfConfirmations: confirmationsValue
     };
   }
 

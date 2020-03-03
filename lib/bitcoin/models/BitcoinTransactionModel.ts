@@ -8,4 +8,5 @@ export default interface BitcoinTransactionModel {
   outputs: BitcoinOutputModel[];
   inputs: BitcoinInputModel[];
   id: string;
+  numberOfConfirmations: number;
 }

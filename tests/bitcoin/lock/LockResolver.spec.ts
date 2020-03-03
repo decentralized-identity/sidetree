@@ -55,11 +55,15 @@ describe('LockResolver', () => {
       };
       const deserializeSpy = spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockLockIdentifier);
 
+      const mockLockStartBlock = 12345;
+      spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(12345));
+
       const mockValueTimeLock: ValueTimeLockModel = {
         amountLocked: 1000,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 1900
+        unlockTransactionTime: 1900,
+        lockTransactionTime: mockLockStartBlock
       };
       const resolveSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
 
@@ -85,6 +89,7 @@ describe('LockResolver', () => {
 
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some transaction id',
+        numberOfConfirmations: 5,
         inputs: [],
         outputs: [
           { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
@@ -101,9 +106,13 @@ describe('LockResolver', () => {
       const mockSerializedLockIdentifier = 'mocked-locked-identifier';
       spyOn(LockIdentifierSerializer, 'serialize').and.returnValue(mockSerializedLockIdentifier);
 
+      const mockLockStartBlock = 12345;
+      spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(12345));
+
       const expectedOutput: ValueTimeLockModel = {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
+        lockTransactionTime: mockLockStartBlock,
         unlockTransactionTime: lockBlockInput,
         owner: validPublicKeyHashOutString
       };
@@ -147,6 +156,7 @@ describe('LockResolver', () => {
 
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some transaction id',
+        numberOfConfirmations: 5,
         inputs: [],
         outputs: [
           { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
@@ -236,7 +246,7 @@ describe('LockResolver', () => {
 
   describe('getTransaction', () => {
     it('should return true if the bitcoin client returns the transaction', async () => {
-      const mockTxn: BitcoinTransactionModel = { id: 'id', inputs: [], outputs: [] };
+      const mockTxn: BitcoinTransactionModel = { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] };
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
 
       const actual = await lockResolver['getTransaction']('input id');
@@ -249,6 +259,54 @@ describe('LockResolver', () => {
       await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
       () => lockResolver['getTransaction']('input id'),
       ErrorCode.LockResolverTransactionNotFound);
+    });
+  });
+
+  describe('calculateLockStartingBlock', () => {
+    it('should calculate the correct starting block', async (done) => {
+      const mockTransaction: BitcoinTransactionModel = {
+        id: 'some id',
+        numberOfConfirmations: 23,
+        inputs: [],
+        outputs: []
+      };
+
+      const mockCurrentBlockHeight = 200;
+      spyOn(lockResolver['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
+
+      const actual = await lockResolver['calculateLockStartingBlock'](mockTransaction);
+      expect(actual).toEqual(mockCurrentBlockHeight - mockTransaction.numberOfConfirmations);
+      done();
+    });
+
+    it('should throw if the number of confiramtions on the input is < 0', async (done) => {
+      const mockTransaction: BitcoinTransactionModel = {
+        id: 'some id',
+        numberOfConfirmations: -2,
+        inputs: [],
+        outputs: []
+      };
+
+      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+        () => lockResolver['calculateLockStartingBlock'](mockTransaction),
+        ErrorCode.LockResolverTransactionNotConfirmed);
+
+      done();
+    });
+
+    it('should throw if the number of confiramtions on the input is 0', async (done) => {
+      const mockTransaction: BitcoinTransactionModel = {
+        id: 'some id',
+        numberOfConfirmations: 0,
+        inputs: [],
+        outputs: []
+      };
+
+      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+        () => lockResolver['calculateLockStartingBlock'](mockTransaction),
+        ErrorCode.LockResolverTransactionNotConfirmed);
+
+      done();
     });
   });
 });

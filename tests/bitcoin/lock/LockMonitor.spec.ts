@@ -114,7 +114,8 @@ describe('LockMonitor', () => {
         amountLocked: 300,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 12323
+        unlockTransactionTime: 12323,
+        lockTransactionTime: 1220
       };
 
       lockMonitor['currentLockState'] = createLockState(undefined, mockCurrentValueLock, 'confirmed');
@@ -130,7 +131,8 @@ describe('LockMonitor', () => {
         amountLocked: 300,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 12323
+        unlockTransactionTime: 12323,
+        lockTransactionTime: 1220
       };
 
       const mockCurrentLockInfo = createLockState(undefined, mockCurrentValueLock, 'pending');
@@ -211,7 +213,8 @@ describe('LockMonitor', () => {
         amountLocked: 300,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 12323
+        unlockTransactionTime: 12323,
+        lockTransactionTime: 1220
       };
 
       const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock, 'confirmed');
@@ -247,7 +250,8 @@ describe('LockMonitor', () => {
         amountLocked: 300,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 12323
+        unlockTransactionTime: 12323,
+        lockTransactionTime: 1220
       };
 
       const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock, 'confirmed');
@@ -283,7 +287,8 @@ describe('LockMonitor', () => {
         amountLocked: 300,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 12323
+        unlockTransactionTime: 12323,
+        lockTransactionTime: 1220
       };
 
       const mockCurrentLockInfo = createLockState(mockSavedLock, mockCurrentValueLock, 'confirmed');
@@ -377,7 +382,8 @@ describe('LockMonitor', () => {
         amountLocked: 5000,
         identifier: 'identifier',
         owner: 'owner',
-        unlockTransactionTime: 1234
+        unlockTransactionTime: 1234,
+        lockTransactionTime: 1220
       };
       const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
 
@@ -430,11 +436,19 @@ describe('LockMonitor', () => {
 
   describe('isTransactionWrittenOnBitcoin', () => {
     it('should return true if the bitcoin client returns the transaction', async () => {
-      const mockTxn: BitcoinTransactionModel = { id: 'id', inputs: [], outputs: [] };
+      const mockTxn: BitcoinTransactionModel = { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] };
       spyOn(lockMonitor['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
 
       const actual = await lockMonitor['isTransactionWrittenOnBitcoin']('input id');
       expect(actual).toBeTruthy();
+    });
+
+    it('should return true if the number of confiramtions is 0', async () => {
+      const mockTxn: BitcoinTransactionModel = { id: 'id', numberOfConfirmations: 0, inputs: [], outputs: [] };
+      spyOn(lockMonitor['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
+
+      const actual = await lockMonitor['isTransactionWrittenOnBitcoin']('input id');
+      expect(actual).toBeFalsy();
     });
 
     it('should return false if there is an exception thrown by the bitcoin client', async () => {
@@ -504,7 +518,8 @@ describe('LockMonitor', () => {
         amountLocked: 5000,
         identifier: 'some identifier',
         owner: 'owner',
-        unlockTransactionTime: mockUnlockTxnTime
+        unlockTransactionTime: mockUnlockTxnTime,
+        lockTransactionTime: 1220
       };
 
       const lastSavedLockInfoInput: SavedLockedModel = {
@@ -535,7 +550,8 @@ describe('LockMonitor', () => {
         amountLocked: 5000,
         identifier: 'some identifier',
         owner: 'owner',
-        unlockTransactionTime: mockUnlockTxnTime
+        unlockTransactionTime: mockUnlockTxnTime,
+        lockTransactionTime: 1220
       };
 
       const mockLastSavedDesiredLockAmount = 500;
@@ -566,7 +582,8 @@ describe('LockMonitor', () => {
         amountLocked: 5000,
         identifier: 'some identifier',
         owner: 'owner',
-        unlockTransactionTime: mockUnlockTxnTime
+        unlockTransactionTime: mockUnlockTxnTime,
+        lockTransactionTime: 1220
       };
 
       const mockLastSavedDesiredLockAmount = 500;
@@ -597,7 +614,8 @@ describe('LockMonitor', () => {
         amountLocked: 5000,
         identifier: 'some identifier',
         owner: 'owner',
-        unlockTransactionTime: mockUnlockTxnTime
+        unlockTransactionTime: mockUnlockTxnTime,
+        lockTransactionTime: 1220
       };
 
       const mockLastSavedDesiredLockAmount = 500;
@@ -631,7 +649,8 @@ describe('LockMonitor', () => {
         amountLocked: 5000,
         identifier: 'some identifier',
         owner: 'owner',
-        unlockTransactionTime: mockUnlockTxnTime
+        unlockTransactionTime: mockUnlockTxnTime,
+        lockTransactionTime: 1220
       };
 
       const mockLastSavedDesiredLockAmount = 500;
@@ -700,7 +719,8 @@ describe('LockMonitor', () => {
         amountLocked: 1234,
         identifier: 'abc',
         unlockTransactionTime: 1234,
-        owner: 'some - owner'
+        owner: 'some - owner',
+        lockTransactionTime: 1220
       };
 
       // Ensure that the desired lock amount is not too much.
@@ -739,7 +759,8 @@ describe('LockMonitor', () => {
         amountLocked: 1234,
         identifier: 'abc',
         owner: 'wallet address',
-        unlockTransactionTime: 1234
+        unlockTransactionTime: 1234,
+        lockTransactionTime: 1220
       };
 
       // Ensure that the desired lock amount is more to cause the error
@@ -786,7 +807,8 @@ describe('LockMonitor', () => {
         amountLocked: 123,
         identifier: 'abc',
         owner: 'wallet address',
-        unlockTransactionTime: 1234
+        unlockTransactionTime: 1234,
+        lockTransactionTime: 1220
       };
 
       const desiredLockAmountInput = 2500;
