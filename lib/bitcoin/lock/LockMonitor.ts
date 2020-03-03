@@ -63,7 +63,7 @@ export default class LockMonitor {
 
     this.pollPeriodInSeconds = 60;
     this.lockPeriodInBlocks = 5;
-    this.desiredLockAmountInSatoshis = 0;
+    this.desiredLockAmountInSatoshis = 1000;
     this.transactionFeesAmountInSatoshis = 2000;
   }
 
@@ -115,6 +115,8 @@ export default class LockMonitor {
     } finally {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * this.pollPeriodInSeconds);
     }
+
+    console.info(`Ending periodic polling for the lock monitor.`);
   }
 
   private async handlePeriodicPolling (): Promise<void> {
