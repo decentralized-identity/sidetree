@@ -155,11 +155,11 @@ export default class LockResolver {
   }
 
   private async calculateLockStartingBlock (transaction: BitcoinTransactionModel): Promise<number> {
-    if (transaction.numberOfConfirmations === 0 || transaction.numberOfConfirmations < 0) {
+    if (transaction.confirmations === 0 || transaction.confirmations < 0) {
       throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed, `transaction id: ${transaction.id}`);
     }
 
     const currentBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    return currentBlockHeight - transaction.numberOfConfirmations;
+    return currentBlockHeight - transaction.confirmations - 1;
   }
 }

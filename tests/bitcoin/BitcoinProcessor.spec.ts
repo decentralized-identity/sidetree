@@ -1298,7 +1298,14 @@ describe('BitcoinProcessor', () => {
         hash: randomString(),
         height: blockHeight,
         previousHash: randomString(),
-        transactions: tx.map((txn) => { return BitcoinClient['createBitcoinTransactionModel'](txn); })
+        transactions: tx.map((txn) => {
+          return {
+            id: txn.id,
+            confirmations: randomNumber(),
+            inputs: txn.inputs.map((input) => { return BitcoinClient['createBitcoinInputModel'](input); }),
+            outputs: txn.outputs.map((output) => { return BitcoinClient['createBitcoinOutputModel'](output); })
+          };
+        })
       };
     }
 
@@ -1310,9 +1317,9 @@ describe('BitcoinProcessor', () => {
         hash: blockHash,
         previousHash: 'previous_hash',
         transactions: [
-          { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] },
-          { id: 'id2', numberOfConfirmations: 5, inputs: [], outputs: [] },
-          { id: 'id3', numberOfConfirmations: 5, inputs: [], outputs: [] }
+          { id: 'id', confirmations: 5, inputs: [], outputs: [] },
+          { id: 'id2', confirmations: 5, inputs: [], outputs: [] },
+          { id: 'id3', confirmations: 5, inputs: [], outputs: [] }
         ]
       };
 
@@ -1367,8 +1374,8 @@ describe('BitcoinProcessor', () => {
         hash: blockHash,
         previousHash: 'previous_hash',
         transactions: [
-          { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] },
-          { id: 'id2', numberOfConfirmations: 5, inputs: [], outputs: [] }
+          { id: 'id', confirmations: 5, inputs: [], outputs: [] },
+          { id: 'id2', confirmations: 5, inputs: [], outputs: [] }
         ]
       };
 
@@ -1395,7 +1402,7 @@ describe('BitcoinProcessor', () => {
         hash: blockHash,
         previousHash: 'previous_hash',
         transactions: [
-          { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] }
+          { id: 'id', confirmations: 5, inputs: [], outputs: [] }
         ]
       };
 
@@ -1513,7 +1520,7 @@ describe('BitcoinProcessor', () => {
     it('should return true if at least 1 output has sidetree data', async (done) => {
       const mockTxnModel: BitcoinTransactionModel = {
         id: 'id',
-        numberOfConfirmations: 5,
+        confirmations: 5,
         inputs: [],
         outputs: [
           { satoshis: 100, scriptAsmAsString: 'script' },
@@ -1540,7 +1547,7 @@ describe('BitcoinProcessor', () => {
     it('should return false if no output has sidetree data', async (done) => {
       const mockTxnModel: BitcoinTransactionModel = {
         id: 'id',
-        numberOfConfirmations: 5,
+        confirmations: 5,
         inputs: [],
         outputs: [
           { satoshis: 100, scriptAsmAsString: 'script' },

@@ -325,7 +325,7 @@ describe('LockMonitor', () => {
       expect(resolveLockSpy).not.toHaveBeenCalled();
     });
 
-    it('should rebroadcast if the last lock transaction is not found on the bitcoin network.', async () => {
+    it('should rebroadcast if the last lock transaction is not yet broadcasted.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
       const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError');
 
@@ -340,7 +340,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
 
-      spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(false));
+      spyOn(lockMonitor as any, 'isTransactionBroadcasted').and.returnValue(Promise.resolve(false));
 
       const expected = createLockState(mockLastLock, undefined, 'pending');
       const actual = await lockMonitor['getCurrentLockState']();
@@ -365,7 +365,7 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
 
-      spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
+      spyOn(lockMonitor as any, 'isTransactionBroadcasted').and.returnValue(Promise.resolve(true));
 
       const expected = createLockState(mockLastLock, undefined, 'none');
       const actual = await lockMonitor['getCurrentLockState']();
@@ -398,12 +398,68 @@ describe('LockMonitor', () => {
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
 
-      spyOn(lockMonitor as any, 'isTransactionWrittenOnBitcoin').and.returnValue(Promise.resolve(true));
+      spyOn(lockMonitor as any, 'isTransactionBroadcasted').and.returnValue(Promise.resolve(true));
 
       const expected = createLockState(mockLastLock, mockValueTimeLock, 'confirmed');
       const actual = await lockMonitor['getCurrentLockState']();
 
       expect(actual).toEqual(expected);
+      expect(rebroadcastSpy).not.toHaveBeenCalled();
+      expect(resolveLockSpy).toHaveBeenCalled();
+    });
+
+    it('should return pending if the lock resolver throws not-confirmed error.', async () => {
+      const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
+
+      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
+        throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed);
+      });
+
+      const mockLastLock: SavedLockedModel = {
+        createTimestamp: 121314,
+        desiredLockAmountInSatoshis: 98974,
+        rawTransaction: 'raw transaction',
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id',
+        type: SavedLockType.Relock
+      };
+
+      spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
+
+      spyOn(lockMonitor as any, 'isTransactionBroadcasted').and.returnValue(Promise.resolve(true));
+
+      const expected = createLockState(mockLastLock, undefined, 'pending');
+      const actual = await lockMonitor['getCurrentLockState']();
+
+      expect(actual).toEqual(expected);
+      expect(rebroadcastSpy).not.toHaveBeenCalled();
+      expect(resolveLockSpy).toHaveBeenCalled();
+    });
+
+    it('should return bubble up any unhandled exceptions.', async () => {
+      const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
+
+      const mockErrorCode = 'some other unhandled error code';
+      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
+        throw new BitcoinError(mockErrorCode);
+      });
+
+      const mockLastLock: SavedLockedModel = {
+        createTimestamp: 121314,
+        desiredLockAmountInSatoshis: 98974,
+        rawTransaction: 'raw transaction',
+        redeemScriptAsHex: 'redeem script as hex',
+        transactionId: 'transaction id',
+        type: SavedLockType.Relock
+      };
+
+      spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
+      spyOn(lockMonitor as any, 'isTransactionBroadcasted').and.returnValue(Promise.resolve(true));
+
+      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+        () => lockMonitor['getCurrentLockState'](),
+        mockErrorCode);
+
       expect(rebroadcastSpy).not.toHaveBeenCalled();
       expect(resolveLockSpy).toHaveBeenCalled();
     });
@@ -434,27 +490,19 @@ describe('LockMonitor', () => {
     });
   });
 
-  describe('isTransactionWrittenOnBitcoin', () => {
+  describe('isTransactionBroadcasted', () => {
     it('should return true if the bitcoin client returns the transaction', async () => {
-      const mockTxn: BitcoinTransactionModel = { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] };
+      const mockTxn: BitcoinTransactionModel = { id: 'id', confirmations: 5, inputs: [], outputs: [] };
       spyOn(lockMonitor['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
 
-      const actual = await lockMonitor['isTransactionWrittenOnBitcoin']('input id');
+      const actual = await lockMonitor['isTransactionBroadcasted']('input id');
       expect(actual).toBeTruthy();
-    });
-
-    it('should return true if the number of confiramtions is 0', async () => {
-      const mockTxn: BitcoinTransactionModel = { id: 'id', numberOfConfirmations: 0, inputs: [], outputs: [] };
-      spyOn(lockMonitor['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
-
-      const actual = await lockMonitor['isTransactionWrittenOnBitcoin']('input id');
-      expect(actual).toBeFalsy();
     });
 
     it('should return false if there is an exception thrown by the bitcoin client', async () => {
       spyOn(lockMonitor['bitcoinClient'], 'getRawTransaction').and.throwError('not found error.');
 
-      const actual = await lockMonitor['isTransactionWrittenOnBitcoin']('input id');
+      const actual = await lockMonitor['isTransactionBroadcasted']('input id');
       expect(actual).toBeFalsy();
     });
   });

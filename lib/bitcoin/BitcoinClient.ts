@@ -11,14 +11,24 @@ import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
+ * Structure (internal to this class) to store the transaction information
+ * as the bitcore-lib.Transaction object does not expose all the properties
+ * that we need.
+ */
+interface BitcoinClientTransaction {
+  id: string;
+  confirmations: number;
+  inputs: Transaction.Input[];
+  outputs: Transaction.Output[];
+}
+
+/**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
  */
 export default class BitcoinClient {
 
   /** The estimated number of blocks written on bitcoin in one hour */
   public static estimatedNumberOfBlocksInOneHour = 6;
-
-  private static readonly confirmationsPropertyName = 'confirmations';
 
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
@@ -213,7 +223,7 @@ export default class BitcoinClient {
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
-      const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer, block.confirmations);
+      const bitcoreTransaction = BitcoinClient.createBitcoinClientTransaction(transactionBuffer, block.confirmations);
       return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
     });
 
@@ -401,12 +411,12 @@ export default class BitcoinClient {
     return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
   }
 
-  private async getRawTransactionRpc (transactionId: string): Promise<Transaction> {
+  private async getRawTransactionRpc (transactionId: string): Promise<BitcoinClientTransaction> {
     const request = {
       method: 'getrawtransaction',
       params: [
         transactionId,  // transaction id
-        true            // verbose output   // get the raw hex-encoded string
+        true            // verbose output
       ]
     };
 
@@ -414,19 +424,24 @@ export default class BitcoinClient {
     const hexEncodedTransaction = rawTransactionData.hex;
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    return BitcoinClient.createTransactionFromBuffer(transactionBuffer, rawTransactionData.confirmations);
+    return BitcoinClient.createBitcoinClientTransaction(transactionBuffer, rawTransactionData.confirmations);
   }
 
   // This function is specifically created to help with unit testing.
-  private static createTransactionFromBuffer (buffer: Buffer, confirmations?: any): Transaction {
+  private static createTransactionFromBuffer (buffer: Buffer): Transaction {
+    return new Transaction(buffer);
+  }
 
-    const transaction = new Transaction(buffer);
+  private static createBitcoinClientTransaction (buffer: Buffer, confirmations: number): BitcoinClientTransaction {
 
-    // Ensure that confirmations is a number and assign it to the outgoing object
-    const confirmationsValue = Number.isNaN(confirmations) ? 0 : confirmations;
-    Object.defineProperty(transaction, BitcoinClient.confirmationsPropertyName, { value: confirmationsValue, writable: false });
+    const transaction = BitcoinClient.createTransactionFromBuffer(buffer);
 
-    return transaction;
+    return {
+      id: transaction.id,
+      confirmations: confirmations,
+      inputs: transaction.inputs,
+      outputs: transaction.outputs
+    };
   }
 
   private async createTransaction (transactionData: string, minFeeInSatoshis: number): Promise<Transaction> {
@@ -499,7 +514,7 @@ export default class BitcoinClient {
   }
 
   private async createSpendToFreezeTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoinClientTransaction,
     previousFreezeUntilBlock: number,
     freezeUntilBlock: number): Promise<[Transaction, string]> {
 
@@ -521,7 +536,7 @@ export default class BitcoinClient {
   }
 
   private async createSpendToWalletTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoinClientTransaction,
     previousFreezeUntilBlock: number): Promise<Transaction> {
 
     // tslint:disable-next-line: max-line-length
@@ -543,7 +558,7 @@ export default class BitcoinClient {
    * @param paytoAddress The address where the spend transaction should go to.
    */
   private async createSpendTransactionFromFrozenTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoinClientTransaction,
     previousFreezeUntilBlock: number,
     paytoAddress: Address): Promise<Transaction> {
 
@@ -588,7 +603,7 @@ export default class BitcoinClient {
   }
 
   private createUnspentOutputFromFrozenTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoinClientTransaction,
     previousFreezeUntilBlock: number): Transaction.UnspentOutput {
 
     const previousFreezeAmountInSatoshis = previousFreezeTransaction.outputs[0].satoshis;
@@ -642,25 +657,16 @@ export default class BitcoinClient {
     };
   }
 
-  private static createBitcoinTransactionModel (bitcoreTransaction: Transaction): BitcoinTransactionModel {
+  private static createBitcoinTransactionModel (bitcoinClientTransaction: BitcoinClientTransaction): BitcoinTransactionModel {
 
-    // We are adding the 'confirmations' property to the Transaction object internally so we want
-    // to make sure that the caller has this property set. Since this is a private function and
-    // cannot be called by outside, we are just throwing a generic error.
-    const confirmationsValue = (bitcoreTransaction as any)['confirmations'];
-
-    if (!confirmationsValue) {
-      throw new Error(`Expected property not present on the object: ${BitcoinClient.confirmationsPropertyName}`);
-    }
-
-    const bitcoinInputs = bitcoreTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
-    const bitcoinOutputs = bitcoreTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
+    const bitcoinInputs = bitcoinClientTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
+    const bitcoinOutputs = bitcoinClientTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
 
     return {
       inputs: bitcoinInputs,
       outputs: bitcoinOutputs,
-      id: bitcoreTransaction.id,
-      numberOfConfirmations: confirmationsValue
+      id: bitcoinClientTransaction.id,
+      confirmations: bitcoinClientTransaction.confirmations
     };
   }
 

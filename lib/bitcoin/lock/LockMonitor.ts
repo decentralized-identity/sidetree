@@ -63,7 +63,7 @@ export default class LockMonitor {
 
     this.pollPeriodInSeconds = 60;
     this.lockPeriodInBlocks = 5;
-    this.desiredLockAmountInSatoshis = 1000;
+    this.desiredLockAmountInSatoshis = 0;
     this.transactionFeesAmountInSatoshis = 2000;
   }
 
@@ -173,10 +173,10 @@ export default class LockMonitor {
 
     console.info(`Found last saved lock of type: ${lastSavedLock.type} with transaction id: ${lastSavedLock.transactionId}.`);
 
-    // Make sure that the last lock txn is actually written to the blockchain. Rebroadcast
-    // if it is not as we don't want to do anything until last lock information is fully
-    // confirmed to be on the blockchain.
-    if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
+    // Make sure that the last lock txn is actually broadcasted to the blockchain. Rebroadcast
+    // if it is not as we don't want to do anything until last lock information is at least
+    // broadcasted.
+    if (!(await this.isTransactionBroadcasted(lastSavedLock.transactionId))) {
 
       await this.rebroadcastTransaction(lastSavedLock);
 
@@ -197,22 +197,37 @@ export default class LockMonitor {
     }
 
     // If we're here then it means that we have saved some information about a lock
-    // which is confirmed to be on the blockchain. Let's resolve it to make sure that
-    // we have all the information.
+    // which is at least broadcasted to blockchain. Let's resolve it.
     const lastLockIdentifier: LockIdentifier = {
       transactionId: lastSavedLock.transactionId,
       redeemScriptAsHex: lastSavedLock.redeemScriptAsHex
     };
 
-    const currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
+    try {
+      const currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
 
-    console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
+      console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
 
-    return {
-      currentValueTimeLock: currentValueTimeLock,
-      latestSavedLockInfo: lastSavedLock,
-      status: LockStatus.Confirmed
-    };
+      return {
+        currentValueTimeLock: currentValueTimeLock,
+        latestSavedLockInfo: lastSavedLock,
+        status: LockStatus.Confirmed
+      };
+
+    } catch (e) {
+
+      if (e instanceof BitcoinError && e.code === ErrorCode.LockResolverTransactionNotConfirmed) {
+        // This means that the transaction was broadcasted but hasn't been written on the blockchain yet.
+        return {
+          currentValueTimeLock: undefined,
+          latestSavedLockInfo: lastSavedLock,
+          status: LockStatus.Pending
+        };
+      }
+
+      // Else this is a unhandle-able exception rethrow
+      throw e;
+    }
   }
 
   private async rebroadcastTransaction (lastSavedLock: SavedLockModel): Promise<void> {
@@ -236,11 +251,12 @@ export default class LockMonitor {
     await this.bitcoinClient.broadcastLockTransaction(lockTransactionFromLastSavedLock);
   }
 
-  private async isTransactionWrittenOnBitcoin (transactionId: string): Promise<boolean> {
+  private async isTransactionBroadcasted (transactionId: string): Promise<boolean> {
     try {
-      const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
+      await this.bitcoinClient.getRawTransaction(transactionId);
 
-      return transaction.numberOfConfirmations > 0;
+      // no exception thrown == transaction found == it was broadcasted even if it is only in the mempool.
+      return true;
     } catch (e) {
       console.warn(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
     }

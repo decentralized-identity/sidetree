@@ -89,7 +89,7 @@ describe('LockResolver', () => {
 
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some transaction id',
-        numberOfConfirmations: 5,
+        confirmations: 5,
         inputs: [],
         outputs: [
           { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
@@ -156,7 +156,7 @@ describe('LockResolver', () => {
 
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some transaction id',
-        numberOfConfirmations: 5,
+        confirmations: 5,
         inputs: [],
         outputs: [
           { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
@@ -246,7 +246,7 @@ describe('LockResolver', () => {
 
   describe('getTransaction', () => {
     it('should return true if the bitcoin client returns the transaction', async () => {
-      const mockTxn: BitcoinTransactionModel = { id: 'id', numberOfConfirmations: 5, inputs: [], outputs: [] };
+      const mockTxn: BitcoinTransactionModel = { id: 'id', confirmations: 5, inputs: [], outputs: [] };
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
 
       const actual = await lockResolver['getTransaction']('input id');
@@ -266,23 +266,23 @@ describe('LockResolver', () => {
     it('should calculate the correct starting block', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
-        numberOfConfirmations: 23,
+        confirmations: 23,
         inputs: [],
         outputs: []
       };
 
-      const mockCurrentBlockHeight = 200;
+      const mockCurrentBlockHeight = mockTransaction.confirmations + 350; // making sure that current block height is higher
       spyOn(lockResolver['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
 
       const actual = await lockResolver['calculateLockStartingBlock'](mockTransaction);
-      expect(actual).toEqual(mockCurrentBlockHeight - mockTransaction.numberOfConfirmations);
+      expect(actual).toEqual(mockCurrentBlockHeight - mockTransaction.confirmations - 1);
       done();
     });
 
     it('should throw if the number of confiramtions on the input is < 0', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
-        numberOfConfirmations: -2,
+        confirmations: -2,
         inputs: [],
         outputs: []
       };
@@ -297,7 +297,7 @@ describe('LockResolver', () => {
     it('should throw if the number of confiramtions on the input is 0', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
-        numberOfConfirmations: 0,
+        confirmations: 0,
         inputs: [],
         outputs: []
       };
