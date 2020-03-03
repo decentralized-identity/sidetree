@@ -57,7 +57,7 @@ A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed
 An update operation to a document contains only the changes from the previous version of the document. Create and recover operations require a full document state of the DID as input.
 
 ## Sidetree DID Unique Suffix
-A Sidetree _DID unique suffix_ is the globally unique portion of a DID. It is computed deterministically from the following data (_suffix data) supplied in a create operation request:
+A Sidetree _DID unique suffix_ is the globally unique portion of a DID. It is computed deterministically from the following data (_suffix data_) supplied in a create operation request:
 
 1. Recovery key.
 1. Document hash.
@@ -287,7 +287,7 @@ POST / HTTP/1.1
 }
 ```
 
-#### Suffix data schema
+#### `suffixData` property schema
 ```json
 {
   "operationDataHash": "Hash of the encoded operation data string.",
@@ -298,15 +298,20 @@ POST / HTTP/1.1
 }
 ```
 
-#### Create operation data schema
+#### `operationData` property schema
 ```json
 {
     "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
-    "document": "Opaque content."
+    "document": "Document content."
 }
 ```
 
-#### Opaque document example
+#### `document` property schema
+```json
+
+```
+
+#### Document example
 ```json
 {
   "publicKey": [
@@ -442,24 +447,27 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "protected": "Encoded protected header.",
-  "payload": "Encoded update payload JSON object defined by the schema below.",
-  "signature": "Encoded signature."
+  "type": "update",
+  "didUniqueSuffix": "The unique suffix of the DID to be updated.",
+  "updateOtp": "The one-time password to be used for this update.",
+  "signedOperationDataHash": {
+    "protected": "JWS header.",
+    "payload": "Hash of the encoded operation data string.",
+    "signature": "JWS signature."
+  },
+  "operationData": "Encoded JSON object containing update operation data."
 }
 ```
 
-#### Update payload schema
+#### Update `operationData` property schema
 ```json
 {
-  "type": "update",
-  "didUniqueSuffix": "The unique suffix of the DID",
-  "patches": ["An array of patches each must adhere to the patch schema defined below."],
-  "updateOtp": "The one-time password to be used for this update.",
-  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "documentPatch": ["An array of patches each must adhere to the document patch schema defined below."],
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update."
 }
 ```
 
-#### Update patch schema
+#### Document patch schema
 ##### Add public keys
 ```json
 {
@@ -653,21 +661,32 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "protected": "Encoded protected header.",
-  "payload": "Encoded recovery payload JSON object defined by the schema below.",
-  "signature": "Encoded signature."
-}
-```
-
-#### Recovery payload schema
-```json
-{
   "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryOtp": "The one-time password to be used for this recovery.",
-  "newDidDocument": "The encoded new DID Document.",
-  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
+  "signedOperationData": {
+    "protected": "JWS header.",
+    "payload": "JWS encoded JSON object containing recovery operation data that are signed.",
+    "signature": "JWS signature."
+  },
+  "operationData": "Encoded JSON object containing unsigned portion of the recovery request."
+}
+```
+
+#### `signedOperationData` property schema
+```json
+{
+  "operationDataHash": "Hash of the encoded unsigned operation data string.",
+  "recoveryKey": "The new recovery key.",
+  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
+}
+```
+
+#### `operationData` schema
+```json
+{
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "document": "Opaque content."
 }
 ```
 
