@@ -1,0 +1,261 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+            <title>DIF Sidetree Protocol</title>
+            <link href="../spec-up/css/custom-elements.css" rel="stylesheet">
+            <link href="../spec-up/css/prism.css" rel="stylesheet">
+            <link href="../spec-up/css/chart.css" rel="stylesheet">
+            <link href="../spec-up/css/font-awesome.css" rel="stylesheet">
+            <link href="../spec-up/css/index.css" rel="stylesheet">
+            <script src="../spec-up/js/custom-elements.js"></script>
+          </head>
+          <body features="source logo">
+            
+            <svg id="svg" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="github" viewBox="0 0 20 20">
+    <path d="M10 0.247c-5.522 0-10 4.477-10 10 0 4.418 2.865 8.167 6.839 9.489 0.5 0.093 0.683-0.217 0.683-0.481 0-0.238-0.009-1.026-0.014-1.862-2.782 0.605-3.369-1.18-3.369-1.18-0.455-1.156-1.11-1.463-1.11-1.463-0.907-0.621 0.069-0.608 0.069-0.608 1.004 0.071 1.533 1.031 1.533 1.031 0.892 1.529 2.339 1.087 2.91 0.831 0.090-0.646 0.349-1.087 0.635-1.337-2.221-0.253-4.556-1.11-4.556-4.942 0-1.092 0.391-1.984 1.030-2.684-0.104-0.252-0.446-1.269 0.097-2.646 0 0 0.84-0.269 2.751 1.025 0.798-0.222 1.653-0.333 2.503-0.337 0.85 0.004 1.706 0.115 2.505 0.337 1.909-1.294 2.747-1.025 2.747-1.025 0.544 1.378 0.202 2.395 0.098 2.646 0.641 0.7 1.029 1.592 1.029 2.684 0 3.841-2.339 4.687-4.566 4.934 0.359 0.31 0.678 0.919 0.678 1.852 0 1.338-0.012 2.415-0.012 2.744 0 0.266 0.18 0.578 0.687 0.48 3.971-1.324 6.833-5.071 6.833-9.488 0-5.523-4.477-10-10-10z"></path>
+  </symbol>
+  <symbol id="nested_list" viewBox="0 0 37 32">
+    <path d="M0 2.286c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM9.143 0h27.429v4.571h-27.429zM9.143 11.429c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM18.286 9.143h18.286v4.571h-18.286zM9.143 29.714c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM18.286 27.429h18.286v4.571h-18.286zM18.286 20.571c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM27.429 18.286h9.143v4.571h-9.143z"></path>
+  </symbol>
+</svg>
+
+            <main>
+
+              <header id="header" class="panel-header">
+                <span id="toc_toggle" panel-toggle="toc">
+                  <svg icon><use xlink:href="#nested_list"></use></svg>
+                </span>
+                <a id="logo" href="https://identity.foundation">
+                  <img src="https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg" />
+                </a>
+                <span issue-count animate panel-toggle="repo_issues">
+                  <svg icon><use xlink:href="#github"></use></svg>
+                </span>
+              </header>
+
+              <article id="content">
+                <h1 id="sidetree-protocol"><a class="toc-anchor" href="#sidetree-protocol">§</a> Sidetree Protocol</h1>
+<p><strong>Specification Status:</strong> Editor’s Draft</p>
+<p><strong>Latest Draft:</strong>
+<a href="https://identity.foundation/sidetree">identity.foundation/sidetree</a></p>
+<dl>
+<dt><strong>Editors:</strong></dt>
+<dd><a href="https://www.linkedin.com/in/dbuchner/">Daniel Buchner</a> (Microsoft)</dd>
+<dd><a href="https://www.linkedin.com/in/or13b/">Orie Steele</a> (Transmute)</dd>
+<dt><strong>Contributors:</strong></dt>
+<dd><a href="https://www.linkedin.com/in/henry-tsai-6b884014/">Henry Tsai</a> (Microsoft)</dd>
+<dt><strong>Participate:</strong></dt>
+<dd><a href="https://github.com/decentralized-identity/sidetree">GitHub repo</a></dd>
+<dd><a href="https://github.com/decentralized-identity/sidetree/issues">File a bug</a></dd>
+<dd><a href="https://github.com/decentralized-identity/sidetree/commits/master">Commit history</a></dd>
+</dl>
+<hr>
+<h2 id="abstract"><a class="toc-anchor" href="#abstract">§</a> Abstract</h2>
+<p>This specification describes the Sidetree protocol, which can be applied to any decentralized ledgers (e.g. Bitcoin) to create ‘Layer 2’ decentralized identifier/DPKI networks that can be as open, public, and permissionless as their underlying ledger systems. Identifiers and PKI metadata in the protocol are expressed via the emerging <a href="https://w3c.github.io/did-core/">W3C <em>Decentralized Identifiers</em></a> standard, and implementations of the protocol can be codified as their own distinct DID Methods. Briefly, a <em>DID Method</em> is a deterministic mechanism for creating unique, user-owned identifiers and managing their associated PKI metadata (<em>DID Documents</em>), all without the need for centralized entities. DID Method indicators are present in DID identifier strings via unique prefixes that distinguish one from another (<code>did:foo</code>, <code>did:bar</code>, etc.); Sidetree is not a DID Method in itself, but a protocol that can be implemented atop decentralized ledgers to create DID Method implementations (i.e. <code>did:ion</code>, <code>did:elem</code>).</p>
+<h2 id="introduction"><a class="toc-anchor" href="#introduction">§</a> Introduction</h2>
+<p><em>This section is non-normative</em></p>
+<p>Decentralized ledgers (e.g. Bitcoin) introduced the first-ever solution to the linear chronological oracle problem, which unlocked the ability to create robust decentralized identifier networks. However, current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems to enable scalable <a href="https://w3c.github.io/did-core/">W3C <em>Decentralized Identifier</em></a> (DID) implementations that can be fully open, public, and permissionless. Sidetree is able to do all this without requiring trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on.</p>
+<p><img src="../docs/diagrams/overview-diagram.png" alt="Sidetree System Overview"></p>
+<p>Architecturally, Sidetree-based DID Method implementations are overlay networks composed of independent peer nodes (<em>Sidetree nodes</em>) that observe an underlying decentralized ledger (as illustrated above), replicate DID PKI state data linked from the ledger, and execute against that data a set of deterministic protocol rules to produce an eventually strongly consistent view of all Decentralized Identifiers in the network. The Sidetree protocol defines a core set of DID PKI state change <em>operations</em>, structured as delta-based Conflict-Free Replicated Data Types (i.e. Create, Update, Recover, and Revoke), that mutate a Decentralized Identifier’s <em>DID Document</em> state. <em>Sidetree nodes</em> that participate in writing operations into the overlay network do so by anchoring <em>content-addressable storage (CAS)</em> (e.g. IPFS) references to aggregated bundles of <em>operations</em> in an underlying ledger. The ledger acts as a linear chronological sequencing oracle, which the protocol leverages to order DID PKI operations in an immutable history all observing nodes can replay and validate. It is this ability to replay the precise sequence of DID PKI state change events, and process those events using a common set of deterministic rules, that allows <em>Sidetree nodes</em> to achieve a consistent view of DIDs and their <em>DID Document</em> states, without requiring any additional consensus mechanism.</p>
+<h2 id="terminology"><a class="toc-anchor" href="#terminology">§</a> Terminology</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Anchor file</td>
+<td>The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction.</td>
+</tr>
+<tr>
+<td>Batch file</td>
+<td>The file containing all the operation data batched together.</td>
+</tr>
+<tr>
+<td>DCAS / CAS</td>
+<td>Distributed content-addressable storage.</td>
+</tr>
+<tr>
+<td>DID Document</td>
+<td>A document containing metadata of a DID, see <a href="https://w3c-ccg.github.io/did-spec/">DID specification</a>.</td>
+</tr>
+<tr>
+<td>DID unique suffix</td>
+<td>The unique portion of a DID. e.g. The unique suffix of ‘did:sidetree:abc’ would be ‘abc’.</td>
+</tr>
+<tr>
+<td>Operation</td>
+<td>A change to a document of a DID.</td>
+</tr>
+<tr>
+<td>Operation request</td>
+<td>A JWS formatted request sent to a Sidetree node to perform an <em>operation</em>.</td>
+</tr>
+<tr>
+<td>Recovery key</td>
+<td>A key that is used to perform recovery or delete operation.</td>
+</tr>
+<tr>
+<td>Sidetree node</td>
+<td>A logical server executing Sidetree protocol rules.</td>
+</tr>
+<tr>
+<td>Suffix data</td>
+<td>Data required to deterministically generate a DID .</td>
+</tr>
+<tr>
+<td>Transaction</td>
+<td>A blockchain transaction representing a batch of Sidetree operations.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="protocol-versioning-default-parameters"><a class="toc-anchor" href="#protocol-versioning-default-parameters">§</a> Protocol Versioning &amp; Default Parameters</h2>
+<p>The Sidetree protocol and its parameters are expected to evolve overtime. Each version of the protocol will define its protocol rules and parameters, as well as the logical <em>blockchain time</em> at which the new rules and parameter settings will take effect. All subsequent transactions will adhere to the same rules and parameters until a newer protocol version is defined.</p>
+<p>The following lists the parameters used by this version of the Sidetree protocol:</p>
+<table>
+<thead>
+<tr>
+<th>Protocol Parameter</th>
+<th>Description</th>
+<th style="text-align:right">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hash algorithm</td>
+<td>The hash algorithm for computation such as for DID generation.</td>
+<td style="text-align:right">SHA256</td>
+</tr>
+<tr>
+<td>Maximum anchor file size</td>
+<td>The maximum compressed anchor file size.</td>
+<td style="text-align:right">1 MB</td>
+</tr>
+<tr>
+<td>Maximum batch file size</td>
+<td>The maximum compressed batch file size.</td>
+<td style="text-align:right">10 MB</td>
+</tr>
+<tr>
+<td>Maximum encoded hash length</td>
+<td>The maximum accepted string length of an encoded hash.</td>
+<td style="text-align:right">100 bytes</td>
+</tr>
+<tr>
+<td>Maximum operation size</td>
+<td>The maximum uncompressed operation size.</td>
+<td style="text-align:right">1 kb</td>
+</tr>
+<tr>
+<td>Maximum operation count</td>
+<td>The maximum number of operations per batch.</td>
+<td style="text-align:right">10,000</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sidetree-did-base-uri"><a class="toc-anchor" href="#sidetree-did-base-uri">§</a> Sidetree DID Base URI</h2>
+<p>DID Methods based on the Sidetree protocol all share the same identifier format. The identifier is a <code>SHA256</code> hash of values from the <a href="#create">Create</a> operation’s <em>Suffix Data Object</em>, composed as follows:</p>
+<div class="mermaid">graph TD
+
+ID(did:ion:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw)
+ID -->|Recovery Commitment Hash| D[oqBQgzhMDw...]
+ID -->|Create Operation Data Hash| E[xKwW0h6HjS...]
+ID -->|Recovery Public Key| F[tB4W0i61jS...]</div><h2 id="operations"><a class="toc-anchor" href="#operations">§</a> Operations</h2>
+<h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
+<p>The following process must be used to generate a Sidetree-based DID:</p>
+<ol>
+<li>Generate a JSON object, referred to herein as the <em>Create Document</em>.</li>
+<li>The <em>Create Document</em> MUST contain a <code>type</code> property, and its value MUST be <code>create</code>.</li>
+<li>The <em>Create Document</em> MUST contain a <code>operationData</code> property, and its value MUST be a <code>base64</code> encoded object, referred to herein as the <em>Operation Data Object</em>, of the following composition:
+<ol>
+<li>Generate a secret commitment value, referred to herein as the <em>Next Update Commitment</em>, and retain it for use at the next DID Update operation.</li>
+<li>The <em>Operation Data Object</em> MUST contain a <code>nextUpdateOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Update Commitment</em>.</li>
+<li>The <em>Operation Data Object</em> MUST contain a <code>document</code> property, and its value must be an object, referred to herein as a <em>Sidetree Delta Operations Object</em>, composed of Sidetree delta operations, as described in the <a href="#sidetree-delta-operations">Sidetree Delta Operations</a> section of this document.</li>
+</ol>
+</li>
+<li>The <em>Create Document</em> MUST contain a <code>suffixData</code> property, and its value MUST be a <code>base64</code> encoded object, referred to herein as the <em>Suffix Data Object</em>, of the following composition:
+<ol>
+<li>Generate a secret commitment value, referred to herein as the <em>Next Recovery Commitment</em>, and retain it for use at the next DID Recovery operation.</li>
+<li>The <em>Suffix Data Object</em> MUST contain a <code>nextRecoveryOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Recovery Commitment</em>.</li>
+<li>The <em>Suffix Data Object</em> MUST contain an <code>operationDataHash</code> property, and its value MUST be a SHA256 hash of the <code>base64</code> encoded <em>Operation Data Object</em>.</li>
+<li>The <em>Suffix Data Object</em> MUST contain a <code>recoveryKey</code> property, and its value MUST be an object of the following composition:
+<ol>
+<li>Generate a <code>secp256k1</code> recovery key pair.</li>
+<li>The object MUST contain a <code>publicKeyHex</code> property, and its value MUST be be the recovery key pair’s Hex encoded public key.</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="update"><a class="toc-anchor" href="#update">§</a> Update</h3>
+<p>The following process must be used to update the state a Sidetree-based DID:</p>
+<ol>
+<li>Generate a JSON object, referred to herein as the <em>Update Document</em>.</li>
+<li>The <em>Update Document</em> MUST contain a <code>type</code> property, and its value MUST be <code>update</code>.</li>
+<li>The <em>Update Document</em> MUST contain a <code>didUniqueSuffix</code> property, and its value MUST be a <code>SHA256</code> hash of the <code>base64</code> encoded <em>Suffix Data Object</em> used in the Create operation for the DID in question(which includes the recovery public key, recovery commitment hash, and create operation data hash).</li>
+<li>The <em>Update Document</em> MUST contain a <code>updateOtp</code> property, and its value MUST be the revealed value for the matching <em>Next Update Commitment</em> hash from the previous operation.</li>
+<li>The <em>Update Document</em> MUST contain a <code>nextUpdateOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Update Commitment</em> value that will be revealed in the next Update operation.</li>
+<li>The <em>Update Document</em> MUST contain a <code>patches</code> property, and its value MUST be an object composed of Sidetree delta operations, as described in the <a href="#sidetree-delta-operations">Sidetree Delta Operations</a> section of this document.</li>
+</ol>
+<h2 id="sidetree-delta-operations"><a class="toc-anchor" href="#sidetree-delta-operations">§</a> Sidetree Delta Operations</h2>
+
+              </article>    
+
+            </main>
+
+            <slide-panels id="slidepanels">
+              <slide-panel id="repo_issues" options="right">
+                <header class="panel-header">
+                  <span>
+                    <svg icon><use xlink:href="#github"></use></svg>
+                    <span issue-count></span>
+                  </span>
+                  <span class="repo-issue-toggle" panel-toggle="repo_issues">✕</span>
+                </header>
+                <ul id="repo_issue_list"></ul>
+              </slide-panel>
+
+              <slide-panel id="toc">
+                <header class="panel-header">
+                  <span>Table of Contents</span>
+                  <span panel-toggle="toc">✕</span>
+                </header>
+                <div id="toc_list">
+                  <ul class="toc">
+<li><a href="#abstract">Abstract</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#terminology">Terminology</a></li>
+<li><a href="#protocol-versioning-default-parameters">Protocol Versioning &amp; Default Parameters</a></li>
+<li><a href="#sidetree-did-base-uri">Sidetree DID Base URI</a></li>
+<li><a href="#operations">Operations</a>
+<ul>
+<li><a href="#create">Create</a></li>
+<li><a href="#update">Update</a></li>
+</ul>
+</li>
+<li><a href="#sidetree-delta-operations">Sidetree Delta Operations</a></li>
+</ul>
+
+                </div>
+              </slide-panel>
+              
+            </slide-panels>
+
+          </body>
+          <script>window.specConfig = {"title":"DIF Sidetree Protocol","spec_directory":"./spec/","logo":"https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg","logo_link":"https://identity.foundation","source":{"host":"github","account":"decentralized-identity","repo":"sidetree"},"destination":"./spec/","destinationResourcePrefix":"../","rootResourcePrefix":"./"}</script>
+          <script src="../spec-up/js/markdown-it.js"></script>
+          <script src="../spec-up/js/prism.js" data-manual></script>
+          <script src="../spec-up/js/mermaid.js"></script>
+          <script src="../spec-up/js/chart.js"></script>
+          <script src="../spec-up/js/index.js"></script>
+        </html>
+      
