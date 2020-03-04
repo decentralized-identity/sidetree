@@ -21,9 +21,9 @@ interface OperationDataModel {
 }
 
 /**
- * A class that represents a recovery operation.
+ * A class that represents a recover operation.
  */
-export default class RecoveryOperation implements OperationModel {
+export default class RecoverOperation implements OperationModel {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
@@ -75,50 +75,50 @@ export default class RecoveryOperation implements OperationModel {
   /**
    * Parses the given buffer as a `UpdateOperation`.
    */
-  public static async parse (operationBuffer: Buffer): Promise<RecoveryOperation> {
+  public static async parse (operationBuffer: Buffer): Promise<RecoverOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const recoveryOperation = await RecoveryOperation.parseObject(operationObject, operationBuffer);
-    return recoveryOperation;
+    const recoverOperation = await RecoverOperation.parseObject(operationObject, operationBuffer);
+    return recoverOperation;
   }
 
   /**
-   * Parses the given operation object as a `RecoveryOperation`.
+   * Parses the given operation object as a `RecoverOperation`.
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoveryOperation> {
+  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RecoverOperation> {
     const properties = Object.keys(operationObject);
     if (properties.length !== 5) {
-      throw new SidetreeError(ErrorCode.RecoveryOperationMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty);
     }
 
     if (operationObject.type !== OperationType.Recover) {
-      throw new SidetreeError(ErrorCode.RecoveryOperationTypeIncorrect);
+      throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
     }
 
     if (typeof operationObject.didUniqueSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoveryOperationMissingDidUniqueSuffix);
+      throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
     if (typeof operationObject.recoveryOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoveryOperationRecoveryOtpMissingOrInvalidType);
+      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryOtpMissingOrInvalidType);
     }
 
     if ((operationObject.recoveryOtp as string).length > Operation.maxEncodedOtpLength) {
-      throw new SidetreeError(ErrorCode.RecoveryOperationRecoveryOtpTooLong);
+      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryOtpTooLong);
     }
 
     const recoveryOtp = operationObject.recoveryOtp;
 
     const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
-    const signedOperationData = await RecoveryOperation.parseSignedOperationData(signedOperationDataJws.payload);
+    const signedOperationData = await RecoverOperation.parseSignedOperationDataPayload(signedOperationDataJws.payload);
 
     const encodedOperationData = operationObject.operationData;
-    const operationData = await RecoveryOperation.parseOperationData(encodedOperationData);
+    const operationData = await RecoverOperation.parseOperationData(encodedOperationData);
 
-    return new RecoveryOperation(
+    return new RecoverOperation(
       operationBuffer,
       operationObject.didUniqueSuffix,
       recoveryOtp,
@@ -129,17 +129,13 @@ export default class RecoveryOperation implements OperationModel {
     );
   }
 
-  private static async parseSignedOperationData (operationDataEncodedString: any): Promise<SignedOperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrNotString);
-    }
-
+  private static async parseSignedOperationDataPayload (operationDataEncodedString: string): Promise<SignedOperationDataModel> {
     const signedOperationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
     const signedOperationData = await JsonAsync.parse(signedOperationDataJsonString);
 
     const properties = Object.keys(signedOperationData);
     if (properties.length !== 3) {
-      throw new SidetreeError(ErrorCode.RecoveryOperationSignedDataMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
     Operation.validateRecoveryKeyObject(signedOperationData.recoveryKey);
@@ -155,7 +151,7 @@ export default class RecoveryOperation implements OperationModel {
 
   private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
     if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrNotString);
+      throw new SidetreeError(ErrorCode.RecoverOperationDataMissingOrNotString);
     }
 
     const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
@@ -163,11 +159,11 @@ export default class RecoveryOperation implements OperationModel {
 
     const properties = Object.keys(operationData);
     if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.RecoveryOperationDataMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.RecoverOperationDataMissingOrUnknownProperty);
     }
 
     if (operationData.document === undefined) {
-      throw new SidetreeError(ErrorCode.RecoveryOperationDocumentMissing);
+      throw new SidetreeError(ErrorCode.RecoverOperationDocumentMissing);
     }
 
     const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);

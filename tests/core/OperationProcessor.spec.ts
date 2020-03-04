@@ -649,83 +649,31 @@ describe('OperationProcessor', async () => {
     });
 
     describe('applyRecoverOperation()', () => {
-      it('should not apply if existing document is undefined.', async () => {
-        // Generate a recovery operation payload.
-        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
-
-        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
-          didUniqueSuffix,
-          OperationType.Recover,
-          payloadData.payload,
-          recoveryPublicKey.id,
-          recoveryPrivateKey,
-          2, 2, 2);
-
-        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, { didDocument: undefined });
-        expect(recoveryResult.validOperation).toBeFalsy();
-        expect(didDocumentReference.didDocument).toBeDefined();
-
-        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
-        expect(didDocumentReference.didDocument).toBeDefined();
-        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
-      });
-
-      it('should not apply if key used to sign is not a recovery key.', async () => {
-        // Generate a recovery operation payload.
-        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
-
-        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
-          didUniqueSuffix,
-          OperationType.Recover,
-          payloadData.payload,
-          signingPublicKey.id,
-          signingPrivateKey,
-          2, 2, 2);
-
-        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
-        expect(recoveryResult.validOperation).toBeFalsy();
-
-        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
-        expect(didDocumentReference.didDocument).toBeDefined();
-        expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
-      });
-
       it('should not apply if signature does not pass verification.', async () => {
-        // Generate a recovery operation payload.
-        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: nextRecoveryOtp });
-
-        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+        const operationData = await OperationGenerator.generateRecoverOperation({
           didUniqueSuffix,
-          OperationType.Recover,
-          payloadData.payload,
-          recoveryPublicKey.id,
-          signingPrivateKey,
-          2, 2, 2);
+          recoveryOtp: nextRecoveryOtp,
+          recoveryPrivateKey: signingPrivateKey // Intentionally an incorrect recovery key.
+        });
+        const anchoredRecoverOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(operationData.recoverOperation, 2, 2, 2);
 
-        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        const recoveryResult = await operationProcessor.apply(anchoredRecoverOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
 
-        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        // Verify that the recovery key is still the same as prior to the application of the recover operation.
         expect(didDocumentReference.didDocument).toBeDefined();
         expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
       it('should not apply if recovery OTP is invalid.', async () => {
-        // Generate a recovery operation payload.
-        const payloadData = await OperationGenerator.generateRecoveryOperationPayload({ didUniqueSuffix, recoveryOtp: 'invalidRecoveryOtpValue' });
+        // Generate a recover operation payload.
+        const operationData = await OperationGenerator.generateRecoverOperation({didUniqueSuffix, recoveryOtp: 'invalidOtpValue', recoveryPrivateKey });
+        const anchoredRecoverOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(operationData.recoverOperation, 2, 2, 2);
 
-        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
-          didUniqueSuffix,
-          OperationType.Recover,
-          payloadData.payload,
-          recoveryPublicKey.id,
-          recoveryPrivateKey,
-          2, 2, 2);
-
-        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        const recoveryResult = await operationProcessor.apply(anchoredRecoverOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
 
-        // Verify that the recovery key is still the same as prior to the application of the recovery operation.
+        // Verify that the recovery key is still the same as prior to the application of the recover operation.
         expect(didDocumentReference.didDocument).toBeDefined();
         expect((didDocumentReference.didDocument as any).recoveryKey.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
@@ -736,7 +684,7 @@ describe('OperationProcessor', async () => {
           didUniqueSuffix,
           newDidDocument: { invalidDidDocument: 'invalidDidDocument' }
         };
-        const anchoredRecoveryOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
+        const anchoredRecoverOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
           didUniqueSuffix,
           OperationType.Recover,
           recoveryPayload,
@@ -744,7 +692,7 @@ describe('OperationProcessor', async () => {
           recoveryPrivateKey,
           2, 2, 2);
 
-        const recoveryResult = await operationProcessor.apply(anchoredRecoveryOperationModel, didDocumentReference);
+        const recoveryResult = await operationProcessor.apply(anchoredRecoverOperationModel, didDocumentReference);
         expect(recoveryResult.validOperation).toBeFalsy();
         expect(didDocumentReference.didDocument).toBeDefined();
 

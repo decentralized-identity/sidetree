@@ -9,7 +9,7 @@ import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PublicKeyModel from '../../models/PublicKeyModel';
-import RecoveryOperation from './RecoveryOperation';
+import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -45,7 +45,7 @@ export default class Operation {
   /** Signature of this operation. */
   public signature!: string;
 
-  /** DID document given in the operation, only applicable to create and recovery operations, undefined otherwise. */
+  /** DID document given in the operation, only applicable to create and recover operations, undefined otherwise. */
   public didDocument?: DocumentModel;
   /** Encoded DID document - mainly used for DID generation. */
   public encodedDidDocument?: string;
@@ -100,7 +100,7 @@ export default class Operation {
       } else if (operationType === OperationType.Update) {
         return UpdateOperation.parseObject(operationObject, operationBuffer);
       } else if (operationType === OperationType.Recover) {
-        return RecoveryOperation.parseObject(operationObject, operationBuffer);
+        return RecoverOperation.parseObject(operationObject, operationBuffer);
       } else {
         throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
       }
@@ -431,7 +431,7 @@ export default class Operation {
   }
 
   /** Maximum allowed encoded OTP string length. */
-  public static readonly maxEncodedOtpLength = 100;
+  public static readonly maxEncodedOtpLength = 50;
 
   /**
    * Validates the given recovery key object is in valid format.

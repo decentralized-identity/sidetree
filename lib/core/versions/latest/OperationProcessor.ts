@@ -8,7 +8,7 @@ import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationPro
 import Multihash from './Multihash';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import OperationType from '../../enums/OperationType';
-import RecoveryOperation from './RecoveryOperation';
+import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
 
 /**
@@ -154,7 +154,7 @@ export default class OperationProcessor implements IOperationProcessor {
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
 
-    const operation = await RecoveryOperation.parse(namedAnchoredOperationModel.operationBuffer);
+    const operation = await RecoverOperation.parse(namedAnchoredOperationModel.operationBuffer);
 
     // Verify the actual OTP hash against the expected OTP hash.
     const isValidOtp = Multihash.isValidHash(operation.recoveryOtp, didResolutionModel.metadata!.nextRecoveryOtpHash!);

@@ -194,7 +194,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 
 #### One-Time Password (OTP) for Operations
   Upon DID creation, the create operation payload must include:
-  1. The hash of a _one-time password_ (OTP) for the next recovery operation.
+  1. The hash of a _one-time password_ (OTP) for the next recover operation.
   1. The hash of a _one-time password_ (OTP) for the next update operation.
 
   The DID owner must reproduce and present the correct OTP in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new OTP(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
@@ -226,9 +226,9 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 > NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the _anchor file_ or _batch file_ becomes available.
 
 ## DID Deletion and Recovery
-Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
+Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is deleted, it cannot be recovered.
 
-The most basic recovery operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
+The most basic recover operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
 
 
 ## Sidetree Client Guidelines
@@ -666,7 +666,7 @@ POST / HTTP/1.1
   "recoveryOtp": "The encoded one-time password to be used for this recovery.",
   "signedOperationData": {
     "protected": "JWS header.",
-    "payload": "JWS encoded JSON object containing recovery operation data that are signed.",
+    "payload": "JWS encoded JSON object containing recover operation data that are signed.",
     "signature": "JWS signature."
   },
   "operationData": "Encoded JSON object containing unsigned portion of the recovery request."

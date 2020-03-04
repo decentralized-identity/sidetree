@@ -16,6 +16,7 @@ import OperationModel from '../../lib/core/versions/latest/models/OperationModel
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -52,13 +53,15 @@ interface GeneratedAnchoredUpdateOperationData {
   nextUpdateOtpEncodedString: string;
 }
 
-interface RecoveryOperationPayloadGenerationInput {
+interface RecoverOperationGenerationInput {
   didUniqueSuffix: string;
   recoveryOtp: string;
+  recoveryPrivateKey: string;
 }
 
-interface GeneratedRecoveryOperationPayloadData {
-  payload: any;
+interface GeneratedRecoverOperationData {
+  operationBuffer: Buffer;
+  recoverOperation: RecoverOperation;
   recoveryKeyId: string;
   recoveryPublicKey: DidPublicKeyModel;
   recoveryPrivateKey: string;
@@ -128,7 +131,7 @@ export default class OperationGenerator {
     const hubServiceEndpoint = 'did:sidetree:value0';
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
-    // Generate the next update and recovery operation OTP.
+    // Generate the next update and recover operation OTP.
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
@@ -192,30 +195,35 @@ export default class OperationGenerator {
   /**
    * Generates a recover operation payload.
    */
-  public static async generateRecoveryOperationPayload (input: RecoveryOperationPayloadGenerationInput): Promise<GeneratedRecoveryOperationPayloadData> {
+  public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
     const recoveryKeyId = '#newRecoveryKey';
     const signingKeyId = '#newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
     const hubServiceEndpoint = 'did:sidetree:value0';
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
-    const newDidDocument = Document.create([recoveryPublicKey, signingPublicKey], services);
 
-    // Generate the next update and recovery operation OTP.
+    // Generate the next update and recover operation OTP.
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
-    const payload = {
-      type: OperationType.Recover,
-      didUniqueSuffix: input.didUniqueSuffix,
-      recoveryOtp: input.recoveryOtp,
-      newDidDocument,
+    const operationJson = await OperationGenerator.generateRecoverOperationRequest(
+      input.didUniqueSuffix,
+      input.recoveryOtp,
+      input.recoveryPrivateKey,
+      recoveryPublicKey,
+      signingPublicKey,
       nextRecoveryOtpHash,
-      nextUpdateOtpHash
-    };
+      nextUpdateOtpHash,
+      services
+    );
+
+    const operationBuffer = Buffer.from(JSON.stringify(operationJson));
+    const recoverOperation = await RecoverOperation.parse(operationBuffer);
 
     return {
-      payload,
+      recoverOperation,
+      operationBuffer,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,
@@ -401,9 +409,9 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a recovery operation request.
+   * Generates a recover operation request.
    */
-  public static async generateRecoveryOperationRequest (
+  public static async generateRecoverOperationRequest (
     didUniqueSuffix: string,
     recoveryOtp: string,
     recoveryPrivateKey: string | PrivateKey,

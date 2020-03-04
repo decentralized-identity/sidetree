@@ -12,7 +12,7 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
-import RecoveryOperation from '../../lib/core/versions/latest/RecoveryOperation';
+import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 
 describe('Resolver', () => {
   const config = require('../json/config-test.json');
@@ -115,7 +115,7 @@ describe('Resolver', () => {
       // Create the recover operation and insert it to the operation store.
       const [update1OtpAfterRecovery, update1OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtp();
-      const recoveryOperationJson = await OperationGenerator.generateRecoveryOperationRequest(
+      const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix,
         firstRecoveryOtp,
         recoveryPrivateKey,
@@ -125,12 +125,12 @@ describe('Resolver', () => {
         update1OtpHashAfterRecovery,
         [newServiceEndpoint]
       );
-      const recoveryOperationBuffer = Buffer.from(JSON.stringify(recoveryOperationJson));
-      const recoveryOperation = await RecoveryOperation.parse(recoveryOperationBuffer);
-      const anchoredRecoveryOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(recoveryOperation, 4, 4, 4);
-      await operationStore.put([anchoredRecoveryOperation]);
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
+      const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
+      const anchoredRecoverOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(recoverOperation, 4, 4, 4);
+      await operationStore.put([anchoredRecoverOperation]);
 
-      // Create an update operation after the recovery operation.
+      // Create an update operation after the recover operation.
       const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
