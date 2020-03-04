@@ -60,11 +60,6 @@ export default class LockMonitor {
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
-
-    this.desiredLockAmountInSatoshis = 0;
-    this.transactionFeesAmountInSatoshis = 3000;
-    this.lockPeriodInBlocks = 3;
-    this.pollPeriodInSeconds = 60;
   }
 
   /**
@@ -151,7 +146,10 @@ export default class LockMonitor {
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      currentLockUpdated = await this.handleReleaseExistingLock(this.currentLockState.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
+      currentLockUpdated =
+        await this.handleReleaseExistingLock(
+          this.currentLockState.currentValueTimeLock!,
+          this.desiredLockAmountInSatoshis);
     }
 
     if (currentLockUpdated) {
@@ -333,6 +331,12 @@ export default class LockMonitor {
     return true;
   }
 
+  /**
+   * Performs the release lock routine. Returns true if there were changes to the lock; false otherwise.
+   *
+   * @param currentValueTimeLock The current value time lock
+   * @param desiredLockAmountInSatoshis The desired lock amount
+   */
   private async handleReleaseExistingLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<boolean> {
 
     // Don't continue unless the current locktime model is actually reached
@@ -340,7 +344,7 @@ export default class LockMonitor {
       return false;
     }
 
-    await this.renewLock(currentValueTimeLock, desiredLockAmountInSatoshis);
+    await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
 
     return true;
   }

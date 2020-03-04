@@ -473,7 +473,7 @@ describe('LockMonitor', () => {
       expect(resolveLockSpy).toHaveBeenCalled();
     });
 
-    it('should return bubble up any unhandled exceptions.', async () => {
+    it('should bubble up any unhandled exceptions.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
 
       const mockErrorCode = 'some other unhandled error code';
@@ -772,7 +772,7 @@ describe('LockMonitor', () => {
     it('should not call the renew lock routine if the lock time has not reached.', async () => {
       spyOn(lockMonitor as any, 'isUnlockTimeReached').and.returnValue(Promise.resolve(false));
 
-      const renewLockSpy = spyOn(lockMonitor as any, 'renewLock');
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLock');
 
       const currentValueTimeLockInput: ValueTimeLockModel = {
         amountLocked: 5000,
@@ -784,7 +784,7 @@ describe('LockMonitor', () => {
 
       const actual = await lockMonitor['handleReleaseExistingLock'](currentValueTimeLockInput, 400);
       expect(actual).toBeFalsy();
-      expect(renewLockSpy).not.toHaveBeenCalled();
+      expect(releaseLockSpy).not.toHaveBeenCalled();
     });
 
     it('should call the renew lock routine if the lock time has reached.', async () => {
@@ -800,7 +800,7 @@ describe('LockMonitor', () => {
         type: SavedLockType.Create
       };
 
-      const renewLockSpy = spyOn(lockMonitor as any, 'renewLock').and.returnValue(Promise.resolve(mockLastSavedLockInfo));
+      const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLock').and.returnValue(Promise.resolve(mockLastSavedLockInfo));
 
       const lastSavedDesiredLockAmountInput = 500;
       const currentValueTimeLockInput: ValueTimeLockModel = {
@@ -813,7 +813,7 @@ describe('LockMonitor', () => {
 
       const actual = await lockMonitor['handleReleaseExistingLock'](currentValueTimeLockInput, lastSavedDesiredLockAmountInput);
       expect(actual).toBeTruthy();
-      expect(renewLockSpy).toHaveBeenCalledWith(currentValueTimeLockInput, lastSavedDesiredLockAmountInput);
+      expect(releaseLockSpy).toHaveBeenCalledWith(currentValueTimeLockInput, lastSavedDesiredLockAmountInput);
     });
   });
 

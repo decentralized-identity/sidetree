@@ -15,7 +15,7 @@ import { IBlockInfo } from './BitcoinProcessor';
  * as the bitcore-lib.Transaction object does not expose all the properties
  * that we need.
  */
-interface BitcoinClientTransaction {
+interface BitcoreTransactionWrapper {
   id: string;
   blockHash: string;
   confirmations: number;
@@ -224,7 +224,7 @@ export default class BitcoinClient {
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
-      const bitcoreTransaction = BitcoinClient.createBitcoinClientTransaction(transactionBuffer, block.confirmations, hash);
+      const bitcoreTransaction = BitcoinClient.createBitcoreTransactionWrapper(transactionBuffer, block.confirmations, hash);
       return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
     });
 
@@ -412,7 +412,7 @@ export default class BitcoinClient {
     return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
   }
 
-  private async getRawTransactionRpc (transactionId: string): Promise<BitcoinClientTransaction> {
+  private async getRawTransactionRpc (transactionId: string): Promise<BitcoreTransactionWrapper> {
     const request = {
       method: 'getrawtransaction',
       params: [
@@ -425,11 +425,12 @@ export default class BitcoinClient {
     const hexEncodedTransaction = rawTransactionData.hex;
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    // The confirmations and the blockhash parameters can both be null if the transaction is not yet
-    // written to the blockchain. In that case, just pass in 0 for the confirmations
+    // The confirmations and the blockhash parameters can both be undefined if the transaction is not yet
+    // written to the blockchain. In that case, just pass in 0 for the confirmations. With the confirmations
+    // being 0, the blockhash can be understood to be undefined.
     const confirmations = rawTransactionData.confirmations ? rawTransactionData.confirmations : 0;
 
-    return BitcoinClient.createBitcoinClientTransaction(transactionBuffer, confirmations, rawTransactionData.blockhash);
+    return BitcoinClient.createBitcoreTransactionWrapper(transactionBuffer, confirmations, rawTransactionData.blockhash);
   }
 
   // This function is specifically created to help with unit testing.
@@ -437,7 +438,7 @@ export default class BitcoinClient {
     return new Transaction(buffer);
   }
 
-  private static createBitcoinClientTransaction (buffer: Buffer, confirmations: number, blockHash: string): BitcoinClientTransaction {
+  private static createBitcoreTransactionWrapper (buffer: Buffer, confirmations: number, blockHash: string): BitcoreTransactionWrapper {
 
     const transaction = BitcoinClient.createTransactionFromBuffer(buffer);
 
@@ -520,7 +521,7 @@ export default class BitcoinClient {
   }
 
   private async createSpendToFreezeTransaction (
-    previousFreezeTransaction: BitcoinClientTransaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number,
     freezeUntilBlock: number): Promise<[Transaction, string]> {
 
@@ -542,7 +543,7 @@ export default class BitcoinClient {
   }
 
   private async createSpendToWalletTransaction (
-    previousFreezeTransaction: BitcoinClientTransaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number): Promise<Transaction> {
 
     // tslint:disable-next-line: max-line-length
@@ -564,7 +565,7 @@ export default class BitcoinClient {
    * @param paytoAddress The address where the spend transaction should go to.
    */
   private async createSpendTransactionFromFrozenTransaction (
-    previousFreezeTransaction: BitcoinClientTransaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number,
     paytoAddress: Address): Promise<Transaction> {
 
@@ -609,7 +610,7 @@ export default class BitcoinClient {
   }
 
   private createUnspentOutputFromFrozenTransaction (
-    previousFreezeTransaction: BitcoinClientTransaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number): Transaction.UnspentOutput {
 
     const previousFreezeAmountInSatoshis = previousFreezeTransaction.outputs[0].satoshis;
@@ -642,7 +643,7 @@ export default class BitcoinClient {
   }
 
   private static serializeSpendTransaction (spendTransaction: Transaction): string {
-    // bitcore-lib does not support creating the freeze transaction natively so we have to manually modify the
+    // bitcore-lib does not support creating the spendFromFreeze transactions natively so we have to manually modify the
     // inputs to add signatures/scripts etc. This means that when we try to serialize, the bitcore-lib throws
     // as it is unable to verify the signatures. So for serialization, we will pass in special options to
     // disable those checks.
@@ -663,17 +664,17 @@ export default class BitcoinClient {
     };
   }
 
-  private static createBitcoinTransactionModel (bitcoinClientTransaction: BitcoinClientTransaction): BitcoinTransactionModel {
+  private static createBitcoinTransactionModel (transactionWrapper: BitcoreTransactionWrapper): BitcoinTransactionModel {
 
-    const bitcoinInputs = bitcoinClientTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
-    const bitcoinOutputs = bitcoinClientTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
+    const bitcoinInputs = transactionWrapper.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
+    const bitcoinOutputs = transactionWrapper.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
 
     return {
       inputs: bitcoinInputs,
       outputs: bitcoinOutputs,
-      id: bitcoinClientTransaction.id,
-      blockHash: bitcoinClientTransaction.blockHash,
-      confirmations: bitcoinClientTransaction.confirmations
+      id: transactionWrapper.id,
+      blockHash: transactionWrapper.blockHash,
+      confirmations: transactionWrapper.confirmations
     };
   }
 
