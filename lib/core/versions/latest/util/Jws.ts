@@ -114,7 +114,7 @@ export default class Jws {
 
   /**
    * Signs the given encoded protected headder and encoded payload using the given private key.
-   * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
+   * @param privateKey A SECP256K1 private-key either in HEX string format (or JWK format, future support).
    */
   private static async signInternal (encodedProtectedHeader: string, encodedPayload: string, privateKey: string): Promise<string> {
     // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))

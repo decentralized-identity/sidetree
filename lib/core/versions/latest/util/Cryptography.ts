@@ -44,7 +44,7 @@ export default class Cryptography {
   /**
    * Signs the given content using the given private key.
    * @param content Content to be signed.
-   * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
+   * @param privateKey A SECP256K1 private-key either in HEX string format (or JWK format, future support).
    */
   public static async sign (content: string, privateKey: string): Promise<string> {
 
