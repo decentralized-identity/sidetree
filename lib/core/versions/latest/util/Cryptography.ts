@@ -3,7 +3,6 @@ import DidPublicKeyModel from '../models/DidPublicKeyModel';
 import Encoder from '../Encoder';
 import KeyUsage from '../KeyUsage';
 import PublicKeyModel from '../models/PublicKeyModel';
-import { EcPrivateKey, PrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 const secp256k1 = require('secp256k1');
 
 /**
@@ -15,25 +14,6 @@ export default class Cryptography {
    */
   public static sha256hash (value: Buffer): Buffer {
     return crypto.createHash('sha256').update(value).digest();
-  }
-
-  /**
-   * Generates a random pair of SECP256K1 public-private key-pair in JWK format.
-   * NOTE: The public key returned is wrapped as a DidPublicKeyModel for convenient usage.
-   * @returns Public key, followed by private key.
-   */
-  public static async generateKeyPairJwk (keyId: string, usage: KeyUsage, controller?: string): Promise<[DidPublicKeyModel, PrivateKey]> {
-    const privateKeyJwk = await EcPrivateKey.generatePrivateKey(keyId);
-    const publicKeyJwk = privateKeyJwk.getPublicKey();
-    const didPublicKey = {
-      id: keyId,
-      type: 'Secp256k1VerificationKey2018',
-      controller,
-      usage,
-      publicKeyJwk
-    };
-
-    return [didPublicKey, privateKeyJwk];
   }
 
   /**
@@ -66,19 +46,14 @@ export default class Cryptography {
    * @param content Content to be signed.
    * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
    */
-  public static async sign (content: string, privateKey: string | PrivateKey): Promise<string> {
+  public static async sign (content: string, privateKey: string): Promise<string> {
 
     let signature;
-    // This is the HEX string case.
-    if (typeof privateKey === 'string') {
-      const hash = Cryptography.sha256hash(Buffer.from(content));
-      const privateKeyBuffer = Buffer.from(privateKey, 'hex');
-      const signatureObject = secp256k1.sign(hash, privateKeyBuffer);
-      signature = Encoder.encode(signatureObject.signature);
-    } else {
-      // This is the JWK case.
-      signature = await Secp256k1CryptoSuite.sign(content, privateKey);
-    }
+    // This is the HEX string case. JWK will be supported in the future
+    const hash = Cryptography.sha256hash(Buffer.from(content));
+    const privateKeyBuffer = Buffer.from(privateKey, 'hex');
+    const signatureObject = secp256k1.sign(hash, privateKeyBuffer);
+    signature = Encoder.encode(signatureObject.signature);
 
     return signature;
   }
@@ -97,8 +72,6 @@ export default class Cryptography {
         const hash = Cryptography.sha256hash(Buffer.from(content));
         const publicKeyBuffer = Buffer.from(publicKey.publicKeyHex, 'hex');
         verified = secp256k1.verify(hash, Encoder.decodeAsBuffer(encodedSignature), publicKeyBuffer);
-      } else if (publicKey.publicKeyJwk !== undefined) {
-        verified = await Secp256k1CryptoSuite.verify(content, encodedSignature, publicKey.publicKeyJwk);
       }
 
       return verified;
