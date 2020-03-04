@@ -5,7 +5,7 @@ enum OperationType {
   Create = 'create',
   Update = 'update',
   Delete = 'delete',
-  Recover = 'recovery'
+  Recover = 'recover'
 }
 
 export default OperationType;

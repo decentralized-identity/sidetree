@@ -401,6 +401,47 @@ export default class OperationGenerator {
   }
 
   /**
+   * Generates a recovery operation request.
+   */
+  public static async generateRecoveryOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string | PrivateKey,
+    newRecoveryPublicKey: PublicKeyModel,
+    newSigningPublicKey: DidPublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    serviceEndpoints?: DidServiceEndpointModel[]) {
+    const document = Document.create([newSigningPublicKey], serviceEndpoints);
+
+    const operationData = {
+      nextUpdateOtpHash,
+      document
+    };
+    const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
+    const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
+
+    const signedOperationDataPayloadObject = {
+      operationDataHash,
+      recoveryKey: { publicKeyHex: newRecoveryPublicKey.publicKeyHex },
+      nextRecoveryOtpHash
+    };
+    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
+    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+
+    const operationDataEncodedString = Encoder.encode(operationDataBuffer);
+    const operation = {
+      type: OperationType.Recover,
+      didUniqueSuffix,
+      recoveryOtp,
+      signedOperationData,
+      operationData: operationDataEncodedString
+    };
+
+    return operation;
+  }
+
+  /**
    * Generates a create operation request buffer.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
