@@ -17,6 +17,7 @@ import { IBlockInfo } from './BitcoinProcessor';
  */
 interface BitcoinClientTransaction {
   id: string;
+  blockHash: string;
   confirmations: number;
   inputs: Transaction.Input[];
   outputs: Transaction.Output[];
@@ -223,7 +224,7 @@ export default class BitcoinClient {
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
-      const bitcoreTransaction = BitcoinClient.createBitcoinClientTransaction(transactionBuffer, block.confirmations);
+      const bitcoreTransaction = BitcoinClient.createBitcoinClientTransaction(transactionBuffer, block.confirmations, hash);
       return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
     });
 
@@ -424,7 +425,11 @@ export default class BitcoinClient {
     const hexEncodedTransaction = rawTransactionData.hex;
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    return BitcoinClient.createBitcoinClientTransaction(transactionBuffer, rawTransactionData.confirmations);
+    // The confirmations and the blockhash parameters can both be null if the transaction is not yet
+    // written to the blockchain. In that case, just pass in 0 for the confirmations
+    const confirmations = rawTransactionData.confirmations ? rawTransactionData.confirmations : 0;
+
+    return BitcoinClient.createBitcoinClientTransaction(transactionBuffer, confirmations, rawTransactionData.blockhash);
   }
 
   // This function is specifically created to help with unit testing.
@@ -432,12 +437,13 @@ export default class BitcoinClient {
     return new Transaction(buffer);
   }
 
-  private static createBitcoinClientTransaction (buffer: Buffer, confirmations: number): BitcoinClientTransaction {
+  private static createBitcoinClientTransaction (buffer: Buffer, confirmations: number, blockHash: string): BitcoinClientTransaction {
 
     const transaction = BitcoinClient.createTransactionFromBuffer(buffer);
 
     return {
       id: transaction.id,
+      blockHash: blockHash,
       confirmations: confirmations,
       inputs: transaction.inputs,
       outputs: transaction.outputs
@@ -666,6 +672,7 @@ export default class BitcoinClient {
       inputs: bitcoinInputs,
       outputs: bitcoinOutputs,
       id: bitcoinClientTransaction.id,
+      blockHash: bitcoinClientTransaction.blockHash,
       confirmations: bitcoinClientTransaction.confirmations
     };
   }

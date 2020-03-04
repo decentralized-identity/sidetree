@@ -61,10 +61,10 @@ export default class LockMonitor {
       status: LockStatus.None
     };
 
+    this.desiredLockAmountInSatoshis = 0;
+    this.transactionFeesAmountInSatoshis = 3000;
+    this.lockPeriodInBlocks = 3;
     this.pollPeriodInSeconds = 60;
-    this.lockPeriodInBlocks = 5;
-    this.desiredLockAmountInSatoshis = 1000;
-    this.transactionFeesAmountInSatoshis = 2000;
   }
 
   /**
@@ -151,8 +151,7 @@ export default class LockMonitor {
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      await this.releaseLock(this.currentLockState.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
-      currentLockUpdated = true;
+      currentLockUpdated = await this.handleReleaseExistingLock(this.currentLockState.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
     }
 
     if (currentLockUpdated) {
@@ -227,7 +226,7 @@ export default class LockMonitor {
         };
       }
 
-      // Else this is a unhandle-able exception rethrow
+      // Else this is an unexpected exception rethrow
       throw e;
     }
   }
@@ -299,12 +298,8 @@ export default class LockMonitor {
     latestSavedLockInfo: SavedLockModel,
     desiredLockAmountInSatoshis: number): Promise<boolean> {
 
-    const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
-
-    console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${currentValueTimeLock.unlockTransactionTime}`);
-
     // Just return if we're not close to expiry
-    if (currentValueTimeLock.unlockTransactionTime - currentBlockTime > 1) {
+    if (! (await this.isUnlockTimeReached(currentValueTimeLock.unlockTransactionTime))) {
       return false;
     }
 
@@ -334,6 +329,18 @@ export default class LockMonitor {
         throw (e);
       }
     }
+
+    return true;
+  }
+
+  private async handleReleaseExistingLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<boolean> {
+
+    // Don't continue unless the current locktime model is actually reached
+    if (! (await this.isUnlockTimeReached(currentValueTimeLock.unlockTransactionTime))) {
+      return false;
+    }
+
+    await this.renewLock(currentValueTimeLock, desiredLockAmountInSatoshis);
 
     return true;
   }
@@ -396,5 +403,13 @@ export default class LockMonitor {
     await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
 
     return lockInfoToSave;
+  }
+
+  private async isUnlockTimeReached (unlockTransactionTime: number): Promise<boolean> {
+    const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
+
+    console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${unlockTransactionTime}`);
+
+    return currentBlockTime - unlockTransactionTime >= 0;
   }
 }

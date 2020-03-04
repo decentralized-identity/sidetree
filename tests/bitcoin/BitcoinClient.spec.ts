@@ -48,6 +48,7 @@ describe('BitcoinClient', async () => {
     // Create the class' internal object
     return {
       id: transaction.id,
+      blockHash: 'some hash',
       confirmations: confirmations,
       inputs: transaction.inputs,
       outputs: transaction.outputs
@@ -330,6 +331,22 @@ describe('BitcoinClient', async () => {
       expect(actual).toEqual(mockTransaction);
       expect(spy).toHaveBeenCalled();
     });
+
+    it('should handle the case if the confirmations parameter from the blockchain is undefined', async () => {
+      const txnId = 'transaction_id';
+      const mockTransaction = generateBitcoinClientTransaction(bitcoinWalletImportString, 50, 0);
+
+      spyOn(BitcoinClient as any, 'createBitcoinClientTransaction').and.returnValue(mockTransaction);
+
+      const spy = mockRpcCall('getrawtransaction', [txnId, true], {
+        confirmations: undefined,
+        hex: Buffer.from('serialized txn').toString('hex')
+      });
+
+      const actual = await bitcoinClient['getRawTransactionRpc'](txnId);
+      expect(actual).toEqual(mockTransaction);
+      expect(spy).toHaveBeenCalled();
+    });
   });
 
   describe('createBitcoinClientTransaction', () => {
@@ -339,12 +356,13 @@ describe('BitcoinClient', async () => {
 
       const expectedTxn = {
         id: mockTransaction.id,
+        blockHash: 'block hash',
         confirmations: 50,
         inputs: mockTransaction.inputs,
         outputs: mockTransaction.outputs
       };
 
-      const actual = BitcoinClient['createBitcoinClientTransaction'](Buffer.from('mock input'), 50);
+      const actual = BitcoinClient['createBitcoinClientTransaction'](Buffer.from('mock input'), expectedTxn.confirmations, expectedTxn.blockHash);
       expect(actual).toEqual(expectedTxn);
     });
   });
@@ -366,6 +384,7 @@ describe('BitcoinClient', async () => {
     it('should return the satoshis from the correct output index.', async () => {
       const mockTxnWithMultipleOutputs: BitcoinTransactionModel = {
         id: 'someid',
+        blockHash: 'block Hash',
         confirmations: 30,
         inputs: [],
         outputs: [
@@ -388,6 +407,7 @@ describe('BitcoinClient', async () => {
     it('should return the inputs - outputs.', async () => {
       const mockTxn: BitcoinTransactionModel = {
         id: 'someid',
+        blockHash: 'block hash',
         confirmations: 4,
         inputs: [
           { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0 }

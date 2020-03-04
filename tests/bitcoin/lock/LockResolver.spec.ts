@@ -8,6 +8,7 @@ import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSe
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
+import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 
 function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddress: Address): Script {
   const lockUntilBlockBuffer = Buffer.alloc(3);
@@ -89,6 +90,7 @@ describe('LockResolver', () => {
 
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some transaction id',
+        blockHash: 'block hash',
         confirmations: 5,
         inputs: [],
         outputs: [
@@ -156,6 +158,7 @@ describe('LockResolver', () => {
 
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some transaction id',
+        blockHash: 'block hash',
         confirmations: 5,
         inputs: [],
         outputs: [
@@ -246,7 +249,7 @@ describe('LockResolver', () => {
 
   describe('getTransaction', () => {
     it('should return true if the bitcoin client returns the transaction', async () => {
-      const mockTxn: BitcoinTransactionModel = { id: 'id', confirmations: 5, inputs: [], outputs: [] };
+      const mockTxn: BitcoinTransactionModel = { id: 'id', blockHash: 'block hash', confirmations: 5, inputs: [], outputs: [] };
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.returnValue(Promise.resolve(mockTxn));
 
       const actual = await lockResolver['getTransaction']('input id');
@@ -266,22 +269,28 @@ describe('LockResolver', () => {
     it('should calculate the correct starting block', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
+        blockHash: 'block hash',
         confirmations: 23,
         inputs: [],
         outputs: []
       };
 
-      const mockCurrentBlockHeight = mockTransaction.confirmations + 350; // making sure that current block height is higher
-      spyOn(lockResolver['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
+      const mockBlockInfo: IBlockInfo = {
+        hash: 'some hash',
+        height: 989347,
+        previousHash: 'previous hash'
+      };
+      spyOn(lockResolver['bitcoinClient'], 'getBlockInfo').and.returnValue(Promise.resolve(mockBlockInfo));
 
       const actual = await lockResolver['calculateLockStartingBlock'](mockTransaction);
-      expect(actual).toEqual(mockCurrentBlockHeight - mockTransaction.confirmations - 1);
+      expect(actual).toEqual(mockBlockInfo.height);
       done();
     });
 
     it('should throw if the number of confiramtions on the input is < 0', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
+        blockHash: 'block hash',
         confirmations: -2,
         inputs: [],
         outputs: []
@@ -297,6 +306,7 @@ describe('LockResolver', () => {
     it('should throw if the number of confiramtions on the input is 0', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
+        blockHash: 'block hash',
         confirmations: 0,
         inputs: [],
         outputs: []

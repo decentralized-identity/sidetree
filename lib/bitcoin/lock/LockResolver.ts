@@ -159,7 +159,8 @@ export default class LockResolver {
       throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed, `transaction id: ${transaction.id}`);
     }
 
-    const currentBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    return currentBlockHeight - transaction.confirmations - 1;
+    const blockInfo = await this.bitcoinClient.getBlockInfo(transaction.blockHash);
+
+    return blockInfo.height;
   }
 }
