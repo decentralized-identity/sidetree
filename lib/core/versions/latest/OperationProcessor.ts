@@ -173,7 +173,7 @@ export default class OperationProcessor implements IOperationProcessor {
     if (!isValidOperationData) {
       return false;
     }
-    
+
     const internalDocumentModel = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document: operation.operationData.document,

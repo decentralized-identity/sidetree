@@ -437,7 +437,7 @@ export default class Operation {
    * Validates the given recovery key object is in valid format.
    * @throws SidetreeError if given recovery key is invalid.
    */
-  public static validateRecoveryKeyObject(recoveryKey: any) {
+  public static validateRecoveryKeyObject (recoveryKey: any) {
     if (recoveryKey === undefined) {
       throw new SidetreeError(ErrorCode.OperationRecoveryKeyUndefined);
     }

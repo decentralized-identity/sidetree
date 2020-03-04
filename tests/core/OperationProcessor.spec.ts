@@ -667,7 +667,7 @@ describe('OperationProcessor', async () => {
 
       it('should not apply if recovery OTP is invalid.', async () => {
         // Generate a recover operation payload.
-        const operationData = await OperationGenerator.generateRecoverOperation({didUniqueSuffix, recoveryOtp: 'invalidOtpValue', recoveryPrivateKey });
+        const operationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryOtp: 'invalidOtpValue', recoveryPrivateKey });
         const anchoredRecoverOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(operationData.recoverOperation, 2, 2, 2);
 
         const recoveryResult = await operationProcessor.apply(anchoredRecoverOperationModel, didDocumentReference);

@@ -49,7 +49,6 @@ export default class RecoverOperation implements OperationModel {
   /** Operation data. */
   public readonly operationData: OperationDataModel;
 
-
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
    */
