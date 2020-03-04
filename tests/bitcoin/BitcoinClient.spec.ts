@@ -20,7 +20,7 @@ describe('BitcoinClient', async () => {
 
   beforeEach(() => {
     bitcoinWalletImportString = BitcoinClient.generatePrivateKey('testnet');
-    bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', bitcoinWalletImportString, 10, maxRetries);
+    bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', bitcoinWalletImportString, 10, maxRetries, 0);
 
     privateKeyFromBitcoinClient = bitcoinClient['walletPrivateKey'];
     walletAddressFromBitcoinClient = bitcoinClient['walletAddress'];
@@ -41,6 +41,24 @@ describe('BitcoinClient', async () => {
       return Promise.resolve(returns);
     });
   }
+
+  describe('createSidetreeTransaction', () => {
+    it('should return the expected result', async () => {
+      const createTransactionSpy = spyOn(bitcoinClient, 'createTransaction' as any).and.returnValue({
+        id: 'someId',
+        getFee: () => { return 123; },
+        serialize: () => { return 'someString'; }
+      });
+
+      const result = await bitcoinClient.createSidetreeTransaction('transactionData', 123);
+
+      expect(createTransactionSpy).toHaveBeenCalledWith('transactionData', 123);
+      expect(result).toEqual({
+        transactionId: 'someId',
+        transactionFee: 123,
+        serializedTransactionObject: 'someString'});
+    });
+  });
 
   describe('generatePrivateKey', () => {
     it('should construct a PrivateKey and export its WIF', () => {
@@ -72,20 +90,11 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('broadcastTransaction', () => {
-    it('should call the utility function.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
-      spyOn(bitcoinClient as any, 'createTransaction').and.returnValue(Promise.resolve(transaction));
-
-      const transactionToString = transaction.toString();
-      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
-
-      const mockUtilFuncResponse = 'mock-response';
-      const spy = spyOn(bitcoinClient as any, 'broadcastTransactionRpc').and.returnValue(Promise.resolve(mockUtilFuncResponse));
-
-      const actual = await bitcoinClient.broadcastTransaction('data to write', 1000);
-      expect(actual).toEqual(mockUtilFuncResponse);
-      expect(spy).toHaveBeenCalledWith(transactionToString);
+  describe('broadcastSidetreeTransaction', () => {
+    it('should call broadcastTransactionRpc with expected argument', async (done) => {
+      const mockRpcCall = spyOn<any>(bitcoinClient, 'broadcastTransactionRpc').and.returnValue('some value');
+      await bitcoinClient.broadcastSidetreeTransaction({ transactionId: 'someId', transactionFee: 1223, serializedTransactionObject: 'abc' });
+      expect(mockRpcCall).toHaveBeenCalledTimes(1);
       done();
     });
   });
@@ -441,7 +450,7 @@ describe('BitcoinClient', async () => {
   });
 
   describe('createTransaction', () => {
-    it('should create the transaction object using the inputs correctly.', async (done) => {
+    it('should create the transaction object using fee passed in if it is greater', async (done) => {
       const availableSatoshis = 5000;
       const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
       const unspentOutputs = [
@@ -455,6 +464,8 @@ describe('BitcoinClient', async () => {
       ];
 
       spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      // The calculated fee is less than the one passed in
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(1));
       const dataToWrite = 'data to write';
       const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
       const fee = availableSatoshis / 2;
@@ -462,6 +473,92 @@ describe('BitcoinClient', async () => {
       const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
       expect(transaction.getFee()).toEqual(fee);
       expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
+      done();
+    });
+
+    it('should create the transaction object and apply markup and round up to nearest int when using the fee passed in', async (done) => {
+      const availableSatoshis = 5000;
+      const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
+      const unspentOutputs = [
+        {
+          txId: unspentCoin.txId,
+          outputIndex: unspentCoin.outputIndex,
+          address: unspentCoin.address,
+          script: unspentCoin.script,
+          satoshis: unspentCoin.satoshis
+        }
+      ];
+
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      // The calculated fee is less than the one passed in
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(1));
+      const originalFeeMarkupHolder = bitcoinClient['sidetreeTransactionFeeMarkupPercentage'];
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = 10;
+      const dataToWrite = 'data to write';
+      const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
+      const fee = availableSatoshis / 2;
+
+      const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
+      expect(transaction.getFee()).toEqual(Math.ceil(fee * 110 / 100));
+      expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = originalFeeMarkupHolder;
+      done();
+    });
+
+    it('should create the transaction object using calculated fee if it is greater', async (done) => {
+      const availableSatoshis = 5000;
+      const calculatedFee = 3000;
+      const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
+      const unspentOutputs = [
+        {
+          txId: unspentCoin.txId,
+          outputIndex: unspentCoin.outputIndex,
+          address: unspentCoin.address,
+          script: unspentCoin.script,
+          satoshis: unspentCoin.satoshis
+        }
+      ];
+
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      // The calculated fee is greater than the fee passed in
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(calculatedFee));
+      const dataToWrite = 'data to write';
+      const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
+      const fee = availableSatoshis / 2;
+
+      const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
+      expect(transaction.getFee()).toEqual(calculatedFee);
+      expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
+      done();
+    });
+
+    it('should create the transaction object using calculated fee with markup, round up to nearest int', async (done) => {
+      const availableSatoshis = 5000;
+      const calculatedFee = 3000;
+      const unspentCoin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, availableSatoshis);
+      const unspentOutputs = [
+        {
+          txId: unspentCoin.txId,
+          outputIndex: unspentCoin.outputIndex,
+          address: unspentCoin.address,
+          script: unspentCoin.script,
+          satoshis: unspentCoin.satoshis
+        }
+      ];
+
+      const markupFeeHolder = bitcoinClient['sidetreeTransactionFeeMarkupPercentage'];
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = 10;
+      spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve(unspentOutputs));
+      // The calculated fee is greater than the fee passed in
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(Promise.resolve(calculatedFee));
+      const dataToWrite = 'data to write';
+      const dataToWriteInHex = Buffer.from(dataToWrite).toString('hex');
+      const fee = availableSatoshis / 2;
+
+      const transaction = await bitcoinClient['createTransaction'](dataToWrite, fee);
+      expect(transaction.getFee()).toEqual(Math.ceil(calculatedFee * 110 / 100));
+      expect(transaction.outputs[0].script.toASM()).toContain(dataToWriteInHex);
+      bitcoinClient['sidetreeTransactionFeeMarkupPercentage'] = markupFeeHolder;
       done();
     });
   });

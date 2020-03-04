@@ -10,7 +10,7 @@ import SidetreeError from '../../lib/core/SidetreeError';
 
 describe('CreateOperation', async () => {
   describe('parse()', async () => {
-    it('should throw create operation request has more than 3 properties.', async () => {
+    it('should throw if create operation request has more than 3 properties.', async () => {
       const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);

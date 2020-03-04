@@ -84,7 +84,7 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
-      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this.config.transactionFeeMarkupPercentage);
+      const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
       this.batchWriters.set(version, batchWriter);
 
       /* tslint:disable-next-line */

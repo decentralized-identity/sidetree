@@ -34,28 +34,32 @@ export default class CreateOperation implements OperationModel {
   /** Data used to generate the unique DID suffix. */
   public readonly suffixData: SuffixDataModel;
 
-  /** Encoded string of the suffix data. */
-  public readonly encodedSuffixData: string;
-
   /** Operation data. */
   public readonly operationData: OperationDataModel;
 
+  /** Encoded string of the suffix data. */
+  public readonly encodedSuffixData: string;
+
+  /** Encoded string of the operation data. */
+  public readonly encodedOperationData: string;
+
   /**
-   * Constructs an Operation if the operation buffer passes schema validation, throws error otherwise.
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
    */
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
     encodedSuffixData: string,
+    encodedOperationData: string,
     suffixData: SuffixDataModel,
     operationData: OperationDataModel) {
+    this.didUniqueSuffix = didUniqueSuffix;
     this.type = OperationType.Create;
     this.operationBuffer = operationBuffer;
     this.encodedSuffixData = encodedSuffixData;
+    this.encodedOperationData = encodedOperationData;
     this.suffixData = suffixData;
     this.operationData = operationData;
-    this.didUniqueSuffix = didUniqueSuffix;
   }
 
   /**
@@ -95,11 +99,12 @@ export default class CreateOperation implements OperationModel {
     }
 
     const encodedSuffixData = operationObject.suffixData;
+    const encodedOperationData = operationObject.operationData;
     const suffixData = await CreateOperation.parseSuffixData(encodedSuffixData);
     const operationData = await CreateOperation.parseOperationData(operationObject.operationData);
 
     const didUniqueSuffix = CreateOperation.computeHash(operationObject.suffixData);
-    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, operationData);
+    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, encodedOperationData, suffixData, operationData);
   }
 
   private static async parseSuffixData (suffixDataEncodedString: any): Promise<SuffixDataModel> {

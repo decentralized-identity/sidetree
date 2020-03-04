@@ -15,9 +15,6 @@ export default class IpfsStorage {
   /** singleton holding the instance of ipfsStorage to use */
   private static ipfsStorageSingleton: IpfsStorage | undefined;
 
-  // a set of error texts ipfs use to denote not a file
-  private static notAFileErrorTextSet = new Set(['this dag node is a directory', 'this dag node has no content']);
-
   /**
    * Create and return the singleton instance of the ipfsStorage if doesn't already exist
    */
@@ -146,7 +143,9 @@ export default class IpfsStorage {
    * @param errorText the error text that matches the ipfs implementation of not a file error
    */
   private static isIpfsErrorNotAFileError (errorText: string) {
-    return IpfsStorage.notAFileErrorTextSet.has(errorText);
+    // a set of error texts ipfs use to denote not a file
+    const notAFileErrorTextSet = new Set(['this dag node is a directory', 'this dag node has no content']);
+    return notAFileErrorTextSet.has(errorText);
   }
 
 }

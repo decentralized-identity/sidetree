@@ -2,16 +2,20 @@ import * as httpStatus from 'http-status';
 import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
+import BitcoinError from '../../lib/bitcoin/BitcoinError';
 import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
-import ErrorCode from '../../lib/common/SharedErrorCode';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
+import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
+import { ResponseStatus } from '../../lib/common/Response';
 import { Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {
@@ -41,7 +45,11 @@ describe('BitcoinProcessor', () => {
     requestMaxRetries: 3,
     mongoDbConnectionString: 'mongodb://localhost:27017',
     sidetreeTransactionPrefix: 'sidetree:',
-    transactionPollPeriodInSeconds: 60
+    transactionPollPeriodInSeconds: 60,
+    sidetreeTransactionFeeMarkupPercentage: 0,
+    valueTimeLockPollPeriodInSeconds: 60,
+    valueTimeLockAmountInBitcoins: 1,
+    valueTimeLockTransactionFeesAmountInBitcoins: undefined
   };
 
   let bitcoinProcessor: BitcoinProcessor;
@@ -52,12 +60,16 @@ describe('BitcoinProcessor', () => {
   let getStartingBlockForInitializationSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
   let periodicPollSpy: jasmine.Spy;
+  let mongoLockTxnStoreSpy: jasmine.Spy;
+  let lockMonitorSpy: jasmine.Spy;
 
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     quantileCalculatorInitializeSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'initialize');
     bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
+    mongoLockTxnStoreSpy = spyOn(bitcoinProcessor['mongoDbLockTransactionStore'], 'initialize');
+    lockMonitorSpy = spyOn(bitcoinProcessor['lockMonitor'], 'initialize');
 
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
@@ -110,7 +122,11 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        sidetreeTransactionFeeMarkupPercentage: 0,
+        valueTimeLockPollPeriodInSeconds: 60,
+        valueTimeLockAmountInBitcoins: 1,
+        valueTimeLockTransactionFeesAmountInBitcoins: undefined
       };
 
       const bitcoinProcessor = new BitcoinProcessor(config);
@@ -120,6 +136,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);
       expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName!);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
+      expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
     });
 
     it('should throw if the wallet import string is incorrect', () => {
@@ -137,7 +154,11 @@ describe('BitcoinProcessor', () => {
         lowBalanceNoticeInDays: undefined,
         requestTimeoutInMilliseconds: undefined,
         requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined
+        transactionPollPeriodInSeconds: undefined,
+        sidetreeTransactionFeeMarkupPercentage: 0,
+        valueTimeLockPollPeriodInSeconds: 60,
+        valueTimeLockAmountInBitcoins: 1,
+        valueTimeLockTransactionFeesAmountInBitcoins: undefined
       };
 
       try {
@@ -156,18 +177,24 @@ describe('BitcoinProcessor', () => {
       quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
       bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
       getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
+      mongoLockTxnStoreSpy.and.returnValue(Promise.resolve());
+      lockMonitorSpy.and.returnValue(Promise.resolve());
     });
 
     it('should initialize the internal objects', async (done) => {
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
       expect(quantileCalculatorInitializeSpy).not.toHaveBeenCalled();
       expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
+      expect(mongoLockTxnStoreSpy).not.toHaveBeenCalled();
+      expect(lockMonitorSpy).not.toHaveBeenCalled();
 
       await bitcoinProcessor.initialize();
 
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
       expect(quantileCalculatorInitializeSpy).toHaveBeenCalledWith();
       expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
+      expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
+      expect(lockMonitorSpy).toHaveBeenCalled();
       done();
     });
 
@@ -407,7 +434,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).not.toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
+        expect(error.code).not.toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
       } finally {
         done();
       }
@@ -423,7 +450,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
+        expect(error.code).toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
         expect(verifyMock).toHaveBeenCalledTimes(1);
       } finally {
         done();
@@ -446,7 +473,7 @@ describe('BitcoinProcessor', () => {
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.InvalidTransactionNumberOrTimeHash);
+        expect(error.code).toEqual(SharedErrorCode.InvalidTransactionNumberOrTimeHash);
         expect(getTransactionsSinceMock).toHaveBeenCalled();
         expect(verifyMock).toHaveBeenCalledTimes(2);
       } finally {
@@ -523,10 +550,15 @@ describe('BitcoinProcessor', () => {
     it('should write a transaction if there are enough Satoshis', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning + 1));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'createSidetreeTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: bitcoinFee,
+        serializedTransactionObject: 'string'
+      }));
       spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
 
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastSidetreeTransaction' as any).and.returnValue(Promise.resolve('someHash'));
 
       await bitcoinProcessor.writeTransaction(hash, bitcoinFee);
       expect(getCoinsSpy).toHaveBeenCalled();
@@ -540,7 +572,12 @@ describe('BitcoinProcessor', () => {
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(lowLevelWarning - 1));
       spyOn(bitcoinProcessor['spendingMonitor'],'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.returnValue(Promise.resolve(true));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastSidetreeTransaction' as any).and.returnValue(Promise.resolve('someHash'));
+      spyOn(bitcoinProcessor['bitcoinClient'], 'createSidetreeTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: bitcoinFee,
+        serializedTransactionObject: 'string'
+      }));
       const errorSpy = spyOn(global.console, 'error').and.callFake((message: string) => {
         expect(message).toContain('fund your wallet');
       });
@@ -557,7 +594,12 @@ describe('BitcoinProcessor', () => {
       const getCoinsSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(0));
       spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(true));
       const hash = randomString();
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any).and.callFake(() => {
+      spyOn(bitcoinProcessor['bitcoinClient'], 'createSidetreeTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: Number.MAX_SAFE_INTEGER,
+        serializedTransactionObject: 'string'
+      }));
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastSidetreeTransaction' as any).and.callFake(() => {
         fail('writeTransaction should have stopped before calling broadcast');
       });
       try {
@@ -566,7 +608,7 @@ describe('BitcoinProcessor', () => {
       } catch (error) {
         expect(error instanceof RequestError).toBeTruthy();
         expect(error.status).toEqual(400);
-        expect(error.code).toEqual(ErrorCode.NotEnoughBalanceForWrite);
+        expect(error.code).toEqual(SharedErrorCode.NotEnoughBalanceForWrite);
 
         expect(getCoinsSpy).toHaveBeenCalled();
         expect(broadcastSpy).not.toHaveBeenCalled();
@@ -578,19 +620,25 @@ describe('BitcoinProcessor', () => {
     it('should fail if the current fee is over the spending limits', async (done) => {
       const monitorAddSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'addTransactionDataBeingWritten');
       const spendLimitSpy = spyOn(bitcoinProcessor['spendingMonitor'], 'isCurrentFeeWithinSpendingLimit').and.returnValue(Promise.resolve(false));
-      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastTransaction' as any);
+      const broadcastSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'broadcastSidetreeTransaction' as any);
+      const createSidetreeTransactionSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'createSidetreeTransaction').and.returnValue(Promise.resolve({
+        transactionId: 'string',
+        transactionFee: bitcoinFee,
+        serializedTransactionObject: 'string'
+      }));
 
       try {
         await bitcoinProcessor.writeTransaction('some data', bitcoinFee);
         fail('expected to throw');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.SpendingCapPerPeriodReached);
+        expect(error.code).toEqual(SharedErrorCode.SpendingCapPerPeriodReached);
       }
 
       expect(broadcastSpy).not.toHaveBeenCalled();
       expect(spendLimitSpy).toHaveBeenCalledWith(bitcoinFee, bitcoinProcessor['lastProcessedBlock']!.height);
       expect(monitorAddSpy).not.toHaveBeenCalled();
+      expect(createSidetreeTransactionSpy).toHaveBeenCalledTimes(1);
       done();
     });
   });
@@ -613,7 +661,7 @@ describe('BitcoinProcessor', () => {
         fail('should have failed');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+        expect(error.code).toEqual(SharedErrorCode.BlockchainTimeOutOfRange);
       }
     });
 
@@ -625,7 +673,7 @@ describe('BitcoinProcessor', () => {
         fail('should have failed');
       } catch (error) {
         expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(ErrorCode.BlockchainTimeOutOfRange);
+        expect(error.code).toEqual(SharedErrorCode.BlockchainTimeOutOfRange);
       }
     });
 
@@ -1627,6 +1675,101 @@ describe('BitcoinProcessor', () => {
 
       expect(fetchedVersion.name).toEqual(expectedVersion.name);
       expect(fetchedVersion.version).toEqual(expectedVersion.version);
+    });
+  });
+
+  describe('getValueTimeLock', () => {
+    it('should call the lock resolver and return the value from it.', async (done) => {
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1000,
+        identifier: 'lock identifier',
+        owner: 'owner',
+        unlockTransactionTime: 1233
+      };
+
+      spyOn(bitcoinProcessor['lockResolver'], 'resolveSerializedLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
+
+      const actual = await bitcoinProcessor.getValueTimeLock('some serialized input');
+      expect(actual).toEqual(mockValueTimeLock);
+      done();
+    });
+
+    it('should throw request error if lockresolver throws any exception', async (done) => {
+      spyOn(bitcoinProcessor['lockResolver'], 'resolveSerializedLockIdentifierAndThrowOnError').and.throwError('no lock found.');
+
+      try {
+        await bitcoinProcessor.getValueTimeLock('some serialized input');
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+        expect(e).toEqual(expectedError);
+      }
+
+      done();
+    });
+  });
+
+  describe('generatePrivateKeyForTestnet', () => {
+    it('should return a private key string by calling the BitcoinClient', () => {
+      const mockPrivateKey = 'mocked private key';
+      spyOn(BitcoinClient, 'generatePrivateKey').and.returnValue(mockPrivateKey);
+
+      const actual = BitcoinProcessor.generatePrivateKeyForTestnet();
+      expect(actual).toEqual(mockPrivateKey);
+    });
+  });
+
+  describe('getActiveValueTimeLockForThisNode', () => {
+    it('should return the value-time-lock from the lockmonitor', () => {
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1000,
+        identifier: 'lock identifier',
+        owner: 'owner',
+        unlockTransactionTime: 1233
+      };
+
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.returnValue(mockValueTimeLock);
+
+      const actual = bitcoinProcessor.getActiveValueTimeLockForThisNode();
+      expect(actual).toEqual(mockValueTimeLock);
+    });
+
+    it('should throw not-found error if the lock monitor returns undefined.', () => {
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.returnValue(undefined);
+
+      try {
+        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
+        expect(e).toEqual(expectedError);
+      }
+    });
+
+    it('should throw pending-state exception if the lock monitor throws pending-state error', () => {
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.callFake(() => {
+        throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+      });
+
+      try {
+        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
+        expect(e).toEqual(expectedError);
+      }
+    });
+
+    it('should bubble up any other errors.', () => {
+      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.throwError('no lock found.');
+
+      try {
+        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        fail('Expected exception is not thrown');
+      } catch (e) {
+        const expectedError = new RequestError(ResponseStatus.ServerError);
+        expect(e).toEqual(expectedError);
+      }
     });
   });
 });
