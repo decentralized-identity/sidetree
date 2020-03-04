@@ -14,7 +14,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
-import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
+import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 interface AnchoredCreateOperationGenerationInput {

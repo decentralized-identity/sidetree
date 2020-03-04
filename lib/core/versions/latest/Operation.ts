@@ -1,5 +1,4 @@
 import CreateOperation from './CreateOperation';
-import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
@@ -9,7 +8,8 @@ import KeyUsage from './KeyUsage';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import PublicKeyModel from './models/PublicKeyModel';
+import PublicKeyModel from '../../models/PublicKeyModel';
+import RecoveryOperation from './RecoveryOperation';
 import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -99,6 +99,8 @@ export default class Operation {
         return CreateOperation.parseObject(operationObject, operationBuffer);
       } else if (operationType === OperationType.Update) {
         return UpdateOperation.parseObject(operationObject, operationBuffer);
+      } else if (operationType === OperationType.Recover) {
+        return RecoveryOperation.parseObject(operationObject, operationBuffer);
       } else {
         throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
       }
@@ -261,7 +263,6 @@ export default class Operation {
       case OperationType.Create:
         // additional parsing required because did doc is nest base64url encoded
         decodedPayload.didDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.didDocument));
-        Operation.validateCreatePayload(decodedPayload);
         this.didUniqueSuffix = this.operationHash;
         this.didDocument = decodedPayload.didDocument;
         this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
@@ -277,7 +278,6 @@ export default class Operation {
       case OperationType.Recover:
         // additional parsing required because did doc is nest base64url encoded
         decodedPayload.newDidDocument = JSON.parse(Encoder.decodeAsString(decodedPayload.newDidDocument));
-        Operation.validateRecoverPayload(decodedPayload);
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.didDocument = decodedPayload.newDidDocument;
         this.recoveryOtp = decodedPayload.recoveryOtp;
@@ -291,36 +291,6 @@ export default class Operation {
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
     }
-  }
-
-  /**
-   * Validates the schema given create operation payload.
-   * @throws Error if given operation payload fails validation.
-   */
-  public static validateCreatePayload (payload: any) {
-    const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 4) {
-      throw new SidetreeError(ErrorCode.OperationCreatePayloadMissingOrUnknownProperty);
-    }
-
-    if (typeof payload.nextRecoveryOtpHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextRecoveryOtpHash);
-    }
-
-    if (typeof payload.nextUpdateOtpHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextUpdateOtpHash);
-    }
-
-    const validDocument = Document.isObjectValidOriginalDocument(payload.didDocument);
-    if (!validDocument) {
-      throw new SidetreeError(ErrorCode.OperationCreateInvalidDidDocument);
-    }
-
-    const nextRecoveryOtpHash = Encoder.decodeAsBuffer(payload.nextRecoveryOtpHash);
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(payload.nextUpdateOtpHash);
-
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
   }
 
   /**
@@ -460,35 +430,22 @@ export default class Operation {
     }
   }
 
+  /** Maximum allowed encoded OTP string length. */
+  public static readonly maxEncodedOtpLength = 100;
+
   /**
-   * Validates the schema given recover operation payload.
-   * @throws Error if given operation payload fails validation.
+   * Validates the given recovery key object is in valid format.
+   * @throws SidetreeError if given recovery key is invalid.
    */
-  public static validateRecoverPayload (payload: any) {
-    const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 6) {
-      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrUnknownProperty);
+  public static validateRecoveryKeyObject(recoveryKey: any) {
+    if (recoveryKey === undefined) {
+      throw new SidetreeError(ErrorCode.OperationRecoveryKeyUndefined);
     }
 
-    if (typeof payload.didUniqueSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidUniqueSuffixType);
-    }
-
-    if (typeof payload.recoveryOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidRecoveryOtp);
-    }
-
-    if (typeof payload.nextRecoveryOtpHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidNextRecoveryOtpHash);
-    }
-
-    if (typeof payload.nextUpdateOtpHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidNextUpdateOtpHash);
-    }
-
-    const validDocument = Document.isObjectValidOriginalDocument(payload.newDidDocument);
-    if (!validDocument) {
-      throw new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidDocument);
+    const recoveryKeyObjectPropertyCount = Object.keys(recoveryKey);
+    if (recoveryKeyObjectPropertyCount.length !== 1 ||
+        typeof recoveryKey.publicKeyHex !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid);
     }
   }
 }

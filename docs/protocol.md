@@ -290,7 +290,7 @@ POST / HTTP/1.1
 #### `suffixData` property schema
 ```json
 {
-  "operationDataHash": "Hash of the encoded operation data string.",
+  "operationDataHash": "Hash of the operation data.",
   "recoveryKey": {
     "publicKeyHex": "The recovery public key as a HEX string."
   },
@@ -452,7 +452,7 @@ POST / HTTP/1.1
   "updateOtp": "The one-time password to be used for this update.",
   "signedOperationDataHash": {
     "protected": "JWS header.",
-    "payload": "Hash of the encoded operation data string.",
+    "payload": "Hash of the operation data.",
     "signature": "JWS signature."
   },
   "operationData": "Encoded JSON object containing update operation data."
@@ -661,9 +661,9 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "type": "recover",
+  "type": "recovery",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "recoveryOtp": "The one-time password to be used for this recovery.",
+  "recoveryOtp": "The encoded one-time password to be used for this recovery.",
   "signedOperationData": {
     "protected": "JWS header.",
     "payload": "JWS encoded JSON object containing recovery operation data that are signed.",
@@ -676,7 +676,7 @@ POST / HTTP/1.1
 #### `signedOperationData` property schema
 ```json
 {
-  "operationDataHash": "Hash of the encoded unsigned operation data string.",
+  "operationDataHash": "Hash of the unsigned operation data.",
   "recoveryKey": "The new recovery key.",
   "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
 }

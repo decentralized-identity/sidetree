@@ -8,6 +8,7 @@ import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationPro
 import Multihash from './Multihash';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import OperationType from '../../enums/OperationType';
+import RecoveryOperation from './RecoveryOperation';
 import UpdateOperation from './UpdateOperation';
 
 /**
@@ -87,17 +88,18 @@ export default class OperationProcessor implements IOperationProcessor {
     const internalDocumentModel = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
-      nextUpdateOtpHash: operation.operationData.nextUpdateOtpHash,
       recoveryKey: operation.suffixData.recoveryKey,
-      nextRecoveryOtpHash: operation.suffixData.nextRecoveryOtpHash
+      nextRecoveryOtpHash: operation.suffixData.nextRecoveryOtpHash,
+      nextUpdateOtpHash: operation.operationData.nextUpdateOtpHash
     };
 
     // Transform the internal document state to a DID document.
     // NOTE: this transformation will be moved out and only apply to the final internal document state by the time #266 is completed.
-    const didDocument = Document.transformToDidDocument(this.didMethodName, internalDocumentModel);
+    const didDocument = this.documentComposer.transformToExternalDocument(this.didMethodName, internalDocumentModel);
 
     didResolutionModel.didDocument = didDocument;
     didResolutionModel.metadata = {
+      recoveryKey: internalDocumentModel.recoveryKey,
       lastOperationTransactionNumber: namedAnchoredOperationModel.transactionNumber,
       nextRecoveryOtpHash: internalDocumentModel.nextRecoveryOtpHash,
       nextUpdateOtpHash: internalDocumentModel.nextUpdateOtpHash
@@ -152,33 +154,43 @@ export default class OperationProcessor implements IOperationProcessor {
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
 
-    const didDocument = didResolutionModel.didDocument;
-
-    // Recovery can only be applied on an existing DID.
-    if (!didDocument) {
-      return false;
-    }
-
-    const operation = AnchoredOperation.createAnchoredOperation(namedAnchoredOperationModel);
+    const operation = await RecoveryOperation.parse(namedAnchoredOperationModel.operationBuffer);
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextRecoveryOtpHash!);
+    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp, didResolutionModel.metadata!.nextRecoveryOtpHash!);
     if (!isValidOtp) {
       return false;
     }
 
-    // ... and the signature must pass verification.
-    if (!(await operation.verifySignature(didDocument.recoveryKey))) {
+    // Verify the signature.
+    const signatureIsValid = await operation.signedOperationDataJws.verifySignature(didResolutionModel.metadata!.recoveryKey);
+    if (!signatureIsValid) {
       return false;
     }
 
-    const newDidDocument = operation.didDocument!;
-    newDidDocument.id = this.didMethodName + operation.didUniqueSuffix;
+    // Verify the actual operation data hash against the expected operation data hash.
+    const isValidOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.signedOperationData.operationDataHash);
+    if (!isValidOperationData) {
+      return false;
+    }
+    
+    const internalDocumentModel = {
+      didUniqueSuffix: operation.didUniqueSuffix,
+      document: operation.operationData.document,
+      recoveryKey: operation.signedOperationData.recoveryKey,
+      nextRecoveryOtpHash: operation.signedOperationData.nextRecoveryOtpHash,
+      nextUpdateOtpHash: operation.operationData.nextUpdateOtpHash
+    };
 
-    didResolutionModel.didDocument = newDidDocument;
-    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
-    didResolutionModel.metadata!.nextRecoveryOtpHash = operation.nextRecoveryOtpHash!,
-    didResolutionModel.metadata!.nextUpdateOtpHash = operation.nextUpdateOtpHash!;
+    // Transform the internal document state to a DID document.
+    // NOTE: this transformation will be moved out and only apply to the final internal document state by the time #266 is completed.
+    const document = this.documentComposer.transformToExternalDocument(this.didMethodName, internalDocumentModel);
+
+    didResolutionModel.didDocument = document;
+    didResolutionModel.metadata!.recoveryKey = operation.signedOperationData.recoveryKey,
+    didResolutionModel.metadata!.lastOperationTransactionNumber = namedAnchoredOperationModel.transactionNumber;
+    didResolutionModel.metadata!.nextRecoveryOtpHash = operation.signedOperationData.nextRecoveryOtpHash,
+    didResolutionModel.metadata!.nextUpdateOtpHash = operation.operationData.nextUpdateOtpHash;
     return true;
   }
 

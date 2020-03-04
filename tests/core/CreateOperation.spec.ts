@@ -78,7 +78,7 @@ describe('CreateOperation', async () => {
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationRecoveryKeyMissing));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyUndefined));
     });
 
     it('should throw if suffix data has invalid recovery key.', async () => {
@@ -89,7 +89,7 @@ describe('CreateOperation', async () => {
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationRecoveryKeyInvalid));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid));
     });
   });
 

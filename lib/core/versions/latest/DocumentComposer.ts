@@ -1,14 +1,32 @@
-import UpdateOperation from './UpdateOperation';
-import Document from './Document';
 import AnchoredOperation from './AnchoredOperation';
-import SidetreeError from '../../SidetreeError';
+import Document from './Document';
 import ErrorCode from './ErrorCode';
+import InternalDocumentModel from './models/InternalDocumentModel';
+import SidetreeError from '../../SidetreeError';
+import UpdateOperation from './UpdateOperation';
 
 /**
  * Composes operations into external-facing document.
  * #266 - DidResolutionModel will be gone by the time #266 is done.
  */
 export default class DocumentComposer {
+  /**
+   * Transforms the given internal document model into a DID Document.
+   */
+  public transformToExternalDocument (didMethodName: string, internalDocumentModel: InternalDocumentModel): any {
+    const did = didMethodName + internalDocumentModel.didUniqueSuffix;
+    const didDocument = {
+      '@context': 'https://w3id.org/did/v1',
+      publicKey: internalDocumentModel.document.publicKey,
+      service: internalDocumentModel.document.service,
+      recoveryKey: internalDocumentModel.recoveryKey
+    };
+
+    Document.addDidToDocument(didDocument, did);
+
+    return didDocument;
+  }
+
   /**
    * Applies the update operation to the given document.
    * @returns The resultant document.

@@ -79,7 +79,7 @@ export default class VegetaLoadGenerator {
 
       // Generate a recovery payload.
       const recoveryPayload = {
-        type: 'recover',
+        type: 'recovery',
         didUniqueSuffix,
         recoveryOtp: recover1OTP,
         newDidDocument: encodedDidDoc,
