@@ -21,7 +21,7 @@ enum LockStatus {
  * Structure (internal to this class) to track the state of the lock.
  */
 interface LockState {
-  currentValueTimeLock: ValueTimeLockModel | undefined;
+  activeValueTimeLock: ValueTimeLockModel | undefined;
   latestSavedLockInfo: SavedLockModel | undefined;
 
   status: LockStatus;
@@ -56,7 +56,7 @@ export default class LockMonitor {
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
     this.currentLockState = {
-      currentValueTimeLock: undefined,
+      activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
@@ -91,7 +91,7 @@ export default class LockMonitor {
       throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
     }
 
-    return currentLockState.currentValueTimeLock;
+    return currentLockState.activeValueTimeLock;
   }
 
   private async periodicPoll (): Promise<void> {
@@ -140,7 +140,7 @@ export default class LockMonitor {
       // The routine will true only if there were any changes made to the lock
       currentLockUpdated =
         await this.handleExistingLockRenewal(
-          this.currentLockState.currentValueTimeLock!,
+          this.currentLockState.activeValueTimeLock!,
           this.currentLockState.latestSavedLockInfo!,
           this.desiredLockAmountInSatoshis);
     }
@@ -148,7 +148,7 @@ export default class LockMonitor {
     if (!lockRequired && validCurrentLockExist) {
       currentLockUpdated =
         await this.handleReleaseExistingLock(
-          this.currentLockState.currentValueTimeLock!,
+          this.currentLockState.activeValueTimeLock!,
           this.desiredLockAmountInSatoshis);
     }
 
@@ -164,7 +164,7 @@ export default class LockMonitor {
     // Nothing to do if there's nothing found.
     if (!lastSavedLock) {
       return {
-        currentValueTimeLock: undefined,
+        activeValueTimeLock: undefined,
         latestSavedLockInfo: undefined,
         status: LockStatus.None
       };
@@ -180,7 +180,7 @@ export default class LockMonitor {
       await this.rebroadcastTransaction(lastSavedLock);
 
       return {
-        currentValueTimeLock: undefined,
+        activeValueTimeLock: undefined,
         latestSavedLockInfo: lastSavedLock,
         status: LockStatus.Pending
       };
@@ -189,7 +189,7 @@ export default class LockMonitor {
     if (lastSavedLock.type === SavedLockType.ReturnToWallet) {
       // This means that there's no current lock for this node. Just return
       return {
-        currentValueTimeLock: undefined,
+        activeValueTimeLock: undefined,
         latestSavedLockInfo: lastSavedLock,
         status: LockStatus.None
       };
@@ -208,7 +208,7 @@ export default class LockMonitor {
       console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
 
       return {
-        currentValueTimeLock: currentValueTimeLock,
+        activeValueTimeLock: currentValueTimeLock,
         latestSavedLockInfo: lastSavedLock,
         status: LockStatus.Confirmed
       };
@@ -218,7 +218,7 @@ export default class LockMonitor {
       if (e instanceof BitcoinError && e.code === ErrorCode.LockResolverTransactionNotConfirmed) {
         // This means that the transaction was broadcasted but hasn't been written on the blockchain yet.
         return {
-          currentValueTimeLock: undefined,
+          activeValueTimeLock: undefined,
           latestSavedLockInfo: lastSavedLock,
           status: LockStatus.Pending
         };
@@ -285,18 +285,20 @@ export default class LockMonitor {
   }
 
   /**
-   * Performs the lock renewal routine; returns true if any updates were made to the lock, false otherwise.
+   * Performs the lock renewal routine.
    *
    * @param currentValueTimeLock The current value time lock if any.
    * @param latestSavedLockInfo The last saved locked info.
    * @param desiredLockAmountInSatoshis The desired lock amount.
+   *
+   * @returns true if any updates were made to the lock, false otherwise.
    */
   private async handleExistingLockRenewal (
     currentValueTimeLock: ValueTimeLockModel,
     latestSavedLockInfo: SavedLockModel,
     desiredLockAmountInSatoshis: number): Promise<boolean> {
 
-    // Just return if we're not close to expiry
+    // Just return if we haven't reached the unlock block yet
     if (! (await this.isUnlockTimeReached(currentValueTimeLock.unlockTransactionTime))) {
       return false;
     }
@@ -332,10 +334,12 @@ export default class LockMonitor {
   }
 
   /**
-   * Performs the release lock routine. Returns true if there were changes to the lock; false otherwise.
+   * Performs the release lock routine.
    *
    * @param currentValueTimeLock The current value time lock
    * @param desiredLockAmountInSatoshis The desired lock amount
+   *
+   * @returns true if any updates were made to the lock, false otherwise.
    */
   private async handleReleaseExistingLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<boolean> {
 
@@ -414,6 +418,6 @@ export default class LockMonitor {
 
     console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${unlockTransactionTime}`);
 
-    return currentBlockTime - unlockTransactionTime >= 0;
+    return currentBlockTime >= unlockTransactionTime;
   }
 }
