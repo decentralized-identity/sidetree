@@ -1,6 +1,7 @@
 import BlockchainTimeModel from '../../lib/core/models/BlockchainTimeModel';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 /**
  * Mock Blockchain class for testing.
@@ -63,5 +64,13 @@ export default class MockBlockchain implements IBlockchain {
 
   public async getFee (transactionTime: number): Promise<number> {
     throw Error('Not implemented. Inputs: ' + transactionTime);
+  }
+
+  public async getValueTimeLock (_lockIdentifer: string): Promise<ValueTimeLockModel | undefined> {
+    throw Error('Not implemented.');
+  }
+
+  public async getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
+    throw Error('Not implemented.');
   }
 }

@@ -8,7 +8,7 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
-fdescribe('Blockchain', async () => {
+describe('Blockchain', async () => {
   describe('read()', async () => {
     it('should return transactions fetched.', async () => {
       const blockchainClient = new Blockchain('Unused URI');
@@ -372,8 +372,8 @@ fdescribe('Blockchain', async () => {
       const blockchainClient = new Blockchain('unused');
 
       const mockFetchResponse = {
-        status: 400,
-        body: '{ code: \'some error code\' }'
+        status: 404,
+        body: '{"code": "some error code"}'
       };
 
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
@@ -390,7 +390,7 @@ fdescribe('Blockchain', async () => {
 
       const mockFetchResponse = {
         status: 500,
-        body: '{ code: \'some error code\' }'
+        body: '{"code": "some error code"}'
       };
 
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
@@ -427,7 +427,7 @@ fdescribe('Blockchain', async () => {
       const actual = await blockchainClient.getWriterValueTimeLock();
 
       expect(actual).toEqual(mockValueTimeLock);
-      expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['writerLockUri']}}`);
+      expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['writerLockUri']}`);
       expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
       done();
     });
@@ -436,8 +436,8 @@ fdescribe('Blockchain', async () => {
       const blockchainClient = new Blockchain('unused');
 
       const mockFetchResponse = {
-        status: 400,
-        body: '{ code: \'some error code\' }'
+        status: 404,
+        body: '{"code": "some error code"}'
       };
 
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
@@ -453,7 +453,7 @@ fdescribe('Blockchain', async () => {
       const blockchainClient = new Blockchain('unused');
 
       const mockFetchResponse = {
-        status: 400,
+        status: 404,
         body: JSON.stringify({ code: SharedErrorCode.ValueTimeLockInPendingState })
       };
 
@@ -472,7 +472,7 @@ fdescribe('Blockchain', async () => {
 
       const mockFetchResponse = {
         status: 500,
-        body: '{ code: \'some error code\' }'
+        body: '{"code": "some error code"}'
       };
 
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
