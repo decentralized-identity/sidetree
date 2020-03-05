@@ -44,7 +44,7 @@ describe('CreateOperation', async () => {
         services
       );
 
-      createOperationRequest.type = OperationType.Delete;
+      createOperationRequest.type = OperationType.Revoke;
 
       const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
       await expectAsync(CreateOperation.parse(createOperationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));

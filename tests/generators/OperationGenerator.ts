@@ -568,21 +568,21 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a Delete Operation buffer.
+   * Generates a Revoke Operation buffer.
    */
-  public static async generateDeleteOperationBuffer (
+  public static async generateRevokeOperationBuffer (
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
     privateKey: string): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
+    const operation = await OperationGenerator.generateRevokeOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 
   /**
-   * Generates a Delete Operation.
+   * Generates a Revoke Operation.
    */
-  public static async generateDeleteOperation (
+  public static async generateRevokeOperation (
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
@@ -594,7 +594,7 @@ export default class OperationGenerator {
     };
 
     const payload = {
-      type: OperationType.Delete,
+      type: OperationType.Revoke,
       didUniqueSuffix,
       recoveryOtp: recoveryOtpEncodedSring
     };

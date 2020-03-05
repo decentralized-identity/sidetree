@@ -83,7 +83,7 @@ export default class RequestHandler implements IRequestHandler {
           break;
         case OperationType.Update:
         case OperationType.Recover:
-        case OperationType.Delete:
+        case OperationType.Revoke:
           response = {
             status: ResponseStatus.Succeeded
           };

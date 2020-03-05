@@ -310,7 +310,7 @@ describe('OperationProcessor', async () => {
     }
   });
 
-  it('should return undefined for deleted did', async () => {
+  it('should return undefined for revoked did', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
@@ -318,29 +318,29 @@ describe('OperationProcessor', async () => {
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
-    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
-    await operationStore.put([deleteOperation]);
+    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
+    const revokeOperation = await addBatchFileOfOneOperationToCas(revokeOperationBuffer, cas, numberOfUpdates + 1, numberOfUpdates + 1, 0);
+    await operationStore.put([revokeOperation]);
 
-    const didDocumentAfterDelete = await resolver.resolve(didUniqueSuffix);
-    expect(didDocumentAfterDelete).toBeUndefined();
+    const didDocumentAfterRevoke = await resolver.resolve(didUniqueSuffix);
+    expect(didDocumentAfterRevoke).toBeUndefined();
   });
 
-  it('should ignore delete operations of a non-existent did', async () => {
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
-    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
-    await operationStore.put([deleteOperation]);
+  it('should ignore revoke operations of a non-existent did', async () => {
+    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
+    const revokeOperation = await addBatchFileOfOneOperationToCas(revokeOperationBuffer, cas, 1, 1, 0);
+    await operationStore.put([revokeOperation]);
 
-    const didDocumentAfterDelete = await resolver.resolve(didUniqueSuffix);
-    expect(didDocumentAfterDelete).toBeUndefined();
+    const didDocumentAfterRevoke = await resolver.resolve(didUniqueSuffix);
+    expect(didDocumentAfterRevoke).toBeUndefined();
   });
 
-  it('should ignore delete operations with invalid signing key id', async () => {
+  it('should ignore revoke operations with invalid signing key id', async () => {
     await operationStore.put([createOp]);
 
-    const deleteOperationBuffer = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, 'InvalidKeyId', signingPrivateKey);
-    const deleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
-    await operationStore.put([deleteOperation]);
+    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, 'InvalidKeyId', signingPrivateKey);
+    const revokeOperation = await addBatchFileOfOneOperationToCas(revokeOperationBuffer, cas, 1, 1, 0);
+    await operationStore.put([revokeOperation]);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     expect(didDocument).toBeDefined();
@@ -348,14 +348,14 @@ describe('OperationProcessor', async () => {
     expect(signingKey).toBeDefined();
   });
 
-  it('should ignore delete operations with invalid signature', async () => {
+  it('should ignore revoke operations with invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const deleteOperation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
-    deleteOperation.signature = 'InvalidSignature';
-    const deleteOperationBuffer = Buffer.from(JSON.stringify(deleteOperation));
-    const anchoredDeleteOperation = await addBatchFileOfOneOperationToCas(deleteOperationBuffer, cas, 1, 1, 0);
-    await operationStore.put([anchoredDeleteOperation]);
+    const revokeOperation = await OperationGenerator.generateRevokeOperation(didUniqueSuffix, recoveryOtp, signingPublicKey.id, signingPrivateKey);
+    revokeOperation.signature = 'InvalidSignature';
+    const revokeOperationBuffer = Buffer.from(JSON.stringify(revokeOperation));
+    const anchoredRevokeOperation = await addBatchFileOfOneOperationToCas(revokeOperationBuffer, cas, 1, 1, 0);
+    await operationStore.put([anchoredRevokeOperation]);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     expect(didDocument).toBeDefined();
@@ -678,13 +678,13 @@ describe('OperationProcessor', async () => {
       it('should not apply if recovery OTP is invalid.', async () => {
         // Create revoke operation payload.
         const payload = {
-          type: OperationType.Delete,
+          type: OperationType.Revoke,
           didUniqueSuffix,
           recoveryOtp: `invalideRecoveryOtp`
         };
         const anchoredUpdateOperationModel = await OperationGenerator.createNamedAnchoredOperationModel(
           didUniqueSuffix,
-          OperationType.Delete,
+          OperationType.Revoke,
           payload,
           recoveryPublicKey.id,
           recoveryPrivateKey,

@@ -216,9 +216,9 @@ describe('RequestHandler', () => {
     expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
   });
 
-  it('should respond with HTTP 200 when DID delete operation request is successful.', async () => {
+  it('should respond with HTTP 200 when DID revoke operation request is successful.', async () => {
     const recoveryOtp = Encoder.encode(Buffer.from('unusedRecoveryOtp'));
-    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', recoveryPrivateKey);
+    const request = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
