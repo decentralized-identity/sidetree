@@ -51,15 +51,17 @@ export default interface IBlockchain {
   getFee (transactionTime: number): Promise<number>;
 
   /**
-   * Gets the lock object associated with the given lock identifier; returns undefined if no lock is found.
+   * Gets the lock object associated with the given lock identifier.
    *
    * @param lockIdentifier The identifier of the desired lock.
+   * @returns the lock object if found; undefined otherwise.
    */
   getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel | undefined>;
 
   /**
-   * Gets the lock object required for batch writing; returns undefined if no lock is found.
+   * Gets the lock object required for batch writing.
    *
+   * @returns the lock object if one exist; undefined otherwise.
    * @throws SidetreeError with ErrorCode.ValueTimeLockInPendingState if the lock is not yet confirmed on the blockchain.
    */
   getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined>;

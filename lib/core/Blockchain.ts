@@ -202,15 +202,34 @@ export default class Blockchain implements IBlockchain {
 
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
-    } else if (response.status !== HttpStatus.OK) {
-      throw new SidetreeError(CoreErrorCode.BlockchainGetLockResponseNotOk), `Response: ${}`;
     }
 
+    if (response.status !== HttpStatus.OK) {
+      throw new SidetreeError(CoreErrorCode.BlockchainGetLockResponseNotOk, `Response: ${responseBodyString}`);
+    }
+
+    return JsonAsync.parse(responseBodyString);
+  }
+
+  public async getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
+
+    const response = await this.fetch(this.writerLockUri);
+    const responseBodyString = await ReadableStream.readAll(response.body);
     const responseBody = await JsonAsync.parse(responseBodyString);
 
+    if (response.status === HttpStatus.NOT_FOUND) {
+
+      if (responseBody.code === SharedErrorCode.ValueTimeLockInPendingState) {
+        throw new SidetreeError(SharedErrorCode.ValueTimeLockInPendingState);
+      }
+
+      return undefined;
+    }
+
+    if (response.status !== HttpStatus.OK) {
+      throw new SidetreeError(CoreErrorCode.BlockchainGetWriterLockResponseNotOk, `Response: ${responseBodyString}`);
+    }
+
     return responseBody;
-  }
-  getWriterValueTimeLock (): Promise<ValueTimeLockModel> {
-    throw new Error('Method not implemented.');
   }
 }
