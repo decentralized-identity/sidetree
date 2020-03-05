@@ -14,7 +14,8 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
-import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
+import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
+import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 interface AnchoredCreateOperationGenerationInput {
@@ -52,13 +53,15 @@ interface GeneratedAnchoredUpdateOperationData {
   nextUpdateOtpEncodedString: string;
 }
 
-interface RecoveryOperationPayloadGenerationInput {
+interface RecoverOperationGenerationInput {
   didUniqueSuffix: string;
   recoveryOtp: string;
+  recoveryPrivateKey: string;
 }
 
-interface GeneratedRecoveryOperationPayloadData {
-  payload: any;
+interface GeneratedRecoverOperationData {
+  operationBuffer: Buffer;
+  recoverOperation: RecoverOperation;
   recoveryKeyId: string;
   recoveryPublicKey: DidPublicKeyModel;
   recoveryPrivateKey: string;
@@ -128,7 +131,7 @@ export default class OperationGenerator {
     const hubServiceEndpoint = 'did:sidetree:value0';
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
-    // Generate the next update and recovery operation OTP.
+    // Generate the next update and recover operation OTP.
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
@@ -192,30 +195,35 @@ export default class OperationGenerator {
   /**
    * Generates a recover operation payload.
    */
-  public static async generateRecoveryOperationPayload (input: RecoveryOperationPayloadGenerationInput): Promise<GeneratedRecoveryOperationPayloadData> {
+  public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
     const recoveryKeyId = '#newRecoveryKey';
     const signingKeyId = '#newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
     const hubServiceEndpoint = 'did:sidetree:value0';
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
-    const newDidDocument = Document.create([recoveryPublicKey, signingPublicKey], services);
 
-    // Generate the next update and recovery operation OTP.
+    // Generate the next update and recover operation OTP.
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
-    const payload = {
-      type: OperationType.Recover,
-      didUniqueSuffix: input.didUniqueSuffix,
-      recoveryOtp: input.recoveryOtp,
-      newDidDocument,
+    const operationJson = await OperationGenerator.generateRecoverOperationRequest(
+      input.didUniqueSuffix,
+      input.recoveryOtp,
+      input.recoveryPrivateKey,
+      recoveryPublicKey,
+      signingPublicKey,
       nextRecoveryOtpHash,
-      nextUpdateOtpHash
-    };
+      nextUpdateOtpHash,
+      services
+    );
+
+    const operationBuffer = Buffer.from(JSON.stringify(operationJson));
+    const recoverOperation = await RecoverOperation.parse(operationBuffer);
 
     return {
-      payload,
+      recoverOperation,
+      operationBuffer,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,
@@ -401,6 +409,47 @@ export default class OperationGenerator {
   }
 
   /**
+   * Generates a recover operation request.
+   */
+  public static async generateRecoverOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string | PrivateKey,
+    newRecoveryPublicKey: PublicKeyModel,
+    newSigningPublicKey: DidPublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    serviceEndpoints?: DidServiceEndpointModel[]) {
+    const document = Document.create([newSigningPublicKey], serviceEndpoints);
+
+    const operationData = {
+      nextUpdateOtpHash,
+      document
+    };
+    const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
+    const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
+
+    const signedOperationDataPayloadObject = {
+      operationDataHash,
+      recoveryKey: { publicKeyHex: newRecoveryPublicKey.publicKeyHex },
+      nextRecoveryOtpHash
+    };
+    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
+    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+
+    const operationDataEncodedString = Encoder.encode(operationDataBuffer);
+    const operation = {
+      type: OperationType.Recover,
+      didUniqueSuffix,
+      recoveryOtp,
+      signedOperationData,
+      operationData: operationDataEncodedString
+    };
+
+    return operation;
+  }
+
+  /**
    * Generates a create operation request buffer.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
@@ -420,14 +469,6 @@ export default class OperationGenerator {
       serviceEndpoints
     );
 
-    return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
-   * Generates an Update Operation buffer with valid signature.
-   */
-  public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.signUsingEs256k(updatePayload, keyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 

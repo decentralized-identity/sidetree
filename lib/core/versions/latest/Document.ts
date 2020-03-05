@@ -1,112 +1,11 @@
 import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 import DocumentModel from './models/DocumentModel';
-import Encoder from './Encoder';
-import InternalDocumentModel from './models/InternalDocumentModel';
 
 /**
  * Class containing reusable DID Document related operations specific to Sidetree.
  */
 export default class Document {
-  /**
-   * Transforms the given internal document model into a DID Document.
-   */
-  public static transformToDidDocument (didMethodName: string, internalDocumentModel: InternalDocumentModel): any {
-    const did = didMethodName + internalDocumentModel.didUniqueSuffix;
-    const didDocument = {
-      '@context': 'https://w3id.org/did/v1',
-      publicKey: internalDocumentModel.document.publicKey,
-      service: internalDocumentModel.document.service,
-      recoveryKey: internalDocumentModel.recoveryKey
-    };
-
-    Document.addDidToDocument(didDocument, did);
-
-    return didDocument;
-  }
-
-  /**
-   * Verifies that the given encoded string is a valid encoded DID Document that can be accepted by the Sidetree create operation.
-   * @param allowedMaxSizeInBytes Optional. If specified, the given size limit is validated against the decoded buffer of the original DID document.
-   */
-  public static isEncodedStringValidOriginalDocument (encodedOriginalDocument: string, allowedMaxSizeInBytes?: number): boolean {
-    const originalDocumentBuffer = Encoder.decodeAsBuffer(encodedOriginalDocument);
-
-    // Verify size of each operation does not exceed the maximum allowed limit.
-    if (allowedMaxSizeInBytes !== undefined &&
-      originalDocumentBuffer.length > allowedMaxSizeInBytes) {
-      return false;
-    }
-
-    // Try to parse the buffer as a JSON object.
-    let originalDocument;
-    try {
-      originalDocument = JSON.parse(originalDocumentBuffer.toString());
-    } catch {
-      return false;
-    }
-
-    // Verify additional Sidetree-specific rules for a valid original DID Document.
-    const isValidOriginalDidDocument = Document.isObjectValidOriginalDocument(originalDocument);
-    return isValidOriginalDidDocument;
-  }
-
-  /**
-   * Verifies that the given JSON object is a valid Sidetree specific encoded DID Document that can be accepted by the Sidetree create operation.
-   */
-  public static isObjectValidOriginalDocument (originalDocument: any): boolean {
-    // Original document must pass generic DID Document schema validation.
-    const isValidGenericDidDocument = Document.isValid(originalDocument, false);
-    if (!isValidGenericDidDocument) {
-      return false;
-    }
-
-    // 'publicKey' property is required and must be an array that is not empty.
-    if (!Array.isArray(originalDocument.publicKey) ||
-        (originalDocument.publicKey as object[]).length === 0) {
-      return false;
-    }
-
-    // Keeps the count of keys for each usage.
-    const keyUsages = new Map<string, number>();
-
-    // Verify each publicKey entry in array.
-    for (let publicKeyEntry of originalDocument.publicKey) {
-      // 'id' must be a fragment (starts with '#').
-      if (!(publicKeyEntry.id as string).startsWith('#')) {
-        return false;
-      }
-
-      // A valid Sidetree public key must contain a custom 'usage' property.
-      if (typeof publicKeyEntry.usage !== 'string') {
-        return false;
-      }
-
-      // Increment the count of the corresponding key usage.
-      const usageCount = keyUsages.get(publicKeyEntry.usage);
-      if (usageCount === undefined) {
-        keyUsages.set(publicKeyEntry.usage, 1);
-      } else {
-        keyUsages.set(publicKeyEntry.usage, usageCount + 1);
-      }
-
-      // Controller field is not allowed to be filled in by the client
-      if (publicKeyEntry.controller !== undefined) {
-        return false;
-      }
-    }
-
-    // Must contain one and only one recovery key.
-    if (keyUsages.get('recovery') !== 1) {
-      return false;
-    }
-
-    // Must contain at least one signing key.
-    if (keyUsages.get('signing') === undefined) {
-      return false;
-    }
-    return true;
-  }
 
   /**
    * Verifies that the given object is a valid generic DID Document (not Sidetree specific).

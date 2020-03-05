@@ -57,7 +57,7 @@ A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed
 An update operation to a document contains only the changes from the previous version of the document. Create and recover operations require a full document state of the DID as input.
 
 ## Sidetree DID Unique Suffix
-A Sidetree _DID unique suffix_ is the globally unique portion of a DID. It is computed deterministically from the following data (_suffix data) supplied in a create operation request:
+A Sidetree _DID unique suffix_ is the globally unique portion of a DID. It is computed deterministically from the following data (_suffix data_) supplied in a create operation request:
 
 1. Recovery key.
 1. Document hash.
@@ -194,7 +194,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 
 #### One-Time Password (OTP) for Operations
   Upon DID creation, the create operation payload must include:
-  1. The hash of a _one-time password_ (OTP) for the next recovery operation.
+  1. The hash of a _one-time password_ (OTP) for the next recover operation.
   1. The hash of a _one-time password_ (OTP) for the next update operation.
 
   The DID owner must reproduce and present the correct OTP in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new OTP(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
@@ -226,9 +226,9 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 > NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the _anchor file_ or _batch file_ becomes available.
 
 ## DID Deletion and Recovery
-Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recovery operation. Once a DID is deleted, it cannot be recovered.
+Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is deleted, it cannot be recovered.
 
-The most basic recovery operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
+The most basic recover operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
 
 
 ## Sidetree Client Guidelines
@@ -287,10 +287,10 @@ POST / HTTP/1.1
 }
 ```
 
-#### Suffix data schema
+#### `suffixData` property schema
 ```json
 {
-  "operationDataHash": "Hash of the encoded operation data string.",
+  "operationDataHash": "Hash of the operation data.",
   "recoveryKey": {
     "publicKeyHex": "The recovery public key as a HEX string."
   },
@@ -298,15 +298,20 @@ POST / HTTP/1.1
 }
 ```
 
-#### Create operation data schema
+#### `operationData` property schema
 ```json
 {
     "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
-    "document": "Opaque content."
+    "document": "Document content."
 }
 ```
 
-#### Opaque document example
+#### `document` property schema
+```json
+
+```
+
+#### Document example
 ```json
 {
   "publicKey": [
@@ -442,24 +447,27 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "protected": "Encoded protected header.",
-  "payload": "Encoded update payload JSON object defined by the schema below.",
-  "signature": "Encoded signature."
+  "type": "update",
+  "didUniqueSuffix": "The unique suffix of the DID to be updated.",
+  "updateOtp": "The one-time password to be used for this update.",
+  "signedOperationDataHash": {
+    "protected": "JWS header.",
+    "payload": "Hash of the operation data.",
+    "signature": "JWS signature."
+  },
+  "operationData": "Encoded JSON object containing update operation data."
 }
 ```
 
-#### Update payload schema
+#### Update `operationData` property schema
 ```json
 {
-  "type": "update",
-  "didUniqueSuffix": "The unique suffix of the DID",
-  "patches": ["An array of patches each must adhere to the patch schema defined below."],
-  "updateOtp": "The one-time password to be used for this update.",
-  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "documentPatch": ["An array of patches each must adhere to the document patch schema defined below."],
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update."
 }
 ```
 
-#### Update patch schema
+#### Document patch schema
 ##### Add public keys
 ```json
 {
@@ -653,21 +661,32 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "protected": "Encoded protected header.",
-  "payload": "Encoded recovery payload JSON object defined by the schema below.",
-  "signature": "Encoded signature."
+  "type": "recovery",
+  "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
+  "recoveryOtp": "The encoded one-time password to be used for this recovery.",
+  "signedOperationData": {
+    "protected": "JWS header.",
+    "payload": "JWS encoded JSON object containing recover operation data that are signed.",
+    "signature": "JWS signature."
+  },
+  "operationData": "Encoded JSON object containing unsigned portion of the recovery request."
 }
 ```
 
-#### Recovery payload schema
+#### `signedOperationData` property schema
 ```json
 {
-  "type": "recover",
-  "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "recoveryOtp": "The one-time password to be used for this recovery.",
-  "newDidDocument": "The encoded new DID Document.",
-  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery.",
+  "operationDataHash": "Hash of the unsigned operation data.",
+  "recoveryKey": "The new recovery key.",
+  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
+}
+```
+
+#### `operationData` schema
+```json
+{
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "document": "Opaque content."
 }
 ```
 
