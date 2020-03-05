@@ -1,5 +1,6 @@
 import BlockchainTimeModel from '../models/BlockchainTimeModel';
 import TransactionModel from '../../common/models/TransactionModel';
+import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 
 /**
  * Interface to access the underlying blockchain.
@@ -48,4 +49,18 @@ export default interface IBlockchain {
    * than Sidetree genesis blockchain time or is later than the current blockchain time.
    */
   getFee (transactionTime: number): Promise<number>;
+
+  /**
+   * Gets the lock object associated with the given lock identifier; returns undefined if no lock is found.
+   *
+   * @param lockIdentifier The identifier of the desired lock.
+   */
+  getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel | undefined>;
+
+  /**
+   * Gets the lock object required for batch writing; returns undefined if no lock is found.
+   *
+   * @throws SidetreeError with ErrorCode.ValueTimeLockInPendingState if the lock is not yet confirmed on the blockchain.
+   */
+  getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined>;
 }
