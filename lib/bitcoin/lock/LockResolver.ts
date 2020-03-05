@@ -155,7 +155,7 @@ export default class LockResolver {
   }
 
   private async calculateLockStartingBlock (transaction: BitcoinTransactionModel): Promise<number> {
-    if (transaction.confirmations === 0 || transaction.confirmations < 0) {
+    if (transaction.confirmations <= 0) {
       throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed, `transaction id: ${transaction.id}`);
     }
 

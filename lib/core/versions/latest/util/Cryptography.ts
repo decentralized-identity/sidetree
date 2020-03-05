@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import DidPublicKeyModel from '../models/DidPublicKeyModel';
 import Encoder from '../Encoder';
 import KeyUsage from '../KeyUsage';
-import PublicKeyModel from '../models/PublicKeyModel';
+import PublicKeyModel from '../../../models/PublicKeyModel';
 import { EcPrivateKey, PrivateKey, Secp256k1CryptoSuite } from '@decentralized-identity/did-auth-jose';
 const secp256k1 = require('secp256k1');
 

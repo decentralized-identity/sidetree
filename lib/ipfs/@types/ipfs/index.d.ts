@@ -108,12 +108,10 @@ declare namespace IPFS {
       path (): string;
     }
 
-    // TODO: Add type for pull-stream
     export type FileContent = Buffer | NodeJS.ReadableStream | Files[];
 
     export interface Files {
       path: string;
-        // TODO: Add type for pull-stream
       content?: Buffer | NodeJS.ReadableStream;
     }
 

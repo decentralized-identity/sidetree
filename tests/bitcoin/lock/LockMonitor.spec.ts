@@ -12,9 +12,9 @@ import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
-function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, currentValueTimeLock: ValueTimeLockModel | undefined, status: any) {
+function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
   return {
-    currentValueTimeLock: currentValueTimeLock,
+    activeValueTimeLock: activeValueTimeLock,
     latestSavedLockInfo: latestSavedLockInfo,
     status: status
   };
