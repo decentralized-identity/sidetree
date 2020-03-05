@@ -76,10 +76,12 @@ export default class LockResolver {
 
     // Now that the lock identifier has been verified, return the lock information
     const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);
+    const lockStartBlock = await this.calculateLockStartingBlock(lockTransaction);
 
     return {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
+      lockTransactionTime: lockStartBlock,
       unlockTransactionTime: scriptVerifyResult.unlockAtBlock!,
       owner: scriptVerifyResult.publicKeyHash!
     };
@@ -150,5 +152,15 @@ export default class LockResolver {
     } catch (e) {
       throw BitcoinError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
     }
+  }
+
+  private async calculateLockStartingBlock (transaction: BitcoinTransactionModel): Promise<number> {
+    if (transaction.confirmations <= 0) {
+      throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed, `transaction id: ${transaction.id}`);
+    }
+
+    const blockInfo = await this.bitcoinClient.getBlockInfo(transaction.blockHash);
+
+    return blockInfo.height;
   }
 }
