@@ -11,8 +11,8 @@ import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOper
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
-import Resolver from '../../lib/core/Resolver';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
+import Resolver from '../../lib/core/Resolver';
 
 describe('Resolver', () => {
   const config = require('../json/config-test.json');

@@ -15,8 +15,8 @@ import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOper
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
-import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
+import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -469,14 +469,6 @@ export default class OperationGenerator {
       serviceEndpoints
     );
 
-    return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
-   * Generates an Update Operation buffer with valid signature.
-   */
-  public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.signUsingEs256k(updatePayload, keyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 

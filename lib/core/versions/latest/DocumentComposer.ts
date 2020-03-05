@@ -2,8 +2,8 @@ import AnchoredOperation from './AnchoredOperation';
 import Document from './Document';
 import ErrorCode from './ErrorCode';
 import InternalDocumentModel from './models/InternalDocumentModel';
-import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
+import SidetreeError from '../../SidetreeError';
 
 /**
  * Composes operations into external-facing document.
