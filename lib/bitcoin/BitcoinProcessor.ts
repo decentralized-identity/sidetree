@@ -708,7 +708,8 @@ export default class BitcoinProcessor {
         transactionTimeHash: transaction.blockHash,
         anchorString: sidetreeData.data,
         transactionFeePaid: transactionFeePaid,
-        normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee
+        normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
+        writer: sidetreeData.writer
       };
     }
 

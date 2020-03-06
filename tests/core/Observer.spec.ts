@@ -75,7 +75,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '1000',
           'anchorString': '1stTransaction',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer': 'writer1'
         },
         {
           'transactionNumber': 2,
@@ -83,7 +84,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '1000',
           'anchorString': '2ndTransaction',
           'transactionFeePaid': 2,
-          'normalizedTransactionFee': 2
+          'normalizedTransactionFee': 2,
+          'writer': 'writer2'
         }
       ]
     };
@@ -222,7 +224,8 @@ describe('Observer', async () => {
       transactionTimeHash: '1000',
       anchorString: anchoredData,
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer'
     };
     const transactionUnderProcessing = {
       transaction: mockTransaction,
@@ -277,7 +280,8 @@ describe('Observer', async () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 1,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const transactionUnderProcessing = {
         transaction: mockTransaction,
@@ -302,7 +306,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '1000',
           'anchorString': '1stTransaction',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer': 'writer1'
         },
         {
           'transactionNumber': 2,
@@ -310,7 +315,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '2000',
           'anchorString': '2ndTransaction',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer': 'writer2'
         },
         {
           'transactionNumber': 3,
@@ -318,7 +324,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '3000',
           'anchorString': '3rdTransaction',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer':'writer3'
         }
       ]
     };
@@ -332,7 +339,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '2001',
           'anchorString': '2ndTransactionNew',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer': 'writer1'
         },
         {
           'transactionNumber': 3,
@@ -340,7 +348,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '3000',
           'anchorString': '3rdTransactionNew',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer': 'writer2'
         },
         {
           'transactionNumber': 4,
@@ -348,7 +357,8 @@ describe('Observer', async () => {
           'transactionTimeHash': '4000',
           'anchorString': '4thTransaction',
           'transactionFeePaid': 1,
-          'normalizedTransactionFee': 1
+          'normalizedTransactionFee': 1,
+          'writer': 'writer3'
         }
       ]
     };
@@ -435,7 +445,8 @@ describe('Observer', async () => {
       'transactionTimeHash': '1000',
       'anchorString': anchoredData,
       'transactionFeePaid': 1,
-      'normalizedTransactionFee': 1
+      'normalizedTransactionFee': 1,
+      'writer': 'writer'
     };
 
     // Prep the transaction store with some initial state.

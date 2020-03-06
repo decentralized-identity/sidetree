@@ -35,7 +35,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 1,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeTruthy();
@@ -49,7 +50,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 1,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeTruthy();
@@ -69,7 +71,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 999999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeTruthy();
@@ -89,7 +92,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 999999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeTruthy();
@@ -109,7 +113,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 999999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeTruthy();
@@ -129,7 +134,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 999999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeFalsy();
@@ -149,7 +155,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 999999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       const result = await transactionProcessor.processTransaction(mockTransaction);
       expect(result).toBeFalsy();
@@ -163,7 +170,8 @@ describe('TransactionProcessor', () => {
         transactionTimeHash: '1000',
         anchorString: anchoredData,
         transactionFeePaid: 999999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
 
       // Mock a method used by `processTransaction` to throw an error.

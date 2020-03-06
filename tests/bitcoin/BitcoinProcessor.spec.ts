@@ -100,7 +100,8 @@ describe('BitcoinProcessor', () => {
         transactionTimeHash: hash,
         anchorString: randomString(),
         transactionFeePaid: feePaidRandom,
-        normalizedTransactionFee: feePaidRandom
+        normalizedTransactionFee: feePaidRandom,
+        writer: randomString()
       });
     }
     return transactions;
@@ -517,7 +518,8 @@ describe('BitcoinProcessor', () => {
           transactionTime: height,
           transactionTimeHash: randomString(),
           transactionFeePaid: feePaidRandom,
-          normalizedTransactionFee: feePaidRandom
+          normalizedTransactionFee: feePaidRandom,
+          writer: randomString()
         });
       }
       const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {
@@ -915,7 +917,8 @@ describe('BitcoinProcessor', () => {
         transactionTime: 100,
         transactionNumber: 200,
         transactionFeePaid: 300,
-        normalizedTransactionFee: 400
+        normalizedTransactionFee: 400,
+        writer: 'writer'
       };
 
       const mockBlock: IBlockInfo = {
@@ -953,7 +956,8 @@ describe('BitcoinProcessor', () => {
         transactionTime: 100,
         transactionNumber: 200,
         transactionFeePaid: 300,
-        normalizedTransactionFee: 400
+        normalizedTransactionFee: 400,
+        writer: 'writer'
       };
 
       const mockBlock: IBlockInfo = {
@@ -1332,9 +1336,9 @@ describe('BitcoinProcessor', () => {
 
       const mockSidetreeTxnModels: TransactionModel[] = [
         // tslint:disable-next-line: max-line-length
-        { anchorString: 'anchor1', transactionTimeHash: 'timehash1', transactionTime: 100, transactionNumber: 200, transactionFeePaid: 300, normalizedTransactionFee: 400 },
+        { anchorString: 'anchor1', transactionTimeHash: 'timehash1', transactionTime: 100, transactionNumber: 200, transactionFeePaid: 300, normalizedTransactionFee: 400, writer: 'writer1' },
         // tslint:disable-next-line: max-line-length
-        { anchorString: 'anchor2', transactionTimeHash: 'timehash2', transactionTime: 150, transactionNumber: 250, transactionFeePaid: 350, normalizedTransactionFee: 450 }
+        { anchorString: 'anchor2', transactionTimeHash: 'timehash2', transactionTime: 150, transactionNumber: 250, transactionFeePaid: 350, normalizedTransactionFee: 450, writer: 'writer2' }
       ];
 
       // Return the mock values one-by-one in order
@@ -1548,7 +1552,8 @@ describe('BitcoinProcessor', () => {
         transactionFeePaid: mockTxnFee,
         transactionNumber: mockTxnNumber,
         transactionTime: mockTxnBlock,
-        transactionTimeHash: mockTxn.blockHash
+        transactionTimeHash: mockTxn.blockHash,
+        writer: mockSidetreeData.writer
       };
 
       const output = await bitcoinProcessor['getSidetreeTransactionModelIfExist'](mockTxn, 10, mockTxnBlock);
