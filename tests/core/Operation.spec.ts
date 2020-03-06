@@ -14,7 +14,7 @@ describe('Operation', async () => {
 
     beforeAll(async () => {
       // Generate a unique key-pair used for each test.
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairJwk('key1', KeyUsage.recovery, 'did:example:123');
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1', KeyUsage.recovery);
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
       const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
