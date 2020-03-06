@@ -480,6 +480,115 @@ HTTP/1.1 500 Internal Server Error
 }
 ```
 
+### Fetch the lock object for value-time-lock calculation.
+Fetches the lock object used for value-time-lock calculation, given the lock identifier.
+
+Returns `HTTP 404 Not Found` with `value_time_lock_not_found` as the `code` parameter value in the JSON body if there was no lock found for the given lock identifier.
+
+#### Request path
+```
+GET /locks/<lock-identifier>
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /locks/gHasdfasodf23230o0jlk23323
+```
+
+#### Response body schema
+```json
+{
+  "amountLocked": "A number representing the amount that was locked.",
+  "identifier": "The string representing the identifier of the lock. This is the same value which is passed in the request path.",
+  "lockTransactionTime": "A number representing the transaction time at which the lock became active.",
+  "owner": "A string reprsenting the owner of the lock.",
+  "unlockTransactionTime": "A number representing the transaction time at which the lock became inactive."
+}
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "amountLocked": 1235696
+  "identifier": "gHasdfasodf23230o0jlk23323",
+  "lockTransactionTime": 167520,
+  "owner": "Hhdofkeio209aanoiyyoiknadfsedsed652",
+  "unlockTransactionTime": 167530
+}
+```
+
+#### Response example - Lock not found.	
+```http
+HTTP/1.1 404 Not Found
+{
+  "code": "value_time_lock_not_found"
+}
+```
+
+### Fetch the writer lock object used for batch writing.
+Fetches the currently active writer lock object written on the blockchain by the Blockchain service. This is used for batch writing.
+
+Returns `HTTP 404 Not Found` with `value_time_lock_not_found` as the `code` parameter value in the JSON body if there is no active lock on the blockchain.
+Returns `HTTP 404 Not Found` with `value_time_lock_in_pending_state` as the `code` parameter value in the JSON body if there is a lock but is not confirmed on the blockchain yet.
+Returns `HTTP 500 Internal Server Error` if there is an error while trying to fetch the lock.
+
+#### Request path
+```
+GET /writerlock
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /writerlock
+```
+
+#### Response body schema
+```json
+{
+  "amountLocked": "A number representing the amount that was locked.",
+  "identifier": "The string representing the identifier of the lock.",
+  "lockTransactionTime": "A number representing the transaction time at which the lock became active.",
+  "owner": "A string reprsenting the owner of the lock.",
+  "unlockTransactionTime": "A number representing the transaction time at which the lock became inactive."
+}
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "amountLocked": 1235696
+  "identifier": "gHasdfasodf23230o0jlk23323",
+  "lockTransactionTime": 167520,
+  "owner": "Hhdofkeio209aanoiyyoiknadfsedsed652",
+  "unlockTransactionTime": 167530
+}
+```
+
+#### Response example - Lock not found.	
+```http
+HTTP/1.1 404 Not Found
+{
+  "code": "value_time_lock_not_found"
+}
+```
+
+#### Response example - Lock not yet confirmed.	
+```http
+HTTP/1.1 404 Not Found
+{
+  "code": "value_time_lock_in_pending_state"
+}
+```
 
 ### Fetch the current service version
 Fetches the current version of the service. The service implementation defines the versioning scheme and its interpretation.
