@@ -42,6 +42,19 @@ describe('BitcoinClient', async () => {
     });
   }
 
+  function generateBitcoreTransactionWrapper (bitcoinWalletImportString: string, outputSatoshis: number = 1, confirmations: number = 0) {
+    const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, outputSatoshis);
+
+    // Create the class' internal object
+    return {
+      id: transaction.id,
+      blockHash: 'some hash',
+      confirmations: confirmations,
+      inputs: transaction.inputs,
+      outputs: transaction.outputs
+    };
+  }
+
   describe('createSidetreeTransaction', () => {
     it('should return the expected result', async () => {
       const createTransactionSpy = spyOn(bitcoinClient, 'createTransaction' as any).and.returnValue({
@@ -101,23 +114,19 @@ describe('BitcoinClient', async () => {
 
   describe('broadcastLockTransaction', () => {
     it('should call the utility function with correct input.', async (done) => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       const mockInputTxnModel: BitcoinLockTransactionModel = {
         transactionId: 'some txn id',
         transactionFee: 100,
         redeemScriptAsHex: 'some-redeem-script',
-        serializedTransactionObject: transaction.toString()
+        serializedTransactionObject: 'serialized-lock-transaction-object'
       };
-
-      const transactionToString = transaction.toString();
-      spyOn(transaction, 'serialize').and.returnValue(transactionToString);
 
       const mockUtilFuncResponse = 'mock-response';
       const spy = spyOn(bitcoinClient as any, 'broadcastTransactionRpc').and.returnValue(Promise.resolve(mockUtilFuncResponse));
 
       const actual = await bitcoinClient.broadcastLockTransaction(mockInputTxnModel);
       expect(actual).toEqual(mockUtilFuncResponse);
-      expect(spy).toHaveBeenCalledWith(transactionToString);
+      expect(spy).toHaveBeenCalledWith(mockInputTxnModel.serializedTransactionObject);
       done();
     });
   });
@@ -157,7 +166,7 @@ describe('BitcoinClient', async () => {
       const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       const mockFreezeTxnToString = mockFreezeTxn.toString();
 
-      const mockPreviousFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockPreviousFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString);
       const mockRedeemScript = 'some redeem script';
 
       const mockCreateFreezeTxnOutput = [mockFreezeTxn, mockRedeemScript];
@@ -187,7 +196,7 @@ describe('BitcoinClient', async () => {
     it('should create the relock transaction.', async () => {
       const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       const mockFreezeTxnToString = mockFreezeTxn.toString();
-      const mockPreviousFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const mockPreviousFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString);
 
       const createBack2WalletTxnSpy = spyOn(bitcoinClient as any, 'createSpendToWalletTransaction').and.returnValue(Promise.resolve(mockFreezeTxn));
 
@@ -212,7 +221,7 @@ describe('BitcoinClient', async () => {
 
   describe('getBlock', () => {
     it('should get the block data.', async () => {
-      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
+      const transaction = generateBitcoreTransactionWrapper(bitcoinWalletImportString);
       const hash = 'block_hash';
 
       const blockData = {
@@ -224,7 +233,7 @@ describe('BitcoinClient', async () => {
         previousblockhash: 'some other hash'
       };
 
-      spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(transaction);
+      spyOn(BitcoinClient as any, 'createBitcoreTransactionWrapper').and.returnValue(transaction);
       const spy = mockRpcCall('getblock', [hash, 2], blockData);
       const actual = await bitcoinClient.getBlock(hash);
 
@@ -294,7 +303,7 @@ describe('BitcoinClient', async () => {
   describe('getRawTransaction', () => {
     it('should make the correct rpc call and return the transaction object', async () => {
       const txnId = 'transaction_id';
-      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
+      const mockTransaction = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 50);
       const mockTransactionAsOutputTxn = BitcoinClient['createBitcoinTransactionModel'](mockTransaction);
 
       const spy = spyOn(bitcoinClient as any, 'getRawTransactionRpc').and.returnValue(mockTransaction);
@@ -308,15 +317,53 @@ describe('BitcoinClient', async () => {
   describe('getRawTransactionRpc', () => {
     it('should make the correct rpc call and return the transaction object', async () => {
       const txnId = 'transaction_id';
-      const mockTransaction: Transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 50);
+      const confirmations = 23;
+      const mockTransaction = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 50, confirmations);
 
-      spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
+      spyOn(BitcoinClient as any, 'createBitcoreTransactionWrapper').and.returnValue(mockTransaction);
 
-      const spy = mockRpcCall('getrawtransaction', [txnId, 0], mockTransaction.toString());
+      const spy = mockRpcCall('getrawtransaction', [txnId, true], {
+        confirmations: confirmations,
+        hex: Buffer.from('serialized txn').toString('hex')
+      });
 
       const actual = await bitcoinClient['getRawTransactionRpc'](txnId);
       expect(actual).toEqual(mockTransaction);
       expect(spy).toHaveBeenCalled();
+    });
+
+    it('should handle the case if the confirmations parameter from the blockchain is undefined', async () => {
+      const txnId = 'transaction_id';
+      const mockTransaction = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 50, 0);
+
+      spyOn(BitcoinClient as any, 'createBitcoreTransactionWrapper').and.returnValue(mockTransaction);
+
+      const spy = mockRpcCall('getrawtransaction', [txnId, true], {
+        confirmations: undefined,
+        hex: Buffer.from('serialized txn').toString('hex')
+      });
+
+      const actual = await bitcoinClient['getRawTransactionRpc'](txnId);
+      expect(actual).toEqual(mockTransaction);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('createBitcoreTransactionWrapper', () => {
+    it('should create the transaction object with the inputs passed in', () => {
+      const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 400);
+      spyOn(BitcoinClient as any, 'createTransactionFromBuffer').and.returnValue(mockTransaction);
+
+      const expectedTxn = {
+        id: mockTransaction.id,
+        blockHash: 'block hash',
+        confirmations: 50,
+        inputs: mockTransaction.inputs,
+        outputs: mockTransaction.outputs
+      };
+
+      const actual = BitcoinClient['createBitcoreTransactionWrapper'](Buffer.from('mock input'), expectedTxn.confirmations, expectedTxn.blockHash);
+      expect(actual).toEqual(expectedTxn);
     });
   });
 
@@ -337,6 +384,8 @@ describe('BitcoinClient', async () => {
     it('should return the satoshis from the correct output index.', async () => {
       const mockTxnWithMultipleOutputs: BitcoinTransactionModel = {
         id: 'someid',
+        blockHash: 'block Hash',
+        confirmations: 30,
         inputs: [],
         outputs: [
           { satoshis: 100, scriptAsmAsString: 'script1' },
@@ -358,6 +407,8 @@ describe('BitcoinClient', async () => {
     it('should return the inputs - outputs.', async () => {
       const mockTxn: BitcoinTransactionModel = {
         id: 'someid',
+        blockHash: 'block hash',
+        confirmations: 4,
         inputs: [
           { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0 }
         ],
@@ -619,7 +670,7 @@ describe('BitcoinClient', async () => {
 
   describe('createSpendToFreezeTransaction', () => {
     it('should return the transaction by the utility function', async () => {
-      const mockFreezeTxn1 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeTxn1 = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 12345);
       const mockFreezeTxn2 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 7890);
       const mockFreezeUntilPreviousBlock = 12345;
       const mockFreezeUntilBlock = 987654;
@@ -643,7 +694,7 @@ describe('BitcoinClient', async () => {
 
   describe('createSpendToWalletTransaction', () => {
     it('should return the transaction by the utility function', async () => {
-      const mockFreezeTxn1 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeTxn1 = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 12345);
       const mockFreezeTxn2 = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 7890);
       const mockFreezeUntilBlock = 987654;
 
@@ -657,7 +708,7 @@ describe('BitcoinClient', async () => {
 
   describe('createSpendTransactionFromFrozenTransaction', () => {
     it('should create the spend transaction correctly', async () => {
-      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 12345);
       const mockFreezeUntilBlock = 987654;
 
       const mockPayToAddress = walletAddressFromBitcoinClient;
@@ -711,7 +762,7 @@ describe('BitcoinClient', async () => {
 
   describe('createUnspentOutputFromFrozenTransaction', () => {
     it('should create unspent output from input transaction', async () => {
-      const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 12345);
+      const mockFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 12345);
       const mockFreezeUntilBlock = 987654;
       const mockRedeemScript = Script.empty().add(117);
       const mockRedeemScriptHashOutput = Script.buildScriptHashOut(mockRedeemScript);

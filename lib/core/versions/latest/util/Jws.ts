@@ -2,7 +2,7 @@ import Cryptography from './Cryptography';
 import Encoder from '../Encoder';
 import ErrorCode from '../ErrorCode';
 import JwsModel from '../models/JwsModel';
-import PublicKeyModel from '../models/PublicKeyModel';
+import PublicKeyModel from '../../../models/PublicKeyModel';
 import SidetreeError from '../../../SidetreeError';
 
 /**

@@ -11,6 +11,19 @@ import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
+ * Structure (internal to this class) to store the transaction information
+ * as the bitcore-lib.Transaction object does not expose all the properties
+ * that we need.
+ */
+interface BitcoreTransactionWrapper {
+  id: string;
+  blockHash: string;
+  confirmations: number;
+  inputs: Transaction.Input[];
+  outputs: Transaction.Output[];
+}
+
+/**
  * Encapsulates functionality for reading/writing to the bitcoin ledger.
  */
 export default class BitcoinClient {
@@ -161,11 +174,13 @@ export default class BitcoinClient {
     const [freezeTransaction, redeemScriptAsHex] =
       await this.createSpendToFreezeTransaction(existingLockTransaction, existingLockUntilBlock, newLockUntilBlock);
 
+    const serializedTransaction = BitcoinClient.serializeSpendTransaction(freezeTransaction);
+
     return {
       transactionId: freezeTransaction.id,
       transactionFee: freezeTransaction.getFee(),
       redeemScriptAsHex: redeemScriptAsHex,
-      serializedTransactionObject: freezeTransaction.serialize()
+      serializedTransactionObject: serializedTransaction
     };
   }
 
@@ -181,11 +196,13 @@ export default class BitcoinClient {
 
     const releaseLockTransaction = await this.createSpendToWalletTransaction(existingLockTransaction, existingLockUntilBlock);
 
+    const serializedTransaction = BitcoinClient.serializeSpendTransaction(releaseLockTransaction);
+
     return {
       transactionId: releaseLockTransaction.id,
       transactionFee: releaseLockTransaction.getFee(),
       redeemScriptAsHex: '',
-      serializedTransactionObject: releaseLockTransaction.serialize()
+      serializedTransactionObject: serializedTransaction
     };
   }
 
@@ -207,7 +224,7 @@ export default class BitcoinClient {
 
     const transactionModels = block.tx.map((txn: any) => {
       const transactionBuffer = Buffer.from(txn.hex, 'hex');
-      const bitcoreTransaction = BitcoinClient.createTransactionFromBuffer(transactionBuffer);
+      const bitcoreTransaction = BitcoinClient.createBitcoreTransactionWrapper(transactionBuffer, block.confirmations, hash);
       return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
     });
 
@@ -395,24 +412,43 @@ export default class BitcoinClient {
     return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
   }
 
-  private async getRawTransactionRpc (transactionId: string): Promise<Transaction> {
+  private async getRawTransactionRpc (transactionId: string): Promise<BitcoreTransactionWrapper> {
     const request = {
       method: 'getrawtransaction',
       params: [
         transactionId,  // transaction id
-        0   // get the raw hex-encoded string
+        true            // verbose output
       ]
     };
 
-    const hexEncodedTransaction = await this.rpcCall(request, true);
+    const rawTransactionData = await this.rpcCall(request, true);
+    const hexEncodedTransaction = rawTransactionData.hex;
     const transactionBuffer = Buffer.from(hexEncodedTransaction, 'hex');
 
-    return BitcoinClient.createTransactionFromBuffer(transactionBuffer);
+    // The confirmations and the blockhash parameters can both be undefined if the transaction is not yet
+    // written to the blockchain. In that case, just pass in 0 for the confirmations. With the confirmations
+    // being 0, the blockhash can be understood to be undefined.
+    const confirmations = rawTransactionData.confirmations ? rawTransactionData.confirmations : 0;
+
+    return BitcoinClient.createBitcoreTransactionWrapper(transactionBuffer, confirmations, rawTransactionData.blockhash);
   }
 
   // This function is specifically created to help with unit testing.
   private static createTransactionFromBuffer (buffer: Buffer): Transaction {
     return new Transaction(buffer);
+  }
+
+  private static createBitcoreTransactionWrapper (buffer: Buffer, confirmations: number, blockHash: string): BitcoreTransactionWrapper {
+
+    const transaction = BitcoinClient.createTransactionFromBuffer(buffer);
+
+    return {
+      id: transaction.id,
+      blockHash: blockHash,
+      confirmations: confirmations,
+      inputs: transaction.inputs,
+      outputs: transaction.outputs
+    };
   }
 
   private async createTransaction (transactionData: string, minFeeInSatoshis: number): Promise<Transaction> {
@@ -485,7 +521,7 @@ export default class BitcoinClient {
   }
 
   private async createSpendToFreezeTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number,
     freezeUntilBlock: number): Promise<[Transaction, string]> {
 
@@ -507,7 +543,7 @@ export default class BitcoinClient {
   }
 
   private async createSpendToWalletTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number): Promise<Transaction> {
 
     // tslint:disable-next-line: max-line-length
@@ -529,7 +565,7 @@ export default class BitcoinClient {
    * @param paytoAddress The address where the spend transaction should go to.
    */
   private async createSpendTransactionFromFrozenTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number,
     paytoAddress: Address): Promise<Transaction> {
 
@@ -574,7 +610,7 @@ export default class BitcoinClient {
   }
 
   private createUnspentOutputFromFrozenTransaction (
-    previousFreezeTransaction: Transaction,
+    previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeUntilBlock: number): Transaction.UnspentOutput {
 
     const previousFreezeAmountInSatoshis = previousFreezeTransaction.outputs[0].satoshis;
@@ -606,6 +642,14 @@ export default class BitcoinClient {
     return redeemScript;
   }
 
+  private static serializeSpendTransaction (spendTransaction: Transaction): string {
+    // bitcore-lib does not support creating the spendFromFreeze transactions natively so we have to manually modify the
+    // inputs to add signatures/scripts etc. This means that when we try to serialize, the bitcore-lib throws
+    // as it is unable to verify the signatures. So for serialization, we will pass in special options to
+    // disable those checks.
+    return (spendTransaction as any).serialize({ disableIsFullySigned: true });
+  }
+
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
     return {
       previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
@@ -620,15 +664,17 @@ export default class BitcoinClient {
     };
   }
 
-  private static createBitcoinTransactionModel (bitcoreTransaction: Transaction): BitcoinTransactionModel {
+  private static createBitcoinTransactionModel (transactionWrapper: BitcoreTransactionWrapper): BitcoinTransactionModel {
 
-    const bitcoinInputs = bitcoreTransaction.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
-    const bitcoinOutputs = bitcoreTransaction.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
+    const bitcoinInputs = transactionWrapper.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
+    const bitcoinOutputs = transactionWrapper.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
 
     return {
       inputs: bitcoinInputs,
       outputs: bitcoinOutputs,
-      id: bitcoreTransaction.id
+      id: transactionWrapper.id,
+      blockHash: transactionWrapper.blockHash,
+      confirmations: transactionWrapper.confirmations
     };
   }
 

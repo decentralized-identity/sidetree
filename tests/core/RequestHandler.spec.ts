@@ -226,25 +226,14 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
-    // Create a request that will delete the 2nd public key.
-    const patches = [
-      {
-        action: 'remove-public-keys',
-        publicKeys: ['#key1', '#key2']
-      }
-    ];
+    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+    const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
+      didUniqueSuffix, 'anyUpdateOtp', '#additionalKey', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', anyNextUpdateOtpHash, 'anyKeyId', anySigningPrivateKey
+    );
 
-    // Construct update payload.
-    const updatePayload = {
-      type: OperationType.Update,
-      didUniqueSuffix,
-      patches,
-      updateOtp: 'EiD_UnusedUpdateOneTimePassword_AAAAAAAAAAAAAA',
-      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
-    };
-
-    const request = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, recoveryPublicKey.id, recoveryPrivateKey);
-    const response = await requestHandler.handleOperationRequest(request);
+    const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+    const response = await requestHandler.handleOperationRequest(requestBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);

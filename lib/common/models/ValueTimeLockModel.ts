@@ -8,6 +8,9 @@ export default interface ValueTimeLockModel {
   /** The amount that is locked */
   amountLocked: number;
 
+  /** At this transaction time the lock became active */
+  lockTransactionTime: number;
+
   /** At this transaction time the lock is no longer valid */
   unlockTransactionTime: number;
 

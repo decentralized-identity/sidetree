@@ -3,7 +3,6 @@ import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -12,6 +11,7 @@ import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOper
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
+import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 
 describe('Resolver', () => {
@@ -29,7 +29,7 @@ describe('Resolver', () => {
     resolver = new Resolver(versionManager, operationStore);
   });
 
-  describe('Recover operation', () => {
+  describe('Recovery operation', () => {
     it('should apply correctly with updates that came before and after the recover operation.', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
@@ -115,25 +115,27 @@ describe('Resolver', () => {
       // Create the recover operation and insert it to the operation store.
       const [update1OtpAfterRecovery, update1OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtp();
-      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
-      const recoveryPayload = {
-        type: OperationType.Recover,
+      const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix,
-        recoveryOtp: firstRecoveryOtp,
-        newDidDocument: Encoder.encode(JSON.stringify(recoveryDocumentModel)),
-        nextRecoveryOtpHash: recoveryOtpHashAfterRecovery,
-        nextUpdateOtpHash: update1OtpHashAfterRecovery
-      };
-      const anchoredRecoveryOperation =
-        await OperationGenerator.createAnchoredOperation(recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 4, 4, 4);
-      await operationStore.put([anchoredRecoveryOperation]);
+        firstRecoveryOtp,
+        recoveryPrivateKey,
+        newRecoveryPublicKey,
+        newSigningPublicKey,
+        recoveryOtpHashAfterRecovery,
+        update1OtpHashAfterRecovery,
+        [newServiceEndpoint]
+      );
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
+      const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
+      const anchoredRecoverOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(recoverOperation, 4, 4, 4);
+      await operationStore.put([anchoredRecoverOperation]);
 
-      // Create an update operation after the recovery operation.
+      // Create an update operation after the recover operation.
       const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         update1OtpAfterRecovery,
-        '#newSigningKey2',
+        '#newSigningKey2ByUpdate1AfterRecovery',
         '111111111111111111111111111111111111111111111111111111111111111111',
         update2OtpHashAfterRecovery,
         newSigningPublicKey.id,
@@ -175,14 +177,11 @@ describe('Resolver', () => {
       didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
 
       expect(didDocument).toBeDefined();
-      expect(didDocument.publicKey.length).toEqual(3);
-      const actualNewRecoveryPublicKey = Document.getPublicKey(didDocument, '#newRecoveryKey');
+      expect(didDocument.publicKey.length).toEqual(2);
       const actualNewSigningPublicKey1 = Document.getPublicKey(didDocument, '#newSigningKey');
-      const actualNewSigningPublicKey2 = Document.getPublicKey(didDocument, '#newSigningKey2');
-      expect(actualNewRecoveryPublicKey).toBeDefined();
+      const actualNewSigningPublicKey2 = Document.getPublicKey(didDocument, '#newSigningKey2ByUpdate1AfterRecovery');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
-      expect(actualNewRecoveryPublicKey!.publicKeyHex).toEqual(newRecoveryPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
       expect(didDocument.service).toBeDefined();

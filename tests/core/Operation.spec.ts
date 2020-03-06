@@ -1,5 +1,4 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import Jws from '../../lib/core/versions/latest/util/Jws';
@@ -71,57 +70,6 @@ describe('Operation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(operationJws));
 
       expect(() => { Operation.create(operationBuffer); }).toThrow(new SidetreeError(ErrorCode.OperationPayloadMissingOrIncorrectType));
-    });
-  });
-
-  describe('validateCreatePayload()', async () => {
-    it('should throw error if payload contains an additioanl unknown property.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
-      const payload = {
-        type: OperationType.Create,
-        didDocument: Document.create([recoveryPublicKey, signingPublicKey]),
-        nextRecoveryOtpHash: 'Any_recovery_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAA',
-        nextUpdateOtpHash: 'Any_update_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAAAA'
-      };
-
-      (payload as any).additionalProperty = true;
-
-      expect(() => { Operation.validateCreatePayload(payload); }).toThrow(new SidetreeError(ErrorCode.OperationCreatePayloadMissingOrUnknownProperty));
-    });
-
-    it('should throw error if payload does not contain `nextRecoveryOtpHash` property.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
-      const payload = {
-        type: OperationType.Create,
-        didDocument: Document.create([recoveryPublicKey, signingPublicKey]),
-        nextRecoveryOtpHash: 'Any_recovery_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAA',
-        nextUpdateOtpHash: 'Any_update_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAAAA'
-      };
-
-      delete payload.nextRecoveryOtpHash;
-      (payload as any).unknownProperty = 'unknown value';
-
-      expect(() => { Operation.validateCreatePayload(payload); }).toThrow(
-        new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextRecoveryOtpHash));
-    });
-
-    it('should throw error if payload contains an additioanl unknown property.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
-      const payload = {
-        type: OperationType.Create,
-        didDocument: Document.create([recoveryPublicKey, signingPublicKey]),
-        nextRecoveryOtpHash: 'Any_recovery_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAA',
-        nextUpdateOtpHash: 'Any_update_OTP_hash_AAAAAAAAAAAAAAAAAAAAAAAAAA'
-      };
-
-      delete payload.nextUpdateOtpHash;
-      (payload as any).unknownProperty = 'unknown value';
-
-      expect(() => { Operation.validateCreatePayload(payload); }).toThrow(
-        new SidetreeError(ErrorCode.OperationCreatePayloadHasMissingOrInvalidNextUpdateOtpHash));
     });
   });
 
@@ -324,92 +272,6 @@ describe('Operation', async () => {
         { id: 'aNonRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }
       ]);
 
-    });
-  });
-
-  describe('validateRecoverPayload()', async () => {
-    it('should throw error if didUniqueSuffix is missing.', async () => {
-      // Generate a recovery operation payload.
-      const recoveryOperationPayloadGenerationInput = {
-        didUniqueSuffix: 'EiB_AnyDID_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'anyRecoveryOtpValue'
-      };
-      const recoveryPayloadData = await OperationGenerator.generateRecoveryOperationPayload(recoveryOperationPayloadGenerationInput);
-
-      // Override the generated operation payload with invalid data.
-      const recoveryPayload = recoveryPayloadData.payload;
-      delete recoveryPayload.didUniqueSuffix;
-      recoveryPayload.unexpectedProperty = 'unexpectedPropertyValue'; // Added so that total property count remains the same.
-
-      const expectedError = new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidUniqueSuffixType);
-      expect(() => { Operation.validateRecoverPayload(recoveryPayload); }).toThrow(expectedError);
-    });
-
-    it('should throw error if recoveryOtp is missing.', async () => {
-      // Generate a recovery operation payload.
-      const recoveryOperationPayloadGenerationInput = {
-        didUniqueSuffix: 'EiB_AnyDID_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'anyRecoveryOtpValue'
-      };
-      const recoveryPayloadData = await OperationGenerator.generateRecoveryOperationPayload(recoveryOperationPayloadGenerationInput);
-
-      // Override the generated operation payload with invalid data.
-      const recoveryPayload = recoveryPayloadData.payload;
-      delete recoveryPayload.recoveryOtp;
-      recoveryPayload.unexpectedProperty = 'unexpectedPropertyValue'; // Added so that total property count remains the same.
-
-      const expectedError = new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidRecoveryOtp);
-      expect(() => { Operation.validateRecoverPayload(recoveryPayload); }).toThrow(expectedError);
-    });
-
-    it('should throw error if nextRecoveryOtpHash is missing.', async () => {
-      // Generate a recovery operation payload.
-      const recoveryOperationPayloadGenerationInput = {
-        didUniqueSuffix: 'EiB_AnyDID_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'anyRecoveryOtpValue'
-      };
-      const recoveryPayloadData = await OperationGenerator.generateRecoveryOperationPayload(recoveryOperationPayloadGenerationInput);
-
-      // Override the generated operation payload with invalid data.
-      const recoveryPayload = recoveryPayloadData.payload;
-      delete recoveryPayload.nextRecoveryOtpHash;
-      recoveryPayload.unexpectedProperty = 'unexpectedPropertyValue'; // Added so that total property count remains the same.
-
-      const expectedError = new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidNextRecoveryOtpHash);
-      expect(() => { Operation.validateRecoverPayload(recoveryPayload); }).toThrow(expectedError);
-    });
-
-    it('should throw error if nextUpdateOtpHash is missing.', async () => {
-      // Generate a recovery operation payload.
-      const recoveryOperationPayloadGenerationInput = {
-        didUniqueSuffix: 'EiB_AnyDID_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'anyRecoveryOtpValue'
-      };
-      const recoveryPayloadData = await OperationGenerator.generateRecoveryOperationPayload(recoveryOperationPayloadGenerationInput);
-
-      // Override the generated operation payload with invalid data.
-      const recoveryPayload = recoveryPayloadData.payload;
-      delete recoveryPayload.nextUpdateOtpHash;
-      recoveryPayload.unexpectedProperty = 'unexpectedPropertyValue'; // Added so that total property count remains the same.
-
-      const expectedError = new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidNextUpdateOtpHash);
-      expect(() => { Operation.validateRecoverPayload(recoveryPayload); }).toThrow(expectedError);
-    });
-
-    it('should throw error if given new DID Document is invalid.', async () => {
-      // Generate a recovery operation payload.
-      const recoveryOperationPayloadGenerationInput = {
-        didUniqueSuffix: 'EiB_AnyDID_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        recoveryOtp: 'anyRecoveryOtpValue'
-      };
-      const recoveryPayloadData = await OperationGenerator.generateRecoveryOperationPayload(recoveryOperationPayloadGenerationInput);
-
-      // Override the generated operation payload with invalid data.
-      const recoveryPayload = recoveryPayloadData.payload;
-      recoveryPayload.newDidDocument = { invalidContent: true };
-
-      const expectedError = new SidetreeError(ErrorCode.OperationRecoverPayloadHasMissingOrInvalidDidDocument);
-      expect(() => { Operation.validateRecoverPayload(recoveryPayload); }).toThrow(expectedError);
     });
   });
 });

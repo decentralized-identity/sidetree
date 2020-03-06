@@ -86,6 +86,7 @@ export default class OperationProcessor implements IOperationProcessor {
 
     didResolutionModel.didDocument = didDocument;
     didResolutionModel.metadata = {
+      recoveryKey: { }, // Unused, just to make the code compatible with latest change.
       lastOperationTransactionNumber: operation.transactionNumber,
       nextRecoveryOtpHash: operation.nextRecoveryOtpHash!,
       nextUpdateOtpHash: operation.nextUpdateOtpHash!

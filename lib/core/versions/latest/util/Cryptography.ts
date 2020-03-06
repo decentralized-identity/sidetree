@@ -2,7 +2,8 @@ import * as crypto from 'crypto';
 import DidPublicKeyModel from '../models/DidPublicKeyModel';
 import Encoder from '../Encoder';
 import KeyUsage from '../KeyUsage';
-import PublicKeyModel from '../models/PublicKeyModel';
+import PublicKeyModel from '../../../models/PublicKeyModel';
+
 const secp256k1 = require('secp256k1');
 
 /**
