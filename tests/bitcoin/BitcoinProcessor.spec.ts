@@ -1339,7 +1339,7 @@ fdescribe('BitcoinProcessor', () => {
 
       // Return the mock values one-by-one in order
       let getSidetreeTxnCallIndex = 0;
-      spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.callFake(() => {
+      spyOn(bitcoinProcessor as any,'getSidetreeTransactionModelIfExist').and.callFake(() => {
 
         let retValue: TransactionModel | undefined = undefined;
 
@@ -1385,7 +1385,7 @@ fdescribe('BitcoinProcessor', () => {
       const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
-      spyOn(bitcoinProcessor as any,'getSidetreeDataFromVOutIfExist').and.returnValue(undefined);
+      spyOn(bitcoinProcessor as any,'getSidetreeTransactionModelIfExist').and.returnValue(undefined);
 
       const addTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction');
 
@@ -1413,7 +1413,7 @@ fdescribe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
 
-      spyOn(bitcoinProcessor as any,'getValidSidetreeTransactionFromOutputs').and.throwError('Test exception');
+      spyOn(bitcoinProcessor as any,'getSidetreeTransactionModelIfExist').and.throwError('Test exception');
 
       const addTransaction = spyOn(bitcoinProcessor['transactionStore'], 'addTransaction');
 
