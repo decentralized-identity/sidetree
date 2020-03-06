@@ -30,7 +30,7 @@ function randomBlock (above: number = 0): IBlockInfo {
   return { height: above + randomNumber(), hash: randomString(), previousHash: randomString() };
 }
 
-fdescribe('BitcoinProcessor', () => {
+describe('BitcoinProcessor', () => {
   const testConfig: IBitcoinConfig = {
     bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
     bitcoinFeeSpendingCutoff: 1,
@@ -1449,23 +1449,19 @@ fdescribe('BitcoinProcessor', () => {
     describe('processBlockForPofCalculation', async () => {
       it('should only add the non-sidetree transactions to the sampler.', async (done) => {
         const block = randomNumber();
-        let numOfNonSidetreeTransactions = 0;
-        let firstTransaction = true;
         const blockData = await generateBlock(block, () => {
-          if (firstTransaction) {
-            // First transaction is always ignored so we are returning
-            // some random data that has no effect on the processing overall
-            firstTransaction = false;
-            return randomString();
-          }
+          return randomString();
+        });
 
-          if (Math.random() > 0.8) {
-            const id = randomString();
-            return testConfig.sidetreeTransactionPrefix + id;
+        let numOfNonSidetreeTransactions = 0;
+        spyOn(SidetreeTransactionData, 'parse').and.callFake(() => {
+
+          if (Math.random() > 0.2) {
+            return { data: randomString(), writer: randomString() };
           }
 
           numOfNonSidetreeTransactions++;
-          return randomString();
+          return undefined;
         });
 
         const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
