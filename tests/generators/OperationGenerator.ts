@@ -448,6 +448,32 @@ export default class OperationGenerator {
     return operation;
   }
 
+  
+  /**
+   * Generates a revoke operation request.
+   */
+  public static async generateRevokeOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string) {
+
+    const signedOperationDataPayloadObject = {
+      didUniqueSuffix,
+      recoveryOtp
+    };
+    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
+    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+
+    const operation = {
+      type: OperationType.Revoke,
+      didUniqueSuffix,
+      recoveryOtp,
+      signedOperationData,
+    };
+
+    return operation;
+  }
+
   /**
    * Generates a create operation request buffer.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
@@ -573,34 +599,9 @@ export default class OperationGenerator {
   public static async generateRevokeOperationBuffer (
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
-    signingKeyId: string,
     privateKey: string): Promise<Buffer> {
-    const operation = await OperationGenerator.generateRevokeOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
+    const operation = await OperationGenerator.generateRevokeOperationRequest(didUniqueSuffix, recoveryOtpEncodedSring, privateKey);
     return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
-   * Generates a Revoke Operation.
-   */
-  public static async generateRevokeOperation (
-    didUniqueSuffix: string,
-    recoveryOtpEncodedSring: string,
-    signingKeyId: string,
-    privateKey: string): Promise<JwsModel> {
-
-    const protectedHeader = {
-      kid: signingKeyId,
-      alg: 'ES256K'
-    };
-
-    const payload = {
-      type: OperationType.Revoke,
-      didUniqueSuffix,
-      recoveryOtp: recoveryOtpEncodedSring
-    };
-
-    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
-    return operationJws;
   }
 
   /**

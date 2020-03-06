@@ -7,6 +7,7 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
+import DocumentComposer from './DocumentComposer';
 
 interface OperationDataModel {
   nextUpdateOtpHash: string;
@@ -122,6 +123,9 @@ export default class UpdateOperation implements OperationModel {
     if (operationData.documentPatch === undefined) {
       throw new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing);
     }
+
+    // Validate `documentPatch` property using the DocumentComposer.
+    DocumentComposer.validateDocumentPatch(operationData.documentPatch);
 
     const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);

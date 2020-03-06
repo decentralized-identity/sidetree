@@ -60,7 +60,7 @@ export default class RecoverOperation implements OperationModel {
     encodedOperationData: string,
     signedOperationData: SignedOperationDataModel,
     operationData: OperationDataModel
-    ) {
+  ) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Recover;
     this.didUniqueSuffix = didUniqueSuffix;

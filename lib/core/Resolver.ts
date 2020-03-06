@@ -46,6 +46,11 @@ export default class Resolver {
       return undefined;
     }
 
+    // If last operation is a revoke. Add a status property.
+    if (didResolutionModel.metadata!.nextRecoveryOtpHash === undefined) {
+      return { status: 'revoked' };
+    }
+
     // Get only update operations that came after the last full operation.
     const lastOperationTransactionNumber = didResolutionModel.metadata!.lastOperationTransactionNumber;
     const updateOperations = operations.filter(op => op.type === OperationType.Update);

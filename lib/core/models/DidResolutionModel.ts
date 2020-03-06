@@ -6,7 +6,7 @@ import PublicKeyModel from './PublicKeyModel';
 export default interface DidResolutionModel {
   didDocument?: any;
   metadata?: {
-    recoveryKey: PublicKeyModel,
+    recoveryKey?: PublicKeyModel,
     lastOperationTransactionNumber: number;
     nextUpdateOtpHash?: string;
     nextRecoveryOtpHash?: string;

@@ -603,49 +603,6 @@ Example:
 None.
 
 
-### DID Revocation
-The API to revoke a given DID.
-
-#### Request path
-```
-POST /
-```
-
-#### Request headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/json``` |
-
-#### Request body schema
-```json
-{
-  "protected": "Encoded protected header.",
-  "payload": "Encoded revoke payload JSON object define by the schema below.",
-  "signature": "Encoded signature."
-}
-```
-
-#### Revoke payload schema
-```json
-{
-  "type": "revoke",
-  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
-  "recoveryOtp": "The current one-time recovery password."
-}
-```
-
-#### Revoke payload example
-```json
-{
-  "type": "revoke",
-  "didUniqueSuffix": "EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg",
-  "recoveryOtp": "BJzEi4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw"
-}
-```
-
-#### Response body
-None.
-
 ### DID Recovery
 
 #### Request path
@@ -661,7 +618,7 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "type": "recovery",
+  "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryOtp": "The encoded one-time password to be used for this recovery.",
   "signedOperationData": {
@@ -687,6 +644,45 @@ POST / HTTP/1.1
 {
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
   "document": "Opaque content."
+}
+```
+
+#### Response body
+None.
+
+
+### DID Revocation
+The API to revoke a given DID.
+
+#### Request path
+```
+POST /
+```
+
+#### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+#### Revoke request body schema
+```json
+{
+  "type": "revoke",
+  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "recoveryOtp": "The current one-time recovery password.",
+  "signedOperationData": {
+    "protected": "JWS header.",
+    "payload": "JWS encoded JSON object containing revoke operation data that are signed.",
+    "signature": "JWS signature."
+  }
+}
+```
+
+#### `signedOperationData` property schema
+```json
+{
+  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "recoveryOtp": "The current one-time recovery password.",
 }
 ```
 
