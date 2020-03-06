@@ -325,7 +325,7 @@ describe('Observer', async () => {
           'anchorString': '3rdTransaction',
           'transactionFeePaid': 1,
           'normalizedTransactionFee': 1,
-          'writer':'writer3'
+          'writer': 'writer3'
         }
       ]
     };
