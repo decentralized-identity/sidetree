@@ -21,6 +21,13 @@ export default class SidetreeTransactionData {
    */
   public static parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): SidetreeTransactionData | undefined {
 
+    // The sidetree transaction has the following requirements:
+    //  1. The number of outputs must be 2
+    //  2. The first output must be an OP_RETURN with the sidetree anchorstring
+    //  3. The second output must be the remaining amount returning to the wallet which wrote the data
+    //
+    // Example transaction: https://www.blockchain.com/btctest/tx/9ad72b164a6315521403cf80eafeaf7af880bdc737e09fe4adaee171f4fe381f
+
     if (bitcoinTransaction.outputs.length !== 2) {
       return undefined;
     }
