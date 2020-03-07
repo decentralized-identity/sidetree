@@ -369,7 +369,7 @@ describe('OperationProcessor', async () => {
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
     const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateOtp, '#additionalKey', updateOperationRequest, anyNextUpdateOtpHash, signingKeyId, anyIncorrectSigningPrivateKey
+      didUniqueSuffix, firstUpdateOtp, '#additionalKey', anyPublicKeyHex, anyNextUpdateOtpHash, signingKeyId, anyIncorrectSigningPrivateKey
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
