@@ -46,7 +46,7 @@ export default class Resolver {
       return undefined;
     }
 
-    // If last operation is a revoke. Add a status property.
+    // If last operation is a revoke. No need to continue, report DID status as 'revoked'.
     if (didResolutionModel.metadata!.nextRecoveryOtpHash === undefined) {
       return { status: 'revoked' };
     }

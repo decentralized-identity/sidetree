@@ -43,7 +43,7 @@ export default class RevokeOperation implements OperationModel {
     didUniqueSuffix: string,
     recoveryOtp: string,
     signedOperationDataJws: Jws,
-    signedOperationData: SignedOperationDataModel,
+    signedOperationData: SignedOperationDataModel
   ) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Revoke;
@@ -94,7 +94,8 @@ export default class RevokeOperation implements OperationModel {
     const recoveryOtp = operationObject.recoveryOtp;
 
     const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
-    const signedOperationData = await RevokeOperation.parseSignedOperationDataPayload(signedOperationDataJws.payload, operationObject.didUniqueSuffix, recoveryOtp);
+    const signedOperationData = await RevokeOperation.parseSignedOperationDataPayload(
+      signedOperationDataJws.payload, operationObject.didUniqueSuffix, recoveryOtp);
 
     return new RevokeOperation(
       operationBuffer,
@@ -105,7 +106,9 @@ export default class RevokeOperation implements OperationModel {
     );
   }
 
-  private static async parseSignedOperationDataPayload (operationDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryOtp: string): Promise<SignedOperationDataModel> {
+  private static async parseSignedOperationDataPayload (
+    operationDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryOtp: string): Promise<SignedOperationDataModel> {
+
     const signedOperationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
     const signedOperationData = await JsonAsync.parse(signedOperationDataJsonString);
 

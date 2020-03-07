@@ -1,3 +1,4 @@
+import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -7,7 +8,6 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../SidetreeError';
-import DocumentComposer from './DocumentComposer';
 
 interface OperationDataModel {
   nextUpdateOtpHash: string;

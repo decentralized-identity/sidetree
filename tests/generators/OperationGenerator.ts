@@ -448,7 +448,6 @@ export default class OperationGenerator {
     return operation;
   }
 
-  
   /**
    * Generates a revoke operation request.
    */
@@ -468,7 +467,7 @@ export default class OperationGenerator {
       type: OperationType.Revoke,
       didUniqueSuffix,
       recoveryOtp,
-      signedOperationData,
+      signedOperationData
     };
 
     return operation;

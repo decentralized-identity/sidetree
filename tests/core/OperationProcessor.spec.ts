@@ -138,7 +138,7 @@ describe('OperationProcessor', async () => {
   let operationStore: IOperationStore;
   let versionManager: IVersionManager;
   let operationProcessor: IOperationProcessor;
-  let createOp: NamedAnchoredOperationModel;  
+  let createOp: NamedAnchoredOperationModel;
   let recoveryPublicKey: DidPublicKeyModel;
   let recoveryPrivateKey: string;
   let signingKeyId: string;
@@ -294,17 +294,18 @@ describe('OperationProcessor', async () => {
 
     const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, recoveryPrivateKey);
     const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-    const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, numberOfUpdates + 1, numberOfUpdates + 1, 0)
+    const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(
+      revokeOperation, numberOfUpdates + 1, numberOfUpdates + 1, 0);
     await operationStore.put([anchoredRevokeOperation]);
 
     const didDocumentAfterRevoke = await resolver.resolve(didUniqueSuffix);
-    expect(didDocumentAfterRevoke).toEqual({status: 'revoked'});
+    expect(didDocumentAfterRevoke).toEqual({ status: 'revoked' });
   });
 
   it('should ignore a revoke operation of a non-existent did', async () => {
     const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, recoveryPrivateKey);
     const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-    const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0)
+    const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0);
     await operationStore.put([anchoredRevokeOperation]);
 
     const didDocumentAfterRevoke = await resolver.resolve(didUniqueSuffix);
@@ -314,9 +315,10 @@ describe('OperationProcessor', async () => {
   it('should ignore a revoke operation with invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, signingPrivateKey); // Intentionally signing with the wrong key.
+    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(
+      didUniqueSuffix, recoveryOtp, signingPrivateKey); // Intentionally signing with the wrong key.
     const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-    const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0)
+    const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0);
     await operationStore.put([anchoredRevokeOperation]);
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
@@ -342,8 +344,9 @@ describe('OperationProcessor', async () => {
     await operationStore.put([createOp]);
 
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateOtp, '#additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', anyNextUpdateOtpHash, '#nonExistentKey', signingPrivateKey
+      didUniqueSuffix, firstUpdateOtp, '#additionalKey', anyPublicKeyHex, anyNextUpdateOtpHash, '#nonExistentKey', signingPrivateKey
     );
 
     // Generate operation with an invalid key
@@ -364,8 +367,9 @@ describe('OperationProcessor', async () => {
 
     const [, anyIncorrectSigningPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateOtp, '#additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', anyNextUpdateOtpHash, signingKeyId, anyIncorrectSigningPrivateKey
+      didUniqueSuffix, firstUpdateOtp, '#additionalKey', updateOperationRequest, anyNextUpdateOtpHash, signingKeyId, anyIncorrectSigningPrivateKey
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));

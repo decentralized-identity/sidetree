@@ -33,12 +33,12 @@ export default class OperationProcessor implements IOperationProcessor {
         validOperation = await this.applyUpdateOperation(namedAnchoredOperationModel, didResolutionModel);
       } else if (namedAnchoredOperationModel.type === OperationType.Recover) {
         validOperation = await this.applyRecoverOperation(namedAnchoredOperationModel, didResolutionModel);
-      } else if (namedAnchoredOperationModel.type === OperationType.Revoke){
+      } else if (namedAnchoredOperationModel.type === OperationType.Revoke) {
         validOperation = await this.applyRevokeOperation(namedAnchoredOperationModel, didResolutionModel);
-      } else {        
+      } else {
         throw new SidetreeError(ErrorCode.OperationProcessorUnknownOperationType);
       }
-      
+
     } catch (error) {
       console.log(`Invalid operation ${error}.`);
     }

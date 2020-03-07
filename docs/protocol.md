@@ -306,12 +306,7 @@ POST / HTTP/1.1
 }
 ```
 
-#### `document` property schema
-```json
-
-```
-
-#### Document example
+#### `document` property example
 ```json
 {
   "publicKey": [

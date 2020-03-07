@@ -19,7 +19,7 @@ describe('RecoverOperation', async () => {
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-otp',
+        'unused-recovery-otp',
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
@@ -106,13 +106,7 @@ describe('RecoverOperation', async () => {
   });
 
   describe('parseSignedOperationDataPayload()', async () => {
-    it('should throw if operation data is not string', async (done) => {
-      await expectAsync((RecoverOperation as any).parseOperationData(123))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationDataMissingOrNotString));
-      done();
-    });
-
-    it('should throw if operation data contains an additional unknown property.', async (done) => {
+    it('should throw if signed operation data contains an additional unknown property.', async (done) => {
       const signedOperationData = {
         operationDataHash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',

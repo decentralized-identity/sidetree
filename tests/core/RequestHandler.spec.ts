@@ -226,8 +226,9 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
     const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateOtp', '#additionalKey', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', anyNextUpdateOtpHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, 'anyUpdateOtp', '#additionalKey', anyPublicKeyHex, anyNextUpdateOtpHash, 'anyKeyId', anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -239,7 +240,7 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
     const recoveryOtp = 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA';
-    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({didUniqueSuffix, recoveryOtp, recoveryPrivateKey});
+    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryOtp, recoveryPrivateKey });
     const response = await requestHandler.handleOperationRequest(recoveryOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
