@@ -1,9 +1,10 @@
+import DidDocumentModel from './models/DidDocumentModel';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DidServiceEndpointModel from './models/DidServiceEndpointModel';
-import DocumentModel from './models/DocumentModel';
 
 /**
- * Class containing reusable DID Document related operations specific to Sidetree.
+ * Class containing reusable DID Document related operations.
+ * NOTE: This class should only be used by the `DocumentComposer`.
  */
 export default class DidDocument {
   /**
@@ -11,7 +12,7 @@ export default class DidDocument {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (didDocument: DocumentModel, keyId: string): DidPublicKeyModel | undefined {
+  public static getPublicKey (didDocument: DidDocumentModel, keyId: string): DidPublicKeyModel | undefined {
     for (let i = 0; i < didDocument.publicKey.length; i++) {
       const publicKey = didDocument.publicKey[i];
 
@@ -27,7 +28,7 @@ export default class DidDocument {
    * Creates a DID document model.
    * Mainly used by tests.
    */
-  public static create (publicKeys: DidPublicKeyModel[], services?: DidServiceEndpointModel[]): DocumentModel {
+  public static create (publicKeys: DidPublicKeyModel[], services?: DidServiceEndpointModel[]): DidDocumentModel {
 
     return {
       '@context': 'https://w3id.org/did/v1',

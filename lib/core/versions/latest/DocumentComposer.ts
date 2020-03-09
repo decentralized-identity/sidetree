@@ -1,5 +1,5 @@
 import DidDocument from './DidDocument';
-import DocumentModel from './models/DocumentModel';
+import DidDocumentModel from './models/DidDocumentModel';
 import ErrorCode from './ErrorCode';
 import InternalDocumentModel from './models/InternalDocumentModel';
 import KeyUsage from './KeyUsage';
@@ -170,7 +170,7 @@ export default class DocumentComposer {
    * Applies the given patches in order to the given DID Document.
    * NOTE: Assumes no schema validation is needed.
    */
-  private static applyPatchesToDidDocument (didDocument: DocumentModel, patches: any[]) {
+  private static applyPatchesToDidDocument (didDocument: DidDocumentModel, patches: any[]) {
     // Loop through and apply all patches.
     for (let patch of patches) {
       DocumentComposer.applyPatchToDidDocument(didDocument, patch);
@@ -180,7 +180,7 @@ export default class DocumentComposer {
   /**
    * Applies the given patch to the given DID Document.
    */
-  private static applyPatchToDidDocument (didDocument: DocumentModel, patch: any) {
+  private static applyPatchToDidDocument (didDocument: DidDocumentModel, patch: any) {
     if (patch.action === 'add-public-keys') {
       const publicKeySet = new Set(didDocument.publicKey.map(key => key.id));
 
@@ -274,7 +274,7 @@ export default class DocumentComposer {
    * @param didDocument The document to update.
    * @param did The DID which gets added to the document.
    */
-  private static addDidToDocument (didDocument: DocumentModel, did: string): void {
+  private static addDidToDocument (didDocument: DidDocumentModel, did: string): void {
 
     didDocument.id = did;
 

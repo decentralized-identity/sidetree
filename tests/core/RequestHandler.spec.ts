@@ -5,8 +5,8 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
+import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
-import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -103,7 +103,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DocumentModel).id).toEqual(did);
+    expect((response.body as DidDocumentModel).id).toEqual(did);
 
     // Inser the create operation into DB.
     const namedAnchoredCreateOperationModel: NamedAnchoredOperationModel = {

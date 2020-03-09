@@ -2,9 +2,9 @@ import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
+import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
-import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
@@ -116,13 +116,13 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
-function validateDidDocumentAfterUpdates (didDocument: DocumentModel | undefined, numberOfUpdates: number) {
+function validateDidDocumentAfterUpdates (didDocument: DidDocumentModel | undefined, numberOfUpdates: number) {
   expect(didDocument).toBeDefined();
   expect(didDocument!.service![0].serviceEndpoint.instances[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
-  validateDidDocumentPublicKeys(didDocument as DocumentModel);
+  validateDidDocumentPublicKeys(didDocument as DidDocumentModel);
 }
 
-function validateDidDocumentPublicKeys (didDocument: DocumentModel) {
+function validateDidDocumentPublicKeys (didDocument: DidDocumentModel) {
   expect(didDocument.id).toBeDefined();
   const did = didDocument.id;
 
@@ -183,7 +183,7 @@ describe('OperationProcessor', async () => {
   it('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationStore.put([createOp]);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
 
     expect(didDocument).toBeDefined();
     const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
@@ -199,7 +199,7 @@ describe('OperationProcessor', async () => {
     const duplicateNamedAnchoredCreateOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(duplicateOperation, 1, 1, 0);
     await operationStore.put([duplicateNamedAnchoredCreateOperationModel]);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
 
     expect(didDocument).toBeDefined();
     const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
@@ -238,7 +238,7 @@ describe('OperationProcessor', async () => {
     };
     await operationStore.put([updateOp]);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
 
     expect(didDocument).toBeDefined();
     const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
@@ -251,7 +251,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
   });
 
@@ -262,7 +262,7 @@ describe('OperationProcessor', async () => {
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
     }
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
   });
 
@@ -279,7 +279,7 @@ describe('OperationProcessor', async () => {
       resolver = new Resolver(versionManager, operationStore);
       const permutedOps = permutation.map(i => ops[i]);
       await operationStore.put(permutedOps);
-      const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+      const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
       validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
     }
   });
@@ -289,7 +289,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, recoveryPrivateKey);
@@ -321,7 +321,7 @@ describe('OperationProcessor', async () => {
     const anchoredRevokeOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0);
     await operationStore.put([anchoredRevokeOperation]);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
     expect(didDocument).toBeDefined();
     const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
     expect(signingKey).toBeDefined();
@@ -355,7 +355,7 @@ describe('OperationProcessor', async () => {
     const anchoredUpdateOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(updateOperation, 1, 1, 0);
     await operationStore.put([anchoredUpdateOperation]);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
 
     expect(didDocument).toBeDefined();
     const newKey = DidDocument.getPublicKey(didDocument, 'additionalKey');
@@ -377,7 +377,7 @@ describe('OperationProcessor', async () => {
     const anchoredUpdateOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(updateOperation, 1, 1, 0);
     await operationStore.put([anchoredUpdateOperation]);
 
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
 
     expect(didDocument).toBeDefined();
     const newKey = DidDocument.getPublicKey(didDocument, 'new-key');
@@ -388,7 +388,7 @@ describe('OperationProcessor', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
-    const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+    const didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
     validateDidDocumentAfterUpdates(didDocument, numberOfUpdates);
 
     // rollback
@@ -403,7 +403,7 @@ describe('OperationProcessor', async () => {
     let signingPublicKey: DidPublicKeyModel;
     let signingPrivateKey: string;
     let namedAnchoredCreateOperationModel: NamedAnchoredOperationModel;
-    let didDocumentReference: { didDocument: DocumentModel | undefined };
+    let didDocumentReference: { didDocument: DidDocumentModel | undefined };
     let nextRecoveryOtp: string;
     let nextUpdateOtp: string;
 

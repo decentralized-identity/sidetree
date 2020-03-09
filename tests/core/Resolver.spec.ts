@@ -1,8 +1,8 @@
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
+import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
-import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -103,7 +103,7 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
-      let didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+      let didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
       expect(didDocument.publicKey.length).toEqual(2);
       expect(didDocument.service![0].serviceEndpoint.instances.length).toEqual(3);
 
@@ -174,7 +174,7 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.
-      didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+      didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
 
       expect(didDocument).toBeDefined();
       expect(didDocument.publicKey.length).toEqual(2);
