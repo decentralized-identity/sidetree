@@ -535,7 +535,6 @@ Fetches the currently active writer lock object written on the blockchain by the
 
 Returns `HTTP 404 Not Found` with `value_time_lock_not_found` as the `code` parameter value in the JSON body if there is no active lock on the blockchain.
 Returns `HTTP 404 Not Found` with `value_time_lock_in_pending_state` as the `code` parameter value in the JSON body if there is a lock but is not confirmed on the blockchain yet.
-Returns `HTTP 500 Internal Server Error` if there is an error while trying to fetch the lock.
 
 #### Request path
 ```
