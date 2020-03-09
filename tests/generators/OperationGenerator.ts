@@ -449,6 +449,31 @@ export default class OperationGenerator {
   }
 
   /**
+   * Generates a revoke operation request.
+   */
+  public static async generateRevokeOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string) {
+
+    const signedOperationDataPayloadObject = {
+      didUniqueSuffix,
+      recoveryOtp
+    };
+    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
+    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+
+    const operation = {
+      type: OperationType.Revoke,
+      didUniqueSuffix,
+      recoveryOtp,
+      signedOperationData
+    };
+
+    return operation;
+  }
+
+  /**
    * Generates a create operation request buffer.
    * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
    * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
@@ -568,39 +593,14 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a Delete Operation buffer.
+   * Generates a Revoke Operation buffer.
    */
-  public static async generateDeleteOperationBuffer (
+  public static async generateRevokeOperationBuffer (
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
-    signingKeyId: string,
     privateKey: string): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
+    const operation = await OperationGenerator.generateRevokeOperationRequest(didUniqueSuffix, recoveryOtpEncodedSring, privateKey);
     return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
-   * Generates a Delete Operation.
-   */
-  public static async generateDeleteOperation (
-    didUniqueSuffix: string,
-    recoveryOtpEncodedSring: string,
-    signingKeyId: string,
-    privateKey: string): Promise<JwsModel> {
-
-    const protectedHeader = {
-      kid: signingKeyId,
-      alg: 'ES256K'
-    };
-
-    const payload = {
-      type: OperationType.Delete,
-      didUniqueSuffix,
-      recoveryOtp: recoveryOtpEncodedSring
-    };
-
-    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
-    return operationJws;
   }
 
   /**

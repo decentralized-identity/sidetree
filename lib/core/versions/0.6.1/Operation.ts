@@ -279,7 +279,7 @@ export default class Operation {
         this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
         this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
-      case OperationType.Delete:
+      case OperationType.Revoke:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.recoveryOtp = decodedPayload.recoveryOtp;
         break;

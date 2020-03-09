@@ -9,7 +9,7 @@ export default interface IOperationProcessor {
   /**
    * Applies an operation on top of the given DID document.
    * In the case of an invalid operation, the given DID document will be unchanged.
-   * In the case of a (valid) delete operation, the given DID document will be set to `undefined`.
+   * In the case of a (valid) revoke operation, the given DID document will be set to `undefined`.
    *
    * MUST NOT throw error.
    *

@@ -10,6 +10,7 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PublicKeyModel from '../../models/PublicKeyModel';
 import RecoverOperation from './RecoverOperation';
+import RevokeOperation from './RevokeOperation';
 import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -78,35 +79,24 @@ export default class Operation {
   }
 
   /**
-   * Creates an Operation that has not been anchored on the blockchain.
-   * @throws Error if given operation buffer fails any validation.
-   */
-  public static create (operationBuffer: Buffer) {
-    return new Operation(operationBuffer);
-  }
-
-  /**
-   * Parses the given buffer into an `IOperation`.
+   * Parses the given buffer into an `OperationModel`.
    */
   public static async parse (operationBuffer: Buffer): Promise<OperationModel> {
-    try {
-      // Parse request buffer into a JS object.
-      const operationJsonString = operationBuffer.toString();
-      const operationObject = JSON.parse(operationJsonString);
-      const operationType = operationObject.type;
+    // Parse request buffer into a JS object.
+    const operationJsonString = operationBuffer.toString();
+    const operationObject = JSON.parse(operationJsonString);
+    const operationType = operationObject.type;
 
-      if (operationType === OperationType.Create) {
-        return CreateOperation.parseObject(operationObject, operationBuffer);
-      } else if (operationType === OperationType.Update) {
-        return UpdateOperation.parseObject(operationObject, operationBuffer);
-      } else if (operationType === OperationType.Recover) {
-        return RecoverOperation.parseObject(operationObject, operationBuffer);
-      } else {
-        throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
-      }
-    } catch {
-      // NOTE: This is a temporary fork in code path, will be removed once issue #266 is completed.
-      return Operation.create(operationBuffer);
+    if (operationType === OperationType.Create) {
+      return CreateOperation.parseObject(operationObject, operationBuffer);
+    } else if (operationType === OperationType.Update) {
+      return UpdateOperation.parseObject(operationObject, operationBuffer);
+    } else if (operationType === OperationType.Recover) {
+      return RecoverOperation.parseObject(operationObject, operationBuffer);
+    } else if (operationType === OperationType.Revoke) {
+      return RevokeOperation.parseObject(operationObject, operationBuffer);
+    } else {
+      throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
     }
   }
 
@@ -269,7 +259,6 @@ export default class Operation {
         this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
       case OperationType.Update:
-        Operation.validateUpdatePayload(decodedPayload);
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.patches = decodedPayload.patches;
         this.updateOtp = decodedPayload.updateOtp;
@@ -284,149 +273,12 @@ export default class Operation {
         this.nextRecoveryOtpHash = decodedPayload.nextRecoveryOtpHash;
         this.nextUpdateOtpHash = decodedPayload.nextUpdateOtpHash;
         break;
-      case OperationType.Delete:
+      case OperationType.Revoke:
         this.didUniqueSuffix = decodedPayload.didUniqueSuffix;
         this.recoveryOtp = decodedPayload.recoveryOtp;
         break;
       default:
         throw new Error(`Not implemented operation type ${this.type}.`);
-    }
-  }
-
-  /**
-   * Validates the schema given update operation payload.
-   * @throws Error if given operation payload fails validation.
-   */
-  public static validateUpdatePayload (payload: any) {
-    const payloadProperties = Object.keys(payload);
-    if (payloadProperties.length !== 5) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrUnknownProperty);
-    }
-
-    if (typeof payload.didUniqueSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidDidUniqueSuffixType);
-    }
-
-    if (typeof payload.updateOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidUpdateOtp);
-    }
-
-    if (typeof payload.nextUpdateOtpHash !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePayloadMissingOrInvalidNextUpdateOtpHash);
-    }
-
-    // Validate schema of every patch to be applied.
-    Operation.validateUpdatePatches(payload.patches);
-  }
-
-  private static validateUpdatePatches (patches: any) {
-    if (!Array.isArray(patches)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchesNotArray);
-    }
-
-    for (let patch of patches) {
-      Operation.validateUpdatePatch(patch);
-    }
-  }
-
-  private static validateUpdatePatch (patch: any) {
-    const action = patch.action;
-    switch (action) {
-      case 'add-public-keys':
-        Operation.validateAddPublicKeysPatch(patch);
-        break;
-      case 'remove-public-keys':
-        Operation.validateRemovePublicKeysPatch(patch);
-        break;
-      case 'add-service-endpoints':
-        Operation.validateServiceEndpointsPatch(patch);
-        break;
-      case 'remove-service-endpoints':
-        Operation.validateServiceEndpointsPatch(patch);
-        break;
-      default:
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownAction);
-    }
-  }
-
-  private static validateAddPublicKeysPatch (patch: any) {
-    const patchProperties = Object.keys(patch);
-    if (patchProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
-    }
-
-    if (!Array.isArray(patch.publicKeys)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeysNotArray);
-    }
-
-    for (let publicKey of patch.publicKeys) {
-      const publicKeyProperties = Object.keys(publicKey);
-      if (publicKeyProperties.length !== 4) {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyMissingOrUnknownProperty);
-      }
-
-      if (typeof publicKey.id !== 'string') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
-      }
-
-      if (publicKey.usage === KeyUsage.recovery) {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyAddRecoveryKeyNotAllowed);
-      }
-
-      if (publicKey.controller !== undefined) {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyControllerNotAllowed);
-      }
-
-      if (publicKey.type === 'Secp256k1VerificationKey2018') {
-        // The key must be in compressed bitcoin-key format.
-        if (typeof publicKey.publicKeyHex !== 'string' ||
-            publicKey.publicKeyHex.length !== 66) {
-          throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyHexMissingOrIncorrect);
-        }
-      } else if (publicKey.type !== 'RsaVerificationKey2018') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyTypeMissingOrUnknown);
-      }
-    }
-  }
-
-  private static validateRemovePublicKeysPatch (patch: any) {
-    const patchProperties = Object.keys(patch);
-    if (patchProperties.length !== 2) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
-    }
-
-    if (!Array.isArray(patch.publicKeys)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeysNotArray);
-    }
-
-    for (let publicKeyId of patch.publicKeys) {
-      if (typeof publicKeyId !== 'string') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchPublicKeyIdNotString);
-      }
-    }
-  }
-
-  /**
-   * Validates update patch for either adding or removing service endpoints.
-   */
-  private static validateServiceEndpointsPatch (patch: any) {
-    const patchProperties = Object.keys(patch);
-    if (patchProperties.length !== 3) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchMissingOrUnknownProperty);
-    }
-
-    if (patch.serviceType !== 'IdentityHub') {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceTypeMissingOrUnknown);
-    }
-
-    if (!Array.isArray(patch.serviceEndpoints)) {
-      throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointsNotArray);
-    }
-
-    for (let serviceEndpoint of patch.serviceEndpoints) {
-      if (typeof serviceEndpoint !== 'string') {
-        throw new SidetreeError(ErrorCode.OperationUpdatePatchServiceEndpointNotString);
-      }
     }
   }
 

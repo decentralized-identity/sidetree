@@ -19,7 +19,7 @@ export default class Resolver {
   /**
    * Resolve the given DID unique suffix to its DID Doducment.
    * @param didUniqueSuffix The unique suffix of the DID to resolve. e.g. if 'did:sidetree:abc123' is the DID, the unique suffix would be 'abc123'
-   * @returns DID Document. Undefined if the unique suffix of the DID is deleted or not found.
+   * @returns DID Document. Undefined if the unique suffix of the DID is revoked or not found.
    *
    * Iterate over all operations in blockchain-time order extending the
    * the operation chain while checking validity.
@@ -36,7 +36,7 @@ export default class Resolver {
     const createAndRecoverAndRevokeOperations = operations.filter(
       op => op.type === OperationType.Create ||
       op.type === OperationType.Recover ||
-      op.type === OperationType.Delete);
+      op.type === OperationType.Revoke);
 
     // Apply "full" operations first.
     await this.applyOperations(createAndRecoverAndRevokeOperations, didResolutionModel);
@@ -44,6 +44,11 @@ export default class Resolver {
     // If no valid full operation is found at all, the DID is not anchored.
     if (didResolutionModel.didDocument === undefined) {
       return undefined;
+    }
+
+    // If last operation is a revoke. No need to continue, report DID status as 'revoked'.
+    if (didResolutionModel.metadata!.nextRecoveryOtpHash === undefined) {
+      return { status: 'revoked' };
     }
 
     // Get only update operations that came after the last full operation.

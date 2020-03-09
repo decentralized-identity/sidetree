@@ -1,14 +1,14 @@
-import AnchoredOperation from './AnchoredOperation';
 import CreateOperation from './CreateOperation';
 import DidResolutionModel from '../../models/DidResolutionModel';
-import Document from './Document';
 import DocumentComposer from './DocumentComposer';
-import DocumentModel from './models/DocumentModel';
+import ErrorCode from './ErrorCode';
 import IOperationProcessor, { ApplyResult } from '../../interfaces/IOperationProcessor';
 import Multihash from './Multihash';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
+import RevokeOperation from './RevokeOperation';
+import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
 /**
@@ -18,12 +18,7 @@ import UpdateOperation from './UpdateOperation';
  * simply storing the operation in the store.
  */
 export default class OperationProcessor implements IOperationProcessor {
-
-  private documentComposer: DocumentComposer;
-
-  public constructor (private didMethodName: string) {
-    this.documentComposer = new DocumentComposer();
-  }
+  public constructor (private didMethodName: string) { }
 
   public async apply (
     namedAnchoredOperationModel: NamedAnchoredOperationModel,
@@ -38,10 +33,12 @@ export default class OperationProcessor implements IOperationProcessor {
         validOperation = await this.applyUpdateOperation(namedAnchoredOperationModel, didResolutionModel);
       } else if (namedAnchoredOperationModel.type === OperationType.Recover) {
         validOperation = await this.applyRecoverOperation(namedAnchoredOperationModel, didResolutionModel);
-      } else {
-        // Revoke operation.
+      } else if (namedAnchoredOperationModel.type === OperationType.Revoke) {
         validOperation = await this.applyRevokeOperation(namedAnchoredOperationModel, didResolutionModel);
+      } else {
+        throw new SidetreeError(ErrorCode.OperationProcessorUnknownOperationType);
       }
+
     } catch (error) {
       console.log(`Invalid operation ${error}.`);
     }
@@ -95,7 +92,7 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Transform the internal document state to a DID document.
     // NOTE: this transformation will be moved out and only apply to the final internal document state by the time #266 is completed.
-    const didDocument = this.documentComposer.transformToExternalDocument(this.didMethodName, internalDocumentModel);
+    const didDocument = DocumentComposer.transformToExternalDocument(this.didMethodName, internalDocumentModel);
 
     didResolutionModel.didDocument = didDocument;
     didResolutionModel.metadata = {
@@ -137,7 +134,7 @@ export default class OperationProcessor implements IOperationProcessor {
       return false;
     }
 
-    const resultingDocument = await this.documentComposer.applyUpdateOperation(operation, didResolutionModel.didDocument);
+    const resultingDocument = await DocumentComposer.applyUpdateOperation(operation, didResolutionModel.didDocument);
 
     didResolutionModel.didDocument = resultingDocument;
     didResolutionModel.metadata!.lastOperationTransactionNumber = namedAnchoredOperationModel.transactionNumber;
@@ -163,7 +160,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the signature.
-    const signatureIsValid = await operation.signedOperationDataJws.verifySignature(didResolutionModel.metadata!.recoveryKey);
+    const signatureIsValid = await operation.signedOperationDataJws.verifySignature(didResolutionModel.metadata!.recoveryKey!);
     if (!signatureIsValid) {
       return false;
     }
@@ -184,7 +181,7 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // Transform the internal document state to a DID document.
     // NOTE: this transformation will be moved out and only apply to the final internal document state by the time #266 is completed.
-    const document = this.documentComposer.transformToExternalDocument(this.didMethodName, internalDocumentModel);
+    const document = DocumentComposer.transformToExternalDocument(this.didMethodName, internalDocumentModel);
 
     didResolutionModel.didDocument = document;
     didResolutionModel.metadata!.recoveryKey = operation.signedOperationData.recoveryKey,
@@ -201,37 +198,25 @@ export default class OperationProcessor implements IOperationProcessor {
     namedAnchoredOperationModel: NamedAnchoredOperationModel,
     didResolutionModel: DidResolutionModel
   ): Promise<boolean> {
-    // NOTE: Use only for read interally to this method.
-    const didDocument = didResolutionModel.didDocument as (DocumentModel | undefined);
 
-    // Revocation can only be applied on an existing DID.
-    if (!didDocument) {
-      return false;
-    }
-
-    const operation = AnchoredOperation.createAnchoredOperation(namedAnchoredOperationModel);
+    const operation = await RevokeOperation.parse(namedAnchoredOperationModel.operationBuffer);
 
     // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp!, didResolutionModel.metadata!.nextRecoveryOtpHash!);
+    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp, didResolutionModel.metadata!.nextRecoveryOtpHash!);
     if (!isValidOtp) {
       return false;
     }
 
-    // The current did document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(didDocument, operation.signingKeyId);
-    if (!publicKey) {
-      return false;
-    }
-
-    // ... and the signature must pass verification.
-    if (!(await operation.verifySignature(publicKey))) {
+    // Verify the signature.
+    const signatureIsValid = await operation.signedOperationDataJws.verifySignature(didResolutionModel.metadata!.recoveryKey!);
+    if (!signatureIsValid) {
       return false;
     }
 
     // The operation passes all checks.
-    didResolutionModel.didDocument = undefined;
-    didResolutionModel.metadata!.lastOperationTransactionNumber = operation.transactionNumber;
-    didResolutionModel.metadata!.nextRecoveryOtpHash = undefined,
+    didResolutionModel.metadata!.recoveryKey = undefined;
+    didResolutionModel.metadata!.lastOperationTransactionNumber = namedAnchoredOperationModel.transactionNumber;
+    didResolutionModel.metadata!.nextRecoveryOtpHash = undefined;
     didResolutionModel.metadata!.nextUpdateOtpHash = undefined;
     return true;
   }
