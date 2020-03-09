@@ -533,8 +533,12 @@ HTTP/1.1 404 Not Found
 ### Fetch the writer lock object used for batch writing.
 Fetches the currently active writer lock object written on the blockchain by the Blockchain service. This is used for batch writing.
 
-Returns `HTTP 404 Not Found` with `value_time_lock_not_found` as the `code` parameter value in the JSON body if there is no active lock on the blockchain.
-Returns `HTTP 404 Not Found` with `value_time_lock_in_pending_state` as the `code` parameter value in the JSON body if there is a lock but is not confirmed on the blockchain yet.
+Returns `HTTP 404 Not Found` with the following values as the `code` parameter in the JSON body:
+
+| Code                              | Description                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------|
+| value_time_lock_not_found         | if there is no active lock on the blockchain.                  |
+| value_time_lock_in_pending_state  | if there is a lock but is not confirmed on the blockchain yet. |
 
 #### Request path
 ```
