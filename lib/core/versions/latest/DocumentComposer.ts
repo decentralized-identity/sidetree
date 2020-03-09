@@ -1,8 +1,8 @@
 import Document from './Document';
+import DocumentModel from './models/DocumentModel';
 import ErrorCode from './ErrorCode';
 import InternalDocumentModel from './models/InternalDocumentModel';
 import KeyUsage from './KeyUsage';
-import Operation from './Operation';
 import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -46,7 +46,7 @@ export default class DocumentComposer {
     }
 
     // The operation passes all checks, apply the patches.
-    Operation.applyPatchesToDidDocument(document, operation.operationData.documentPatch);
+    DocumentComposer.applyPatchesToDidDocument(document, operation.operationData.documentPatch);
 
     return document;
   }
@@ -164,6 +164,103 @@ export default class DocumentComposer {
       if (typeof serviceEndpoint !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotString);
       }
+    }
+  }
+  /**
+   * Applies the given patches in order to the given DID Document.
+   * NOTE: Assumes no schema validation is needed.
+   */
+  private static applyPatchesToDidDocument (didDocument: DocumentModel, patches: any[]) {
+    // Loop through and apply all patches.
+    for (let patch of patches) {
+      DocumentComposer.applyPatchToDidDocument(didDocument, patch);
+    }
+  }
+
+  /**
+   * Applies the given patch to the given DID Document.
+   */
+  private static applyPatchToDidDocument (didDocument: DocumentModel, patch: any) {
+    if (patch.action === 'add-public-keys') {
+      const publicKeySet = new Set(didDocument.publicKey.map(key => key.id));
+
+      // Loop through all given public keys and add them if they don't exist already.
+      for (let publicKey of patch.publicKeys) {
+        if (!publicKeySet.has(publicKey.id)) {
+          // Add the controller property. This cannot be added by the client and can
+          // only be set by the server side
+          publicKey.controller = didDocument.id;
+          didDocument.publicKey.push(publicKey);
+        }
+      }
+    } else if (patch.action === 'remove-public-keys') {
+      const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
+
+      // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
+      for (let publicKey of patch.publicKeys) {
+        const existingKey = publicKeyMap.get(publicKey);
+
+        // Deleting recovery key is NOT allowed.
+        if (existingKey !== undefined &&
+            existingKey.usage !== KeyUsage.recovery) {
+          publicKeyMap.delete(publicKey);
+        }
+      }
+
+      didDocument.publicKey = [...publicKeyMap.values()];
+    } else if (patch.action === 'add-service-endpoints') {
+      // Find the service of the given service type.
+      let service = undefined;
+      if (didDocument.service !== undefined) {
+        service = didDocument.service.find(service => service.type === patch.serviceType);
+      }
+
+      // If service not found, create a new service element and add it to the property.
+      if (service === undefined) {
+        service = {
+          type: patch.serviceType,
+          serviceEndpoint: {
+            '@context': 'schema.identity.foundation/hub',
+            '@type': 'UserServiceEndpoint',
+            instances: patch.serviceEndpoints
+          }
+        };
+
+        if (didDocument.service === undefined) {
+          didDocument.service = [service];
+        } else {
+          didDocument.service.push(service);
+        }
+      } else {
+        // Else we add to the eixsting service element.
+
+        const serviceEndpointSet = new Set(service.serviceEndpoint.instances);
+
+        // Loop through all given service endpoints and add them if they don't exist already.
+        for (let serviceEndpoint of patch.serviceEndpoints) {
+          if (!serviceEndpointSet.has(serviceEndpoint)) {
+            service.serviceEndpoint.instances.push(serviceEndpoint);
+          }
+        }
+      }
+    } else if (patch.action === 'remove-service-endpoints') {
+      let service = undefined;
+      if (didDocument.service !== undefined) {
+        service = didDocument.service.find(service => service.type === patch.serviceType);
+      }
+
+      if (service === undefined) {
+        return;
+      }
+
+      const serviceEndpointSet = new Set(service.serviceEndpoint.instances);
+
+      // Loop through all given public key IDs and add them from the existing public key set.
+      for (let serviceEndpoint of patch.serviceEndpoints) {
+        serviceEndpointSet.delete(serviceEndpoint);
+      }
+
+      service.serviceEndpoint.instances = [...serviceEndpointSet];
     }
   }
 }
