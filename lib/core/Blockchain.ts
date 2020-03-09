@@ -2,6 +2,7 @@ import * as HttpStatus from 'http-status';
 import BlockchainTimeModel from './models/BlockchainTimeModel';
 import CoreErrorCode from './CoreErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
+import JsonAsync from './versions/latest/util/JsonAsync';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
@@ -9,6 +10,7 @@ import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from './SidetreeError';
 import TransactionModel from '../common/models/TransactionModel';
+import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.
@@ -27,11 +29,16 @@ export default class Blockchain implements IBlockchain {
   private transactionsUri: string; // e.g. https://127.0.0.1/transactions
   private timeUri: string; // e.g. https://127.0.0.1/time
   private feeUri: string; // e.g. https://127.0.0.1/fee
+  private locksUri: string; // e.g. https://127.0.0.1/locks
+  private writerLockUri: string; // e.g. https://127.0.0.1/writelock
 
   public constructor (public uri: string) {
     this.transactionsUri = `${uri}/transactions`;
     this.timeUri = `${uri}/time`;
     this.feeUri = `${uri}/fee`;
+    this.locksUri = `${uri}/locks`;
+    this.writerLockUri = `${uri}/writerlock`;
+
     this.serviceVersionFetcher = new ServiceVersionFetcher(uri);
 
     this.cachedBlockchainTime = { hash: '', time: 0 }; // Dummy values that gets overwritten by `initialize()`.
@@ -185,5 +192,44 @@ export default class Blockchain implements IBlockchain {
     }
 
     return responseBody.normalizedTransactionFee as number;
+  }
+
+  public async getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel | undefined> {
+    const readUri = `${this.locksUri}/${lockIdentifier}`;
+
+    const response = await this.fetch(readUri);
+    const responseBodyString = await ReadableStream.readAll(response.body);
+
+    if (response.status === HttpStatus.NOT_FOUND) {
+      return undefined;
+    }
+
+    if (response.status !== HttpStatus.OK) {
+      throw new SidetreeError(CoreErrorCode.BlockchainGetLockResponseNotOk, `Response: ${responseBodyString}`);
+    }
+
+    return JsonAsync.parse(responseBodyString);
+  }
+
+  public async getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
+
+    const response = await this.fetch(this.writerLockUri);
+    const responseBodyString = await ReadableStream.readAll(response.body);
+    const responseBody = await JsonAsync.parse(responseBodyString);
+
+    if (response.status === HttpStatus.NOT_FOUND) {
+
+      if (responseBody.code === SharedErrorCode.ValueTimeLockInPendingState) {
+        throw new SidetreeError(SharedErrorCode.ValueTimeLockInPendingState);
+      }
+
+      return undefined;
+    }
+
+    if (response.status !== HttpStatus.OK) {
+      throw new SidetreeError(CoreErrorCode.BlockchainGetWriterLockResponseNotOk, `Response: ${responseBodyString}`);
+    }
+
+    return responseBody;
   }
 }

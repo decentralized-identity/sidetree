@@ -1,10 +1,12 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/CoreErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import SidetreeError from '../../lib/core/SidetreeError';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('Blockchain', async () => {
   describe('read()', async () => {
@@ -334,6 +336,153 @@ describe('Blockchain', async () => {
       spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
       await expectAsync(blockchainClient.getFee(700)).toBeRejectedWith(new SidetreeError(CoreErrorCode.BlockchainGetFeeResponseNotOk));
+    });
+  });
+
+  describe('getValueTimeLock', () => {
+    it('should return the object returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 12134,
+        identifier: 'identifier',
+        lockTransactionTime: 11223,
+        owner: 'some owner',
+        unlockTransactionTime: 98734
+      };
+
+      const mockFetchResponse = {
+        status: 200,
+        body: JSON.stringify(mockValueTimeLock)
+      };
+
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      const identifierInput = 'indentifier input';
+      const actual = await blockchainClient.getValueTimeLock(identifierInput);
+
+      expect(actual).toEqual(mockValueTimeLock);
+      expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['locksUri']}/${identifierInput}`);
+      expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
+      done();
+    });
+
+    it('should return undefined if not-found is returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockFetchResponse = {
+        status: 404,
+        body: '{"code": "some error code"}'
+      };
+
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      const actual = await blockchainClient.getValueTimeLock('non-existent-identifier');
+
+      expect(actual).not.toBeDefined();
+      done();
+    });
+
+    it('should throw if there is any other error returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockFetchResponse = {
+        status: 500,
+        body: '{"code": "some error code"}'
+      };
+
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => blockchainClient.getValueTimeLock('non-existent-identifier'),
+        CoreErrorCode.BlockchainGetLockResponseNotOk);
+
+      done();
+    });
+  });
+
+  describe('getWriterValueTimeLock', () => {
+    it('should return the object returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 12134,
+        identifier: 'identifier',
+        lockTransactionTime: 11223,
+        owner: 'some owner',
+        unlockTransactionTime: 98734
+      };
+
+      const mockFetchResponse = {
+        status: 200,
+        body: JSON.stringify(mockValueTimeLock)
+      };
+
+      const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      const actual = await blockchainClient.getWriterValueTimeLock();
+
+      expect(actual).toEqual(mockValueTimeLock);
+      expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['writerLockUri']}`);
+      expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
+      done();
+    });
+
+    it('should return undefined if not-found is returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockFetchResponse = {
+        status: 404,
+        body: '{"code": "some error code"}'
+      };
+
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      const actual = await blockchainClient.getWriterValueTimeLock();
+
+      expect(actual).not.toBeDefined();
+      done();
+    });
+
+    it('should throw pending-state error if that is returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockFetchResponse = {
+        status: 404,
+        body: JSON.stringify({ code: SharedErrorCode.ValueTimeLockInPendingState })
+      };
+
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => blockchainClient.getWriterValueTimeLock(),
+        SharedErrorCode.ValueTimeLockInPendingState);
+
+      done();
+    });
+
+    it('should throw generic error if that is returned by the network call.', async (done) => {
+      const blockchainClient = new Blockchain('unused');
+
+      const mockFetchResponse = {
+        status: 500,
+        body: '{"code": "some error code"}'
+      };
+
+      spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => blockchainClient.getWriterValueTimeLock(),
+        CoreErrorCode.BlockchainGetWriterLockResponseNotOk);
+
+      done();
     });
   });
 });
