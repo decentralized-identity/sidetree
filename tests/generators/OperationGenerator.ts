@@ -2,9 +2,9 @@ import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
-import Document from '../../lib/core/versions/latest/Document';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
@@ -279,7 +279,7 @@ export default class OperationGenerator {
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
-    const document = Document.create([signingPublicKey], serviceEndpoints);
+    const document = DidDocument.create([signingPublicKey], serviceEndpoints);
 
     const operationData = {
       nextUpdateOtpHash,
@@ -350,7 +350,7 @@ export default class OperationGenerator {
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
-    const document = Document.create([newSigningPublicKey], serviceEndpoints);
+    const document = DidDocument.create([newSigningPublicKey], serviceEndpoints);
 
     const operationData = {
       nextUpdateOtpHash,

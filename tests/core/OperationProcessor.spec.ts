@@ -1,9 +1,9 @@
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
-import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
@@ -186,7 +186,7 @@ describe('OperationProcessor', async () => {
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
 
     expect(didDocument).toBeDefined();
-    const signingKey = Document.getPublicKey(didDocument, signingKeyId);
+    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
     expect(signingKey).toBeDefined();
     validateDidDocumentPublicKeys(didDocument);
   });
@@ -202,7 +202,7 @@ describe('OperationProcessor', async () => {
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
 
     expect(didDocument).toBeDefined();
-    const signingKey = Document.getPublicKey(didDocument, signingKeyId);
+    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -241,7 +241,7 @@ describe('OperationProcessor', async () => {
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
 
     expect(didDocument).toBeDefined();
-    const signingKey = Document.getPublicKey(didDocument, signingKeyId);
+    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
     expect(signingKey).not.toBeDefined(); // if update above went through, new key would be added.
     validateDidDocumentPublicKeys(didDocument);
   });
@@ -323,7 +323,7 @@ describe('OperationProcessor', async () => {
 
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
     expect(didDocument).toBeDefined();
-    const signingKey = Document.getPublicKey(didDocument, signingKeyId);
+    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -358,7 +358,7 @@ describe('OperationProcessor', async () => {
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
 
     expect(didDocument).toBeDefined();
-    const newKey = Document.getPublicKey(didDocument, 'additionalKey');
+    const newKey = DidDocument.getPublicKey(didDocument, 'additionalKey');
     expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
@@ -380,7 +380,7 @@ describe('OperationProcessor', async () => {
     const didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
 
     expect(didDocument).toBeDefined();
-    const newKey = Document.getPublicKey(didDocument, 'new-key');
+    const newKey = DidDocument.getPublicKey(didDocument, 'new-key');
     expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 

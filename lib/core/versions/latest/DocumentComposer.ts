@@ -1,4 +1,4 @@
-import Document from './Document';
+import DidDocument from './DidDocument';
 import DocumentModel from './models/DocumentModel';
 import ErrorCode from './ErrorCode';
 import InternalDocumentModel from './models/InternalDocumentModel';
@@ -23,7 +23,7 @@ export default class DocumentComposer {
       recoveryKey: internalDocumentModel.recoveryKey
     };
 
-    Document.addDidToDocument(didDocument, did);
+    DocumentComposer.addDidToDocument(didDocument, did);
 
     return didDocument;
   }
@@ -35,7 +35,7 @@ export default class DocumentComposer {
    */
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
     // The current document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(document, operation.signedOperationDataHash.kid);
+    const publicKey = DidDocument.getPublicKey(document, operation.signedOperationDataHash.kid);
     if (!publicKey) {
       throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
     }
@@ -261,6 +261,28 @@ export default class DocumentComposer {
       }
 
       service.serviceEndpoint.instances = [...serviceEndpointSet];
+    }
+  }
+
+  /**
+   * Adds DID references in the given DID document using the given DID
+   * because client creating the document will not have these value set.
+   * Specifically:
+   * 1. `id` is added.
+   * 1. `controller` of the public-keys is added.
+   *
+   * @param didDocument The document to update.
+   * @param did The DID which gets added to the document.
+   */
+  private static addDidToDocument (didDocument: DocumentModel, did: string): void {
+
+    didDocument.id = did;
+
+    // Only update the publickey if the array is present
+    if (Array.isArray(didDocument.publicKey)) {
+      for (let publicKeyEntry of didDocument.publicKey) {
+        publicKeyEntry.controller = did;
+      }
     }
   }
 }
