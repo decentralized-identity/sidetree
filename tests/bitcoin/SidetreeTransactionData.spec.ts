@@ -27,20 +27,6 @@ describe('SidetreeTransactionData', () => {
   }
 
   describe('parse', () => {
-    it('should return undefined if the output length is not 2', async (done) => {
-      const mockTxn: BitcoinTransactionModel = {
-        id: 'some id',
-        blockHash: 'hash',
-        confirmations: 1,
-        outputs: [],
-        inputs: []
-      };
-
-      const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
-      expect(actual).not.toBeDefined();
-      done();
-    });
-
     it('should return undefined if the sidetree data is invalid', async (done) => {
       const mockTxn: BitcoinTransactionModel = {
         id: 'some id',
@@ -53,7 +39,7 @@ describe('SidetreeTransactionData', () => {
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromVOutIfExist').and.returnValue(undefined);
+      spyOn(SidetreeTransactionData as any, 'getValidSidetreeDataFromOutputs').and.returnValue(undefined);
 
       const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
@@ -72,8 +58,8 @@ describe('SidetreeTransactionData', () => {
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromVOutIfExist').and.returnValue('some data');
-      spyOn(SidetreeTransactionData as any, 'getWriterFromVOutIfExist').and.returnValue(undefined);
+      spyOn(SidetreeTransactionData as any, 'getValidSidetreeDataFromOutputs').and.returnValue('some data');
+      spyOn(SidetreeTransactionData as any, 'getValidWriterFromInputs').and.returnValue(undefined);
 
       const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
@@ -95,8 +81,8 @@ describe('SidetreeTransactionData', () => {
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromVOutIfExist').and.returnValue(sidetreeData);
-      spyOn(SidetreeTransactionData as any, 'getWriterFromVOutIfExist').and.returnValue(writer);
+      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.returnValue(sidetreeData);
+      spyOn(SidetreeTransactionData as any, 'getValidWriterFromInputs').and.returnValue(writer);
 
       const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).toBeDefined();
@@ -106,12 +92,12 @@ describe('SidetreeTransactionData', () => {
     });
   });
 
-  describe('getSidetreeDataFromVOutIfExist', async () => {
+  describe('getSidetreeDataFromOutputIfExist', async () => {
     it('should return the data if the valid sidetree transaction exist', async (done) => {
       const sidetreeData = 'some test data';
       const mockDataOutput = createValidDataOutput(sidetreeData);
 
-      const actual = SidetreeTransactionData['getSidetreeDataFromVOutIfExist'](mockDataOutput, sidetreeTransactionPrefix);
+      const actual = SidetreeTransactionData['getSidetreeDataFromOutputIfExist'](mockDataOutput, sidetreeTransactionPrefix);
       expect(actual!).toEqual(sidetreeData);
       done();
     });
@@ -119,40 +105,40 @@ describe('SidetreeTransactionData', () => {
     it('should return undefined if no valid sidetree transaction exist', async (done) => {
       const mockOutput: BitcoinOutputModel = { satoshis:  0, scriptAsmAsString: 'some random data' };
 
-      const actual = SidetreeTransactionData['getSidetreeDataFromVOutIfExist'](mockOutput, sidetreeTransactionPrefix);
+      const actual = SidetreeTransactionData['getSidetreeDataFromOutputIfExist'](mockOutput, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
   });
 
-  describe('getWriterFromVOutIfExist', async () => {
-    it('should return the data if the valid sidetree transaction exist', async (done) => {
-      const sidetreeWriter = 'somewriter';
-      const mockWriterOutput = createValidWriterOutput(sidetreeWriter);
+  // describe('getWriterFromVOutIfExist', async () => {
+  //   it('should return the data if the valid sidetree transaction exist', async (done) => {
+  //     const sidetreeWriter = 'somewriter';
+  //     const mockWriterOutput = createValidWriterOutput(sidetreeWriter);
 
-      const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
-      expect(actual!).toEqual(sidetreeWriter);
-      done();
-    });
+  //     const actual = SidetreeTransactionData['getValidReceiverFromInputs'](mockWriterOutput);
+  //     expect(actual!).toEqual(sidetreeWriter);
+  //     done();
+  //   });
 
-    it('should return undefined if no valid sidetree transaction exist', async (done) => {
-      const sidetreeWriter = 'some writer';
-      const mockWriterOutput = createValidWriterOutput(sidetreeWriter);
-      mockWriterOutput.scriptAsmAsString += ' OP_DUP';
+  //   it('should return undefined if no valid sidetree transaction exist', async (done) => {
+  //     const sidetreeWriter = 'some writer';
+  //     const mockWriterOutput = createValidWriterOutput(sidetreeWriter);
+  //     mockWriterOutput.scriptAsmAsString += ' OP_DUP';
 
-      const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
-      expect(actual).not.toBeDefined();
-      done();
-    });
-  });
+  //     const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
+  //     expect(actual).not.toBeDefined();
+  //     done();
+  //   });
+  // });
 
-  it('should return undefined if script asm is undefined', async (done) => {
-    const mockWriterOutput: BitcoinOutputModel = {
-      satoshis: 0, scriptAsmAsString: (undefined as any) as string
-    };
+  // it('should return undefined if script asm is undefined', async (done) => {
+  //   const mockWriterOutput: BitcoinOutputModel = {
+  //     satoshis: 0, scriptAsmAsString: (undefined as any) as string
+  //   };
 
-    const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
-    expect(actual).not.toBeDefined();
-    done();
-  });
+  //   const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
+  //   expect(actual).not.toBeDefined();
+  //   done();
+  // });
 });

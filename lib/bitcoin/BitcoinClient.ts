@@ -70,6 +70,21 @@ export default class BitcoinClient {
    */
   public async initialize (): Promise<void> {
 
+    // const txn = await this.getRawTransaction('a98fd29d4583d1f691067b0f92ae83d3808d18cba55bd630dbf569fbaea9355c');
+
+    // txn.inputs.forEach(input => {
+    //   const inputPKAsHex = input.scriptAsmAsString.split(' ')[1];
+    //   const publicKey = new PublicKey(inputPKAsHex);
+    //   const publicKeyAddress = (publicKey as any).toAddress('testnet');
+    //   const publicKeyHashout = Script.buildPublicKeyHashOut(publicKeyAddress);
+    //   // const publicKeyHashout = Script.buildPublicKeyOut(publicKey);
+    //   console.info(`*****************: ${publicKeyHashout.toASM()}`);
+
+    //   const publicKeyAsBuffer = Buffer.from(inputPKAsHex, 'hex');
+    //   const publicKeyHashAsBuffer = crypto.Hash.sha256ripemd160(publicKeyAsBuffer);
+    //   console.info(`***********$$$$$$: ${publicKeyHashAsBuffer.toString('hex')}`);
+    // });
+
     console.debug(`Checking if bitcoin contains a wallet for ${this.walletAddress}`);
     if (!await this.isAddressAddedToWallet(this.walletAddress.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${this.walletAddress}. This can take up to 10 minutes.`);
@@ -653,7 +668,8 @@ export default class BitcoinClient {
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
     return {
       previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
-      outputIndexInPreviousTransaction: bitcoreInput.outputIndex
+      outputIndexInPreviousTransaction: bitcoreInput.outputIndex,
+      scriptAsmAsString: bitcoreInput.script.toASM()
     };
   }
 
