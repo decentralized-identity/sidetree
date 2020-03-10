@@ -29,7 +29,8 @@ async function generateAndStoreTransactions (transactionStore: ITransactionStore
       transactionTime: i,
       transactionTimeHash: i.toString(),
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer'
     };
 
     await transactionStore.addTransaction(transaction);
@@ -220,7 +221,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 1,
       transactionTimeHash: '1',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer1'
     };
 
     const transaction2: TransactionModel = {
@@ -229,7 +231,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 2,
       transactionTimeHash: '2',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer2'
     };
 
     const transaction3: TransactionModel = {
@@ -238,7 +241,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 2,
       transactionTimeHash: '2',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer3'
     };
 
     await transactionStore.addTransaction(transaction1);
@@ -258,7 +262,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 1,
       transactionTimeHash: '1',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer1'
     };
 
     const transaction2: TransactionModel = {
@@ -267,7 +272,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 2,
       transactionTimeHash: '2',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer2'
     };
 
     const transaction3: TransactionModel = {
@@ -276,7 +282,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 3,
       transactionTimeHash: '3',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer3'
     };
 
     await transactionStore.addTransaction(transaction1);
@@ -296,7 +303,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 1,
       transactionTimeHash: '1',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer1'
     };
 
     const transaction2: TransactionModel = {
@@ -305,7 +313,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 2,
       transactionTimeHash: '2',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer2'
     };
 
     const transaction3: TransactionModel = {
@@ -314,7 +323,8 @@ describe('MongoDbTransactionStore', async () => {
       transactionTime: 3,
       transactionTimeHash: '3',
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer3'
     };
 
     await transactionStore.addTransaction(transaction1);

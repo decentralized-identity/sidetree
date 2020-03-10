@@ -8,4 +8,5 @@ export default interface TransactionModel {
   anchorString: string;
   transactionFeePaid: number;
   normalizedTransactionFee: number;
+  writer: string;
 }

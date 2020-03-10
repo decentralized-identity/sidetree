@@ -410,7 +410,7 @@ describe('BitcoinClient', async () => {
         blockHash: 'block hash',
         confirmations: 4,
         inputs: [
-          { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0 }
+          { previousTransactionId: 'prevTxnId', outputIndexInPreviousTransaction: 0, scriptAsmAsString: 'inputscript' }
         ],
         outputs: [
           { satoshis: 100, scriptAsmAsString: 'script1' },

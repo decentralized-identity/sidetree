@@ -35,7 +35,8 @@ export default class MockBlockchain implements IBlockchain {
         transactionTimeHash: this.hashes[hashIndex][0],
         anchorString: this.hashes[hashIndex][0],
         transactionFeePaid: this.hashes[hashIndex][1],
-        normalizedTransactionFee: this.hashes[hashIndex][1]
+        normalizedTransactionFee: this.hashes[hashIndex][1],
+        writer: 'writer'
       };
       transactions.push(transaction);
     }

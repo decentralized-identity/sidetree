@@ -29,7 +29,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 333,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer1'
         },
         {
           transactionNumber: 2,
@@ -37,7 +38,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 998,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer2'
         },
         {
           transactionNumber: 3,
@@ -45,7 +47,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 999,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         },
         {
           transactionNumber: 4,
@@ -53,7 +56,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 14,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer4'
         }
       ];
 
@@ -66,7 +70,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 333,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer1'
         },
         {
           transactionNumber: 2,
@@ -74,7 +79,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 998,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer2'
         },
         {
           transactionNumber: 4,
@@ -82,7 +88,8 @@ describe('ThroughputLimiter', () => {
           transactionTimeHash: 'some hash',
           anchorString: 'some string',
           transactionFeePaid: 14,
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer4'
         }
       ];
 
