@@ -1,12 +1,12 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/CoreErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import SidetreeError from '../../lib/core/SidetreeError';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
-import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
 describe('Blockchain', async () => {
   describe('read()', async () => {

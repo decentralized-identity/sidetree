@@ -2,6 +2,7 @@ import * as HttpStatus from 'http-status';
 import BlockchainTimeModel from './models/BlockchainTimeModel';
 import CoreErrorCode from './CoreErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
+import JsonAsync from './versions/latest/util/JsonAsync';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
@@ -10,7 +11,6 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from './SidetreeError';
 import TransactionModel from '../common/models/TransactionModel';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
-import JsonAsync from './versions/latest/util/JsonAsync';
 
 /**
  * Class that communicates with the underlying blockchain using REST API defined by the protocol document.

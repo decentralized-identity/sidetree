@@ -4,7 +4,6 @@ import ErrorCode from '../ErrorCode';
 import JwsModel from '../models/JwsModel';
 import PublicKeyModel from '../../../models/PublicKeyModel';
 import SidetreeError from '../../../SidetreeError';
-import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 /**
  * Class containing reusable JWS operations.
@@ -88,7 +87,7 @@ export default class Jws {
   public static async sign (
     protectedHeader: any,
     payload: any,
-    privateKey: string | PrivateKey
+    privateKey: string
   ): Promise<JwsModel> {
     const protectedHeaderJsonString = JSON.stringify(protectedHeader);
     const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
@@ -115,9 +114,9 @@ export default class Jws {
 
   /**
    * Signs the given encoded protected headder and encoded payload using the given private key.
-   * @param privateKey A SECP256K1 private-key either in HEX string format or JWK format.
+   * @param privateKey A SECP256K1 private-key either in HEX string format (or JWK format, future support).
    */
-  private static async signInternal (encodedProtectedHeader: string, encodedPayload: string, privateKey: string | PrivateKey): Promise<string> {
+  private static async signInternal (encodedProtectedHeader: string, encodedPayload: string, privateKey: string): Promise<string> {
     // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
     const jwsSigningInput = encodedProtectedHeader + '.' + encodedPayload;
     const signature = await Cryptography.sign(jwsSigningInput, privateKey);

@@ -16,7 +16,6 @@ import OperationModel from '../../lib/core/versions/latest/models/OperationModel
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
-import { PrivateKey } from '@decentralized-identity/did-auth-jose';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -241,7 +240,7 @@ export default class OperationGenerator {
   public static async createAnchoredOperation (
     payload: any,
     publicKeyId: string,
-    privateKey: string | PrivateKey,
+    privateKey: string,
     transactionTime: number,
     transactionNumber: number,
     operationIndex: number
@@ -259,7 +258,7 @@ export default class OperationGenerator {
   public static async createAnchoredOperationModel (
     payload: any,
     publicKeyId: string,
-    privateKey: string | PrivateKey,
+    privateKey: string,
     transactionTime: number,
     transactionNumber: number,
     operationIndex: number
@@ -283,7 +282,7 @@ export default class OperationGenerator {
     type: OperationType,
     payload: any,
     publicKeyId: string,
-    privateKey: string | PrivateKey,
+    privateKey: string,
     transactionTime: number,
     transactionNumber: number,
     operationIndex: number
@@ -307,7 +306,7 @@ export default class OperationGenerator {
   public static async createOperationBuffer (
     payload: any,
     publicKeyId: string,
-    privateKey: string | PrivateKey
+    privateKey: string
   ): Promise<Buffer> {
     const protectedHeader = {
       kid: publicKeyId,
@@ -384,7 +383,7 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     documentPatch: any,
     signingKeyId: string,
-    signingPrivateKey: string | PrivateKey
+    signingPrivateKey: string
   ) {
     const operationData = {
       documentPatch,
@@ -414,7 +413,7 @@ export default class OperationGenerator {
   public static async generateRecoverOperationRequest (
     didUniqueSuffix: string,
     recoveryOtp: string,
-    recoveryPrivateKey: string | PrivateKey,
+    recoveryPrivateKey: string,
     newRecoveryPublicKey: PublicKeyModel,
     newSigningPublicKey: DidPublicKeyModel,
     nextRecoveryOtpHash: string,
@@ -482,7 +481,7 @@ export default class OperationGenerator {
     newPublicKeyHex: string,
     nextUpdateOtpHash: string,
     signingKeyId: string,
-    signingPrivateKey: string | PrivateKey) {
+    signingPrivateKey: string) {
 
     const documentPatch = [
       {
@@ -558,7 +557,7 @@ export default class OperationGenerator {
   /**
    * Signs the given payload as a ES256K JWS.
    */
-  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: string): Promise<JwsModel> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
@@ -575,7 +574,7 @@ export default class OperationGenerator {
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
-    privateKey: string | PrivateKey): Promise<Buffer> {
+    privateKey: string): Promise<Buffer> {
     const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
@@ -587,7 +586,7 @@ export default class OperationGenerator {
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
     signingKeyId: string,
-    privateKey: string | PrivateKey): Promise<JwsModel> {
+    privateKey: string): Promise<JwsModel> {
 
     const protectedHeader = {
       kid: signingKeyId,

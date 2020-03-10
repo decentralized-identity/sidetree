@@ -6,6 +6,6 @@ export default interface DidPublicKeyModel {
   type: string;
   controller?: string;
   usage: string;
-  publicKeyJwk?: any;
+  publicKeyJwk?: any; // this is currently not supported nor used in code, will support in the future
   publicKeyHex?: string;
 }
