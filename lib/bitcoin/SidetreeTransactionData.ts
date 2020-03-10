@@ -1,6 +1,6 @@
+import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
-import BitcoinInputModel from './models/BitcoinInputModel';
 import { crypto } from 'bitcore-lib';
 
 /**
@@ -53,14 +53,17 @@ export default class SidetreeTransactionData {
       const currentOutput = transactionOutputs[i];
       const sidetreeDataForThisOutput = SidetreeTransactionData.getSidetreeDataFromOutputIfExist(currentOutput, sidetreePrefix);
 
-      const oneSidetreeDataAlreadyFound = sidetreeDataToReturn !== undefined;
+      if (sidetreeDataForThisOutput) {
 
-      if (sidetreeDataForThisOutput && oneSidetreeDataAlreadyFound) {
-        console.info(`More than one sidetree transaction was found in the outputs of transaction id: ${transactionId}`);
-        return undefined;
+        const oneSidetreeDataAlreadyFound = sidetreeDataToReturn !== undefined;
+
+        if (oneSidetreeDataAlreadyFound) {
+          console.info(`More than one sidetree transactions were found in the outputs of transaction id: ${transactionId}`);
+          return undefined;
+        }
+
+        sidetreeDataToReturn = sidetreeDataForThisOutput;
       }
-
-      sidetreeDataToReturn = sidetreeDataForThisOutput;
     }
 
     return sidetreeDataToReturn;
@@ -106,7 +109,7 @@ export default class SidetreeTransactionData {
     const allPublicKeys = transactionInputs.map(input => {
       const scriptAsmParts = input.scriptAsmAsString.split(' ');
 
-      // If the publickey is not present then just return 'undefined'
+      // If the publickey is not present then just use 'undefined'
       return scriptAsmParts.length >= 2 ? scriptAsmParts[1] : undefined;
     });
 
@@ -118,8 +121,7 @@ export default class SidetreeTransactionData {
 
     // There should be only 1 key in all of the inputs; so if we have more than 1 then that is invalid.
     if (uniquePublicKeys.size !== 1) {
-      // This is kinda unusual .. log it
-      console.info(`Invalid public key inputs were found in transaction id: ${transactionId}`);
+      console.info(`More than one public key inputs were found in transaction id: ${transactionId}`);
       return undefined;
     }
 

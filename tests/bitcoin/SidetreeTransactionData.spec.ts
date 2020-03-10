@@ -1,6 +1,8 @@
+import BitcoinInputModel from '../../lib/bitcoin/models/BitcoinInputModel';
 import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
-import SidetreeTransactionData from '../../lib/bitcoin/SidetreeTransactionData';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
+import SidetreeTransactionData from '../../lib/bitcoin/SidetreeTransactionData';
+import { crypto } from 'bitcore-lib';
 
 describe('SidetreeTransactionData', () => {
   let sidetreeTransactionPrefix: string;
@@ -19,10 +21,11 @@ describe('SidetreeTransactionData', () => {
     };
   }
 
-  function createValidWriterOutput (writer: string, satoshis: number = 10): BitcoinOutputModel {
+  function createValidWriterInput (writer: string): BitcoinInputModel {
     return {
-      satoshis: satoshis,
-      scriptAsmAsString: `OP_DUP OP_HASH160 ${writer} OP_EQUALVERIFY OP_CHECKSIG`
+      previousTransactionId: 'some previous txn id',
+      outputIndexInPreviousTransaction: 1,
+      scriptAsmAsString: `signature ${writer}`
     };
   }
 
@@ -32,10 +35,7 @@ describe('SidetreeTransactionData', () => {
         id: 'some id',
         blockHash: 'hash',
         confirmations: 1,
-        outputs: [
-          { satoshis: 0, scriptAsmAsString: 'some input' },
-          createValidWriterOutput('some writer')
-        ],
+        outputs: [],
         inputs: []
       };
 
@@ -51,10 +51,7 @@ describe('SidetreeTransactionData', () => {
         id: 'some id',
         blockHash: 'hash',
         confirmations: 1,
-        outputs: [
-          createValidDataOutput('data'),
-          { satoshis: 0, scriptAsmAsString: 'invalid writer script' }
-        ],
+        outputs: [],
         inputs: []
       };
 
@@ -74,20 +71,77 @@ describe('SidetreeTransactionData', () => {
         id: 'some id',
         blockHash: 'hash',
         confirmations: 1,
-        outputs: [
-          createValidDataOutput(sidetreeData),
-          createValidWriterOutput(writer)
-        ],
+        outputs: [],
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.returnValue(sidetreeData);
+      spyOn(SidetreeTransactionData as any, 'getValidSidetreeDataFromOutputs').and.returnValue(sidetreeData);
       spyOn(SidetreeTransactionData as any, 'getValidWriterFromInputs').and.returnValue(writer);
 
       const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).toBeDefined();
       expect(actual!.data).toEqual(sidetreeData);
       expect(actual!.writer).toEqual(writer);
+      done();
+    });
+  });
+
+  describe('getValidSidetreeDataFromOutputs', () => {
+    it('should return the sidetree data if only output has the data present', async (done) => {
+      const mockSidetreeData = 'some side tree data';
+      let sidetreeDataSent = false;
+      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
+        if (!sidetreeDataSent) {
+          sidetreeDataSent = true;
+          return mockSidetreeData;
+        }
+
+        return undefined;
+      });
+
+      const mockOutputs: BitcoinOutputModel[] = [
+        createValidDataOutput('mock data 1'),
+        createValidDataOutput('mock data 2')
+      ];
+
+      const actual = SidetreeTransactionData['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      expect(actual).toEqual(mockSidetreeData);
+      done();
+    });
+
+    it('should return undefined if no output has any sidetree data.', async (done) => {
+      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.returnValue(undefined);
+
+      const mockOutputs: BitcoinOutputModel[] = [
+        createValidDataOutput('mock data 1'),
+        createValidDataOutput('mock data 2')
+      ];
+
+      const actual = SidetreeTransactionData['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      expect(actual).not.toBeDefined();
+      done();
+    });
+
+    it('should return undefined if there is more one output with the sidetree data.', async (done) => {
+      let callCount = 0;
+      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
+        callCount++;
+
+        if (callCount % 2 === 1) {
+          return `mockSidetreeData ${callCount}`;
+        }
+
+        return undefined;
+      });
+
+      const mockOutputs: BitcoinOutputModel[] = [
+        createValidDataOutput('mock data 1'),
+        createValidDataOutput('mock data 2'),
+        createValidDataOutput('mock data 2')
+      ];
+
+      const actual = SidetreeTransactionData['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      expect(actual).not.toBeDefined();
       done();
     });
   });
@@ -111,34 +165,70 @@ describe('SidetreeTransactionData', () => {
     });
   });
 
-  // describe('getWriterFromVOutIfExist', async () => {
-  //   it('should return the data if the valid sidetree transaction exist', async (done) => {
-  //     const sidetreeWriter = 'somewriter';
-  //     const mockWriterOutput = createValidWriterOutput(sidetreeWriter);
+  describe('getValidWriterFromInputs', () => {
+    it('should return correctly hashed value of the public key found.', () => {
+      const mockPublicKey = 'some-public-key';
+      spyOn(SidetreeTransactionData as any, 'getValidPublicKeyFromInputs').and.returnValue(mockPublicKey);
 
-  //     const actual = SidetreeTransactionData['getValidReceiverFromInputs'](mockWriterOutput);
-  //     expect(actual!).toEqual(sidetreeWriter);
-  //     done();
-  //   });
+      const mockHashedValueBuffer = Buffer.from(mockPublicKey);
+      spyOn(crypto.Hash, 'sha256ripemd160').and.returnValue(mockHashedValueBuffer);
 
-  //   it('should return undefined if no valid sidetree transaction exist', async (done) => {
-  //     const sidetreeWriter = 'some writer';
-  //     const mockWriterOutput = createValidWriterOutput(sidetreeWriter);
-  //     mockWriterOutput.scriptAsmAsString += ' OP_DUP';
+      const expectedOutput = mockHashedValueBuffer.toString('hex');
+      const actual = SidetreeTransactionData['getValidWriterFromInputs']('txid', []);
+      expect(actual).toEqual(expectedOutput);
+    });
 
-  //     const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
-  //     expect(actual).not.toBeDefined();
-  //     done();
-  //   });
-  // });
+    it('should return undefined if there is no valid public key found in the inputs.', () => {
+      spyOn(SidetreeTransactionData as any, 'getValidPublicKeyFromInputs').and.returnValue(undefined);
 
-  // it('should return undefined if script asm is undefined', async (done) => {
-  //   const mockWriterOutput: BitcoinOutputModel = {
-  //     satoshis: 0, scriptAsmAsString: (undefined as any) as string
-  //   };
+      const actual = SidetreeTransactionData['getValidWriterFromInputs']('txid', []);
+      expect(actual).not.toBeDefined();
+    });
+  });
 
-  //   const actual = SidetreeTransactionData['getWriterFromVOutIfExist'](mockWriterOutput);
-  //   expect(actual).not.toBeDefined();
-  //   done();
-  // });
+  describe('getValidPublicKeyFromInputs', () => {
+    it('should return the value if all the inputs have the have the same value.', () => {
+      const mockPublicKey = 'public-key-writer';
+
+      const mockInputs: BitcoinInputModel[] = [
+        createValidWriterInput(mockPublicKey),
+        createValidWriterInput(mockPublicKey),
+        createValidWriterInput(mockPublicKey)
+      ];
+
+      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', mockInputs);
+      expect(actual).toEqual(mockPublicKey);
+    });
+
+    it('should return undefined if one input does not have expected public key.', () => {
+      const mockPublicKey = 'public-key-writer';
+
+      const mockInputs: BitcoinInputModel[] = [
+        createValidWriterInput(mockPublicKey),
+        createValidWriterInput(mockPublicKey),
+        { previousTransactionId: 'txid', outputIndexInPreviousTransaction: 0, scriptAsmAsString: 'onlySignature' }
+      ];
+
+      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', mockInputs);
+      expect(actual).not.toBeDefined();
+    });
+
+    it('should return undefined if one input has different public key.', () => {
+      const mockPublicKey = 'public-key-writer';
+
+      const mockInputs: BitcoinInputModel[] = [
+        createValidWriterInput(mockPublicKey),
+        createValidWriterInput(mockPublicKey),
+        createValidWriterInput('different-publick-key')
+      ];
+
+      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', mockInputs);
+      expect(actual).not.toBeDefined();
+    });
+
+    it('should return undefined if there are no inputs.', () => {
+      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', []);
+      expect(actual).not.toBeDefined();
+    });
+  });
 });
