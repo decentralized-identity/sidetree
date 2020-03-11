@@ -110,6 +110,11 @@ export default class BlockDataFileDecoder {
 
   /**
    * Returns the value of the varInt in base 10 and strip it from the input hex
+   * VarInt is a variable integer.
+   * It can either be a 1 byte hex representation of an int
+   * or 2 byte int with prefix fd (total of 3 bytes)
+   * or 4 byte int with prefix fe (total of 5 bytes)
+   * or 8 byte int with prefix ff (total of 9 bytes)
    * @param hex the hex to parse the varInt from
    */
   private static parseVarInt (hex: string): [number, string] {
