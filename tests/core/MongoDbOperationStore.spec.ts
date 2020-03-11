@@ -112,12 +112,13 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
     const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const [, anyUnusedOtpHash] = OperationGenerator.generateOtp();
 
     // Generate an update operation.
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
       'anyUnusedUpdateOtp',
-      'anyUnusedNextUpdateOtpHash',
+      anyUnusedOtpHash,
       ['anyUnusedServiceEndpointsToAdd'],
       [],
       createOperationData.signingKeyId,
@@ -138,12 +139,13 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
     const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const [, anyUnusedOtpHash] = OperationGenerator.generateOtp();
 
     // Generate an update operation.
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
       'anyUnusedUpdateOtp',
-      'anyUnusedNextUpdateOtpHash',
+      anyUnusedOtpHash,
       ['anyUnusedServiceEndpointsToAdd'],
       [],
       createOperationData.signingKeyId,
