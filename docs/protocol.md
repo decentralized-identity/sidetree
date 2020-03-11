@@ -8,7 +8,7 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, and Delete) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, Recover, and Revoke) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
 
 ## Terminology
@@ -23,7 +23,7 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 | DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
 | Operation             | A change to a document of a DID.                                               |
 | Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
-| Recovery key          | A key that is used to perform recovery or delete operation.                    |
+| Recovery key          | A key that is used to perform recovery or revoke operation.                    |
 | Sidetree node         | A logical server executing Sidetree protocol rules.                            |
 | Suffix data           | Data required to deterministically generate a DID .                            |
 | Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
@@ -225,8 +225,8 @@ A Sidetree transaction represents a batch of operations to be processed by Sidet
 
 > NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the _anchor file_ or _batch file_ becomes available.
 
-## DID Deletion and Recovery
-Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is deleted, it cannot be recovered.
+## DID Revocation and Recovery
+Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is revoked, it cannot be recovered.
 
 The most basic recover operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
 
@@ -306,12 +306,7 @@ POST / HTTP/1.1
 }
 ```
 
-#### `document` property schema
-```json
-
-```
-
-#### Document example
+#### `document` property example
 ```json
 {
   "publicKey": [
@@ -603,49 +598,6 @@ Example:
 None.
 
 
-### DID Deletion
-The API to delete a given DID.
-
-#### Request path
-```
-POST /
-```
-
-#### Request headers
-| Name                  | Value                  |
-| --------------------- | ---------------------- |
-| ```Content-Type```    | ```application/json``` |
-
-#### Request body schema
-```json
-{
-  "protected": "Encoded protected header.",
-  "payload": "Encoded delete payload JSON object define by the schema below.",
-  "signature": "Encoded signature."
-}
-```
-
-#### Delete payload schema
-```json
-{
-  "type": "delete",
-  "didUniqueSuffix": "The unique suffix of the DID to be deleted.",
-  "recoveryOtp": "The current one-time recovery password."
-}
-```
-
-#### Delete payload example
-```json
-{
-  "type": "delete",
-  "didUniqueSuffix": "EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg",
-  "recoveryOtp": "BJzEi4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw"
-}
-```
-
-#### Response body
-None.
-
 ### DID Recovery
 
 #### Request path
@@ -661,7 +613,7 @@ POST / HTTP/1.1
 #### Request body schema
 ```json
 {
-  "type": "recovery",
+  "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryOtp": "The encoded one-time password to be used for this recovery.",
   "signedOperationData": {
@@ -687,6 +639,45 @@ POST / HTTP/1.1
 {
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
   "document": "Opaque content."
+}
+```
+
+#### Response body
+None.
+
+
+### DID Revocation
+The API to revoke a given DID.
+
+#### Request path
+```
+POST /
+```
+
+#### Request headers
+| Name                  | Value                  |
+| --------------------- | ---------------------- |
+| ```Content-Type```    | ```application/json``` |
+
+#### Revoke request body schema
+```json
+{
+  "type": "revoke",
+  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "recoveryOtp": "The current one-time recovery password.",
+  "signedOperationData": {
+    "protected": "JWS header.",
+    "payload": "JWS encoded JSON object containing revoke operation data that are signed.",
+    "signature": "JWS signature."
+  }
+}
+```
+
+#### `signedOperationData` property schema
+```json
+{
+  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "recoveryOtp": "The current one-time recovery password.",
 }
 ```
 

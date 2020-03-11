@@ -1,3 +1,4 @@
+import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -122,6 +123,9 @@ export default class UpdateOperation implements OperationModel {
     if (operationData.documentPatch === undefined) {
       throw new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing);
     }
+
+    // Validate `documentPatch` property using the DocumentComposer.
+    DocumentComposer.validateDocumentPatch(operationData.documentPatch);
 
     const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);

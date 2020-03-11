@@ -5,10 +5,10 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
+import DidDocument from '../../lib/core/versions/latest/DidDocument';
+import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
-import DidServiceEndpoint from '../common/DidServiceEndpoint';
-import Document from '../../lib/core/versions/latest/Document';
-import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
+import DocumentState from '../../lib/core/models/DocumentState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -61,7 +61,7 @@ describe('RequestHandler', () => {
 
     cas = new MockCas();
     const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
-    const operationProcessor = new OperationProcessor(config.didMethodName);
+    const operationProcessor = new OperationProcessor();
 
     versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
@@ -105,7 +105,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DocumentModel).id).toEqual(did);
+    expect((response.body as DidDocumentModel).id).toEqual(did);
 
     // Inser the create operation into DB.
     const namedAnchoredCreateOperationModel: NamedAnchoredOperationModel = {
@@ -180,7 +180,8 @@ describe('RequestHandler', () => {
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body).id).toEqual(did);
+
+    validateDidReferencesInDidDocument(response.body, did);
   });
 
   it('should return a resolved DID Document given a valid long-form DID.', async () => {
@@ -197,7 +198,8 @@ describe('RequestHandler', () => {
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body).id).toEqual(shortFormDid);
+
+    validateDidReferencesInDidDocument(response.body, shortFormDid);
   });
 
   it('should return NotFound given an unknown DID.', async () => {
@@ -216,9 +218,9 @@ describe('RequestHandler', () => {
     expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
   });
 
-  it('should respond with HTTP 200 when DID delete operation request is successful.', async () => {
+  it('should respond with HTTP 200 when DID revoke operation request is successful.', async () => {
     const recoveryOtp = Encoder.encode(Buffer.from('unusedRecoveryOtp'));
-    const request = await OperationGenerator.generateDeleteOperationBuffer(didUniqueSuffix, recoveryOtp, '#key1', recoveryPrivateKey);
+    const request = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -228,8 +230,9 @@ describe('RequestHandler', () => {
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
     const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateOtp', '#additionalKey', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', anyNextUpdateOtpHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, 'anyUpdateOtp', '#additionalKey', anyPublicKeyHex, anyNextUpdateOtpHash, 'anyKeyId', anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -240,24 +243,9 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
-    // Create new keys used for new document for recovery request.
-    const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-    const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
-    const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
-
-    // Create the recover payload.
-    const newDocumentModel = Encoder.encode(JSON.stringify(Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint])));
-    const recoverPayload = {
-      type: OperationType.Recover,
-      didUniqueSuffix,
-      recoveryOtp: 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA',
-      newDidDocument: newDocumentModel,
-      nextRecoveryOtpHash: 'EiD_UnusedNextRecoveryOneTimePasswordHash_AAAA',
-      nextUpdateOtpHash: 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA'
-    };
-
-    const request = await OperationGenerator.createOperationBuffer(recoverPayload, recoveryPublicKey.id, recoveryPrivateKey);
-    const response = await requestHandler.handleOperationRequest(request);
+    const recoveryOtp = 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA';
+    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryOtp, recoveryPrivateKey });
+    const response = await requestHandler.handleOperationRequest(recoveryOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);
@@ -273,14 +261,35 @@ describe('RequestHandler', () => {
     });
   });
 
-  describe('handleResolveRequestWithLongFormDid()', async () => {
+  describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const resolverOverriddenReturnValue = 'overridden value';
-      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(resolverOverriddenReturnValue));
+      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey', KeyUsage.recovery);
+      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey', KeyUsage.signing);
+      const [, anyOtpHash] = OperationGenerator.generateOtp();
+      const mockedResolverReturnedDocumentState: DocumentState = {
+        didUniqueSuffix,
+        document: DidDocument.create([anySigningPublicKey]),
+        lastOperationTransactionNumber: 123,
+        nextRecoveryOtpHash: anyOtpHash,
+        nextUpdateOtpHash: anyOtpHash,
+        recoveryKey: anyRecoveryPublicKey
+      };
+      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDocumentState));
 
-      const response = await (requestHandler as any).handleResolveRequestWithLongFormDid('unused');
+      const documentState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(response.body).toEqual(resolverOverriddenReturnValue);
+      expect(documentState.document.publicKey[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
     });
   });
 });
+
+/**
+ * Verifies that the given DID document contains correct references to the DID throughout.
+ */
+function validateDidReferencesInDidDocument (didDocument: DidDocumentModel, did: string) {
+  expect(didDocument.id).toEqual(did);
+
+  for (let publicKey of didDocument.publicKey) {
+    expect(publicKey.controller).toEqual(did);
+  }
+}

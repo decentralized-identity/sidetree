@@ -24,7 +24,8 @@ export default class SidetreeTransactionData {
   public static parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): SidetreeTransactionData | undefined {
 
     // The sidetree transaction has the following requirements:
-    //  1. There should be only one output with a valid sidetree anchorstring
+    //  1. There must be only one output with a valid sidetree anchorstring
+
     //  2. All the inputs must have the same receiving public key
     //
     // Example transaction: https://www.blockchain.com/btctest/tx/a98fd29d4583d1f691067b0f92ae83d3808d18cba55bd630dbf569fbaea9355c
@@ -109,6 +110,7 @@ export default class SidetreeTransactionData {
     const allPublicKeys = transactionInputs.map(input => {
       const scriptAsmParts = input.scriptAsmAsString.split(' ');
 
+      // Issue #271: Figure out whether assuming the 2nd one as the public key is ok or not.
       // If the publickey is not present then just use 'undefined'
       return scriptAsmParts.length >= 2 ? scriptAsmParts[1] : undefined;
     });

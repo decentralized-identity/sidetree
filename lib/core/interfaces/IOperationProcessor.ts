@@ -1,5 +1,5 @@
+import DocumentState from '../models/DocumentState';
 import NamedAnchoredOperationModel from '../models/NamedAnchoredOperationModel';
-import DidResolutionModel from '../models/DidResolutionModel';
 
 /**
  * Interface that defines a class that can process operations.
@@ -7,25 +7,15 @@ import DidResolutionModel from '../models/DidResolutionModel';
 export default interface IOperationProcessor {
 
   /**
-   * Applies an operation on top of the given DID document.
-   * In the case of an invalid operation, the given DID document will be unchanged.
-   * In the case of a (valid) delete operation, the given DID document will be set to `undefined`.
-   *
-   * MUST NOT throw error.
+   * Applies an operation on top of the given document state.
+   * In the case of an invalid operation, the resultant document state will remain the same.
    *
    * @param operation The operation to apply against the given DID Document (if any).
-   * @param didResolutionModel
-   *        The container object that contains the metadata needed for applying the operation and the reference to the DID document to be modified.
+   * @param documentState The document state to apply the operation no top of. Needs to be `undefined` if the operation to be applied is a create operation.
+   * @returns The resultant `DocumentState`.
    */
   apply (
     operation: NamedAnchoredOperationModel,
-    didResolutionModel: DidResolutionModel
-  ): Promise<ApplyResult>;
-}
-
-/**
- * The result of applying an operation.
- */
-export interface ApplyResult {
-  validOperation: boolean;
+    documentState: DocumentState | undefined
+  ): Promise<DocumentState | undefined>;
 }
