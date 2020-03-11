@@ -16,7 +16,6 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
@@ -85,8 +84,8 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     // Generate a unique key-pair used for each test.
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
@@ -154,8 +153,8 @@ describe('RequestHandler', () => {
 
   it('should return bad request if two operations for the same DID is received.', async () => {
     // Create the initial create operation.
-    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey');
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
@@ -228,7 +227,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
-    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
     const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
@@ -263,8 +262,8 @@ describe('RequestHandler', () => {
 
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey', KeyUsage.recovery);
-      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey', KeyUsage.signing);
+      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey');
+      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
       const [, anyOtpHash] = OperationGenerator.generateOtp();
       const mockedResolverReturnedDocumentState: DocumentState = {
         didUniqueSuffix,

@@ -2,7 +2,6 @@ import DidDocument from './DidDocument';
 import DidDocumentModel from './models/DidDocumentModel';
 import DocumentState from '../../models/DocumentState';
 import ErrorCode from './ErrorCode';
-import KeyUsage from './KeyUsage';
 import SidetreeError from '../../SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -103,16 +102,12 @@ export default class DocumentComposer {
 
     for (let publicKey of patch.publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      if (publicKeyProperties.length !== 4) {
+      if (publicKeyProperties.length !== 3) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyMissingOrUnknownProperty);
       }
 
       if (typeof publicKey.id !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
-      }
-
-      if (publicKey.usage === KeyUsage.recovery) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyAddRecoveryKeyNotAllowed);
       }
 
       if (publicKey.controller !== undefined) {
@@ -205,12 +200,10 @@ export default class DocumentComposer {
       for (let publicKey of patch.publicKeys) {
         const existingKey = publicKeyMap.get(publicKey);
 
-        // Deleting recovery key is NOT allowed.
-        // NOTE: `usage` is no longer necessary and will be removed as part of issue #266, #362, and #383.
-        if (existingKey !== undefined &&
-            existingKey.usage !== KeyUsage.recovery) {
+        if (existingKey !== undefined) {
           publicKeyMap.delete(publicKey);
         }
+        // Else we will just treat this key removal as a no-op.
       }
 
       didDocument.publicKey = [...publicKeyMap.values()];

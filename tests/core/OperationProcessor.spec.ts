@@ -10,7 +10,6 @@ import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -149,8 +148,8 @@ describe('OperationProcessor', async () => {
 
     // Generate a unique key-pair used for each test.
     signingKeyId = '#signingKey';
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
+    [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
     let recoveryOtpHash;
@@ -368,7 +367,7 @@ describe('OperationProcessor', async () => {
   it('should ignore update operation with an invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const [, anyIncorrectSigningPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.signing);
+    const [, anyIncorrectSigningPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
     const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
@@ -419,8 +418,8 @@ describe('OperationProcessor', async () => {
       documentState = undefined;
 
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
-      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
 
       // Create the initial create operation.
@@ -593,7 +592,7 @@ describe('OperationProcessor', async () => {
 
       it('should apply even if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
-        const [anyNewRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
+        const [anyNewRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
         const [, anyNewRecoveryOtpHash] = OperationGenerator.generateOtp();
         const [, anyNewUpdateOtpHash] = OperationGenerator.generateOtp();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(

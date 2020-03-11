@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import OperationGenerator from './OperationGenerator';
 
 /**
@@ -27,12 +26,12 @@ export default class VegetaLoadGenerator {
 
     for (let i = 0; i < uniqueDidCount; i++) {
       // Generate a random pair of public-private key pair and save them on disk.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
       fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
 
       const signingKeyId = '#signingKey';
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
       const [recover1OTP, recoveryOtpHash] = OperationGenerator.generateOtp();
@@ -64,8 +63,8 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
 
       // Generate a recover operation request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.recovery);
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix, recover1OTP, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2OtpHash, update2OtpHash
       );

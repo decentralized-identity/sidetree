@@ -4,7 +4,6 @@ import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
@@ -31,8 +30,8 @@ describe('Resolver', () => {
   describe('Recovery operation', () => {
     it('should apply correctly with updates that came before and after the recover operation.', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
       const [firstRecoveryOtp, firstRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
@@ -107,8 +106,8 @@ describe('Resolver', () => {
       expect(documentState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey, newSigningPrivateKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
+      const [newSigningPublicKey, newSigningPrivateKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
       const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
 
       // Create the recover operation and insert it to the operation store.

@@ -1,7 +1,6 @@
 import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import SidetreeError from '../../lib/core/SidetreeError';
 
 describe('DocumentComposer', async () => {
@@ -50,14 +49,6 @@ describe('DocumentComposer', async () => {
       (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
-    });
-
-    it('should throw error if the public key in an add-public-keys patch is a declared as a recovery key.', async () => {
-      const patches = generatePatchesForPublicKeys();
-      (patches[0].publicKeys![0] as any).usage = KeyUsage.recovery;
-
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyAddRecoveryKeyNotAllowed);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -150,15 +141,15 @@ describe('DocumentComposer', async () => {
       const didDocument: DidDocumentModel = {
         '@context': 'https://www.w3.org/ns/did/v1',
         id: 'someId',
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
         service: []
       };
       const patches = [
         {
           action: 'add-public-keys',
           publicKeys: [
-            { id: 'aRepeatingId', type: 'thisShouldNotShowUp', usage: 'thisShouldNotShowUp' },
-            { id: 'aNonRepeatingId', type: 'someType', usage: 'some usage' }
+            { id: 'aRepeatingId', type: 'thisShouldNotShowUp' },
+            { id: 'aNonRepeatingId', type: 'someType' }
           ]
         }
       ];
@@ -166,8 +157,8 @@ describe('DocumentComposer', async () => {
       (DocumentComposer as any).applyPatchesToDidDocument(didDocument, patches);
 
       expect(didDocument.publicKey).toEqual([
-        { id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' },
-        { id: 'aNonRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }
+        { id: 'aRepeatingId', type: 'someType', controller: 'someId' },
+        { id: 'aNonRepeatingId', type: 'someType', controller: 'someId' }
       ]);
 
     });
@@ -188,7 +179,6 @@ function generatePatchesForPublicKeys () {
         {
           id: '#keyX',
           type: 'Secp256k1VerificationKey2018',
-          usage: 'signing',
           publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
         }
       ]

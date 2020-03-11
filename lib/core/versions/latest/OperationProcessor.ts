@@ -120,7 +120,7 @@ export default class OperationProcessor implements IOperationProcessor {
     try {
       resultingDocument = await DocumentComposer.applyUpdateOperation(operation, documentState.document);
     } catch {
-      // Retrun the given document state if error is encountered applying the update.
+      // Return the given document state if error is encountered applying the update.
       return documentState;
     }
 
