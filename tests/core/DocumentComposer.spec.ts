@@ -137,7 +137,7 @@ describe('DocumentComposer', async () => {
   });
 
   describe('applyPatchesToDidDocument()', async () => {
-    it('should prevent the same id for multiple keys', async () => {
+    it('should replace old key with the same ID with new values.', async () => {
       const didDocument: DidDocumentModel = {
         '@context': 'https://www.w3.org/ns/did/v1',
         id: 'someId',
@@ -148,7 +148,7 @@ describe('DocumentComposer', async () => {
         {
           action: 'add-public-keys',
           publicKeys: [
-            { id: 'aRepeatingId', type: 'thisShouldNotShowUp' },
+            { id: 'aRepeatingId', type: 'newTypeValue' },
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
         }
@@ -157,8 +157,8 @@ describe('DocumentComposer', async () => {
       (DocumentComposer as any).applyPatchesToDidDocument(didDocument, patches);
 
       expect(didDocument.publicKey).toEqual([
-        { id: 'aRepeatingId', type: 'someType', controller: 'someId' },
-        { id: 'aNonRepeatingId', type: 'someType', controller: 'someId' }
+        { id: 'aRepeatingId', type: 'newTypeValue' },
+        { id: 'aNonRepeatingId', type: 'someType' }
       ]);
 
     });

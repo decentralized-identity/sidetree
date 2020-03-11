@@ -182,17 +182,16 @@ export default class DocumentComposer {
    */
   private static applyPatchToDidDocument (didDocument: DidDocumentModel, patch: any) {
     if (patch.action === 'add-public-keys') {
-      const publicKeyIdSet = new Set(didDocument.publicKey.map(key => key.id));
+      const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
 
       // Loop through all given public keys and add them if they don't exist already.
       for (let publicKey of patch.publicKeys) {
-        if (!publicKeyIdSet.has(publicKey.id)) {
-          // Add the controller property. This cannot be added by the client and can
-          // only be set by the server side
-          publicKey.controller = didDocument.id;
-          didDocument.publicKey.push(publicKey);
-        }
+        // NOTE: If a key ID already exists, we will just replace the existing key.
+        // Not throwing error will minimize the need (thus risk) of reusing exposed update OTP.
+        publicKeyMap.set(publicKey.id, publicKey);
       }
+
+      didDocument.publicKey = [...publicKeyMap.values()];
     } else if (patch.action === 'remove-public-keys') {
       const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
 
@@ -203,7 +202,8 @@ export default class DocumentComposer {
         if (existingKey !== undefined) {
           publicKeyMap.delete(publicKey);
         }
-        // Else we will just treat this key removal as a no-op.
+        // NOTE: Else we will just treat this key removal as a no-op.
+        // Not throwing error will minimize the need (thus risk) of reusing exposed update OTP.
       }
 
       didDocument.publicKey = [...publicKeyMap.values()];
