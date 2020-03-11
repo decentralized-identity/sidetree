@@ -35,7 +35,6 @@ export default class VersionManager implements IVersionManager {
   private requestHandlers: Map<string, IRequestHandler>;
   private transactionProcessors: Map<string, ITransactionProcessor>;
   private transactionSelectors: Map<string, ITransactionSelector>;
-  // private documentComposers: Map<string, IDocumentComposer>;
 
   public constructor (
     private config: Config,
@@ -50,7 +49,6 @@ export default class VersionManager implements IVersionManager {
     this.requestHandlers = new Map();
     this.transactionProcessors = new Map();
     this.transactionSelectors = new Map();
-    // this.documentComposers = new Map();
   }
 
   /**
