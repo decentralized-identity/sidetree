@@ -127,7 +127,7 @@ export default class BlockDataFileDecoder {
       value = parseInt(varInt, 16);
     } else {
       const bytesToRead = varIntPrefixMap.get(varInt);
-      // this means the next 2 bytes are varInt in little endian
+      // this means the next 2, 4 or 8 bytes are varInt in little endian depending on the prefix
       const varIntValueHexLittleEndian = BlockDataFileDecoder.getNextNBytesInAHexString(hex, bytesToRead);
       const varIntValueHexBigEndian = BlockDataFileDecoder.littleToBigEndian(varIntValueHexLittleEndian);
       value = parseInt(varIntValueHexBigEndian, 16);
