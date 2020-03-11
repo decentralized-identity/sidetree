@@ -138,14 +138,17 @@ export default class BlockDataFileDecoder {
   }
 
   private static getNextNBytesInAHexString (hex: string, n: number) {
+    // 2 characters is a byte
     return hex.substring(0, n * 2);
   }
 
   private static removeFirstNBytesFromHexString (hex: string, n: number) {
+    // 2 characters is a byte
     return hex.substring(n * 2);
   }
 
   private static littleToBigEndian (hex: string): string {
+    // group by every 2 characters (1 byte), reverse the order then join back as a string
     return hex.match(/../g)!.reverse().join('');
   }
 }
