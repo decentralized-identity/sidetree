@@ -110,6 +110,7 @@ export default class SidetreeTransactionData {
     const allPublicKeys = transactionInputs.map(input => {
       const scriptAsmParts = input.scriptAsmAsString.split(' ');
 
+      // Issue #271: Figure out whether assuming the 2nd one as the public key is ok or not.
       // If the publickey is not present then just use 'undefined'
       return scriptAsmParts.length >= 2 ? scriptAsmParts[1] : undefined;
     });
