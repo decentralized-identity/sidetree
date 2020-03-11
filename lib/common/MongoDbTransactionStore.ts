@@ -103,7 +103,8 @@ export default class MongoDbTransactionStore implements ITransactionStore {
         transactionTime: transaction.transactionTime,
         transactionTimeHash: transaction.transactionTimeHash,
         transactionFeePaid: transaction.transactionFeePaid,
-        normalizedTransactionFee: transaction.normalizedTransactionFee
+        normalizedTransactionFee: transaction.normalizedTransactionFee,
+        writer: transaction.writer
       };
       await this.transactionCollection!.insertOne(transactionInMongoDb);
     } catch (error) {

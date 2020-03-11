@@ -20,7 +20,8 @@ describe('TransactionSelector', () => {
           numberOfOperations: 12
         }),
         transactionFeePaid: 333,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer1'
       },
       {
         transactionNumber: 2,
@@ -31,7 +32,8 @@ describe('TransactionSelector', () => {
           numberOfOperations: 11
         }),
         transactionFeePaid: 998, // second highest fee should come second
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer2'
       },
       {
         transactionNumber: 3,
@@ -42,7 +44,8 @@ describe('TransactionSelector', () => {
           numberOfOperations: 8
         }),
         transactionFeePaid: 999, // highest fee should come first
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer3'
       },
       {
         transactionNumber: 4,
@@ -53,7 +56,8 @@ describe('TransactionSelector', () => {
           numberOfOperations: 1
         }),
         transactionFeePaid: 14,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer4'
       }
     ];
   }
@@ -81,7 +85,8 @@ describe('TransactionSelector', () => {
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // highest fee should come first
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         },
         {
           transactionNumber: 2,
@@ -92,7 +97,8 @@ describe('TransactionSelector', () => {
             numberOfOperations: 11
           }),
           transactionFeePaid: 998, // second highest fee should come second
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer2'
         }
       ];
       expect(result).toEqual(expected);
@@ -115,7 +121,8 @@ describe('TransactionSelector', () => {
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // second highest fee should come second
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         }
       ];
       expect(result).toEqual(expected);
@@ -148,7 +155,8 @@ describe('TransactionSelector', () => {
           numberOfOperations: 16
         }),
         transactionFeePaid: 9999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
 
       await transactionStore.addTransaction(extraTransaction);
@@ -164,7 +172,8 @@ describe('TransactionSelector', () => {
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // second highest fee should come second
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         }
       ];
       expect(result).toEqual(expected);
@@ -184,7 +193,8 @@ describe('TransactionSelector', () => {
           numberOfOperations: 1
         }),
         transactionFeePaid: 9999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
 
       await transactionStore.addTransaction(extraTransaction);
@@ -200,7 +210,8 @@ describe('TransactionSelector', () => {
             numberOfOperations: 8
           }),
           transactionFeePaid: 999, // second highest fee should come second
-          normalizedTransactionFee: 1
+          normalizedTransactionFee: 1,
+          writer: 'writer3'
         }
       ];
       expect(result).toEqual(expected);
@@ -216,7 +227,8 @@ describe('TransactionSelector', () => {
         transactionTimeHash: 'some hash',
         anchorString: 'thisIsABadString',
         transactionFeePaid: 9999,
-        normalizedTransactionFee: 1
+        normalizedTransactionFee: 1,
+        writer: 'writer'
       };
       await transactionStore.addTransaction(extraTransaction);
 

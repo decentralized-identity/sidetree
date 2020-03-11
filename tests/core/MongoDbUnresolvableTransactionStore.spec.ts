@@ -27,7 +27,8 @@ async function generateTransactions (count: number): Promise<TransactionModel[]>
       transactionTime: i,
       transactionTimeHash: i.toString(),
       transactionFeePaid: 1,
-      normalizedTransactionFee: 1
+      normalizedTransactionFee: 1,
+      writer: 'writer'
     };
 
     transactions.push(transaction);

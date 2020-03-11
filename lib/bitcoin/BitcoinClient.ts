@@ -653,7 +653,8 @@ export default class BitcoinClient {
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
     return {
       previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
-      outputIndexInPreviousTransaction: bitcoreInput.outputIndex
+      outputIndexInPreviousTransaction: bitcoreInput.outputIndex,
+      scriptAsmAsString: bitcoreInput.script.toASM()
     };
   }
 

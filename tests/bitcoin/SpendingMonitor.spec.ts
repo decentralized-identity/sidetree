@@ -12,9 +12,9 @@ describe('SpendingMonitor', () => {
   const bitcoinFeeSpendingCutoffInSatoshis = 3 * BitcoinProcessor['satoshiPerBitcoin'];
   const mockTxns: TransactionModel[] = [
     // tslint:disable-next-line: max-line-length
-    { transactionNumber: 12345, transactionTime: 10, transactionTimeHash: 'hash1', anchorString: 'anchor_string1', transactionFeePaid: 100, normalizedTransactionFee: 90 },
+    { transactionNumber: 12345, transactionTime: 10, transactionTimeHash: 'hash1', anchorString: 'anchor_string1', transactionFeePaid: 100, normalizedTransactionFee: 90, writer: 'writer1' },
     // tslint:disable-next-line: max-line-length
-    { transactionNumber: 67890, transactionTime: 11, transactionTimeHash: 'hash2', anchorString: 'anchor_string2', transactionFeePaid: 110, normalizedTransactionFee: 95 }
+    { transactionNumber: 67890, transactionTime: 11, transactionTimeHash: 'hash2', anchorString: 'anchor_string2', transactionFeePaid: 110, normalizedTransactionFee: 95, writer: 'writer2' }
   ];
 
   beforeEach(() => {
