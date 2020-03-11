@@ -1,8 +1,8 @@
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
-import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
+import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -15,13 +15,12 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 
 describe('Resolver', () => {
-  const config = require('../json/config-test.json');
   let resolver: Resolver;
   let operationStore: IOperationStore;
 
   beforeEach(async () => {
     // Make sure the mock version manager always returns the same operation processor in the test.
-    const operationProcessor = new OperationProcessor(config.didMethodName);
+    const operationProcessor = new OperationProcessor();
     const versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
 
@@ -103,9 +102,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
-      let didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
-      expect(didDocument.publicKey.length).toEqual(2);
-      expect(didDocument.service![0].serviceEndpoint.instances.length).toEqual(3);
+      let documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
+      expect(documentState.document.publicKey.length).toEqual(2);
+      expect(documentState.document.service![0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
@@ -174,8 +173,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.
-      didDocument = await resolver.resolve(didUniqueSuffix) as DidDocumentModel;
+      documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
 
+      const didDocument = documentState.document;
       expect(didDocument).toBeDefined();
       expect(didDocument.publicKey.length).toEqual(2);
       const actualNewSigningPublicKey1 = DidDocument.getPublicKey(didDocument, '#newSigningKey');

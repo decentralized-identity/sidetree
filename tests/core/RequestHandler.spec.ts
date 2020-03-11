@@ -5,8 +5,10 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
+import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
+import DocumentState from '../../lib/core/models/DocumentState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -59,7 +61,7 @@ describe('RequestHandler', () => {
 
     cas = new MockCas();
     const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
-    const operationProcessor = new OperationProcessor(config.didMethodName);
+    const operationProcessor = new OperationProcessor();
 
     versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
@@ -178,7 +180,8 @@ describe('RequestHandler', () => {
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body).id).toEqual(did);
+
+    validateDidReferencesInDidDocument(response.body, did);
   });
 
   it('should return a resolved DID Document given a valid long-form DID.', async () => {
@@ -195,7 +198,8 @@ describe('RequestHandler', () => {
 
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
-    expect((response.body).id).toEqual(shortFormDid);
+
+    validateDidReferencesInDidDocument(response.body, shortFormDid);
   });
 
   it('should return NotFound given an unknown DID.', async () => {
@@ -259,12 +263,33 @@ describe('RequestHandler', () => {
 
   describe('handleResolveRequestWithLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const resolverOverriddenReturnValue = 'overridden value';
-      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(resolverOverriddenReturnValue));
+      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey', KeyUsage.recovery);
+      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey', KeyUsage.signing);
+      const [, anyOtpHash] = OperationGenerator.generateOtp();
+      const mockedResolverReturnedDocumentState: DocumentState = {
+        didUniqueSuffix,
+        document: DidDocument.create([anySigningPublicKey]),
+        lastOperationTransactionNumber: 123,
+        nextRecoveryOtpHash: anyOtpHash,
+        nextUpdateOtpHash: anyOtpHash,
+        recoveryKey: anyRecoveryPublicKey
+      };
+      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDocumentState));
 
       const response = await (requestHandler as any).handleResolveRequestWithLongFormDid('unused');
 
-      expect(response.body).toEqual(resolverOverriddenReturnValue);
+      expect(response.body.publicKey[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
     });
   });
 });
+
+/**
+ * Verifies that the given DID document contains correct references to the DID throughout.
+ */
+function validateDidReferencesInDidDocument (didDocument: DidDocumentModel, did: string) {
+  expect(didDocument.id).toEqual(did);
+
+  for (let publicKey of didDocument.publicKey) {
+    expect(publicKey.controller).toEqual(did);
+  }
+}

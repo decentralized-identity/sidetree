@@ -1,5 +1,4 @@
 import * as crypto from 'crypto';
-import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
@@ -184,54 +183,6 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates an anchored operation model.
-   */
-  public static async createAnchoredOperationModel (
-    payload: any,
-    publicKeyId: string,
-    privateKey: string,
-    transactionTime: number,
-    transactionNumber: number,
-    operationIndex: number
-  ): Promise<AnchoredOperationModel> {
-    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
-    const anchoredOperationModel: AnchoredOperationModel = {
-      operationBuffer,
-      operationIndex,
-      transactionNumber,
-      transactionTime
-    };
-
-    return anchoredOperationModel;
-  }
-
-  /**
-   * Creates a named anchored operation model.
-   */
-  public static async createNamedAnchoredOperationModel (
-    didUniqueSuffix: string,
-    type: OperationType,
-    payload: any,
-    publicKeyId: string,
-    privateKey: string,
-    transactionTime: number,
-    transactionNumber: number,
-    operationIndex: number
-  ): Promise<NamedAnchoredOperationModel> {
-    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
-    const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
-      didUniqueSuffix,
-      type,
-      operationBuffer,
-      operationIndex,
-      transactionNumber,
-      transactionTime
-    };
-
-    return namedAnchoredOperationModel;
-  }
-
-  /**
    * Creates an operation.
    */
   public static async createOperationBuffer (
@@ -351,6 +302,23 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = DidDocument.create([newSigningPublicKey], serviceEndpoints);
+    const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
+      didUniqueSuffix, recoveryOtp, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryOtpHash, nextUpdateOtpHash, document
+    );
+    return recoverOperation;
+  }
+
+  /**
+   * Creates a recover operation request.
+   */
+  public static async createRecoverOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string,
+    newRecoveryPublicKey: PublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    document: any) {
 
     const operationData = {
       nextUpdateOtpHash,
