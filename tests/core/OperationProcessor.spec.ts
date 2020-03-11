@@ -600,7 +600,7 @@ describe('OperationProcessor', async () => {
           didUniqueSuffix, nextRecoveryOtp, recoveryPrivateKey, anyNewRecoveryPublicKey, anyNewRecoveryOtpHash, anyNewUpdateOtpHash, document
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
-        const anchoredRecoverOperationModel = await OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
+        const anchoredRecoverOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
 
         const newDocumentState = await operationProcessor.apply(anchoredRecoverOperationModel, documentState);
         expect(newDocumentState!.lastOperationTransactionNumber).toEqual(2);
@@ -615,7 +615,7 @@ describe('OperationProcessor', async () => {
         // Create revoke operation payload.
         const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, 'invalideRecoveryOtp', recoveryPrivateKey);
         const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-        const anchoredRevokeOperationModel = await OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 2, 2, 2);
+        const anchoredRevokeOperationModel = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(revokeOperation, 2, 2, 2);
 
         const newDocumentState = await operationProcessor.apply(anchoredRevokeOperationModel, documentState);
         expect(newDocumentState!.lastOperationTransactionNumber).toEqual(1);

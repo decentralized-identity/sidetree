@@ -85,7 +85,7 @@ export default class RequestHandler implements IRequestHandler {
             break;
           }
 
-          const document = DocumentComposer.transformToExternalDocument(documentState!, this.didMethodName);
+          const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
 
           response = {
             status: ResponseStatus.Succeeded,
