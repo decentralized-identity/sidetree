@@ -141,11 +141,25 @@ export default class RequestHandler implements IRequestHandler {
 
       const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 
+      let documentState: DocumentState | undefined;
       if (did.isShortForm) {
-        return this.handleResolveRequestWithShortFormDid(did);
+        documentState = await this.resolver.resolve(did.uniqueSuffix);
       } else {
-        return this.handleResolveRequestWithLongFormDid(did);
+        documentState = await this.resolveLongFormDid(did);
       }
+
+      if (documentState === undefined) {
+        return {
+          status: ResponseStatus.NotFound
+        };
+      }
+
+      const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
+
+      return {
+        status: ResponseStatus.Succeeded,
+        body: document
+      };
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
@@ -162,48 +176,24 @@ export default class RequestHandler implements IRequestHandler {
     }
   }
 
-  private async handleResolveRequestWithShortFormDid (did: Did): Promise<ResponseModel> {
-    const documentState = await this.resolver.resolve(did.uniqueSuffix);
-
-    if (documentState === undefined) {
-      return {
-        status: ResponseStatus.NotFound
-      };
-    }
-
-    const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
-
-    return {
-      status: ResponseStatus.Succeeded,
-      body: document
-    };
-  }
-
-  private async handleResolveRequestWithLongFormDid (did: Did): Promise<ResponseModel> {
+  /**
+   * Resolves the given long-form DID by resolving using operations found over the network first;
+   * if no operations found, the given create operation will is used to construct the document state.
+   */
+  private async resolveLongFormDid (did: Did): Promise<DocumentState | undefined> {
     // Attempt to resolve the DID by using operations found from the network first.
-    const response = await this.handleResolveRequestWithShortFormDid(did);
+    let documentState = await this.resolver.resolve(did.uniqueSuffix);
 
-    // If DID Document found then return it.
-    if (response.status === ResponseStatus.Succeeded) {
-      return response;
+    // If document state found then return it.
+    if (documentState !== undefined) {
+      return documentState;
     }
 
     // The code reaches here if this DID is not registered on the ledger.
 
-    const documentState = await this.applyCreateOperation(did.createOperation!);
+    documentState = await this.applyCreateOperation(did.createOperation!);
 
-    if (documentState === undefined) {
-      return {
-        status: ResponseStatus.NotFound
-      };
-    }
-
-    const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
-
-    return {
-      status: ResponseStatus.Succeeded,
-      body: document
-    };
+    return documentState;
   }
 
   private async applyCreateOperation (createOpertion: OperationModel): Promise<DocumentState | undefined> {

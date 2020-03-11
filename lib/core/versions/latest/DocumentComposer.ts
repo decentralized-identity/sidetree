@@ -187,11 +187,11 @@ export default class DocumentComposer {
    */
   private static applyPatchToDidDocument (didDocument: DidDocumentModel, patch: any) {
     if (patch.action === 'add-public-keys') {
-      const publicKeySet = new Set(didDocument.publicKey.map(key => key.id));
+      const publicKeyIdSet = new Set(didDocument.publicKey.map(key => key.id));
 
       // Loop through all given public keys and add them if they don't exist already.
       for (let publicKey of patch.publicKeys) {
-        if (!publicKeySet.has(publicKey.id)) {
+        if (!publicKeyIdSet.has(publicKey.id)) {
           // Add the controller property. This cannot be added by the client and can
           // only be set by the server side
           publicKey.controller = didDocument.id;
@@ -206,6 +206,7 @@ export default class DocumentComposer {
         const existingKey = publicKeyMap.get(publicKey);
 
         // Deleting recovery key is NOT allowed.
+        // NOTE: `usage` is no longer necessary and will be removed as part of issue #266, #362, and #383.
         if (existingKey !== undefined &&
             existingKey.usage !== KeyUsage.recovery) {
           publicKeyMap.delete(publicKey);
@@ -237,7 +238,7 @@ export default class DocumentComposer {
           didDocument.service.push(service);
         }
       } else {
-        // Else we add to the eixsting service element.
+        // Else we add to the existing service element.
 
         const serviceEndpointSet = new Set(service.serviceEndpoint.instances);
 

@@ -261,7 +261,7 @@ describe('RequestHandler', () => {
     });
   });
 
-  describe('handleResolveRequestWithLongFormDid()', async () => {
+  describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
       const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey', KeyUsage.recovery);
       const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey', KeyUsage.signing);
@@ -276,9 +276,9 @@ describe('RequestHandler', () => {
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDocumentState));
 
-      const response = await (requestHandler as any).handleResolveRequestWithLongFormDid('unused');
+      const documentState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(response.body.publicKey[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
+      expect(documentState.document.publicKey[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
     });
   });
 });
