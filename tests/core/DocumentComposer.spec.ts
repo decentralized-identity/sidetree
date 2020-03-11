@@ -1,8 +1,7 @@
+import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
-import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
-import Operation from '../../lib/core/versions/latest/Operation';
 import SidetreeError from '../../lib/core/SidetreeError';
 
 describe('DocumentComposer', async () => {
@@ -148,7 +147,7 @@ describe('DocumentComposer', async () => {
 
   describe('applyPatchesToDidDocument()', async () => {
     it('should prevent the same id for multiple keys', async () => {
-      const didDocument: DocumentModel = {
+      const didDocument: DidDocumentModel = {
         '@context': 'https://www.w3.org/ns/did/v1',
         id: 'someId',
         publicKey: [{ id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' }],
@@ -164,7 +163,7 @@ describe('DocumentComposer', async () => {
         }
       ];
 
-      Operation.applyPatchesToDidDocument(didDocument, patches);
+      (DocumentComposer as any).applyPatchesToDidDocument(didDocument, patches);
 
       expect(didDocument.publicKey).toEqual([
         { id: 'aRepeatingId', type: 'someType', usage: 'some usage', controller: 'someId' },
