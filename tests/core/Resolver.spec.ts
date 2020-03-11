@@ -104,7 +104,7 @@ describe('Resolver', () => {
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
       expect(documentState.document.publicKey.length).toEqual(2);
-      expect(documentState.document.service![0].serviceEndpoint.instances.length).toEqual(3);
+      expect(documentState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
@@ -185,11 +185,11 @@ describe('Resolver', () => {
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
       expect(didDocument.service).toBeDefined();
-      expect(didDocument.service!.length).toEqual(1);
-      expect(didDocument.service![0].serviceEndpoint).toBeDefined();
-      expect(didDocument.service![0].serviceEndpoint.instances).toBeDefined();
-      expect(didDocument.service![0].serviceEndpoint.instances.length).toEqual(1);
-      expect(didDocument.service![0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
+      expect(didDocument.service.length).toEqual(1);
+      expect(didDocument.service[0].serviceEndpoint).toBeDefined();
+      expect(didDocument.service[0].serviceEndpoint.instances).toBeDefined();
+      expect(didDocument.service[0].serviceEndpoint.instances.length).toEqual(1);
+      expect(didDocument.service[0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
     });
   });
 });
