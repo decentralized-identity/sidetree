@@ -119,7 +119,11 @@ export default class OperationProcessor implements IOperationProcessor {
     let resultingDocument;
     try {
       resultingDocument = await DocumentComposer.applyUpdateOperation(operation, documentState.document);
-    } catch {
+    } catch (error) {
+      const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = namedAnchoredOperationModel.transactionNumber;
+      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${error.toString()}.`);
+
       // Return the given document state if error is encountered applying the update.
       return documentState;
     }
