@@ -20,6 +20,10 @@ export default interface ProtocolParameters {
   maxOperationsPerBatch: number;
   /** Maximum size of an operation in bytes. */
   maxOperationByteSize: number;
+  /** Minimum number of operations before value time lock is not required. */
+  minNumberOfOpsForValueTimeLock: number;
   /** The multiplier that converts the normalized fee from blockchain into a 'per operation' fee. */
   normalizedFeeToPerOperationFeeMultiplier: number;
+  /** The multiplier that converts the normalized 'per operation' fee into 'per operation lock amount' */
+  valueTimeLockAmountMultiplier: number;
 }

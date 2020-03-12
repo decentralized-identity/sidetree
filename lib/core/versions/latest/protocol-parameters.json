@@ -8,5 +8,7 @@
   "maxNumberOfTransactionsPerTransactionTime": 300,
   "maxOperationByteSize": 2000,
   "maxOperationsPerBatch": 10000,
-  "normalizedFeeToPerOperationFeeMultiplier": 0.01
+  "minNumberOfOpsForValueTimeLock": 100,
+  "normalizedFeeToPerOperationFeeMultiplier": 0.01,
+  "valueTimeLockAmountMultiplier": 10
 }

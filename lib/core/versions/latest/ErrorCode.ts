@@ -112,5 +112,8 @@ export default {
   UpdateOperationMissingOrUnknownProperty: 'update_operation_missing_or_unknown_property',
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
   UpdateOperationUpdateOtpMissingOrInvalidType: 'update_operation_update_otp_missing_or_invalid_type',
-  UpdateOperationUpdateOtpTooLong: 'update_operation_update_otp_too_long'
+  UpdateOperationUpdateOtpTooLong: 'update_operation_update_otp_too_long',
+  ValueTimeLockRequired: 'value_time_lock_required',
+  ValueTimeLockTargetTransactionTimeOutsideLockRange: 'value_time_lock_target_transaction_time_outside_lock_range',
+  ValueTimeLockInsufficentLockAmount: 'value_time_lock_insufficient_lock_amount'
 };
