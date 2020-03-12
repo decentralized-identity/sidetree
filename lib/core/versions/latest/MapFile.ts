@@ -2,7 +2,7 @@ import Compressor from './util/Compressor';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import MapFileModel from './models/MapFileModel';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Class containing Map File related operations.

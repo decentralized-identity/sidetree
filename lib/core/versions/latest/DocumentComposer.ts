@@ -2,7 +2,7 @@ import DidDocument from './DidDocument';
 import DidDocumentModel from './models/DidDocumentModel';
 import DocumentState from '../../models/DocumentState';
 import ErrorCode from './ErrorCode';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
 /**

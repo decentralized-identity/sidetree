@@ -1,6 +1,6 @@
 import * as HttpStatus from 'http-status';
 import BlockchainTimeModel from './models/BlockchainTimeModel';
-import CoreErrorCode from './CoreErrorCode';
+import CoreErrorCode from './ErrorCode';
 import IBlockchain from './interfaces/IBlockchain';
 import JsonAsync from './versions/latest/util/JsonAsync';
 import nodeFetch from 'node-fetch';
@@ -8,7 +8,7 @@ import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
-import SidetreeError from './SidetreeError';
+import SidetreeError from '../common/SidetreeError';
 import TransactionModel from '../common/models/TransactionModel';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 

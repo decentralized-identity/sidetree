@@ -2,12 +2,12 @@ import * as httpStatus from 'http-status';
 import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
-import BitcoinError from '../../lib/bitcoin/BitcoinError';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
+import SidetreeError from '../../lib/common/SidetreeError';
 import SidetreeTransactionData from '../../lib/bitcoin/SidetreeTransactionData';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
@@ -1679,7 +1679,7 @@ describe('BitcoinProcessor', () => {
 
     it('should throw pending-state exception if the lock monitor throws pending-state error', () => {
       spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.callFake(() => {
-        throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+        throw new SidetreeError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
       });
 
       try {

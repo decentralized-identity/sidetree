@@ -3,7 +3,7 @@ import Encoder from '../Encoder';
 import ErrorCode from '../ErrorCode';
 import JwsModel from '../models/JwsModel';
 import PublicKeyModel from '../../../models/PublicKeyModel';
-import SidetreeError from '../../../SidetreeError';
+import SidetreeError from '../../../../common/SidetreeError';
 
 /**
  * Class containing reusable JWS operations.

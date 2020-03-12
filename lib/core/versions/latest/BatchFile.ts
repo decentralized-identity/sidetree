@@ -7,7 +7,7 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import timeSpan = require('time-span');
 
 /**

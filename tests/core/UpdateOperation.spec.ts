@@ -4,7 +4,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
-import SidetreeError from '../../lib/core/SidetreeError';
+import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 describe('UpdateOperation', async () => {

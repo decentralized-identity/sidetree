@@ -1,10 +1,10 @@
 import BitcoinClient from '../BitcoinClient';
-import BitcoinError from '../BitcoinError';
 import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
+import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 import { Script } from 'bitcore-lib';
 
@@ -60,7 +60,7 @@ export default class LockResolver {
     const scriptVerifyResult = LockResolver.isRedeemScriptALockScript(redeemScriptObj);
 
     if (!scriptVerifyResult.isScriptValid) {
-      throw new BitcoinError(ErrorCode.LockResolverRedeemScriptIsNotLock, `${redeemScriptObj.toASM()}`);
+      throw new SidetreeError(ErrorCode.LockResolverRedeemScriptIsNotLock, `${redeemScriptObj.toASM()}`);
     }
 
     // (B). verify that the transaction is paying to the target redeem script
@@ -70,7 +70,7 @@ export default class LockResolver {
                                                     LockResolver.isOutputPayingToTargetScript(lockTransaction.outputs[0], redeemScriptObj);
 
     if (!transactionIsPayingToTargetRedeemScript) {
-      throw new BitcoinError(ErrorCode.LockResolverTransactionIsNotPayingToScript,
+      throw new SidetreeError(ErrorCode.LockResolverTransactionIsNotPayingToScript,
                              `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
     }
 
@@ -142,7 +142,7 @@ export default class LockResolver {
 
       return new Script(redeemScriptAsBuffer);
     } catch (e) {
-      throw BitcoinError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
+      throw SidetreeError.createFromError(ErrorCode.LockResolverRedeemScriptIsInvalid, e);
     }
   }
 
@@ -150,13 +150,13 @@ export default class LockResolver {
     try {
       return this.bitcoinClient.getRawTransaction(transactionId);
     } catch (e) {
-      throw BitcoinError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
+      throw SidetreeError.createFromError(ErrorCode.LockResolverTransactionNotFound, e);
     }
   }
 
   private async calculateLockStartingBlock (transaction: BitcoinTransactionModel): Promise<number> {
     if (transaction.confirmations <= 0) {
-      throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed, `transaction id: ${transaction.id}`);
+      throw new SidetreeError(ErrorCode.LockResolverTransactionNotConfirmed, `transaction id: ${transaction.id}`);
     }
 
     const blockInfo = await this.bitcoinClient.getBlockInfo(transaction.blockHash);

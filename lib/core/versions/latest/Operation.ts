@@ -4,7 +4,7 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
 import RevokeOperation from './RevokeOperation';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
 /**

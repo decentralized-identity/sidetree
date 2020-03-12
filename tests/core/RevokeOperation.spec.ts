@@ -4,7 +4,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import RevokeOperation from '../../lib/core/versions/latest/RevokeOperation';
-import SidetreeError from '../../lib/core/SidetreeError';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('RevokeOperation', async () => {
   describe('parse()', async () => {

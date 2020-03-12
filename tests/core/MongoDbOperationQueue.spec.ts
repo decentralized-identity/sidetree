@@ -3,7 +3,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationQueue from '../../lib/core/versions/latest/MongoDbOperationQueue';
-import SidetreeError from '../../lib/core/SidetreeError';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 /**
  * Creates a MongoDbOperationQueue and initializes it.

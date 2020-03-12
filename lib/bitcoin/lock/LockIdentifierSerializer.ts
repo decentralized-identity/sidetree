@@ -1,7 +1,7 @@
 import base64url from 'base64url';
-import BitcoinError from '../BitcoinError';
-import LockIdentifierModel from '../models/LockIdentifierModel';
 import ErrorCode from '../ErrorCode';
+import LockIdentifierModel from '../models/LockIdentifierModel';
+import SidetreeError from '../../common/SidetreeError';
 
 /**
  * Encapsulates functionality to serialize and deserialize a lock identifier.
@@ -29,7 +29,7 @@ export default class LockIdentifierSerializer {
     const splitDecodedString = decodedString.split(LockIdentifierSerializer.delimiter);
 
     if (splitDecodedString.length !== 2) {
-      throw new BitcoinError(ErrorCode.LockIdentifierIncorrectFormat);
+      throw new SidetreeError(ErrorCode.LockIdentifierIncorrectFormat);
     }
 
     return {

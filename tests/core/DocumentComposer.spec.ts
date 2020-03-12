@@ -1,7 +1,7 @@
 import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import SidetreeError from '../../lib/core/SidetreeError';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DocumentComposer', async () => {
   describe('validateDocumentPatch()', async () => {

@@ -1,5 +1,4 @@
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
-import BitcoinError from '../../../lib/bitcoin/BitcoinError';
 import BitcoinLockTransactionModel from '../../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
@@ -10,6 +9,7 @@ import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
+import SidetreeError from '../../../lib/common/SidetreeError';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
@@ -35,13 +35,13 @@ describe('LockMonitor', () => {
 
   describe('constructor', () => {
     it('should throw if the desired lock amount is not a whole number', () => {
-      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000.34, 25, 1234),
         ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber);
     });
 
     it('should throw if the txn fees amount is not a whole number', () => {
-      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 1234.56, 45),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
     });
@@ -104,7 +104,7 @@ describe('LockMonitor', () => {
     it('should throw if the current lock status is pending', () => {
       lockMonitor['currentLockState'] = createLockState(undefined, undefined, 'pending');
 
-      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => lockMonitor.getCurrentValueTimeLock(),
         ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
     });
@@ -449,7 +449,7 @@ describe('LockMonitor', () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
 
       const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
-        throw new BitcoinError(ErrorCode.LockResolverTransactionNotConfirmed);
+        throw new SidetreeError(ErrorCode.LockResolverTransactionNotConfirmed);
       });
 
       const mockLastLock: SavedLockedModel = {
@@ -478,7 +478,7 @@ describe('LockMonitor', () => {
 
       const mockErrorCode = 'some other unhandled error code';
       const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
-        throw new BitcoinError(mockErrorCode);
+        throw new SidetreeError(mockErrorCode);
       });
 
       const mockLastLock: SavedLockedModel = {
@@ -493,7 +493,7 @@ describe('LockMonitor', () => {
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(mockLastLock));
       spyOn(lockMonitor as any, 'isTransactionBroadcasted').and.returnValue(Promise.resolve(true));
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockMonitor['getCurrentLockState'](),
         mockErrorCode);
 
@@ -589,7 +589,7 @@ describe('LockMonitor', () => {
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
       const desiredLockAmount = mockWalletBalance - lockMonitor['transactionFeesAmountInSatoshis'];
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockMonitor['handleCreatingNewLock'](desiredLockAmount),
         ErrorCode.LockMonitorNotEnoughBalanceForFirstLock);
     });
@@ -718,7 +718,7 @@ describe('LockMonitor', () => {
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLock').and.returnValue(Promise.resolve());
       const renewLockSpy = spyOn(lockMonitor as any, 'renewLock');
       renewLockSpy.and.callFake(() => {
-        throw new BitcoinError(ErrorCode.LockMonitorNotEnoughBalanceForRelock);
+        throw new SidetreeError(ErrorCode.LockMonitorNotEnoughBalanceForRelock);
       });
 
       const actual = await lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount);
@@ -752,13 +752,13 @@ describe('LockMonitor', () => {
 
       const releaseLockSpy = spyOn(lockMonitor as any, 'releaseLock');
 
-      const mockUnhandledError = new BitcoinError('some unhandled error');
+      const mockUnhandledError = new SidetreeError('some unhandled error');
       const renewLockSpy = spyOn(lockMonitor as any, 'renewLock');
       renewLockSpy.and.callFake(() => {
         throw mockUnhandledError;
       });
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockMonitor['handleExistingLockRenewal'](currentValueTimeLockInput, lastSavedLockInfoInput, mockLastSavedDesiredLockAmount),
         mockUnhandledError.code
       );
@@ -900,7 +900,7 @@ describe('LockMonitor', () => {
       // Ensure that the desired lock amount is more to cause the error
       const desiredLockAmountInput = currentLockInfoInput.amountLocked + mockRenewLockTxn.transactionFee;
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockMonitor['renewLock'](currentLockInfoInput, desiredLockAmountInput),
         ErrorCode.LockMonitorNotEnoughBalanceForRelock);
 

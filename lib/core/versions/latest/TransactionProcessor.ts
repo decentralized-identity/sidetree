@@ -12,7 +12,7 @@ import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import MapFile from './MapFile';
 import MapFileModel from './models/MapFileModel';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 
 /**
