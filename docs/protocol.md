@@ -313,8 +313,7 @@ POST / HTTP/1.1
     {
       "id": "#key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1",
-      "usage": "signing"
+      "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1"
     }
   ],
   "service": [

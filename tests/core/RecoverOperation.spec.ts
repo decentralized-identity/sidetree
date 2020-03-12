@@ -1,7 +1,6 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -11,9 +10,9 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('RecoverOperation', async () => {
   describe('parse()', async () => {
     it('should throw if operation type is incorrect', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
       const [, unusedNextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
 
@@ -35,9 +34,9 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if didUniqueSuffix is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
       const [, unusedNextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
 
@@ -59,9 +58,9 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if recoveryOtp is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
       const [, unusedNextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
 
@@ -83,9 +82,9 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if recoveryOtp is too long.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.signing);
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey', KeyUsage.signing);
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
       const [, unusedNextRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
 
