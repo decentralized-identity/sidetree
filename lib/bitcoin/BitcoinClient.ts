@@ -654,7 +654,7 @@ export default class BitcoinClient {
     return {
       previousTransactionId: bitcoreInput.prevTxId.toString('hex'),
       outputIndexInPreviousTransaction: bitcoreInput.outputIndex,
-      scriptAsmAsString: bitcoreInput.script.toASM()
+      scriptAsmAsString: bitcoreInput.script ? bitcoreInput.script.toASM() : ''
     };
   }
 
