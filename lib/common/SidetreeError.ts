@@ -20,4 +20,11 @@ export default class SidetreeError extends Error {
   public static createFromError (code: string, err: Error): SidetreeError {
     return new SidetreeError(code, err ? err.message : undefined);
   }
+
+  /**
+   * Converts the given `Error` into a string.
+   */
+  public static stringify (error: Error) {
+    return JSON.stringify(error, Object.getOwnPropertyNames(error));
+  }
 }

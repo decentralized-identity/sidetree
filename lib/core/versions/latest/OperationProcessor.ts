@@ -122,7 +122,7 @@ export default class OperationProcessor implements IOperationProcessor {
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
-      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${error.toString()}.`);
+      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
       // Return the given document state if error is encountered applying the update.
       return documentState;
