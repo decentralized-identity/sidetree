@@ -2,7 +2,7 @@ import Cryptography from '../../../lib/core/versions/latest/util/Cryptography';
 import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
 import Jws from '../../../lib/core/versions/latest/util/Jws';
 import KeyUsage from '../../../lib/core/versions/latest/KeyUsage';
-import SidetreeError from '../../../lib/core/SidetreeError';
+import SidetreeError from '../../../lib/common/SidetreeError';
 
 describe('Jws', async () => {
   describe('parse()', async () => {

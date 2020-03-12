@@ -7,7 +7,7 @@ import JsonAsync from './util/JsonAsync';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import timeSpan = require('time-span');
 
 /**

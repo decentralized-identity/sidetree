@@ -2,7 +2,7 @@ import * as IPFS from 'ipfs';
 import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
-import IpfsError from './IpfsError';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Class that implements the IPFS Storage functionality.
@@ -20,7 +20,7 @@ export default class IpfsStorage {
    */
   public static async createSingleton (repo?: any): Promise<IpfsStorage> {
     if (IpfsStorage.ipfsStorageSingleton !== undefined) {
-      throw new IpfsError(ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce,
+      throw new SidetreeError(ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce,
         'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
     }
 
@@ -38,7 +38,7 @@ export default class IpfsStorage {
    */
   public static getSingleton (): IpfsStorage {
     if (IpfsStorage.ipfsStorageSingleton === undefined) {
-      throw new IpfsError(ErrorCode.IpfsStorageInstanceGetHasToBeCalledAfterCreate,
+      throw new SidetreeError(ErrorCode.IpfsStorageInstanceGetHasToBeCalledAfterCreate,
         'IpfsStorage is a singleton, Please use the createSingleton method before get');
     }
     return IpfsStorage.ipfsStorageSingleton;
