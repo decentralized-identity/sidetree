@@ -1,4 +1,5 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
+import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFileModel from './models/AnchorFileModel';
 import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
@@ -10,7 +11,6 @@ import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import MapFile from './MapFile';
 import MapFileModel from './models/MapFileModel';
-import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
@@ -87,7 +87,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     transaction: TransactionModel,
     anchorFile: AnchorFileModel,
     mapFile: MapFileModel
-  ): Promise<NamedAnchoredOperationModel[]> {
+  ): Promise<AnchoredOperationModel[]> {
     const batchFileHash = mapFile.batchFileHash;
     console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
 

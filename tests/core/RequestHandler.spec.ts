@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
@@ -21,7 +22,6 @@ import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -107,7 +107,7 @@ describe('RequestHandler', () => {
     expect((response.body as DidDocumentModel).id).toEqual(did);
 
     // Inser the create operation into DB.
-    const namedAnchoredCreateOperationModel: NamedAnchoredOperationModel = {
+    const namedAnchoredCreateOperationModel: AnchoredOperationModel = {
       didUniqueSuffix: createOperation.didUniqueSuffix,
       type: OperationType.Create,
       transactionNumber: 1,
@@ -123,7 +123,7 @@ describe('RequestHandler', () => {
 
   it('should queue operation request and have it processed by the batch scheduler correctly.', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ operationIndex: 1, transactionNumber: 1, transactionTime: 1 });
-    const createOperationBuffer = createOperationData.namedAnchoredOperationModel.operationBuffer;
+    const createOperationBuffer = createOperationData.anchoredOperationModel.operationBuffer;
     await requestHandler.handleOperationRequest(createOperationBuffer);
 
     const blockchainWriteSpy = spyOn(blockchain, 'write');

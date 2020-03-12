@@ -1,3 +1,4 @@
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
@@ -6,7 +7,6 @@ import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -45,7 +45,7 @@ describe('Resolver', () => {
         [serviceEndpoint]
       );
       const createOperation = await CreateOperation.parse(operationBuffer);
-      const namedAnchoredOperationModel = {
+      const anchoredOperationModel = {
         type: OperationType.Create,
         didUniqueSuffix: createOperation.didUniqueSuffix,
         operationBuffer,
@@ -55,7 +55,7 @@ describe('Resolver', () => {
       };
 
       const didUniqueSuffix = createOperation.didUniqueSuffix;
-      await operationStore.put([namedAnchoredOperationModel]);
+      await operationStore.put([anchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
       const [update2OtpPriorToRecovery, update2OtpHashPriorToRecovery] = OperationGenerator.generateOtp();
@@ -69,7 +69,7 @@ describe('Resolver', () => {
         signingPrivateKey
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
-      const anchoredUpdateOperation1PriorRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation1PriorRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation1BufferPriorRecovery,
@@ -90,7 +90,7 @@ describe('Resolver', () => {
         signingPrivateKey
       );
       const updateOperation2BufferPriorRecovery = Buffer.from(JSON.stringify(updatePayload2PriorRecovery));
-      const anchoredUpdateOperation2PriorRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation2PriorRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation2BufferPriorRecovery,
@@ -125,7 +125,7 @@ describe('Resolver', () => {
       );
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
       const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
-      const anchoredRecoverOperation = OperationGenerator.createNamedAnchoredOperationModelFromOperationModel(recoverOperation, 4, 4, 4);
+      const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 4, 4, 4);
       await operationStore.put([anchoredRecoverOperation]);
 
       // Create an update operation after the recover operation.
@@ -140,7 +140,7 @@ describe('Resolver', () => {
         newSigningPrivateKey
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
-      const anchoredUpdateOperation1AfterRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation1AfterRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation1BufferAfterRecovery,
@@ -161,7 +161,7 @@ describe('Resolver', () => {
         newSigningPrivateKey
       );
       const updateOperation2BufferAfterRecovery = Buffer.from(JSON.stringify(updatePayload2AfterRecovery));
-      const anchoredUpdateOperation2AfterRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation2AfterRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation2BufferAfterRecovery,

@@ -1,6 +1,5 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 
 /**
  * Compare two operations returning -1, 0, 1 when the first operand
@@ -27,7 +26,7 @@ function compareOperation (op1: AnchoredOperationModel, op2: AnchoredOperationMo
 export default class MockOperationStore implements IOperationStore {
   // Map DID unique suffixes to operations over it stored as an array. The array might be sorted
   // or unsorted by blockchain time order.
-  private readonly didToOperations: Map<string, NamedAnchoredOperationModel[]> = new Map();
+  private readonly didToOperations: Map<string, AnchoredOperationModel[]> = new Map();
 
   // Map DID unique suffixes to a boolean indicating if the operations array for the DID is sorted
   // or not.
@@ -36,7 +35,7 @@ export default class MockOperationStore implements IOperationStore {
   /**
    * Inserts an operation into the in-memory store.
    */
-  private async insert (operation: NamedAnchoredOperationModel): Promise<void> {
+  private async insert (operation: AnchoredOperationModel): Promise<void> {
     this.ensureDidContainerExist(operation.didUniqueSuffix);
     // Append the operation to the operation array for the did ...
     this.didToOperations.get(operation.didUniqueSuffix)!.push(operation);
@@ -47,7 +46,7 @@ export default class MockOperationStore implements IOperationStore {
   /**
    * Implements OperationStore.put()
    */
-  public async put (operations: NamedAnchoredOperationModel[]): Promise<void> {
+  public async put (operations: AnchoredOperationModel[]): Promise<void> {
     for (const operation of operations) {
       await this.insert(operation);
     }
@@ -58,7 +57,7 @@ export default class MockOperationStore implements IOperationStore {
    * Get an iterator that returns all operations with a given
    * didUniqueSuffix ordered by (transactionNumber, operationIndex).
    */
-  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
+  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
     let didOps = this.didToOperations.get(didUniqueSuffix);
 
     if (!didOps) {
@@ -121,7 +120,7 @@ export default class MockOperationStore implements IOperationStore {
 
   private ensureDidContainerExist (did: string) {
     if (this.didToOperations.get(did) === undefined) {
-      this.didToOperations.set(did, new Array<NamedAnchoredOperationModel>());
+      this.didToOperations.set(did, new Array<AnchoredOperationModel>());
       this.didUpdatedSinceLastSort.set(did, false);
     }
   }

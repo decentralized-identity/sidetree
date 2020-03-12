@@ -1,5 +1,5 @@
+import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
-import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
 import OperationType from './enums/OperationType';
 import { Binary, Collection, Long, MongoClient } from 'mongodb';
 
@@ -67,7 +67,7 @@ export default class MongoDbOperationStore implements IOperationStore {
   /**
    * Implement OperationStore.put
    */
-  public async put (operations: NamedAnchoredOperationModel[]): Promise<void> {
+  public async put (operations: AnchoredOperationModel[]): Promise<void> {
     let batch = this.collection!.initializeUnorderedBulkOp();
 
     for (const operation of operations) {
@@ -88,7 +88,7 @@ export default class MongoDbOperationStore implements IOperationStore {
   /**
    * Gets all operations of the given DID unique suffix in ascending chronological order.
    */
-  public async get (didUniqueSuffix: string): Promise<NamedAnchoredOperationModel[]> {
+  public async get (didUniqueSuffix: string): Promise<AnchoredOperationModel[]> {
     const mongoOperations = await this.collection!.find({ didSuffix: didUniqueSuffix }).sort({ txnNumber: 1, opIndex: 1 }).toArray();
     return mongoOperations.map((operation) => { return MongoDbOperationStore.convertToAnchoredOperationModel(operation); });
   }
@@ -126,7 +126,7 @@ export default class MongoDbOperationStore implements IOperationStore {
    * that can be stored on MongoDb. The IMongoOperation object has sufficient
    * information to reconstruct the original operation.
    */
-  private static convertToMongoOperation (operation: NamedAnchoredOperationModel): IMongoOperation {
+  private static convertToMongoOperation (operation: AnchoredOperationModel): IMongoOperation {
     return {
       type: operation.type,
       didSuffix: operation.didUniqueSuffix,
@@ -144,7 +144,7 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Note: mongodb.find() returns an 'any' object that automatically converts longs to numbers -
    * hence the type 'any' for mongoOperation.
    */
-  private static convertToAnchoredOperationModel (mongoOperation: any): NamedAnchoredOperationModel {
+  private static convertToAnchoredOperationModel (mongoOperation: any): AnchoredOperationModel {
     return {
       type: mongoOperation.type,
       didUniqueSuffix: mongoOperation.didSuffix,
