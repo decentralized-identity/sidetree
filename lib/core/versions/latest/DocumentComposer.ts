@@ -3,7 +3,7 @@ import DidDocumentModel from './models/DidDocumentModel';
 import DocumentState from '../../models/DocumentState';
 import ErrorCode from './ErrorCode';
 import KeyUsage from './KeyUsage';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
 /**

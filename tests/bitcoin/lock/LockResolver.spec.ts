@@ -141,7 +141,7 @@ describe('LockResolver', () => {
       spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
         ErrorCode.LockResolverRedeemScriptIsNotLock
       );
@@ -173,7 +173,7 @@ describe('LockResolver', () => {
       spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
       spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(false);
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
         ErrorCode.LockResolverTransactionIsNotPayingToScript
       );
@@ -241,7 +241,7 @@ describe('LockResolver', () => {
     it('should throw if script creation throws.', async () => {
       spyOn(Buffer,'from').and.throwError('som error');
 
-      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => LockResolver['createScript']('some input'),
         ErrorCode.LockResolverRedeemScriptIsInvalid);
     });
@@ -259,7 +259,7 @@ describe('LockResolver', () => {
     it('should throw not-found error if there is an exception thrown by the bitcoin client', async () => {
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('not found custom error.');
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
       () => lockResolver['getTransaction']('input id'),
       ErrorCode.LockResolverTransactionNotFound);
     });
@@ -296,7 +296,7 @@ describe('LockResolver', () => {
         outputs: []
       };
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver['calculateLockStartingBlock'](mockTransaction),
         ErrorCode.LockResolverTransactionNotConfirmed);
 
@@ -312,7 +312,7 @@ describe('LockResolver', () => {
         outputs: []
       };
 
-      await JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver['calculateLockStartingBlock'](mockTransaction),
         ErrorCode.LockResolverTransactionNotConfirmed);
 

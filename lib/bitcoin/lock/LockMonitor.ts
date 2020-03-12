@@ -1,5 +1,4 @@
 import BitcoinClient from '../BitcoinClient';
-import BitcoinError from '../BitcoinError';
 import BitcoinLockTransactionModel from '../models/BitcoinLockTransactionModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifier from '../models/LockIdentifierModel';
@@ -8,6 +7,7 @@ import LockResolver from './LockResolver';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
 import SavedLockModel from '../models/SavedLockedModel';
 import SavedLockType from '../enums/SavedLockType';
+import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
 /** Enum (internal to this class) to track the status of the lock. */
@@ -47,11 +47,11 @@ export default class LockMonitor {
     private lockPeriodInBlocks: number) {
 
     if (!Number.isInteger(desiredLockAmountInSatoshis)) {
-      throw new BitcoinError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
+      throw new SidetreeError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
     }
 
     if (!Number.isInteger(transactionFeesAmountInSatoshis)) {
-      throw new BitcoinError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
+      throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
@@ -88,7 +88,7 @@ export default class LockMonitor {
     if (currentLockState.status === LockStatus.Pending) {
       // Throw a very specific error so that the caller can do something
       // about it if they have to
-      throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+      throw new SidetreeError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
     }
 
     return currentLockState.activeValueTimeLock;
@@ -215,7 +215,7 @@ export default class LockMonitor {
 
     } catch (e) {
 
-      if (e instanceof BitcoinError && e.code === ErrorCode.LockResolverTransactionNotConfirmed) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.LockResolverTransactionNotConfirmed) {
         // This means that the transaction was broadcasted but hasn't been written on the blockchain yet.
         return {
           activeValueTimeLock: undefined,
@@ -272,7 +272,7 @@ export default class LockMonitor {
     const walletBalance = await this.bitcoinClient.getBalanceInSatoshis();
 
     if (walletBalance <= totalLockAmount) {
-      throw new BitcoinError(ErrorCode.LockMonitorNotEnoughBalanceForFirstLock,
+      throw new SidetreeError(ErrorCode.LockMonitorNotEnoughBalanceForFirstLock,
                              `Lock amount: ${totalLockAmount}; Wallet balance: ${walletBalance}`);
     }
 
@@ -321,7 +321,7 @@ export default class LockMonitor {
 
       // If there is not enough balance for the relock then just release the lock. Let the next
       // iteration of the polling to try and create a new lock.
-      if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
         console.warn(`There is not enough balance for relocking so going to release the lock. Error: ${e.message}`);
         await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       } else {
@@ -366,7 +366,7 @@ export default class LockMonitor {
 
     // If the transaction fee is making the relock amount less than the desired amount
     if (currentValueTimeLock.amountLocked - relockTransaction.transactionFee < desiredLockAmountInSatoshis) {
-      throw new BitcoinError(
+      throw new SidetreeError(
         ErrorCode.LockMonitorNotEnoughBalanceForRelock,
         // tslint:disable-next-line: max-line-length
         `The current locked amount (${currentValueTimeLock.amountLocked} satoshis) minus the relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);

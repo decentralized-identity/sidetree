@@ -7,7 +7,7 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PublicKeyModel from '../../models/PublicKeyModel';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedOperationDataModel {
   operationDataHash: string;

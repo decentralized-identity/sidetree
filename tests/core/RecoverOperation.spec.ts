@@ -6,7 +6,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
-import SidetreeError from '../../lib/core/SidetreeError';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('RecoverOperation', async () => {
   describe('parse()', async () => {

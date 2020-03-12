@@ -12,7 +12,7 @@ import MapFile from './MapFile';
 import MapFileModel from './models/MapFileModel';
 import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 
 /**
