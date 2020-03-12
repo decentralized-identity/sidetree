@@ -1,5 +1,5 @@
 import Config from './models/Config';
-import CoreErrorCode from './CoreErrorCode';
+import CoreErrorCode from './ErrorCode';
 import DownloadManager from './DownloadManager';
 import IBatchWriter from './interfaces/IBatchWriter';
 import IBlockchain from './interfaces/IBlockchain';
@@ -12,7 +12,7 @@ import ITransactionSelector from './interfaces/ITransactionSelector';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
 import Resolver from './Resolver';
-import SidetreeError from './SidetreeError';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Defines a protocol version and its starting blockchain time.

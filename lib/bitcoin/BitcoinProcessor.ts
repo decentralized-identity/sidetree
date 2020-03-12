@@ -1,6 +1,5 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
-import BitcoinError from './BitcoinError';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
 import LockMonitor from './lock/LockMonitor';
@@ -13,6 +12,7 @@ import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeTransactionData from './SidetreeTransactionData';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
@@ -341,7 +341,7 @@ export default class BitcoinProcessor {
       currentLock = this.lockMonitor.getCurrentValueTimeLock();
     } catch (e) {
 
-      if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
         throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
       }
 

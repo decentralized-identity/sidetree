@@ -1,9 +1,9 @@
 import base64url from 'base64url';
 import ErrorCode from '../ipfs/ErrorCode';
 import FetchResultCode from '../common/FetchResultCode';
-import IpfsError from './IpfsError';
 import IpfsStorage from './IpfsStorage';
 import ServiceInfo from '../common/ServiceInfoProvider';
+import SidetreeError from '../common/SidetreeError';
 import { ResponseModel, ResponseStatus } from '../common/Response';
 import { Timeout } from './Util/Timeout';
 
@@ -30,7 +30,7 @@ export default class RequestHandler {
     try {
       ipfsStorage = await IpfsStorage.createSingleton(repo);
     } catch (e) {
-      if (e instanceof IpfsError && e.code === ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce) {
         console.debug('IpfsStorage create was called twice, attempting to call get instead: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
         ipfsStorage = IpfsStorage.getSingleton();
       } else {

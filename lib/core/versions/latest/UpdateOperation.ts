@@ -7,7 +7,7 @@ import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 
 interface OperationDataModel {
   nextUpdateOtpHash: string;

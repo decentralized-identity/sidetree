@@ -9,7 +9,7 @@ import OperationProcessor from './OperationProcessor';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import { ResponseModel, ResponseStatus } from '../../../common/Response';
 import DocumentState from '../../models/DocumentState';
 
