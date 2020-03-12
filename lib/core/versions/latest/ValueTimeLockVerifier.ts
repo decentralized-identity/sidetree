@@ -28,7 +28,7 @@ export default class ValueTimeLockVerifier {
    * Gets the max number of operations allowed for zero lock amount.
    */
   public static getMaxNumberOfOpsForZeroLockAmount (): number {
-    return ProtocolParameters.minNumberOfOpsForValueTimeLock;
+    return ProtocolParameters.maxNumberOfOpsForNoValueTimeLock;
   }
 
   /**
