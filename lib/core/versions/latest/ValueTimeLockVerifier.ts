@@ -1,6 +1,6 @@
 import ErrorCode from './ErrorCode';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
 
 /**
