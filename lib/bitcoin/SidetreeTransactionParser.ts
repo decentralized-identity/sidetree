@@ -1,16 +1,17 @@
+import BitcoinClient from './BitcoinClient';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import SidetreeTransactionModel from './models/SidetreeTransactionModel';
 import { crypto } from 'bitcore-lib';
 
 /**
  * Encapsulates functionality about a sidetree transaction written on the bitcoin.
  */
-export default class SidetreeTransactionData {
+export default class SidetreeTransactionParser {
 
-  private constructor (
-    public readonly data: string,
-    public readonly writer: string) {
+  // @ts-ignore
+  public constructor (private bitcoinClient: BitcoinClient) {
   }
 
   /**
@@ -21,38 +22,39 @@ export default class SidetreeTransactionData {
    *
    * @returns This object if the transaction is a valid sidetree transaction; undefined otherwise.
    */
-  public static parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): SidetreeTransactionData | undefined {
+  public parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): SidetreeTransactionModel | undefined {
 
-    // The sidetree transaction has the following requirements:
-    //  1. There must be only one output with a valid sidetree anchorstring
+    // Example valid transaction: https://www.blockchain.com/btctest/tx/a98fd29d4583d1f691067b0f92ae83d3808d18cba55bd630dbf569fbaea9355c
 
-    //  2. All the inputs must have the same receiving public key
-    //
-    // Example transaction: https://www.blockchain.com/btctest/tx/a98fd29d4583d1f691067b0f92ae83d3808d18cba55bd630dbf569fbaea9355c
-
-    const sidetreeData = SidetreeTransactionData.getValidSidetreeDataFromOutputs(bitcoinTransaction.id, bitcoinTransaction.outputs, sidetreePrefix);
+    const sidetreeData = this.getValidSidetreeDataFromOutputs(bitcoinTransaction.id, bitcoinTransaction.outputs, sidetreePrefix);
 
     if (!sidetreeData) {
       return undefined;
     }
 
-    const writer = SidetreeTransactionData.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
+    const writer = this.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
 
     if (!writer) {
       console.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
       return undefined;
     }
 
-    return new SidetreeTransactionData(sidetreeData, writer);
+    return {
+      data: sidetreeData,
+      writer: writer
+    };
   }
 
-  private static getValidSidetreeDataFromOutputs (transactionId: string, transactionOutputs: BitcoinOutputModel[], sidetreePrefix: string): string | undefined {
+  private getValidSidetreeDataFromOutputs (transactionId: string, transactionOutputs: BitcoinOutputModel[], sidetreePrefix: string): string | undefined {
+
+    // The sidetree transaction output has the following requirements:
+    //  1. There must be only one output with a valid sidetree anchorstring
 
     let sidetreeDataToReturn: string | undefined = undefined;
 
     for (let i = 0; i < transactionOutputs.length; i++) {
       const currentOutput = transactionOutputs[i];
-      const sidetreeDataForThisOutput = SidetreeTransactionData.getSidetreeDataFromOutputIfExist(currentOutput, sidetreePrefix);
+      const sidetreeDataForThisOutput = this.getSidetreeDataFromOutputIfExist(currentOutput, sidetreePrefix);
 
       if (sidetreeDataForThisOutput) {
 
@@ -70,7 +72,7 @@ export default class SidetreeTransactionData {
     return sidetreeDataToReturn;
   }
 
-  private static getSidetreeDataFromOutputIfExist (transactionOutput: BitcoinOutputModel, sidetreePrefix: string): string | undefined {
+  private getSidetreeDataFromOutputIfExist (transactionOutput: BitcoinOutputModel, sidetreePrefix: string): string | undefined {
 
     // check for returned data for sidetree prefix
     const hexDataMatches = transactionOutput.scriptAsmAsString.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
@@ -88,9 +90,9 @@ export default class SidetreeTransactionData {
     return undefined;
   }
 
-  private static getValidWriterFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): string | undefined {
+  private getValidWriterFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): string | undefined {
 
-    const validPublickey = SidetreeTransactionData.getValidPublicKeyFromInputs(transactionId, transactionInputs);
+    const validPublickey = this.getValidPublicKeyFromInputs(transactionId, transactionInputs);
 
     if (!validPublickey) {
       return undefined;
@@ -104,7 +106,15 @@ export default class SidetreeTransactionData {
     return publicKeyHashBuffer.toString('hex');
   }
 
-  private static getValidPublicKeyFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): string | undefined {
+  private getValidPublicKeyFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): string | undefined {
+
+    // A valid sidetree transaction inputs have following requirements:
+    //  1. The first input must be in format: <signature> <publickey>
+    //  2. The output being spent by the first input must be in the pay-to-public-key-hash output.
+    //  3. The first input checks will prove that the writer of the txn owns the <publickey><privatekey> pair
+    //     so we won't check any other inputs.
+    //
+    // The output will be the <publickey> from the first input.
 
     // First get all the public keys from the inputs
     const allPublicKeys = transactionInputs.map(input => {

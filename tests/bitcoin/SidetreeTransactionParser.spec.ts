@@ -1,14 +1,24 @@
+import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinInputModel from '../../lib/bitcoin/models/BitcoinInputModel';
 import BitcoinOutputModel from '../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
-import SidetreeTransactionData from '../../lib/bitcoin/SidetreeTransactionData';
+import SidetreeTransactionParser from '../../lib/bitcoin/SidetreeTransactionParser';
 import { crypto } from 'bitcore-lib';
 
-describe('SidetreeTransactionData', () => {
+describe('SidetreeTransactionParser', () => {
   let sidetreeTransactionPrefix: string;
 
   beforeAll(() => {
     sidetreeTransactionPrefix = 'sidetree:';
+  });
+
+  const validTestWalletImportString = 'cTpKFwqu2HqW4y5ByMkNRKAvkPxEcwpax5Qr33ibYvkp1KSxdji6';
+  const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
+
+  let sidetreeTxnParser: SidetreeTransactionParser;
+
+  beforeEach(() => {
+    sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient);
   });
 
   function createValidDataOutput (data: string): BitcoinOutputModel {
@@ -39,9 +49,9 @@ describe('SidetreeTransactionData', () => {
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getValidSidetreeDataFromOutputs').and.returnValue(undefined);
+      spyOn(SidetreeTransactionParser as any, 'getValidSidetreeDataFromOutputs').and.returnValue(undefined);
 
-      const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
@@ -55,10 +65,10 @@ describe('SidetreeTransactionData', () => {
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getValidSidetreeDataFromOutputs').and.returnValue('some data');
-      spyOn(SidetreeTransactionData as any, 'getValidWriterFromInputs').and.returnValue(undefined);
+      spyOn(SidetreeTransactionParser as any, 'getValidSidetreeDataFromOutputs').and.returnValue('some data');
+      spyOn(SidetreeTransactionParser as any, 'getValidWriterFromInputs').and.returnValue(undefined);
 
-      const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
@@ -75,10 +85,10 @@ describe('SidetreeTransactionData', () => {
         inputs: []
       };
 
-      spyOn(SidetreeTransactionData as any, 'getValidSidetreeDataFromOutputs').and.returnValue(sidetreeData);
-      spyOn(SidetreeTransactionData as any, 'getValidWriterFromInputs').and.returnValue(writer);
+      spyOn(SidetreeTransactionParser as any, 'getValidSidetreeDataFromOutputs').and.returnValue(sidetreeData);
+      spyOn(SidetreeTransactionParser as any, 'getValidWriterFromInputs').and.returnValue(writer);
 
-      const actual = SidetreeTransactionData.parse(mockTxn, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser.parse(mockTxn, sidetreeTransactionPrefix);
       expect(actual).toBeDefined();
       expect(actual!.data).toEqual(sidetreeData);
       expect(actual!.writer).toEqual(writer);
@@ -90,7 +100,7 @@ describe('SidetreeTransactionData', () => {
     it('should return the sidetree data if only output has the data present', async (done) => {
       const mockSidetreeData = 'some side tree data';
       let sidetreeDataSent = false;
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
+      spyOn(SidetreeTransactionParser as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
         if (!sidetreeDataSent) {
           sidetreeDataSent = true;
           return mockSidetreeData;
@@ -104,27 +114,27 @@ describe('SidetreeTransactionData', () => {
         createValidDataOutput('mock data 2')
       ];
 
-      const actual = SidetreeTransactionData['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
       expect(actual).toEqual(mockSidetreeData);
       done();
     });
 
     it('should return undefined if no output has any sidetree data.', async (done) => {
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.returnValue(undefined);
+      spyOn(SidetreeTransactionParser as any, 'getSidetreeDataFromOutputIfExist').and.returnValue(undefined);
 
       const mockOutputs: BitcoinOutputModel[] = [
         createValidDataOutput('mock data 1'),
         createValidDataOutput('mock data 2')
       ];
 
-      const actual = SidetreeTransactionData['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
 
     it('should return undefined if there is more one output with the sidetree data.', async (done) => {
       let callCount = 0;
-      spyOn(SidetreeTransactionData as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
+      spyOn(SidetreeTransactionParser as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
         callCount++;
 
         if (callCount % 2 === 1) {
@@ -140,7 +150,7 @@ describe('SidetreeTransactionData', () => {
         createValidDataOutput('mock data 2')
       ];
 
-      const actual = SidetreeTransactionData['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
@@ -151,7 +161,7 @@ describe('SidetreeTransactionData', () => {
       const sidetreeData = 'some test data';
       const mockDataOutput = createValidDataOutput(sidetreeData);
 
-      const actual = SidetreeTransactionData['getSidetreeDataFromOutputIfExist'](mockDataOutput, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getSidetreeDataFromOutputIfExist'](mockDataOutput, sidetreeTransactionPrefix);
       expect(actual!).toEqual(sidetreeData);
       done();
     });
@@ -159,7 +169,7 @@ describe('SidetreeTransactionData', () => {
     it('should return undefined if no valid sidetree transaction exist', async (done) => {
       const mockOutput: BitcoinOutputModel = { satoshis:  0, scriptAsmAsString: 'some random data' };
 
-      const actual = SidetreeTransactionData['getSidetreeDataFromOutputIfExist'](mockOutput, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getSidetreeDataFromOutputIfExist'](mockOutput, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
@@ -168,20 +178,20 @@ describe('SidetreeTransactionData', () => {
   describe('getValidWriterFromInputs', () => {
     it('should return correctly hashed value of the public key found.', () => {
       const mockPublicKey = 'some-public-key';
-      spyOn(SidetreeTransactionData as any, 'getValidPublicKeyFromInputs').and.returnValue(mockPublicKey);
+      spyOn(SidetreeTransactionParser as any, 'getValidPublicKeyFromInputs').and.returnValue(mockPublicKey);
 
       const mockHashedValueBuffer = Buffer.from(mockPublicKey);
       spyOn(crypto.Hash, 'sha256ripemd160').and.returnValue(mockHashedValueBuffer);
 
       const expectedOutput = mockHashedValueBuffer.toString('hex');
-      const actual = SidetreeTransactionData['getValidWriterFromInputs']('txid', []);
+      const actual = sidetreeTxnParser['getValidWriterFromInputs']('txid', []);
       expect(actual).toEqual(expectedOutput);
     });
 
     it('should return undefined if there is no valid public key found in the inputs.', () => {
-      spyOn(SidetreeTransactionData as any, 'getValidPublicKeyFromInputs').and.returnValue(undefined);
+      spyOn(SidetreeTransactionParser as any, 'getValidPublicKeyFromInputs').and.returnValue(undefined);
 
-      const actual = SidetreeTransactionData['getValidWriterFromInputs']('txid', []);
+      const actual = sidetreeTxnParser['getValidWriterFromInputs']('txid', []);
       expect(actual).not.toBeDefined();
     });
   });
@@ -196,7 +206,7 @@ describe('SidetreeTransactionData', () => {
         createValidWriterInput(mockPublicKey)
       ];
 
-      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', mockInputs);
+      const actual = sidetreeTxnParser['getValidPublicKeyFromInputs']('txid', mockInputs);
       expect(actual).toEqual(mockPublicKey);
     });
 
@@ -209,7 +219,7 @@ describe('SidetreeTransactionData', () => {
         { previousTransactionId: 'txid', outputIndexInPreviousTransaction: 0, scriptAsmAsString: 'onlySignature' }
       ];
 
-      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', mockInputs);
+      const actual = sidetreeTxnParser['getValidPublicKeyFromInputs']('txid', mockInputs);
       expect(actual).not.toBeDefined();
     });
 
@@ -222,12 +232,12 @@ describe('SidetreeTransactionData', () => {
         createValidWriterInput('different-publick-key')
       ];
 
-      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', mockInputs);
+      const actual = sidetreeTxnParser['getValidPublicKeyFromInputs']('txid', mockInputs);
       expect(actual).not.toBeDefined();
     });
 
     it('should return undefined if there are no inputs.', () => {
-      const actual = SidetreeTransactionData['getValidPublicKeyFromInputs']('txid', []);
+      const actual = sidetreeTxnParser['getValidPublicKeyFromInputs']('txid', []);
       expect(actual).not.toBeDefined();
     });
   });
