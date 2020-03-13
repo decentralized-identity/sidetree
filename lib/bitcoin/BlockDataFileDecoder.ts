@@ -10,14 +10,14 @@ export default class BlockDataFileDecoder {
    */
   public static magicBytes = {
     testnet: '0b110907',
-    mainnet: 'f9beb4d9',
-    regtest: 'fabfb5da'
+    mainnet: 'f9beb4d9'
   };
 
   /**
    * decode a blk.dat file
    */
   public static decode (blockDataBuffer: Buffer): any {
+    // structure of blk.dat files: https://learnmeabitcoin.com/guide/blkdat
     // decode the buffer as hex
     let hexValue = blockDataBuffer.toString('hex');
 
@@ -28,11 +28,9 @@ export default class BlockDataFileDecoder {
       blocksHex = hexValue.split(BlockDataFileDecoder.magicBytes.testnet);
     } else if (hexValue.startsWith(BlockDataFileDecoder.magicBytes.mainnet)) {
       blocksHex = hexValue.split(BlockDataFileDecoder.magicBytes.mainnet);
-    } else if (hexValue.startsWith(BlockDataFileDecoder.magicBytes.regtest)) {
-      blocksHex = hexValue.split(BlockDataFileDecoder.magicBytes.regtest);
     } else {
       console.log('Given buffer is not a valid blk.dat file');
-      return;
+      return [];
     }
 
     // shift one because the first elem after split is empty
@@ -40,6 +38,9 @@ export default class BlockDataFileDecoder {
 
     const parsedBlocks = [];
 
+    let count = 1;
+    // TODO: make this loop multiprocess
+    // We don't need the blocks to be processed sequentially. We can slip the blocks into groups and the multi process
     for (let blockHex of blocksHex) {
       let size: number;
       [size, blockHex] = BlockDataFileDecoder.getSize(blockHex);
@@ -51,14 +52,16 @@ export default class BlockDataFileDecoder {
       let numOfTransactions: number;
       [numOfTransactions, blockHex] = BlockDataFileDecoder.getNumOfTransactions(blockHex);
 
-      // right now, the remainder are transaction data
-      // TODO add transaction data parsing
+      let transactionHexes: string[];
+      [transactionHexes, blockHex] = BlockDataFileDecoder.getTransactionHexes(blockHex, numOfTransactions);
 
+      console.info(`${count} out of ${blocksHex.length} blocks done`);
+      count++;
       parsedBlocks.push({
         size: size,
         blockHash: blockHash,
         numberOfTransactions: numOfTransactions,
-        transactionData: blockHex
+        transactionHexes: transactionHexes
       });
     }
 
@@ -105,11 +108,122 @@ export default class BlockDataFileDecoder {
   }
 
   private static getNumOfTransactions (hex: string): [number, string] {
-    return BlockDataFileDecoder.parseVarInt(hex);
+    const [numberOfTransactions, strippedHex] = BlockDataFileDecoder.parseVarInt(hex);
+    return [numberOfTransactions, strippedHex];
+  }
+
+  private static getTransactionHexes (hex: string, expectedNumOfTransactions: number): [string[], string] {
+    // structure of transaction data: https://learnmeabitcoin.com/guide/transaction-data
+    const transactionHexes = [];
+    for (let transactionCount = 1; transactionCount <= expectedNumOfTransactions; transactionCount++) {
+      // first 4 bytes are transaction version
+      let currentTransaction = BlockDataFileDecoder.getNextNBytesInAHexString(hex, 4);
+      hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 4);
+
+      // next bytes are varInt denoting the number of inputs to this transaction
+      let varIntHexRepresentationOfInputCount: string;
+      let numberOfInputs: number;
+      [numberOfInputs, hex, varIntHexRepresentationOfInputCount] = BlockDataFileDecoder.parseVarInt(hex);
+      currentTransaction += varIntHexRepresentationOfInputCount;
+
+      // if numberOfInputs is 0, it is bip144 format, it needs to parse the flag and then recount the the the number of inputs
+      const isBip144 = numberOfInputs === 0;
+      if (isBip144) {
+        // parse the 1 byte flag
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, 1);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 1);
+
+        // re-calculate the number of inputs
+        [numberOfInputs, hex, varIntHexRepresentationOfInputCount] = BlockDataFileDecoder.parseVarInt(hex);
+        currentTransaction += varIntHexRepresentationOfInputCount;
+      }
+
+      // for each input
+      for (let inputCount = 1; inputCount <= numberOfInputs; inputCount++) {
+        // first 32 bytes are TXID
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, 32);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 32);
+
+        // next 4 bytes are VOUT
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, 4);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 4);
+
+        // next few bytes are varInt indicating the size of input script
+        let scriptSizeInBytes: number;
+        let hexRepresentationOfScriptSize: string;
+        [scriptSizeInBytes, hex, hexRepresentationOfScriptSize] = BlockDataFileDecoder.parseVarInt(hex);
+        currentTransaction += hexRepresentationOfScriptSize;
+
+        // the next scriptSizeInBytes bytes are the script
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, scriptSizeInBytes);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, scriptSizeInBytes);
+
+        // the next 4 bytes are input sequence
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, 4);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 4);
+      }
+
+      // the next few bytes are varInt denoting the number of outputs
+      let varIntHexRepresentationOfOutputCount: string;
+      let numberOfOutputs: number;
+      [numberOfOutputs, hex, varIntHexRepresentationOfOutputCount] = BlockDataFileDecoder.parseVarInt(hex);
+      currentTransaction += varIntHexRepresentationOfOutputCount;
+
+      // for each output
+      for (let outputCount = 1; outputCount <= numberOfOutputs; outputCount++) {
+        // the first 8 bytes are the value in satoshis
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, 8);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 8);
+
+        // the next few bytes denote the scriptPubKeySize in varInt
+        let scriptPubKeySizeInBytes: number;
+        let hexRepresentationOfScriptPubKeySize: string;
+        [scriptPubKeySizeInBytes, hex, hexRepresentationOfScriptPubKeySize] = BlockDataFileDecoder.parseVarInt(hex);
+        currentTransaction += hexRepresentationOfScriptPubKeySize;
+
+        // the next scriptPubKeySizeInBytes bytes are the scriptPubKey
+        currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, scriptPubKeySizeInBytes);
+        hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, scriptPubKeySizeInBytes);
+      }
+
+      // if is bip144, it needs to parse the witnesses
+      if (isBip144) {
+        // each input has a witness so for each input
+        for (let inputCount = 1; inputCount <= numberOfInputs; inputCount++) {
+          // next few bytes denote the number of witness items for this input
+          let numberOfWitnesses: number;
+          let hexRepresentationOfNumOfWitnesses: string;
+          [numberOfWitnesses, hex, hexRepresentationOfNumOfWitnesses] = BlockDataFileDecoder.parseVarInt(hex);
+          currentTransaction += hexRepresentationOfNumOfWitnesses;
+
+          // for each witness
+          for (let witnessCount = 1; witnessCount <= numberOfWitnesses; witnessCount++) {
+            // first few bytes of a witness denotes how many bytes the witness script spans
+            let witnessSizeInBytes: number;
+            let hexRepresentationOfWitnessSize: string;
+            [witnessSizeInBytes, hex, hexRepresentationOfWitnessSize] = BlockDataFileDecoder.parseVarInt(hex);
+            currentTransaction += hexRepresentationOfWitnessSize;
+
+            // next witnessSizeInBytes bytes are the witness script
+            currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, witnessSizeInBytes);
+            hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, witnessSizeInBytes);
+          }
+        }
+      }
+
+      // the final 4 bytes are the lockTime
+      currentTransaction += BlockDataFileDecoder.getNextNBytesInAHexString(hex, 4);
+      hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 4);
+
+      // finished parsing, add to the returned array
+      transactionHexes.push(currentTransaction);
+    }
+
+    return [transactionHexes, hex];
   }
 
   /**
-   * Returns the value of the varInt in base 10 and strip it from the input hex
+   * Returns the value of the varInt in base 10 stripped input hex, and the hex representation of the varInt
    * VarInt is a variable integer.
    * It can either be a 1 byte hex representation of an int
    * or 2 byte int with prefix fd (total of 3 bytes)
@@ -117,7 +231,7 @@ export default class BlockDataFileDecoder {
    * or 8 byte int with prefix ff (total of 9 bytes)
    * @param hex the hex to parse the varInt from
    */
-  private static parseVarInt (hex: string): [number, string] {
+  private static parseVarInt (hex: string): [number, string, string] {
     const varIntPrefixMap = new Map();
     varIntPrefixMap.set('fd', 2);
     varIntPrefixMap.set('fe', 4);
@@ -125,21 +239,24 @@ export default class BlockDataFileDecoder {
 
     // 1 byte denotes the varInt
     const varInt = BlockDataFileDecoder.getNextNBytesInAHexString(hex, 1);
-    let strippedHex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 1);
+    hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, 1);
     let value: number;
+    let varIntWithPrefix: string;
     if (!varIntPrefixMap.has(varInt)) {
       // this means we take the hex as is
       value = parseInt(varInt, 16);
+      varIntWithPrefix = varInt;
     } else {
       const bytesToRead = varIntPrefixMap.get(varInt);
       // this means the next 2, 4 or 8 bytes are varInt in little endian depending on the prefix
       const varIntValueHexLittleEndian = BlockDataFileDecoder.getNextNBytesInAHexString(hex, bytesToRead);
       const varIntValueHexBigEndian = BlockDataFileDecoder.littleToBigEndian(varIntValueHexLittleEndian);
       value = parseInt(varIntValueHexBigEndian, 16);
-      strippedHex = BlockDataFileDecoder.removeFirstNBytesFromHexString(strippedHex, bytesToRead);
+      hex = BlockDataFileDecoder.removeFirstNBytesFromHexString(hex, bytesToRead);
+      varIntWithPrefix = varInt + varIntValueHexLittleEndian;
     }
 
-    return [value, strippedHex];
+    return [value, hex, varIntWithPrefix];
   }
 
   private static getNextNBytesInAHexString (hex: string, n: number) {
