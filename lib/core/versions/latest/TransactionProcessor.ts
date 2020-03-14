@@ -39,7 +39,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const mapFileModel = await this.downloadAndVerifyMapFile(anchorFileModel, anchoredData.numberOfOperations);
 
       // Download and verify batch file.
-      const batchFileModel = await this.downloadAndVerifyBatchFile(anchorFileModel, mapFileModel);
+      const batchFileModel = await this.downloadAndVerifyBatchFile(mapFileModel);
 
       // Compose into operations from all the files downloaded.
       const operations = await this.composeAnchoredOperationModels(transaction, anchorFileModel, mapFileModel, batchFileModel);
@@ -123,14 +123,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
   }
 
   private async downloadAndVerifyBatchFile (
-    anchorFile: AnchorFileModel,
     mapFile: MapFileModel
   ): Promise<BatchFileModel> {
     const batchFileHash = mapFile.batchFileHash;
     console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
-    const batchFileModel = await BatchFile.parse(fileBuffer, anchorFile);
+    const batchFileModel = await BatchFile.parse(fileBuffer);
 
     return batchFileModel;
   }

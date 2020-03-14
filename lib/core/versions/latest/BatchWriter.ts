@@ -3,13 +3,19 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
+import CreateOperation from './CreateOperation';
 import FeeManager from './FeeManager';
 import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
 import MapFile from './MapFile';
+import Operation from './Operation';
+import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
+import RecoverOperation from './RecoverOperation';
+import RevokeOperation from './RevokeOperation';
+import UpdateOperation from './UpdateOperation';
 
 /**
  * Implementation of the `IBatchWriter`.
@@ -31,10 +37,19 @@ export default class BatchWriter implements IBatchWriter {
       return;
     }
 
-    const operationBuffers = queuedOperations.map(queuedOperations => queuedOperations.operationBuffer);
+    const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
+    const createOperationModels = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
+    const recoverOperationModels = operationModels.filter(operation => operation.type === OperationType.Recover) as RecoverOperation[];
+    const updateOperationModels = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
+    const revokeOperationModels = operationModels.filter(operation => operation.type === OperationType.Revoke) as RevokeOperation[];
 
-    // Create the batch file buffer from the operation buffers.
-    const batchFileBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
+    // Create the batch file buffer from the operation models.
+    // NOTE: revoke operations don't have operation data.
+    const operationData = [];
+    operationData.push(...createOperationModels.map(operation => operation.encodedOperationData!));
+    operationData.push(...recoverOperationModels.map(operation => operation.encodedOperationData!));
+    operationData.push(...updateOperationModels.map(operation => operation.encodedOperationData!));
+    const batchFileBuffer = await BatchFile.toBatchFileBuffer(createOperationModels, recoverOperationModels, updateOperationModels);
 
     // Write the batch file to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);

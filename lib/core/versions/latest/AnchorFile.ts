@@ -55,7 +55,7 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${anchorFileModel.mapFileHash}' is unsupported.`);
     }
 
-    // `operation` validations.
+    // `operations` validations.
 
     const allowedProperties = new Set(['createOperations', 'recoverOperations', 'revokeOperations']);
     const operations = anchorFileModel.operations;
@@ -74,8 +74,10 @@ export default class AnchorFile {
         throw new SidetreeError(ErrorCode.AnchorFileCreateOperationsNotArray);
       }
 
-      for (const createOperation of operations.createOperations) {
-        CreateOperation.
+      // Validate every operation.
+      for (const operation of operations.createOperations) {
+        const createOperation = await CreateOperation.parseOpertionFromAnchorFile(operation);
+        didUniqueSuffixes.push(createOperation.didUniqueSuffix);
       }
     }
 
