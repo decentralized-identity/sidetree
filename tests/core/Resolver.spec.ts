@@ -1,27 +1,25 @@
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
-import Document from '../../lib/core/versions/latest/Document';
-import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
-import Encoder from '../../lib/core/versions/latest/Encoder';
+import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
+import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 
 describe('Resolver', () => {
-  const config = require('../json/config-test.json');
   let resolver: Resolver;
   let operationStore: IOperationStore;
 
   beforeEach(async () => {
     // Make sure the mock version manager always returns the same operation processor in the test.
-    const operationProcessor = new OperationProcessor(config.didMethodName);
+    const operationProcessor = new OperationProcessor();
     const versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
 
@@ -29,11 +27,11 @@ describe('Resolver', () => {
     resolver = new Resolver(versionManager, operationStore);
   });
 
-  describe('Recover operation', () => {
+  describe('Recovery operation', () => {
     it('should apply correctly with updates that came before and after the recover operation.', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
       const [firstRecoveryOtp, firstRecoveryOtpHash] = OperationGenerator.generateOtp();
       const [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
@@ -47,7 +45,7 @@ describe('Resolver', () => {
         [serviceEndpoint]
       );
       const createOperation = await CreateOperation.parse(operationBuffer);
-      const namedAnchoredOperationModel = {
+      const anchoredOperationModel = {
         type: OperationType.Create,
         didUniqueSuffix: createOperation.didUniqueSuffix,
         operationBuffer,
@@ -57,7 +55,7 @@ describe('Resolver', () => {
       };
 
       const didUniqueSuffix = createOperation.didUniqueSuffix;
-      await operationStore.put([namedAnchoredOperationModel]);
+      await operationStore.put([anchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
       const [update2OtpPriorToRecovery, update2OtpHashPriorToRecovery] = OperationGenerator.generateOtp();
@@ -71,7 +69,7 @@ describe('Resolver', () => {
         signingPrivateKey
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
-      const anchoredUpdateOperation1PriorRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation1PriorRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation1BufferPriorRecovery,
@@ -92,7 +90,7 @@ describe('Resolver', () => {
         signingPrivateKey
       );
       const updateOperation2BufferPriorRecovery = Buffer.from(JSON.stringify(updatePayload2PriorRecovery));
-      const anchoredUpdateOperation2PriorRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation2PriorRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation2BufferPriorRecovery,
@@ -103,44 +101,46 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
-      let didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
-      expect(didDocument.publicKey.length).toEqual(2);
-      expect(didDocument.service![0].serviceEndpoint.instances.length).toEqual(3);
+      let documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
+      expect(documentState.document.publicKey.length).toEqual(2);
+      expect(documentState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey', KeyUsage.recovery);
-      const [newSigningPublicKey, newSigningPrivateKey] = await Cryptography.generateKeyPairHex('#newSigningKey', KeyUsage.signing);
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
+      const [newSigningPublicKey, newSigningPrivateKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
       const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
 
       // Create the recover operation and insert it to the operation store.
       const [update1OtpAfterRecovery, update1OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtp();
-      const recoveryDocumentModel = Document.create([newRecoveryPublicKey, newSigningPublicKey], [newServiceEndpoint]);
-      const recoveryPayload = {
-        type: OperationType.Recover,
+      const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix,
-        recoveryOtp: firstRecoveryOtp,
-        newDidDocument: Encoder.encode(JSON.stringify(recoveryDocumentModel)),
-        nextRecoveryOtpHash: recoveryOtpHashAfterRecovery,
-        nextUpdateOtpHash: update1OtpHashAfterRecovery
-      };
-      const anchoredRecoveryOperation =
-        await OperationGenerator.createAnchoredOperation(recoveryPayload, recoveryPublicKey.id, recoveryPrivateKey, 4, 4, 4);
-      await operationStore.put([anchoredRecoveryOperation]);
+        firstRecoveryOtp,
+        recoveryPrivateKey,
+        newRecoveryPublicKey,
+        newSigningPublicKey,
+        recoveryOtpHashAfterRecovery,
+        update1OtpHashAfterRecovery,
+        [newServiceEndpoint]
+      );
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
+      const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
+      const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 4, 4, 4);
+      await operationStore.put([anchoredRecoverOperation]);
 
-      // Create an update operation after the recovery operation.
+      // Create an update operation after the recover operation.
       const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         update1OtpAfterRecovery,
-        '#newSigningKey2',
+        '#newSigningKey2ByUpdate1AfterRecovery',
         '111111111111111111111111111111111111111111111111111111111111111111',
         update2OtpHashAfterRecovery,
         newSigningPublicKey.id,
         newSigningPrivateKey
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
-      const anchoredUpdateOperation1AfterRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation1AfterRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation1BufferAfterRecovery,
@@ -161,7 +161,7 @@ describe('Resolver', () => {
         newSigningPrivateKey
       );
       const updateOperation2BufferAfterRecovery = Buffer.from(JSON.stringify(updatePayload2AfterRecovery));
-      const anchoredUpdateOperation2AfterRecovery: NamedAnchoredOperationModel = {
+      const anchoredUpdateOperation2AfterRecovery: AnchoredOperationModel = {
         type: OperationType.Update,
         didUniqueSuffix,
         operationBuffer: updateOperation2BufferAfterRecovery,
@@ -172,25 +172,23 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.
-      didDocument = await resolver.resolve(didUniqueSuffix) as DocumentModel;
+      documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
 
+      const didDocument = documentState.document;
       expect(didDocument).toBeDefined();
-      expect(didDocument.publicKey.length).toEqual(3);
-      const actualNewRecoveryPublicKey = Document.getPublicKey(didDocument, '#newRecoveryKey');
-      const actualNewSigningPublicKey1 = Document.getPublicKey(didDocument, '#newSigningKey');
-      const actualNewSigningPublicKey2 = Document.getPublicKey(didDocument, '#newSigningKey2');
-      expect(actualNewRecoveryPublicKey).toBeDefined();
+      expect(didDocument.publicKey.length).toEqual(2);
+      const actualNewSigningPublicKey1 = DidDocument.getPublicKey(didDocument, '#newSigningKey');
+      const actualNewSigningPublicKey2 = DidDocument.getPublicKey(didDocument, '#newSigningKey2ByUpdate1AfterRecovery');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
-      expect(actualNewRecoveryPublicKey!.publicKeyHex).toEqual(newRecoveryPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
       expect(didDocument.service).toBeDefined();
-      expect(didDocument.service!.length).toEqual(1);
-      expect(didDocument.service![0].serviceEndpoint).toBeDefined();
-      expect(didDocument.service![0].serviceEndpoint.instances).toBeDefined();
-      expect(didDocument.service![0].serviceEndpoint.instances.length).toEqual(1);
-      expect(didDocument.service![0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
+      expect(didDocument.service.length).toEqual(1);
+      expect(didDocument.service[0].serviceEndpoint).toBeDefined();
+      expect(didDocument.service[0].serviceEndpoint.instances).toBeDefined();
+      expect(didDocument.service[0].serviceEndpoint.instances.length).toEqual(1);
+      expect(didDocument.service[0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
     });
   });
 });

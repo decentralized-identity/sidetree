@@ -1,13 +1,13 @@
+import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFileModel from './models/AnchorFileModel';
 import BatchFileModel from './models/BatchFileModel';
 import Compressor from './util/Compressor';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
-import NamedAnchoredOperationModel from '../../models/NamedAnchoredOperationModel';
 import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 import timeSpan = require('time-span');
 
 /**
@@ -24,7 +24,7 @@ export default class BatchFile {
     anchorFile: AnchorFileModel,
     transactionNumber: number,
     transactionTime: number
-  ): Promise<NamedAnchoredOperationModel[]> {
+  ): Promise<AnchoredOperationModel[]> {
 
     let endTimer = timeSpan();
     const decompressedBatchFileBuffer = await Compressor.decompress(batchFileBuffer);
@@ -72,7 +72,7 @@ export default class BatchFile {
     }
 
     endTimer = timeSpan();
-    const namedAnchoredOperationModels: NamedAnchoredOperationModel[] = [];
+    const anchoredOperationModels: AnchoredOperationModel[] = [];
 
     for (let operationIndex = 0; operationIndex < batchSize; operationIndex++) {
       const encodedOperation = batchFile.operations[operationIndex];
@@ -87,7 +87,7 @@ export default class BatchFile {
       }
 
       const operation = await Operation.parse(operationBuffer);
-      const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
+      const anchoredOperationModel: AnchoredOperationModel = {
         didUniqueSuffix: operation.didUniqueSuffix,
         type: operation.type,
         operationBuffer,
@@ -104,11 +104,11 @@ export default class BatchFile {
           `is not the same as '${didUniqueSuffixesInAnchorFile}' seen in anchor file.`);
       }
 
-      namedAnchoredOperationModels.push(namedAnchoredOperationModel);
+      anchoredOperationModels.push(anchoredOperationModel);
     }
     console.info(`Decoded ${batchSize} operations in batch file. Time taken: ${endTimer.rounded()} ms.`);
 
-    return namedAnchoredOperationModels;
+    return anchoredOperationModels;
   }
 
   /**

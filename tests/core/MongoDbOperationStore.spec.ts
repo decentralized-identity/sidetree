@@ -1,8 +1,9 @@
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
+import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 const databaseName = 'sidetree-test';
 const operationCollectionName = 'operations-test';
@@ -18,54 +19,43 @@ async function createOperationStore (mongoDbConnectionString: string): Promise<I
  * @param transactionNumber The transaction number to use for all the operations created. If undefined, the array index is used.
  */
 async function createOperationChain (
-  createOperation: NamedAnchoredOperationModel,
+  createOperation: AnchoredOperationModel,
   firstUpdateOtpEncodedString: string,
   chainLength: number,
   signingKeyId: string,
   signingPrivateKey: string,
   transactionNumber?: number):
-  Promise<NamedAnchoredOperationModel[]> {
+  Promise<AnchoredOperationModel[]> {
   const didUniqueSuffix = createOperation.didUniqueSuffix;
-  const chain = new Array<NamedAnchoredOperationModel>(createOperation);
+  const chain = new Array<AnchoredOperationModel>(createOperation);
   let updateOtpEncodedString = firstUpdateOtpEncodedString;
 
   for (let i = 1; i < chainLength ; i++) {
     const transactionNumberToUse = transactionNumber ? transactionNumber : i;
     const transactionTimeToUse = transactionNumberToUse;
-    const patches = [
-      {
-        action: 'add-public-keys',
-        publicKeys: [
-          {
-            id: '#key2',
-            type: 'RsaVerificationKey2018',
-            usage: 'signing',
-            publicKeyPem: new Date(Date.now()).toLocaleString() // Some dummy value that's not used.
-          }
-        ]
-      }
-    ];
 
-    const anchoredUpdateOperationGenerationInput = {
+    const [nextUpdateOtp, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const operationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
-      patches,
-      signingKeyId,
-      signingPrivateKey,
       updateOtpEncodedString,
-      transactionNumber: transactionNumberToUse,
-      transactionTime: transactionTimeToUse,
-      operationIndex: i
-    };
-
-    const operationData = await OperationGenerator.generateAnchoredUpdateOperation(anchoredUpdateOperationGenerationInput);
-    chain.push(operationData.anchoredOperation);
-    updateOtpEncodedString = operationData.nextUpdateOtpEncodedString;
+      `#key${i}`,
+      '000000000000000000000000000000000000000000000000000000000000000000',
+      nextUpdateOtpHash,
+      signingKeyId,
+      signingPrivateKey
+    );
+    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
+    const anchoredOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+      operationModel, transactionTimeToUse, transactionNumberToUse, i
+    );
+    chain.push(anchoredOperation);
+    updateOtpEncodedString = nextUpdateOtp;
   }
   return chain;
 }
 
 // Check if two operations are equal
-function checkEqual (operation1: NamedAnchoredOperationModel, operation2: NamedAnchoredOperationModel): void {
+function checkEqual (operation1: AnchoredOperationModel, operation2: AnchoredOperationModel): void {
   expect(operation1.transactionNumber).toBeDefined();
   expect(operation2.transactionNumber).toBeDefined();
   expect(operation1.transactionNumber).toEqual(operation2.transactionNumber);
@@ -80,7 +70,7 @@ function checkEqual (operation1: NamedAnchoredOperationModel, operation2: NamedA
 }
 
 // Check if two operation arrays are equal
-function checkEqualArray (putOperations: NamedAnchoredOperationModel[], gotOperations: NamedAnchoredOperationModel[]): void {
+function checkEqualArray (putOperations: AnchoredOperationModel[], gotOperations: AnchoredOperationModel[]): void {
   expect(gotOperations.length).toEqual(putOperations.length);
 
   for (let i = 0 ; i < putOperations.length ; i++) {
@@ -111,89 +101,79 @@ describe('MongoDbOperationStore', async () => {
 
   it('should get a put create operation', async () => {
     const operationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = operationData.namedAnchoredOperationModel;
-    await operationStore.put([namedAnchoredOperationModel]);
-    const returnedOperations = await operationStore.get(namedAnchoredOperationModel.didUniqueSuffix);
-    checkEqualArray([namedAnchoredOperationModel], returnedOperations);
+    const anchoredOperationModel = operationData.anchoredOperationModel;
+    await operationStore.put([anchoredOperationModel]);
+    const returnedOperations = await operationStore.get(anchoredOperationModel.didUniqueSuffix);
+    checkEqualArray([anchoredOperationModel], returnedOperations);
   });
 
   it('should get a put update operation', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+    const [, anyUnusedOtpHash] = OperationGenerator.generateOtp();
 
     // Generate an update operation.
-    const patches = [
-      {
-        action: 'add-service-endpoints',
-        serviceType: 'IdentityHub',
-        serviceEndpoints: ['did:sidetree:someValue']
-      }
-    ];
-    const anchoredUpdateOperationGenerationInput = {
+    const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
-      patches,
-      signingKeyId: createOperationData.signingKeyId,
-      signingPrivateKey: createOperationData.signingPrivateKey,
-      updateOtpEncodedString: createOperationData.nextUpdateOtpEncodedString,
-      transactionNumber: 1,
-      transactionTime: 1,
-      operationIndex: 0
-    };
-    const updateOperationData = await OperationGenerator.generateAnchoredUpdateOperation(anchoredUpdateOperationGenerationInput);
-    const updateOperation = updateOperationData.anchoredOperation;
+      'anyUnusedUpdateOtp',
+      anyUnusedOtpHash,
+      ['anyUnusedServiceEndpointsToAdd'],
+      [],
+      createOperationData.signingKeyId,
+      createOperationData.signingPrivateKey
+    );
+    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
+    const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+      operationModel, 1, 1, 0
+    );
 
-    await operationStore.put([updateOperation]);
+    await operationStore.put([anchoredUpdateOperation]);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
-    checkEqualArray([updateOperation], returnedOperations);
+    checkEqualArray([anchoredUpdateOperation], returnedOperations);
   });
 
   it('should ignore duplicate updates', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+    const [, anyUnusedOtpHash] = OperationGenerator.generateOtp();
 
     // Generate an update operation.
-    const patches = [
-      {
-        action: 'add-service-endpoints',
-        serviceType: 'IdentityHub',
-        serviceEndpoints: ['did:sidetree:someValue']
-      }
-    ];
-    const anchoredUpdateOperationGenerationInput = {
+    const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
-      patches,
-      signingKeyId: createOperationData.signingKeyId,
-      signingPrivateKey: createOperationData.signingPrivateKey,
-      updateOtpEncodedString: createOperationData.nextUpdateOtpEncodedString,
-      transactionNumber: 1,
-      transactionTime: 1,
-      operationIndex: 0
-    };
-    const updateOperationData = await OperationGenerator.generateAnchoredUpdateOperation(anchoredUpdateOperationGenerationInput);
-    const updateOperation = updateOperationData.anchoredOperation;
+      'anyUnusedUpdateOtp',
+      anyUnusedOtpHash,
+      ['anyUnusedServiceEndpointsToAdd'],
+      [],
+      createOperationData.signingKeyId,
+      createOperationData.signingPrivateKey
+    );
+    const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
+    const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+      operationModel, 1, 1, 0
+    );
 
-    await operationStore.put([updateOperation]);
+    await operationStore.put([anchoredUpdateOperation]);
     // Insert duplicate operation
-    await operationStore.put([updateOperation]);
+    await operationStore.put([anchoredUpdateOperation]);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
-    checkEqualArray([updateOperation], returnedOperations);
+    checkEqualArray([anchoredUpdateOperation], returnedOperations);
   });
 
   it('should get all operations in a batch put', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
     const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
     const signingKeyId = createOperationData.signingKeyId;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
     await operationStore.put(operationChain);
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
@@ -203,14 +183,14 @@ describe('MongoDbOperationStore', async () => {
   it('should get all operations in a batch put with duplicates', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
     const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
     const signingKeyId = createOperationData.signingKeyId;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
 
     // construct an operation chain with duplicated operations
     const batchWithDuplicates = operationChain.concat(operationChain);
@@ -223,14 +203,14 @@ describe('MongoDbOperationStore', async () => {
   it('should delete all', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
     const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
     const signingKeyId = createOperationData.signingKeyId;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
 
     await operationStore.put(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
@@ -244,14 +224,14 @@ describe('MongoDbOperationStore', async () => {
   it('should delete operations with timestamp filter', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
     const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
     const signingKeyId = createOperationData.signingKeyId;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
     await operationStore.put(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
@@ -266,14 +246,14 @@ describe('MongoDbOperationStore', async () => {
   it('should remember operations after stop/restart', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
     const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
     const signingKeyId = createOperationData.signingKeyId;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
     await operationStore.put(operationChain);
     let returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
@@ -289,14 +269,14 @@ describe('MongoDbOperationStore', async () => {
   it('should get all operations in transaction time order', async () => {
     // Use a create operation to generate a DID
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-    const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-    const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+    const anchoredOperationModel = createOperationData.anchoredOperationModel;
+    const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
     const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
     const signingKeyId = createOperationData.signingKeyId;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
 
     // Insert operations in reverse transaction time order
     for (let i = chainSize - 1 ; i >= 0 ; i--) {
@@ -312,14 +292,14 @@ describe('MongoDbOperationStore', async () => {
     it('should delete updates in the earlier transactions correctly', async () => {
       // Use a create operation to generate a DID
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-      const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-      const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
       const signingKeyId = createOperationData.signingKeyId;
       const signingPrivateKey = createOperationData.signingPrivateKey;
 
       const chainSize = 10;
-      const operationChain = await createOperationChain(namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
+      const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey);
       await operationStore.put(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
@@ -329,7 +309,7 @@ describe('MongoDbOperationStore', async () => {
       const returnedOperationsAfterDeletion = await operationStore.get(didUniqueSuffix);
 
       // Expected remaining operations is the first operation + the last 5 update operations.
-      let expectedRemainingOperations = [namedAnchoredOperationModel];
+      let expectedRemainingOperations = [anchoredOperationModel];
       expectedRemainingOperations.push(...operationChain.slice(5));
       checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
     });
@@ -337,8 +317,8 @@ describe('MongoDbOperationStore', async () => {
     it('should delete earlier updates in the same transaction correctly', async () => {
       // Use a create operation to generate a DID
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
-      const namedAnchoredOperationModel = createOperationData.namedAnchoredOperationModel;
-      const didUniqueSuffix = namedAnchoredOperationModel.didUniqueSuffix;
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const nextUpdateOtpEncodedString = createOperationData.nextUpdateOtpEncodedString;
       const signingKeyId = createOperationData.signingKeyId;
       const signingPrivateKey = createOperationData.signingPrivateKey;
@@ -346,7 +326,7 @@ describe('MongoDbOperationStore', async () => {
       const chainSize = 10;
       const txnNumber = 1;
       const operationChain = await createOperationChain(
-        namedAnchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey, txnNumber);
+        anchoredOperationModel, nextUpdateOtpEncodedString, chainSize, signingKeyId, signingPrivateKey, txnNumber);
       await operationStore.put(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
@@ -356,7 +336,7 @@ describe('MongoDbOperationStore', async () => {
       const returnedOperationsAfterDeletion = await operationStore.get(didUniqueSuffix);
 
       // Expected remaining operations is the first operation + the last 5 update operations.
-      let expectedRemainingOperations = [namedAnchoredOperationModel];
+      let expectedRemainingOperations = [anchoredOperationModel];
       expectedRemainingOperations.push(...operationChain.slice(5));
       checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
     });

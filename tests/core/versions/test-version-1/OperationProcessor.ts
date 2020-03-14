@@ -1,20 +1,17 @@
 import AnchoredOperationModel from '../../../../lib/core/models/AnchoredOperationModel';
-import IOperationProcessor, { ApplyResult } from '../../../../lib/core/interfaces/IOperationProcessor';
+import DocumentState from '../../../../lib/core/models/DocumentState';
+import IOperationProcessor from '../../../../lib/core/interfaces/IOperationProcessor';
 
 /**
  * Operation processor.
  */
 export default class OperationProcessor implements IOperationProcessor {
 
-  public constructor (private didMethodName: string) {
-    console.debug(this.didMethodName);
-  }
-
   async apply (
-    anchoredOperationModel: AnchoredOperationModel,
-    didDocumentReference: { didDocument: object | undefined }
-  ): Promise<ApplyResult> {
+    operation: AnchoredOperationModel,
+    documentState: DocumentState | undefined
+  ): Promise<DocumentState | undefined> {
     /* tslint:disable-next-line */
-    throw new Error(`OperationProcessor: Not implemented. Version: TestVersion1. Inputs: ${anchoredOperationModel}, ${didDocumentReference}`);
+    throw new Error(`OperationProcessor: Not implemented. Version: TestVersion1. Inputs: ${operation}, ${documentState}`);
   }
 }

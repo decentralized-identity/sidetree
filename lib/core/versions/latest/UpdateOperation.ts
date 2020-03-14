@@ -1,11 +1,13 @@
+import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import Multihash from './Multihash';
+import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import SidetreeError from '../../SidetreeError';
+import SidetreeError from '../../../common/SidetreeError';
 
 interface OperationDataModel {
   nextUpdateOtpHash: string;
@@ -87,6 +89,14 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
+    if (typeof operationObject.updateOtp !== 'string') {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpMissingOrInvalidType);
+    }
+
+    if ((operationObject.updateOtp as string).length > Operation.maxEncodedOtpLength) {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpTooLong);
+    }
+
     const updateOtp = operationObject.updateOtp;
 
     const signedOperationDataHash = Jws.parse(operationObject.signedOperationDataHash);
@@ -113,6 +123,9 @@ export default class UpdateOperation implements OperationModel {
     if (operationData.documentPatch === undefined) {
       throw new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing);
     }
+
+    // Validate `documentPatch` property using the DocumentComposer.
+    DocumentComposer.validateDocumentPatch(operationData.documentPatch);
 
     const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);

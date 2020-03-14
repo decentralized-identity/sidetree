@@ -219,7 +219,8 @@ The transactions array must always end with a complete block of data, but can st
       "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorString": "The string written to the blockchain for this transaction.",
       "transactionFeePaid": "A number representing the fee paid for this transaction.",
-      "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation."
+      "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation.",
+      "writer": "A string representing the writer of the transaction. Used in the value time lock calculations."
     },
     ...
   ]
@@ -239,7 +240,8 @@ HTTP/1.1 200 OK
       "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
       "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
       "transactionFeePaid": 40000,
-      "normalizedTransactionFee": 100
+      "normalizedTransactionFee": 100,
+      "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
     },
     {
       "transactionNumber": 100,
@@ -247,7 +249,8 @@ HTTP/1.1 200 OK
       "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
       "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
       "transactionFeePaid": 600000,
-      "normalizedTransactionFee": 400
+      "normalizedTransactionFee": 400,
+      "writer": "0af7eccefa3aaa37421782523b4a2034ed5a0ad0"
     }
   ]
 }
@@ -288,7 +291,8 @@ POST /transactions/firstValid HTTP/1.1
       "transactionTimeHash": "The hash associated with the transaction time.",
       "anchorString": "The string written to the blockchain for this transaction.",
       "transactionFeePaid": "A number representing the fee paid for this transaction.",
-      "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation."
+      "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation.",
+      "writer": "A string representing the writer of the transaction. Used in the value time lock calculations."
     },
     ...
   ]
@@ -308,7 +312,8 @@ Content-Type: application/json
       "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
       "anchorString": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg",
       "transactionFeePaid": 5000,
-      "normalizedTransactionFee": 100
+      "normalizedTransactionFee": 100,
+      "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
     },
     {
       "transactionNumber": 18,
@@ -316,7 +321,8 @@ Content-Type: application/json
       "transactionTimeHash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
       "anchorString": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb",
       "transactionFeePaid": 30,
-      "normalizedTransactionFee": 10
+      "normalizedTransactionFee": 10,
+      "writer": "0af7eccefa3aaa37421782523b4a2034ed5a0ad0"
 
     },
     {
@@ -325,7 +331,8 @@ Content-Type: application/json
       "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
       "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
       "transactionFeePaid": 50000,
-      "normalizedTransactionFee": 150
+      "normalizedTransactionFee": 150,
+      "writer": "0af7eccefa3aaa87421782523b4a2034ed5a0ad0"
     },
     {
       "transactionNumber": 12,
@@ -333,7 +340,8 @@ Content-Type: application/json
       "transactionTimeHash": "0000000000000000001e002080595267fe034d370897b7b506d119ad29da1541",
       "anchorString": "Qmss3gKdm9uU9YLx3MPRHQTcUq1CR1Xv9Zpdu7EBG9Pk9Y",
       "transactionFeePaid": 1000000,
-      "normalizedTransactionFee": 200
+      "normalizedTransactionFee": 200,
+      "writer": "0af7eccefa3aaa87421782523b4a2034e23jdad0"
     },
     {
       "transactionNumber": 4,
@@ -341,7 +349,8 @@ Content-Type: application/json
       "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
       "anchorString": "QmdcDrVPWy3ZXoZcuvFq7fDVqatks22MMqPAxDqXsZzGhy"
       "transactionFeePaid": 100,
-      "normalizedTransactionFee": 50
+      "normalizedTransactionFee": 50,
+      "writer": "0af7asdifa3aaa87421782523b4a2034ed5a0ad0"
     }
   ]
 }
@@ -355,7 +364,8 @@ Content-Type: application/json
   "transactionTimeHash": "The hash associated with the transaction time.",
   "anchorString": "The string written to the blockchain for this transaction.",
   "transactionFeePaid": "A number representing the fee paid for this transaction.",
-  "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation."
+  "normalizedTransactionFee": "A number representing the normalized transaction fee used for proof-of-fee calculation.",
+  "writer": "A string representing the writer of the transaction. Used in the value time lock calculations."
 }
 ```
 
@@ -369,7 +379,8 @@ HTTP/1.1 200 OK
   "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
   "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
   "transactionFeePaid": 50000,
-  "normalizedTransactionFee": 50
+  "normalizedTransactionFee": 50,
+  "writer": "0af7eccefa3aaa87421782523b4a2034e23jdad0"
 }
 ```
 
@@ -386,7 +397,7 @@ Returns `HTTP 400 Bad Request` with the following values as the `code` parameter
 
 | Code                            | Description                                                                                                 |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| spending_cap_per_period_reached | if with the given `fee` this node will exceed the spending limit as configured in the parameters.           |
+| spending_cap_per_period_reached | if with the given fee (derived from minimumFee) this node will exceed the spending limit as configured in the parameters.           |
 | not_enough_balace_for_write     | if the wallet configured in the parameters does not have enough balance to complete the write operation.    |
 
 #### Request path
@@ -402,7 +413,7 @@ POST /transactions
 #### Request body schema
 ```json
 {
-  "fee": "A number representing the transaction fee to be paid to write this transaction to the blockchain.",
+  "minimumFee": "A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee is dynamically calculated and can be higher than this amount (but not lower).",
   "anchorString": "The string to be written to the blockchain for this transaction."
 }
 ```
@@ -412,7 +423,7 @@ POST /transactions
 POST /transactions HTTP/1.1
 
 {
-  "fee": 200000,
+  "minimumFee": 200000,
   "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
 }
 ```
@@ -480,6 +491,118 @@ HTTP/1.1 500 Internal Server Error
 }
 ```
 
+### Fetch the lock object for value-time-lock calculation.
+Fetches the lock object used for value-time-lock calculation, given the lock identifier.
+
+Returns `HTTP 404 Not Found` with `value_time_lock_not_found` as the `code` parameter value in the JSON body if there was no lock found for the given lock identifier.
+
+#### Request path
+```
+GET /locks/<lock-identifier>
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /locks/gHasdfasodf23230o0jlk23323
+```
+
+#### Response body schema
+```json
+{
+  "amountLocked": "A number representing the amount that was locked.",
+  "identifier": "The string representing the identifier of the lock. This is the same value which is passed in the request path.",
+  "lockTransactionTime": "A number representing the transaction time at which the lock became active.",
+  "owner": "A string reprsenting the owner of the lock.",
+  "unlockTransactionTime": "A number representing the transaction time at which the lock became inactive."
+}
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "amountLocked": 1235696
+  "identifier": "gHasdfasodf23230o0jlk23323",
+  "lockTransactionTime": 167520,
+  "owner": "Hhdofkeio209aanoiyyoiknadfsedsed652",
+  "unlockTransactionTime": 167530
+}
+```
+
+#### Response example - Lock not found.	
+```http
+HTTP/1.1 404 Not Found
+{
+  "code": "value_time_lock_not_found"
+}
+```
+
+### Fetch the writer lock object used for batch writing.
+Fetches the currently active writer lock object written on the blockchain by the Blockchain service. This is used for batch writing.
+
+Returns `HTTP 404 Not Found` with the following values as the `code` parameter in the JSON body:
+
+| Code                              | Description                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------|
+| value_time_lock_not_found         | if there is no active lock on the blockchain.                  |
+| value_time_lock_in_pending_state  | if there is a lock but is not confirmed on the blockchain yet. |
+
+#### Request path
+```
+GET /writerlock
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /writerlock
+```
+
+#### Response body schema
+```json
+{
+  "amountLocked": "A number representing the amount that was locked.",
+  "identifier": "The string representing the identifier of the lock.",
+  "lockTransactionTime": "A number representing the transaction time at which the lock became active.",
+  "owner": "A string reprsenting the owner of the lock.",
+  "unlockTransactionTime": "A number representing the transaction time at which the lock became inactive."
+}
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+{
+  "amountLocked": 1235696
+  "identifier": "gHasdfasodf23230o0jlk23323",
+  "lockTransactionTime": 167520,
+  "owner": "Hhdofkeio209aanoiyyoiknadfsedsed652",
+  "unlockTransactionTime": 167530
+}
+```
+
+#### Response example - Lock not found.	
+```http
+HTTP/1.1 404 Not Found
+{
+  "code": "value_time_lock_not_found"
+}
+```
+
+#### Response example - Lock not yet confirmed.	
+```http
+HTTP/1.1 404 Not Found
+{
+  "code": "value_time_lock_in_pending_state"
+}
+```
 
 ### Fetch the current service version
 Fetches the current version of the service. The service implementation defines the versioning scheme and its interpretation.

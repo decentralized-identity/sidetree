@@ -2,17 +2,16 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
-import SidetreeError from '../../lib/core/SidetreeError';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('CreateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
       const [, recoveryOtpHash] = OperationGenerator.generateOtp();
       const [, firstUpdateOtpHash] = OperationGenerator.generateOtp();
@@ -31,8 +30,8 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw if operation type is incorrect', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
       const [, recoveryOtpHash] = OperationGenerator.generateOtp();
       const [, firstUpdateOtpHash] = OperationGenerator.generateOtp();
@@ -44,7 +43,7 @@ describe('CreateOperation', async () => {
         services
       );
 
-      createOperationRequest.type = OperationType.Delete;
+      createOperationRequest.type = OperationType.Revoke;
 
       const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
       await expectAsync(CreateOperation.parse(createOperationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
@@ -78,7 +77,7 @@ describe('CreateOperation', async () => {
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationRecoveryKeyMissing));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyUndefined));
     });
 
     it('should throw if suffix data has invalid recovery key.', async () => {
@@ -89,7 +88,7 @@ describe('CreateOperation', async () => {
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationRecoveryKeyInvalid));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid));
     });
   });
 

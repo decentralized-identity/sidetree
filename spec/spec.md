@@ -59,23 +59,27 @@ The figure below illustrates the three primary components of a Sidetree-based DI
 
 ## Protocol Versioning & Default Parameters
 
-The Sidetree protocol and its parameters are expected to evolve overtime. Each version of the protocol will define its protocol rules and parameters, as well as the logical _blockchain time_ at which the new rules and parameter settings will take effect. All subsequent transactions will adhere to the same rules and parameters until a newer protocol version is defined.
+The rules and parameters of the Sidetree protocol MAY change in future versions. Each version of the protocol will define a set of protocol rules and parameters with default suggested values. The following are the parameters used by this version of the Sidetree protocol - implementers MAY choose different options than the defaults listed below:
 
-The following lists the parameters used by this version of the Sidetree protocol:
+| Protocol Parameter          | Description                                                                   | Suggested Defaults |
+|-----------------------------|-------------------------------------------------------------------------------|:-------------------|
+| `HASH_ALGORITHM` { #hash-algorithm }       | Algorithm for generating hashes of protocol-related values.    |             SHA256 |
+| `KEY_ALGORITHM` { #key-algorithm }         | Asymmetric public key algorithm for signing DID operations.    |          secp256k1 |
+| `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | Maximum compressed anchor file size.                     |               1 MB |
+| `MAX_MAP_FILE_SIZE`         | Maximum compressed map file size.                                             |               1 MB |
+| `MAX_BATCH_FILE_SIZE`       | Maximum compressed batch file size.                                           |              10 MB |
+| `MAX_ENCODED_HASH_LENGTH`   | Maximum accepted string length of an encoded hash.                            |          100 bytes |
+| `MAX_OPERATION_SIZE`        | Maximum uncompressed operation size.                                          |               1 kb |
+| `MAX_OPERATION_COUNT`       | Maximum number of operations per batch.                                       |             10,000 |
 
-| Protocol Parameter          | Description                                                                   | Suggested Value |
-|-----------------------------|-------------------------------------------------------------------------------|:----------------|
-| `HASH_ALGORITHM` { #hash-algorithm }       | The hash algorithm for computation such as for DID generation. |          SHA256 |
-| `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | The maximum compressed anchor file size.                 |            1 MB |
-| `MAX_MAP_FILE_SIZE`         | The maximum compressed map file size.                                         |            1 MB |
-| `MAX_BATCH_FILE_SIZE`       | The maximum compressed batch file size.                                       |           10 MB |
-| `MAX_ENCODED_HASH_LENGTH`   | The maximum accepted string length of an encoded hash.                        |       100 bytes |
-| `MAX_OPERATION_SIZE`        | The maximum uncompressed operation size.                                      |            1 kb |
-| `MAX_OPERATION_COUNT`       | The maximum number of operations per batch.                                   |          10,000 |
+### Activation of New Protocol Versions
+
+New versions of the protocol, or modifications to parameter values by implementers, MUST be activated at a specified _blockchain time_ so all nodes can remain in sync by enforcing the same ruleset and parameters beginning at the same logical starting point. All transactions that occur after the specified _blockchain time_ will adhere to the associated version's rules and parameters until a newer version of the protocol is defined and implemented at a future _blockchain time_.
+
 
 ## Sidetree DID Base URI
 
-DID Methods based on the Sidetree protocol all share the same identifier format. The identifier is a `SHA256` hash of values from the [Create](#create) operation's _Suffix Data Object_, composed as follows:
+DID Methods based on the Sidetree protocol all share the same identifier format. The identifier is a hash of values from the [Create](#create) operation's _Suffix Data Object_ (generated using the [`HASH_ALGORITHM`](#hash-algorithm)), and composed of the following:
 
 ```mermaid
 graph TD
@@ -92,10 +96,8 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)
 
 The following process must be used to generate a Sidetree-based DID:
 
-#### Operation Values
-
-1. Generate a `secp256k1` key pair for use as the initial recovery key of the new DID.
-2. Generate a secret commitment value, referred to herein as the _Next Recovery Commitment_, and retain it for use at the next DID Recovery operation.
+1. Generate a key pair, using the [`KEY_ALGORITHM`](#key-algorithm), for use as the initial recovery key of the new DID.
+2. Generate a secret commitment value, referred to herein as the _Recovery Commitment_, and retain it for use in the next DID Recovery operation.
 3. Generate an object, referred to herein as a _Sidetree Operation Object_, composed of Sidetree operations, as described in the [Sidetree Delta Operations](#sidetree-operations) section of this document.
 
 #### Anchor File Inclusion
@@ -180,7 +182,7 @@ A valid Anchor File is a JSON document MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZ
 1. The Anchor File MUST contain a `map_file` property, and its value MUST be a _CAS URI_ for the related Map File.
 2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Revoke](#revoke) operations, the Anchor File MUST contain an `operations` property, and its value MUST be an object composed as follows:
     - If the set of operations to be anchored contains any [Create](#create) operations, add the property `create`, and let its value be an array of _Anchor File Create Operation Entries_, which are objects composed as follows for each [Create](#create) operation in the set:
-        - The object MUST contain an `initial_state` property, and its value MUST be a hash value of the DID's initial state, using the [`HASH_ALGORITHM`](#hash-algorithm).
+        - The object MUST contain an `initial_state` property, and its value MUST be a hash of the DID's initial state, generated via the [`HASH_ALGORITHM`](#hash-algorithm).
 2. If the set of operations to be anchored contains any [Create](#create) operations, the Anchor File MUST contain a `create` property, and its value MUST be an object with an `ops` property, whose value MUST be an array of _Create Operation Anchor File Entries_.
 
 ### Map File

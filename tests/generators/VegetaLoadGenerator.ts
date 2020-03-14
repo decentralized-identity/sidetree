@@ -1,9 +1,7 @@
 import * as fs from 'fs';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import OperationGenerator from './OperationGenerator';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -21,8 +19,6 @@ export default class VegetaLoadGenerator {
    * @param hashAlgorithmInMultihashCode The hash algorithm in Multihash code in DEC (not in HEX).
    */
   public static async generateLoadFiles (uniqueDidCount: number, endpointUrl: string, absoluteFolderPath: string) {
-    const keyId = '#key1';
-
     // Make directories needed by the request generator.
     fs.mkdirSync(absoluteFolderPath);
     fs.mkdirSync(absoluteFolderPath + '/keys');
@@ -30,11 +26,12 @@ export default class VegetaLoadGenerator {
 
     for (let i = 0; i < uniqueDidCount; i++) {
       // Generate a random pair of public-private key pair and save them on disk.
-      const [publicKey, privateKey] = await Cryptography.generateKeyPairHex(keyId, KeyUsage.recovery);
-      fs.writeFileSync(absoluteFolderPath + `/keys/privateKey${i}.json`, JSON.stringify(privateKey));
-      fs.writeFileSync(absoluteFolderPath + `/keys/publicKey${i}.json`, JSON.stringify(publicKey));
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
 
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+      const signingKeyId = '#signingKey';
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
 
       const [recover1OTP, recoveryOtpHash] = OperationGenerator.generateOtp();
@@ -44,7 +41,7 @@ export default class VegetaLoadGenerator {
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-        publicKey,
+        recoveryPublicKey,
         signingPublicKey,
         recoveryOtpHash,
         update1OtpHash,
@@ -55,39 +52,26 @@ export default class VegetaLoadGenerator {
       // Compute the DID unique suffix from the generated Create payload.
       const createOperation = await CreateOperation.parse(createOperationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
-      const encodedDidDoc = Encoder.encode(JSON.stringify(createOperation.operationData.document));
 
-      // Generate an Update payload.
-      const updatePayload = {
-        didUniqueSuffix,
-        patch: [{
-          op: 'replace',
-          path: '/publicKey/1',
-          value: {
-            id: 'key2',
-            type: 'RsaVerificationKey2018',
-            publicKeyPem: process.hrtime() // Some dummy value that's not used.
-          }
-        }],
-        updateOtp: update1Otp,
-        nextUpdateOtpHash: update2OtpHash
-      };
+      // Generate an update operation
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
+        didUniqueSuffix, update1Otp, '#additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', update2OtpHash, signingKeyId, signingPrivateKey
+      );
 
-      // Generate an Update request body and save it on disk.
-      const updateOperationBuffer = await OperationGenerator.generateUpdateOperationBuffer(updatePayload, keyId, privateKey);
+      // Save the update operation request on disk.
+      const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
 
-      // Generate a recovery payload.
-      const recoveryPayload = {
-        type: 'recover',
-        didUniqueSuffix,
-        recoveryOtp: recover1OTP,
-        newDidDocument: encodedDidDoc,
-        nextRecoveryOtpHash: recovery2OtpHash,
-        nextUpdateOtpHash: update2OtpHash
-      };
-      const recoveryOperationBuffer = await OperationGenerator.createOperationBuffer(recoveryPayload, keyId, privateKey);
-      fs.writeFileSync(`${absoluteFolderPath}/requests/recovery${i}.json`, recoveryOperationBuffer);
+      // Generate a recover operation request.
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
+      const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
+        didUniqueSuffix, recover1OTP, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2OtpHash, update2OtpHash
+      );
+
+      // Save the recover operation request on disk.
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
+      fs.writeFileSync(`${absoluteFolderPath}/requests/recovery${i}.json`, recoverOperationBuffer);
     }
 
     // Generate Create API calls in a targets file.

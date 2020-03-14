@@ -12,14 +12,13 @@ import MapFile from './MapFile';
 import ProtocolParameters from './ProtocolParameters';
 
 /**
- * Implementation of the `TransactionProcessor`.
+ * Implementation of the `IBatchWriter`.
  */
 export default class BatchWriter implements IBatchWriter {
   public constructor (
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
-    private cas: ICas,
-    private transactionFeeMarkupPercentage: number) { }
+    private cas: ICas) { }
 
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.
@@ -68,8 +67,8 @@ export default class BatchWriter implements IBatchWriter {
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
-    const fee = FeeManager.computeTransactionFee(normalizedFee, operationBuffers.length, this.transactionFeeMarkupPercentage);
-    console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with fee: ${fee}`);
+    const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, operationBuffers.length);
+    console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with minimum fee of: ${fee}`);
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 

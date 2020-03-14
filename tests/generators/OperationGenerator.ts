@@ -1,21 +1,18 @@
 import * as crypto from 'crypto';
-import AnchoredOperation from '../../lib/core/versions/latest/AnchoredOperation';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
-import Document from '../../lib/core/versions/latest/Document';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
-import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
-import { PrivateKey } from '@decentralized-identity/did-auth-jose';
+import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
+import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -25,7 +22,7 @@ interface AnchoredCreateOperationGenerationInput {
 
 interface GeneratedAnchoredCreateOperationData {
   createOperation: CreateOperation;
-  namedAnchoredOperationModel: NamedAnchoredOperationModel;
+  anchoredOperationModel: AnchoredOperationModel;
   recoveryKeyId: string;
   recoveryPublicKey: DidPublicKeyModel;
   recoveryPrivateKey: string;
@@ -36,29 +33,15 @@ interface GeneratedAnchoredCreateOperationData {
   nextUpdateOtpEncodedString: string;
 }
 
-interface AnchoredUpdateOperationGenerationInput {
-  transactionNumber: number;
-  transactionTime: number;
-  operationIndex: number;
-  didUniqueSuffix: string;
-  updateOtpEncodedString: string;
-  patches: object[];
-  signingKeyId: string;
-  signingPrivateKey: string;
-}
-
-interface GeneratedAnchoredUpdateOperationData {
-  anchoredOperation: AnchoredOperation;
-  nextUpdateOtpEncodedString: string;
-}
-
-interface RecoveryOperationPayloadGenerationInput {
+interface RecoverOperationGenerationInput {
   didUniqueSuffix: string;
   recoveryOtp: string;
+  recoveryPrivateKey: string;
 }
 
-interface GeneratedRecoveryOperationPayloadData {
-  payload: any;
+interface GeneratedRecoverOperationData {
+  operationBuffer: Buffer;
+  recoverOperation: RecoverOperation;
   recoveryKeyId: string;
   recoveryPublicKey: DidPublicKeyModel;
   recoveryPrivateKey: string;
@@ -94,7 +77,7 @@ export default class OperationGenerator {
   public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
     const createOperationData = await OperationGenerator.generateCreateOperation();
 
-    const namedAnchoredOperationModel = {
+    const anchoredOperationModel = {
       type: OperationType.Create,
       didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
       operationBuffer: createOperationData.createOperation.operationBuffer,
@@ -105,7 +88,7 @@ export default class OperationGenerator {
 
     return {
       createOperation: createOperationData.createOperation,
-      namedAnchoredOperationModel,
+      anchoredOperationModel,
       recoveryKeyId: createOperationData.recoveryKeyId,
       recoveryPublicKey: createOperationData.recoveryPublicKey,
       recoveryPrivateKey: createOperationData.recoveryPrivateKey,
@@ -123,12 +106,12 @@ export default class OperationGenerator {
   public static async generateCreateOperation () {
     const recoveryKeyId = '#recoveryKey';
     const signingKeyId = '#signingKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
-    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
+    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const hubServiceEndpoint = 'did:sidetree:value0';
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
-    // Generate the next update and recovery operation OTP.
+    // Generate the next update and recover operation OTP.
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
@@ -156,66 +139,37 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an anchored update operation.
-   */
-  public static async generateAnchoredUpdateOperation (input: AnchoredUpdateOperationGenerationInput): Promise<GeneratedAnchoredUpdateOperationData> {
-    const updateOtpEncodedString = input.updateOtpEncodedString;
-
-    // Generate the next update OTP.
-    const nextUpdateOtpBuffer = crypto.randomBytes(32);
-    const nextUpdateOtpEncodedString = Encoder.encode(nextUpdateOtpBuffer);
-    const nextUpdateOtpHash = Encoder.encode(Multihash.hash(nextUpdateOtpBuffer, 18)); // 18 = SHA256;
-
-    const updatePayload = {
-      type: OperationType.Update,
-      didUniqueSuffix: input.didUniqueSuffix,
-      patches: input.patches,
-      updateOtp: updateOtpEncodedString,
-      nextUpdateOtpHash
-    };
-
-    const anchoredOperation = await OperationGenerator.createAnchoredOperation(
-      updatePayload,
-      input.signingKeyId,
-      input.signingPrivateKey,
-      input.transactionTime,
-      input.transactionNumber,
-      input.operationIndex
-    );
-
-    return {
-      anchoredOperation,
-      nextUpdateOtpEncodedString
-    };
-  }
-
-  /**
    * Generates a recover operation payload.
    */
-  public static async generateRecoveryOperationPayload (input: RecoveryOperationPayloadGenerationInput): Promise<GeneratedRecoveryOperationPayloadData> {
+  public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
     const recoveryKeyId = '#newRecoveryKey';
     const signingKeyId = '#newSigningKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
-    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
+    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const hubServiceEndpoint = 'did:sidetree:value0';
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
-    const newDidDocument = Document.create([recoveryPublicKey, signingPublicKey], services);
 
-    // Generate the next update and recovery operation OTP.
+    // Generate the next update and recover operation OTP.
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
-    const payload = {
-      type: OperationType.Recover,
-      didUniqueSuffix: input.didUniqueSuffix,
-      recoveryOtp: input.recoveryOtp,
-      newDidDocument,
+    const operationJson = await OperationGenerator.generateRecoverOperationRequest(
+      input.didUniqueSuffix,
+      input.recoveryOtp,
+      input.recoveryPrivateKey,
+      recoveryPublicKey,
+      signingPublicKey,
       nextRecoveryOtpHash,
-      nextUpdateOtpHash
-    };
+      nextUpdateOtpHash,
+      services
+    );
+
+    const operationBuffer = Buffer.from(JSON.stringify(operationJson));
+    const recoverOperation = await RecoverOperation.parse(operationBuffer);
 
     return {
-      payload,
+      recoverOperation,
+      operationBuffer,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,
@@ -228,78 +182,12 @@ export default class OperationGenerator {
   }
 
   /**
-   * Creates an anchored operation.
-   */
-  public static async createAnchoredOperation (
-    payload: any,
-    publicKeyId: string,
-    privateKey: string | PrivateKey,
-    transactionTime: number,
-    transactionNumber: number,
-    operationIndex: number
-  ): Promise<AnchoredOperation> {
-    const anchoredOperationModel =
-      await OperationGenerator.createAnchoredOperationModel(payload, publicKeyId, privateKey, transactionTime, transactionNumber, operationIndex);
-    const anchoredOperation = AnchoredOperation.createAnchoredOperation(anchoredOperationModel);
-
-    return anchoredOperation;
-  }
-
-  /**
-   * Creates an anchored operation model.
-   */
-  public static async createAnchoredOperationModel (
-    payload: any,
-    publicKeyId: string,
-    privateKey: string | PrivateKey,
-    transactionTime: number,
-    transactionNumber: number,
-    operationIndex: number
-  ): Promise<AnchoredOperationModel> {
-    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
-    const anchoredOperationModel: AnchoredOperationModel = {
-      operationBuffer,
-      operationIndex,
-      transactionNumber,
-      transactionTime
-    };
-
-    return anchoredOperationModel;
-  }
-
-  /**
-   * Creates a named anchored operation model.
-   */
-  public static async createNamedAnchoredOperationModel (
-    didUniqueSuffix: string,
-    type: OperationType,
-    payload: any,
-    publicKeyId: string,
-    privateKey: string | PrivateKey,
-    transactionTime: number,
-    transactionNumber: number,
-    operationIndex: number
-  ): Promise<NamedAnchoredOperationModel> {
-    const operationBuffer = await OperationGenerator.createOperationBuffer(payload, publicKeyId, privateKey);
-    const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
-      didUniqueSuffix,
-      type,
-      operationBuffer,
-      operationIndex,
-      transactionNumber,
-      transactionTime
-    };
-
-    return namedAnchoredOperationModel;
-  }
-
-  /**
    * Creates an operation.
    */
   public static async createOperationBuffer (
     payload: any,
     publicKeyId: string,
-    privateKey: string | PrivateKey
+    privateKey: string
   ): Promise<Buffer> {
     const protectedHeader = {
       kid: publicKeyId,
@@ -313,13 +201,13 @@ export default class OperationGenerator {
   /**
    * Creates a named anchored operation model from `OperationModel`.
    */
-  public static createNamedAnchoredOperationModelFromOperationModel (
+  public static createAnchoredOperationModelFromOperationModel (
     operationModel: OperationModel,
     transactionTime: number,
     transactionNumber: number,
     operationIndex: number
-  ): NamedAnchoredOperationModel {
-    const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
+  ): AnchoredOperationModel {
+    const anchoredOperationModel: AnchoredOperationModel = {
       didUniqueSuffix: operationModel.didUniqueSuffix,
       type: operationModel.type,
       operationBuffer: operationModel.operationBuffer,
@@ -327,7 +215,7 @@ export default class OperationGenerator {
       transactionNumber,
       transactionTime
     };
-    return namedAnchoredOperationModel;
+    return anchoredOperationModel;
   }
 
   /**
@@ -341,7 +229,7 @@ export default class OperationGenerator {
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
-    const document = Document.create([signingPublicKey], serviceEndpoints);
+    const document = DidDocument.create([signingPublicKey], serviceEndpoints);
 
     const operationData = {
       nextUpdateOtpHash,
@@ -376,7 +264,7 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     documentPatch: any,
     signingKeyId: string,
-    signingPrivateKey: string | PrivateKey
+    signingPrivateKey: string
   ) {
     const operationData = {
       documentPatch,
@@ -398,6 +286,89 @@ export default class OperationGenerator {
     };
 
     return updateOperationRequest;
+  }
+
+  /**
+   * Generates a recover operation request.
+   */
+  public static async generateRecoverOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string,
+    newRecoveryPublicKey: PublicKeyModel,
+    newSigningPublicKey: DidPublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    serviceEndpoints?: DidServiceEndpointModel[]) {
+    const document = DidDocument.create([newSigningPublicKey], serviceEndpoints);
+    const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
+      didUniqueSuffix, recoveryOtp, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryOtpHash, nextUpdateOtpHash, document
+    );
+    return recoverOperation;
+  }
+
+  /**
+   * Creates a recover operation request.
+   */
+  public static async createRecoverOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string,
+    newRecoveryPublicKey: PublicKeyModel,
+    nextRecoveryOtpHash: string,
+    nextUpdateOtpHash: string,
+    document: any) {
+
+    const operationData = {
+      nextUpdateOtpHash,
+      document
+    };
+    const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
+    const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
+
+    const signedOperationDataPayloadObject = {
+      operationDataHash,
+      recoveryKey: { publicKeyHex: newRecoveryPublicKey.publicKeyHex },
+      nextRecoveryOtpHash
+    };
+    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
+    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+
+    const operationDataEncodedString = Encoder.encode(operationDataBuffer);
+    const operation = {
+      type: OperationType.Recover,
+      didUniqueSuffix,
+      recoveryOtp,
+      signedOperationData,
+      operationData: operationDataEncodedString
+    };
+
+    return operation;
+  }
+
+  /**
+   * Generates a revoke operation request.
+   */
+  public static async generateRevokeOperationRequest (
+    didUniqueSuffix: string,
+    recoveryOtp: string,
+    recoveryPrivateKey: string) {
+
+    const signedOperationDataPayloadObject = {
+      didUniqueSuffix,
+      recoveryOtp
+    };
+    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
+    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+
+    const operation = {
+      type: OperationType.Revoke,
+      didUniqueSuffix,
+      recoveryOtp,
+      signedOperationData
+    };
+
+    return operation;
   }
 
   /**
@@ -424,14 +395,6 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an Update Operation buffer with valid signature.
-   */
-  public static async generateUpdateOperationBuffer (updatePayload: object, keyId: string, privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.signUsingEs256k(updatePayload, keyId, privateKey);
-    return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
    * Creates an update operation for adding a key.
    */
   public static async createUpdateOperationRequestForAddingAKey (
@@ -441,7 +404,7 @@ export default class OperationGenerator {
     newPublicKeyHex: string,
     nextUpdateOtpHash: string,
     signingKeyId: string,
-    signingPrivateKey: string | PrivateKey) {
+    signingPrivateKey: string) {
 
     const documentPatch = [
       {
@@ -450,7 +413,6 @@ export default class OperationGenerator {
           {
             id: idOfNewKey,
             type: 'Secp256k1VerificationKey2018',
-            usage: 'signing',
             publicKeyHex: newPublicKeyHex
           }
         ]
@@ -517,7 +479,7 @@ export default class OperationGenerator {
   /**
    * Signs the given payload as a ES256K JWS.
    */
-  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: string | PrivateKey): Promise<JwsModel> {
+  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: string): Promise<JwsModel> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
@@ -528,39 +490,14 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a Delete Operation buffer.
+   * Generates a Revoke Operation buffer.
    */
-  public static async generateDeleteOperationBuffer (
+  public static async generateRevokeOperationBuffer (
     didUniqueSuffix: string,
     recoveryOtpEncodedSring: string,
-    signingKeyId: string,
-    privateKey: string | PrivateKey): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeleteOperation(didUniqueSuffix, recoveryOtpEncodedSring, signingKeyId, privateKey);
+    privateKey: string): Promise<Buffer> {
+    const operation = await OperationGenerator.generateRevokeOperationRequest(didUniqueSuffix, recoveryOtpEncodedSring, privateKey);
     return Buffer.from(JSON.stringify(operation));
-  }
-
-  /**
-   * Generates a Delete Operation.
-   */
-  public static async generateDeleteOperation (
-    didUniqueSuffix: string,
-    recoveryOtpEncodedSring: string,
-    signingKeyId: string,
-    privateKey: string | PrivateKey): Promise<JwsModel> {
-
-    const protectedHeader = {
-      kid: signingKeyId,
-      alg: 'ES256K'
-    };
-
-    const payload = {
-      type: OperationType.Delete,
-      didUniqueSuffix,
-      recoveryOtp: recoveryOtpEncodedSring
-    };
-
-    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
-    return operationJws;
   }
 
   /**

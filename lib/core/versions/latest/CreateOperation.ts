@@ -2,13 +2,15 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
+import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import SidetreeError from '../../SidetreeError';
+import PublicKeyModel from '../../models/PublicKeyModel';
+import SidetreeError from '../../../common/SidetreeError';
 
 interface SuffixDataModel {
   operationDataHash: string;
-  recoveryKey: string;
+  recoveryKey: PublicKeyModel;
   nextRecoveryOtpHash: string;
 }
 
@@ -120,15 +122,7 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
-    if (suffixData.recoveryKey === undefined) {
-      throw new SidetreeError(ErrorCode.CreateOperationRecoveryKeyMissing);
-    }
-
-    const recoveryKeyObjectPropertyCount = Object.keys(suffixData.recoveryKey);
-    if (recoveryKeyObjectPropertyCount.length !== 1 ||
-        typeof suffixData.recoveryKey.publicKeyHex !== 'string') {
-      throw new SidetreeError(ErrorCode.CreateOperationRecoveryKeyInvalid);
-    }
+    Operation.validateRecoveryKeyObject(suffixData.recoveryKey);
 
     const operationDataHash = Encoder.decodeAsBuffer(suffixData.operationDataHash);
     const nextRecoveryOtpHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryOtpHash);

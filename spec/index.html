@@ -129,56 +129,62 @@
 </tbody>
 </table>
 <h2 id="protocol-versioning-default-parameters"><a class="toc-anchor" href="#protocol-versioning-default-parameters">§</a> Protocol Versioning &amp; Default Parameters</h2>
-<p>The Sidetree protocol and its parameters are expected to evolve overtime. Each version of the protocol will define its protocol rules and parameters, as well as the logical <em>blockchain time</em> at which the new rules and parameter settings will take effect. All subsequent transactions will adhere to the same rules and parameters until a newer protocol version is defined.</p>
-<p>The following lists the parameters used by this version of the Sidetree protocol:</p>
+<p>The rules and parameters of the Sidetree protocol MAY change in future versions. Each version of the protocol will define a set of protocol rules and parameters with default suggested values. The following are the parameters used by this version of the Sidetree protocol - implementers MAY choose different options than the defaults listed below:</p>
 <table>
 <thead>
 <tr>
 <th>Protocol Parameter</th>
 <th>Description</th>
-<th style="text-align:left">Suggested Value</th>
+<th style="text-align:left">Suggested Defaults</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td id="hash-algorithm"><code>HASH_ALGORITHM</code></td>
-<td>The hash algorithm for computation such as for DID generation.</td>
+<td>Algorithm for generating hashes of protocol-related values.</td>
 <td style="text-align:left">SHA256</td>
 </tr>
 <tr>
+<td id="key-algorithm"><code>KEY_ALGORITHM</code></td>
+<td>Asymmetric public key algorithm for signing DID operations.</td>
+<td style="text-align:left">secp256k1</td>
+</tr>
+<tr>
 <td id="max-anchor-file-size"><code>MAX_ANCHOR_FILE_SIZE</code></td>
-<td>The maximum compressed anchor file size.</td>
+<td>Maximum compressed anchor file size.</td>
 <td style="text-align:left">1 MB</td>
 </tr>
 <tr>
 <td><code>MAX_MAP_FILE_SIZE</code></td>
-<td>The maximum compressed map file size.</td>
+<td>Maximum compressed map file size.</td>
 <td style="text-align:left">1 MB</td>
 </tr>
 <tr>
 <td><code>MAX_BATCH_FILE_SIZE</code></td>
-<td>The maximum compressed batch file size.</td>
+<td>Maximum compressed batch file size.</td>
 <td style="text-align:left">10 MB</td>
 </tr>
 <tr>
 <td><code>MAX_ENCODED_HASH_LENGTH</code></td>
-<td>The maximum accepted string length of an encoded hash.</td>
+<td>Maximum accepted string length of an encoded hash.</td>
 <td style="text-align:left">100 bytes</td>
 </tr>
 <tr>
 <td><code>MAX_OPERATION_SIZE</code></td>
-<td>The maximum uncompressed operation size.</td>
+<td>Maximum uncompressed operation size.</td>
 <td style="text-align:left">1 kb</td>
 </tr>
 <tr>
 <td><code>MAX_OPERATION_COUNT</code></td>
-<td>The maximum number of operations per batch.</td>
+<td>Maximum number of operations per batch.</td>
 <td style="text-align:left">10,000</td>
 </tr>
 </tbody>
 </table>
+<h3 id="activation-of-new-protocol-versions"><a class="toc-anchor" href="#activation-of-new-protocol-versions">§</a> Activation of New Protocol Versions</h3>
+<p>New versions of the protocol, or modifications to parameter values by implementers, MUST be activated at a specified <em>blockchain time</em> so all nodes can remain in sync by enforcing the same ruleset and parameters beginning at the same logical starting point. All transactions that occur after the specified <em>blockchain time</em> will adhere to the associated version’s rules and parameters until a newer version of the protocol is defined and implemented at a future <em>blockchain time</em>.</p>
 <h2 id="sidetree-did-base-uri"><a class="toc-anchor" href="#sidetree-did-base-uri">§</a> Sidetree DID Base URI</h2>
-<p>DID Methods based on the Sidetree protocol all share the same identifier format. The identifier is a <code>SHA256</code> hash of values from the <a href="#create">Create</a> operation’s <em>Suffix Data Object</em>, composed as follows:</p>
+<p>DID Methods based on the Sidetree protocol all share the same identifier format. The identifier is a hash of values from the <a href="#create">Create</a> operation’s <em>Suffix Data Object</em> (generated using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>), and composed of the following:</p>
 <div class="mermaid">graph TD
 
 ID(did:ion:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw)
@@ -187,10 +193,9 @@ ID -->|Create Operation Data Hash| E(xKwW0h6HjS...)
 ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="operations"><a class="toc-anchor" href="#operations">§</a> Operations</h2>
 <h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
 <p>The following process must be used to generate a Sidetree-based DID:</p>
-<h4 id="operation-values"><a class="toc-anchor" href="#operation-values">§</a> Operation Values</h4>
 <ol>
-<li>Generate a <code>secp256k1</code> key pair for use as the initial recovery key of the new DID.</li>
-<li>Generate a secret commitment value, referred to herein as the <em>Next Recovery Commitment</em>, and retain it for use at the next DID Recovery operation.</li>
+<li>Generate a key pair, using the <a href="#key-algorithm"><code>KEY_ALGORITHM</code></a>, for use as the initial recovery key of the new DID.</li>
+<li>Generate a secret commitment value, referred to herein as the <em>Recovery Commitment</em>, and retain it for use in the next DID Recovery operation.</li>
 <li>Generate an object, referred to herein as a <em>Sidetree Operation Object</em>, composed of Sidetree operations, as described in the <a href="#sidetree-operations">Sidetree Delta Operations</a> section of this document.</li>
 </ol>
 <h4 id="anchor-file-inclusion"><a class="toc-anchor" href="#anchor-file-inclusion">§</a> Anchor File Inclusion</h4>
@@ -286,7 +291,7 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="operations"><a class="
 <ul>
 <li>If the set of operations to be anchored contains any <a href="#create">Create</a> operations, add the property <code>create</code>, and let its value be an array of <em>Anchor File Create Operation Entries</em>, which are objects composed as follows for each <a href="#create">Create</a> operation in the set:
 <ul>
-<li>The object MUST contain an <code>initial_state</code> property, and its value MUST be a hash value of the DID’s initial state, using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>.</li>
+<li>The object MUST contain an <code>initial_state</code> property, and its value MUST be a hash of the DID’s initial state, generated via the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>.</li>
 </ul>
 </li>
 </ul>
@@ -349,13 +354,16 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="operations"><a class="
 <li><a href="#abstract">Abstract</a></li>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#terminology">Terminology</a></li>
-<li><a href="#protocol-versioning-default-parameters">Protocol Versioning &amp; Default Parameters</a></li>
+<li><a href="#protocol-versioning-default-parameters">Protocol Versioning &amp; Default Parameters</a>
+<ul>
+<li><a href="#activation-of-new-protocol-versions">Activation of New Protocol Versions</a></li>
+</ul>
+</li>
 <li><a href="#sidetree-did-base-uri">Sidetree DID Base URI</a></li>
 <li><a href="#operations">Operations</a>
 <ul>
 <li><a href="#create">Create</a>
 <ul>
-<li><a href="#operation-values">Operation Values</a></li>
 <li><a href="#anchor-file-inclusion">Anchor File Inclusion</a></li>
 </ul>
 </li>

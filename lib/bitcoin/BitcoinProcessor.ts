@@ -1,7 +1,5 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
-import BitcoinError from './BitcoinError';
-import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
 import LockMonitor from './lock/LockMonitor';
@@ -14,7 +12,9 @@ import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
+import SidetreeTransactionData from './SidetreeTransactionData';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
 import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
@@ -121,7 +121,8 @@ export default class BitcoinProcessor {
         config.bitcoinRpcPassword,
         config.bitcoinWalletImportString,
         config.requestTimeoutInMilliseconds || 300,
-        config.requestMaxRetries || 3);
+        config.requestMaxRetries || 3,
+        config.sidetreeTransactionFeeMarkupPercentage || 0);
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
 
@@ -247,40 +248,39 @@ export default class BitcoinProcessor {
   /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorString The string to be written as part of the transaction.
-   * @param fee The fee to be paid for this transaction.
+   * @param minimumFee The minimum fee to be paid for this transaction.
    */
-  public async writeTransaction (anchorString: string, fee: number) {
-    console.info(`Fee: ${fee}. Anchoring string ${anchorString}`);
-    // ----
-    // Issue #347 opened to track the investigation for this hardcoded value.
-    // Ensure that we are always paying this minimum fee.
-    fee = Math.max(fee, 1000);
-    // ----
+  public async writeTransaction (anchorString: string, minimumFee: number) {
+    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
+    const sidetreeTransaction = await this.bitcoinClient.createSidetreeTransaction(sidetreeTransactionString, minimumFee);
+    const transactionFee = sidetreeTransaction.transactionFee;
+    console.info(`Fee: ${transactionFee}. Anchoring string ${anchorString}`);
 
-    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(fee, this.lastProcessedBlock!.height);
+    const feeWithinSpendingLimits = await this.spendingMonitor.isCurrentFeeWithinSpendingLimit(transactionFee, this.lastProcessedBlock!.height);
 
     if (!feeWithinSpendingLimits) {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.SpendingCapPerPeriodReached);
+
     }
 
+    // Write a warning if the balance is running low
     const totalSatoshis = await this.bitcoinClient.getBalanceInSatoshis();
 
     const estimatedBitcoinWritesPerDay = 6 * 24;
-    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * fee;
+    const lowBalanceAmount = this.lowBalanceNoticeDays * estimatedBitcoinWritesPerDay * transactionFee;
     if (totalSatoshis < lowBalanceAmount) {
-      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * fee));
-      console.error(`Low balance (${daysLeft} days remaining),\
- please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
+      const daysLeft = Math.floor(totalSatoshis / (estimatedBitcoinWritesPerDay * transactionFee));
+      console.error(`Low balance (${daysLeft} days remaining), please fund your wallet. Amount: >=${lowBalanceAmount - totalSatoshis} satoshis.`);
     }
+
     // cannot make the transaction
-    if (totalSatoshis < fee) {
+    if (totalSatoshis < transactionFee) {
       const error = new Error(`Not enough satoshis to broadcast. Failed to broadcast anchor string ${anchorString}`);
       console.error(error);
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.NotEnoughBalanceForWrite);
     }
 
-    const sidetreeTransactionString = `${this.sidetreePrefix}${anchorString}`;
-    const transactionHash = await this.bitcoinClient.broadcastTransaction(sidetreeTransactionString, fee);
+    const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
     console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
@@ -341,7 +341,7 @@ export default class BitcoinProcessor {
       currentLock = this.lockMonitor.getCurrentValueTimeLock();
     } catch (e) {
 
-      if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
         throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
       }
 
@@ -592,45 +592,6 @@ export default class BitcoinProcessor {
     return hash === responseData;
   }
 
-  private isSidetreeTransaction (transaction: BitcoinTransactionModel): boolean {
-    const transactionOutputs = transaction.outputs;
-
-    for (let outputIndex = 0; outputIndex < transactionOutputs.length; outputIndex++) {
-
-      const data = this.getSidetreeDataFromVOutIfExist(transactionOutputs[outputIndex]);
-
-      // We do not check for multiple sidetree anchors; we would treat such
-      // transactions as non-sidetree for updating the transaction store, but here
-      // it seems better to consider this as a sidetree transaction and ignore it
-      // for sampling purposes to eliminate potentially fraudelent transactions from
-      // affecting the sample.
-      if (data !== undefined) {
-        return true;
-      }
-    }
-
-    // non sidetree transaction
-    return false;
-  }
-
-  private getSidetreeDataFromVOutIfExist (transactionOutput: BitcoinOutputModel): string | undefined {
-
-    // check for returned data for sidetree prefix
-    const hexDataMatches = transactionOutput.scriptAsmAsString.match(/\s*OP_RETURN ([0-9a-fA-F]+)$/);
-
-    if (hexDataMatches && hexDataMatches.length !== 0) {
-
-      const data = Buffer.from(hexDataMatches[1], 'hex').toString();
-
-      if (data.startsWith(this.sidetreePrefix)) {
-        return data.slice(this.sidetreePrefix.length);
-      }
-    }
-
-    // Nothing was found
-    return undefined;
-  }
-
   private isGroupBoundary (block: number): boolean {
     return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
@@ -653,7 +614,8 @@ export default class BitcoinProcessor {
     for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
-      const isSidetreeTransaction = this.isSidetreeTransaction(transaction);
+      const sidetreeData = SidetreeTransactionData.parse(transaction, this.sidetreePrefix);
+      const isSidetreeTransaction = sidetreeData !== undefined;
 
       // Add the transaction to the sampler.  We filter out transactions with unusual
       // input count - such transaction require a large number of rpc calls to compute transaction fee
@@ -708,11 +670,8 @@ export default class BitcoinProcessor {
     for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
-      // get the output coins in the transaction
-      const outputs = transactions[transactionIndex].outputs;
-
       try {
-        const sidetreeTxToAdd = await this.getValidSidetreeTransactionFromOutputs(outputs, transactionIndex, block, blockHash, transaction.id);
+        const sidetreeTxToAdd = await this.getSidetreeTransactionModelIfExist(transaction, transactionIndex, block);
 
         // If there are transactions found then add them to the transaction store
         if (sidetreeTxToAdd) {
@@ -732,57 +691,29 @@ export default class BitcoinProcessor {
     return blockHash;
   }
 
-  private async getValidSidetreeTransactionFromOutputs (
-    allVOuts: BitcoinOutputModel[],
+  private async getSidetreeTransactionModelIfExist (
+    transaction: BitcoinTransactionModel,
     transactionIndex: number,
-    transactionBlock: number,
-    transactionHash: string,
-    transactionId: string): Promise<TransactionModel | undefined> {
+    transactionBlock: number): Promise<TransactionModel | undefined> {
 
-    let sidetreeTxToAdd: TransactionModel | undefined = undefined;
+    const sidetreeData = SidetreeTransactionData.parse(transaction, this.sidetreePrefix);
 
-    for (let outputIndex = 0; outputIndex < allVOuts.length; outputIndex++) {
-
-      const sidetreeData = this.getSidetreeDataFromVOutIfExist(allVOuts[outputIndex]);
-      const isSidetreeTx = (sidetreeData !== undefined);
-      const oneSidetreeTxAlreadyFound = (sidetreeTxToAdd !== undefined);
-
-      if (isSidetreeTx && oneSidetreeTxAlreadyFound) {
-        // tslint:disable-next-line: max-line-length
-        const message = `The outputs in block: ${transactionBlock} with transaction id: ${transactionId} has multiple sidetree transactions. So ignoring this transaction.`;
-        console.debug(message);
-        return undefined;
-
-      } else if (isSidetreeTx) {
-        // we have found a valid sidetree transaction
-        sidetreeTxToAdd = {
-          transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
-          transactionTime: transactionBlock,
-          transactionTimeHash: transactionHash,
-          anchorString: sidetreeData as string,
-
-          // We will fill the following information after we have make sure that this is
-          // indeed the transaction that we want to return. This is because the calculation
-          // of the following properties may be expensive.
-          transactionFeePaid: -1,
-          normalizedTransactionFee: -1
-        };
-      }
-    }
-
-    if (sidetreeTxToAdd !== undefined) {
-      // If we got to here then everything was good and we found only one sidetree transaction, otherwise
-      // we would've returned earlier. So let's fill the missing information for the transaction and
-      // return it
-      const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
+    if (sidetreeData) {
+      const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
       const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
-      sidetreeTxToAdd.transactionFeePaid = transactionFeePaid;
-      sidetreeTxToAdd.normalizedTransactionFee = normalizedFeeModel.normalizedTransactionFee;
+      return {
+        transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
+        transactionTime: transactionBlock,
+        transactionTimeHash: transaction.blockHash,
+        anchorString: sidetreeData.data,
+        transactionFeePaid: transactionFeePaid,
+        normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
+        writer: sidetreeData.writer
+      };
     }
 
-    // non sidetree transaction
-    return sidetreeTxToAdd;
+    return undefined;
   }
 
   /**

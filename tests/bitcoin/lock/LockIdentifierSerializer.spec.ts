@@ -28,7 +28,7 @@ describe('LockIdentifierSerializer', () => {
       const incorrectInput = `value1${delimiter}value2${delimiter}value3`;
       const incorrectInputEncoded = base64url.encode(incorrectInput);
 
-      JasmineSidetreeErrorValidator.expectBitcoinErrorToBeThrown(
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => { LockIdentifierSerializer.deserialize(incorrectInputEncoded); },
         ErrorCode.LockIdentifierIncorrectFormat);
     });

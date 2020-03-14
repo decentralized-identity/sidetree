@@ -2,7 +2,7 @@
  * Standardized error class for throwing generic errors internal to this project.
  * NOTE: Not to be confused with RequestError which is used as a response to external requests.
  */
-export default class BitcoinError extends Error {
+export default class SidetreeError extends Error {
   constructor (public code: string, message?: string) {
     super(message ? `${code}: ${message}` : code);
 
@@ -17,7 +17,14 @@ export default class BitcoinError extends Error {
    * @param code The error code.
    * @param err The error exception thrown.
    */
-  public static createFromError (code: string, err: Error): BitcoinError {
-    return new BitcoinError(code, err ? err.message : undefined);
+  public static createFromError (code: string, err: Error): SidetreeError {
+    return new SidetreeError(code, err ? err.message : undefined);
+  }
+
+  /**
+   * Converts the given `Error` into a string.
+   */
+  public static stringify (error: Error) {
+    return JSON.stringify(error, Object.getOwnPropertyNames(error));
   }
 }

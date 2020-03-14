@@ -1,5 +1,4 @@
 import BitcoinClient from '../BitcoinClient';
-import BitcoinError from '../BitcoinError';
 import BitcoinLockTransactionModel from '../models/BitcoinLockTransactionModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifier from '../models/LockIdentifierModel';
@@ -8,6 +7,7 @@ import LockResolver from './LockResolver';
 import MongoDbLockTransactionStore from './MongoDbLockTransactionStore';
 import SavedLockModel from '../models/SavedLockedModel';
 import SavedLockType from '../enums/SavedLockType';
+import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from './../../common/models/ValueTimeLockModel';
 
 /** Enum (internal to this class) to track the status of the lock. */
@@ -21,7 +21,7 @@ enum LockStatus {
  * Structure (internal to this class) to track the state of the lock.
  */
 interface LockState {
-  currentValueTimeLock: ValueTimeLockModel | undefined;
+  activeValueTimeLock: ValueTimeLockModel | undefined;
   latestSavedLockInfo: SavedLockModel | undefined;
 
   status: LockStatus;
@@ -47,16 +47,16 @@ export default class LockMonitor {
     private lockPeriodInBlocks: number) {
 
     if (!Number.isInteger(desiredLockAmountInSatoshis)) {
-      throw new BitcoinError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
+      throw new SidetreeError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
     }
 
     if (!Number.isInteger(transactionFeesAmountInSatoshis)) {
-      throw new BitcoinError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
+      throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
     this.lockResolver = new LockResolver(this.bitcoinClient);
     this.currentLockState = {
-      currentValueTimeLock: undefined,
+      activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
@@ -88,10 +88,10 @@ export default class LockMonitor {
     if (currentLockState.status === LockStatus.Pending) {
       // Throw a very specific error so that the caller can do something
       // about it if they have to
-      throw new BitcoinError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
+      throw new SidetreeError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
     }
 
-    return currentLockState.currentValueTimeLock;
+    return currentLockState.activeValueTimeLock;
   }
 
   private async periodicPoll (): Promise<void> {
@@ -110,6 +110,8 @@ export default class LockMonitor {
     } finally {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * this.pollPeriodInSeconds);
     }
+
+    console.info(`Ending periodic polling for the lock monitor.`);
   }
 
   private async handlePeriodicPolling (): Promise<void> {
@@ -138,14 +140,16 @@ export default class LockMonitor {
       // The routine will true only if there were any changes made to the lock
       currentLockUpdated =
         await this.handleExistingLockRenewal(
-          this.currentLockState.currentValueTimeLock!,
+          this.currentLockState.activeValueTimeLock!,
           this.currentLockState.latestSavedLockInfo!,
           this.desiredLockAmountInSatoshis);
     }
 
     if (!lockRequired && validCurrentLockExist) {
-      await this.releaseLock(this.currentLockState.currentValueTimeLock!, this.desiredLockAmountInSatoshis);
-      currentLockUpdated = true;
+      currentLockUpdated =
+        await this.handleReleaseExistingLock(
+          this.currentLockState.activeValueTimeLock!,
+          this.desiredLockAmountInSatoshis);
     }
 
     if (currentLockUpdated) {
@@ -160,7 +164,7 @@ export default class LockMonitor {
     // Nothing to do if there's nothing found.
     if (!lastSavedLock) {
       return {
-        currentValueTimeLock: undefined,
+        activeValueTimeLock: undefined,
         latestSavedLockInfo: undefined,
         status: LockStatus.None
       };
@@ -168,15 +172,15 @@ export default class LockMonitor {
 
     console.info(`Found last saved lock of type: ${lastSavedLock.type} with transaction id: ${lastSavedLock.transactionId}.`);
 
-    // Make sure that the last lock txn is actually written to the blockchain. Rebroadcast
-    // if it is not as we don't want to do anything until last lock information is fully
-    // confirmed to be on the blockchain.
-    if (!(await this.isTransactionWrittenOnBitcoin(lastSavedLock.transactionId))) {
+    // Make sure that the last lock txn is actually broadcasted to the blockchain. Rebroadcast
+    // if it is not as we don't want to do anything until last lock information is at least
+    // broadcasted.
+    if (!(await this.isTransactionBroadcasted(lastSavedLock.transactionId))) {
 
       await this.rebroadcastTransaction(lastSavedLock);
 
       return {
-        currentValueTimeLock: undefined,
+        activeValueTimeLock: undefined,
         latestSavedLockInfo: lastSavedLock,
         status: LockStatus.Pending
       };
@@ -185,29 +189,44 @@ export default class LockMonitor {
     if (lastSavedLock.type === SavedLockType.ReturnToWallet) {
       // This means that there's no current lock for this node. Just return
       return {
-        currentValueTimeLock: undefined,
+        activeValueTimeLock: undefined,
         latestSavedLockInfo: lastSavedLock,
         status: LockStatus.None
       };
     }
 
     // If we're here then it means that we have saved some information about a lock
-    // which is confirmed to be on the blockchain. Let's resolve it to make sure that
-    // we have all the information.
+    // which is at least broadcasted to blockchain. Let's resolve it.
     const lastLockIdentifier: LockIdentifier = {
       transactionId: lastSavedLock.transactionId,
       redeemScriptAsHex: lastSavedLock.redeemScriptAsHex
     };
 
-    const currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
+    try {
+      const currentValueTimeLock = await this.lockResolver.resolveLockIdentifierAndThrowOnError(lastLockIdentifier);
 
-    console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
+      console.info(`Found a valid current lock: ${JSON.stringify(currentValueTimeLock)}`);
 
-    return {
-      currentValueTimeLock: currentValueTimeLock,
-      latestSavedLockInfo: lastSavedLock,
-      status: LockStatus.Confirmed
-    };
+      return {
+        activeValueTimeLock: currentValueTimeLock,
+        latestSavedLockInfo: lastSavedLock,
+        status: LockStatus.Confirmed
+      };
+
+    } catch (e) {
+
+      if (e instanceof SidetreeError && e.code === ErrorCode.LockResolverTransactionNotConfirmed) {
+        // This means that the transaction was broadcasted but hasn't been written on the blockchain yet.
+        return {
+          activeValueTimeLock: undefined,
+          latestSavedLockInfo: lastSavedLock,
+          status: LockStatus.Pending
+        };
+      }
+
+      // Else this is an unexpected exception rethrow
+      throw e;
+    }
   }
 
   private async rebroadcastTransaction (lastSavedLock: SavedLockModel): Promise<void> {
@@ -231,11 +250,11 @@ export default class LockMonitor {
     await this.bitcoinClient.broadcastLockTransaction(lockTransactionFromLastSavedLock);
   }
 
-  private async isTransactionWrittenOnBitcoin (transactionId: string): Promise<boolean> {
+  private async isTransactionBroadcasted (transactionId: string): Promise<boolean> {
     try {
       await this.bitcoinClient.getRawTransaction(transactionId);
 
-      // no exception thrown == transaction found.
+      // no exception thrown == transaction found == it was broadcasted even if it is only in the mempool.
       return true;
     } catch (e) {
       console.warn(`Transaction with id: ${transactionId} was not found on the bitcoin. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
@@ -253,7 +272,7 @@ export default class LockMonitor {
     const walletBalance = await this.bitcoinClient.getBalanceInSatoshis();
 
     if (walletBalance <= totalLockAmount) {
-      throw new BitcoinError(ErrorCode.LockMonitorNotEnoughBalanceForFirstLock,
+      throw new SidetreeError(ErrorCode.LockMonitorNotEnoughBalanceForFirstLock,
                              `Lock amount: ${totalLockAmount}; Wallet balance: ${walletBalance}`);
     }
 
@@ -266,23 +285,21 @@ export default class LockMonitor {
   }
 
   /**
-   * Performs the lock renewal routine; returns true if any updates were made to the lock, false otherwise.
+   * Performs the lock renewal routine.
    *
    * @param currentValueTimeLock The current value time lock if any.
    * @param latestSavedLockInfo The last saved locked info.
    * @param desiredLockAmountInSatoshis The desired lock amount.
+   *
+   * @returns true if any updates were made to the lock, false otherwise.
    */
   private async handleExistingLockRenewal (
     currentValueTimeLock: ValueTimeLockModel,
     latestSavedLockInfo: SavedLockModel,
     desiredLockAmountInSatoshis: number): Promise<boolean> {
 
-    const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
-
-    console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${currentValueTimeLock.unlockTransactionTime}`);
-
-    // Just return if we're not close to expiry
-    if (currentValueTimeLock.unlockTransactionTime - currentBlockTime > 1) {
+    // Just return if we haven't reached the unlock block yet
+    if (! (await this.isUnlockTimeReached(currentValueTimeLock.unlockTransactionTime))) {
       return false;
     }
 
@@ -304,7 +321,7 @@ export default class LockMonitor {
 
       // If there is not enough balance for the relock then just release the lock. Let the next
       // iteration of the polling to try and create a new lock.
-      if (e instanceof BitcoinError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorNotEnoughBalanceForRelock) {
         console.warn(`There is not enough balance for relocking so going to release the lock. Error: ${e.message}`);
         await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       } else {
@@ -312,6 +329,26 @@ export default class LockMonitor {
         throw (e);
       }
     }
+
+    return true;
+  }
+
+  /**
+   * Performs the release lock routine.
+   *
+   * @param currentValueTimeLock The current value time lock
+   * @param desiredLockAmountInSatoshis The desired lock amount
+   *
+   * @returns true if any updates were made to the lock, false otherwise.
+   */
+  private async handleReleaseExistingLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<boolean> {
+
+    // Don't continue unless the current locktime model is actually reached
+    if (! (await this.isUnlockTimeReached(currentValueTimeLock.unlockTransactionTime))) {
+      return false;
+    }
+
+    await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
 
     return true;
   }
@@ -329,7 +366,7 @@ export default class LockMonitor {
 
     // If the transaction fee is making the relock amount less than the desired amount
     if (currentValueTimeLock.amountLocked - relockTransaction.transactionFee < desiredLockAmountInSatoshis) {
-      throw new BitcoinError(
+      throw new SidetreeError(
         ErrorCode.LockMonitorNotEnoughBalanceForRelock,
         // tslint:disable-next-line: max-line-length
         `The current locked amount (${currentValueTimeLock.amountLocked} satoshis) minus the relocking fee (${relockTransaction.transactionFee} satoshis) is causing the relock amount to go below the desired lock amount: ${desiredLockAmountInSatoshis}`);
@@ -374,5 +411,13 @@ export default class LockMonitor {
     await this.bitcoinClient.broadcastLockTransaction(lockTransaction);
 
     return lockInfoToSave;
+  }
+
+  private async isUnlockTimeReached (unlockTransactionTime: number): Promise<boolean> {
+    const currentBlockTime = await this.bitcoinClient.getCurrentBlockHeight();
+
+    console.info(`Current block: ${currentBlockTime}; Current lock's unlock block: ${unlockTransactionTime}`);
+
+    return currentBlockTime >= unlockTransactionTime;
   }
 }

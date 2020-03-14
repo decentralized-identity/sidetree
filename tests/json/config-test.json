@@ -6,6 +6,5 @@
   "batchingIntervalInSeconds": 10,
   "observingIntervalInSeconds": 10,
   "maxConcurrentDownloads": 20,
-  "mongoDbConnectionString": "mongodb://localhost:27017/",
-  "transactionFeeMarkupPercentage": 10
+  "mongoDbConnectionString": "mongodb://localhost:27017/"
 }

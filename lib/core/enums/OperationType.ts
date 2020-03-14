@@ -4,7 +4,7 @@
 enum OperationType {
   Create = 'create',
   Update = 'update',
-  Delete = 'delete',
+  Revoke = 'revoke',
   Recover = 'recover'
 }
 
