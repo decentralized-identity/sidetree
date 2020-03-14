@@ -19,7 +19,11 @@
 
 :root {
   --dif-blue: #1e6fb0;
-  --header-height: 3em;
+  --header-height: 48px;
+}
+
+*:target {
+  scroll-margin: calc(var(--header-height) / 0.75) 0 0;
 }
 
 body {
@@ -56,8 +60,6 @@ main article h3,
 main article h4 {
   display: flex;
   font-weight: 500;
-  padding-top: 6vh;
-  margin-top: -4vh;
 }
 
 main article h2 {
@@ -231,8 +233,13 @@ svg[icon] {
   pointer-events: none;
 }
 
-p > img {
+article p > img {
   max-width: 100%;
+  margin: 0 auto;
+}
+
+article li {
+  margin-top: 0.4em;
 }
 
 /* Custom Elements */

@@ -42,8 +42,8 @@
               <article id="content">
                 <h1 id="sidetree-protocol"><a class="toc-anchor" href="#sidetree-protocol">§</a> Sidetree Protocol</h1>
 <p><strong>Specification Status:</strong> Editor’s Draft</p>
-<p><strong>Latest Draft:</strong>
-<a href="https://identity.foundation/sidetree">identity.foundation/sidetree</a></p>
+<p><strong>Latest published version:</strong>
+<a href="https://identity.foundation/sidetree/spec">identity.foundation/sidetree/spec</a></p>
 <dl>
 <dt><strong>Editors:</strong></dt>
 <dd><a href="https://www.linkedin.com/in/dbuchner/">Daniel Buchner</a> (Microsoft)</dd>
@@ -61,8 +61,14 @@
 <h2 id="introduction"><a class="toc-anchor" href="#introduction">§</a> Introduction</h2>
 <p><em>This section is non-normative</em></p>
 <p>Decentralized ledgers (e.g. Bitcoin) introduced the first-ever solution to the linear chronological oracle problem, which unlocked the ability to create robust decentralized identifier networks. However, current approaches that utilize these ledger systems to create decentralized identifier networks suffer from severely limited transactional volumes and other performance issues. Sidetree is a ‘Layer 2’ protocol that runs atop decentralized ledger systems to enable scalable <a href="https://w3c.github.io/did-core/">W3C <em>Decentralized Identifier</em></a> (DID) implementations that can be fully open, public, and permissionless. Sidetree is able to do all this without requiring trusted intermediaries, centralized authorities, special protocol tokens, or secondary consensus mechanisms, while preserving the core attributes of decentralization and immutability of the underlying ledger systems it is implemented on.</p>
-<p><img src="../docs/diagrams/overview-diagram.png" alt="Sidetree System Overview"></p>
-<p>Architecturally, Sidetree-based DID Method implementations are overlay networks composed of independent peer nodes (<em>Sidetree nodes</em>) that observe an underlying decentralized ledger (as illustrated above), replicate DID PKI state data linked from the ledger, and execute against that data a set of deterministic protocol rules to produce an eventually strongly consistent view of all Decentralized Identifiers in the network. The Sidetree protocol defines a core set of DID PKI state change <em>operations</em>, structured as delta-based Conflict-Free Replicated Data Types (i.e. Create, Update, Recover, and Revoke), that mutate a Decentralized Identifier’s <em>DID Document</em> state. <em>Sidetree nodes</em> that participate in writing operations into the overlay network do so by anchoring <em>content-addressable storage (CAS)</em> (e.g. IPFS) references to aggregated bundles of <em>operations</em> in an underlying ledger. The ledger acts as a linear chronological sequencing oracle, which the protocol leverages to order DID PKI operations in an immutable history all observing nodes can replay and validate. It is this ability to replay the precise sequence of DID PKI state change events, and process those events using a common set of deterministic rules, that allows <em>Sidetree nodes</em> to achieve a consistent view of DIDs and their <em>DID Document</em> states, without requiring any additional consensus mechanism.</p>
+<p>Architecturally, Sidetree-based DID Method implementations are overlay networks composed of independent peer nodes (<em>Sidetree nodes</em>) that observe an underlying decentralized ledger (as illustrated above), replicate DID PKI state data linked from the ledger, and execute against that data a set of deterministic protocol rules to produce an eventually strongly consistent view of all Decentralized Identifiers in the network. The Sidetree protocol defines a core set of DID PKI state change <em>operations</em>, structured as delta-based Conflict-Free Replicated Data Types (i.e. <a href="#create">Create</a>, <a href="#update">Update</a>, <a href="#recover">Recover</a>, or <a href="#revoke">Revoke</a>), that mutate a Decentralized Identifier’s <em>DID Document</em> state. <em>Sidetree nodes</em> that participate in writing operations into the overlay network do so by anchoring <em>Content-Addressable Storage (CAS)</em> (e.g. IPFS) references to aggregated bundles of <em>operations</em> in an underlying ledger. The ledger acts as a linear chronological sequencing oracle, which the protocol leverages to order DID PKI operations in an immutable history all observing nodes can replay and validate. It is this ability to replay the precise sequence of DID PKI state change events, and process those events using a common set of deterministic rules, that allows <em>Sidetree nodes</em> to achieve a consistent view of DIDs and their <em>DID Document</em> states, without requiring any additional consensus mechanism.</p>
+<p>The figure below illustrates the three primary components of a Sidetree-based DID overlay network:</p>
+<ol>
+<li>The underlying ledger system that serves as the global anchoring and linear sequencing system for DID operations.</li>
+<li>The Sidetree nodes themselves, which interact with the ledger system to anchor operations, fetch and replicate data from the CAS network, and process operations in accordance with the protocol deterministic ruleset.</li>
+<li>An integrated Content-Addressable Storage (CAS) network layer Sidetree nodes use to distribute and replicate DID operation files.</li>
+</ol>
+<img src="../docs/diagrams/sidetree-system.svg" style="display: block; margin: 0 auto; padding: 1em 0; width: 100%; max-width: 620px;" />
 <h2 id="terminology"><a class="toc-anchor" href="#terminology">§</a> Terminology</h2>
 <table>
 <thead>
@@ -73,48 +79,52 @@
 </thead>
 <tbody>
 <tr>
-<td>Anchor file</td>
-<td>The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction.</td>
+<td>Anchor File</td>
+<td>JSON Document containing proving and index data for Create, Recovery, and Revocation operations, and a CAS link to the associated Map File. This file is anchored to the target ledger.</td>
 </tr>
 <tr>
-<td>Batch file</td>
-<td>The file containing all the operation data batched together.</td>
+<td>Map File</td>
+<td>JSON Document containing Update operation proving and index data, as well as CAS links to Batch File chunks.</td>
 </tr>
 <tr>
-<td>DCAS / CAS</td>
-<td>Distributed content-addressable storage.</td>
+<td>Batch File</td>
+<td>JSON Document containing all verbose operation data for the corresponding set of DIDs specified in the related Map File.</td>
+</tr>
+<tr>
+<td>CAS</td>
+<td>Content-addressable storage</td>
 </tr>
 <tr>
 <td>DID Document</td>
-<td>A document containing metadata of a DID, see <a href="https://w3c-ccg.github.io/did-spec/">DID specification</a>.</td>
+<td>JSON Document containing public key references, service endpoints, and other PKI metadata that corresponds to a given DID (as defined in the <a href="https://w3c.github.io/did-core/">W3C DID Specification</a>).</td>
 </tr>
 <tr>
-<td>DID unique suffix</td>
-<td>The unique portion of a DID. e.g. The unique suffix of ‘did:sidetree:abc’ would be ‘abc’.</td>
+<td>DID Unique Suffix</td>
+<td>The unique identifier string within a DID URI. e.g. The unique suffix of <code>did:sidetree:123</code> would be <code>123</code>.</td>
 </tr>
 <tr>
-<td>Operation</td>
-<td>A change to a document of a DID.</td>
+<td>DID Suffix Data</td>
+<td>Data required to deterministically generate a DID.</td>
 </tr>
 <tr>
-<td>Operation request</td>
-<td>A JWS formatted request sent to a Sidetree node to perform an <em>operation</em>.</td>
+<td>DID Operation</td>
+<td>Set of delta-based modifications that change the state of a DID Document when applied.</td>
 </tr>
 <tr>
-<td>Recovery key</td>
-<td>A key that is used to perform recovery or delete operation.</td>
+<td>Operation Request</td>
+<td>JWS formatted request sent to a <em>Sidetree Node</em> to include a <em>DID Operation</em> in a batch of operations.</td>
 </tr>
 <tr>
-<td>Sidetree node</td>
-<td>A logical server executing Sidetree protocol rules.</td>
+<td>Recovery Key</td>
+<td>Public/private key pair used to perform a Recovery or Revocation operation.</td>
 </tr>
 <tr>
-<td>Suffix data</td>
-<td>Data required to deterministically generate a DID .</td>
+<td>Sidetree Node</td>
+<td>Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.</td>
 </tr>
 <tr>
 <td>Transaction</td>
-<td>A blockchain transaction representing a batch of Sidetree operations.</td>
+<td>Ledger transaction that anchors a set of Sidetree operations, via a CAS link to an Anchor File.</td>
 </tr>
 </tbody>
 </table>
@@ -126,39 +136,44 @@
 <tr>
 <th>Protocol Parameter</th>
 <th>Description</th>
-<th style="text-align:right">Value</th>
+<th style="text-align:left">Suggested Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Hash algorithm</td>
+<td id="hash-algorithm"><code>HASH_ALGORITHM</code></td>
 <td>The hash algorithm for computation such as for DID generation.</td>
-<td style="text-align:right">SHA256</td>
+<td style="text-align:left">SHA256</td>
 </tr>
 <tr>
-<td>Maximum anchor file size</td>
+<td id="max-anchor-file-size"><code>MAX_ANCHOR_FILE_SIZE</code></td>
 <td>The maximum compressed anchor file size.</td>
-<td style="text-align:right">1 MB</td>
+<td style="text-align:left">1 MB</td>
 </tr>
 <tr>
-<td>Maximum batch file size</td>
+<td><code>MAX_MAP_FILE_SIZE</code></td>
+<td>The maximum compressed map file size.</td>
+<td style="text-align:left">1 MB</td>
+</tr>
+<tr>
+<td><code>MAX_BATCH_FILE_SIZE</code></td>
 <td>The maximum compressed batch file size.</td>
-<td style="text-align:right">10 MB</td>
+<td style="text-align:left">10 MB</td>
 </tr>
 <tr>
-<td>Maximum encoded hash length</td>
+<td><code>MAX_ENCODED_HASH_LENGTH</code></td>
 <td>The maximum accepted string length of an encoded hash.</td>
-<td style="text-align:right">100 bytes</td>
+<td style="text-align:left">100 bytes</td>
 </tr>
 <tr>
-<td>Maximum operation size</td>
+<td><code>MAX_OPERATION_SIZE</code></td>
 <td>The maximum uncompressed operation size.</td>
-<td style="text-align:right">1 kb</td>
+<td style="text-align:left">1 kb</td>
 </tr>
 <tr>
-<td>Maximum operation count</td>
+<td><code>MAX_OPERATION_COUNT</code></td>
 <td>The maximum number of operations per batch.</td>
-<td style="text-align:right">10,000</td>
+<td style="text-align:left">10,000</td>
 </tr>
 </tbody>
 </table>
@@ -167,22 +182,42 @@
 <div class="mermaid">graph TD
 
 ID(did:ion:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw)
-ID -->|Recovery Commitment Hash| D[oqBQgzhMDw...]
-ID -->|Create Operation Data Hash| E[xKwW0h6HjS...]
-ID -->|Recovery Public Key| F[tB4W0i61jS...]</div><h2 id="operations"><a class="toc-anchor" href="#operations">§</a> Operations</h2>
+ID -->|Recovery Commitment Hash| D(oqBQgzhMDw...)
+ID -->|Create Operation Data Hash| E(xKwW0h6HjS...)
+ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="operations"><a class="toc-anchor" href="#operations">§</a> Operations</h2>
 <h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
 <p>The following process must be used to generate a Sidetree-based DID:</p>
+<h4 id="operation-values"><a class="toc-anchor" href="#operation-values">§</a> Operation Values</h4>
 <ol>
-<li>Generate a JSON object, referred to herein as the <em>Create Document</em>.</li>
-<li>The <em>Create Document</em> MUST contain a <code>type</code> property, and its value MUST be <code>create</code>.</li>
-<li>The <em>Create Document</em> MUST contain a <code>operationData</code> property, and its value MUST be a <code>base64</code> encoded object, referred to herein as the <em>Operation Data Object</em>, of the following composition:
+<li>Generate a <code>secp256k1</code> key pair for use as the initial recovery key of the new DID.</li>
+<li>Generate a secret commitment value, referred to herein as the <em>Next Recovery Commitment</em>, and retain it for use at the next DID Recovery operation.</li>
+<li>Generate an object, referred to herein as a <em>Sidetree Operation Object</em>, composed of Sidetree operations, as described in the <a href="#sidetree-operations">Sidetree Delta Operations</a> section of this document.</li>
+</ol>
+<h4 id="anchor-file-inclusion"><a class="toc-anchor" href="#anchor-file-inclusion">§</a> Anchor File Inclusion</h4>
+<ol start="2">
+<li>
+<p>The <em>Suffix Data Object</em> MUST contain a <code>nextRecoveryOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Recovery Commitment</em>.</p>
+</li>
+<li>
+<p>The <em>Suffix Data Object</em> MUST contain an <code>operationDataHash</code> property, and its value MUST be a SHA256 hash of the <code>base64</code> encoded <em>Operation Data Object</em>.</p>
+</li>
+<li>
+<p>The <em>Suffix Data Object</em> MUST contain a <code>recoveryKey</code> property, and its value MUST be an object of the following composition:</p>
+<ol>
+<li>Generate a <code>secp256k1</code> recovery key pair.</li>
+<li>The object MUST contain a <code>publicKeyHex</code> property, and its value MUST be be the recovery key pair’s Hex encoded public key.</li>
+</ol>
+</li>
+<li>
+<p>Generate an operation  and its value MUST be a <code>base64</code> encoded object, referred to herein as the <em>Operation Data Object</em>, of the following composition:</p>
 <ol>
 <li>Generate a secret commitment value, referred to herein as the <em>Next Update Commitment</em>, and retain it for use at the next DID Update operation.</li>
 <li>The <em>Operation Data Object</em> MUST contain a <code>nextUpdateOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Update Commitment</em>.</li>
 <li>The <em>Operation Data Object</em> MUST contain a <code>document</code> property, and its value must be an object, referred to herein as a <em>Sidetree Delta Operations Object</em>, composed of Sidetree delta operations, as described in the <a href="#sidetree-delta-operations">Sidetree Delta Operations</a> section of this document.</li>
 </ol>
 </li>
-<li>The <em>Create Document</em> MUST contain a <code>suffixData</code> property, and its value MUST be a <code>base64</code> encoded object, referred to herein as the <em>Suffix Data Object</em>, of the following composition:
+<li>
+<p>The <em>Create Document</em> MUST contain a <code>suffixData</code> property, and its value MUST be a <code>base64</code> encoded object, referred to herein as the <em>Suffix Data Object</em>, of the following composition:</p>
 <ol>
 <li>Generate a secret commitment value, referred to herein as the <em>Next Recovery Commitment</em>, and retain it for use at the next DID Recovery operation.</li>
 <li>The <em>Suffix Data Object</em> MUST contain a <code>nextRecoveryOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Recovery Commitment</em>.</li>
@@ -206,7 +241,87 @@ ID -->|Recovery Public Key| F[tB4W0i61jS...]</div><h2 id="operations"><a class="
 <li>The <em>Update Document</em> MUST contain a <code>nextUpdateOtpHash</code> property, and its value MUST be a SHA256 hash of the <em>Next Update Commitment</em> value that will be revealed in the next Update operation.</li>
 <li>The <em>Update Document</em> MUST contain a <code>patches</code> property, and its value MUST be an object composed of Sidetree delta operations, as described in the <a href="#sidetree-delta-operations">Sidetree Delta Operations</a> section of this document.</li>
 </ol>
-<h2 id="sidetree-delta-operations"><a class="toc-anchor" href="#sidetree-delta-operations">§</a> Sidetree Delta Operations</h2>
+<h2 id="file-structures"><a class="toc-anchor" href="#file-structures">§</a> File Structures</h2>
+<p>The protocol defines the following three file structures, which house DID operation data and are designed to support key functionality to enable light node configurations, minimize permanently retained data, and ensure performant resolution of DIDs.</p>
+<img src="../docs/diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
+<h3 id="anchor-file"><a class="toc-anchor" href="#anchor-file">§</a> Anchor File</h3>
+<p>Anchor files contain <a href="#create">Create</a> and <a href="#recovery">Recovery</a> operation proving data, as well as a CAS link to the related Sidetree Map file (detailed below). As the name suggests, Anchor files are anchored to the target ledger system via embedding a Content Addressable Hash link in the ledger’s transactional history.</p>
+<pre class="language-js"><code class="language-js"><span class="token punctuation">{</span>
+  <span class="token string">"map_file"</span><span class="token operator">:</span> <span class="token constant">CAS_HASH_LINK</span><span class="token punctuation">,</span>
+  <span class="token string">"operations"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"create"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        initial_state<span class="token operator">:</span> <span class="token constant">INITIAL_STATE_HASH</span><span class="token punctuation">,</span>
+        initial_recovery_key<span class="token operator">:</span> <span class="token constant">PUB_KEY</span><span class="token punctuation">,</span>
+        initial_recovery_commitment<span class="token operator">:</span> <span class="token constant">SECRET_VALUE_HASH</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span>
+    <span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token string">"recover"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        did<span class="token operator">:</span> <span class="token constant">DID_SUFFIX</span><span class="token punctuation">,</span>
+        recovery_reveal<span class="token operator">:</span> <span class="token constant">REVEALED_SECRET_VALUE</span><span class="token punctuation">,</span>
+        new_recovery_commitment<span class="token operator">:</span> <span class="token constant">SECRET_VALUE_HASH</span><span class="token punctuation">,</span>
+        new_state<span class="token operator">:</span> <span class="token constant">RECOVERY_STATE_HASH</span><span class="token punctuation">,</span>
+        new_recovery_key<span class="token operator">:</span> <span class="token constant">PUB_KEY</span><span class="token punctuation">,</span>
+        sig<span class="token operator">:</span> <span class="token constant">RECOVERY_KEY_SIGNATURE</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span>
+    <span class="token punctuation">]</span><span class="token punctuation">,</span>
+    <span class="token string">"revoke"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        did<span class="token operator">:</span> <span class="token constant">DID_SUFFIX</span><span class="token punctuation">,</span>
+        recovery_reveal<span class="token operator">:</span> <span class="token constant">REVEALED_SECRET_VALUE</span><span class="token punctuation">,</span>
+        sig<span class="token operator">:</span> <span class="token constant">RECOVERY_KEY_SIGNATURE</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span>
+    <span class="token punctuation">]</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<p>A valid Anchor File is a JSON document MUST NOT exceed the <a href="#max-anchor-file-size"><code>MAX_ANCHOR_FILE_SIZE</code></a> of the following composition:</p>
+<ol>
+<li>The Anchor File MUST contain a <code>map_file</code> property, and its value MUST be a <em>CAS URI</em> for the related Map File.</li>
+<li>If the set of operations to be anchored contain any <a href="#create">Create</a>, <a href="#recovery">Recover</a>, or <a href="#revoke">Revoke</a> operations, the Anchor File MUST contain an <code>operations</code> property, and its value MUST be an object composed as follows:
+<ul>
+<li>If the set of operations to be anchored contains any <a href="#create">Create</a> operations, add the property <code>create</code>, and let its value be an array of <em>Anchor File Create Operation Entries</em>, which are objects composed as follows for each <a href="#create">Create</a> operation in the set:
+<ul>
+<li>The object MUST contain an <code>initial_state</code> property, and its value MUST be a hash value of the DID’s initial state, using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>If the set of operations to be anchored contains any <a href="#create">Create</a> operations, the Anchor File MUST contain a <code>create</code> property, and its value MUST be an object with an <code>ops</code> property, whose value MUST be an array of <em>Create Operation Anchor File Entries</em>.</li>
+</ol>
+<h3 id="map-file"><a class="toc-anchor" href="#map-file">§</a> Map File</h3>
+<p>The Map file in the Sidetree protocol contains Update operation proving data, as well as the CAS-linked Batch file chunks.</p>
+<pre class="language-js"><code class="language-js"><span class="token punctuation">{</span>
+  <span class="token string">"chunks"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span> chunk<span class="token operator">:</span> <span class="token constant">CHUNK_HASH</span> <span class="token punctuation">}</span>
+  <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token string">"updates"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token string">"ops"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+      <span class="token punctuation">{</span>
+        did<span class="token operator">:</span> <span class="token constant">DID_UNIQUE_SUFFIX</span><span class="token punctuation">,</span>
+        update_reveal<span class="token operator">:</span> <span class="token constant">REVEALED_COMMITMENT_VALUE</span><span class="token punctuation">,</span>
+        update_patch<span class="token operator">:</span> <span class="token constant">STATE_PATCH_HASH</span><span class="token punctuation">,</span>
+        sig<span class="token operator">:</span> <span class="token constant">UPDATE_KEY_SIGNATURE</span>
+      <span class="token punctuation">}</span><span class="token punctuation">,</span>
+      <span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span>
+    <span class="token punctuation">]</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<h3 id="batch-file"><a class="toc-anchor" href="#batch-file">§</a> Batch File</h3>
+<p>Batch files contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier’s DID Document.</p>
+<pre class="language-js"><code class="language-js"><span class="token punctuation">{</span>
+  <span class="token string">"ops"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
+    <span class="token punctuation">{</span> <span class="token constant">SIDETREE_OPERATION</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token punctuation">{</span> <span class="token constant">SIDETREE_OPERATION</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>
+    <span class="token operator">...</span>
+  <span class="token punctuation">]</span>
+<span class="token punctuation">}</span>
+</code></pre>
 
               </article>    
 
@@ -238,11 +353,22 @@ ID -->|Recovery Public Key| F[tB4W0i61jS...]</div><h2 id="operations"><a class="
 <li><a href="#sidetree-did-base-uri">Sidetree DID Base URI</a></li>
 <li><a href="#operations">Operations</a>
 <ul>
-<li><a href="#create">Create</a></li>
+<li><a href="#create">Create</a>
+<ul>
+<li><a href="#operation-values">Operation Values</a></li>
+<li><a href="#anchor-file-inclusion">Anchor File Inclusion</a></li>
+</ul>
+</li>
 <li><a href="#update">Update</a></li>
 </ul>
 </li>
-<li><a href="#sidetree-delta-operations">Sidetree Delta Operations</a></li>
+<li><a href="#file-structures">File Structures</a>
+<ul>
+<li><a href="#anchor-file">Anchor File</a></li>
+<li><a href="#map-file">Map File</a></li>
+<li><a href="#batch-file">Batch File</a></li>
+</ul>
+</li>
 </ul>
 
                 </div>
