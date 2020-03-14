@@ -1,11 +1,8 @@
-import AnchoredOperationModel from '../../models/AnchoredOperationModel';
-import AnchorFileModel from './models/AnchorFileModel';
 import BatchFileModel from './models/BatchFileModel';
 import Compressor from './util/Compressor';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
-import Operation from './Operation';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import timeSpan = require('time-span');
@@ -19,12 +16,9 @@ export default class BatchFile {
    * Parses and validates the given batch file buffer and all the operations within it.
    * @throws SidetreeError if failed parsing or validation.
    */
-  public static async parseAndValidate (
-    batchFileBuffer: Buffer,
-    anchorFile: AnchorFileModel,
-    transactionNumber: number,
-    transactionTime: number
-  ): Promise<AnchoredOperationModel[]> {
+  public static async parse (
+    batchFileBuffer: Buffer
+  ): Promise<BatchFileModel> {
 
     let endTimer = timeSpan();
     const decompressedBatchFileBuffer = await Compressor.decompress(batchFileBuffer);
@@ -32,83 +26,40 @@ export default class BatchFile {
     console.info(`Parsed batch file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
-    const allowedProperties = new Set(['operations']);
+    const allowedProperties = new Set(['operationsData']);
     for (let property in batchFileObject) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.BatchFileUnexpectedProperty, `Unexpected property ${property} in batch file.`);
       }
     }
 
-    // Make sure operations is an array.
-    if (!(batchFileObject.operations instanceof Array)) {
-      throw new SidetreeError(ErrorCode.BatchFileOperationsPropertyNotArray, 'Invalid batch file, operations property is not an array.');
+    // Make sure operationData is an array.
+    if (!(batchFileObject.operationData instanceof Array)) {
+      throw new SidetreeError(ErrorCode.BatchFileOperationDataPropertyNotArray, 'Invalid batch file, operationData property is not an array.');
     }
 
     // Make sure all operations are strings.
     batchFileObject.operations.forEach((operation: any) => {
       if (typeof operation !== 'string') {
-        throw new SidetreeError(ErrorCode.BatchFileOperationsNotArrayOfStrings, 'Invalid batch file, operations property is not an array of strings.');
+        throw new SidetreeError(ErrorCode.BatchFileOperationDataNotArrayOfStrings, 'Invalid batch file, operationData property is not an array of strings.');
       }
     });
 
-    const batchFile = batchFileObject as BatchFileModel;
-    const batchSize = batchFile.operations.length;
+    const batchFileModel = batchFileObject as BatchFileModel;
 
-    // Verify the number of operations does not exceed the maximum allowed limit.
-    if (batchSize > ProtocolParameters.maxOperationsPerBatch) {
-      throw new SidetreeError(
-        ErrorCode.BatchFileOperationCountExceedsLimit,
-        `Batch size of ${batchSize} operations exceeds the allowed limit of ${ProtocolParameters.maxOperationsPerBatch}.`
-      );
-    }
+    for (const encodedOperationData of batchFileModel.operationData) {
+      const operationDataBuffer = Buffer.from(encodedOperationData);
 
-    // Verify that the batch size count matches that of the anchor file.
-    const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
-    if (batchSize !== operationCountInAnchorFile) {
-      throw new SidetreeError(
-        ErrorCode.BatchFileOperationCountMismatch,
-        `Batch size of ${batchSize} in batch file does not match of size of ${operationCountInAnchorFile} in anchor file.`
-      );
-    }
-
-    endTimer = timeSpan();
-    const anchoredOperationModels: AnchoredOperationModel[] = [];
-
-    for (let operationIndex = 0; operationIndex < batchSize; operationIndex++) {
-      const encodedOperation = batchFile.operations[operationIndex];
-      const operationBuffer = Encoder.decodeAsBuffer(encodedOperation);
-
-      // Verify size of each operation does not exceed the maximum allowed limit.
-      if (operationBuffer.length > ProtocolParameters.maxOperationByteSize) {
+      // Verify size of each operation data entry does not exceed the maximum allowed limit.
+      if (operationDataBuffer.length > ProtocolParameters.maxOperationDataByteSize) {
         throw new SidetreeError(
-          ErrorCode.BatchFileOperationSizeExceedsLimit,
-          `Operation size of ${operationBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationByteSize} bytes.`
+          ErrorCode.BatchFileOperationDataSizeExceedsLimit,
+          `Operation size of ${operationDataBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationDataByteSize} bytes.`
         );
       }
-
-      const operation = await Operation.parse(operationBuffer);
-      const anchoredOperationModel: AnchoredOperationModel = {
-        didUniqueSuffix: operation.didUniqueSuffix,
-        type: operation.type,
-        operationBuffer,
-        operationIndex,
-        transactionNumber,
-        transactionTime
-      };
-
-      const didUniqueSuffixesInAnchorFile = anchorFile.didUniqueSuffixes[operationIndex];
-      if (operation.didUniqueSuffix !== didUniqueSuffixesInAnchorFile) {
-        throw new SidetreeError(
-          ErrorCode.BatchFileOperationMismatch,
-          `Operation ${operationIndex}'s DID unique suffix '${operation.didUniqueSuffix}' ` +
-          `is not the same as '${didUniqueSuffixesInAnchorFile}' seen in anchor file.`);
-      }
-
-      anchoredOperationModels.push(anchoredOperationModel);
     }
-    console.info(`Decoded ${batchSize} operations in batch file. Time taken: ${endTimer.rounded()} ms.`);
 
-    return anchoredOperationModels;
+    return batchFileModel;
   }
 
   /**

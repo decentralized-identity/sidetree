@@ -183,18 +183,28 @@ describe('TransactionProcessor', () => {
   });
 
   describe('downloadAndVerifyAnchorFile', () => {
-    it('should throw if the downloaded file has incorrect number of the unique suffixes.', async (done) => {
+    it('should throw if paid operation count exceeded the protocol limit.', async (done) => {
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', 999999), // Some really large paid operation count.
+        ErrorCode.TransactionProcessorPaidOperationCountExceedsLimit);
+
+      done();
+    });
+
+    it('should throw if operation count in anchor file exceeded the paid limit.', async (done) => {
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.alloc(0)));
 
       const mockAnchorFile: AnchorFileModel = {
-        didUniqueSuffixes: [ 'suffix 1', 'suffix2' ],
+        operations: {
+          createOperations: ['anyValue1', 'anyValue2']
+        },
         mapFileHash: 'map_file_hash'
       };
-      spyOn(AnchorFile, 'parseAndValidate').and.returnValue(Promise.resolve(mockAnchorFile));
+      spyOn(AnchorFile, 'parse').and.returnValue(Promise.resolve(mockAnchorFile));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', mockAnchorFile.didUniqueSuffixes.length + 5),
-        ErrorCode.AnchorFileDidUniqueSuffixesCountIncorrect);
+        () => transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', 1),
+        ErrorCode.AnchorFileOperationCountExceededPaidLimit);
 
       done();
     });

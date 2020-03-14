@@ -1,5 +1,6 @@
 import AnchorFileModel from './models/AnchorFileModel';
 import Compressor from './util/Compressor';
+import CreateOperation from './CreateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -15,7 +16,7 @@ export default class AnchorFile {
    * Parses and validates the given anchor file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parseAndValidate (anchorFileBuffer: Buffer): Promise<AnchorFileModel> {
+  public static async parse (anchorFileBuffer: Buffer): Promise<AnchorFileModel> {
 
     let anchorFileDecompressedBuffer;
     try {
@@ -24,62 +25,79 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileDecompressionFailure, e);
     }
 
-    let anchorFile;
+    let anchorFileModel;
     try {
-      anchorFile = await JsonAsync.parse(anchorFileDecompressedBuffer);
+      anchorFileModel = await JsonAsync.parse(anchorFileDecompressedBuffer);
     } catch (e) {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const anchorFileProperties = Object.keys(anchorFile);
+    const anchorFileProperties = Object.keys(anchorFileModel);
     if (anchorFileProperties.length > 2) {
       throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
     }
 
-    if (!anchorFile.hasOwnProperty('mapFileHash')) {
+    if (!anchorFileModel.hasOwnProperty('mapFileHash')) {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
     }
 
-    if (!anchorFile.hasOwnProperty('didUniqueSuffixes')) {
+    if (!anchorFileModel.hasOwnProperty('operations')) {
       throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing);
     }
 
     // Map file hash validations.
-    if (typeof anchorFile.mapFileHash !== 'string') {
+    if (typeof anchorFileModel.mapFileHash !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString);
     }
 
-    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFile.mapFileHash);
+    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFileModel.mapFileHash);
     if (!Multihash.isComputedUsingHashAlgorithm(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${anchorFile.mapFileHash}' is unsupported.`);
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${anchorFileModel.mapFileHash}' is unsupported.`);
     }
 
-    // DID Unique Suffixes validations.
-    if (!Array.isArray(anchorFile.didUniqueSuffixes)) {
-      throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesNotArray);
-    }
+    // `operation` validations.
 
-    if (anchorFile.didUniqueSuffixes.length > ProtocolParameters.maxOperationsPerBatch) {
-      throw new SidetreeError(ErrorCode.AnchorFileExceededMaxOperationCount);
-    }
-
-    if (this.hasDuplicates(anchorFile.didUniqueSuffixes)) {
-      throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesHasDuplicates);
-    }
-
-    // Verify each entry in DID unique suffixes.
-    for (let uniqueSuffix of anchorFile.didUniqueSuffixes) {
-      if (typeof uniqueSuffix !== 'string') {
-        throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString);
-      }
-
-      const maxEncodedHashStringLength = ProtocolParameters.maxEncodedHashStringLength;
-      if (uniqueSuffix.length > maxEncodedHashStringLength) {
-        throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixTooLong, `Unique suffix '${uniqueSuffix}' exceeds length of ${maxEncodedHashStringLength}.`);
+    const allowedProperties = new Set(['createOperations', 'recoverOperations', 'revokeOperations']);
+    const operations = anchorFileModel.operations;
+    for (let property in operations) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.AnchorFileUnexpectedPropertyInOperations, `Unexpected property ${property} in 'operations' property in anchor file.`);
       }
     }
 
-    return anchorFile;
+    // Will be populated for later validity check.
+    const didUniqueSuffixes: string[] = [];
+
+    // Validate `createOperations` if exists.
+    if (operations.createOperations !== undefined) {
+      if (!Array.isArray(operations.createOperations)) {
+        throw new SidetreeError(ErrorCode.AnchorFileCreateOperationsNotArray);
+      }
+
+      for (const createOperation of operations.createOperations) {
+        CreateOperation.
+      }
+    }
+
+    // Validate `recoverOperations` if exists.
+    if (operations.recoverOperations !== undefined) {
+      if (!Array.isArray(operations.recoverOperations)) {
+        throw new SidetreeError(ErrorCode.AnchorFileRecoverOperationsNotArray);
+      }
+    }
+
+    // Validate `revokeOperations` if exists.
+    if (operations.revokeOperations !== undefined) {
+      if (!Array.isArray(operations.revokeOperations)) {
+        throw new SidetreeError(ErrorCode.AnchorFileRevokeOperationsNotArray);
+      }
+    }
+
+    if (AnchorFile.hasDuplicates(didUniqueSuffixes)) {
+      throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
+    }
+
+    return anchorFileModel;
   }
 
   /**

@@ -12,7 +12,7 @@ describe('MapFile', async () => {
       const fileCompressed = await Compressor.compress(fileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parseAndValidate(fileCompressed),
+        () => MapFile.parse(fileCompressed),
         ErrorCode.MapFileNotJson);
     });
 
@@ -23,7 +23,7 @@ describe('MapFile', async () => {
       const fileBuffer = Buffer.from(JSON.stringify(mapFileModel));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parseAndValidate(fileBuffer),
+        () => MapFile.parse(fileBuffer),
         ErrorCode.MapFileDecompressionFailure);
     });
 
@@ -35,7 +35,7 @@ describe('MapFile', async () => {
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
-      await expectAsync(MapFile.parseAndValidate(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileHasUnknownProperty));
+      await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileHasUnknownProperty));
     });
 
     it('should throw if missing map file hash.', async () => {
@@ -46,7 +46,7 @@ describe('MapFile', async () => {
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
-      await expectAsync(MapFile.parseAndValidate(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileBatchFileHashMissingOrIncorrectType));
+      await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileBatchFileHashMissingOrIncorrectType));
     });
   });
 });

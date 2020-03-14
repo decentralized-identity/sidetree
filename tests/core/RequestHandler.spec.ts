@@ -141,14 +141,18 @@ describe('RequestHandler', () => {
     expect(batchFile.operations.length).toEqual(1);
   });
 
-  it('should return bad request if operation given is larger than protocol limit.', async () => {
+  it('should return bad request if operation data given in request is larger than protocol limit.', async () => {
+    const createOperationData = await OperationGenerator.generateCreateOperation();
+    const createOperationRequest = createOperationData.operationRequest;
     const getRandomBytesAsync = util.promisify(crypto.randomBytes);
     const largeBuffer = await getRandomBytesAsync(4000);
+    createOperationRequest.operationData = Encoder.encode(largeBuffer);
+
     const response = await requestHandler.handleOperationRequest(largeBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.OperationExceedsMaximumSize);
+    expect(response.body.code).toEqual(ErrorCode.RequestHandlerOperationDataExceedsMaximumSize);
   });
 
   it('should return bad request if two operations for the same DID is received.', async () => {

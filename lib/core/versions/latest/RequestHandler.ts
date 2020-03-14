@@ -36,14 +36,19 @@ export default class RequestHandler implements IRequestHandler {
     // Perform common validation for any write request and parse it into an `OperationModel`.
     let operation: OperationModel;
     try {
-      // Validate operation request size.
-      if (request.length > ProtocolParameters.maxOperationByteSize) {
-        const errorMessage = `Operation byte size of ${request.length} exceeded limit of ${ProtocolParameters.maxOperationByteSize}`;
-        console.info(errorMessage);
-        throw new SidetreeError(ErrorCode.OperationExceedsMaximumSize, errorMessage);
-      }
-
       operation = await Operation.parse(request);
+
+      // Check `operationData` property data size if they exist in the operation.
+      if (operation.type === OperationType.Create ||
+          operation.type === OperationType.Recover ||
+          operation.type === OperationType.Update) {
+        const operationDataBuffer = Buffer.from((request as any).operationData);
+        if (operationDataBuffer.length > ProtocolParameters.maxOperationDataByteSize) {
+          const errorMessage = `operationDdata byte size of ${operationDataBuffer.length} exceeded limit of ${ProtocolParameters.maxOperationDataByteSize}`;
+          console.info(errorMessage);
+          throw new SidetreeError(ErrorCode.RequestHandlerOperationDataExceedsMaximumSize, errorMessage);
+        }
+      }
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
       if (await this.operationQueue.contains(operation.didUniqueSuffix)) {

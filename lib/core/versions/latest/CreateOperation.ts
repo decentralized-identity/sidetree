@@ -67,8 +67,8 @@ export default class CreateOperation implements OperationModel {
   /**
    * Computes the cryptographic multihash of the given string.
    */
-  private static computeHash (encodedString: string): string {
-    const dataBuffer = Encoder.decodeAsBuffer(encodedString);
+  public static computeDidUniqueSuffix (encodedSuffixData: string): string {
+    const dataBuffer = Encoder.decodeAsBuffer(encodedSuffixData);
     const multihash = Multihash.hash(dataBuffer);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
@@ -105,7 +105,7 @@ export default class CreateOperation implements OperationModel {
     const suffixData = await CreateOperation.parseSuffixData(encodedSuffixData);
     const operationData = await CreateOperation.parseOperationData(operationObject.operationData);
 
-    const didUniqueSuffix = CreateOperation.computeHash(operationObject.suffixData);
+    const didUniqueSuffix = CreateOperation.computeDidUniqueSuffix(operationObject.suffixData);
     return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, encodedOperationData, suffixData, operationData);
   }
 

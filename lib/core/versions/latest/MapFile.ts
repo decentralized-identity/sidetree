@@ -12,7 +12,7 @@ export default class MapFile {
    * Parses and validates the given map file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parseAndValidate (mapFileBuffer: Buffer): Promise<MapFileModel> {
+  public static async parse (mapFileBuffer: Buffer): Promise<MapFileModel> {
 
     let decompressedBuffer;
     try {
