@@ -6,7 +6,7 @@ import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
 
 /**
- * Encapsulates functionality about a sidetree transaction written on the bitcoin.
+ * Encapsulates functionality about parsing a sidetree transaction written on the bitcoin.
  */
 export default class SidetreeTransactionParser {
 
@@ -19,7 +19,7 @@ export default class SidetreeTransactionParser {
    * @param bitcoinTransaction The transaction to parse.
    * @param sidetreePrefix The prefix of the sidetree transactions.
    *
-   * @returns This object if the transaction is a valid sidetree transaction; undefined otherwise.
+   * @returns The data model if the specified transaction is a valid sidetree transaction; undefined otherwise.
    */
   public async parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): Promise<SidetreeTransactionModel | undefined> {
 
