@@ -617,7 +617,7 @@ export default class BitcoinProcessor {
     for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
-      const sidetreeData = this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
+      const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
       const isSidetreeTransaction = sidetreeData !== undefined;
 
       // Add the transaction to the sampler.  We filter out transactions with unusual
@@ -699,7 +699,7 @@ export default class BitcoinProcessor {
     transactionIndex: number,
     transactionBlock: number): Promise<TransactionModel | undefined> {
 
-    const sidetreeData = this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
+    const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
 
     if (sidetreeData) {
       const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);

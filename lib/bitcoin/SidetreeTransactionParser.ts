@@ -2,15 +2,14 @@ import BitcoinClient from './BitcoinClient';
 import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionModel from './models/SidetreeTransactionModel';
-import { crypto } from 'bitcore-lib';
 
 /**
  * Encapsulates functionality about a sidetree transaction written on the bitcoin.
  */
 export default class SidetreeTransactionParser {
 
-  // @ts-ignore
   public constructor (private bitcoinClient: BitcoinClient) {
   }
 
@@ -22,9 +21,7 @@ export default class SidetreeTransactionParser {
    *
    * @returns This object if the transaction is a valid sidetree transaction; undefined otherwise.
    */
-  public parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): SidetreeTransactionModel | undefined {
-
-    // Example valid transaction: https://www.blockchain.com/btctest/tx/a98fd29d4583d1f691067b0f92ae83d3808d18cba55bd630dbf569fbaea9355c
+  public async parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): Promise<SidetreeTransactionModel | undefined> {
 
     const sidetreeData = this.getValidSidetreeDataFromOutputs(bitcoinTransaction.id, bitcoinTransaction.outputs, sidetreePrefix);
 
@@ -32,7 +29,7 @@ export default class SidetreeTransactionParser {
       return undefined;
     }
 
-    const writer = this.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
+    const writer = await this.getValidWriterFromInputs(bitcoinTransaction.id, bitcoinTransaction.inputs);
 
     if (!writer) {
       console.info(`Valid sidetree data was found but no valid writer was found for transaction id: ${bitcoinTransaction.id}`);
@@ -90,54 +87,66 @@ export default class SidetreeTransactionParser {
     return undefined;
   }
 
-  private getValidWriterFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): string | undefined {
-
-    const validPublickey = this.getValidPublicKeyFromInputs(transactionId, transactionInputs);
-
-    if (!validPublickey) {
-      return undefined;
-    }
-
-    // This library uses the public-key-hash-output format of the public key as the writer so
-    // convert the public key into the expected foramat.
-    const publicKeyAsBuffer = Buffer.from(validPublickey, 'hex');
-    const publicKeyHashBuffer = crypto.Hash.sha256ripemd160(publicKeyAsBuffer);
-
-    return publicKeyHashBuffer.toString('hex');
-  }
-
-  private getValidPublicKeyFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): string | undefined {
+  private async getValidWriterFromInputs (transactionId: string, transactionInputs: BitcoinInputModel[]): Promise<string | undefined> {
 
     // A valid sidetree transaction inputs have following requirements:
-    //  1. The first input must be in format: <signature> <publickey>
-    //  2. The output being spent by the first input must be in the pay-to-public-key-hash output.
-    //  3. The first input checks will prove that the writer of the txn owns the <publickey><privatekey> pair
-    //     so we won't check any other inputs.
+    //  A. There must be at least one input.
+    //  B. The first input must be in format: <signature> <publickey>
+    //  C. The output being spent by the first input must be in the pay-to-public-key-hash output.
     //
-    // The output will be the <publickey> from the first input.
+    // The first input checks will prove that the writer of the input/txn owns the <publickey><privatekey> pair
+    // so we won't check any other inputs.
+    //
+    // The writer is the hash of the <publickey> which is in the output being spent (C).
+    //
+    // Example valid transaction: https://www.blockchain.com/btctest/tx/a98fd29d4583d1f691067b0f92ae83d3808d18cba55bd630dbf569fbaea9355c
 
-    // First get all the public keys from the inputs
-    const allPublicKeys = transactionInputs.map(input => {
-      const scriptAsmParts = input.scriptAsmAsString.split(' ');
-
-      // Issue #271: Figure out whether assuming the 2nd one as the public key is ok or not.
-      // If the publickey is not present then just use 'undefined'
-      return scriptAsmParts.length >= 2 ? scriptAsmParts[1] : undefined;
-    });
-
-    // Save all the unique public keys.
-    const uniquePublicKeys = new Set<string | undefined>();
-    for (let i = 0; i < transactionInputs.length; i++) {
-      uniquePublicKeys.add(allPublicKeys[i]);
-    }
-
-    // There should be only 1 key in all of the inputs; so if we have more than 1 then that is invalid.
-    if (uniquePublicKeys.size !== 1) {
-      console.info(`More than one public key inputs were found in transaction id: ${transactionId}`);
+    // A.
+    if (transactionInputs.length < 1) {
+      console.info(`There must be at least one input in the transaction id: ${transactionId}`);
       return undefined;
     }
 
-    // If we are here then there's only one public key, return it.
-    return allPublicKeys[0];
+    const inputToCheck = transactionInputs[0];
+
+    // B.
+    const inputScriptAsmParts = inputToCheck.scriptAsmAsString.split(' ');
+    if (inputScriptAsmParts.length !== 2) {
+      console.info(`The first input must have only the signature and publickey; transaction id: ${transactionId}`);
+      return undefined;
+    }
+
+    // C.
+    const outputBeingSpend = await this.fetchOutput(inputToCheck.previousTransactionId, inputToCheck.outputIndexInPreviousTransaction);
+
+    if (!outputBeingSpend) {
+      return undefined;
+    }
+
+    return this.getPublicKeyHashIfValidScript(outputBeingSpend.scriptAsmAsString);
+  }
+
+  private async fetchOutput (transactionId: string, outputIdxToFetch: number): Promise<BitcoinOutputModel | undefined> {
+    try {
+      const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
+
+      return transaction.outputs[outputIdxToFetch];
+    } catch (e) {
+      console.warn(`Error while trying to get outputIdx: ${outputIdxToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+      return undefined;
+    }
+  }
+
+  private getPublicKeyHashIfValidScript (scriptAsm: string): string | undefined {
+    const scriptAsmParts = scriptAsm.split(' ');
+
+    const isScriptValid =
+      scriptAsmParts.length === 5 &&
+      scriptAsmParts[0] === 'OP_DUP' &&
+      scriptAsmParts[1] === 'OP_HASH160' &&
+      scriptAsmParts[3] === 'OP_EQUALVERIFY' &&
+      scriptAsmParts[4] === 'OP_CHECKSIG';
+
+    return isScriptValid ? scriptAsmParts[2] : undefined;
   }
 }

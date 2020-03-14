@@ -8,7 +8,7 @@ import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import SidetreeError from '../../lib/common/SidetreeError';
-import SidetreeTransactionData from '../../lib/bitcoin/SidetreeTransactionData';
+import SidetreeTransactionModel from '../../lib/bitcoin/models/SidetreeTransactionModel';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
 import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -1458,14 +1458,14 @@ describe('BitcoinProcessor', () => {
         });
 
         let numOfNonSidetreeTransactions = 0;
-        spyOn(SidetreeTransactionData, 'parse').and.callFake(() => {
+        spyOn(bitcoinProcessor['sidetreeTransactionParser'], 'parse').and.callFake(() => {
 
           if (Math.random() > 0.2) {
-            return { data: randomString(), writer: randomString() };
+            return Promise.resolve({ data: randomString(), writer: randomString() });
           }
 
           numOfNonSidetreeTransactions++;
-          return undefined;
+          return Promise.resolve(undefined);
         });
 
         const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
@@ -1522,11 +1522,11 @@ describe('BitcoinProcessor', () => {
   describe('getSidetreeTransactionModelIfExist', async () => {
     it('should only return the sidetree transaction data if exist.', async (done) => {
 
-      const mockSidetreeData: SidetreeTransactionData = {
+      const mockSidetreeData: SidetreeTransactionModel = {
         data: 'sidetree data',
         writer: 'writer'
       };
-      spyOn(SidetreeTransactionData, 'parse').and.returnValue(mockSidetreeData);
+      spyOn(bitcoinProcessor['sidetreeTransactionParser'], 'parse').and.returnValue(Promise.resolve(mockSidetreeData));
 
       const mockTxnFee = 1000;
       const mockNormalizedFeeModel: TransactionFeeModel = { normalizedTransactionFee: 300 };
@@ -1567,7 +1567,7 @@ describe('BitcoinProcessor', () => {
 
     it('should return undefined if the parse result is undefined.', async (done) => {
 
-      spyOn(SidetreeTransactionData, 'parse').and.returnValue(undefined);
+      spyOn(bitcoinProcessor['sidetreeTransactionParser'], 'parse').and.returnValue(Promise.resolve(undefined));
 
       const getTxnFeeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis');
       const getNormalizedFeeSpy = spyOn(bitcoinProcessor, 'getNormalizedFee');
