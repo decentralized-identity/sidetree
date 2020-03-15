@@ -138,7 +138,7 @@ describe('RequestHandler', () => {
     const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
-    expect(batchFile.operations.length).toEqual(1);
+    expect(batchFile.operationData.length).toEqual(1);
   });
 
   it('should return bad request if operation data given in request is larger than protocol limit.', async () => {
@@ -148,7 +148,8 @@ describe('RequestHandler', () => {
     const largeBuffer = await getRandomBytesAsync(4000);
     createOperationRequest.operationData = Encoder.encode(largeBuffer);
 
-    const response = await requestHandler.handleOperationRequest(largeBuffer);
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);

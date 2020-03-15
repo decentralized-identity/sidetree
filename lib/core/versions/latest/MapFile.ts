@@ -1,3 +1,4 @@
+import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -29,13 +30,33 @@ export default class MapFile {
       throw SidetreeError.createFromError(ErrorCode.MapFileNotJson, error);
     }
 
-    const mapFileProperties = Object.keys(mapFile);
-    if (mapFileProperties.length > 1) {
-      throw new SidetreeError(ErrorCode.MapFileHasUnknownProperty);
+    const allowedProperties = new Set(['batchFileHash', 'updateOperations']);
+    for (let property in mapFile) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.MapFileHasUnknownProperty);
+      }
     }
 
     if (typeof mapFile.batchFileHash !== 'string') {
       throw new SidetreeError(ErrorCode.MapFileBatchFileHashMissingOrIncorrectType);
+    }
+
+    // Validate `updateOperations` if exists.
+    const updateOperations = mapFile.updateOperations;
+    if (updateOperations !== undefined) {
+      if (!Array.isArray(updateOperations)) {
+        throw new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray);
+      }
+
+      // TODO: Validate each operation.
+      // for (const operation of updateOperations) {
+      //   // const createOperation = await UpdateOperation.parseOpertionFromAnchorFile(operation);
+      // }
+
+      const didUniqueSuffixes = (mapFile as MapFileModel).updateOperations!.map(operation => operation.didUniqueSuffix);
+      if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
+        throw new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid);
+      }
     }
 
     return mapFile;

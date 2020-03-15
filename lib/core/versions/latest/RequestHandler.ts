@@ -12,6 +12,7 @@ import Resolver from '../../Resolver';
 import SidetreeError from '../../../common/SidetreeError';
 import { ResponseModel, ResponseStatus } from '../../../common/Response';
 import DocumentState from '../../models/DocumentState';
+import JsonAsync from './util/JsonAsync';
 
 /**
  * Sidetree operation request handler.
@@ -34,15 +35,15 @@ export default class RequestHandler implements IRequestHandler {
     console.info(`Handling operation request of size ${request.length} bytes...`);
 
     // Perform common validation for any write request and parse it into an `OperationModel`.
-    let operation: OperationModel;
+    let operationModel: OperationModel;
     try {
-      operation = await Operation.parse(request);
+      const operationRequest = await JsonAsync.parse(request);
 
       // Check `operationData` property data size if they exist in the operation.
-      if (operation.type === OperationType.Create ||
-          operation.type === OperationType.Recover ||
-          operation.type === OperationType.Update) {
-        const operationDataBuffer = Buffer.from((request as any).operationData);
+      if (operationRequest.type === OperationType.Create ||
+          operationRequest.type === OperationType.Recover ||
+          operationRequest.type === OperationType.Update) {
+        const operationDataBuffer = Buffer.from(operationRequest.operationData);
         if (operationDataBuffer.length > ProtocolParameters.maxOperationDataByteSize) {
           const errorMessage = `operationDdata byte size of ${operationDataBuffer.length} exceeded limit of ${ProtocolParameters.maxOperationDataByteSize}`;
           console.info(errorMessage);
@@ -50,8 +51,10 @@ export default class RequestHandler implements IRequestHandler {
         }
       }
 
+      operationModel = await Operation.parse(request);
+
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
-      if (await this.operationQueue.contains(operation.didUniqueSuffix)) {
+      if (await this.operationQueue.contains(operationModel.didUniqueSuffix)) {
         throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
       }
     } catch (error) {
@@ -73,14 +76,14 @@ export default class RequestHandler implements IRequestHandler {
     }
 
     try {
-      console.info(`Operation type: '${operation.type}', DID unique suffix: '${operation.didUniqueSuffix}'`);
+      console.info(`Operation type: '${operationModel.type}', DID unique suffix: '${operationModel.didUniqueSuffix}'`);
 
       // Passed common operation validation, hand off to specific operation handler.
       let response: ResponseModel;
-      switch (operation.type) {
+      switch (operationModel.type) {
         case OperationType.Create:
 
-          const documentState = await this.applyCreateOperation(operation);
+          const documentState = await this.applyCreateOperation(operationModel);
 
           if (documentState === undefined) {
             response = {
@@ -113,7 +116,7 @@ export default class RequestHandler implements IRequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        await this.operationQueue.enqueue(operation.didUniqueSuffix, operation.operationBuffer);
+        await this.operationQueue.enqueue(operationModel.didUniqueSuffix, operationModel.operationBuffer);
       }
 
       return response;

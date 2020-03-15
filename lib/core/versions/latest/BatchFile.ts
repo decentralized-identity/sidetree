@@ -28,7 +28,7 @@ export default class BatchFile {
     console.info(`Parsed batch file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
-    const allowedProperties = new Set(['operationsData']);
+    const allowedProperties = new Set(['operationData']);
     for (let property in batchFileObject) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.BatchFileUnexpectedProperty, `Unexpected property ${property} in batch file.`);
@@ -41,7 +41,7 @@ export default class BatchFile {
     }
 
     // Make sure all operations are strings.
-    batchFileObject.operations.forEach((operation: any) => {
+    batchFileObject.operationData.forEach((operation: any) => {
       if (typeof operation !== 'string') {
         throw new SidetreeError(ErrorCode.BatchFileOperationDataNotArrayOfStrings, 'Invalid batch file, operationData property is not an array of strings.');
       }

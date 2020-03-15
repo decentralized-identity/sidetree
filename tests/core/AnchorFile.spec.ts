@@ -51,35 +51,37 @@ describe('AnchorFile', async () => {
       await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing));
     });
 
-    it('should throw if missing DID unique suffix.', async () => {
+    it('should throw if missing operations property.', async () => {
       const anchorFile = {
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
-        // didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A'], // Intentionally kept to show what is missing.
+        // operations: {}, // Intentionally missing operations.
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty));
     });
 
     it('should throw if map file hash is not string.', async () => {
-      const anchorFile = {
-        mapFileHash: 12345,
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
-      };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('unusedMockFileHash', [createOperation], [], []);
+
+      (anchorFileModel as any).mapFileHash = 1234; // Intentionally setting the mapFileHash as an incorrect type.
+
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString));
     });
 
     it('should throw if map file hash is invalid.', async () => {
-      const anchorFile = {
-        mapFileHash: 'InvalidHash',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
-      };
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('invalidMapFileHash', [createOperation], [], []);
+
       try {
-        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
         const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
         await AnchorFile.parse(anchorFileCompressed);
@@ -113,7 +115,7 @@ describe('AnchorFile', async () => {
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
         createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
         'anyRecoveryOtp',
-        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        createOperationData.recoveryPrivateKey
       );
 
       // Strip away properties not allowed in the revokeOperations array elements.
@@ -135,7 +137,7 @@ describe('AnchorFile', async () => {
 
   describe('createBuffer', async () => {
     it('should created a compressed buffer correctly.', async () => {
-      const mapFileHash = 'anyMapFileHash';
+      const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 

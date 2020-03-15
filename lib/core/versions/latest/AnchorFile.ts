@@ -1,4 +1,5 @@
 import AnchorFileModel from './models/AnchorFileModel';
+import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
 import Encoder from './Encoder';
@@ -44,7 +45,7 @@ export default class AnchorFile {
     }
 
     if (!anchorFileModel.hasOwnProperty('operations')) {
-      throw new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing);
+      throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
     // Map file hash validations.
@@ -88,6 +89,12 @@ export default class AnchorFile {
       if (!Array.isArray(operations.recoverOperations)) {
         throw new SidetreeError(ErrorCode.AnchorFileRecoverOperationsNotArray);
       }
+
+      // Validate every operation.
+      for (const operation of operations.recoverOperations) {
+        // TODO: Validate
+        didUniqueSuffixes.push(operation.didUniqueSuffix);
+      }
     }
 
     // Validate `revokeOperations` if exists.
@@ -95,30 +102,19 @@ export default class AnchorFile {
       if (!Array.isArray(operations.revokeOperations)) {
         throw new SidetreeError(ErrorCode.AnchorFileRevokeOperationsNotArray);
       }
+
+      // Validate every operation.
+      for (const operation of operations.revokeOperations) {
+        // TODO: Validate
+        didUniqueSuffixes.push(operation.didUniqueSuffix);
+      }
     }
 
-    if (AnchorFile.hasDuplicates(didUniqueSuffixes)) {
+    if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
     return anchorFileModel;
-  }
-
-  /**
-   * Checkes to see if there are duplicates in the given array.
-   */
-  public static hasDuplicates<T> (array: Array<T>): boolean {
-    const uniqueValues = new Set<T>();
-
-    for (let i = 0; i < array.length; i++) {
-      const value = array[i];
-      if (uniqueValues.has(value)) {
-        return true;
-      }
-      uniqueValues.add(value);
-    }
-
-    return false;
   }
 
   /**
@@ -174,7 +170,7 @@ export default class AnchorFile {
     recoverOperations: RecoverOperation[],
     revokeOperations: RevokeOperation[]
   ): Promise<Buffer> {
-    const anchorFileModel = AnchorFile.createModel(mapFileHash, createOperations, recoverOperations, revokeOperations);
+    const anchorFileModel = await AnchorFile.createModel(mapFileHash, createOperations, recoverOperations, revokeOperations);
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 
