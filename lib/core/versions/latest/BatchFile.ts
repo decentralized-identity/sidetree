@@ -1,11 +1,13 @@
 import BatchFileModel from './models/BatchFileModel';
 import Compressor from './util/Compressor';
-import Encoder from './Encoder';
+import CreateOperation from './CreateOperation';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import timeSpan = require('time-span');
+import RecoverOperation from './RecoverOperation';
+import UpdateOperation from './UpdateOperation';
 
 /**
  * Defines the schema of a Batch File and its related operations.
@@ -63,16 +65,19 @@ export default class BatchFile {
   }
 
   /**
-   * Creates the Batch File buffer from an array of operation Buffers.
-   * @param operationBuffers Operation buffers in JSON serialized form, NOT encoded in anyway.
-   * @returns The Batch File buffer.
+   * Creates batch file buffer.
    */
-  public static async fromOperationBuffers (operationBuffers: Buffer[]): Promise<Buffer> {
-    const operations = operationBuffers.map((operation) => {
-      return Encoder.encode(operation);
-    });
+  public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
+    const operationData = [];
+    operationData.push(...createOperations.map(operation => operation.encodedOperationData!));
+    operationData.push(...recoverOperations.map(operation => operation.encodedOperationData!));
+    operationData.push(...updateOperations.map(operation => operation.encodedOperationData!));
 
-    const rawData = JSON.stringify({ operations });
+    const batchFileModel = {
+      operationData
+    };
+
+    const rawData = Buffer.from(JSON.stringify(batchFileModel));
     const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
     return compressedRawData;

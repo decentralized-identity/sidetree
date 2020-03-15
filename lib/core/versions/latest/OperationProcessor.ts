@@ -84,10 +84,10 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const newDocumentState = {
       didUniqueSuffix: operation.didUniqueSuffix,
-      document: operation.operationData.document,
+      document: operation.operationData!.document,
       recoveryKey: operation.suffixData.recoveryKey,
       nextRecoveryOtpHash: operation.suffixData.nextRecoveryOtpHash,
-      nextUpdateOtpHash: operation.operationData.nextUpdateOtpHash,
+      nextUpdateOtpHash: operation.operationData!.nextUpdateOtpHash,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 

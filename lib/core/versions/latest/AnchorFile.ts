@@ -6,6 +6,8 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
+import RecoverOperation from './RecoverOperation';
+import RevokeOperation from './RevokeOperation';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
@@ -120,10 +122,59 @@ export default class AnchorFile {
   }
 
   /**
-   * Creates a buffer from the input so that the buffer can be persisted.
+   * Creates an `AnchorFileModel`.
    */
-  public static async createBufferFromAnchorFileModel (anchorFileModel: AnchorFileModel): Promise<Buffer> {
+  public static async createModel (
+    mapFileHash: string,
+    createOperationArray: CreateOperation[],
+    recoverOperationArray: RecoverOperation[],
+    revokeOperationArray: RevokeOperation[]
+  ): Promise<AnchorFileModel> {
 
+    const createOperations = createOperationArray.map(operation => {
+      return {
+        suffixData: operation.encodedSuffixData
+      };
+    });
+
+    const recoverOperations = recoverOperationArray.map(operation => {
+      return {
+        didUniqueSuffix: operation.didUniqueSuffix,
+        recoveryOtp: operation,
+        signedOperationData: operation.signedOperationDataJws.toJwsModel()
+      };
+    });
+
+    const revokeOperations = revokeOperationArray.map(operation => {
+      return {
+        didUniqueSuffix: operation.didUniqueSuffix,
+        recoveryOtp: operation.recoveryOtp,
+        signedOperationData: operation.signedOperationDataJws.toJwsModel()
+      };
+    });
+
+    const anchorFileModel = {
+      mapFileHash,
+      operations: {
+        createOperations,
+        recoverOperations,
+        revokeOperations
+      }
+    };
+
+    return anchorFileModel;
+  }
+
+  /**
+   * Creates an anchor file buffer.
+   */
+  public static async createBuffer (
+    mapFileHash: string,
+    createOperations: CreateOperation[],
+    recoverOperations: RecoverOperation[],
+    revokeOperations: RevokeOperation[]
+  ): Promise<Buffer> {
+    const anchorFileModel = AnchorFile.createModel(mapFileHash, createOperations, recoverOperations, revokeOperations);
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 

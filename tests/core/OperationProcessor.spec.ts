@@ -1,5 +1,4 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
@@ -7,11 +6,9 @@ import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentM
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import DocumentState from '../../lib/core/models/DocumentState';
-import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -22,19 +19,10 @@ import RevokeOperation from '../../lib/core/versions/latest/RevokeOperation';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 
-async function addOperationsAsBatchFileToCas (
-  operationBuffers: Buffer[],
-  cas: ICas) {
-
-  const batchBuffer = await BatchFile.fromOperationBuffers(operationBuffers);
-  await cas.write(batchBuffer);
-}
-
 async function createUpdateSequence (
   didUniqueSuffix: string,
   createOp: AnchoredOperationModel,
   firstUpdateOtp: string,
-  cas: ICas,
   numberOfUpdates: number,
   publicKeyId: string,
   privateKey: any): Promise<AnchoredOperationModel[]> {
@@ -69,7 +57,6 @@ async function createUpdateSequence (
     updateOtp = nextUpdateOtp;
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-    await addOperationsAsBatchFileToCas([operationBuffer], cas);
 
     const updateOp: AnchoredOperationModel = {
       type: OperationType.Update,
@@ -123,7 +110,6 @@ function validateDidDocumentAfterUpdates (didDocument: DidDocumentModel | undefi
 }
 
 describe('OperationProcessor', async () => {
-  let cas = new MockCas();
   let resolver: Resolver;
   let operationStore: IOperationStore;
   let versionManager: IVersionManager;
@@ -139,7 +125,6 @@ describe('OperationProcessor', async () => {
   let recoveryOtp: string;
 
   beforeEach(async () => {
-    cas = new MockCas();
     operationStore = new MockOperationStore();
     operationProcessor = new OperationProcessor();
     versionManager = new MockVersionManager();
@@ -164,7 +149,7 @@ describe('OperationProcessor', async () => {
       firstUpdateOtpHash,
       services
     );
-    await addOperationsAsBatchFileToCas([createOperationBuffer], cas);
+
     const createOperation = await CreateOperation.parse(createOperationBuffer);
     createOp = OperationGenerator.createAnchoredOperationModelFromOperationModel(createOperation, 0, 0, 0);
     didUniqueSuffix = createOp.didUniqueSuffix;
@@ -217,7 +202,6 @@ describe('OperationProcessor', async () => {
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-    await addOperationsAsBatchFileToCas([operationBuffer], cas);
 
     const updateOp: AnchoredOperationModel = {
       type: OperationType.Update,
@@ -239,7 +223,7 @@ describe('OperationProcessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
 
     const documentState = await resolver.resolve(didUniqueSuffix);
@@ -249,7 +233,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
@@ -261,7 +245,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
@@ -280,7 +264,7 @@ describe('OperationProcessor', async () => {
 
   it('should process revoke operation correctly.', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
 
     const documentState = await resolver.resolve(didUniqueSuffix);
@@ -330,7 +314,7 @@ describe('OperationProcessor', async () => {
 
   it('should ignore updates to DID that is not created', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
 
     // elide i = 0, the create operation
     for (let i = 1 ; i < ops.length ; ++i) {
@@ -389,7 +373,7 @@ describe('OperationProcessor', async () => {
 
   it('should rollback all', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, cas, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();

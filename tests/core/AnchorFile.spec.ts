@@ -1,14 +1,12 @@
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import SidetreeError from '../../lib/common/SidetreeError';
 import OperationGenerator from '../generators/OperationGenerator';
-import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 
 describe('AnchorFile', async () => {
-  describe('parseAndValidate()', async () => {
+  describe('parse()', async () => {
     it('should throw if buffer given is not valid JSON.', async () => {
       const anchorFileBuffer = Buffer.from('NotJsonString');
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -135,24 +133,18 @@ describe('AnchorFile', async () => {
     });
   });
 
-  describe('createBufferFromAnchorFileModel', async () => {
+  describe('createBuffer', async () => {
     it('should created a compressed buffer correctly.', async () => {
-      const anchorFile = {
-        mapFileHash: 'val1',
-        didUniqueSuffixes: ['val2']
-      };
+      const mapFileHash = 'anyMapFileHash';
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
 
-      const bufferFromCode = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
+      const anchoreFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperation], [], []);
 
-      // Calculated this manually to validate the output
-      const expectedEncodedBuffer = 'H4sIAAAAAAAACqtWyk0scMvMSfVILM5QslIqS8wxVNJRSslMCc3LLCxNDS5NS8usSC1WsooGyRkpxdYCACZUzsYzAAAA';
-      const expectedBuffer = Encoder.decodeAsBuffer(expectedEncodedBuffer);
+      const decompressedAnchorFileModel = await AnchorFile.parse(anchoreFileBuffer);
 
-      // Removing the first 10 bytes of the buffer as those are the header bytes in gzip are
-      // the header bytes which are effected by the current operating system. So if the tests
-      // run on a different OS, those bytes change even though they don't effect the actual
-      // decompression/compression.
-      expect(bufferFromCode.slice(10)).toEqual(expectedBuffer.slice(10));
+      expect(decompressedAnchorFileModel.mapFileHash).toEqual(mapFileHash);
+      expect(decompressedAnchorFileModel.operations.createOperations![0].suffixData).toEqual(createOperation.encodedSuffixData);
     });
   });
 });

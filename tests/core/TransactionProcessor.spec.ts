@@ -10,6 +10,7 @@ import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MockOperationStore from '../mocks/MockOperationStore';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
+import OperationGenerator from '../generators/OperationGenerator';
 
 describe('TransactionProcessor', () => {
   const config = require('../json/config-test.json');
@@ -212,14 +213,13 @@ describe('TransactionProcessor', () => {
     it('should return the parsed file.', async (done) => {
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.alloc(0)));
 
-      const mockAnchorFile: AnchorFileModel = {
-        didUniqueSuffixes: [ 'suffix 1', 'suffix2' ],
-        mapFileHash: 'map_file_hash'
-      };
-      spyOn(AnchorFile, 'parseAndValidate').and.returnValue(Promise.resolve(mockAnchorFile));
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const mockAnchorFileModel = await AnchorFile.createModel('mockMapFileHash', [(await createOperationData).createOperation], [], []);
+      spyOn(AnchorFile, 'parse').and.returnValue(Promise.resolve(mockAnchorFileModel));
 
-      const actual = await transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', mockAnchorFile.didUniqueSuffixes.length);
-      expect(actual).toEqual(mockAnchorFile);
+      const paidBatchSize = 2;
+      const actual = await transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', paidBatchSize);
+      expect(actual).toEqual(mockAnchorFileModel);
       done();
     });
   });

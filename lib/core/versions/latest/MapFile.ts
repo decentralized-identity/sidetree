@@ -3,6 +3,7 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import MapFileModel from './models/MapFileModel';
 import SidetreeError from '../../../common/SidetreeError';
+import UpdateOperation from './UpdateOperation';
 
 /**
  * Class containing Map File related operations.
@@ -43,8 +44,19 @@ export default class MapFile {
   /**
    * Creates the Map File buffer.
    */
-  public static async createBuffer (batchFileHash: string): Promise<Buffer> {
-    const mapFileModel = { batchFileHash };
+  public static async createBuffer (batchFileHash: string, updateOperationArray: UpdateOperation[]): Promise<Buffer> {
+    const updateOperations = updateOperationArray.map(operation => {
+      return {
+        didUniqueSuffix: operation.didUniqueSuffix,
+        updateOtp: operation.updateOtp,
+        signedOperationDataHash: operation.signedOperationDataHash.toJwsModel()
+      };
+    });
+
+    const mapFileModel = {
+      batchFileHash,
+      updateOperations
+    };
 
     const rawData = JSON.stringify(mapFileModel);
     const compressedRawData = await Compressor.compress(Buffer.from(rawData));

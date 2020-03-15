@@ -1,7 +1,6 @@
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
-import AnchorFileModel from './models/AnchorFileModel';
 import BatchFile from './BatchFile';
 import CreateOperation from './CreateOperation';
 import FeeManager from './FeeManager';
@@ -29,8 +28,9 @@ export default class BatchWriter implements IBatchWriter {
   public async write () {
     // Get the batch of operations to be anchored on the blockchain.
     const queuedOperations = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
+    const numberOfOperations = queuedOperations.length;
 
-    console.info('Batch size = ' + queuedOperations.length);
+    console.info(`Batch size = ${numberOfOperations}`);
 
     // Do nothing if there is nothing to batch together.
     if (queuedOperations.length === 0) {
@@ -38,51 +38,38 @@ export default class BatchWriter implements IBatchWriter {
     }
 
     const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
-    const createOperationModels = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
-    const recoverOperationModels = operationModels.filter(operation => operation.type === OperationType.Recover) as RecoverOperation[];
-    const updateOperationModels = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
-    const revokeOperationModels = operationModels.filter(operation => operation.type === OperationType.Revoke) as RevokeOperation[];
+    const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
+    const recoverOperations = operationModels.filter(operation => operation.type === OperationType.Recover) as RecoverOperation[];
+    const updateOperations = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
+    const revokeOperations = operationModels.filter(operation => operation.type === OperationType.Revoke) as RevokeOperation[];
 
     // Create the batch file buffer from the operation models.
     // NOTE: revoke operations don't have operation data.
-    const operationData = [];
-    operationData.push(...createOperationModels.map(operation => operation.encodedOperationData!));
-    operationData.push(...recoverOperationModels.map(operation => operation.encodedOperationData!));
-    operationData.push(...updateOperationModels.map(operation => operation.encodedOperationData!));
-    const batchFileBuffer = await BatchFile.toBatchFileBuffer(createOperationModels, recoverOperationModels, updateOperationModels);
+    const batchFileBuffer = await BatchFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
     // Write the batch file to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);
     console.info(`Wrote batch file ${batchFileHash} to content addressable store.`);
 
     // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(batchFileHash);
+    const mapFileBuffer = await MapFile.createBuffer(batchFileHash, updateOperations);
     const mapFileHash = await this.cas.write(mapFileBuffer);
     console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 
-    // Construct the DID unique suffixes of each operation to be included in the anchor file.
-    const didUniqueSuffixes = queuedOperations.map(queuedOperations => queuedOperations.didUniqueSuffix);
-
-    // Construct the 'anchor file'.
-    const anchorFileModel: AnchorFileModel = {
-      mapFileHash,
-      didUniqueSuffixes
-    };
-
     // Write the anchor file to content addressable store.
-    const anchorFileJsonBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
-    const anchorFileAddress = await this.cas.write(anchorFileJsonBuffer);
-    console.info(`Wrote anchor file ${anchorFileAddress} to content addressable store.`);
+    const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, createOperations, recoverOperations, revokeOperations);
+    const anchorFileHash = await this.cas.write(anchorFileBuffer);
+    console.info(`Wrote anchor file ${anchorFileHash} to content addressable store.`);
 
     // Anchor the data to the blockchain
     const dataToBeAnchored: AnchoredData = {
-      anchorFileHash: anchorFileAddress,
-      numberOfOperations: operationBuffers.length
+      anchorFileHash,
+      numberOfOperations
     };
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
-    const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, operationBuffers.length);
+    const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
     console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with minimum fee of: ${fee}`);
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);

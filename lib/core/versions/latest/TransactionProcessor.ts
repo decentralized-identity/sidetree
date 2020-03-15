@@ -97,7 +97,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     return anchorFileModel;
   }
 
-  private async downloadAndVerifyMapFile (anchorFileModel: AnchorFileModel, batchSize: number): Promise<MapFileModel> {
+  private async downloadAndVerifyMapFile (anchorFileModel: AnchorFileModel, paidBatchSize: number): Promise<MapFileModel> {
     console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileHash, ProtocolParameters.maxMapFileSizeInBytes);
@@ -109,9 +109,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const recoverOperations = anchorFileOperations.recoverOperations ? anchorFileOperations.recoverOperations : [];
     const revokeOperations = anchorFileOperations.revokeOperations ? anchorFileOperations.revokeOperations : [];
     const operationCountInAnchorFile = createOperations.length + recoverOperations.length + revokeOperations.length;
-    const maxPaidUpdateOperationCount = batchSize - operationCountInAnchorFile;
+    const maxPaidUpdateOperationCount = paidBatchSize - operationCountInAnchorFile;
 
-    if (mapFileModel.updateOperations.length > maxPaidUpdateOperationCount) {
+    if (mapFileModel.updateOperations !== undefined &&
+        mapFileModel.updateOperations.length > maxPaidUpdateOperationCount) {
       throw new SidetreeError(
         ErrorCode.MapFileUpdateOperationCountExceededPaidLimit,
         `Max allowed update operation count: ${maxPaidUpdateOperationCount}, but got: ${mapFileModel.updateOperations.length}`);
