@@ -18,4 +18,19 @@ export default class ArrayMethods {
 
     return false;
   }
+
+  /**
+   * Checks that entries in array 2 is not in array 1.
+   */
+  public static mutuallyExclusive<T> (array1: Array<T>, array2: Array<T>): boolean {
+    const valuesInArray1 = new Set<T>(array1);
+
+    for (const value of array2) {
+      if (valuesInArray1.has(value)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }

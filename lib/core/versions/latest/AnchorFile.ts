@@ -15,11 +15,19 @@ import SidetreeError from '../../../common/SidetreeError';
  * Class containing Anchor File related operations.
  */
 export default class AnchorFile {
+
+  /**
+   * Class that represends an anchor file.
+   * NOTE: this class is introduced as an internal structure in replacement to `AnchorFileModel`
+   * to keep useful metadata so that repeated computation can be avoided.
+   */
+  private constructor (public readonly model: AnchorFileModel, public readonly didUniqueSuffixes: string[]) { }
+
   /**
    * Parses and validates the given anchor file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parse (anchorFileBuffer: Buffer): Promise<AnchorFileModel> {
+  public static async parse (anchorFileBuffer: Buffer): Promise<AnchorFile> {
 
     let anchorFileDecompressedBuffer;
     try {
@@ -114,7 +122,8 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
-    return anchorFileModel;
+    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes);
+    return anchorFile;
   }
 
   /**

@@ -1,6 +1,5 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
-import AnchorFileModel from './models/AnchorFileModel';
 import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
 import DownloadManager from '../../DownloadManager';
@@ -17,6 +16,7 @@ import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
 import CreateOperation from './CreateOperation';
 import BatchFileModel from './models/BatchFileModel';
+import ArrayMethods from './util/ArrayMethods';
 
 /**
  * Implementation of the `ITransactionProcessor`.
@@ -33,16 +33,16 @@ export default class TransactionProcessor implements ITransactionProcessor {
       FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
 
       // Download and verify anchor file.
-      const anchorFileModel = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash, anchoredData.numberOfOperations);
+      const anchorFile = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash, anchoredData.numberOfOperations);
 
       // Download and verify anchor file.
-      const mapFileModel = await this.downloadAndVerifyMapFile(anchorFileModel, anchoredData.numberOfOperations);
+      const mapFileModel = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
       // Download and verify batch file.
       const batchFileModel = await this.downloadAndVerifyBatchFile(mapFileModel);
 
       // Compose into operations from all the files downloaded.
-      const operations = await this.composeAnchoredOperationModels(transaction, anchorFileModel, mapFileModel, batchFileModel);
+      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFileModel, batchFileModel);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
@@ -68,7 +68,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
   /**
    * @param batchSize The size of the batch in number of operations.
    */
-  private async downloadAndVerifyAnchorFile (anchorFileHash: string, paidBatchSize: number): Promise<AnchorFileModel> {
+  private async downloadAndVerifyAnchorFile (anchorFileHash: string, paidBatchSize: number): Promise<AnchorFile> {
     // Verify the number of paid operations does not exceed the maximum allowed limit.
     if (paidBatchSize > ProtocolParameters.maxOperationsPerBatch) {
       throw new SidetreeError(
@@ -80,45 +80,45 @@ export default class TransactionProcessor implements ITransactionProcessor {
     console.info(`Downloading anchor file '${anchorFileHash}', max file size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
 
     const fileBuffer = await this.downloadFileFromCas(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
-    const anchorFileModel = await AnchorFile.parse(fileBuffer);
-    const operations = anchorFileModel.operations;
+    const anchorFile = await AnchorFile.parse(fileBuffer);
 
-    const createOperations = operations.createOperations ? operations.createOperations : [];
-    const recoverOperations = operations.recoverOperations ? operations.recoverOperations : [];
-    const revokeOperations = operations.revokeOperations ? operations.revokeOperations : [];
-
-    const operationCountInAnchorFile = createOperations.length + recoverOperations.length + revokeOperations.length;
+    const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
     if (operationCountInAnchorFile > paidBatchSize) {
       throw new SidetreeError(
         ErrorCode.AnchorFileOperationCountExceededPaidLimit,
         `Operation count ${operationCountInAnchorFile} in anchor file exceeded limit of : ${paidBatchSize}`);
     }
 
-    return anchorFileModel;
+    return anchorFile;
   }
 
-  private async downloadAndVerifyMapFile (anchorFileModel: AnchorFileModel, paidBatchSize: number): Promise<MapFileModel> {
+  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidBatchSize: number): Promise<MapFileModel> {
+    const anchorFileModel = anchorFile.model;
     console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
     const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileHash, ProtocolParameters.maxMapFileSizeInBytes);
     const mapFileModel = await MapFile.parse(fileBuffer);
 
     // Calulate the max paid update operation count.
-    const anchorFileOperations = anchorFileModel.operations;
-    const createOperations = anchorFileOperations.createOperations ? anchorFileOperations.createOperations : [];
-    const recoverOperations = anchorFileOperations.recoverOperations ? anchorFileOperations.recoverOperations : [];
-    const revokeOperations = anchorFileOperations.revokeOperations ? anchorFileOperations.revokeOperations : [];
-    const operationCountInAnchorFile = createOperations.length + recoverOperations.length + revokeOperations.length;
+    const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
     const maxPaidUpdateOperationCount = paidBatchSize - operationCountInAnchorFile;
 
-    if (mapFileModel.updateOperations !== undefined &&
-        mapFileModel.updateOperations.length > maxPaidUpdateOperationCount) {
+    const updateOperationCount = mapFileModel.updateOperations ? mapFileModel.updateOperations.length : 0;
+    if (updateOperationCount > maxPaidUpdateOperationCount) {
       throw new SidetreeError(
         ErrorCode.MapFileUpdateOperationCountExceededPaidLimit,
-        `Max allowed update operation count: ${maxPaidUpdateOperationCount}, but got: ${mapFileModel.updateOperations.length}`);
+        `Max allowed update operation count: ${maxPaidUpdateOperationCount}, but got: ${updateOperationCount}`);
     }
 
-    // TODO: ensure there is no operation for the same DID between anchor and map files.
+    // Ensure there is no operation for the same DID in both anchor and map files.
+    let didUniqueSuffixesInMapFile: string[] = [];
+    if (mapFileModel.updateOperations !== undefined) {
+      didUniqueSuffixesInMapFile = mapFileModel.updateOperations.map(operation => operation.didUniqueSuffix);
+
+      if (!ArrayMethods.mutuallyExclusive(anchorFile.didUniqueSuffixes, didUniqueSuffixesInMapFile)) {
+        throw new SidetreeError(ErrorCode.TransactionProcessorOperationForTheSameDidInBothAnchorAndMapFile);
+      }
+    }
 
     return mapFileModel;
   }
@@ -137,15 +137,16 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
   private composeAnchoredOperationModels (
     transaction: TransactionModel,
-    anchorFile: AnchorFileModel,
+    anchorFile: AnchorFile,
     mapFile: MapFileModel,
     batchFile: BatchFileModel
   ): AnchoredOperationModel[] {
 
-    let createOperations = anchorFile.operations.createOperations ? anchorFile.operations.createOperations : [];
-    let recoverOperations = anchorFile.operations.recoverOperations ? anchorFile.operations.recoverOperations : [];
+    const anchorFileModel = anchorFile.model;
+    let createOperations = anchorFileModel.operations.createOperations ? anchorFileModel.operations.createOperations : [];
+    let recoverOperations = anchorFileModel.operations.recoverOperations ? anchorFileModel.operations.recoverOperations : [];
     let updateOperations = mapFile.updateOperations ? mapFile.updateOperations : [];
-    let revokeOperations = anchorFile.operations.revokeOperations ? anchorFile.operations.revokeOperations : [];
+    let revokeOperations = anchorFileModel.operations.revokeOperations ? anchorFileModel.operations.revokeOperations : [];
 
     // Add implied properties for later convenience.
     recoverOperations = recoverOperations.map((operation) => Object.assign(operation, { type: OperationType.Recover }));

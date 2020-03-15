@@ -103,6 +103,7 @@ export default {
   RevokeOperationTypeIncorrect: 'revoke_operation_type_incorrect',
   TransactionFeePaidInvalid: 'transaction_fee_paid_is_invalid',
   TransactionFeePaidLessThanNormalizedFee: 'transaction_fee_paid_less_than_normalized_fee',
+  TransactionProcessorOperationForTheSameDidInBothAnchorAndMapFile: 'transaction_processor_operation_for_the_same_did_in_both_anchor_and_map_file',
   TransactionProcessorPaidOperationCountExceedsLimit: 'transaction_processor_paid_operation_count_exceeds_limit',
   TransactionsNotInSameBlock: 'transactions_not_in_same_block',
   UpdateOperationDataMissingOrNotString: 'update_operation_data_missting_or_not_string',

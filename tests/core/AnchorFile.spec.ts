@@ -143,10 +143,10 @@ describe('AnchorFile', async () => {
 
       const anchoreFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperation], [], []);
 
-      const decompressedAnchorFileModel = await AnchorFile.parse(anchoreFileBuffer);
+      const anchorFile = await AnchorFile.parse(anchoreFileBuffer);
 
-      expect(decompressedAnchorFileModel.mapFileHash).toEqual(mapFileHash);
-      expect(decompressedAnchorFileModel.operations.createOperations![0].suffixData).toEqual(createOperation.encodedSuffixData);
+      expect(anchorFile.model.mapFileHash).toEqual(mapFileHash);
+      expect(anchorFile.model.operations.createOperations![0].suffixData).toEqual(createOperation.encodedSuffixData);
     });
   });
 });
