@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
@@ -16,13 +17,11 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -85,8 +84,8 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     // Generate a unique key-pair used for each test.
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2', KeyUsage.signing);
+    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
@@ -108,7 +107,7 @@ describe('RequestHandler', () => {
     expect((response.body as DidDocumentModel).id).toEqual(did);
 
     // Inser the create operation into DB.
-    const namedAnchoredCreateOperationModel: NamedAnchoredOperationModel = {
+    const namedAnchoredCreateOperationModel: AnchoredOperationModel = {
       didUniqueSuffix: createOperation.didUniqueSuffix,
       type: OperationType.Create,
       transactionNumber: 1,
@@ -124,7 +123,7 @@ describe('RequestHandler', () => {
 
   it('should queue operation request and have it processed by the batch scheduler correctly.', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ operationIndex: 1, transactionNumber: 1, transactionTime: 1 });
-    const createOperationBuffer = createOperationData.namedAnchoredOperationModel.operationBuffer;
+    const createOperationBuffer = createOperationData.anchoredOperationModel.operationBuffer;
     await requestHandler.handleOperationRequest(createOperationBuffer);
 
     const blockchainWriteSpy = spyOn(blockchain, 'write');
@@ -154,8 +153,8 @@ describe('RequestHandler', () => {
 
   it('should return bad request if two operations for the same DID is received.', async () => {
     // Create the initial create operation.
-    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey', KeyUsage.recovery);
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey');
     const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
@@ -228,7 +227,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
-    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey', KeyUsage.signing);
+    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
     const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
     const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
@@ -263,8 +262,8 @@ describe('RequestHandler', () => {
 
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey', KeyUsage.recovery);
-      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey', KeyUsage.signing);
+      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey');
+      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
       const [, anyOtpHash] = OperationGenerator.generateOtp();
       const mockedResolverReturnedDocumentState: DocumentState = {
         didUniqueSuffix,

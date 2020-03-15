@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import DidPublicKeyModel from '../models/DidPublicKeyModel';
 import Encoder from '../Encoder';
-import KeyUsage from '../KeyUsage';
 import PublicKeyModel from '../../../models/PublicKeyModel';
 
 const secp256k1 = require('secp256k1');
@@ -21,7 +20,7 @@ export default class Cryptography {
    * Generates a random pair of SECP256K1 public-private key-pair in HEX format.
    * @returns Public key, followed by private key.
    */
-  public static async generateKeyPairHex (keyId: string, usage: KeyUsage): Promise<[DidPublicKeyModel, string]> {
+  public static async generateKeyPairHex (keyId: string): Promise<[DidPublicKeyModel, string]> {
     let privateKeyBuffer;
     do {
       privateKeyBuffer = crypto.randomBytes(32);
@@ -35,7 +34,6 @@ export default class Cryptography {
     const didPublicKey = {
       id: keyId,
       type: 'Secp256k1VerificationKey2018',
-      usage,
       publicKeyHex
     };
 

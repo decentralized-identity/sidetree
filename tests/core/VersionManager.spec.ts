@@ -1,3 +1,4 @@
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import Config from '../../lib/core/models/Config';
 import DownloadManager from '../../lib/core/DownloadManager';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
@@ -8,7 +9,6 @@ import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -86,7 +86,7 @@ describe('VersionManager', async () => {
       await expectAsync(batchWriter.write()).toBeRejected();
 
       const operationProcessor = versionMgr.getOperationProcessor(1001);
-      const namedAnchoredOpModel: NamedAnchoredOperationModel = {
+      const namedAnchoredOpModel: AnchoredOperationModel = {
         type: OperationType.Create,
         didUniqueSuffix: 'unusedDidUniqueSuffix',
         transactionTime: 0,

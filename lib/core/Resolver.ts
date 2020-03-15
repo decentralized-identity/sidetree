@@ -1,7 +1,7 @@
+import AnchoredOperationModel from './models/AnchoredOperationModel';
 import DocumentState from './models/DocumentState';
 import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
-import NamedAnchoredOperationModel from './models/NamedAnchoredOperationModel';
 import OperationType from './enums/OperationType';
 
 /**
@@ -65,7 +65,7 @@ export default class Resolver {
    * @param documentState The document state to apply the operations on top of.
    */
   private async applyOperations (
-    operations: NamedAnchoredOperationModel[],
+    operations: AnchoredOperationModel[],
     documentState: DocumentState | undefined
     ): Promise<DocumentState | undefined> {
     let appliedDocumentState = documentState;

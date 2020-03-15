@@ -1,6 +1,6 @@
+import AnchoredOperationModel from '../../../../lib/core/models/AnchoredOperationModel';
 import DocumentState from '../../../../lib/core/models/DocumentState';
 import IOperationProcessor from '../../../../lib/core/interfaces/IOperationProcessor';
-import NamedAnchoredOperationModel from '../../../../lib/core/models/NamedAnchoredOperationModel';
 
 /**
  * Operation processor.
@@ -8,7 +8,7 @@ import NamedAnchoredOperationModel from '../../../../lib/core/models/NamedAnchor
 export default class OperationProcessor implements IOperationProcessor {
 
   async apply (
-    operation: NamedAnchoredOperationModel,
+    operation: AnchoredOperationModel,
     documentState: DocumentState | undefined
   ): Promise<DocumentState | undefined> {
     /* tslint:disable-next-line */

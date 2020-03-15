@@ -1,5 +1,5 @@
+import AnchoredOperationModel from '../models/AnchoredOperationModel';
 import DocumentState from '../models/DocumentState';
-import NamedAnchoredOperationModel from '../models/NamedAnchoredOperationModel';
 
 /**
  * Interface that defines a class that can process operations.
@@ -15,7 +15,7 @@ export default interface IOperationProcessor {
    * @returns The resultant `DocumentState`.
    */
   apply (
-    operation: NamedAnchoredOperationModel,
+    operation: AnchoredOperationModel,
     documentState: DocumentState | undefined
   ): Promise<DocumentState | undefined>;
 }

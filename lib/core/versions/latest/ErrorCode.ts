@@ -48,7 +48,6 @@ export default {
   DocumentComposerKeyNotFound: 'document_composer_key_not_found',
   DocumentComposerPatchMissingOrUnknownAction: 'document_composer_patch_missing_or_unknown_action',
   DocumentComposerPatchMissingOrUnknownProperty: 'document_composer_patch_missing_or_unknown_property',
-  DocumentComposerPatchPublicKeyAddRecoveryKeyNotAllowed: 'document_composer_patch_public_key_add_recovery_key_not_allowed',
   DocumentComposerPatchPublicKeyControllerNotAllowed: 'document_composer_patch_public_key_controller_not_allowed',
   DocumentComposerPatchPublicKeyHexMissingOrIncorrect: 'document_composer_patch_public_key_hex_missing_or_incorrect',
   DocumentComposerPatchPublicKeyIdNotString: 'document_composer_patch_public_key_id_not_string',

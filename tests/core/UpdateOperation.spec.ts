@@ -1,7 +1,6 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -11,7 +10,7 @@ import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 describe('UpdateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if didUniqueSuffix is not string.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key', KeyUsage.signing);
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
       const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
         'unused-DID-unique-suffix',
@@ -29,7 +28,7 @@ describe('UpdateOperation', async () => {
     });
 
     it('should throw if operation type is incorrect', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key', KeyUsage.signing);
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
       const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
         'unused-DID-unique-suffix',
@@ -47,7 +46,7 @@ describe('UpdateOperation', async () => {
     });
 
     it('should throw if updateOtp is not string.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key', KeyUsage.signing);
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
       const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
         'unused-DID-unique-suffix',
@@ -65,7 +64,7 @@ describe('UpdateOperation', async () => {
     });
 
     it('should throw if recoveryOtp is too long.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key', KeyUsage.signing);
+      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
       const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
         'unused-DID-unique-suffix',

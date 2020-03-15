@@ -12,7 +12,7 @@ import MapFile from './MapFile';
 import ProtocolParameters from './ProtocolParameters';
 
 /**
- * Implementation of the `TransactionProcessor`.
+ * Implementation of the `IBatchWriter`.
  */
 export default class BatchWriter implements IBatchWriter {
   public constructor (

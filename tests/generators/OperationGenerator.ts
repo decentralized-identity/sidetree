@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidDocument from '../../lib/core/versions/latest/DidDocument';
@@ -7,9 +8,7 @@ import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidSe
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
-import KeyUsage from '../../lib/core/versions/latest/KeyUsage';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-import NamedAnchoredOperationModel from '../../lib/core/models/NamedAnchoredOperationModel';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
@@ -23,7 +22,7 @@ interface AnchoredCreateOperationGenerationInput {
 
 interface GeneratedAnchoredCreateOperationData {
   createOperation: CreateOperation;
-  namedAnchoredOperationModel: NamedAnchoredOperationModel;
+  anchoredOperationModel: AnchoredOperationModel;
   recoveryKeyId: string;
   recoveryPublicKey: DidPublicKeyModel;
   recoveryPrivateKey: string;
@@ -78,7 +77,7 @@ export default class OperationGenerator {
   public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
     const createOperationData = await OperationGenerator.generateCreateOperation();
 
-    const namedAnchoredOperationModel = {
+    const anchoredOperationModel = {
       type: OperationType.Create,
       didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
       operationBuffer: createOperationData.createOperation.operationBuffer,
@@ -89,7 +88,7 @@ export default class OperationGenerator {
 
     return {
       createOperation: createOperationData.createOperation,
-      namedAnchoredOperationModel,
+      anchoredOperationModel,
       recoveryKeyId: createOperationData.recoveryKeyId,
       recoveryPublicKey: createOperationData.recoveryPublicKey,
       recoveryPrivateKey: createOperationData.recoveryPrivateKey,
@@ -107,8 +106,8 @@ export default class OperationGenerator {
   public static async generateCreateOperation () {
     const recoveryKeyId = '#recoveryKey';
     const signingKeyId = '#signingKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
-    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
+    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const hubServiceEndpoint = 'did:sidetree:value0';
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
@@ -145,8 +144,8 @@ export default class OperationGenerator {
   public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
     const recoveryKeyId = '#newRecoveryKey';
     const signingKeyId = '#newSigningKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId, KeyUsage.recovery);
-    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+    const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
+    const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const hubServiceEndpoint = 'did:sidetree:value0';
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
@@ -202,13 +201,13 @@ export default class OperationGenerator {
   /**
    * Creates a named anchored operation model from `OperationModel`.
    */
-  public static createNamedAnchoredOperationModelFromOperationModel (
+  public static createAnchoredOperationModelFromOperationModel (
     operationModel: OperationModel,
     transactionTime: number,
     transactionNumber: number,
     operationIndex: number
-  ): NamedAnchoredOperationModel {
-    const namedAnchoredOperationModel: NamedAnchoredOperationModel = {
+  ): AnchoredOperationModel {
+    const anchoredOperationModel: AnchoredOperationModel = {
       didUniqueSuffix: operationModel.didUniqueSuffix,
       type: operationModel.type,
       operationBuffer: operationModel.operationBuffer,
@@ -216,7 +215,7 @@ export default class OperationGenerator {
       transactionNumber,
       transactionTime
     };
-    return namedAnchoredOperationModel;
+    return anchoredOperationModel;
   }
 
   /**
@@ -414,7 +413,6 @@ export default class OperationGenerator {
           {
             id: idOfNewKey,
             type: 'Secp256k1VerificationKey2018',
-            usage: 'signing',
             publicKeyHex: newPublicKeyHex
           }
         ]

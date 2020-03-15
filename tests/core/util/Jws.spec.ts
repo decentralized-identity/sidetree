@@ -1,14 +1,13 @@
 import Cryptography from '../../../lib/core/versions/latest/util/Cryptography';
 import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
 import Jws from '../../../lib/core/versions/latest/util/Jws';
-import KeyUsage from '../../../lib/core/versions/latest/KeyUsage';
 import SidetreeError from '../../../lib/common/SidetreeError';
 
 describe('Jws', async () => {
   describe('parse()', async () => {
     it('should throw error if protected header contains unexpected property.', async () => {
       const signingKeyId = '#signingKey';
-      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
 
       const protectedHeader = {
         unknownProperty: 'anyValue',
@@ -25,7 +24,7 @@ describe('Jws', async () => {
 
     it('should throw error if `kid` in header is missing or is in incorrect type.', async () => {
       const signingKeyId = '#signingKey';
-      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
 
       const protectedHeader = {
         kid: true, // Incorect type.
@@ -41,7 +40,7 @@ describe('Jws', async () => {
 
     it('should throw error if `alg` in header is missing or is in incorrect type.', async () => {
       const signingKeyId = '#signingKey';
-      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId, KeyUsage.signing);
+      const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
 
       const protectedHeader = {
         kid: signingKeyId,
