@@ -53,6 +53,14 @@ export default class Jws {
     this.signature = input.signature;
   }
 
+  public toJwsModel (): JwsModel {
+    return {
+      protected: this.protected,
+      payload: this.payload,
+      signature: this.signature
+    };
+  }
+
   /**
    * Verifies the JWS signature.
    * @returns true if signature is successfully verified, false otherwise.

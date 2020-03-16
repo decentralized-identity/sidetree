@@ -106,10 +106,10 @@ For every batch of Sidetree operations created, there are three files that are c
 The _batch file_ is a ZIP compressed JSON document of the following schema:
 ```json
 {
-  "operations": [
-    "Encoded operation",
-    "Encoded operation",
-    ...
+  "operationData": [
+    "Encoded operationData from 1st operation request",
+    "Encoded operationData from 2nd operation request",
+    "Encoded operationData from nth operation request",
   ]
 }
 ```
@@ -119,6 +119,7 @@ The _map file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded multihash of the batch file.",
+  "updateOperations": ["Update operation request excluding `type` and `operationData` properties.", "..."]
 }
 ```
 
@@ -127,7 +128,11 @@ The _anchor file_ is a JSON document of the following schema:
 ```json
 {
   "mapFileHash": "Encoded multihash of the map file.",
-  "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."]
+  "operations": {
+    "createOperations": ["Update operation request excluding `type` and `operationData` properties.", "..."],
+    "recoverOperations": ["Recover operation request excluding `type` and `operationData` properties.", "..."],
+    "revokeOperations": ["Recoke operation request excluding `type` properties.", "..."]
+  }
 }
 ```
 

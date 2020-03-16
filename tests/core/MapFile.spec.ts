@@ -6,13 +6,13 @@ import MapFileModel from '../../lib/core/versions/latest/models/MapFileModel';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('MapFile', async () => {
-  describe('parseAndValidate()', async () => {
+  describe('parse()', async () => {
     it('should throw if buffer given is not valid JSON.', async () => {
       const fileBuffer = Buffer.from('NotJsonString');
       const fileCompressed = await Compressor.compress(fileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parseAndValidate(fileCompressed),
+        () => MapFile.parse(fileCompressed),
         ErrorCode.MapFileNotJson);
     });
 
@@ -23,7 +23,7 @@ describe('MapFile', async () => {
       const fileBuffer = Buffer.from(JSON.stringify(mapFileModel));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => MapFile.parseAndValidate(fileBuffer),
+        () => MapFile.parse(fileBuffer),
         ErrorCode.MapFileDecompressionFailure);
     });
 
@@ -35,18 +35,17 @@ describe('MapFile', async () => {
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
-      await expectAsync(MapFile.parseAndValidate(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileHasUnknownProperty));
+      await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileHasUnknownProperty));
     });
 
-    it('should throw if missing map file hash.', async () => {
+    it('should throw if missing batch file hash.', async () => {
       const mapFile = {
         // batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what the expected property should be.
-        anchorFileHash: 'Incorrect property'
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
 
-      await expectAsync(MapFile.parseAndValidate(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileBatchFileHashMissingOrIncorrectType));
+      await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileBatchFileHashMissingOrIncorrectType));
     });
   });
 });
