@@ -1,7 +1,9 @@
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFile from './AnchorFile';
+import ArrayMethods from './util/ArrayMethods';
 import BatchFile from './BatchFile';
+import BatchFileModel from './models/BatchFileModel';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
@@ -14,9 +16,6 @@ import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
-import CreateOperation from './CreateOperation';
-import BatchFileModel from './models/BatchFileModel';
-import ArrayMethods from './util/ArrayMethods';
 
 /**
  * Implementation of the `ITransactionProcessor`.
@@ -142,18 +141,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
     batchFile: BatchFileModel
   ): AnchoredOperationModel[] {
 
-    const anchorFileModel = anchorFile.model;
-    let createOperations = anchorFileModel.operations.createOperations ? anchorFileModel.operations.createOperations : [];
-    let recoverOperations = anchorFileModel.operations.recoverOperations ? anchorFileModel.operations.recoverOperations : [];
+    let createOperations = anchorFile.createOperations;
+    let recoverOperations = anchorFile.recoverOperations;
+    let revokeOperations = anchorFile.revokeOperations;
     let updateOperations = mapFile.updateOperations ? mapFile.updateOperations : [];
-    let revokeOperations = anchorFileModel.operations.revokeOperations ? anchorFileModel.operations.revokeOperations : [];
 
-    // Add implied properties for later convenience.
-    recoverOperations = recoverOperations.map((operation) => Object.assign(operation, { type: OperationType.Recover }));
+    // Add `type` property for later convenience.
     updateOperations = updateOperations.map((operation) => Object.assign(operation, { type: OperationType.Update }));
-    revokeOperations = revokeOperations.map((operation) => Object.assign(operation, { type: OperationType.Revoke }));
-    createOperations = createOperations.map(
-      (operation) => Object.assign(operation, { type: OperationType.Create, didUniqueSuffix: CreateOperation.computeDidUniqueSuffix(operation.suffixData) }));
 
     // Add the operations in the following order of types: create, recover, update, revoke.
     const operations = [];

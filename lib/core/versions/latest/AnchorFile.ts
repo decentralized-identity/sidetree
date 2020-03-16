@@ -21,7 +21,12 @@ export default class AnchorFile {
    * NOTE: this class is introduced as an internal structure in replacement to `AnchorFileModel`
    * to keep useful metadata so that repeated computation can be avoided.
    */
-  private constructor (public readonly model: AnchorFileModel, public readonly didUniqueSuffixes: string[]) { }
+  private constructor (
+    public readonly model: AnchorFileModel,
+    public readonly didUniqueSuffixes: string[],
+    public readonly createOperations: CreateOperation[],
+    public readonly recoverOperations: RecoverOperation[],
+    public readonly revokeOperations: RevokeOperation[]) { }
 
   /**
    * Parses and validates the given anchor file buffer.
@@ -80,6 +85,7 @@ export default class AnchorFile {
     const didUniqueSuffixes: string[] = [];
 
     // Validate `createOperations` if exists.
+    const createOperations: CreateOperation[] = [];
     if (operations.createOperations !== undefined) {
       if (!Array.isArray(operations.createOperations)) {
         throw new SidetreeError(ErrorCode.AnchorFileCreateOperationsNotArray);
@@ -88,11 +94,13 @@ export default class AnchorFile {
       // Validate every operation.
       for (const operation of operations.createOperations) {
         const createOperation = await CreateOperation.parseOpertionFromAnchorFile(operation);
+        createOperations.push(createOperation);
         didUniqueSuffixes.push(createOperation.didUniqueSuffix);
       }
     }
 
     // Validate `recoverOperations` if exists.
+    const recoverOperations: RecoverOperation[] = [];
     if (operations.recoverOperations !== undefined) {
       if (!Array.isArray(operations.recoverOperations)) {
         throw new SidetreeError(ErrorCode.AnchorFileRecoverOperationsNotArray);
@@ -100,12 +108,14 @@ export default class AnchorFile {
 
       // Validate every operation.
       for (const operation of operations.recoverOperations) {
-        // TODO: Validate
-        didUniqueSuffixes.push(operation.didUniqueSuffix);
+        const recoverOperation = await RecoverOperation.parseOpertionFromAnchorFile(operation);
+        recoverOperations.push(recoverOperation);
+        didUniqueSuffixes.push(recoverOperation.didUniqueSuffix);
       }
     }
 
     // Validate `revokeOperations` if exists.
+    const revokeOperations: RevokeOperation[] = [];
     if (operations.revokeOperations !== undefined) {
       if (!Array.isArray(operations.revokeOperations)) {
         throw new SidetreeError(ErrorCode.AnchorFileRevokeOperationsNotArray);
@@ -113,8 +123,9 @@ export default class AnchorFile {
 
       // Validate every operation.
       for (const operation of operations.revokeOperations) {
-        // TODO: Validate
-        didUniqueSuffixes.push(operation.didUniqueSuffix);
+        const revokeOperation = await RevokeOperation.parseOpertionFromAnchorFile(operation);
+        revokeOperations.push(revokeOperation);
+        didUniqueSuffixes.push(revokeOperation.didUniqueSuffix);
       }
     }
 
@@ -122,7 +133,7 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
-    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes);
+    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, revokeOperations);
     return anchorFile;
   }
 

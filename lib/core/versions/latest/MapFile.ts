@@ -48,10 +48,10 @@ export default class MapFile {
         throw new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray);
       }
 
-      // TODO: Validate each operation.
-      // for (const operation of updateOperations) {
-      //   // const createOperation = await UpdateOperation.parseOpertionFromAnchorFile(operation);
-      // }
+      // Validate each operation.
+      for (const operation of updateOperations) {
+        await UpdateOperation.parseOpertionFromAnchorFile(operation);
+      }
 
       const didUniqueSuffixes = (mapFile as MapFileModel).updateOperations!.map(operation => operation.didUniqueSuffix);
       if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {

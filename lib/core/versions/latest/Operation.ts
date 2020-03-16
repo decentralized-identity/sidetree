@@ -27,11 +27,11 @@ export default class Operation {
     if (operationType === OperationType.Create) {
       return CreateOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else if (operationType === OperationType.Update) {
-      return UpdateOperation.parseObject(operationObject, operationBuffer);
+      return UpdateOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else if (operationType === OperationType.Recover) {
-      return RecoverOperation.parseObject(operationObject, operationBuffer);
+      return RecoverOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else if (operationType === OperationType.Revoke) {
-      return RevokeOperation.parseObject(operationObject, operationBuffer);
+      return RevokeOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else {
       throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
     }

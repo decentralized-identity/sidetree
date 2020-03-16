@@ -67,7 +67,7 @@ export default class CreateOperation implements OperationModel {
   /**
    * Computes the cryptographic multihash of the given string.
    */
-  public static computeDidUniqueSuffix (encodedSuffixData: string): string {
+  private static computeDidUniqueSuffix (encodedSuffixData: string): string {
     const dataBuffer = Encoder.decodeAsBuffer(encodedSuffixData);
     const multihash = Multihash.hash(dataBuffer);
     const encodedMultihash = Encoder.encode(multihash);
@@ -78,7 +78,7 @@ export default class CreateOperation implements OperationModel {
    * Parses the given input as a create operation entry in the anchor file.
    */
   public static async parseOpertionFromAnchorFile (input: any): Promise<CreateOperation> {
-    // TODO: there is NO NEED for operationBuffer in both OperationModel and AnchoredOperationModel. Remove them.
+    // Issue #442 - Replace `operationBuffer` in `OperationModel` and `AnchoredOperationModel` with actual operation request
     const opertionBuffer = Buffer.from(JSON.stringify(input));
     const operation = await CreateOperation.parseObject(input, opertionBuffer, true);
     return operation;
