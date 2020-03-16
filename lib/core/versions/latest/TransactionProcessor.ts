@@ -67,12 +67,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
   /**
    * @param batchSize The size of the batch in number of operations.
    */
-  private async downloadAndVerifyAnchorFile (anchorFileHash: string, paidBatchSize: number): Promise<AnchorFile> {
+  private async downloadAndVerifyAnchorFile (anchorFileHash: string, paidOperationCount: number): Promise<AnchorFile> {
     // Verify the number of paid operations does not exceed the maximum allowed limit.
-    if (paidBatchSize > ProtocolParameters.maxOperationsPerBatch) {
+    if (paidOperationCount > ProtocolParameters.maxOperationsPerBatch) {
       throw new SidetreeError(
         ErrorCode.TransactionProcessorPaidOperationCountExceedsLimit,
-        `Paid batch size of ${paidBatchSize} operations exceeds the allowed limit of ${ProtocolParameters.maxOperationsPerBatch}.`
+        `Paid batch size of ${paidOperationCount} operations exceeds the allowed limit of ${ProtocolParameters.maxOperationsPerBatch}.`
       );
     }
 
@@ -82,16 +82,16 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const anchorFile = await AnchorFile.parse(fileBuffer);
 
     const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
-    if (operationCountInAnchorFile > paidBatchSize) {
+    if (operationCountInAnchorFile > paidOperationCount) {
       throw new SidetreeError(
         ErrorCode.AnchorFileOperationCountExceededPaidLimit,
-        `Operation count ${operationCountInAnchorFile} in anchor file exceeded limit of : ${paidBatchSize}`);
+        `Operation count ${operationCountInAnchorFile} in anchor file exceeded limit of : ${paidOperationCount}`);
     }
 
     return anchorFile;
   }
 
-  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidBatchSize: number): Promise<MapFileModel> {
+  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFileModel> {
     const anchorFileModel = anchorFile.model;
     console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
@@ -100,7 +100,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     // Calulate the max paid update operation count.
     const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
-    const maxPaidUpdateOperationCount = paidBatchSize - operationCountInAnchorFile;
+    const maxPaidUpdateOperationCount = paidOperationCount - operationCountInAnchorFile;
 
     const updateOperationCount = mapFileModel.updateOperations ? mapFileModel.updateOperations.length : 0;
     if (updateOperationCount > maxPaidUpdateOperationCount) {
