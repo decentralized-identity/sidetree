@@ -9,26 +9,28 @@ import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
 export default class ValueTimeLockVerifier {
 
   /**
-   * Calculates the value time lock amount required for the given number of operations.
+   * Calculates the maximum number of operations allowed to be written for the given lock information. If
+   * there is no lock then it returns the number of operations which do not required a lock.
    *
-   * @param numberOfOperations The target number of operations.
-   * @param normalizedFee The normalized fee for the given block.
+   * @param valueTimeLock The lock object if exists
+   * @param normalizedFee The normalized fee for the current block
    */
-  public static calculateRequiredLockAmount (numberOfOperations: number, normalizedFee: number): number {
+  public static calculateMaxNumberOfOpsAllowed (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number) {
 
-    if (numberOfOperations <= this.getMaxNumberOfOpsForZeroLockAmount()) {
-      return 0;
+    if (valueTimeLock === undefined) {
+      return ProtocolParameters.maxNumberOfOpsForNoValueTimeLock;
     }
 
+    // Using the following formula:
+    //  requiredLockAmount = normalizedfee * normalizedFeeMultipier * numberOfOps * valueTimeLockMultilier
+    //
+    // We are going to find the numberOfOps given the requiredLockAmount
     const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
-    return feePerOperation * numberOfOperations * ProtocolParameters.valueTimeLockAmountMultiplier;
-  }
+    const numberOfOpsAllowed = valueTimeLock.amountLocked / (feePerOperation * ProtocolParameters.valueTimeLockAmountMultiplier);
 
-  /**
-   * Gets the max number of operations allowed for zero lock amount.
-   */
-  public static getMaxNumberOfOpsForZeroLockAmount (): number {
-    return ProtocolParameters.maxNumberOfOpsForNoValueTimeLock;
+    // Make sure that we are returning an integer; rounding down to make sure that we are returning a
+    // more accurate number.
+    return Math.floor(numberOfOpsAllowed);
   }
 
   /**
@@ -44,28 +46,32 @@ export default class ValueTimeLockVerifier {
     valueTimeLock: ValueTimeLockModel | undefined,
     numberOfOperations: number,
     normalizedFee: number,
-    targetTransactionTime: number): void {
+    targetTransactionTime: number,
+    targetTransactionWriter: string): void {
 
-    const requiredLockAmount = this.calculateRequiredLockAmount(numberOfOperations, normalizedFee);
+    if (valueTimeLock) {
+      // Check the lock owner
+      if (valueTimeLock.owner !== targetTransactionWriter) {
+        throw new SidetreeError(
+          ErrorCode.ValueTimeLockTransactionWriterLockOwnerMismatch,
+          `Transaction writer: ${targetTransactionWriter} - Lock owner: ${valueTimeLock.owner}`);
+      }
 
-    if (requiredLockAmount === 0) {
-      return;
+      // Check the lock duration
+      if (targetTransactionTime < valueTimeLock.lockTransactionTime ||
+          targetTransactionTime >= valueTimeLock.unlockTransactionTime) {
+        throw new SidetreeError(
+          ErrorCode.ValueTimeLockTargetTransactionTimeOutsideLockRange,
+          `Target block: ${targetTransactionTime}; lock start time: ${valueTimeLock.lockTransactionTime}; unlock time: ${valueTimeLock.unlockTransactionTime}`);
+      }
     }
 
-    if (requiredLockAmount > 0 && valueTimeLock === undefined) {
-      throw new SidetreeError(ErrorCode.ValueTimeLockRequired, `Required lock amuont: ${requiredLockAmount}`);
-    }
+    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOpsAllowed(valueTimeLock, normalizedFee);
 
-    if (targetTransactionTime < valueTimeLock!.lockTransactionTime || targetTransactionTime >= valueTimeLock!.unlockTransactionTime) {
+    if (numberOfOperations > maxNumberOfOpsAllowed) {
       throw new SidetreeError(
-        ErrorCode.ValueTimeLockTargetTransactionTimeOutsideLockRange,
-        `Target block: ${targetTransactionTime}; lock start time: ${valueTimeLock!.lockTransactionTime}; unlock time: ${valueTimeLock!.unlockTransactionTime}`);
-    }
-
-    if (valueTimeLock!.amountLocked < requiredLockAmount) {
-      throw new SidetreeError(
-        ErrorCode.ValueTimeLockInsufficentLockAmount,
-        `Required lock amount: ${requiredLockAmount}; actual lock amount: ${valueTimeLock!.amountLocked}`);
+        ErrorCode.ValueTimeLockInvalidNumberOfOperations,
+        `Max number of ops allowed: ${maxNumberOfOpsAllowed}; actual number of ops: ${numberOfOperations}`);
     }
   }
 }

@@ -76,7 +76,7 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
-      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */

@@ -7,6 +7,7 @@ import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
 import FetchResultCode from '../../../common/FetchResultCode';
+import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import MapFile from './MapFile';
@@ -14,12 +15,13 @@ import MapFileModel from './models/MapFileModel';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
+import ValueTimeLockVerifier from './ValueTimeLockVerifier';
 
 /**
  * Implementation of the `ITransactionProcessor`.
  */
 export default class TransactionProcessor implements ITransactionProcessor {
-  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
+  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore, private blockchain: IBlockchain) { }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     try {
@@ -30,9 +32,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
       FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
 
       // Download and verify anchor file.
-      const anchorFile = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash, anchoredData.numberOfOperations);
+      const anchorFile = await this.downloadAndVerifyAnchorFile(transaction, anchoredData.anchorFileHash, anchoredData.numberOfOperations);
 
-      // Download and verify anchor file.
+      // Download and verify map file.
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile.mapFileHash);
 
       // Download and verify batch file.
@@ -46,7 +48,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
       if (error instanceof SidetreeError) {
         // If error is potentially related to CAS network connectivity issues, we need to return false to retry later.
         if (error.code === ErrorCode.CasNotReachable ||
-            error.code === ErrorCode.CasFileNotFound) {
+            error.code === ErrorCode.CasFileNotFound ||
+            error.code === ErrorCode.ValueTimeLockVerificationFailed) {
           return false;
         }
 
@@ -59,7 +62,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
   }
 
-  private async downloadAndVerifyAnchorFile (anchorFileHash: string, expectedCountOfUniqueSuffixes: number): Promise<AnchorFileModel> {
+  private async downloadAndVerifyAnchorFile (
+    transaction: TransactionModel,
+    anchorFileHash: string,
+    expectedCountOfUniqueSuffixes: number): Promise<AnchorFileModel> {
+
     console.info(`Downloading anchor file '${anchorFileHash}', max size limit ${ProtocolParameters.maxAnchorFileSizeInBytes} bytes...`);
 
     const fileBuffer = await this.downloadFileFromCas(anchorFileHash, ProtocolParameters.maxAnchorFileSizeInBytes);
@@ -69,6 +76,27 @@ export default class TransactionProcessor implements ITransactionProcessor {
       throw new SidetreeError(
         ErrorCode.AnchorFileDidUniqueSuffixesCountIncorrect,
         `Did unique suffixes count: ${anchorFileModel.didUniqueSuffixes.length} is different from the expected count: ${expectedCountOfUniqueSuffixes}`);
+    }
+
+    // Verify required lock if one was needed.
+    const valueTimeLock = anchorFileModel.writerLock ? await this.blockchain.getValueTimeLock(anchorFileModel.writerLock) : undefined;
+
+    try {
+      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+        valueTimeLock,
+        anchorFileModel.didUniqueSuffixes.length,
+        transaction.normalizedTransactionFee,
+        transaction.transactionTime,
+        transaction.writer);
+    } catch (e) {
+      if (e instanceof SidetreeError) {
+        // Wrapping the lock verification failures in another error so that we can check
+        // for this error in the calling function and return false (signaling the layer
+        // above to NOT retry this anchor file)
+        throw new SidetreeError(ErrorCode.ValueTimeLockVerificationFailed, e.message);
+      }
+
+      throw e;
     }
 
     return anchorFileModel;

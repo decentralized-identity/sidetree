@@ -164,6 +164,7 @@ describe('AnchorFile', async () => {
   describe('createBufferFromAnchorFileModel', async () => {
     it('should created a compressed buffer correctly.', async () => {
       const anchorFile = {
+        writerLock: undefined,
         mapFileHash: 'val1',
         didUniqueSuffixes: ['val2']
       };

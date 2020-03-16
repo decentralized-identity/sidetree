@@ -6,25 +6,29 @@ import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('ValueTimeLockVerifier', () => {
 
-  describe('calculateRequiredLockAmount', () => {
+  describe('calculateMaxNumberOfOpsAllowed', () => {
     it('should return the correct lock amount', () => {
-      const numberOfOpsInput = ProtocolParameters.maxNumberOfOpsForNoValueTimeLock + 1;
+      const valueTimeLockInput: ValueTimeLockModel = {
+        amountLocked: 1234,
+        identifier: 'identifier',
+        lockTransactionTime: 1234,
+        unlockTransactionTime: 1240,
+        owner: 'owner'
+      };
+
       const normalizedFeeInput = 3;
+      const feePerOp = normalizedFeeInput * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
+      const numOfOps = valueTimeLockInput.amountLocked / (feePerOp * ProtocolParameters.valueTimeLockAmountMultiplier);
+      const expectedNumOfOps = Math.floor(numOfOps);
 
-      const expectedAmount = normalizedFeeInput
-                             * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier
-                             * numberOfOpsInput
-                             * ProtocolParameters.valueTimeLockAmountMultiplier;
-
-      const actual = ValueTimeLockVerifier.calculateRequiredLockAmount(numberOfOpsInput, normalizedFeeInput);
-      expect(actual).toEqual(expectedAmount);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOpsAllowed(valueTimeLockInput, normalizedFeeInput);
+      expect(actual).toEqual(expectedNumOfOps);
     });
 
-    it('should return 0 if the number of operations do not require any lock', () => {
-      const numberOfOpsInput = ProtocolParameters.maxNumberOfOpsForNoValueTimeLock;
-      const actual = ValueTimeLockVerifier.calculateRequiredLockAmount(numberOfOpsInput, 2);
+    it('should return number of free ops if the value lock is undefined.', () => {
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOpsAllowed(undefined, 2);
 
-      expect(actual).toEqual(0);
+      expect(actual).toEqual(ProtocolParameters.maxNumberOfOpsForNoValueTimeLock);
     });
 
   });

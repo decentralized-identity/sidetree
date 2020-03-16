@@ -187,6 +187,7 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.alloc(0)));
 
       const mockAnchorFile: AnchorFileModel = {
+        writerLock: 'lock identifier',
         didUniqueSuffixes: [ 'suffix 1', 'suffix2' ],
         mapFileHash: 'map_file_hash'
       };
@@ -203,6 +204,7 @@ describe('TransactionProcessor', () => {
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.alloc(0)));
 
       const mockAnchorFile: AnchorFileModel = {
+        writerLock: 'lock identifier',
         didUniqueSuffixes: [ 'suffix 1', 'suffix2' ],
         mapFileHash: 'map_file_hash'
       };

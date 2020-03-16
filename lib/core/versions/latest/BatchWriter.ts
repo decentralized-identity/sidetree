@@ -10,6 +10,8 @@ import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
 import MapFile from './MapFile';
 import ProtocolParameters from './ProtocolParameters';
+import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
+import ValueTimeLockVerifier from './ValueTimeLockVerifier';
 
 /**
  * Implementation of the `IBatchWriter`.
@@ -21,8 +23,12 @@ export default class BatchWriter implements IBatchWriter {
     private cas: ICas) { }
 
   public async write () {
+    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
+    const currentLock = await this.blockchain.getWriterValueTimeLock();
+    const numberOfOpsAllowed = this.getNumberOfOpsToWrite(currentLock, normalizedFee);
+
     // Get the batch of operations to be anchored on the blockchain.
-    const queuedOperations = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
+    const queuedOperations = await this.operationQueue.peek(numberOfOpsAllowed);
 
     console.info('Batch size = ' + queuedOperations.length);
 
@@ -50,6 +56,7 @@ export default class BatchWriter implements IBatchWriter {
 
     // Construct the 'anchor file'.
     const anchorFileModel: AnchorFileModel = {
+      writerLock: currentLock ? currentLock.identifier : undefined,
       mapFileHash,
       didUniqueSuffixes
     };
@@ -66,7 +73,6 @@ export default class BatchWriter implements IBatchWriter {
     };
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
-    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, operationBuffers.length);
     console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with minimum fee of: ${fee}`);
 
@@ -74,5 +80,11 @@ export default class BatchWriter implements IBatchWriter {
 
     // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(queuedOperations.length);
+  }
+
+  private getNumberOfOpsToWrite (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number): number {
+    const numberOfOpsAllowed = ValueTimeLockVerifier.calculateMaxNumberOfOpsAllowed(valueTimeLock, normalizedFee);
+
+    return Math.min(numberOfOpsAllowed, ProtocolParameters.maxOperationsPerBatch);
   }
 }

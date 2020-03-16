@@ -451,7 +451,7 @@ describe('Blockchain', async () => {
       done();
     });
 
-    it('should throw pending-state error if that is returned by the network call.', async (done) => {
+    it('should return undefined if pending-state error is returned by the network call.', async (done) => {
       const blockchainClient = new Blockchain('unused');
 
       const mockFetchResponse = {
@@ -462,10 +462,8 @@ describe('Blockchain', async () => {
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
       spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => blockchainClient.getWriterValueTimeLock(),
-        SharedErrorCode.ValueTimeLockInPendingState);
-
+      const actual = await blockchainClient.getWriterValueTimeLock();
+      expect(actual).toBeUndefined();
       done();
     });
 

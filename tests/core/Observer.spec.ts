@@ -182,6 +182,7 @@ describe('Observer', async () => {
       operation2Data.createOperation.didUniqueSuffix
     ];
     const anchorFileModel: AnchorFileModel = {
+      writerLock: 'lock identifier',
       mapFileHash: mockMapFileHash,
       didUniqueSuffixes
     };
