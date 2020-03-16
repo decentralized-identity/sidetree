@@ -44,8 +44,8 @@ export default class RequestHandler implements IRequestHandler {
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
         const operationDataBuffer = Buffer.from(operationRequest.operationData);
-        if (operationDataBuffer.length > ProtocolParameters.maxOperationDataByteSize) {
-          const errorMessage = `operationDdata byte size of ${operationDataBuffer.length} exceeded limit of ${ProtocolParameters.maxOperationDataByteSize}`;
+        if (operationDataBuffer.length > ProtocolParameters.maxOperationDataSizeInBytes) {
+          const errorMessage = `operationDdata byte size of ${operationDataBuffer.length} exceeded limit of ${ProtocolParameters.maxOperationDataSizeInBytes}`;
           console.info(errorMessage);
           throw new SidetreeError(ErrorCode.RequestHandlerOperationDataExceedsMaximumSize, errorMessage);
         }
@@ -55,7 +55,8 @@ export default class RequestHandler implements IRequestHandler {
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
       if (await this.operationQueue.contains(operationModel.didUniqueSuffix)) {
-        throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
+        const errorMessage = `An operation request already exists in queue for DID '${operationModel.didUniqueSuffix}', only one is allowed at a time.`;
+        throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed, errorMessage);
       }
     } catch (error) {
       // Give meaningful/specific error code and message when possible.

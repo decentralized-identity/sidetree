@@ -114,7 +114,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     if (mapFileModel.updateOperations !== undefined) {
       didUniqueSuffixesInMapFile = mapFileModel.updateOperations.map(operation => operation.didUniqueSuffix);
 
-      if (!ArrayMethods.mutuallyExclusive(anchorFile.didUniqueSuffixes, didUniqueSuffixesInMapFile)) {
+      if (!ArrayMethods.areMutuallyExclusive(anchorFile.didUniqueSuffixes, didUniqueSuffixesInMapFile)) {
         throw new SidetreeError(ErrorCode.TransactionProcessorOperationForTheSameDidInBothAnchorAndMapFile);
       }
     }

@@ -53,10 +53,10 @@ export default class BatchFile {
       const operationDataBuffer = Buffer.from(encodedOperationData);
 
       // Verify size of each operation data entry does not exceed the maximum allowed limit.
-      if (operationDataBuffer.length > ProtocolParameters.maxOperationDataByteSize) {
+      if (operationDataBuffer.length > ProtocolParameters.maxOperationDataSizeInBytes) {
         throw new SidetreeError(
           ErrorCode.BatchFileOperationDataSizeExceedsLimit,
-          `Operation size of ${operationDataBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationDataByteSize} bytes.`
+          `Operation size of ${operationDataBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationDataSizeInBytes} bytes.`
         );
       }
     }
