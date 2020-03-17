@@ -612,12 +612,12 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Given a Bitcoin block, filter down to and return all potential sidetree transactions and perform PoF calculation on the rest.
+   * Given a Bitcoin block, filter down to and return all potential sidetree transactions, performing PoF calculation on the rest.
    * @param blockHeight Block height to process
    * @param blockData Block data to process
-   * @returns an array where each element is a tuple of transaction index number and its corresponding SidetreeTransactionModel
+   * @returns an array of sidetree transactions
    */
-  private async preprocessBlock (blockHeight: number, blockData: BitcoinBlockModel): Promise<Array<[number, SidetreeTransactionModel]>> {
+  private async filterBlock (blockHeight: number, blockData: BitcoinBlockModel): Promise<Array<TransactionModel>> {
 
     const blockHash = blockData.hash;
 
@@ -625,7 +625,7 @@ export default class BitcoinProcessor {
     this.transactionSampler.resetPsuedoRandomSeed(blockHash);
 
     const transactions = blockData.transactions;
-    const potentialSidetreeTransactions: Array<[number, SidetreeTransactionModel]> = [];
+    let sidetreeTransactions: Array<[number, SidetreeTransactionModel]> = [];
 
     // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
     // so we are going to ignore that transaction in our calculations.
@@ -635,8 +635,8 @@ export default class BitcoinProcessor {
       const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
 
       if (sidetreeData !== undefined) {
-        // Is a potential sidetree transaction. Add it to the result set
-        potentialSidetreeTransactions.push([transactionIndex, sidetreeData]);
+        // Is a sidetree transaction. Add it to the working result set
+        sidetreeTransactions.push([transactionIndex, sidetreeData]);
       } else if (transaction.inputs.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
         // Add the transaction to the sampler.  We filter out transactions with unusual
         // input count - such transaction require a large number of rpc calls to compute transaction fee
@@ -649,7 +649,7 @@ export default class BitcoinProcessor {
 
       // Compute the transaction fees for sampled transactions of this group
       const sampledTransactionIds = this.transactionSampler.getSample();
-      const sampledTransactionFees = new Array();
+      const sampledTransactionFees = [];
       for (let transactionId of sampledTransactionIds) {
         const transactionFee = await this.bitcoinClient.getTransactionFeeInSatoshis(transactionId);
         sampledTransactionFees.push(transactionFee);
@@ -662,7 +662,33 @@ export default class BitcoinProcessor {
       this.transactionSampler.clear();
     }
 
-    return potentialSidetreeTransactions;
+    let results: Array<TransactionModel> = [];
+    for (let i = 0; i < sidetreeTransactions.length; i++) {
+      const [transactionIndex, sidetreeTransaction] = sidetreeTransactions[i];
+      const tx = await this.getTransactionModel(sidetreeTransaction, transactions[transactionIndex], transactionIndex, blockHeight);
+      results.push(tx);
+    }
+    return results;
+  }
+
+  private async getTransactionModel (
+    sidetreeData: SidetreeTransactionModel,
+    transaction: BitcoinTransactionModel,
+    transactionIndex: number,
+    transactionBlock: number): Promise<TransactionModel> {
+
+    const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
+    const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
+
+    return {
+      transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
+      transactionTime: transactionBlock,
+      transactionTimeHash: transaction.blockHash,
+      anchorString: sidetreeData.data,
+      transactionFeePaid: transactionFeePaid,
+      normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
+      writer: sidetreeData.writer
+    };
   }
 
   /**
@@ -681,20 +707,16 @@ export default class BitcoinProcessor {
       throw Error(`Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`);
     }
 
-    const potentialSidetreeTransactions = await this.preprocessBlock(block, blockData);
-
-    const transactions = blockData.transactions;
-    // iterate through transactions
-    for (let i = 0; i < potentialSidetreeTransactions.length; i++) {
-      const [transactionIndex, potentialSidetreeTransaction] = potentialSidetreeTransactions[i];
-      const transaction = transactions[transactionIndex];
+    // Filter the block down to only sidetree transactions, then persist them to the transaction store
+    const sidetreeTransactions = await this.filterBlock(block, blockData);
+    for (let i = 0; i < sidetreeTransactions.length; i++) {
+      const transaction = sidetreeTransactions[i];
 
       try {
-        const sidetreeTxToAdd = await this.getSidetreeTransactionModel(potentialSidetreeTransaction, transaction, transactionIndex, block);
-        console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
-        await this.transactionStore.addTransaction(sidetreeTxToAdd);
+        console.debug(`Sidetree transaction found; adding ${JSON.stringify(transaction)}`);
+        await this.transactionStore.addTransaction(transaction);
       } catch (e) {
-        const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
+        const inputs = { block: block, blockHash: blockHash, transactionIndex: TransactionNumber.getPosition(transaction.transactionNumber) };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
                        JSON.stringify(inputs),
                        JSON.stringify(e, Object.getOwnPropertyNames(e)));
@@ -704,26 +726,6 @@ export default class BitcoinProcessor {
     }
 
     return blockHash;
-  }
-
-  private async getSidetreeTransactionModel (
-    sidetreeData: SidetreeTransactionModel,
-    transaction: BitcoinTransactionModel,
-    transactionIndex: number,
-    transactionBlock: number): Promise<TransactionModel> {
-
-    const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
-    const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
-
-    return {
-      transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
-      transactionTime: transactionBlock,
-      transactionTimeHash: transaction.blockHash,
-      anchorString: sidetreeData.data,
-      transactionFeePaid: transactionFeePaid,
-      normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
-      writer: sidetreeData.writer
-    };
   }
 
   /**
