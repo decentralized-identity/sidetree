@@ -142,7 +142,7 @@ describe('SidetreeTransactionParser', () => {
       });
 
       const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs'](mockOutputs, sidetreeTransactionPrefix);
-      expect(actual).toEqual('mockSidetreeData 1');
+      expect(actual).toEqual('mockSidetreeData 2');
       done();
     });
   });

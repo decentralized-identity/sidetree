@@ -53,6 +53,9 @@ export default class Jws {
     this.signature = input.signature;
   }
 
+  /**
+   * Returns this object as a JwsModel object.
+   */
   public toJwsModel (): JwsModel {
     return {
       protected: this.protected,
