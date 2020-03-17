@@ -18,8 +18,8 @@ export default interface ProtocolParameters {
   maxNumberOfTransactionsPerTransactionTime: number;
   /** Maximum operations per batch. */
   maxOperationsPerBatch: number;
-  /** Maximum size of an operation in bytes. */
-  maxOperationByteSize: number;
+  /** Maximum size of the `operationData` property in bytes. */
+  maxOperationDataSizeInBytes: number;
   /** The multiplier that converts the normalized fee from blockchain into a 'per operation' fee. */
   normalizedFeeToPerOperationFeeMultiplier: number;
 }

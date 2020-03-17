@@ -54,12 +54,21 @@ export default class RevokeOperation implements OperationModel {
   }
 
   /**
+   * Parses the given input as a revoke operation entry in the anchor file.
+   */
+  public static async parseOpertionFromAnchorFile (input: any): Promise<RevokeOperation> {
+    const opertionBuffer = Buffer.from(JSON.stringify(input));
+    const operation = await RevokeOperation.parseObject(input, opertionBuffer, true);
+    return operation;
+  }
+
+  /**
    * Parses the given buffer as a `UpdateOperation`.
    */
   public static async parse (operationBuffer: Buffer): Promise<RevokeOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const revokeOperation = await RevokeOperation.parseObject(operationObject, operationBuffer);
+    const revokeOperation = await RevokeOperation.parseObject(operationObject, operationBuffer, false);
     return revokeOperation;
   }
 
@@ -68,15 +77,17 @@ export default class RevokeOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
+   * @param anchorFileMode If set to true, then `operationData` and `type` properties is expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RevokeOperation> {
-    const properties = Object.keys(operationObject);
-    if (properties.length !== 4) {
-      throw new SidetreeError(ErrorCode.RevokeOperationMissingOrUnknownProperty);
+  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RevokeOperation> {
+    let expectedPropertyCount = 4;
+    if (anchorFileMode) {
+      expectedPropertyCount = 3;
     }
 
-    if (operationObject.type !== OperationType.Revoke) {
-      throw new SidetreeError(ErrorCode.RevokeOperationTypeIncorrect);
+    const properties = Object.keys(operationObject);
+    if (properties.length !== expectedPropertyCount) {
+      throw new SidetreeError(ErrorCode.RevokeOperationMissingOrUnknownProperty);
     }
 
     if (typeof operationObject.didUniqueSuffix !== 'string') {
@@ -96,6 +107,13 @@ export default class RevokeOperation implements OperationModel {
     const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
     const signedOperationData = await RevokeOperation.parseSignedOperationDataPayload(
       signedOperationDataJws.payload, operationObject.didUniqueSuffix, recoveryOtp);
+
+    // If not in anchor file mode, we need to validate `type` property.
+    if (!anchorFileMode) {
+      if (operationObject.type !== OperationType.Revoke) {
+        throw new SidetreeError(ErrorCode.RevokeOperationTypeIncorrect);
+      }
+    }
 
     return new RevokeOperation(
       operationBuffer,

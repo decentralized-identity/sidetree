@@ -1,7 +1,6 @@
 import * as retry from 'async-retry';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
-import AnchorFileModel from '../../lib/core/versions/latest/models/AnchorFileModel';
 import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Blockchain from '../../lib/core/Blockchain';
 import Cas from '../../lib/core/Cas';
@@ -154,52 +153,40 @@ describe('Observer', async () => {
   it('should process a valid operation batch successfully.', async () => {
     const operation1Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
-
-    const operationsBuffer = [
-      operation1Data.createOperation.operationBuffer,
-      operation2Data.createOperation.operationBuffer
-    ];
+    const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
     // Generating batch file data.
-    const batchFileBuffer = await BatchFile.fromOperationBuffers(operationsBuffer);
-    const batchFileFetchResult: FetchResult = {
+    const mockbBatchFileBuffer = await BatchFile.createBuffer(createOperations, [], []);
+    const mockBatchFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: batchFileBuffer
+      content: mockbBatchFileBuffer
     };
     const mockBatchFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockBatchFileHash')));
 
     // Generating map file data.
-    const mapFileBuffer = await MapFile.createBuffer(mockBatchFilehash);
+    const mockMapFileBuffer = await MapFile.createBuffer(mockBatchFilehash, []);
     const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
-    const mapFileFetchResult: FetchResult = {
+    const mockMapFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mapFileBuffer
+      content: mockMapFileBuffer
     };
 
     // Generating anchor file data.
-    const didUniqueSuffixes = [
-      operation1Data.createOperation.didUniqueSuffix,
-      operation2Data.createOperation.didUniqueSuffix
-    ];
-    const anchorFileModel: AnchorFileModel = {
-      mapFileHash: mockMapFileHash,
-      didUniqueSuffixes
-    };
-    const anchorFileBuffer = await AnchorFile.createBufferFromAnchorFileModel(anchorFileModel);
-    const anchoreFileFetchResult: FetchResult = {
+    const mockAnchorFileBuffer = await AnchorFile.createBuffer(mockMapFileHash, createOperations, [], []);
+    const mockAnchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: anchorFileBuffer
+      content: mockAnchorFileBuffer
     };
     const mockAnchorFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockAnchorFileHash')));
 
     // Prepare the mock fetch results from the `DownloadManager.download()`.
     const mockDownloadFunction = async (hash: string) => {
       if (hash === mockAnchorFilehash) {
-        return anchoreFileFetchResult;
+        return mockAnchoreFileFetchResult;
       } else if (hash === mockMapFileHash) {
-        return mapFileFetchResult;
+        return mockMapFileFetchResult;
       } else if (hash === mockBatchFilehash) {
-        return batchFileFetchResult;
+        return mockBatchFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
       }
@@ -217,7 +204,7 @@ describe('Observer', async () => {
       1
     );
 
-    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFilehash, numberOfOperations: operationsBuffer.length });
+    const anchoredData = AnchoredDataSerializer.serialize({ anchorFileHash: mockAnchorFilehash, numberOfOperations: createOperations.length });
     const mockTransaction: TransactionModel = {
       transactionNumber: 1,
       transactionTime: 1000000,
@@ -233,6 +220,7 @@ describe('Observer', async () => {
     };
     await (observer as any).processTransaction(mockTransaction, transactionUnderProcessing);
 
+    const didUniqueSuffixes = createOperations.map(operation => operation.didUniqueSuffix);
     for (const didUniqueSuffix of didUniqueSuffixes) {
       const operationArray = await operationStore.get(didUniqueSuffix);
       expect(operationArray.length).toEqual(1);

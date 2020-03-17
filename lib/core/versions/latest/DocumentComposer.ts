@@ -50,7 +50,7 @@ export default class DocumentComposer {
     }
 
     // The operation passes all checks, apply the patches.
-    DocumentComposer.applyPatchesToDidDocument(document, operation.operationData.documentPatch);
+    DocumentComposer.applyPatchesToDidDocument(document, operation.operationData!.documentPatch);
 
     return document;
   }

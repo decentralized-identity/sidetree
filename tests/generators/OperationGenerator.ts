@@ -115,7 +115,7 @@ export default class OperationGenerator {
     const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
     const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
 
-    const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
+    const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey,
       nextRecoveryOtpHash,
@@ -123,10 +123,13 @@ export default class OperationGenerator {
       service
     );
 
+    const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
+
     const createOperation = await CreateOperation.parse(operationBuffer);
 
     return {
       createOperation,
+      operationRequest,
       recoveryKeyId,
       recoveryPublicKey,
       recoveryPrivateKey,

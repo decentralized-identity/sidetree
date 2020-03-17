@@ -3,5 +3,9 @@
  */
 export default interface AnchorFileModel {
   mapFileHash: string;
-  didUniqueSuffixes: string[];
+  operations: {
+    createOperations?: any[],
+    recoverOperations?: any[],
+    revokeOperations?: any[]
+  };
 }
