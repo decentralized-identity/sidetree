@@ -23,7 +23,7 @@ export default class SidetreeTransactionParser {
    */
   public async parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): Promise<SidetreeTransactionModel | undefined> {
 
-    const sidetreeData = this.getValidSidetreeDataFromOutputs(bitcoinTransaction.id, bitcoinTransaction.outputs, sidetreePrefix);
+    const sidetreeData = this.getValidSidetreeDataFromOutputs(bitcoinTransaction.outputs, sidetreePrefix);
 
     if (!sidetreeData) {
       return undefined;
@@ -42,31 +42,23 @@ export default class SidetreeTransactionParser {
     };
   }
 
-  private getValidSidetreeDataFromOutputs (transactionId: string, transactionOutputs: BitcoinOutputModel[], sidetreePrefix: string): string | undefined {
+  private getValidSidetreeDataFromOutputs (transactionOutputs: BitcoinOutputModel[], sidetreePrefix: string): string | undefined {
 
     // The sidetree transaction output has the following requirements:
-    //  1. There must be only one output with a valid sidetree anchorstring
-
-    let sidetreeDataToReturn: string | undefined = undefined;
+    //  1. We will recognize only the first sidetree anchorstring and ignore the rest.
 
     for (let i = 0; i < transactionOutputs.length; i++) {
       const currentOutput = transactionOutputs[i];
       const sidetreeDataForThisOutput = this.getSidetreeDataFromOutputIfExist(currentOutput, sidetreePrefix);
 
       if (sidetreeDataForThisOutput) {
-
-        const oneSidetreeDataAlreadyFound = sidetreeDataToReturn !== undefined;
-
-        if (oneSidetreeDataAlreadyFound) {
-          console.info(`More than one sidetree transactions were found in the outputs of transaction id: ${transactionId}`);
-          return undefined;
-        }
-
-        sidetreeDataToReturn = sidetreeDataForThisOutput;
+        // Sidetree data found .. return it
+        return sidetreeDataForThisOutput;
       }
     }
 
-    return sidetreeDataToReturn;
+    // Nothing found
+    return undefined;
   }
 
   private getSidetreeDataFromOutputIfExist (transactionOutput: BitcoinOutputModel, sidetreePrefix: string): string | undefined {
@@ -126,13 +118,13 @@ export default class SidetreeTransactionParser {
     return this.getPublicKeyHashIfValidScript(outputBeingSpend.scriptAsmAsString);
   }
 
-  private async fetchOutput (transactionId: string, outputIdxToFetch: number): Promise<BitcoinOutputModel | undefined> {
+  private async fetchOutput (transactionId: string, outputIndexToFetch: number): Promise<BitcoinOutputModel | undefined> {
     try {
       const transaction = await this.bitcoinClient.getRawTransaction(transactionId);
 
-      return transaction.outputs[outputIdxToFetch];
+      return transaction.outputs[outputIndexToFetch];
     } catch (e) {
-      console.warn(`Error while trying to get outputIdx: ${outputIdxToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
+      console.warn(`Error while trying to get outputIdx: ${outputIndexToFetch} from transaction: ${transactionId}. Error: ${SidetreeError.stringify(e)}`);
       return undefined;
     }
   }

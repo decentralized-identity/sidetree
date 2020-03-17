@@ -88,7 +88,7 @@ describe('SidetreeTransactionParser', () => {
   });
 
   describe('getValidSidetreeDataFromOutputs', () => {
-    it('should return the sidetree data if only output has the data present', async (done) => {
+    it('should return the sidetree data if only one output has the data present', async (done) => {
       const mockSidetreeData = 'some side tree data';
       let sidetreeDataSent = false;
       spyOn(sidetreeTxnParser as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
@@ -105,7 +105,7 @@ describe('SidetreeTransactionParser', () => {
         createValidDataOutput('mock data 2')
       ];
 
-      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs'](mockOutputs, sidetreeTransactionPrefix);
       expect(actual).toEqual(mockSidetreeData);
       done();
     });
@@ -118,31 +118,31 @@ describe('SidetreeTransactionParser', () => {
         createValidDataOutput('mock data 2')
       ];
 
-      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
+      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs'](mockOutputs, sidetreeTransactionPrefix);
       expect(actual).not.toBeDefined();
       done();
     });
 
-    it('should return undefined if there is more one output with the sidetree data.', async (done) => {
-      let callCount = 0;
-      spyOn(sidetreeTxnParser as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
-        callCount++;
-
-        if (callCount % 2 === 1) {
-          return `mockSidetreeData ${callCount}`;
-        }
-
-        return undefined;
-      });
-
+    it('should only return the first output with the sidetree data.', async (done) => {
       const mockOutputs: BitcoinOutputModel[] = [
         createValidDataOutput('mock data 1'),
         createValidDataOutput('mock data 2'),
         createValidDataOutput('mock data 2')
       ];
 
-      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs']('txid', mockOutputs, sidetreeTransactionPrefix);
-      expect(actual).not.toBeDefined();
+      let callCount = 0;
+      spyOn(sidetreeTxnParser as any, 'getSidetreeDataFromOutputIfExist').and.callFake(() => {
+        callCount++;
+
+        if (callCount > 1) {
+          return `mockSidetreeData ${callCount}`;
+        }
+
+        return undefined;
+      });
+
+      const actual = sidetreeTxnParser['getValidSidetreeDataFromOutputs'](mockOutputs, sidetreeTransactionPrefix);
+      expect(actual).toEqual('mockSidetreeData 1');
       done();
     });
   });
