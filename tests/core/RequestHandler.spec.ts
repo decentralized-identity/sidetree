@@ -133,22 +133,27 @@ describe('RequestHandler', () => {
 
     // Verfiy that CAS was invoked to store the batch file.
     const maxBatchFileSize = 20000000;
-    const expectedBatchBuffer = await BatchFile.fromOperationBuffers([createOperationBuffer]);
+    const expectedBatchBuffer = await BatchFile.createBuffer([createOperationData.createOperation], [], []);
     const expectedBatchFileHash = MockCas.getAddress(expectedBatchBuffer);
     const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
-    expect(batchFile.operations.length).toEqual(1);
+    expect(batchFile.operationData.length).toEqual(1);
   });
 
-  it('should return bad request if operation given is larger than protocol limit.', async () => {
+  it('should return bad request if operation data given in request is larger than protocol limit.', async () => {
+    const createOperationData = await OperationGenerator.generateCreateOperation();
+    const createOperationRequest = createOperationData.operationRequest;
     const getRandomBytesAsync = util.promisify(crypto.randomBytes);
     const largeBuffer = await getRandomBytesAsync(4000);
-    const response = await requestHandler.handleOperationRequest(largeBuffer);
+    createOperationRequest.operationData = Encoder.encode(largeBuffer);
+
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.OperationExceedsMaximumSize);
+    expect(response.body.code).toEqual(ErrorCode.RequestHandlerOperationDataExceedsMaximumSize);
   });
 
   it('should return bad request if two operations for the same DID is received.', async () => {

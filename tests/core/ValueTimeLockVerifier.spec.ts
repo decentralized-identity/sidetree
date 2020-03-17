@@ -30,36 +30,24 @@ describe('ValueTimeLockVerifier', () => {
 
       expect(actual).toEqual(ProtocolParameters.maxNumberOfOpsForNoValueTimeLock);
     });
-
-  });
-
-  describe('getMaxNumberOfOpsForZeroLockAmount', () => {
-    it('should return the correct value', () => {
-      const actual = ValueTimeLockVerifier.getMaxNumberOfOpsForZeroLockAmount();
-
-      expect(actual).toEqual(ProtocolParameters.maxNumberOfOpsForNoValueTimeLock);
-    });
   });
 
   describe('verifyLockAmountAndThrowOnError', () => {
-    it('should not throw errors if the required amount is 0', () => {
-      spyOn(ValueTimeLockVerifier, 'calculateRequiredLockAmount').and.returnValue(0);
-
-      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, 10, 2, 1234);
-      // No exception == valid
-    });
-
-    it('shoud throw if the lock is undefined but the lock is needed.', () => {
-      spyOn(ValueTimeLockVerifier, 'calculateRequiredLockAmount').and.returnValue(100);
+    it('should throw if the lock-owner and transaction-writer do not match', () => {
+      const valueTimeLockInput: ValueTimeLockModel = {
+        amountLocked: 1234,
+        identifier: 'identifier',
+        lockTransactionTime: 1234,
+        unlockTransactionTime: 1235,
+        owner: 'lock-owner'
+      };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, 10, 200, 12324),
-        ErrorCode.ValueTimeLockRequired);
+        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, 10, 123, 12, 'txn writer'),
+        ErrorCode.ValueTimeLockTransactionWriterLockOwnerMismatch);
     });
 
     it('shoud throw if the current block is earlier than the lock start time.', () => {
-      spyOn(ValueTimeLockVerifier, 'calculateRequiredLockAmount').and.returnValue(100);
-
       const valueTimeLockinput: ValueTimeLockModel = {
         amountLocked: 100,
         identifier: 'identifier',
@@ -69,13 +57,17 @@ describe('ValueTimeLockVerifier', () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockinput, 10, 200, valueTimeLockinput.lockTransactionTime - 1),
+        () =>
+          ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+            valueTimeLockinput,
+            10,
+            200,
+            valueTimeLockinput.lockTransactionTime - 1,
+            valueTimeLockinput.owner),
         ErrorCode.ValueTimeLockTargetTransactionTimeOutsideLockRange);
     });
 
     it('shoud throw if the lock is later than the lock end time.', () => {
-      spyOn(ValueTimeLockVerifier, 'calculateRequiredLockAmount').and.returnValue(100);
-
       const valueTimeLockinput: ValueTimeLockModel = {
         amountLocked: 100,
         identifier: 'identifier',
@@ -85,16 +77,22 @@ describe('ValueTimeLockVerifier', () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockinput, 10, 200, valueTimeLockinput.unlockTransactionTime),
+        () =>
+          ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+            valueTimeLockinput,
+            10,
+            200,
+            valueTimeLockinput.unlockTransactionTime,
+            valueTimeLockinput.owner),
         ErrorCode.ValueTimeLockTargetTransactionTimeOutsideLockRange);
     });
 
     it('shoud throw if the lock amoutn is less than the required amount.', () => {
-      const mockRequiredlockAmount = 234;
-      spyOn(ValueTimeLockVerifier, 'calculateRequiredLockAmount').and.returnValue(mockRequiredlockAmount);
+      const mockMaxNumOfOps = 234;
+      spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOpsAllowed').and.returnValue(mockMaxNumOfOps);
 
       const valueTimeLockinput: ValueTimeLockModel = {
-        amountLocked: mockRequiredlockAmount - 1,
+        amountLocked: 123,
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
@@ -102,23 +100,34 @@ describe('ValueTimeLockVerifier', () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockinput, 10, 200, valueTimeLockinput.lockTransactionTime + 1),
-        ErrorCode.ValueTimeLockInsufficentLockAmount);
+        () =>
+          ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+            valueTimeLockinput,
+            mockMaxNumOfOps + 1,
+            200,
+            valueTimeLockinput.lockTransactionTime + 1,
+            valueTimeLockinput.owner),
+        ErrorCode.ValueTimeLockInvalidNumberOfOperations);
     });
 
     it('shoud not throw if all of the checks pass.', () => {
-      const mockRequiredlockAmount = 234;
-      spyOn(ValueTimeLockVerifier, 'calculateRequiredLockAmount').and.returnValue(mockRequiredlockAmount);
+      const mockMaxNumOfOps = 234;
+      spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOpsAllowed').and.returnValue(mockMaxNumOfOps);
 
       const valueTimeLockinput: ValueTimeLockModel = {
-        amountLocked: mockRequiredlockAmount + 1,
+        amountLocked: 123,
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
         owner: 'owner'
       };
 
-      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockinput, 10, 200, valueTimeLockinput.lockTransactionTime + 1);
+      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+        valueTimeLockinput,
+        mockMaxNumOfOps,
+        200,
+        valueTimeLockinput.lockTransactionTime + 1,
+        valueTimeLockinput.owner);
 
       // no exception === no unexpected errors.
     });

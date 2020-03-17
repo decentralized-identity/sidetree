@@ -14,7 +14,7 @@ import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
-import SidetreeTransactionData from './SidetreeTransactionData';
+import SidetreeTransactionParser from './SidetreeTransactionParser';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
 import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
@@ -84,6 +84,8 @@ export default class BitcoinProcessor {
 
   private lockMonitor: LockMonitor;
 
+  private sidetreeTransactionParser: SidetreeTransactionParser;
+
   /** proof of fee configuration */
   private readonly quantileCalculator: SlidingWindowQuantileCalculator;
 
@@ -124,6 +126,7 @@ export default class BitcoinProcessor {
         config.requestMaxRetries || 3,
         config.sidetreeTransactionFeeMarkupPercentage || 0);
 
+    this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient);
     this.lockResolver = new LockResolver(this.bitcoinClient);
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
@@ -614,7 +617,7 @@ export default class BitcoinProcessor {
     for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
-      const sidetreeData = SidetreeTransactionData.parse(transaction, this.sidetreePrefix);
+      const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
       const isSidetreeTransaction = sidetreeData !== undefined;
 
       // Add the transaction to the sampler.  We filter out transactions with unusual
@@ -696,7 +699,7 @@ export default class BitcoinProcessor {
     transactionIndex: number,
     transactionBlock: number): Promise<TransactionModel | undefined> {
 
-    const sidetreeData = SidetreeTransactionData.parse(transaction, this.sidetreePrefix);
+    const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
 
     if (sidetreeData) {
       const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);

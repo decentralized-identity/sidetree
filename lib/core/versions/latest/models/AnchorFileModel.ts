@@ -4,5 +4,9 @@
 export default interface AnchorFileModel {
   writerLock: string | undefined;
   mapFileHash: string;
-  didUniqueSuffixes: string[];
+  operations: {
+    createOperations?: any[],
+    recoverOperations?: any[],
+    revokeOperations?: any[]
+  };
 }

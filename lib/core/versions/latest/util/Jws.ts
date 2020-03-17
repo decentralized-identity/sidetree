@@ -54,6 +54,17 @@ export default class Jws {
   }
 
   /**
+   * Returns this object as a JwsModel object.
+   */
+  public toJwsModel (): JwsModel {
+    return {
+      protected: this.protected,
+      payload: this.payload,
+      signature: this.signature
+    };
+  }
+
+  /**
    * Verifies the JWS signature.
    * @returns true if signature is successfully verified, false otherwise.
    */

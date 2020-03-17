@@ -70,7 +70,7 @@ See [DID Create API](#DID-Creation) section for detail on how to construct a cre
 
 ## Unpublished DID Resolution
 
-DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through _DID Parameters_, as described in the [W3C DID spec](https://w3c.github.io/did-spec/#generic-did-parameter-names).
+DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through _DID Parameters_, as described in the [W3C DID spec](https://w3c.github.io/did-core/#generic-did-url-parameters).
 
 Many DID Methods feature a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying trust system (i.e. blockchain, ledger). The community has recognized the need for a mechanism to support resolution and use of identifiers during this period. As such, the community will introduce a _Generic DID Parameter_ `initial-values` that any DID method can use to signify initial state variables during this period. 
 
@@ -96,7 +96,7 @@ The Sidetree protocol increases operation throughput by batching multiple operat
 For every batch of Sidetree operations created, there are three files that are created and stored in the CAS layer:
 
 1. Batch file - The file containing the actual change data of all the operations batched together.
-1. Map file - This file contain references to one or more _batch files_. Currently this map file only reference one batch file, but this design allows for operation data to be seperated in multiple batch files for optimized on-demand reslution. 
+1. Map file - This file contain references to one or more _batch files_. Currently this map file only reference one batch file, but this design allows for operation data to be separated in multiple batch files for optimized on-demand resolution. 
 1. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the following:
     1. Hash of the _map file_.
     1. Array of DID suffixes (the unique portion of the DID string that differentiates one DID from another) for all DIDs that are declared to have operations within the associated _batch file_.
@@ -106,10 +106,10 @@ For every batch of Sidetree operations created, there are three files that are c
 The _batch file_ is a ZIP compressed JSON document of the following schema:
 ```json
 {
-  "operations": [
-    "Encoded operation",
-    "Encoded operation",
-    ...
+  "operationData": [
+    "Encoded operationData from 1st operation request",
+    "Encoded operationData from 2nd operation request",
+    "Encoded operationData from nth operation request",
   ]
 }
 ```
@@ -119,6 +119,7 @@ The _map file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded multihash of the batch file.",
+  "updateOperations": ["Update operation request excluding `type` and `operationData` properties.", "..."]
 }
 ```
 
@@ -127,7 +128,11 @@ The _anchor file_ is a JSON document of the following schema:
 ```json
 {
   "mapFileHash": "Encoded multihash of the map file.",
-  "didUniqueSuffixes": ["Unique suffix of DID of 1st operation", "Unique suffix of DID of 2nd operation", "..."]
+  "operations": {
+    "createOperations": ["Update operation request excluding `type` and `operationData` properties.", "..."],
+    "recoverOperations": ["Recover operation request excluding `type` and `operationData` properties.", "..."],
+    "revokeOperations": ["Recoke operation request excluding `type` properties.", "..."]
+  }
 }
 ```
 
@@ -202,7 +207,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
   See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify OTPs and OTP hashes in each operation.
 
 ## Sidetree Transaction Processing
-A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increasing by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
+A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increased by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
 
 1. _Anchor file_ validation rules:
    1. The anchor file must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
