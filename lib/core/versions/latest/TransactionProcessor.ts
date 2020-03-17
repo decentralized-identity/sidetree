@@ -41,7 +41,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const batchFileModel = await this.downloadAndVerifyBatchFile(mapFileModel);
 
       // Compose into operations from all the files downloaded.
-      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFileModel, batchFileModel);
+      const operations = this.composeAnchoredOperationModels(transaction, anchorFile, mapFileModel, batchFileModel);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
