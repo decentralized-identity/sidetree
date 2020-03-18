@@ -10,7 +10,7 @@ export default class ValueTimeLockVerifier {
 
   /**
    * Calculates the maximum number of operations allowed to be written for the given lock information. If
-   * there is no lock then it returns the number of operations which do not required a lock.
+   * there is no lock then it returns the number of operations which do not require a lock.
    *
    * @param valueTimeLock The lock object if exists
    * @param normalizedFee The normalized fee for the current block
@@ -22,14 +22,14 @@ export default class ValueTimeLockVerifier {
     }
 
     // Using the following formula:
-    //  requiredLockAmount = normalizedfee * normalizedFeeMultipier * numberOfOps * valueTimeLockMultilier
+    //  requiredLockAmount = normalizedfee * normalizedFeeMultipier * numberOfOps * valueTimeLockMultiplier
     //
     // We are going to find the numberOfOps given the requiredLockAmount
     const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     const numberOfOpsAllowed = valueTimeLock.amountLocked / (feePerOperation * ProtocolParameters.valueTimeLockAmountMultiplier);
 
-    // Make sure that we are returning an integer; rounding down to make sure that we are returning a
-    // more accurate number.
+    // Make sure that we are returning an integer; rounding down to make sure that we are not going above 
+    // the max limit.
     return Math.floor(numberOfOpsAllowed);
   }
 

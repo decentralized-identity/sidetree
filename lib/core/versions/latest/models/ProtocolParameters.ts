@@ -14,7 +14,7 @@ export default interface ProtocolParameters {
   maxEncodedHashStringLength: number;
   /** Max number of operations observed per transaction time */
   maxNumberOfOpsPerTransactionTime: number;
-  /** Minimum number of operations before value time lock is not required. */
+  /** Maximum number of operations allowed with no lock. */
   maxNumberOfOpsForNoValueTimeLock: number;
   /** Max number of transactions observed per transaction time */
   maxNumberOfTransactionsPerTransactionTime: number;
