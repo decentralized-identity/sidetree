@@ -28,7 +28,7 @@ export default class ValueTimeLockVerifier {
     const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     const numberOfOpsAllowed = valueTimeLock.amountLocked / (feePerOperation * ProtocolParameters.valueTimeLockAmountMultiplier);
 
-    // Make sure that we are returning an integer; rounding down to make sure that we are not going above 
+    // Make sure that we are returning an integer; rounding down to make sure that we are not going above
     // the max limit.
     return Math.floor(numberOfOpsAllowed);
   }
