@@ -48,8 +48,10 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
+    const maxAllowedPropertyCount = 3;
     const anchorFileProperties = Object.keys(anchorFileModel);
-    if (anchorFileProperties.length > 2) {
+
+    if (anchorFileProperties.length > maxAllowedPropertyCount) {
       throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
     }
 
@@ -59,6 +61,13 @@ export default class AnchorFile {
 
     if (!anchorFileModel.hasOwnProperty('operations')) {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
+    }
+
+    // This property is optional so if there's an additional propertye besides
+    // the required ones then it must be this optional one.
+    if (anchorFileProperties.length === maxAllowedPropertyCount &&
+       !anchorFileModel.hasOwnProperty('writerLock')) {
+      throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
     }
 
     // Map file hash validations.

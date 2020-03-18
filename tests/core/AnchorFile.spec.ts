@@ -31,8 +31,9 @@ describe('AnchorFile', async () => {
     it('should throw if has an unknown property.', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
+        writerlock: 'writer lock',
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: []
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -60,6 +61,18 @@ describe('AnchorFile', async () => {
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty));
+    });
+
+    it('should throw if any additional property is NOT the writer lock.', async () => {
+      const anchorFile = {
+        invalidProperty: 'some property value',
+        mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        operations: {}
+      };
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
     });
 
     it('should throw if map file hash is not string.', async () => {

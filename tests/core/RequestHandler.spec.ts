@@ -57,6 +57,7 @@ describe('RequestHandler', () => {
   beforeEach(async () => {
     const operationQueue = new MockOperationQueue();
     spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
+    spyOn(blockchain, 'getWriterValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
     cas = new MockCas();
     const batchWriter = new BatchWriter(operationQueue, blockchain, cas);

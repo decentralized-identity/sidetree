@@ -13,6 +13,9 @@ import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
+import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('TransactionProcessor', () => {
   const config = require('../json/config-test.json');
@@ -233,6 +236,48 @@ describe('TransactionProcessor', () => {
       done();
     });
 
+    it('should bubble up any errors thrown by verify lock routine', async (done) => {
+      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.from('value')));
+
+      const mockAnchorFile: AnchorFile = {
+        createOperations: [],
+        didUniqueSuffixes: ['abc', 'def'],
+        model: { writerLock: 'lock', mapFileHash: 'map_hash', operations: {} },
+        recoverOperations: [],
+        revokeOperations: []
+      };
+      spyOn(AnchorFile, 'parse').and.returnValue(Promise.resolve(mockAnchorFile));
+
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1234,
+        identifier: 'identifier',
+        lockTransactionTime: 1234,
+        unlockTransactionTime: 7890,
+        owner: 'owner'
+      };
+      spyOn(transactionProcessor['blockchain'], 'getValueTimeLock').and.returnValue(Promise.resolve(mockValueTimeLock));
+
+      const mockTransaction: TransactionModel = {
+        anchorString: 'anchor string',
+        normalizedTransactionFee: 123,
+        transactionFeePaid: 1234,
+        transactionNumber: 98765,
+        transactionTime: 5678,
+        transactionTimeHash: 'transaction time hash',
+        writer: 'writer'
+      };
+
+      const mockErrorCode = 'some error code';
+      spyOn(ValueTimeLockVerifier, 'verifyLockAmountAndThrowOnError').and.callFake(() => {
+        throw new SidetreeError(mockErrorCode);
+      });
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'anchor_hash', mockAnchorFile.didUniqueSuffixes.length),
+        mockErrorCode);
+      done();
+    });
+
     it('should return the parsed file.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mockAnchorFileModel = await AnchorFile.createModel(
@@ -241,6 +286,8 @@ describe('TransactionProcessor', () => {
       const mockAnchorFileBuffer = await Compressor.compress(Buffer.from(JSON.stringify(mockAnchorFileModel)));
 
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockAnchorFileBuffer));
+      spyOn(transactionProcessor['blockchain'], 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
+      spyOn(ValueTimeLockVerifier, 'verifyLockAmountAndThrowOnError').and.returnValue(undefined);
 
       const mockTransaction: TransactionModel = {
         anchorString: 'anchor string',

@@ -31,7 +31,7 @@ describe('Observer', async () => {
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
-  let blockchain: MockBlockchain
+  let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -49,6 +49,9 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
     blockchain = new MockBlockchain();
+
+    // Mock the blockchain to return an empty lock
+    spyOn(blockchain, 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
     const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
     const transactionSelector = new TransactionSelector(transactionStore);
