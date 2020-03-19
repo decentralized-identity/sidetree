@@ -15,10 +15,10 @@ export default class ValueTimeLockVerifier {
    * @param valueTimeLock The lock object if exists
    * @param normalizedFee The normalized fee for the current block
    */
-  public static calculateMaxNumberOfOpsAllowed (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number) {
+  public static calculateMaxNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number) {
 
     if (valueTimeLock === undefined) {
-      return ProtocolParameters.maxNumberOfOpsForNoValueTimeLock;
+      return ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock;
     }
 
     // Using the following formula:
@@ -40,37 +40,39 @@ export default class ValueTimeLockVerifier {
    * @param valueTimeLock The value time lock object used for verificiation.
    * @param numberOfOperations The target number of operations.
    * @param normalizedFee The normalized fee for the target block.
-   * @param targetTransactionTime The transaction time where the operations were written.
+   * @param sidetreeTransactionTime The transaction time where the operations were written.
+   * @param sidetreeTransactionWriter The writer of the transaction.
    */
   public static verifyLockAmountAndThrowOnError (
     valueTimeLock: ValueTimeLockModel | undefined,
     numberOfOperations: number,
     normalizedFee: number,
-    targetTransactionTime: number,
-    targetTransactionWriter: string): void {
+    sidetreeTransactionTime: number,
+    sidetreeTransactionWriter: string): void {
 
     if (valueTimeLock) {
       // Check the lock owner
-      if (valueTimeLock.owner !== targetTransactionWriter) {
+      if (valueTimeLock.owner !== sidetreeTransactionWriter) {
         throw new SidetreeError(
-          ErrorCode.ValueTimeLockTransactionWriterLockOwnerMismatch,
-          `Transaction writer: ${targetTransactionWriter} - Lock owner: ${valueTimeLock.owner}`);
+          ErrorCode.ValueTimeLockVerifierTransactionWriterLockOwnerMismatch,
+          `Sidetree transaction writer: ${sidetreeTransactionWriter} - Lock owner: ${valueTimeLock.owner}`);
       }
 
       // Check the lock duration
-      if (targetTransactionTime < valueTimeLock.lockTransactionTime ||
-          targetTransactionTime >= valueTimeLock.unlockTransactionTime) {
+      if (sidetreeTransactionTime < valueTimeLock.lockTransactionTime ||
+          sidetreeTransactionTime >= valueTimeLock.unlockTransactionTime) {
         throw new SidetreeError(
-          ErrorCode.ValueTimeLockTargetTransactionTimeOutsideLockRange,
-          `Target block: ${targetTransactionTime}; lock start time: ${valueTimeLock.lockTransactionTime}; unlock time: ${valueTimeLock.unlockTransactionTime}`);
+          ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange,
+          // tslint:disable-next-line: max-line-length
+          `Sidetree transaction block: ${sidetreeTransactionTime}; lock start time: ${valueTimeLock.lockTransactionTime}; unlock time: ${valueTimeLock.unlockTransactionTime}`);
       }
     }
 
-    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOpsAllowed(valueTimeLock, normalizedFee);
+    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOperationsAllowed(valueTimeLock, normalizedFee);
 
     if (numberOfOperations > maxNumberOfOpsAllowed) {
       throw new SidetreeError(
-        ErrorCode.ValueTimeLockInvalidNumberOfOperations,
+        ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations,
         `Max number of ops allowed: ${maxNumberOfOpsAllowed}; actual number of ops: ${numberOfOperations}`);
     }
   }

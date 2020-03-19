@@ -115,7 +115,7 @@ export default {
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
   UpdateOperationUpdateOtpMissingOrInvalidType: 'update_operation_update_otp_missing_or_invalid_type',
   UpdateOperationUpdateOtpTooLong: 'update_operation_update_otp_too_long',
-  ValueTimeLockInvalidNumberOfOperations: 'value_time_lock_Invalid_number_of_operations',
-  ValueTimeLockTargetTransactionTimeOutsideLockRange: 'value_time_lock_target_transaction_time_outside_lock_range',
-  ValueTimeLockTransactionWriterLockOwnerMismatch: 'value_time_lock_transaction_owner_lock_writer_mismatch'
+  ValueTimeLockVerifierInvalidNumberOfOperations: 'value_time_lock_verifierInvalid_number_of_operations',
+  ValueTimeLockVerifierTransactionTimeOutsideLockRange: 'value_time_lock_verifiertarget_transaction_time_outside_lock_range',
+  ValueTimeLockVerifierTransactionWriterLockOwnerMismatch: 'value_time_lock_verifiertransaction_owner_lock_writer_mismatch'
 };
