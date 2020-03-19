@@ -97,7 +97,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
       valueTimeLock,
-      operationCountInAnchorFile,
+      paidOperationCount,
       transaction.normalizedTransactionFee,
       transaction.transactionTime,
       transaction.writer);

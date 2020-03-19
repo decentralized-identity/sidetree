@@ -268,13 +268,22 @@ describe('TransactionProcessor', () => {
       };
 
       const mockErrorCode = 'some error code';
-      spyOn(ValueTimeLockVerifier, 'verifyLockAmountAndThrowOnError').and.callFake(() => {
+      const lockVerifySpy = spyOn(ValueTimeLockVerifier, 'verifyLockAmountAndThrowOnError').and.callFake(() => {
         throw new SidetreeError(mockErrorCode);
       });
 
+      const paidOperationCount = 52;
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'anchor_hash', mockAnchorFile.didUniqueSuffixes.length),
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'anchor_hash', paidOperationCount),
         mockErrorCode);
+
+      expect(lockVerifySpy)
+        .toHaveBeenCalledWith(
+          mockValueTimeLock,
+          paidOperationCount,
+          mockTransaction.normalizedTransactionFee,
+          mockTransaction.transactionTime,
+          mockTransaction.writer);
       done();
     });
 

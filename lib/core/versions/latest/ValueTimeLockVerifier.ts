@@ -30,7 +30,10 @@ export default class ValueTimeLockVerifier {
 
     // Make sure that we are returning an integer; rounding down to make sure that we are not going above
     // the max limit.
-    return Math.floor(numberOfOpsAllowed);
+    const numberOfOpsAllowedInt = Math.floor(numberOfOpsAllowed);
+
+    // Return at least the 'free' operations
+    return Math.max(numberOfOpsAllowedInt, ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
   }
 
   /**
@@ -49,6 +52,11 @@ export default class ValueTimeLockVerifier {
     normalizedFee: number,
     sidetreeTransactionTime: number,
     sidetreeTransactionWriter: string): void {
+
+    // If the number of written operations were under the free limit then there's nothing to check
+    if (numberOfOperations <= ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock) {
+      return;
+    }
 
     if (valueTimeLock) {
       // Check the lock owner

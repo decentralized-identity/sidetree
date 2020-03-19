@@ -9,7 +9,7 @@ describe('ValueTimeLockVerifier', () => {
   describe('calculateMaxNumberOfOperationsAllowed', () => {
     it('should return the correct lock amount', () => {
       const valueTimeLockInput: ValueTimeLockModel = {
-        amountLocked: 1234,
+        amountLocked: 12349876, // large amount to allow more than free number of ops
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 1240,
@@ -25,6 +25,19 @@ describe('ValueTimeLockVerifier', () => {
       expect(actual).toEqual(expectedNumOfOps);
     });
 
+    it('should return the number of free ops if the lock amount is too small', () => {
+      const valueTimeLockInput: ValueTimeLockModel = {
+        amountLocked: 100, // low amount to allow less than free number of ops
+        identifier: 'identifier',
+        lockTransactionTime: 1234,
+        unlockTransactionTime: 1240,
+        owner: 'owner'
+      };
+
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, 1);
+      expect(actual).toEqual(ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
+    });
+
     it('should return number of free ops if the value lock is undefined.', () => {
       const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(undefined, 2);
 
@@ -33,6 +46,15 @@ describe('ValueTimeLockVerifier', () => {
   });
 
   describe('verifyLockAmountAndThrowOnError', () => {
+    it('should not throw if the number of operations are less than the free-operations-count', () => {
+      const calcMaxOpsSpy = spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed');
+
+      const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock;
+
+      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, numberOfOpsInput, 123, 12, 'txn writer');
+      expect(calcMaxOpsSpy).not.toHaveBeenCalled();
+    });
+
     it('should throw if the lock-owner and transaction-writer do not match', () => {
       const valueTimeLockInput: ValueTimeLockModel = {
         amountLocked: 1234,
