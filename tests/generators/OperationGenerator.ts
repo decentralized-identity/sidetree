@@ -13,6 +13,7 @@ import OperationModel from '../../lib/core/versions/latest/models/OperationModel
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/models/PublicKeyModel';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
+import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -57,6 +58,13 @@ interface GeneratedRecoverOperationData {
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
+
+  public static generateRandomHash (): string {
+    const randomBuffer = crypto.randomBytes(32);
+    const randomHash = Encoder.encode(Multihash.hash(randomBuffer));
+
+    return randomHash;
+  }
 
   /**
    * Generates an one-time password and its hash as encoded strings for use in opertaions.
@@ -261,7 +269,52 @@ export default class OperationGenerator {
   /**
    * Generates an update operation request.
    */
-  public static async generateUpdateOperationRequest (
+  public static async generateUpdateOperationRequest (didUniqueSuffix?: string) {
+    if (didUniqueSuffix === undefined) {
+      didUniqueSuffix = OperationGenerator.generateRandomHash();
+    }
+
+    const [updateOtp] = OperationGenerator.generateOtp();
+    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const anyNewSigningPublicKeyId = '#anyNewKey';
+    const [anyNewSigningKey] = await Cryptography.generateKeyPairHex(anyNewSigningPublicKeyId);
+    const documentPatch = [
+      {
+        action: 'add-public-keys',
+        publicKeys: [
+          {
+            id: anyNewSigningPublicKeyId,
+            type: 'Secp256k1VerificationKey2018',
+            publicKeyHex: anyNewSigningKey.publicKeyHex
+          }
+        ]
+      }
+    ];
+    const signingKeyId = '#anySigningKeyId';
+    const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
+    const request = await OperationGenerator.createUpdateOperationRequest(
+      didUniqueSuffix,
+      updateOtp,
+      nextUpdateOtpHash,
+      documentPatch,
+      signingKeyId,
+      signingPrivateKey
+    );
+
+    const buffer = Buffer.from(JSON.stringify(request));
+    const updateOperation = await UpdateOperation.parse(buffer);
+
+    return {
+      request,
+      buffer,
+      updateOperation
+    };
+  }
+
+  /**
+   * Creates an update operation request.
+   */
+  public static async createUpdateOperationRequest (
     didUniqueSuffix: string,
     updateOtp: string,
     nextUpdateOtpHash: string,
@@ -422,7 +475,7 @@ export default class OperationGenerator {
       }
     ];
 
-    const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+    const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
@@ -467,7 +520,7 @@ export default class OperationGenerator {
       documentPatch.push(patch);
     }
 
-    const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+    const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
