@@ -1,5 +1,6 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Cas from '../../lib/core/Cas';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import DownloadManager from '../../lib/core/DownloadManager';
@@ -7,13 +8,12 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/FetchResultCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
+import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
-import MapFile from '../../lib/core/versions/latest/MapFile';
-import SidetreeError from '../../lib/common/SidetreeError';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
 
 describe('TransactionProcessor', () => {
   const config = require('../json/config-test.json');
