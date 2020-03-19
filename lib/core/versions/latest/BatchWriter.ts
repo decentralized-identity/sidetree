@@ -85,8 +85,14 @@ export default class BatchWriter implements IBatchWriter {
   }
 
   private getNumberOfOpsToWrite (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number): number {
-    const numberOfOpsAllowed = ValueTimeLockVerifier.calculateMaxNumberOfOpsAllowed(valueTimeLock, normalizedFee);
+    const maxNumberOfOpsAllowedByProtocol = ProtocolParameters.maxOperationsPerBatch;
+    const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOpsAllowed(valueTimeLock, normalizedFee);
 
-    return Math.min(numberOfOpsAllowed, ProtocolParameters.maxOperationsPerBatch);
+    if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
+      // tslint:disable-next-line: max-line-length
+      console.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
+    }
+
+    return Math.min(maxNumberOfOpsAllowedByLock, maxNumberOfOpsAllowedByProtocol);
   }
 }

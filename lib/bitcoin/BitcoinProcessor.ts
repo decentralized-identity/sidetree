@@ -345,7 +345,7 @@ export default class BitcoinProcessor {
     } catch (e) {
 
       if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
-        throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
+        throw new RequestError(ResponseStatus.NotFound, ErrorCode.ValueTimeLockInPendingState);
       }
 
       console.error(`Current value time lock retrieval failed with error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);

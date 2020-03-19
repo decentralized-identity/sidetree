@@ -2,7 +2,7 @@
  * Defines Anchor File structure.
  */
 export default interface AnchorFileModel {
-  writerLock: string | undefined;
+  writerLockId: string | undefined;
   mapFileHash: string;
   operations: {
     createOperations?: any[],

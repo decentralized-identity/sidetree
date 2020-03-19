@@ -1,5 +1,6 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/ErrorCode';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -456,7 +457,7 @@ describe('Blockchain', async () => {
 
       const mockFetchResponse = {
         status: 404,
-        body: JSON.stringify({ code: SharedErrorCode.ValueTimeLockInPendingState })
+        body: JSON.stringify({ code: ErrorCode.ValueTimeLockInPendingState })
       };
 
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));

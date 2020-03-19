@@ -1686,7 +1686,7 @@ describe('BitcoinProcessor', () => {
         bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
-        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockInPendingState);
+        const expectedError = new RequestError(ResponseStatus.NotFound, ErrorCode.ValueTimeLockInPendingState);
         expect(e).toEqual(expectedError);
       }
     });
