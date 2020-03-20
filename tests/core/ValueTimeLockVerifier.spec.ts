@@ -34,7 +34,7 @@ describe('ValueTimeLockVerifier', () => {
         owner: 'owner'
       };
 
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, 1);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, 100);
       expect(actual).toEqual(ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
     });
 
@@ -64,8 +64,10 @@ describe('ValueTimeLockVerifier', () => {
         owner: 'lock-owner'
       };
 
+      const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock + 100;
+
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, 10, 123, 12, 'txn writer'),
+        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, numberOfOpsInput, 123, 12, 'txn writer'),
         ErrorCode.ValueTimeLockVerifierTransactionWriterLockOwnerMismatch);
     });
 
@@ -78,11 +80,13 @@ describe('ValueTimeLockVerifier', () => {
         owner: 'owner'
       };
 
+      const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock + 100;
+
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () =>
           ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
             valueTimeLockinput,
-            10,
+            numberOfOpsInput,
             200,
             valueTimeLockinput.lockTransactionTime - 1,
             valueTimeLockinput.owner),
@@ -98,18 +102,20 @@ describe('ValueTimeLockVerifier', () => {
         owner: 'owner'
       };
 
+      const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock + 100;
+
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () =>
           ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
             valueTimeLockinput,
-            10,
+            numberOfOpsInput,
             200,
             valueTimeLockinput.unlockTransactionTime,
             valueTimeLockinput.owner),
         ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange);
     });
 
-    it('shoud throw if the lock amoutn is less than the required amount.', () => {
+    it('shoud throw if the lock amount is less than the required amount.', () => {
       const mockMaxNumOfOps = 234;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockMaxNumOfOps);
 
