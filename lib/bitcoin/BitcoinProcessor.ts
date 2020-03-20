@@ -127,6 +127,7 @@ export default class BitcoinProcessor {
         config.sidetreeTransactionFeeMarkupPercentage || 0);
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient);
+
     this.lockResolver =
       new LockResolver(
         this.bitcoinClient,
@@ -146,7 +147,7 @@ export default class BitcoinProcessor {
         config.valueTimeLockPollPeriodInSeconds || 10 * 60,
         config.valueTimeLockAmountInBitcoins * BitcoinProcessor.satoshiPerBitcoin, // Desired lock amount in satoshis
         valueTimeLockTransactionFeesInBtc * BitcoinProcessor.satoshiPerBitcoin,    // Txn Fees amoount in satoshis
-        ProtocolParameters.minimumValueTimeLockDurationInBlocks);                  // Desired lock duration in blocks
+        ProtocolParameters.maximumValueTimeLockDurationInBlocks);                  // Desired lock duration in blocks
   }
 
   /**

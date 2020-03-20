@@ -38,8 +38,6 @@ export default class LockMonitor {
 
   private currentLockState: LockState;
 
-  // private lockResolver: LockResolver;
-
   constructor (
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
@@ -57,16 +55,11 @@ export default class LockMonitor {
       throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
-    // this.lockResolver = new LockResolver(this.bitcoinClient, lockPeriodInBlocks);
     this.currentLockState = {
       activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
-
-    // We are always going to use the maximum 
-    // const estimatedBlocksInOneDay = 6 * 24;
-    // this.lockPeriodInBlocks = lockPeriodInBlocks + estimatedBlocksInOneDay;
   }
 
   /**
