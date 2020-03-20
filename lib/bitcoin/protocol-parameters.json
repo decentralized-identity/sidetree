@@ -6,5 +6,7 @@
 
   "maxInputCountForSampledTransaction": 100,
   "historicalOffsetInBlocks": 200,
-  "minimumValueTimeLockDurationInBlocks": 4320
+
+  "minimumValueTimeLockDurationInBlocks": 4320,
+  "maximumValueTimeLockDurationInBlocks": 4464
 }
