@@ -33,7 +33,7 @@ interface LockState {
 export default class LockMonitor {
 
   private lockPeriodInBlocks: number;
- 
+
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
   private currentLockState: LockState;
