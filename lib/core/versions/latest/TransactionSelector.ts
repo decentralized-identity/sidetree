@@ -16,7 +16,7 @@ export default class TransactionSelector implements ITransactionSelector {
   public constructor (
     private transactionStore: ITransactionStore
   ) {
-    this.maxNumberOfOperationsPerBlock = ProtocolParameters.maxNumberOfOpsPerTransactionTime;
+    this.maxNumberOfOperationsPerBlock = ProtocolParameters.maxNumberOfOperationsPerTransactionTime;
     this.maxNumberOfTransactionsPerBlock = ProtocolParameters.maxNumberOfTransactionsPerTransactionTime;
   }
 

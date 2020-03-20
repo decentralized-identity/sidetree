@@ -31,8 +31,9 @@ describe('AnchorFile', async () => {
     it('should throw if has an unknown property.', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
+        writerlockId: 'writer lock',
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: []
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -43,7 +44,7 @@ describe('AnchorFile', async () => {
     it('should throw if missing map file hash.', async () => {
       const anchorFile = {
         // mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -62,10 +63,22 @@ describe('AnchorFile', async () => {
       await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty));
     });
 
+    it('should throw if any additional property.', async () => {
+      const anchorFile = {
+        invalidProperty: 'some property value',
+        mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        operations: {}
+      };
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
+    });
+
     it('should throw if map file hash is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const anchorFileModel = await AnchorFile.createModel('unusedMockFileHash', [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).mapFileHash = 1234; // Intentionally setting the mapFileHash as an incorrect type.
 
@@ -78,7 +91,7 @@ describe('AnchorFile', async () => {
     it('should throw if map file hash is invalid.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const anchorFileModel = await AnchorFile.createModel('invalidMapFileHash', [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('writerlock', 'invalidMapFileHash', [createOperation], [], []);
 
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
@@ -88,6 +101,19 @@ describe('AnchorFile', async () => {
       } catch (error) {
         expect(error.code).toEqual(ErrorCode.AnchorFileMapFileHashUnsupported);
       }
+    });
+
+    it('should throw if writer lock id is not string.', async () => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
+
+      (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
+
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileWriterLockIPropertyNotString));
     });
 
     it('should throw if `createOperations` is not an array.', async () => {
@@ -141,7 +167,7 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const anchoreFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperation], [], []);
+      const anchoreFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, [createOperation], [], []);
 
       const anchorFile = await AnchorFile.parse(anchoreFileBuffer);
 

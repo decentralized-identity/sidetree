@@ -7,19 +7,24 @@ import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/FetchResultCode';
+import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MapFile from '../../lib/core/versions/latest/MapFile';
+import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
+import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 
 describe('TransactionProcessor', () => {
   const config = require('../json/config-test.json');
   let casClient: Cas;
   let operationStore: MockOperationStore;
   let downloadManager: DownloadManager;
+  let blockchain: IBlockchain;
   let transactionProcessor: TransactionProcessor;
 
   beforeEach(() => {
@@ -27,7 +32,8 @@ describe('TransactionProcessor', () => {
     operationStore = new MockOperationStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
-    transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    blockchain = new MockBlockchain();
+    transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
   });
 
   describe('prcoessTransaction', () => {
@@ -188,8 +194,18 @@ describe('TransactionProcessor', () => {
 
   describe('downloadAndVerifyAnchorFile', () => {
     it('should throw if paid operation count exceeded the protocol limit.', async (done) => {
+      const mockTransaction: TransactionModel = {
+        anchorString: 'anchor string',
+        normalizedTransactionFee: 123,
+        transactionFeePaid: 1234,
+        transactionNumber: 98765,
+        transactionTime: 5678,
+        transactionTimeHash: 'transaction time hash',
+        writer: 'writer'
+      };
+
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', 999999), // Some really large paid operation count.
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction,'mock_hash', 999999), // Some really large paid operation count.
         ErrorCode.TransactionProcessorPaidOperationCountExceedsLimit);
 
       done();
@@ -199,28 +215,101 @@ describe('TransactionProcessor', () => {
       const createOperation1 = (await OperationGenerator.generateCreateOperation()).createOperation;
       const createOperation2 = (await OperationGenerator.generateCreateOperation()).createOperation;
       const anyHash = OperationGenerator.generateRandomHash();
-      const mockAnchorFileModel = await AnchorFile.createModel(anyHash, [createOperation1, createOperation2], [], []);
+      const mockAnchorFileModel = await AnchorFile.createModel('writerLockId', anyHash, [createOperation1, createOperation2], [], []);
       const mockAnchorFileBuffer = await Compressor.compress(Buffer.from(JSON.stringify(mockAnchorFileModel)));
 
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockAnchorFileBuffer));
 
+      const mockTransaction: TransactionModel = {
+        anchorString: 'anchor string',
+        normalizedTransactionFee: 123,
+        transactionFeePaid: 1234,
+        transactionNumber: 98765,
+        transactionTime: 5678,
+        transactionTimeHash: 'transaction time hash',
+        writer: 'writer'
+      };
+
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', 1),
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'mock_hash', 1),
         ErrorCode.AnchorFileOperationCountExceededPaidLimit);
 
+      done();
+    });
+
+    it('should bubble up any errors thrown by verify lock routine', async (done) => {
+      spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(Buffer.from('value')));
+
+      const mockAnchorFile: AnchorFile = {
+        createOperations: [],
+        didUniqueSuffixes: ['abc', 'def'],
+        model: { writerLockId: 'lock', mapFileHash: 'map_hash', operations: {} },
+        recoverOperations: [],
+        revokeOperations: []
+      };
+      spyOn(AnchorFile, 'parse').and.returnValue(Promise.resolve(mockAnchorFile));
+
+      const mockValueTimeLock: ValueTimeLockModel = {
+        amountLocked: 1234,
+        identifier: 'identifier',
+        lockTransactionTime: 1234,
+        unlockTransactionTime: 7890,
+        owner: 'owner'
+      };
+      spyOn(transactionProcessor['blockchain'], 'getValueTimeLock').and.returnValue(Promise.resolve(mockValueTimeLock));
+
+      const mockTransaction: TransactionModel = {
+        anchorString: 'anchor string',
+        normalizedTransactionFee: 123,
+        transactionFeePaid: 1234,
+        transactionNumber: 98765,
+        transactionTime: 5678,
+        transactionTimeHash: 'transaction time hash',
+        writer: 'writer'
+      };
+
+      const mockErrorCode = 'some error code';
+      const lockVerifySpy = spyOn(ValueTimeLockVerifier, 'verifyLockAmountAndThrowOnError').and.callFake(() => {
+        throw new SidetreeError(mockErrorCode);
+      });
+
+      const paidOperationCount = 52;
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'anchor_hash', paidOperationCount),
+        mockErrorCode);
+
+      expect(lockVerifySpy)
+        .toHaveBeenCalledWith(
+          mockValueTimeLock,
+          paidOperationCount,
+          mockTransaction.normalizedTransactionFee,
+          mockTransaction.transactionTime,
+          mockTransaction.writer);
       done();
     });
 
     it('should return the parsed file.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const anyHash = OperationGenerator.generateRandomHash();
-      const mockAnchorFileModel = await AnchorFile.createModel(anyHash, [createOperationData.createOperation], [], []);
+      const mockAnchorFileModel = await AnchorFile.createModel('wrierLockId', anyHash, [createOperationData.createOperation], [], []);
       const mockAnchorFileBuffer = await Compressor.compress(Buffer.from(JSON.stringify(mockAnchorFileModel)));
 
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockAnchorFileBuffer));
+      spyOn(transactionProcessor['blockchain'], 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
+      spyOn(ValueTimeLockVerifier, 'verifyLockAmountAndThrowOnError').and.returnValue(undefined);
+
+      const mockTransaction: TransactionModel = {
+        anchorString: 'anchor string',
+        normalizedTransactionFee: 123,
+        transactionFeePaid: 1234,
+        transactionNumber: 98765,
+        transactionTime: 5678,
+        transactionTimeHash: 'transaction time hash',
+        writer: 'writer'
+      };
 
       const paidBatchSize = 2;
-      const downloadedAnchorFile = await transactionProcessor['downloadAndVerifyAnchorFile']('mock_hash', paidBatchSize);
+      const downloadedAnchorFile = await transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'mock_hash', paidBatchSize);
       expect(downloadedAnchorFile.model).toEqual(mockAnchorFileModel);
       done();
     });
@@ -230,7 +319,7 @@ describe('TransactionProcessor', () => {
     it('should validates the map file when the map file does declare the updateOperations property.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperationData.createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
@@ -251,7 +340,7 @@ describe('TransactionProcessor', () => {
     it('should return undefined if update operation count is greater than the max paid update operation count.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperationData.createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
@@ -271,7 +360,7 @@ describe('TransactionProcessor', () => {
     it('should return undefined if there are multiple operations for the same DID between anchor and map file.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperationData.createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
@@ -290,7 +379,7 @@ describe('TransactionProcessor', () => {
     it('should return undefined if unexpected error caught.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperationData.createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Mocking an unexpected error thrown.
@@ -306,7 +395,7 @@ describe('TransactionProcessor', () => {
     it('should throw if a network related error is caught.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperationData.createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Mocking a non-network related known error thrown.
@@ -324,7 +413,7 @@ describe('TransactionProcessor', () => {
     it('should return undefined if non-network related known error is caught.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperationData.createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Mocking a non-network related known error thrown.
@@ -413,7 +502,7 @@ describe('TransactionProcessor', () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Create map file model with 1 update operation.
@@ -428,7 +517,7 @@ describe('TransactionProcessor', () => {
       const batchFileModel = await BatchFile.parse(batchFileBuffer);
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
-      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, batchFileModel);
+      const anchoredOperationModels = transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, batchFileModel);
 
       expect(anchoredOperationModels.length).toEqual(2);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);
@@ -454,11 +543,11 @@ describe('TransactionProcessor', () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
       const mapFileHash = OperationGenerator.generateRandomHash();
-      const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, [createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
-      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, undefined, undefined);
+      const anchoredOperationModels = transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, undefined, undefined);
 
       expect(anchoredOperationModels.length).toEqual(1);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);

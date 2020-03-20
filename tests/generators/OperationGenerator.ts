@@ -59,6 +59,9 @@ interface GeneratedRecoverOperationData {
  */
 export default class OperationGenerator {
 
+  /**
+   * Generates random hash.
+   */
   public static generateRandomHash (): string {
     const randomBuffer = crypto.randomBytes(32);
     const randomHash = Encoder.encode(Multihash.hash(randomBuffer));

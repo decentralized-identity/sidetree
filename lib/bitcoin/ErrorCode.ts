@@ -9,5 +9,6 @@ export default {
   LockResolverRedeemScriptIsNotLock: 'lock_resolver_redeem_script_is_not_lock',
   LockResolverTransactionIsNotPayingToScript: 'lock_resolver_transaction_is_not_paying_to_script',
   LockResolverTransactionNotConfirmed: 'lock_resolver_transation_not_confirmed',
-  LockResolverTransactionNotFound: 'lock_resolver_transaction_not_found'
+  LockResolverTransactionNotFound: 'lock_resolver_transaction_not_found',
+  ValueTimeLockInPendingState: 'value_time_lock_in_pending_state'
 };

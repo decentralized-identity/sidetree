@@ -20,6 +20,7 @@ export default {
   AnchorFileRecoverOperationsNotArray: 'anchor_file_recover_operations_not_array',
   AnchorFileRevokeOperationsNotArray: 'anchor_file_revoke_operations_not_array',
   AnchorFileUnexpectedPropertyInOperations: 'anchor_file_unexpected_property_in_operations',
+  AnchorFileWriterLockIPropertyNotString: 'anchor_file_writer_lock_id_property_not_string',
   BatchFileOperationDataSizeExceedsLimit: 'batch_file_operation_data_size_exceeds_limit',
   BatchFileOperationDataNotArrayOfStrings: 'batch_file_operation_data_not_array_of_string',
   BatchFileOperationDataPropertyNotArray: 'batch_file_operation_data_property_not_array',
@@ -111,5 +112,8 @@ export default {
   UpdateOperationMissingOrUnknownProperty: 'update_operation_missing_or_unknown_property',
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
   UpdateOperationUpdateOtpMissingOrInvalidType: 'update_operation_update_otp_missing_or_invalid_type',
-  UpdateOperationUpdateOtpTooLong: 'update_operation_update_otp_too_long'
+  UpdateOperationUpdateOtpTooLong: 'update_operation_update_otp_too_long',
+  ValueTimeLockVerifierInvalidNumberOfOperations: 'value_time_lock_verifierInvalid_number_of_operations',
+  ValueTimeLockVerifierTransactionTimeOutsideLockRange: 'value_time_lock_verifiertarget_transaction_time_outside_lock_range',
+  ValueTimeLockVerifierTransactionWriterLockOwnerMismatch: 'value_time_lock_verifiertransaction_owner_lock_writer_mismatch'
 };

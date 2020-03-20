@@ -4,9 +4,11 @@
   "maxMapFileSizeInBytes": 1000000,
   "maxBatchFileSizeInBytes": 20000000,
   "maxEncodedHashStringLength": 100,
-  "maxNumberOfOpsPerTransactionTime": 600000,
+  "maxNumberOfOperationsPerTransactionTime": 600000,
   "maxNumberOfTransactionsPerTransactionTime": 300,
   "maxOperationDataSizeInBytes": 1000,
   "maxOperationsPerBatch": 10000,
-  "normalizedFeeToPerOperationFeeMultiplier": 0.01
+  "maxNumberOfOperationsForNoValueTimeLock": 100,
+  "normalizedFeeToPerOperationFeeMultiplier": 0.01,
+  "valueTimeLockAmountMultiplier": 10
 }

@@ -11,6 +11,7 @@ import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import MockBlockchain from '../mocks/MockBlockchain';
 import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
@@ -30,6 +31,7 @@ describe('Observer', async () => {
   let downloadManager: DownloadManager;
   let operationStore: IOperationStore;
   let transactionStore: MockTransactionStore;
+  let blockchain: MockBlockchain;
   let versionManager: IVersionManager;
 
   const originalDefaultTestTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -46,8 +48,12 @@ describe('Observer', async () => {
     transactionStore = new MockTransactionStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
+    blockchain = new MockBlockchain();
 
-    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore);
+    // Mock the blockchain to return an empty lock
+    spyOn(blockchain, 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
+
+    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
     const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 
@@ -172,7 +178,7 @@ describe('Observer', async () => {
     };
 
     // Generating anchor file data.
-    const mockAnchorFileBuffer = await AnchorFile.createBuffer(mockMapFileHash, createOperations, [], []);
+    const mockAnchorFileBuffer = await AnchorFile.createBuffer('writerlock', mockMapFileHash, createOperations, [], []);
     const mockAnchoreFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
       content: mockAnchorFileBuffer

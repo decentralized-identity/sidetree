@@ -8,6 +8,7 @@ import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
 import FetchResultCode from '../../../common/FetchResultCode';
+import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import MapFile from './MapFile';
@@ -16,12 +17,13 @@ import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
+import ValueTimeLockVerifier from './ValueTimeLockVerifier';
 
 /**
  * Implementation of the `ITransactionProcessor`.
  */
 export default class TransactionProcessor implements ITransactionProcessor {
-  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore) { }
+  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore, private blockchain: IBlockchain) { }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     try {
@@ -32,9 +34,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
       FeeManager.verifyTransactionFeeAndThrowOnError(transaction.transactionFeePaid, anchoredData.numberOfOperations, transaction.normalizedTransactionFee);
 
       // Download and verify anchor file.
-      const anchorFile = await this.downloadAndVerifyAnchorFile(anchoredData.anchorFileHash, anchoredData.numberOfOperations);
+      const anchorFile = await this.downloadAndVerifyAnchorFile(transaction, anchoredData.anchorFileHash, anchoredData.numberOfOperations);
 
-      // Download and verify anchor file.
+      // Download and verify map file.
       const mapFileModel = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
       // Download and verify batch file.
@@ -67,7 +69,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
   /**
    * @param batchSize The size of the batch in number of operations.
    */
-  private async downloadAndVerifyAnchorFile (anchorFileHash: string, paidOperationCount: number): Promise<AnchorFile> {
+  private async downloadAndVerifyAnchorFile (transaction: TransactionModel, anchorFileHash: string, paidOperationCount: number): Promise<AnchorFile> {
     // Verify the number of paid operations does not exceed the maximum allowed limit.
     if (paidOperationCount > ProtocolParameters.maxOperationsPerBatch) {
       throw new SidetreeError(
@@ -87,6 +89,18 @@ export default class TransactionProcessor implements ITransactionProcessor {
         ErrorCode.AnchorFileOperationCountExceededPaidLimit,
         `Operation count ${operationCountInAnchorFile} in anchor file exceeded limit of : ${paidOperationCount}`);
     }
+
+    // Verify required lock if one was needed.
+    const valueTimeLock = anchorFile.model.writerLockId
+                          ? await this.blockchain.getValueTimeLock(anchorFile.model.writerLockId)
+                          : undefined;
+
+    ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
+      valueTimeLock,
+      paidOperationCount,
+      transaction.normalizedTransactionFee,
+      transaction.transactionTime,
+      transaction.writer);
 
     return anchorFile;
   }

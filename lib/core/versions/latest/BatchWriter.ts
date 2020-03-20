@@ -15,6 +15,8 @@ import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import RevokeOperation from './RevokeOperation';
 import UpdateOperation from './UpdateOperation';
+import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
+import ValueTimeLockVerifier from './ValueTimeLockVerifier';
 
 /**
  * Implementation of the `IBatchWriter`.
@@ -26,8 +28,12 @@ export default class BatchWriter implements IBatchWriter {
     private cas: ICas) { }
 
   public async write () {
+    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
+    const currentLock = await this.blockchain.getWriterValueTimeLock();
+    const numberOfOpsAllowed = this.getNumberOfOperationsToWrite(currentLock, normalizedFee);
+
     // Get the batch of operations to be anchored on the blockchain.
-    const queuedOperations = await this.operationQueue.peek(ProtocolParameters.maxOperationsPerBatch);
+    const queuedOperations = await this.operationQueue.peek(numberOfOpsAllowed);
     const numberOfOperations = queuedOperations.length;
 
     console.info(`Batch size = ${numberOfOperations}`);
@@ -57,7 +63,8 @@ export default class BatchWriter implements IBatchWriter {
     console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 
     // Write the anchor file to content addressable store.
-    const anchorFileBuffer = await AnchorFile.createBuffer(mapFileHash, createOperations, recoverOperations, revokeOperations);
+    const writerLock = currentLock ? currentLock.identifier : undefined;
+    const anchorFileBuffer = await AnchorFile.createBuffer(writerLock, mapFileHash, createOperations, recoverOperations, revokeOperations);
     const anchorFileHash = await this.cas.write(anchorFileBuffer);
     console.info(`Wrote anchor file ${anchorFileHash} to content addressable store.`);
 
@@ -68,7 +75,6 @@ export default class BatchWriter implements IBatchWriter {
     };
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
-    const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
     console.info(`Writing data to blockchain: ${stringToWriteToBlockchain} with minimum fee of: ${fee}`);
 
@@ -76,5 +82,17 @@ export default class BatchWriter implements IBatchWriter {
 
     // Remove written operations from queue after batch writing has completed successfully.
     await this.operationQueue.dequeue(queuedOperations.length);
+  }
+
+  private getNumberOfOperationsToWrite (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number): number {
+    const maxNumberOfOpsAllowedByProtocol = ProtocolParameters.maxOperationsPerBatch;
+    const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock, normalizedFee);
+
+    if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
+      // tslint:disable-next-line: max-line-length
+      console.info(`Maximum number of operations allowed by value time lock: ${maxNumberOfOpsAllowedByLock}; Maximum number of operations allowed by protocol: ${maxNumberOfOpsAllowedByProtocol}`);
+    }
+
+    return Math.min(maxNumberOfOpsAllowedByLock, maxNumberOfOpsAllowedByProtocol);
   }
 }
