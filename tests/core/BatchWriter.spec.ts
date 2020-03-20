@@ -12,13 +12,13 @@ describe('BatchWriter', () => {
     batchWriter = new BatchWriter(new MockOperationQueue(), new MockBlockchain(), new MockCas());
   });
 
-  describe('getNumberOfOpsToWrite', () => {
+  describe('getNumberOfOperationsToWrite', () => {
 
     it('should return the value from the lock verifier', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch - 1;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
-      const actual = batchWriter['getNumberOfOpsToWrite'](undefined, 1);
+      const actual = batchWriter['getNumberOfOperationsToWrite'](undefined, 1);
       expect(actual).toEqual(mockOpsByLock);
     });
 
@@ -26,7 +26,7 @@ describe('BatchWriter', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch + 123;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
-      const actual = batchWriter['getNumberOfOpsToWrite'](undefined, 1);
+      const actual = batchWriter['getNumberOfOperationsToWrite'](undefined, 1);
       expect(actual).toEqual(ProtocolParameters.maxOperationsPerBatch);
     });
 
