@@ -358,7 +358,7 @@ describe('LockResolver', () => {
   describe('isLockDurationValid', () => {
     it('should return true if the lock duration is exactly on the limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'] + 1;
+      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'];
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeTruthy();
@@ -374,7 +374,7 @@ describe('LockResolver', () => {
 
     it('should return false if the lock duration is below the limit.', () => {
       const intendedStartBlock = 100;
-      const unlockBlock = intendedStartBlock + lockResolver['minimumLockDurationInBlocks'] + 1;
+      const unlockBlock = intendedStartBlock + lockResolver['minimumLockDurationInBlocks'];
       const actualStartBlock = intendedStartBlock + 3;
 
       const actual = lockResolver['isLockDurationValid'](actualStartBlock, unlockBlock);

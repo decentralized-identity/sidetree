@@ -176,9 +176,9 @@ export default class LockResolver {
     //  startBlock:  10
     //  unlockBlock: 20 - no lock at this block
     //
-    //  lock-duration: unlockBlock - startBlock - 1 = 9 blocks
+    //  lock-duration: unlockBlock - startBlock = 10 blocks
 
-    const lockDuration = unlockBlock - startBlock - 1;
+    const lockDuration = unlockBlock - startBlock;
 
     return lockDuration >= this.minimumLockDurationInBlocks;
   }
