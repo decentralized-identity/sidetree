@@ -76,7 +76,8 @@ export default class MapFile {
 
     const mapFileModel = {
       batchFileHash,
-      updateOperations
+      // Only insert an `updateOperations` property if the array is not empty.
+      updateOperations: (updateOperations.length > 0) ? updateOperations : undefined
     };
 
     const rawData = JSON.stringify(mapFileModel);

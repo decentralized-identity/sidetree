@@ -44,7 +44,7 @@ async function createUpdateSequence (
         serviceEndpoints: ['did:sidetree:value' + i]
       }
     ];
-    const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+    const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
@@ -192,7 +192,7 @@ describe('OperationProcessor', async () => {
       }
     ];
     const nextUpdateOtpHash = 'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA';
-    const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+    const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       firstUpdateOtp,
       nextUpdateOtpHash,

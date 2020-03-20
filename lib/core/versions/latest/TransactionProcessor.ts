@@ -105,60 +105,112 @@ export default class TransactionProcessor implements ITransactionProcessor {
     return anchorFile;
   }
 
-  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFileModel> {
-    const anchorFileModel = anchorFile.model;
-    console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
+  /**
+   * NOTE: In order to be forward-compatable with data-pruning feature,
+   * we must continue to process the operations declared in the anchor file even if the map/batch file is invalid.
+   * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
+   * It is a design choice to hide the complexity of map file downloading and construction within this method,
+   * instead of throwing errors and letting the caller handle them.
+   * @returns `MapFileModel` if downloaded file is valid; `undefined` otherwise.
+   * @throws SidetreeErrors that are retryable.
+   */
+  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFileModel | undefined> {
+    try {
+      const anchorFileModel = anchorFile.model;
+      console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
-    const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileHash, ProtocolParameters.maxMapFileSizeInBytes);
-    const mapFileModel = await MapFile.parse(fileBuffer);
+      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileHash, ProtocolParameters.maxMapFileSizeInBytes);
+      const mapFileModel = await MapFile.parse(fileBuffer);
 
-    // Calulate the max paid update operation count.
-    const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
-    const maxPaidUpdateOperationCount = paidOperationCount - operationCountInAnchorFile;
+      // Calulate the max paid update operation count.
+      const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
+      const maxPaidUpdateOperationCount = paidOperationCount - operationCountInAnchorFile;
 
-    const updateOperationCount = mapFileModel.updateOperations ? mapFileModel.updateOperations.length : 0;
-    if (updateOperationCount > maxPaidUpdateOperationCount) {
-      throw new SidetreeError(
-        ErrorCode.MapFileUpdateOperationCountExceededPaidLimit,
-        `Max allowed update operation count: ${maxPaidUpdateOperationCount}, but got: ${updateOperationCount}`);
-    }
+      // If the actual update operation count is greater than the max paid update operation count, the map file is invalid.
+      const updateOperationCount = mapFileModel.updateOperations ? mapFileModel.updateOperations.length : 0;
+      if (updateOperationCount > maxPaidUpdateOperationCount) {
+        return undefined;
+      }
 
-    // Ensure there is no operation for the same DID in both anchor and map files.
-    let didUniqueSuffixesInMapFile: string[] = [];
-    if (mapFileModel.updateOperations !== undefined) {
-      didUniqueSuffixesInMapFile = mapFileModel.updateOperations.map(operation => operation.didUniqueSuffix);
+      // If we find operations for the same DID between anchor and map files, the map file is invalid.
+      let didUniqueSuffixesInMapFile: string[] = [];
+      if (mapFileModel.updateOperations !== undefined) {
+        didUniqueSuffixesInMapFile = mapFileModel.updateOperations.map(operation => operation.didUniqueSuffix);
 
-      if (!ArrayMethods.areMutuallyExclusive(anchorFile.didUniqueSuffixes, didUniqueSuffixesInMapFile)) {
-        throw new SidetreeError(ErrorCode.TransactionProcessorOperationForTheSameDidInBothAnchorAndMapFile);
+        if (!ArrayMethods.areMutuallyExclusive(anchorFile.didUniqueSuffixes, didUniqueSuffixesInMapFile)) {
+          return undefined;
+        }
+      }
+
+      return mapFileModel;
+    } catch (error) {
+      if (error instanceof SidetreeError) {
+        // If error is related to CAS network issues, we will surface them so retry can happen.
+        if (error.code === ErrorCode.CasNotReachable ||
+            error.code === ErrorCode.CasFileNotFound) {
+          throw error;
+        }
+
+        return undefined;
+      } else {
+        console.error(`Unexpected error fetching map file ${anchorFile.model.mapFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        return undefined;
       }
     }
-
-    return mapFileModel;
   }
 
+  /**
+   * NOTE: In order to be forward-compatable with data-pruning feature,
+   * we must continue to process the operations declared in the anchor file even if the map/batch file is invalid.
+   * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
+   * It is a design choice to hide the complexity of batch file downloading and construction within this method,
+   * instead of throwing errors and letting the caller handle them.
+   * @returns `BatchFileModel` if downloaded file is valid; `undefined` otherwise.
+   * @throws SidetreeErrors that are retryable.
+   */
   private async downloadAndVerifyBatchFile (
-    mapFile: MapFileModel
-  ): Promise<BatchFileModel> {
-    const batchFileHash = mapFile.batchFileHash;
-    console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
+    mapFile: MapFileModel | undefined
+  ): Promise<BatchFileModel | undefined> {
+    // Can't download batch file if map file is not given.
+    if (mapFile === undefined) {
+      return undefined;
+    }
 
-    const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
-    const batchFileModel = await BatchFile.parse(fileBuffer);
+    try {
+      const batchFileHash = mapFile.batchFileHash;
+      console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
 
-    return batchFileModel;
+      const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
+      const batchFileModel = await BatchFile.parse(fileBuffer);
+
+      return batchFileModel;
+    } catch (error) {
+      if (error instanceof SidetreeError) {
+        // If error is related to CAS network issues, we will surface them so retry can happen.
+        if (error.code === ErrorCode.CasNotReachable ||
+            error.code === ErrorCode.CasFileNotFound) {
+          throw error;
+        }
+
+        return undefined;
+      } else {
+        console.error(`Unexpected error fetching batch file ${mapFile.batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        return undefined;
+      }
+    }
   }
 
   private composeAnchoredOperationModels (
     transaction: TransactionModel,
     anchorFile: AnchorFile,
-    mapFile: MapFileModel,
-    batchFile: BatchFileModel
+    mapFile: MapFileModel | undefined,
+    batchFile: BatchFileModel | undefined
   ): AnchoredOperationModel[] {
 
     let createOperations = anchorFile.createOperations;
     let recoverOperations = anchorFile.recoverOperations;
     let revokeOperations = anchorFile.revokeOperations;
-    let updateOperations = mapFile.updateOperations ? mapFile.updateOperations : [];
+    let updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
 
     // Add `type` property for later convenience.
     updateOperations = updateOperations.map((operation) => Object.assign(operation, { type: OperationType.Update }));
@@ -170,12 +222,14 @@ export default class TransactionProcessor implements ITransactionProcessor {
     operations.push(...updateOperations);
     operations.push(...revokeOperations);
 
-    // Add operation data from batch file to to each operation.
+    // If batch file is found/given, add operation data from batch file to to each operation.
     // NOTE: there is no operation data for revoke operations.
-    const operationCountExcludingRevokes = createOperations.length + recoverOperations.length + updateOperations.length;
-    for (let i = 0; i < operationCountExcludingRevokes &&
-                    i < batchFile.operationData.length; i++) {
-      operations[i].operationData = batchFile.operationData[i];
+    if (batchFile !== undefined) {
+      const operationCountExcludingRevokes = createOperations.length + recoverOperations.length + updateOperations.length;
+      for (let i = 0; i < operationCountExcludingRevokes &&
+                      i < batchFile.operationData.length; i++) {
+        operations[i].operationData = batchFile.operationData[i];
+      }
     }
 
     // Add anchored timestamp to each operation.

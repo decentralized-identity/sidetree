@@ -12,7 +12,7 @@ describe('UpdateOperation', async () => {
     it('should throw if didUniqueSuffix is not string.', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
-      const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-update-otp',
         unusedNextUpdateOtpHash,
@@ -30,7 +30,7 @@ describe('UpdateOperation', async () => {
     it('should throw if operation type is incorrect', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
-      const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-update-otp',
         unusedNextUpdateOtpHash,
@@ -48,7 +48,7 @@ describe('UpdateOperation', async () => {
     it('should throw if updateOtp is not string.', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
-      const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-update-otp',
         unusedNextUpdateOtpHash,
@@ -66,7 +66,7 @@ describe('UpdateOperation', async () => {
     it('should throw if recoveryOtp is too long.', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
       const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
-      const updateOperationRequest = await OperationGenerator.generateUpdateOperationRequest(
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         'super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp',
         unusedNextUpdateOtpHash,
