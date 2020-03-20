@@ -172,19 +172,13 @@ export default class LockResolver {
   }
 
   private isLockDurationValid (startBlock: number, unlockBlock: number): boolean {
-    // Assuming that the lock was created with the correct lock duration, there is always
-    // a chance that the lock was actually written to the blockchain 1 or 2 blocks later
-    // than intended. So while validating the duration, we are going to give leeway of 2 blocks.
-    // Since the required lock duration is large (month), this small leeway is acceptable.
-    //
     // Example:
     //  startBlock:  10
     //  unlockBlock: 20 - no lock at this block
     //
-    //  lock-duration: 20 - 10 - 1 = 9 blocks
-    //  lock-duration-with-leeway: lock-duration + 2 = 11 blocks
+    //  lock-duration: unlockBlock - startBlock - 1 = 9 blocks
 
-    const lockDuration = unlockBlock - startBlock + 1;
+    const lockDuration = unlockBlock - startBlock - 1;
 
     return lockDuration >= this.minimumLockDurationInBlocks;
   }

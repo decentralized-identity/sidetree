@@ -45,6 +45,14 @@ describe('LockMonitor', () => {
         () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 1234.56, 45),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
     });
+
+    it('should add the correct buffer to the lock period input', () => {
+      const lockPeriodInput = 50;
+      const monitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 100, lockPeriodInput);
+
+      const expectedLockPeriod = lockPeriodInput + (6 * 24);
+      expect(monitor['lockPeriodInBlocks']).toEqual(expectedLockPeriod);
+    });
   });
 
   describe('initialize', () => {

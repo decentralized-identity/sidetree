@@ -32,6 +32,8 @@ interface LockState {
  */
 export default class LockMonitor {
 
+  private lockPeriodInBlocks: number;
+ 
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
   private currentLockState: LockState;
@@ -44,7 +46,7 @@ export default class LockMonitor {
     private pollPeriodInSeconds: number,
     private desiredLockAmountInSatoshis: number,
     private transactionFeesAmountInSatoshis: number,
-    private lockPeriodInBlocks: number) {
+    lockPeriodInBlocks: number) {
 
     if (!Number.isInteger(desiredLockAmountInSatoshis)) {
       throw new SidetreeError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
@@ -60,6 +62,13 @@ export default class LockMonitor {
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
+
+    // We are increasing the lock period by a few blocks to give us ourselves a
+    // buffer in case the lock transaction took longer to be actually written on
+    // the blockchain. We want the buffer to be somewhat longer cause once the
+    // transation is written, the admin now has to wait for the lock to expire.
+    const estimatedBlocksInOneDay = 6 * 24;
+    this.lockPeriodInBlocks = lockPeriodInBlocks + estimatedBlocksInOneDay;
   }
 
   /**
@@ -307,7 +316,7 @@ export default class LockMonitor {
     // the wallet and let the next poll iteration start a new lock.
     if (latestSavedLockInfo.desiredLockAmountInSatoshis !== desiredLockAmountInSatoshis) {
       // tslint:disable-next-line: max-line-length
-      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to releast the lock.`);
+      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to release the lock.`);
 
       await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       return true;

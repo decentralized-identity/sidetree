@@ -356,18 +356,17 @@ describe('LockResolver', () => {
   });
 
   describe('isLockDurationValid', () => {
-    it('should return true if the lock duration is within the leeway.', () => {
-      const intendedStartBlock = 100;
-      const unlockBlock = intendedStartBlock + lockResolver['minimumLockDurationInBlocks'] + 1;
-      const actualStartBlock = intendedStartBlock + 2;
+    it('should return true if the lock duration is exactly on the limit.', () => {
+      const startBlock = 100;
+      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'] + 1;
 
-      const actual = lockResolver['isLockDurationValid'](actualStartBlock, unlockBlock);
+      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeTruthy();
     });
 
-    it('should return true if the lock duration is at the limt.', () => {
+    it('should return true if the lock duration is greater than the limit.', () => {
       const startBlock = 100;
-      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'] + 1;
+      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'] + 20;
 
       const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
       expect(actual).toBeTruthy();
