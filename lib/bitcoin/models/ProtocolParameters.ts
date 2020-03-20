@@ -18,6 +18,9 @@ export default interface ProtocolParameters {
   maxInputCountForSampledTransaction: number;
   historicalOffsetInBlocks: number;
 
-  /** The minimum number of blocks for the value-time-lock */
+  /** The maximum duration for the value-time-lock */
+  maximumValueTimeLockDurationInBlocks: number;
+
+  /** The minimum duration for the value-time-lock */
   minimumValueTimeLockDurationInBlocks: number;
 }

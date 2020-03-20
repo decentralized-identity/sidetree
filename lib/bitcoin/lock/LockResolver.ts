@@ -23,7 +23,7 @@ interface LockScriptVerifyResult {
  */
 export default class LockResolver {
 
-  constructor (private bitcoinClient: BitcoinClient, private minimumLockDurationInBlocks: number) {
+  constructor (private bitcoinClient: BitcoinClient, private minimumLockDurationInBlocks: number, private maximumLockDurationInBlocks: number) {
   }
 
   /**
@@ -180,6 +180,6 @@ export default class LockResolver {
 
     const lockDuration = unlockBlock - startBlock;
 
-    return lockDuration >= this.minimumLockDurationInBlocks;
+    return lockDuration >= this.minimumLockDurationInBlocks && lockDuration <= this.maximumLockDurationInBlocks;
   }
 }

@@ -32,21 +32,22 @@ interface LockState {
  */
 export default class LockMonitor {
 
-  private lockPeriodInBlocks: number;
+  // private lockPeriodInBlocks: number;
 
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
   private currentLockState: LockState;
 
-  private lockResolver: LockResolver;
+  // private lockResolver: LockResolver;
 
   constructor (
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
+    private lockResolver: LockResolver,
     private pollPeriodInSeconds: number,
     private desiredLockAmountInSatoshis: number,
     private transactionFeesAmountInSatoshis: number,
-    lockPeriodInBlocks: number) {
+    private lockPeriodInBlocks: number) {
 
     if (!Number.isInteger(desiredLockAmountInSatoshis)) {
       throw new SidetreeError(ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber, `${desiredLockAmountInSatoshis}`);
@@ -56,19 +57,16 @@ export default class LockMonitor {
       throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
-    this.lockResolver = new LockResolver(this.bitcoinClient, lockPeriodInBlocks);
+    // this.lockResolver = new LockResolver(this.bitcoinClient, lockPeriodInBlocks);
     this.currentLockState = {
       activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
 
-    // We are increasing the lock period by a few blocks to give us ourselves a
-    // buffer in case the lock transaction took longer to be actually written on
-    // the blockchain. We want the buffer to be somewhat longer cause once the
-    // transation is written, the admin now has to wait for the lock to expire.
-    const estimatedBlocksInOneDay = 6 * 24;
-    this.lockPeriodInBlocks = lockPeriodInBlocks + estimatedBlocksInOneDay;
+    // We are always going to use the maximum 
+    // const estimatedBlocksInOneDay = 6 * 24;
+    // this.lockPeriodInBlocks = lockPeriodInBlocks + estimatedBlocksInOneDay;
   }
 
   /**
