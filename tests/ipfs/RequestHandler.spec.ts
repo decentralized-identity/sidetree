@@ -11,8 +11,20 @@ describe('RequestHandler', async () => {
   beforeAll(async (done) => {
     maxFileSize = 20000000; // 20MB
     fetchTimeoutInSeconds = 1;
-    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    requestHandler = new RequestHandler(fetchTimeoutInSeconds);
+    await requestHandler.initialize();
     done();
+  });
+
+  it('should throw if RequestHandler\'s ipfsStorage has not been initialized', async () => {
+    let uninitializedHandler = new RequestHandler(1);
+    try {
+      // @ts-ignore: Variable never used because error should be thrown.
+      let x = uninitializedHandler.ipfsStorage;
+      fail('should have thrown');
+    } catch (error) {
+      expect(error.message).toContain('initialize()');
+    }
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {

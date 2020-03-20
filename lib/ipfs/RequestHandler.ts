@@ -13,19 +13,24 @@ const multihashes = require('multihashes');
  * Sidetree IPFS request handler class.
  */
 export default class RequestHandler {
-  /**
-   * Instance of IpfsStorage.
-   */
-  public ipfsStorage: IpfsStorage;
+
+  private _ipfsStorage: IpfsStorage | undefined;
 
   private serviceInfo: ServiceInfo;
 
   /**
-   * create an instance of request handler
+   * Constructs the Sidetree IPFS request handler.
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
+   */
+  public constructor (private fetchTimeoutInSeconds: number) {
+    this.serviceInfo = new ServiceInfo('ipfs');
+  }
+
+  /**
+   * Initialize this instance of request handler
    * @param repo Optional IPFS datastore implementation.
    */
-  public static async create (fetchTimeoutInSeconds: number, repo?: any) {
+  public async initialize (repo?: any): Promise<void> {
     let ipfsStorage: IpfsStorage;
     try {
       ipfsStorage = await IpfsStorage.createSingleton(repo);
@@ -38,22 +43,31 @@ export default class RequestHandler {
         throw e;
       }
     }
-    return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
+    this.ipfsStorage = ipfsStorage;
   }
 
   /**
-   * Constructs the Sidetree IPFS request handler.
-   * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
-   * @param repo Optional IPFS datastore implementation.
+   * Gets instance of IpfsStorage.
    */
-  private constructor (private fetchTimeoutInSeconds: number, ipfsStorage: IpfsStorage) {
-    this.ipfsStorage = ipfsStorage;
-    this.serviceInfo = new ServiceInfo('ipfs');
+  public get ipfsStorage (): IpfsStorage {
+    if (this._ipfsStorage === undefined) {
+      throw new SidetreeError(ErrorCode.RequestHandlerIpfsStorageInstanceGetHasToBeCalledAfterInitialize,
+        'RequestHandler\'s initialize() must be called before accessing ipfsStorage');
+    }
+    return this._ipfsStorage;
+  }
+
+  /**
+   * Sets instance of IpfsStorage.
+   */
+  public set ipfsStorage (value: IpfsStorage) {
+    this._ipfsStorage = value;
   }
 
   /**
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
+   * @param maxSizeInBytes Optional maximum allowed size limit of the content.
    */
   public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number): Promise<ResponseModel> {
     console.log(`Handling fetch request for '${base64urlEncodedMultihash}'...`);
