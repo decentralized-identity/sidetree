@@ -54,7 +54,7 @@ export default class LockMonitor {
       throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
-    this.lockResolver = new LockResolver(this.bitcoinClient);
+    this.lockResolver = new LockResolver(this.bitcoinClient, lockPeriodInBlocks);
     this.currentLockState = {
       activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,

@@ -23,7 +23,7 @@ interface LockScriptVerifyResult {
  */
 export default class LockResolver {
 
-  constructor (private bitcoinClient: BitcoinClient) {
+  constructor (private bitcoinClient: BitcoinClient, private minimumLockDurationInBlocks: number) {
   }
 
   /**
@@ -51,6 +51,7 @@ export default class LockResolver {
     // The verifictation of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script
     //   (B). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier
+    //   (C). The lock duration is valid
     //
     // With above, we can verify that the amount is/was locked for the specified wallet in
     // the specified transaction.
@@ -77,6 +78,12 @@ export default class LockResolver {
     // Now that the lock identifier has been verified, return the lock information
     const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);
     const lockStartBlock = await this.calculateLockStartingBlock(lockTransaction);
+
+    // (C). verify that the lock duration is valid
+    if (!this.isLockDurationValid(lockStartBlock, scriptVerifyResult.unlockAtBlock!)) {
+      throw new SidetreeError(ErrorCode.LockResolverDurationIsInvalid,
+                              `Lock start block: ${lockStartBlock}. Unlock block: ${scriptVerifyResult.unlockAtBlock}`);
+    }
 
     return {
       identifier: serializedLockIdentifier,
@@ -162,5 +169,23 @@ export default class LockResolver {
     const blockInfo = await this.bitcoinClient.getBlockInfo(transaction.blockHash);
 
     return blockInfo.height;
+  }
+
+  private isLockDurationValid (startBlock: number, unlockBlock: number): boolean {
+    // Assuming that the lock was created with the correct lock duration, there is always
+    // a chance that the lock was actually written to the blockchain 1 or 2 blocks later
+    // than intended. So while validating the duration, we are going to give leeway of 2 blocks.
+    // Since the required lock duration is large (month), this small leeway is acceptable.
+    //
+    // Example:
+    //  startBlock:  10
+    //  unlockBlock: 20 - no lock at this block
+    //
+    //  lock-duration: 20 - 10 - 1 = 9 blocks
+    //  lock-duration-with-leeway: lock-duration + 2 = 11 blocks
+
+    const lockDuration = unlockBlock - startBlock + 1;
+
+    return lockDuration >= this.minimumLockDurationInBlocks;
   }
 }
