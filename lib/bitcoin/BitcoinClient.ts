@@ -5,8 +5,8 @@ import BitcoinInputModel from './models/BitcoinInputModel';
 import BitcoinLockTransactionModel from './models/BitcoinLockTransactionModel';
 import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import HttpContentReader from '../common/HttpContentReader';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
-import ReadableStream from '../common/ReadableStream';
 import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
@@ -723,8 +723,7 @@ export default class BitcoinClient {
     }
 
     const response = await this.fetchWithRetry(this.bitcoinPeerUri.toString(), requestOptions, timeout);
-
-    const responseData = await ReadableStream.readAll(response.body);
+    const responseData = await HttpContentReader.readContent(response);
     if (response.status !== httpStatus.OK) {
       const error = new Error(`Fetch failed [${response.status}]: ${responseData}`);
       console.error(error);

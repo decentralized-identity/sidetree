@@ -1,6 +1,7 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/ErrorCode';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import HttpContentReader from '../../lib/common/HttpContentReader';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -360,14 +361,14 @@ describe('Blockchain', async () => {
       };
 
       const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      const readContentSpy = spyOn(HttpContentReader, 'readContent').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
       const identifierInput = 'indentifier input';
       const actual = await blockchainClient.getValueTimeLock(identifierInput);
 
       expect(actual).toEqual(mockValueTimeLock);
       expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['locksUri']}/${identifierInput}`);
-      expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
+      expect(readContentSpy).toHaveBeenCalledWith(mockFetchResponse);
       done();
     });
 
@@ -425,13 +426,13 @@ describe('Blockchain', async () => {
       };
 
       const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      const readContentSpy = spyOn(HttpContentReader, 'readContent').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
       const actual = await blockchainClient.getWriterValueTimeLock();
 
       expect(actual).toEqual(mockValueTimeLock);
       expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['writerLockUri']}`);
-      expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
+      expect(readContentSpy).toHaveBeenCalledWith(mockFetchResponse);
       done();
     });
 

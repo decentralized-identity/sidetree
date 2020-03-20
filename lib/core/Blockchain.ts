@@ -1,10 +1,10 @@
 import * as HttpStatus from 'http-status';
 import BlockchainTimeModel from './models/BlockchainTimeModel';
 import CoreErrorCode from './ErrorCode';
+import HttpContentReader from '../common/HttpContentReader';
 import IBlockchain from './interfaces/IBlockchain';
 import JsonAsync from './versions/latest/util/JsonAsync';
 import nodeFetch from 'node-fetch';
-import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SharedErrorCode from '../common/SharedErrorCode';
@@ -98,7 +98,7 @@ export default class Blockchain implements IBlockchain {
     const response = await this.fetch(readUri);
     console.info(`Fetch response: ${response.status}'.`);
 
-    const responseBodyBuffer = await ReadableStream.readAll(response.body);
+    const responseBodyBuffer = await HttpContentReader.readContent(response);
     const responseBody = JSON.parse(responseBodyBuffer.toString());
 
     if (response.status === HttpStatus.BAD_REQUEST &&
@@ -177,7 +177,7 @@ export default class Blockchain implements IBlockchain {
     const readUri = `${this.feeUri}/${transactionTime}`;
 
     const response = await this.fetch(readUri);
-    const responseBodyString = await ReadableStream.readAll(response.body);
+    const responseBodyString = await HttpContentReader.readContent(response);
     const responseBody = JSON.parse(responseBodyString.toString());
 
     if (response.status === HttpStatus.BAD_REQUEST &&
@@ -198,7 +198,7 @@ export default class Blockchain implements IBlockchain {
     const readUri = `${this.locksUri}/${lockIdentifier}`;
 
     const response = await this.fetch(readUri);
-    const responseBodyString = await ReadableStream.readAll(response.body);
+    const responseBodyString = await HttpContentReader.readContent(response);
 
     if (response.status === HttpStatus.NOT_FOUND) {
       return undefined;
@@ -214,7 +214,7 @@ export default class Blockchain implements IBlockchain {
   public async getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
 
     const response = await this.fetch(this.writerLockUri);
-    const responseBodyString = await ReadableStream.readAll(response.body);
+    const responseBodyString = await HttpContentReader.readContent(response);
     const responseBody = await JsonAsync.parse(responseBodyString);
 
     if (response.status === HttpStatus.NOT_FOUND) {

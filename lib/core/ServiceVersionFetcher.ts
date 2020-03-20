@@ -1,5 +1,5 @@
 import nodeFetch from 'node-fetch';
-import ReadableStream from '../common/ReadableStream';
+import HttpContentReader from '../common/HttpContentReader';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
@@ -47,7 +47,7 @@ export default class ServiceVersionFetcher {
       console.info('Trying to get the version info from the blockchain service. Url: ', versionUri);
 
       const response = await this.fetch(versionUri);
-      const responseBodyBuffer = await ReadableStream.readAll(response.body);
+      const responseBodyBuffer = await HttpContentReader.readContent(response);
 
       console.info('Received version response from the blockchain service: ', responseBodyBuffer.toString());
 

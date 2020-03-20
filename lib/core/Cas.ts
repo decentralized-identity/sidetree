@@ -1,9 +1,9 @@
 import * as HttpStatus from 'http-status';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/FetchResultCode';
+import HttpContentReader from '../common/HttpContentReader';
 import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
-import ReadableStream from '../common/ReadableStream';
 import ServiceVersionFetcher from './ServiceVersionFetcher';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
@@ -30,14 +30,14 @@ export default class Cas implements ICas {
       console.error(`CAS write error response status: ${response.status}`);
 
       if (response.body) {
-        const errorBody = await ReadableStream.readAll(response.body);
+        const errorBody = await HttpContentReader.readContent(response);
         console.error(`CAS write error body: ${errorBody}`);
       }
 
       throw new Error('Encountered an error writing content to CAS.');
     }
 
-    const body = await ReadableStream.readAll(response.body);
+    const body = await HttpContentReader.readContent(response);
     const hash = JSON.parse(body.toString()).hash;
 
     return hash;
@@ -53,7 +53,7 @@ export default class Cas implements ICas {
       }
 
       if (response.status === HttpStatus.BAD_REQUEST) {
-        const errorBody = await ReadableStream.readAll(response.body);
+        const errorBody = await HttpContentReader.readContent(response);
         return JSON.parse(errorBody.toString());
       }
 
@@ -61,7 +61,7 @@ export default class Cas implements ICas {
         console.error(`CAS '${address}' read response status: ${response.status}`);
 
         if (response.body) {
-          const errorBody = await ReadableStream.readAll(response.body);
+          const errorBody = await HttpContentReader.readContent(response);
           console.error(`CAS '${address}' read error body: ${errorBody}`);
         }
 
@@ -69,7 +69,7 @@ export default class Cas implements ICas {
         return { code: FetchResultCode.NotFound };
       }
 
-      const content = await ReadableStream.readAll(response.body);
+      const content = await HttpContentReader.readContent(response);
 
       return {
         code: FetchResultCode.Success,
