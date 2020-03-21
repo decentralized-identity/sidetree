@@ -5,5 +5,8 @@
   "quantileMeasure": 0.5,
 
   "maxInputCountForSampledTransaction": 100,
-  "historicalOffsetInBlocks": 200
+  "historicalOffsetInBlocks": 200,
+
+  "minimumValueTimeLockDurationInBlocks": 4320,
+  "maximumValueTimeLockDurationInBlocks": 4464
 }

@@ -36,11 +36,10 @@ export default class LockMonitor {
 
   private currentLockState: LockState;
 
-  private lockResolver: LockResolver;
-
   constructor (
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
+    private lockResolver: LockResolver,
     private pollPeriodInSeconds: number,
     private desiredLockAmountInSatoshis: number,
     private transactionFeesAmountInSatoshis: number,
@@ -54,7 +53,6 @@ export default class LockMonitor {
       throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
-    this.lockResolver = new LockResolver(this.bitcoinClient);
     this.currentLockState = {
       activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,
@@ -307,7 +305,7 @@ export default class LockMonitor {
     // the wallet and let the next poll iteration start a new lock.
     if (latestSavedLockInfo.desiredLockAmountInSatoshis !== desiredLockAmountInSatoshis) {
       // tslint:disable-next-line: max-line-length
-      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to releast the lock.`);
+      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to release the lock.`);
 
       await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       return true;
