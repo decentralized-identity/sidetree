@@ -116,7 +116,7 @@ describe('CreateOperation', async () => {
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
       await expectAsync((CreateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDocumentMissing));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty));
     });
   });
 });

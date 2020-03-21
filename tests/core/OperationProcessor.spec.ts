@@ -574,7 +574,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.recoveryKey!.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
       });
 
-      it('should apply even if new document is in some unexpected format.', async () => {
+      it('should apply successfully with document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
         const [anyNewRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
         const [, anyNewRecoveryOtpHash] = OperationGenerator.generateOtp();
@@ -587,7 +587,7 @@ describe('OperationProcessor', async () => {
 
         const newDocumentState = await operationProcessor.apply(anchoredRecoverOperationModel, documentState);
         expect(newDocumentState!.lastOperationTransactionNumber).toEqual(2);
-        expect(newDocumentState!.document).toEqual(document);
+        expect(newDocumentState!.document).toEqual({ });
 
         expect(newDocumentState!.recoveryKey!.publicKeyHex).toEqual(anyNewRecoveryPublicKey.publicKeyHex!);
       });

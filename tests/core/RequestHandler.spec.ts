@@ -6,7 +6,6 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
-import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DocumentState from '../../lib/core/models/DocumentState';
@@ -271,9 +270,12 @@ describe('RequestHandler', () => {
       const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey');
       const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
       const [, anyOtpHash] = OperationGenerator.generateOtp();
+      const document = {
+        publicKey: [anySigningPublicKey]
+      };
       const mockedResolverReturnedDocumentState: DocumentState = {
         didUniqueSuffix,
-        document: DidDocument.create([anySigningPublicKey]),
+        document,
         lastOperationTransactionNumber: 123,
         nextRecoveryOtpHash: anyOtpHash,
         nextUpdateOtpHash: anyOtpHash,

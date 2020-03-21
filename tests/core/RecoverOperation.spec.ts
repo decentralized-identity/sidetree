@@ -146,7 +146,7 @@ describe('RecoverOperation', async () => {
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
       await expectAsync((RecoverOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationDocumentMissing));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationDataMissingOrUnknownProperty));
       done();
     });
   });

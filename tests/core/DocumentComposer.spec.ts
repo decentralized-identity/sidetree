@@ -1,6 +1,7 @@
 import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DocumentComposer', async () => {
@@ -155,7 +156,7 @@ describe('DocumentComposer', async () => {
     });
   });
 
-  describe('validateDocumentPatch()', async () => {
+  describe('validateDocument()', async () => {
     it('should throw if document contains 2 keys of with the same ID.', async () => {
       const document = {
         publicKey: [
@@ -174,6 +175,17 @@ describe('DocumentComposer', async () => {
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdDuplicated);
       expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document contains unknown property.', async () => {
+      const document = {
+        unknownProperty: 'any value'
+      };
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+       async () => { DocumentComposer.validateDocument(document); },
+       ErrorCode.DocumentComposerUnknownPropertyInDocument
+      );
     });
   });
 });

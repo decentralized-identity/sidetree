@@ -2,7 +2,6 @@ import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -243,7 +242,10 @@ export default class OperationGenerator {
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
-    const document = DidDocument.create([signingPublicKey], serviceEndpoints);
+    const document = {
+      publicKey: [signingPublicKey],
+      service: serviceEndpoints
+    };
 
     const operationData = {
       nextUpdateOtpHash,
@@ -359,7 +361,10 @@ export default class OperationGenerator {
     nextRecoveryOtpHash: string,
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
-    const document = DidDocument.create([newSigningPublicKey], serviceEndpoints);
+    const document = {
+      publicKey: [newSigningPublicKey],
+      service: serviceEndpoints
+    };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
       didUniqueSuffix, recoveryOtp, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryOtpHash, nextUpdateOtpHash, document
     );

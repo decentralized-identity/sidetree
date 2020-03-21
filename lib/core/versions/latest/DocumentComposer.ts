@@ -60,9 +60,15 @@ export default class DocumentComposer {
    * @throws SidetreeError if given document patch fails validation.
    */
   public static validateDocument (document: any) {
-    // It is fine to have an empty to begin with.
     if (document === undefined) {
-      return;
+      throw new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
+    }
+
+    const allowedProperties = new Set(['publicKey', 'service']);
+    for (let property in document) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInDocument, `Unexpected property ${property} in document.`);
+      }
     }
 
     // Verify 'publicKey' property if it exists.
