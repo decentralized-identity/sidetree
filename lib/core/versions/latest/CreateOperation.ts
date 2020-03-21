@@ -1,5 +1,6 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import DocumentComposer from './DocumentComposer';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import Operation from './Operation';
@@ -167,6 +168,8 @@ export default class CreateOperation implements OperationModel {
     if (properties.length !== 2) {
       throw new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty);
     }
+
+    DocumentComposer.validateDocument(operationData.document);
 
     if (operationData.document === undefined) {
       throw new SidetreeError(ErrorCode.CreateOperationDocumentMissing);

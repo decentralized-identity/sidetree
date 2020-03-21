@@ -32,7 +32,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0] as any).publicKeys = 'incorrectType';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeysNotArray);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeysNotArray);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -40,7 +40,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).unknownProperty = 'unknownProperty';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyMissingOrUnknownProperty);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -48,16 +48,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
-    });
-
-    it('should throw error if the public key includes the controller property', async () => {
-      const patches = generatePatchesForPublicKeys();
-      delete (patches[0].publicKeys![0] as any).type;
-      (patches[0].publicKeys![0] as any).controller = 'somevalue';
-
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyControllerNotAllowed);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdNotString);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -67,7 +58,7 @@ describe('DocumentComposer', async () => {
 
       (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyHexMissingOrIncorrect);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeySecp256k1NotCompressedHex);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -75,7 +66,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).type = 'unknownKeyType';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyTypeMissingOrUnknown);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -91,7 +82,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[1] as any).publicKeys = 'incorrectType';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeysNotArray);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
       expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
     });
 
@@ -161,6 +152,28 @@ describe('DocumentComposer', async () => {
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
 
+    });
+  });
+
+  describe('validateDocumentPatch()', async () => {
+    it('should throw if document contains 2 keys of with the same ID.', async () => {
+      const document = {
+        publicKey: [
+          {
+            id: '#key1',
+            type: 'RsaVerificationKey2018',
+            publicKeyHex: 'anything'
+          },
+          {
+            id: '#key1', // Intentional duplicated key ID.
+            type: 'RsaVerificationKey2018',
+            publicKeyPem: 'anything'
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdDuplicated);
+      expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
     });
   });
 });
