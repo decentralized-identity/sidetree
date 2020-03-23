@@ -14,7 +14,8 @@
       "markdown_paths": [
         "latest.md",
         "method-versioning.md",
-        "protocol-versioning.md"
+        "protocol-versioning.md",
+        "did-state-patches.md"
       ]
     }
   ]
