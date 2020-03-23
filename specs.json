@@ -10,10 +10,11 @@
         "account": "decentralized-identity",
         "repo": "sidetree"
       },
-      "spec_directory": "./docs",
+      "spec_directory": "./docs/spec",
       "markdown_paths": [
-        "spec.md",
-        "method-versioning.md"
+        "latest.md",
+        "method-versioning.md",
+        "protocol-versioning.md"
       ]
     }
   ]
