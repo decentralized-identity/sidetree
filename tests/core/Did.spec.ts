@@ -46,7 +46,7 @@ describe('DID', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),
-        ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed
+        ErrorCode.DidLongFormOnlyOneQueryParamAllowed
       );
     });
 
@@ -101,7 +101,7 @@ describe('DID', async () => {
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),
-        ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed
+        ErrorCode.DidLongFormNoInitialStateFound
       );
     });
   });

@@ -71,34 +71,7 @@ export default class Did {
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      let didStringUrl = undefined;
-      try {
-        didStringUrl = new URL(didString);
-      } catch {
-        throw new SidetreeError(ErrorCode.DidInvalidDidString);
-      }
-      let queryParamCounter = 0;
-      let encodedCreateRequest = '';
-
-      didStringUrl.searchParams.forEach((value, key) => {
-        queryParamCounter += 1;
-        if (queryParamCounter > 1) {
-          throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
-        }
-
-        // expect key to be -<method>-initial-state
-        const expectedKey = `-${methodNameParts[1]}-${this.initialStateParameterSuffix}`;
-        if (key !== expectedKey) {
-          throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
-        }
-
-        encodedCreateRequest = value;
-      });
-
-      if (encodedCreateRequest === '') {
-        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
-      }
-
+      const encodedCreateRequest = Did.getEncodedCreateRequestFromDidString(didString, methodNameParts);
       const createRequestBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
       const createOperation = await CreateOperation.parse(createRequestBuffer);
 
@@ -119,5 +92,37 @@ export default class Did {
     }
 
     return did;
+  }
+
+  private static getEncodedCreateRequestFromDidString(didString: string, methodNameParts: string[]): string {
+    let didStringUrl = undefined;
+    try {
+      didStringUrl = new URL(didString);
+    } catch {
+      throw new SidetreeError(ErrorCode.DidInvalidDidString);
+    }
+    let queryParamCounter = 0;
+    let encodedCreateRequest = '';
+
+    didStringUrl.searchParams.forEach((value, key) => {
+      queryParamCounter += 1;
+      if (queryParamCounter > 1) {
+        throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
+      }
+
+      // expect key to be -<method>-initial-state
+      const expectedKey = `-${methodNameParts[1]}-${Did.initialStateParameterSuffix}`;
+      if (key !== expectedKey) {
+        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
+      }
+
+      encodedCreateRequest = value;
+    });
+
+    if (encodedCreateRequest === '') {
+      throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
+    }
+
+    return encodedCreateRequest;
   }
 }
