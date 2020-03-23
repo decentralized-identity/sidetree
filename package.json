@@ -48,7 +48,7 @@
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
     "lint": "tslint --fix --project .",
-    "spec": "node -e \"require('spec-up')()\""
+    "spec": "node ./scripts/build-spec.js"
   },
   "husky": {
     "hooks": {
