@@ -1,5 +1,10 @@
 name: Deploy Spec
-on: [push]
+
+on:
+  push:
+    branches:
+      - master
+
 jobs:
   build-and-deploy-spec:
     runs-on: ubuntu-latest
