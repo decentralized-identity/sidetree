@@ -19,7 +19,8 @@
     "raw-body": "2.3.3",
     "secp256k1": "3.6.2",
     "time-span": "3.1.0",
-    "yieldable-json": "1.1.0"
+    "yieldable-json": "1.1.0",
+    "spec-up": "0.9.59"
   },
   "devDependencies": {
     "@types/async-retry": "1.4.0",
@@ -46,7 +47,8 @@
   "scripts": {
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
-    "lint": "tslint --fix --project ."
+    "lint": "tslint --fix --project .",
+    "spec": "node -e \"require('spec-up')()\""
   },
   "husky": {
     "hooks": {
