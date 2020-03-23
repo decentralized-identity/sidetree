@@ -1,4 +1,6 @@
+const { exec } = require("child_process");
 require('spec-up')();
+
 setTimeout(()=>{
-    process.exit(0);
+    exec('killall node')
 }, 5 * 1000)
