@@ -221,7 +221,7 @@
 <img src="../docs/diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
 <h3 id="anchor-file"><a class="toc-anchor" href="#anchor-file">§</a> Anchor File</h3>
 <p>Anchor files contain <a href="#create">Create</a>, <a href="#recover">Recover</a>, and <a href="#revoke">Revoke</a> operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor files are anchored to the target ledger system via embedding a CAS URI in the ledger’s transactional history.</p>
-<div id="example-326" class="notice example"><a class="notice-link" href="#example-326">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-17" class="notice example"><a class="notice-link" href="#example-17">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"map_file"</span><span class="token operator">:</span> CAS_CID<span class="token punctuation">,</span>
   <span class="token property">"operations"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
     <span class="token property">"create"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
@@ -332,7 +332,7 @@
 </ul>
 <h3 id="map-file"><a class="toc-anchor" href="#map-file">§</a> Map File</h3>
 <p>The Map file in the Sidetree protocol contains Update operation proving data, as well as the CAS-linked Batch file chunks.</p>
-<div id="example-327" class="notice example"><a class="notice-link" href="#example-327">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-18" class="notice example"><a class="notice-link" href="#example-18">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"chunks"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> <span class="token property">"chunk_hash"</span><span class="token operator">:</span> CHUNK_HASH <span class="token punctuation">}</span>
   <span class="token punctuation">]</span><span class="token punctuation">,</span>
@@ -376,7 +376,7 @@
 <h3 id="batch-files"><a class="toc-anchor" href="#batch-files">§</a> Batch Files</h3>
 <p>Batch Files are JSON Documents, compressed via the <a href="#compression-algorithm">COMPRESSION_ALGORITHM</a> contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier’s DID Document.</p>
 <p>For the this version of the protocol, there will only exist a single Batch File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into mutliple chunks, each with their own Batch File.</p>
-<div id="create-operation-batch-file-entry-168" class="notice example"><a class="notice-link" href="#create-operation-batch-file-entry-168">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="create-operation-batch-file-entry-4" class="notice example"><a class="notice-link" href="#create-operation-batch-file-entry-4">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"operations"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> SIDETREE_OPERATION <span class="token punctuation">}</span><span class="token punctuation">,</span>
     <span class="token punctuation">{</span> SIDETREE_OPERATION <span class="token punctuation">}</span><span class="token punctuation">,</span>
@@ -406,7 +406,7 @@ ID -->|Create Operation Data Hash| E(xKwW0h6HjS...)
 ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a class="toc-anchor" href="#did-operations">§</a> DID Operations</h2>
 <p>Sidetree-based DIDs support a variety of DID operations, all of which require the DID owner to generate specific data values and cryptographic material. The sections below describe how to perform each type of operation, and how those operations are represented in the CAS-replicated files that are anchored to the underlying ledger system.</p>
 <p>While virtually all DID owners will engage User Agent applications on their local devices to perform these operations, most will not generate the anchoring transactions on the underlying ledger. Instead, most users will likely send the anchoring-related operation values they generate to external nodes for anchoring. This is relatively safe, because operations require signatures that an external node cannot forge. The only attack available to a rouge node operator is to not anchor the operations a DID owner sends them. However, the DID owner can detect this (via a scan of subsequent blocks) and send their operation to a different node or do it themselves, if they so desire.</p>
-<div id="note-168" class="notice note"><a class="notice-link" href="#note-168">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
+<div id="note-5" class="notice note"><a class="notice-link" href="#note-5">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
 </div>
 <h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
 <p>Use the following process to generate a Sidetree-based DID:</p>
@@ -470,11 +470,11 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 </ol>
 <h2 id="did-state-patches"><a class="toc-anchor" href="#did-state-patches">§</a> DID State Patches</h2>
 <p>Sidetree defines a pluggable patching mechanism that can be extended to define new <em>Patch Actions</em>. There are only a few required <em>Patch Actions</em> that every implementation MUST support, related to the handling and management of protocol-active keys (keys that are empowered to modify DID state). Support for any of the additional <em>Patch Actions</em> defined in the spec is elective. Implementers MAY use the <em>Patch Action</em> format to introduce new <em>Patch Actions</em> that are as strict or permissive as they choose.</p>
-<div id="warning-14" class="notice warning"><a class="notice-link" href="#warning-14">WARNING</a><p>Implementers of Sidetree-based DID networks that are truly open, permissionless, and decentralized should carefully consider the ramifications of adding unstructured, free-form <em>Patch Actions</em> that are not strictly evaluated by nodes at the time of ingest, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.</p>
+<div id="warning-5" class="notice warning"><a class="notice-link" href="#warning-5">WARNING</a><p>Implementers of Sidetree-based DID networks that are truly open, permissionless, and decentralized should carefully consider the ramifications of adding unstructured, free-form <em>Patch Actions</em> that are not strictly evaluated by nodes at the time of ingest, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.</p>
 </div>
 <h3 id="patching-protocol-active-keys"><a class="toc-anchor" href="#patching-protocol-active-keys">§</a> Patching Protocol-Active Keys</h3>
 <h4 id="add-public-keys"><a class="toc-anchor" href="#add-public-keys">§</a> Add public keys</h4>
-<div id="example-328" class="notice example"><a class="notice-link" href="#example-328">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-19" class="notice example"><a class="notice-link" href="#example-19">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"publicKeys"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -499,7 +499,7 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 </li>
 </ol>
 <h4 id="remove-public-keys"><a class="toc-anchor" href="#remove-public-keys">§</a> Remove public keys</h4>
-<div id="example-329" class="notice example"><a class="notice-link" href="#example-329">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-20" class="notice example"><a class="notice-link" href="#example-20">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"publicKeys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"key1"</span><span class="token punctuation">,</span> <span class="token string">"key2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -545,8 +545,8 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 <ol>
 <li>Assign the transaction a <em>Transaction Number</em>.</li>
 <li>If the implementation supports enforcement value locking, and the transaction is encoded in accordance with the implementation’s value locking format, skip the remaining steps and process the transaction as described in the <a href="#proof-of-fee">Proof of Fee</a> section on <a href="#value-locking">Value Locking</a>.</li>
-<li>The <a href="#anchor-string"><em>Anchor String</em></a> MUST be formatted correctly - if it is not, discard the transaction and continue iteration.</li>
-<li>If the implementation DOES NOT support enforcement of a <a href="#proof-of-fee">per-operation fee</a>, skip this step. If enforcement of a <a href="#proof-of-fee">per-operation fee</a> is supported, ensure the transaction fee meets the <a href="#proof-of-fee">per-operation fee</a> requirements for inclusion - if it does not, discard the transaction and continue iteration.</li>
+<li>The <a href="#anchor-string"><em>Anchor String</em></a> MUST be formatted correctly - if it IS NOT, discard the transaction and continue iteration.</li>
+<li>If the implementation DOES NOT support enforcement of a <a href="#proof-of-fee">per-operation fee</a>, skip this step. If enforcement of a <a href="#proof-of-fee">per-operation fee</a> is supported, ensure the transaction fee meets the <a href="#proof-of-fee">per-operation fee</a> requirements for inclusion - if it DOES NOT, discard the transaction and continue iteration.</li>
 <li>If the implementation DOES NOT support enforcement of <a href="#value-locking">Value Locking</a>, skip this step. If enforcement of <a href="#value-locking">Value Locking</a> is supported, ensure the transaction’s fee meets the <a href="#value-locking">Value Locking</a> requirements for inclusion - if it does not, discard the transaction and continue iteration.</li>
 <li>Parse the <a href="#anchor-string"><em>Anchor String</em></a> to derive the <em>Operation Count</em> and <em>Anchor File CID</em>.</li>
 <li>Use the <a href="#cas-protocol"><code>CAS_PROTOCOL</code></a> to fetch the <a href="#anchor-file">Anchor File</a> using the <em>Anchor File CID</em>. If the file cannot be located, retain a reference that signifies the need to retry fetch of the file. If the file successfully retrieved, proceed to the next section on how to <a href="#anchor-file-processing">process an Anchor File</a></li>
@@ -556,26 +556,30 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 <h2 id="anchor-file-processing"><a class="toc-anchor" href="#anchor-file-processing">§</a> Anchor File Processing</h2>
 <p>The follow sequence of rules and processing steps must be followed to correctly process an Anchor File:</p>
 <ol>
-<li>
-<p>The anchor file MUST NOT exceed the <a href="#max-anchor-file-size"><code>MAX_ANCHOR_FILE_SIZE</code></a> - if it does, cease processing and discard the file data.</p>
-</li>
-<li>
-<p>The anchor file MUST validate against the protocol-defined <a href="#anchor-file">Anchor File</a> schema and construction rules - if it does not, cease processing and discard the file data.</p>
+<li>The anchor file MUST NOT exceed the <a href="#max-anchor-file-size"><code>MAX_ANCHOR_FILE_SIZE</code></a> - if it does, cease processing and discard the file data.</li>
+<li>The anchor file MUST validate against the protocol-defined <a href="#anchor-file">Anchor File</a> schema and construction rules - if it DOES NOT, cease processing and discard the file data.
 <ul>
 <li>While this rule is articulated in the <a href="#anchor-file">Anchor File</a> section of the specification, it should be emphasized to ensure accurate processing: an <a href="#anchor-file">Anchor File</a> MUST NOT include multiple operations in the <code>operations</code> section of the Anchor File for the same <a href="#did-unique-suffix">DID Unique Suffixes</a> - if any duplicates are found, cease processing and discard the file data.</li>
 </ul>
 </li>
-<li>
-<p>Iterate the <a href="#anchor-file-create-entry"><em>Anchor File Create Entries</em></a>, and for each entry, process as follows:</p>
+<li>Iterate the <a href="#anchor-file-create-entry"><em>Anchor File Create Entries</em></a>, and for each entry, process as follows:
 <ol>
-<li>Derive the <a href="#did-unique-suffix">DID Unique Suffixes</a> from the values present in the entry, and ensure there IS NOT an existing DID matching the same <a href="#did-unique-suffix">DID Unique Suffixes</a> in the state-history of the implementation. If another <a href="#create">Create</a> operation has already anchored a DID of the same <a href="#did-unique-suffix">DID Unique Suffixes</a> in a transaction preceding the transaction that anchors the entries being iterated, do not process the operation any further, and move to the next operation in the array.</li>
-<li>Create an entry in the implementation’s database for the new DID, and retain the <a href="#initial-recovery-commitment"><em>Initial Recovery Commitment</em></a> and <a href="#initial-recovery-key">_Initial Recovery Key</a> values from <a href="#anchor-file-create-entry"><em>Anchor File Create Entries</em></a>.</li>
+<li>Derive the <a href="#did-unique-suffix">DID Unique Suffixes</a> from the values present in the entry, and ensure there IS NOT an existing DID matching the same <a href="#did-unique-suffix">DID Unique Suffixes</a> in the state-history of the implementation. If another valid <a href="#create">Create</a> operation has already anchored a DID of the same <a href="#did-unique-suffix">DID Unique Suffixes</a> in a transaction preceding the transaction that anchors the entries being iterated, do not process the operation and move to the next operation in the array.</li>
+<li>Persist an entry for the new DID within the implementation to hold this and future operational data, and retain the <a href="#initial-recovery-commitment"><em>Initial Recovery Commitment</em></a> and <a href="#initial-recovery-key">_Initial Recovery Key</a> values from <a href="#anchor-file-create-entry"><em>Anchor File Create Entries</em></a> for use in validating a future Recovery operation.</li>
 </ol>
 </li>
-<li>
-<p>Iterate the <a href="#anchor-file-recovery-entry"><em>Anchor File Recovery Entries</em></a>, and for each entry, process as follows:
-1.</p>
+<li>Iterate the <a href="#anchor-file-recovery-entry"><em>Anchor File Recovery Entries</em></a>, and for each entry, process as follows:
+<ol>
+<li>Ensure the <a href="#did-unique-suffix">DID Unique Suffixes</a> of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was present for the same DID, do not process the operation and move to the next operation in the array.</li>
+<li>Persist an entry for the operation within implementation in reference to its <a href="#did-unique-suffix">DID Unique Suffixes</a> in the ledger-relative chronological order.</li>
+</ol>
 </li>
+</ol>
+<div id="todo-5" class="notice todo"><a class="notice-link" href="#todo-5">TODO</a><p>Make sure we do allow multiple ops being processed if some are invalid.</p>
+</div>
+<div id="todo-6" class="notice todo"><a class="notice-link" href="#todo-6">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
+</div>
+<ol>
 <li>
 <p><em>Anchor file</em> validation rules:</p>
 <ol>
@@ -625,6 +629,11 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 </ol>
 <h2 id="value-locking"><a class="toc-anchor" href="#value-locking">§</a> Value Locking</h2>
 <h2 id="resolution"><a class="toc-anchor" href="#resolution">§</a> Resolution</h2>
+<!--
+2. The `recovery_reveal_value` MUST be the value that corresponds to the currently valid _Recovery Commitment Hash_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
+    3. The included signature MUST a signature over the operation values that validates against the currently valid _Recovery Public Key_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
+    4. With the reveal value and signature validated, persist the operation data within the implementation to hold this and future operational data, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry) for use in validating a future Recovery operation.
+-->
 <h3 id="unpublished-did-resolution"><a class="toc-anchor" href="#unpublished-did-resolution">§</a> Unpublished DID Resolution</h3>
 <p>DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through <em>DID Parameters</em>, as described in the <a href="https://w3c.github.io/did-spec/#generic-did-parameter-names">W3C DID spec</a>.</p>
 <p>Many DID Methods feature a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying trust system (i.e. blockchain, ledger). The community has recognized the need for a mechanism to support resolution and use of identifiers during this period. As such, the community will introduce a <em>Generic DID Parameter</em> <code>initial-values</code> that any DID method can use to signify initial state variables during this period.</p>

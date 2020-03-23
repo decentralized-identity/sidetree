@@ -428,8 +428,8 @@ Regardless of the ledger system an implementer chooses, the implementer MUST be 
 3. For each transaction found during iteration that is determined to be a protocol-related transaction, process the transaction as follows:
     1. Assign the transaction a _Transaction Number_.
     2. If the implementation supports enforcement value locking, and the transaction is encoded in accordance with the implementation's value locking format, skip the remaining steps and process the transaction as described in the [Proof of Fee](#proof-of-fee) section on [Value Locking](#value-locking).
-    3. The [_Anchor String_](#anchor-string) MUST be formatted correctly - if it is not, discard the transaction and continue iteration.
-    4. If the implementation DOES NOT support enforcement of a [per-operation fee](#proof-of-fee), skip this step. If enforcement of a [per-operation fee](#proof-of-fee) is supported, ensure the transaction fee meets the [per-operation fee](#proof-of-fee) requirements for inclusion - if it does not, discard the transaction and continue iteration. 
+    3. The [_Anchor String_](#anchor-string) MUST be formatted correctly - if it IS NOT, discard the transaction and continue iteration.
+    4. If the implementation DOES NOT support enforcement of a [per-operation fee](#proof-of-fee), skip this step. If enforcement of a [per-operation fee](#proof-of-fee) is supported, ensure the transaction fee meets the [per-operation fee](#proof-of-fee) requirements for inclusion - if it DOES NOT, discard the transaction and continue iteration. 
     5. If the implementation DOES NOT support enforcement of [Value Locking](#value-locking), skip this step. If enforcement of [Value Locking](#value-locking) is supported, ensure the transaction's fee meets the [Value Locking](#value-locking) requirements for inclusion - if it does not, discard the transaction and continue iteration.
     6. Parse the [_Anchor String_](#anchor-string) to derive the _Operation Count_ and _Anchor File CID_.
     7. Use the [`CAS_PROTOCOL`](#cas-protocol) to fetch the [Anchor File](#anchor-file) using the _Anchor File CID_. If the file cannot be located, retain a reference that signifies the need to retry fetch of the file. If the file successfully retrieved, proceed to the next section on how to [process an Anchor File](#anchor-file-processing)
@@ -439,15 +439,23 @@ Regardless of the ledger system an implementer chooses, the implementer MUST be 
 The follow sequence of rules and processing steps must be followed to correctly process an Anchor File:
 
 1. The anchor file MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size) - if it does, cease processing and discard the file data.
-2. The anchor file MUST validate against the protocol-defined [Anchor File](#anchor-file) schema and construction rules - if it does not, cease processing and discard the file data.
+2. The anchor file MUST validate against the protocol-defined [Anchor File](#anchor-file) schema and construction rules - if it DOES NOT, cease processing and discard the file data.
     - While this rule is articulated in the [Anchor File](#anchor-file) section of the specification, it should be emphasized to ensure accurate processing: an [Anchor File](#anchor-file) MUST NOT include multiple operations in the `operations` section of the Anchor File for the same [DID Unique Suffixes](#did-unique-suffix) - if any duplicates are found, cease processing and discard the file data.
 3. Iterate the [_Anchor File Create Entries_](#anchor-file-create-entry), and for each entry, process as follows:
-    1. Derive the [DID Unique Suffixes](#did-unique-suffix) from the values present in the entry, and ensure there IS NOT an existing DID matching the same [DID Unique Suffixes](#did-unique-suffix) in the state-history of the implementation. If another [Create](#create) operation has already anchored a DID of the same [DID Unique Suffixes](#did-unique-suffix) in a transaction preceding the transaction that anchors the entries being iterated, do not process the operation any further, and move to the next operation in the array.
-    2. Create an entry in the implementation's database for the new DID, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry).
+    1. Derive the [DID Unique Suffixes](#did-unique-suffix) from the values present in the entry, and ensure there IS NOT an existing DID matching the same [DID Unique Suffixes](#did-unique-suffix) in the state-history of the implementation. If another valid [Create](#create) operation has already anchored a DID of the same [DID Unique Suffixes](#did-unique-suffix) in a transaction preceding the transaction that anchors the entries being iterated, do not process the operation and move to the next operation in the array.
+    2. Persist an entry for the new DID within the implementation to hold this and future operational data, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry) for use in validating a future Recovery operation.
 4. Iterate the [_Anchor File Recovery Entries_](#anchor-file-recovery-entry), and for each entry, process as follows:
-    1. 
+    1. Ensure the [DID Unique Suffixes](#did-unique-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was present for the same DID, do not process the operation and move to the next operation in the array.
+    2. Persist an entry for the operation within implementation in reference to its [DID Unique Suffixes](#did-unique-suffix) in the ledger-relative chronological order.
+    
 
+::: todo
+Make sure we do allow multiple ops being processed if some are invalid.
+:::
 
+::: todo
+Confirm how we handle ops where there was not a previous op found.
+:::
 
 1. _Anchor file_ validation rules:
    1. The anchor file must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
@@ -485,6 +493,13 @@ Sidetree implementations MAY choose to impose a per-op fee that is used to gate 
 
 
 ## Resolution
+
+
+<!--
+2. The `recovery_reveal_value` MUST be the value that corresponds to the currently valid _Recovery Commitment Hash_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
+    3. The included signature MUST a signature over the operation values that validates against the currently valid _Recovery Public Key_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
+    4. With the reveal value and signature validated, persist the operation data within the implementation to hold this and future operational data, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry) for use in validating a future Recovery operation.
+-->
 
 ### Unpublished DID Resolution
 
