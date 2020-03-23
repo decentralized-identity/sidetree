@@ -9,5 +9,5 @@ coverage/
 # sidetree-ipfs data folder
 sidetree-ipfs/
 
-./docs/index.html
-./spec-up
+docs/index.html
+spec-up
