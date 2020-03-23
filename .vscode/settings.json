@@ -8,5 +8,6 @@
     "**/.DS_Store": true,
     "**/versions/[0-9]**/**": true
   },
-  "prettier": false
+  "prettier": false,
+  "liveServer.settings.port": 5501
 }
