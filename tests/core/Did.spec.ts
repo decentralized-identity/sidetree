@@ -25,7 +25,7 @@ describe('DID', async () => {
       const didMethodName = 'did:sidetree:';
       const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
       const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
-      const longFormDid = `${shortFormDid};initial-values=${encodedCreateOperationRequest}`;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
 
       const did = await Did.create(longFormDid, didMethodName);
       expect(did.isShortForm).toBeFalsy();
@@ -33,6 +33,28 @@ describe('DID', async () => {
       expect(did.shortForm).toEqual(shortFormDid);
       expect(did.uniqueSuffix).toEqual(didUniqueSuffix);
       expect(did.createOperation).toEqual(createOperationData.createOperation);
+    });
+
+    it('should throw error if more than one query param is provided', async () => {
+      // Create a long-form DID string.
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
+      const didMethodName = 'did:sidetree:';
+      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
+      const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}&extra-param`;
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => Did.create(longFormDid, didMethodName),
+        ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed
+      );
+    });
+
+    it('should throw if method name is not valid', async () => {
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => Did.create('notValid:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg', 'notValid'),
+        ErrorCode.DidInvalidMethodName
+      );
     });
 
     it('should throw if DID given does not match the expected DID method name.', async () => {
@@ -54,11 +76,32 @@ describe('DID', async () => {
       const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
       const didMethodName = 'did:sidetree:';
       const mismatchingShortFormDid = `${didMethodName}EiA_MismatchingDID_AAAAAAAAAAAAAAAAAAAAAAAAAAA`;
-      const longFormDid = `${mismatchingShortFormDid};initial-values=${encodedCreateOperationRequest}`;
+      const longFormDid = `${mismatchingShortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),
-        ErrorCode.DidUniqueSuffixFromInitialValuesMismatch
+        ErrorCode.DidUniqueSuffixFromInitialStateMismatch
+      );
+    });
+
+    it('should throw if the given did string is not a valid url format', async () => {
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => Did.create('@#$%^&:@#$%^:1234?some=param', '@#$%^&:@#$%^'),
+        ErrorCode.DidInvalidDidString
+      );
+    });
+
+    it('should throw if the given did string does not have query param', async () => {
+      // Create a long-form DID string.
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const didMethodName = 'did:sidetree:';
+      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
+      const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
+      const longFormDid = `${shortFormDid}?`;
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => Did.create(longFormDid, didMethodName),
+        ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed
       );
     });
   });

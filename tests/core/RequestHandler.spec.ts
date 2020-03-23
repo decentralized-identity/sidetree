@@ -196,7 +196,7 @@ describe('RequestHandler', () => {
     const didMethodName = 'did:sidetree:';
     const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
     const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
-    const longFormDid = `${shortFormDid};initial-values=${encodedCreateOperationRequest}`;
+    const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
 
     const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);
@@ -216,11 +216,11 @@ describe('RequestHandler', () => {
   });
 
   it('should return BadRequest given a malformed DID.', async () => {
-    const response = await requestHandler.handleResolveRequest('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg;bad-request-param=bad-input');
+    const response = await requestHandler.handleResolveRequest('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg?bad-request-param=bad-input');
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
+    expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
   });
 
   it('should respond with HTTP 200 when DID revoke operation request is successful.', async () => {
