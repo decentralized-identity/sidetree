@@ -1,4 +1,3 @@
-# Sidetree Specification and Reference Implementation
 
 #### [View GitHub](https://github.com/decentralized-identity/sidetree)
 
