@@ -82,12 +82,13 @@ export default class OperationProcessor implements IOperationProcessor {
       return documentState;
     }
 
+    const operationData = operation.operationData;
     const newDocumentState = {
       didUniqueSuffix: operation.didUniqueSuffix,
-      document: operation.operationData!.document,
+      document: operationData ? operationData.document : { },
       recoveryKey: operation.suffixData.recoveryKey,
       nextRecoveryOtpHash: operation.suffixData.nextRecoveryOtpHash,
-      nextUpdateOtpHash: operation.operationData!.nextUpdateOtpHash,
+      nextUpdateOtpHash: operationData ? operationData.nextUpdateOtpHash : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -169,12 +170,13 @@ export default class OperationProcessor implements IOperationProcessor {
       return documentState;
     }
 
+    const operationData = operation.operationData;
     const newDocumentState = {
       didUniqueSuffix: operation.didUniqueSuffix,
-      document: operation.operationData!.document,
+      document: operationData ? operationData.document : { },
       recoveryKey: operation.signedOperationData.recoveryKey,
       nextRecoveryOtpHash: operation.signedOperationData.nextRecoveryOtpHash,
-      nextUpdateOtpHash: operation.operationData!.nextUpdateOtpHash,
+      nextUpdateOtpHash: operationData ? operationData.nextUpdateOtpHash : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 

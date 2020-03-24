@@ -1,6 +1,5 @@
 import DidDocumentModel from './models/DidDocumentModel';
 import DidPublicKeyModel from './models/DidPublicKeyModel';
-import DidServiceEndpointModel from './models/DidServiceEndpointModel';
 
 /**
  * Class containing reusable DID Document related operations.
@@ -22,18 +21,5 @@ export default class DidDocument {
     }
 
     return undefined;
-  }
-
-  /**
-   * Creates a DID document model.
-   * Mainly used by tests.
-   */
-  public static create (publicKeys: DidPublicKeyModel[], services?: DidServiceEndpointModel[]): DidDocumentModel {
-
-    return {
-      '@context': 'https://w3id.org/did/v1',
-      publicKey: publicKeys,
-      service: services
-    };
   }
 }

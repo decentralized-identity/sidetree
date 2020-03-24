@@ -1,3 +1,4 @@
+import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -16,7 +17,7 @@ interface SuffixDataModel {
 
 interface OperationDataModel {
   nextUpdateOtpHash: string;
-  document: string;
+  document: any;
 }
 
 /**
@@ -124,7 +125,13 @@ export default class CreateOperation implements OperationModel {
       }
 
       encodedOperationData = operationObject.operationData;
-      operationData = await CreateOperation.parseOperationData(operationObject.operationData);
+      try {
+        operationData = await CreateOperation.parseOperationData(operationObject.operationData);
+      } catch {
+        // For compatibility with data pruning, we have to assume that operation data may be unavailable,
+        // thus an operation with invalid operation data needs to be processed as an operation with unavailable operation data,
+        // so here we let operation data be `undefined`.
+      }
     }
 
     const didUniqueSuffix = CreateOperation.computeDidUniqueSuffix(operationObject.suffixData);
@@ -163,14 +170,14 @@ export default class CreateOperation implements OperationModel {
     const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
     const operationData = await JsonAsync.parse(operationDataJsonString);
 
-    const properties = Object.keys(operationData);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty);
+    const allowedProperties = new Set(['document', 'nextUpdateOtpHash']);
+    for (let property in operationData) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty);
+      }
     }
 
-    if (operationData.document === undefined) {
-      throw new SidetreeError(ErrorCode.CreateOperationDocumentMissing);
-    }
+    DocumentComposer.validateDocument(operationData.document);
 
     const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);

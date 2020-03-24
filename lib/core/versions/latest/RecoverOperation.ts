@@ -1,3 +1,4 @@
+import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -134,7 +135,13 @@ export default class RecoverOperation implements OperationModel {
       }
 
       encodedOperationData = operationObject.operationData;
-      operationData = await RecoverOperation.parseOperationData(operationObject.operationData);
+      try {
+        operationData = await RecoverOperation.parseOperationData(operationObject.operationData);
+      } catch {
+        // For compatibility with data pruning, we have to assume that operation data may be unavailable,
+        // thus an operation with invalid operation data needs to be processed as an operation with unavailable operation data,
+        // so here we let operation data be `undefined`.
+      }
     }
 
     return new RecoverOperation(
@@ -176,14 +183,14 @@ export default class RecoverOperation implements OperationModel {
     const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
     const operationData = await JsonAsync.parse(operationDataJsonString);
 
-    const properties = Object.keys(operationData);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.RecoverOperationDataMissingOrUnknownProperty);
+    const allowedProperties = new Set(['document', 'nextUpdateOtpHash']);
+    for (let property in operationData) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.RecoverOperationDataMissingOrUnknownProperty);
+      }
     }
 
-    if (operationData.document === undefined) {
-      throw new SidetreeError(ErrorCode.RecoverOperationDocumentMissing);
-    }
+    DocumentComposer.validateDocument(operationData.document);
 
     const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);

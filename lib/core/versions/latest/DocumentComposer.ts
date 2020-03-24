@@ -56,6 +56,50 @@ export default class DocumentComposer {
   }
 
   /**
+   * Validates the schema of the given full document.
+   * @throws SidetreeError if given document patch fails validation.
+   */
+  public static validateDocument (document: any) {
+    if (document === undefined) {
+      throw new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
+    }
+
+    const allowedProperties = new Set(['publicKey', 'service']);
+    for (let property in document) {
+      if (!allowedProperties.has(property)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInDocument, `Unexpected property ${property} in document.`);
+      }
+    }
+
+    // Verify 'publicKey' property if it exists.
+    if (document.hasOwnProperty('publicKey')) {
+      DocumentComposer.validatePublicKeys(document.publicKey);
+    }
+
+    // Verify 'service' property if it exists.
+    if (document.hasOwnProperty('service')) {
+      // 'service' property must be an array.
+      if (!Array.isArray(document.service)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerServiceNotArray);
+      }
+
+      // Verify each service entry in array.
+      for (let serviceEntry of document.service) {
+        // 'type' is required and must be string type.
+        if (typeof serviceEntry.type !== 'string') {
+          throw new SidetreeError(ErrorCode.DocumentComposerServiceTypeNotString);
+        }
+
+        // 'serviceEndpoint' is required.
+        const serviceEntryType = typeof serviceEntry.serviceEndpoint;
+        if (serviceEntryType !== 'string' && serviceEntryType !== 'object') {
+          throw new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrIncorrectType);
+        }
+      }
+    }
+  }
+
+  /**
    * Validates the schema of the given update document patch.
    * @throws SidetreeError if given document patch fails validation.
    */
@@ -96,32 +140,39 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    if (!Array.isArray(patch.publicKeys)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeysNotArray);
+    DocumentComposer.validatePublicKeys(patch.publicKeys);
+  }
+
+  private static validatePublicKeys (publicKeys: any) {
+    if (!Array.isArray(publicKeys)) {
+      throw new SidetreeError(ErrorCode.DocumentComposerPublicKeysNotArray);
     }
 
-    for (let publicKey of patch.publicKeys) {
+    const publicKeyIdSet: Set<string> = new Set();
+    for (let publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
       if (publicKeyProperties.length !== 3) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyMissingOrUnknownProperty);
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
       if (typeof publicKey.id !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdNotString);
       }
 
-      if (publicKey.controller !== undefined) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyControllerNotAllowed);
+      // 'id' must be unique
+      if (publicKeyIdSet.has(publicKey.id)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdDuplicated);
       }
+      publicKeyIdSet.add(publicKey.id);
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {
         // The key must be in compressed bitcoin-key format.
         if (typeof publicKey.publicKeyHex !== 'string' ||
             publicKey.publicKeyHex.length !== 66) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyHexMissingOrIncorrect);
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeySecp256k1NotCompressedHex);
         }
       } else if (publicKey.type !== 'RsaVerificationKey2018') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyTypeMissingOrUnknown);
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
       }
     }
   }
@@ -133,7 +184,7 @@ export default class DocumentComposer {
     }
 
     if (!Array.isArray(patch.publicKeys)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeysNotArray);
+      throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
     }
 
     for (let publicKeyId of patch.publicKeys) {
@@ -166,6 +217,7 @@ export default class DocumentComposer {
       }
     }
   }
+
   /**
    * Applies the given patches in order to the given DID Document.
    * NOTE: Assumes no schema validation is needed.
@@ -182,7 +234,7 @@ export default class DocumentComposer {
    */
   private static applyPatchToDidDocument (didDocument: DidDocumentModel, patch: any) {
     if (patch.action === 'add-public-keys') {
-      const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
+      const publicKeyMap = didDocument.publicKey ? new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey])) : new Map();
 
       // Loop through all given public keys and add them if they don't exist already.
       for (let publicKey of patch.publicKeys) {
