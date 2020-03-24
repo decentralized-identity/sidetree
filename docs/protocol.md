@@ -61,7 +61,7 @@ A Sidetree _DID unique suffix_ is the globally unique portion of a DID.
 
 e.g. The DID unique suffix of `did:sidetree:abc` would be `abc`.
 
-The DID unique suffix is computed deterministically by hashing, then encoding the (_suffix data_) supplied in a create operation request. The suffix data contains:
+The DID unique suffix is computed deterministically by hashing, then encoding the_suffix data_ supplied in a create operation request. The suffix data contains:
 
 1. Hash of the initial document.
 1. Recovery key.
