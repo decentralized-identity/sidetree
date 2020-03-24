@@ -9,7 +9,7 @@ import SidetreeError from '../../../common/SidetreeError';
  */
 export default class Did {
 
-  private static readonly initialValuesParameterPrefix = 'initial-values=';
+  private static readonly initialStateParameterSuffix = 'initial-state';
 
   /** `true` if DID is short form; `false` if DID is long-form. */
   public isShortForm: boolean;
@@ -35,9 +35,9 @@ export default class Did {
 
     this.didMethodName = didMethodName;
 
-    const indexOfSemiColonChar = did.indexOf(';');
-    // If there is no semicolon, then DID can only be in short-form.
-    if (indexOfSemiColonChar < 0) {
+    const indexOfQuestionMarkChar = did.indexOf('?');
+    // If there is no question mark, then DID can only be in short-form.
+    if (indexOfQuestionMarkChar < 0) {
       this.isShortForm = true;
     } else {
       this.isShortForm = false;
@@ -47,7 +47,7 @@ export default class Did {
       this.uniqueSuffix = did.substring(didMethodName.length);
     } else {
       // This is long-form.
-      this.uniqueSuffix = did.substring(didMethodName.length, indexOfSemiColonChar);
+      this.uniqueSuffix = did.substring(didMethodName.length, indexOfQuestionMarkChar);
     }
 
     if (this.uniqueSuffix.length === 0) {
@@ -62,19 +62,16 @@ export default class Did {
    * @param didString Short or long-form DID string.
    */
   public static async create (didString: string, didMethodName: string): Promise<Did> {
+    const methodNameParts = didMethodName.split(':');
+    if (methodNameParts.length < 2) {
+      throw new SidetreeError(ErrorCode.DidInvalidMethodName);
+    }
+
     const did = new Did(didString, didMethodName);
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      const indexOfSemiColonChar = didString.indexOf(';');
-      const didParameterString = didString.substring(indexOfSemiColonChar + 1);
-
-      if (!didParameterString.startsWith(Did.initialValuesParameterPrefix)) {
-        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialValuesParameterIsAllowed);
-      }
-
-      // Trim the `initial-values=` string to get the encoded create operation request body.
-      const encodedCreateRequest = didParameterString.substring(Did.initialValuesParameterPrefix.length);
+      const encodedCreateRequest = Did.getEncodedCreateRequestFromDidString(didString, methodNameParts);
       const createRequestBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
       const createOperation = await CreateOperation.parse(createRequestBuffer);
 
@@ -84,16 +81,48 @@ export default class Did {
       const uniqueSuffixBuffer = Encoder.decodeAsBuffer(did.uniqueSuffix);
       const hashAlgorithmCode = Multihash.getHashAlgorithmCode(uniqueSuffixBuffer);
       const didUniqueSuffixDataBuffer = Encoder.decodeAsBuffer(createOperation.encodedSuffixData);
-      const didUniqueSuffixFromInitialValues = Encoder.encode(Multihash.hash(didUniqueSuffixDataBuffer, hashAlgorithmCode));
+      const didUniqueSuffixFromInitialState = Encoder.encode(Multihash.hash(didUniqueSuffixDataBuffer, hashAlgorithmCode));
 
       // If the computed unique suffix is not the same as the unique suffix in given short-form DID.
-      if (didUniqueSuffixFromInitialValues !== did.uniqueSuffix) {
-        throw new SidetreeError(ErrorCode.DidUniqueSuffixFromInitialValuesMismatch);
+      if (didUniqueSuffixFromInitialState !== did.uniqueSuffix) {
+        throw new SidetreeError(ErrorCode.DidUniqueSuffixFromInitialStateMismatch);
       }
 
       did.createOperation = createOperation;
     }
 
     return did;
+  }
+
+  private static getEncodedCreateRequestFromDidString(didString: string, methodNameParts: string[]): string {
+    let didStringUrl = undefined;
+    try {
+      didStringUrl = new URL(didString);
+    } catch {
+      throw new SidetreeError(ErrorCode.DidInvalidDidString);
+    }
+    let queryParamCounter = 0;
+    let encodedCreateRequest = '';
+
+    didStringUrl.searchParams.forEach((value, key) => {
+      queryParamCounter += 1;
+      if (queryParamCounter > 1) {
+        throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
+      }
+
+      // expect key to be -<method>-initial-state
+      const expectedKey = `-${methodNameParts[1]}-${Did.initialStateParameterSuffix}`;
+      if (key !== expectedKey) {
+        throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
+      }
+
+      encodedCreateRequest = value;
+    });
+
+    if (encodedCreateRequest === '') {
+      throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
+    }
+
+    return encodedCreateRequest;
   }
 }
