@@ -312,11 +312,12 @@ POST / HTTP/1.1
 #### `operationData` property schema
 ```json
 {
-  "patches": "An array of patches where each entry is a patch action defined by the patch action schema.",
+  "patches": "An array of patches where each entry is a patch defined by the document patch schema.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
 
+See [document patch schema](#Document-patch-schema) section for all the supported patch actions.
 
 #### Response headers
 | Name                  | Value                  |
@@ -441,11 +442,12 @@ POST / HTTP/1.1
 #### Update `operationData` property schema
 ```json
 {
-  "patches": "An array of patches where each entry is a patch action defined by the patch action schema.",
+  "patches": "An array of patches where each entry is a patch defined by the patch schema.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update."
 }
 ```
 
+See [document patch schema](#Document-patch-schema) section for all the supported patch actions.
 
 #### Response body
 None.
@@ -490,10 +492,12 @@ POST / HTTP/1.1
 #### `operationData` schema
 ```json
 {
-  "patches": "An array of patches where each entry is a patch action defined by the patch action schema.",
+  "patches": "An array of patches where each entry is a patch defined by the patch schema.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
+
+See [document patch schema](#Document-patch-schema) section for all the supported patch actions.
 
 #### Response body
 None.
@@ -591,7 +595,7 @@ HTTP/1.1 200 OK
 ```
 
 
-## Document patch action schema
+## Document patch schema
 
 ### Replacing the existing document
 ```json
