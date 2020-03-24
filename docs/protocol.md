@@ -312,37 +312,11 @@ POST / HTTP/1.1
 #### `operationData` property schema
 ```json
 {
-    "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
-    "document": "Document content."
+  "patches": "An array of patches where each entry is a patch action defined by the patch action schema.",
+  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
 }
 ```
 
-#### `document` property example
-```json
-{
-  "publicKey": [
-    {
-      "id": "#key1",
-      "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "02f49802fb3e09c6dd43f19aa41293d1e0dad044b68cf81cf7079499edfd0aa9f1"
-    }
-  ],
-  "service": [
-    {
-      "type": "IdentityHub",
-      "publicKey": "#key1",
-      "serviceEndpoint": {
-        "@context": "schema.identity.foundation/hub",
-        "@type": "UserServiceEndpoint",
-        "instances": [
-          "did:bar:456",
-          "did:zaz:789"
-        ]
-      }
-    }
-  ]
-}
-```
 
 #### Response headers
 | Name                  | Value                  |
@@ -467,142 +441,11 @@ POST / HTTP/1.1
 #### Update `operationData` property schema
 ```json
 {
-  "documentPatch": ["An array of patches each must adhere to the document patch schema defined below."],
+  "patches": "An array of patches where each entry is a patch action defined by the patch action schema.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update."
 }
 ```
 
-#### Document patch schema
-##### Add public keys
-```json
-{
-  "action": "add-public-keys",
-  "publicKeys": [
-    {
-      "id": "A string that begins with '#'.",
-      "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else any property can be used.",
-    }
-  ]
-}
-```
-
-Example:
-```json
-{
-  "action": "add-public-keys",
-  "publicKeys": [
-    {
-      "id": "#key1",
-      "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
-    },
-    {
-      "id": "#key2",
-      "type": "RsaVerificationKey2018",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----"
-    }
-  ]
-}
-```
-
-##### Remove public keys
-```json
-{
-  "action": "remove-public-keys",
-  "publicKeys": ["Array of 'id' property of public keys to remove."]
-}
-```
-
-Example:
-```json
-{
-  "action": "remove-public-keys",
-  "publicKeys": ["#key1", "#key2"]
-}
-```
-
-##### Add service endpoints
-```json
-{
-  "action": "add-service-endpoints",
-  "serviceType": "IdentityHub",
-  "serviceEndpoints": [
-    "Array of DID to add."
-  ]
-}
-```
-
-Example:
-```json
-{
-  "action": "add-service-endpoints",
-  "serviceType": "IdentityHub",
-  "serviceEndpoints": [
-    "did:sidetree:EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA",
-    "did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A"
-  ]
-}
-```
-
-##### Remove service endpoints
-```json
-{
-  "action": "remove-service-endpoints",
-  "serviceType": "IdentityHub",
-  "serviceEndpoints": [
-    "Array of DID to remove."
-  ]
-}
-```
-
-Example:
-```json
-{
-  "action": "remove-service-endpoints",
-  "serviceType": "IdentityHub",
-  "serviceEndpoints": [
-    "did:sidetree:EiDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLA",
-    "did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A"
-  ]
-}
-```
-
-
-#### Update payload example
-```json
-{
-  "type": "update",
-  "didUniqueSuffix": "EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8A",
-  "patches": [
-    {
-      "action": "add-public-keys",
-      "publicKeys": [
-        {
-          "id": "#key1",
-          "type": "Secp256k1VerificationKey2018",
-          "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
-        },
-        {
-          "id": "#key2",
-          "type": "RsaVerificationKey2018",
-          "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----"
-        }
-      ]
-    },
-    {
-      "action": "remove-service-endpoints",
-      "serviceType": "IdentityHub",
-      "serviceEndpoints": [
-        "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
-        "did:sidetree:EiAJ6AlyUPaEOxXk-AdXoEikeTf7DhcXvF61MfgnjJgazg"
-      ]
-    }
-  ],
-  "updateOtp": "iDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLAa",
-  "nextUpdateOtpHash": "EiDJesPq9hAIPrBiDw7PBZG8OUCG4XT5d6debxCUIVFUrg",
-}
-```
 
 #### Response body
 None.
@@ -647,8 +490,8 @@ POST / HTTP/1.1
 #### `operationData` schema
 ```json
 {
+  "patches": "An array of patches where each entry is a patch action defined by the patch action schema.",
   "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
-  "document": "Opaque content."
 }
 ```
 
@@ -746,6 +589,156 @@ HTTP/1.1 200 OK
   }
 ]
 ```
+
+
+## Document patch action schema
+
+### Replacing the existing document
+```json
+{
+  "action": "replace",
+  "document": "A full document defined by the document schema "
+}
+```
+
+#### `document` schema
+```json
+{
+  "publicKeys": [
+    {
+      "id": "A string that begins with '#'.",
+      "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
+      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
+    }
+  ],
+  "serviceEndpoints": [
+    {
+      "id": "A string no longer than 7 characters.",
+      "type": "A string no longer than 30 characters.",
+      "serviceEndpoint": "URIs beginning with a scheme segment (i.e. http://, git://), and be no longer than 80 characters."
+    }
+  ]
+}
+```
+
+#### `document` property example
+```json
+{
+  "publicKeys": [
+    {
+      "id": "key1",
+      "type": "Secp256k1VerificationKey2018",
+      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+    }
+  ],
+  "serviceEndpoints": [
+    {
+      "id": "my-git",
+      "type": "git",
+      "serviceEndpoint": "URIs beginning with a scheme segment (i.e. http://, git://), and be no longer than 80 characters."
+    }
+  ]
+}
+```
+
+
+### Adding public keys
+```json
+{
+  "action": "add-public-keys",
+  "publicKeys": [
+    {
+      "id": "A string that begins with '#'.",
+      "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
+      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
+    }
+  ]
+}
+```
+
+Example:
+```json
+{
+  "action": "add-public-keys",
+  "publicKeys": [
+    {
+      "id": "key1",
+      "type": "Secp256k1VerificationKey2018",
+      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+    },
+    {
+      "id": "key2",
+      "type": "RsaVerificationKey2018",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----"
+    }
+  ]
+}
+```
+
+### Removing public keys
+```json
+{
+  "action": "remove-public-keys",
+  "publicKeys": ["Array of 'id' property of public keys to remove."]
+}
+```
+
+Example:
+```json
+{
+  "action": "remove-public-keys",
+  "publicKeys": ["#key1", "#key2"]
+}
+```
+
+### Adding service endpoints
+```json
+{
+  "action": "add-service-endpoints",
+  "serviceEndpoints": [
+    {
+      "id": "A string no longer than 7 characters.",
+      "type": "A string no longer than 30 characters.",
+      "serviceEndpoint": "URIs beginning with a scheme segment (i.e. http://, git://), and be no longer than 80 characters."
+    }
+  ]
+}
+```
+
+Example:
+```json
+{
+  "action": "add-service-endpoints",
+  "serviceEndpoints": [
+    {
+      "id": "my-git",
+      "type": "git",
+      "serviceEndpoint": "URIs beginning with a scheme segment (i.e. http://, git://), and be no longer than 80 characters."
+    }
+  ]
+}
+```
+
+### Removing service endpoints
+```json
+{
+  "action": "remove-service-endpoints",
+  "serviceEndpointIds": [
+    "ID of service endpoint to remove."
+  ]
+}
+```
+
+Example:
+```json
+{
+  "action": "remove-service-endpoints",
+  "serviceEndpointIds": [
+    "my-git"
+  ]
+}
+```
+
 
 ## Merkle Root Hash Inclusion (Currently not used, may support in the future)
 Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
