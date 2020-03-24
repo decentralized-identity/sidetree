@@ -610,7 +610,7 @@ HTTP/1.1 200 OK
 {
   "publicKeys": [
     {
-      "id": "A string that begins with '#'.",
+      "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
       "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
     }
@@ -652,7 +652,7 @@ HTTP/1.1 200 OK
   "action": "add-public-keys",
   "publicKeys": [
     {
-      "id": "A string that begins with '#'.",
+      "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
       "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
     }
@@ -691,7 +691,7 @@ Example:
 ```json
 {
   "action": "remove-public-keys",
-  "publicKeys": ["#key1", "#key2"]
+  "publicKeys": ["key1", "key2"]
 }
 ```
 
