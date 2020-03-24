@@ -215,13 +215,13 @@
 <li>The Sidetree nodes themselves, which interact with the ledger system to anchor operations, fetch and replicate data from the CAS network, and process operations in accordance with the protocol deterministic ruleset.</li>
 <li>An integrated Content-Addressable Storage (CAS) network layer Sidetree nodes use to distribute and replicate DID operation files.</li>
 </ol>
-<img src="../docs/diagrams/sidetree-system.svg" style="display: block; margin: 0 auto; padding: 1em 0; width: 100%; max-width: 620px;" />
+<img src="../diagrams/sidetree-system.svg" style="display: block; margin: 0 auto; padding: 1em 0; width: 100%; max-width: 620px;" />
 <h2 id="file-structures"><a class="toc-anchor" href="#file-structures">§</a> File Structures</h2>
 <p>The protocol defines the following three file structures, which house DID operation data and are designed to support key functionality to enable light node configurations, minimize permanently retained data, and ensure performant resolution of DIDs.</p>
-<img src="../docs/diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
+<img src="../diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
 <h3 id="anchor-file"><a class="toc-anchor" href="#anchor-file">§</a> Anchor File</h3>
 <p>Anchor files contain <a href="#create">Create</a>, <a href="#recover">Recover</a>, and <a href="#revoke">Revoke</a> operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor files are anchored to the target ledger system via embedding a CAS URI in the ledger’s transactional history.</p>
-<div id="example-1" class="notice example"><a class="notice-link" href="#example-1">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-13" class="notice example"><a class="notice-link" href="#example-13">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"map_file"</span><span class="token operator">:</span> CAS_CID<span class="token punctuation">,</span>
   <span class="token property">"operations"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
     <span class="token property">"create"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
@@ -332,7 +332,7 @@
 </ul>
 <h3 id="map-file"><a class="toc-anchor" href="#map-file">§</a> Map File</h3>
 <p>The Map file in the Sidetree protocol contains Update operation proving data, as well as the CAS-linked Batch file chunks.</p>
-<div id="example-2" class="notice example"><a class="notice-link" href="#example-2">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-14" class="notice example"><a class="notice-link" href="#example-14">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"chunks"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> <span class="token property">"chunk_hash"</span><span class="token operator">:</span> CHUNK_HASH <span class="token punctuation">}</span>
   <span class="token punctuation">]</span><span class="token punctuation">,</span>
@@ -376,7 +376,7 @@
 <h3 id="batch-files"><a class="toc-anchor" href="#batch-files">§</a> Batch Files</h3>
 <p>Batch Files are JSON Documents, compressed via the <a href="#compression-algorithm">COMPRESSION_ALGORITHM</a> contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier’s DID Document.</p>
 <p>For the this version of the protocol, there will only exist a single Batch File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into mutliple chunks, each with their own Batch File.</p>
-<div id="create-operation-batch-file-entry" class="notice example"><a class="notice-link" href="#create-operation-batch-file-entry">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="create-operation-batch-file-entry-3" class="notice example"><a class="notice-link" href="#create-operation-batch-file-entry-3">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"operations"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> SIDETREE_OPERATION <span class="token punctuation">}</span><span class="token punctuation">,</span>
     <span class="token punctuation">{</span> SIDETREE_OPERATION <span class="token punctuation">}</span><span class="token punctuation">,</span>
@@ -406,7 +406,7 @@ ID -->|Create Operation Data Hash| E(xKwW0h6HjS...)
 ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a class="toc-anchor" href="#did-operations">§</a> DID Operations</h2>
 <p>Sidetree-based DIDs support a variety of DID operations, all of which require the DID owner to generate specific data values and cryptographic material. The sections below describe how to perform each type of operation, and how those operations are represented in the CAS-replicated files that are anchored to the underlying ledger system.</p>
 <p>While virtually all DID owners will engage User Agent applications on their local devices to perform these operations, most will not generate the anchoring transactions on the underlying ledger. Instead, most users will likely send the anchoring-related operation values they generate to external nodes for anchoring. This is relatively safe, because operations require signatures that an external node cannot forge. The only attack available to a rouge node operator is to not anchor the operations a DID owner sends them. However, the DID owner can detect this (via a scan of subsequent blocks) and send their operation to a different node or do it themselves, if they so desire.</p>
-<div id="note-1" class="notice note"><a class="notice-link" href="#note-1">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
+<div id="note-4" class="notice note"><a class="notice-link" href="#note-4">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
 </div>
 <h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
 <p>Use the following process to generate a Sidetree-based DID:</p>
@@ -470,11 +470,11 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 </ol>
 <h2 id="did-state-patches"><a class="toc-anchor" href="#did-state-patches">§</a> DID State Patches</h2>
 <p>Sidetree defines a pluggable patching mechanism that can be extended to define new <em>Patch Actions</em>. There are only a few required <em>Patch Actions</em> that every implementation MUST support, related to the handling and management of protocol-active keys (keys that are empowered to modify DID state). Support for any of the additional <em>Patch Actions</em> defined in the spec is elective. Implementers MAY use the <em>Patch Action</em> format to introduce new <em>Patch Actions</em> that are as strict or permissive as they choose.</p>
-<div id="warning-1" class="notice warning"><a class="notice-link" href="#warning-1">WARNING</a><p>Implementers of Sidetree-based DID networks that are truly open, permissionless, and decentralized should carefully consider the ramifications of adding unstructured, free-form <em>Patch Actions</em> that are not strictly evaluated by nodes at the time of ingest, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.</p>
+<div id="warning-4" class="notice warning"><a class="notice-link" href="#warning-4">WARNING</a><p>Implementers of Sidetree-based DID networks that are truly open, permissionless, and decentralized should carefully consider the ramifications of adding unstructured, free-form <em>Patch Actions</em> that are not strictly evaluated by nodes at the time of ingest, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.</p>
 </div>
 <h3 id="patching-protocol-active-keys"><a class="toc-anchor" href="#patching-protocol-active-keys">§</a> Patching Protocol-Active Keys</h3>
 <h4 id="add-public-keys"><a class="toc-anchor" href="#add-public-keys">§</a> Add public keys</h4>
-<div id="example-3" class="notice example"><a class="notice-link" href="#example-3">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-15" class="notice example"><a class="notice-link" href="#example-15">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"publicKeys"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -499,7 +499,7 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 </li>
 </ol>
 <h4 id="remove-public-keys"><a class="toc-anchor" href="#remove-public-keys">§</a> Remove public keys</h4>
-<div id="example-4" class="notice example"><a class="notice-link" href="#example-4">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-16" class="notice example"><a class="notice-link" href="#example-16">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"publicKeys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"key1"</span><span class="token punctuation">,</span> <span class="token string">"key2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -575,9 +575,9 @@ ID -->|Recovery Public Key| F(tB4W0i61jS...)</div><h2 id="did-operations"><a cla
 </ol>
 </li>
 </ol>
-<div id="todo-1" class="notice todo"><a class="notice-link" href="#todo-1">TODO</a><p>Make sure we do allow multiple ops being processed if some are invalid.</p>
+<div id="todo-7" class="notice todo"><a class="notice-link" href="#todo-7">TODO</a><p>Make sure we do allow multiple ops being processed if some are invalid.</p>
 </div>
-<div id="todo-2" class="notice todo"><a class="notice-link" href="#todo-2">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
+<div id="todo-8" class="notice todo"><a class="notice-link" href="#todo-8">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
 </div>
 <ol>
 <li>
