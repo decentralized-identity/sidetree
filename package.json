@@ -20,7 +20,7 @@
     "secp256k1": "3.6.2",
     "time-span": "3.1.0",
     "yieldable-json": "1.1.0",
-    "spec-up": "0.9.59"
+    "spec-up": "0.9.60"
   },
   "devDependencies": {
     "@types/async-retry": "1.4.0",
@@ -48,7 +48,8 @@
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
     "lint": "tslint --fix --project .",
-    "spec": "node ./scripts/build-spec.js"
+    "spec": "node ./scripts/build-spec.js",
+    "spec:watch": "node -e \"require('spec-up')()\""
   },
   "husky": {
     "hooks": {

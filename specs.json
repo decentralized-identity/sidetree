@@ -1,5 +1,6 @@
 
 {
+  "resource_path": "./docs/spec",
   "specs": [
     {
       "title": "DIF Sidetree Protocol",
@@ -12,7 +13,19 @@
       },
       "spec_directory": "./docs/spec",
       "markdown_paths": [
-        "latest.md",
+        "title.md",
+        "abstract.md",
+        "intro.md",
+        "terminology.md",
+        "versioning-params.md",
+        "topology.md",
+        "file-structures.md",
+        "unique-suffix.md",
+        "operations.md",
+        "patches.md",
+        "processing.md",
+        "pof.md",
+        "resolution.md",
         "method-versioning.md",
         "protocol-versioning.md"
       ]
