@@ -57,13 +57,17 @@ A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed
 An update operation to a document contains only the changes from the previous version of the document. Create and recover operations require a full document state of the DID as input.
 
 ## Sidetree DID Unique Suffix
-A Sidetree _DID unique suffix_ is the globally unique portion of a DID. It is computed deterministically from the following data (_suffix data_) supplied in a create operation request:
+A Sidetree _DID unique suffix_ is the globally unique portion of a DID. 
 
+e.g. The DID unique suffix of `did:sidetree:abc` would be `abc`.
+
+The DID unique suffix is computed deterministically by hashing, then encoding the (_suffix data_) supplied in a create operation request. The suffix data contains:
+
+1. Hash of the initial document.
 1. Recovery key.
-1. Document hash.
 1. Hash of one-time password for recovery.
 
-A requester can deterministically compute the DID before the create operation is anchored on the blockchain.
+As a result, a requester can deterministically compute the DID before the create operation is requested and anchored on the blockchain.
 
 See [DID Create API](#DID-Creation) section for detail on how to construct a create operation request.
 
@@ -76,9 +80,11 @@ Many DID Methods feature a period of time (which may be indefinite) between the 
 
 Sidetree uses the `-<method-name>-initial-state` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `-<method-name>-initial-state` DID Parameter to the DID, with the value being the encoded string of the create operation request.
 
-e.g. `did:sidetree:<unique-portion>?-sidetree-initial-state=<encoded-create-operation-request>`.
+e.g. `did:sidetree:<did-unique-suffix>?-sidetree-initial-state=<encoded-create-operation-request>`.
 
-This allows any entity to support all of the following usage patterns:
+See [DID Create API](#DID-Creation) section for detail on how to construct a create operation request.
+
+This feature allows any entity to support all of the following usage patterns:
 
 - Resolving unpublished DIDs.
 - Authenticating with unpublished DIDs.
@@ -297,7 +303,7 @@ POST / HTTP/1.1
 {
   "operationDataHash": "Hash of the operation data.",
   "recoveryKey": {
-    "publicKeyHex": "The recovery public key as a HEX string."
+    "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
   },
   "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
 }
