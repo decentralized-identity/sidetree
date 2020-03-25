@@ -98,7 +98,7 @@ export default class RevokeOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedCommitmentRevealValueLength) {
+    if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
       throw new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueTooLong);
     }
 

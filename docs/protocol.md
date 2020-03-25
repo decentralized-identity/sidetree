@@ -211,7 +211,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 
   The DID owner must reproduce and reveal the correct commitment value in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new commitment value(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
 
-  See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify commitment/reveal values and commitment hashes in each operation.
+  See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify reveal values and commitment hashes in each operation.
 
 ## Sidetree Transaction Processing
 A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increased by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
@@ -306,7 +306,7 @@ POST / HTTP/1.1
   "recoveryKey": {
     "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
   },
-  "nextRecoveryCommitmentHash": "Commitment hash to be used for the next recovery."
+  "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
 }
 ```
 
@@ -314,7 +314,7 @@ POST / HTTP/1.1
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the document patch schema.",
-  "nextUpdateCommitmentHash": "Commitment hash to be used for the next update.",
+  "nextUpdateCommitmentHash": "Commitment hash to for the next update.",
 }
 ```
 
@@ -430,7 +430,7 @@ POST / HTTP/1.1
 {
   "type": "update",
   "didUniqueSuffix": "The unique suffix of the DID to be updated.",
-  "updateRevealValue": "Commitment hash to be used for this update.",
+  "updateRevealValue": "Reveal value for this update.",
   "signedOperationDataHash": {
     "protected": "JWS header.",
     "payload": "Hash of the operation data.",
@@ -444,7 +444,7 @@ POST / HTTP/1.1
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the patch schema.",
-  "nextUpdateCommitmentHash": "Commitment hash to be used for the next update."
+  "nextUpdateCommitmentHash": "Commitment hash for the next update."
 }
 ```
 
@@ -471,7 +471,7 @@ POST / HTTP/1.1
 {
   "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "recoveryRevealValue": "The reveal value to be used for this recovery.",
+  "recoveryRevealValue": "The reveal value for this recovery.",
   "signedOperationData": {
     "protected": "JWS header.",
     "payload": "JWS encoded JSON object containing recover operation data that are signed.",
@@ -486,7 +486,7 @@ POST / HTTP/1.1
 {
   "operationDataHash": "Hash of the unsigned operation data.",
   "recoveryKey": "The new recovery key.",
-  "nextRecoveryCommitmentHash": "Commitment hash to be used for the next recovery."
+  "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
 }
 ```
 
@@ -494,7 +494,7 @@ POST / HTTP/1.1
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the patch schema.",
-  "nextUpdateCommitmentHash": "Commitment hash to be used for the next update.",
+  "nextUpdateCommitmentHash": "Commitment hash for the next update.",
 }
 ```
 

@@ -1,18 +1,11 @@
-import DocumentComposer from './DocumentComposer';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
-import Multihash from './Multihash';
 import Operation from './Operation';
+import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
-
-interface OperationDataModel {
-  nextUpdateCommitmentHash: string;
-  documentPatch: any;
-}
 
 /**
  * A class that represents an update operation.
@@ -104,7 +97,7 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.updateRevealValue as string).length > Operation.maxEncodedCommitmentRevealValueLength) {
+    if ((operationObject.updateRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
       throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
     }
 
@@ -121,36 +114,10 @@ export default class UpdateOperation implements OperationModel {
       }
 
       encodedOperationData = operationObject.operationData;
-      operationData = await UpdateOperation.parseOperationData(encodedOperationData);
+      operationData = await Operation.parseOperationData(encodedOperationData);
     }
 
     return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
       updateRevealValue, signedOperationDataHash, encodedOperationData, operationData);
-  }
-
-  private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrNotString);
-    }
-
-    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const operationData = await JsonAsync.parse(operationDataJsonString);
-
-    const properties = Object.keys(operationData);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrUnknownProperty);
-    }
-
-    if (operationData.documentPatch === undefined) {
-      throw new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing);
-    }
-
-    // Validate `documentPatch` property using the DocumentComposer.
-    DocumentComposer.validateDocumentPatch(operationData.documentPatch);
-
-    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(operationData.nextUpdateCommitmentHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitmentHash);
-
-    return operationData;
   }
 }
