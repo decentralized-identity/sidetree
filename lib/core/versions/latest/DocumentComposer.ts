@@ -1,5 +1,5 @@
-import DidDocument from './DidDocument';
-import DidDocumentModel from './models/DidDocumentModel';
+import Document from './Document';
+import DocumentModel from './models/DocumentModel';
 import DocumentState from '../../models/DocumentState';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../../../common/SidetreeError';
@@ -22,7 +22,7 @@ export default class DocumentComposer {
     const did = didMethodName + documentState.didUniqueSuffix;
     const didDocument = {
       '@context': 'https://w3id.org/did/v1',
-      publicKey: documentState.document.publicKey,
+      publicKey: documentState.document.publicKeys,
       service: documentState.document.service,
       recoveryKey: documentState.recoveryKey
     };
@@ -39,7 +39,7 @@ export default class DocumentComposer {
    */
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
     // The current document must contain the public key mentioned in the operation ...
-    const publicKey = DidDocument.getPublicKey(document, operation.signedOperationDataHash.kid);
+    const publicKey = Document.getPublicKey(document, operation.signedOperationDataHash.kid);
     if (!publicKey) {
       throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
     }
@@ -50,7 +50,7 @@ export default class DocumentComposer {
     }
 
     // The operation passes all checks, apply the patches.
-    DocumentComposer.applyPatchesToDidDocument(document, operation.operationData!.documentPatch);
+    DocumentComposer.applyPatches(document, operation.operationData!.patches);
 
     return document;
   }
@@ -103,12 +103,11 @@ export default class DocumentComposer {
    * Validates the schema of the given update document patch.
    * @throws SidetreeError if given document patch fails validation.
    */
-  public static validateDocumentPatch (documentPatch: any) {
-    if (!Array.isArray(documentPatch)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchNotArray);
+  public static validateDocumentPatches (patches: any) {
+    if (!Array.isArray(patches)) {
+      throw new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchesNotArray);
     }
 
-    const patches = documentPatch;
     for (let patch of patches) {
       DocumentComposer.validatePatch(patch);
     }
@@ -117,6 +116,9 @@ export default class DocumentComposer {
   private static validatePatch (patch: any) {
     const action = patch.action;
     switch (action) {
+      case 'replace':
+        DocumentComposer.validateDocument(patch.document);
+        break;
       case 'add-public-keys':
         DocumentComposer.validateAddPublicKeysPatch(patch);
         break;
@@ -219,22 +221,25 @@ export default class DocumentComposer {
   }
 
   /**
-   * Applies the given patches in order to the given DID Document.
+   * Applies the given patches in order to the given document.
    * NOTE: Assumes no schema validation is needed.
+   * @returns The resultant document.
    */
-  private static applyPatchesToDidDocument (didDocument: DidDocumentModel, patches: any[]) {
+  public static applyPatches (document: any, patches: any[]) {
     // Loop through and apply all patches.
     for (let patch of patches) {
-      DocumentComposer.applyPatchToDidDocument(didDocument, patch);
+      DocumentComposer.applyPatchToDidDocument(document, patch);
     }
   }
 
   /**
    * Applies the given patch to the given DID Document.
    */
-  private static applyPatchToDidDocument (didDocument: DidDocumentModel, patch: any) {
-    if (patch.action === 'add-public-keys') {
-      const publicKeyMap = didDocument.publicKey ? new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey])) : new Map();
+  private static applyPatchToDidDocument (document: DocumentModel, patch: any) {
+    if (patch.action === 'replace') {
+      //
+    } else if (patch.action === 'add-public-keys') {
+      const publicKeyMap = document.publicKeys ? new Map(document.publicKeys.map(publicKey => [publicKey.id, publicKey])) : new Map();
 
       // Loop through all given public keys and add them if they don't exist already.
       for (let publicKey of patch.publicKeys) {
@@ -243,9 +248,9 @@ export default class DocumentComposer {
         publicKeyMap.set(publicKey.id, publicKey);
       }
 
-      didDocument.publicKey = [...publicKeyMap.values()];
+      document.publicKeys = [...publicKeyMap.values()];
     } else if (patch.action === 'remove-public-keys') {
-      const publicKeyMap = new Map(didDocument.publicKey.map(publicKey => [publicKey.id, publicKey]));
+      const publicKeyMap = new Map(document.publicKeys.map(publicKey => [publicKey.id, publicKey]));
 
       // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
       for (let publicKey of patch.publicKeys) {
@@ -258,12 +263,12 @@ export default class DocumentComposer {
         // Not throwing error will minimize the need (thus risk) of reusing exposed update OTP.
       }
 
-      didDocument.publicKey = [...publicKeyMap.values()];
+      document.publicKeys = [...publicKeyMap.values()];
     } else if (patch.action === 'add-service-endpoints') {
       // Find the service of the given service type.
       let service = undefined;
-      if (didDocument.service !== undefined) {
-        service = didDocument.service.find(service => service.type === patch.serviceType);
+      if (document.service !== undefined) {
+        service = document.service.find(service => service.type === patch.serviceType);
       }
 
       // If service not found, create a new service element and add it to the property.
@@ -277,10 +282,10 @@ export default class DocumentComposer {
           }
         };
 
-        if (didDocument.service === undefined) {
-          didDocument.service = [service];
+        if (document.service === undefined) {
+          document.service = [service];
         } else {
-          didDocument.service.push(service);
+          document.service.push(service);
         }
       } else {
         // Else we add to the existing service element.
@@ -296,8 +301,8 @@ export default class DocumentComposer {
       }
     } else if (patch.action === 'remove-service-endpoints') {
       let service = undefined;
-      if (didDocument.service !== undefined) {
-        service = didDocument.service.find(service => service.type === patch.serviceType);
+      if (document.service !== undefined) {
+        service = document.service.find(service => service.type === patch.serviceType);
       }
 
       if (service === undefined) {
@@ -325,7 +330,7 @@ export default class DocumentComposer {
    * @param didDocument The document to update.
    * @param did The DID which gets added to the document.
    */
-  private static addDidToDocument (didDocument: DidDocumentModel, did: string): void {
+  private static addDidToDocument (didDocument: any, did: string): void {
 
     didDocument.id = did;
 

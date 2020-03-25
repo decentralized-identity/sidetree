@@ -1,8 +1,8 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
+import Document from '../../lib/core/versions/latest/Document';
 import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -177,8 +177,8 @@ describe('Resolver', () => {
       const didDocument = documentState.document;
       expect(didDocument).toBeDefined();
       expect(didDocument.publicKey.length).toEqual(2);
-      const actualNewSigningPublicKey1 = DidDocument.getPublicKey(didDocument, '#newSigningKey');
-      const actualNewSigningPublicKey2 = DidDocument.getPublicKey(didDocument, '#newSigningKey2ByUpdate1AfterRecovery');
+      const actualNewSigningPublicKey1 = Document.getPublicKey(didDocument, '#newSigningKey');
+      const actualNewSigningPublicKey2 = Document.getPublicKey(didDocument, '#newSigningKey2ByUpdate1AfterRecovery');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);

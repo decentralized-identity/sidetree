@@ -1,9 +1,9 @@
-import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import Operation from './Operation';
+import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PublicKeyModel from '../../models/PublicKeyModel';
@@ -13,11 +13,6 @@ interface SuffixDataModel {
   operationDataHash: string;
   recoveryKey: PublicKeyModel;
   nextRecoveryOtpHash: string;
-}
-
-interface OperationDataModel {
-  nextUpdateOtpHash: string;
-  document: any;
 }
 
 /**
@@ -126,7 +121,7 @@ export default class CreateOperation implements OperationModel {
 
       encodedOperationData = operationObject.operationData;
       try {
-        operationData = await CreateOperation.parseOperationData(operationObject.operationData);
+        operationData = await Operation.parseOperationData(operationObject.operationData);
       } catch {
         // For compatibility with data pruning, we have to assume that operation data may be unavailable,
         // thus an operation with invalid operation data needs to be processed as an operation with unavailable operation data,
@@ -160,28 +155,5 @@ export default class CreateOperation implements OperationModel {
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryOtpHash);
 
     return suffixData;
-  }
-
-  private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.CreateOperationDataMissingOrNotString);
-    }
-
-    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const operationData = await JsonAsync.parse(operationDataJsonString);
-
-    const allowedProperties = new Set(['document', 'nextUpdateOtpHash']);
-    for (let property in operationData) {
-      if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty);
-      }
-    }
-
-    DocumentComposer.validateDocument(operationData.document);
-
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
-
-    return operationData;
   }
 }

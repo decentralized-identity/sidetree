@@ -87,24 +87,24 @@ describe('UpdateOperation', async () => {
 
     it('should throw if operation data contains an additional unknown property.', async () => {
       const operationData = {
-        documentPatch: 'any opaque content',
+        patches: 'any opaque content',
         nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
       await expectAsync((UpdateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationDataMissingOrUnknownProperty));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationDataMissingOrUnknownProperty));
     });
 
-    it('should throw if operation data is missing documentPatch property.', async () => {
+    it('should throw if operation data is missing patches property.', async () => {
       const operationData = {
-        // documentPatch: 'any opaque content', // Intentionally missing.
+        // patches: 'any opaque content', // Intentionally missing.
         nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
       await expectAsync((UpdateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationDocumentPatchesMissing));
     });
   });
 });

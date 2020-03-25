@@ -91,32 +91,4 @@ describe('CreateOperation', async () => {
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid));
     });
   });
-
-  describe('parseOperationData()', async () => {
-    it('should throw if operation data is not string', async () => {
-      await expectAsync((CreateOperation as any).parseOperationData(123)).toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDataMissingOrNotString));
-    });
-
-    it('should throw if operation data contains an additional unknown property.', async () => {
-      const operationData = {
-        document: 'any opaque content',
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        extraProperty: 'An unknown extra property'
-      };
-      const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
-      await expectAsync((CreateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty));
-    });
-
-    it('should throw if operation data is missing document property.', async () => {
-      const operationData = {
-        // document: 'any opaque content', // Intentionally missing.
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        unknownProperty: 'An unknown property'
-      };
-      const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
-      await expectAsync((CreateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty));
-    });
-  });
 });
