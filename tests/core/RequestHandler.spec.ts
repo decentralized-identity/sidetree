@@ -6,7 +6,6 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
-import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DocumentState from '../../lib/core/models/DocumentState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
@@ -104,7 +103,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect((response.body as DidDocumentModel).id).toEqual(did);
+    expect(response.body.id).toEqual(did);
 
     // Inser the create operation into DB.
     const namedAnchoredCreateOperationModel: AnchoredOperationModel = {
@@ -271,7 +270,7 @@ describe('RequestHandler', () => {
       const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
       const [, anyOtpHash] = OperationGenerator.generateOtp();
       const document = {
-        publicKey: [anySigningPublicKey]
+        publicKeys: [anySigningPublicKey]
       };
       const mockedResolverReturnedDocumentState: DocumentState = {
         didUniqueSuffix,
@@ -285,7 +284,7 @@ describe('RequestHandler', () => {
 
       const documentState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(documentState.document.publicKey[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
+      expect(documentState.document.publicKeys[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
     });
   });
 });
@@ -293,7 +292,7 @@ describe('RequestHandler', () => {
 /**
  * Verifies that the given DID document contains correct references to the DID throughout.
  */
-function validateDidReferencesInDidDocument (didDocument: DidDocumentModel, did: string) {
+function validateDidReferencesInDidDocument (didDocument: any, did: string) {
   expect(didDocument.id).toEqual(did);
 
   for (let publicKey of didDocument.publicKey) {

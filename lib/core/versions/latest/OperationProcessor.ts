@@ -77,15 +77,30 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await CreateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Ensure actual operation data hash matches expected operation data hash.
-    const isValidOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.suffixData.operationDataHash);
-    if (!isValidOperationData) {
+    const isMatchingOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.suffixData.operationDataHash);
+    if (!isMatchingOperationData) {
       return documentState;
     }
 
+    // Apply the given patches against an empty object.
     const operationData = operation.operationData;
+    let document = { };
+    try {
+      if (operationData !== undefined) {
+        document = DocumentComposer.applyPatches(document, operationData.patches);
+      }
+    } catch (error) {
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = anchoredOperationModel.transactionNumber;
+      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+
+      // Return the given document state if error is encountered applying the update.
+      return documentState;
+    }
+
     const newDocumentState = {
       didUniqueSuffix: operation.didUniqueSuffix,
-      document: operationData ? operationData.document : { },
+      document,
       recoveryKey: operation.suffixData.recoveryKey,
       nextRecoveryOtpHash: operation.suffixData.nextRecoveryOtpHash,
       nextUpdateOtpHash: operationData ? operationData.nextUpdateOtpHash : undefined,
@@ -165,15 +180,30 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual operation data hash against the expected operation data hash.
-    const isValidOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.signedOperationData.operationDataHash);
-    if (!isValidOperationData) {
+    const isMatchingOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.signedOperationData.operationDataHash);
+    if (!isMatchingOperationData) {
       return documentState;
     }
 
+    // Apply the given patches against an empty object.
     const operationData = operation.operationData;
+    let document = { };
+    try {
+      if (operationData !== undefined) {
+        document = DocumentComposer.applyPatches(document, operationData.patches);
+      }
+    } catch (error) {
+      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+      const transactionNumber = anchoredOperationModel.transactionNumber;
+      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+
+      // Return the given document state if error is encountered applying the update.
+      return documentState;
+    }
+
     const newDocumentState = {
       didUniqueSuffix: operation.didUniqueSuffix,
-      document: operationData ? operationData.document : { },
+      document,
       recoveryKey: operation.signedOperationData.recoveryKey,
       nextRecoveryOtpHash: operation.signedOperationData.nextRecoveryOtpHash,
       nextUpdateOtpHash: operationData ? operationData.nextUpdateOtpHash : undefined,

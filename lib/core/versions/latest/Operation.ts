@@ -1,5 +1,10 @@
 import CreateOperation from './CreateOperation';
+import DocumentComposer from './DocumentComposer';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonAsync from './util/JsonAsync';
+import Multihash from './Multihash';
+import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
@@ -35,6 +40,35 @@ export default class Operation {
     } else {
       throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
     }
+  }
+
+  /**
+   * Parses the given encoded operation data string.
+   */
+  public static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
+    if (typeof operationDataEncodedString !== 'string') {
+      throw new SidetreeError(ErrorCode.OperationDataMissingOrNotString);
+    }
+
+    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
+    const operationData = await JsonAsync.parse(operationDataJsonString);
+
+    const properties = Object.keys(operationData);
+    if (properties.length !== 2) {
+      throw new SidetreeError(ErrorCode.OperationDataMissingOrUnknownProperty);
+    }
+
+    if (operationData.patches === undefined) {
+      throw new SidetreeError(ErrorCode.OperationDocumentPatchesMissing);
+    }
+
+    // Validate `patches` property using the DocumentComposer.
+    DocumentComposer.validateDocumentPatches(operationData.patches);
+
+    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
+
+    return operationData;
   }
 
   /**

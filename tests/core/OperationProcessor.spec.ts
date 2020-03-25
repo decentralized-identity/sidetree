@@ -1,10 +1,10 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import DidDocument from '../../lib/core/versions/latest/DidDocument';
-import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
+import Document from '../../lib/core/versions/latest/Document';
+import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
@@ -32,7 +32,7 @@ async function createUpdateSequence (
   let updateOtp = firstUpdateOtp;
   for (let i = 0; i < numberOfUpdates; ++i) {
     const [nextUpdateOtp, nextUpdateOtpHash] = OperationGenerator.generateOtp();
-    const documentPatch = [
+    const patches = [
       {
         action: 'remove-service-endpoints',
         serviceType: 'IdentityHub',
@@ -48,7 +48,7 @@ async function createUpdateSequence (
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
-      documentPatch,
+      patches,
       publicKeyId,
       privateKey
     );
@@ -104,9 +104,9 @@ function getPermutation (size: number, index: number): Array<number> {
   return permutation;
 }
 
-function validateDidDocumentAfterUpdates (didDocument: DidDocumentModel | undefined, numberOfUpdates: number) {
-  expect(didDocument).toBeDefined();
-  expect(didDocument!.service![0].serviceEndpoint.instances[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
+  expect(document).toBeDefined();
+  expect(document!.service![0].serviceEndpoint.instances[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -161,8 +161,8 @@ describe('OperationProcessor', async () => {
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    const didDocument = documentState!.document;
-    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
+    const document = documentState!.document;
+    const signingKey = Document.getPublicKey(document, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -177,15 +177,15 @@ describe('OperationProcessor', async () => {
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    const didDocument = documentState!.document;
-    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
+    const document = documentState!.document;
+    const signingKey = Document.getPublicKey(document, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
   it('should process update to remove a public key correctly', async () => {
     await operationStore.put([createOp]);
 
-    const documentPatch = [
+    const patches = [
       {
         action: 'remove-public-keys',
         publicKeys: [signingKeyId]
@@ -196,7 +196,7 @@ describe('OperationProcessor', async () => {
       didUniqueSuffix,
       firstUpdateOtp,
       nextUpdateOtpHash,
-      documentPatch,
+      patches,
       signingPublicKey.id,
       signingPrivateKey
     );
@@ -216,8 +216,8 @@ describe('OperationProcessor', async () => {
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    const didDocument = documentState!.document;
-    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
+    const document = documentState!.document;
+    const signingKey = Document.getPublicKey(document, signingKeyId);
     expect(signingKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
@@ -228,7 +228,7 @@ describe('OperationProcessor', async () => {
 
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
-    validateDidDocumentAfterUpdates(documentState!.document, numberOfUpdates);
+    validateDocumentAfterUpdates(documentState!.document, numberOfUpdates);
   });
 
   it('should correctly process updates in reverse order', async () => {
@@ -240,7 +240,7 @@ describe('OperationProcessor', async () => {
     }
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
-    validateDidDocumentAfterUpdates(documentState!.document, numberOfUpdates);
+    validateDocumentAfterUpdates(documentState!.document, numberOfUpdates);
   });
 
   it('should correctly process updates in every (5! = 120) order', async () => {
@@ -258,7 +258,7 @@ describe('OperationProcessor', async () => {
       await operationStore.put(permutedOps);
       const documentState = await resolver.resolve(didUniqueSuffix);
       expect(documentState).toBeDefined();
-      validateDidDocumentAfterUpdates(documentState!.document, numberOfUpdates);
+      validateDocumentAfterUpdates(documentState!.document, numberOfUpdates);
     }
   });
 
@@ -269,7 +269,7 @@ describe('OperationProcessor', async () => {
 
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
-    validateDidDocumentAfterUpdates(documentState!.document, numberOfUpdates);
+    validateDocumentAfterUpdates(documentState!.document, numberOfUpdates);
 
     const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, recoveryPrivateKey);
     const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
@@ -307,8 +307,8 @@ describe('OperationProcessor', async () => {
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    const didDocument = documentState!.document;
-    const signingKey = DidDocument.getPublicKey(didDocument, signingKeyId);
+    const document = documentState!.document;
+    const signingKey = Document.getPublicKey(document, signingKeyId);
     expect(signingKey).toBeDefined();
   });
 
@@ -343,8 +343,8 @@ describe('OperationProcessor', async () => {
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    const didDocument = documentState!.document;
-    const newKey = DidDocument.getPublicKey(didDocument, 'additionalKey');
+    const document = documentState!.document;
+    const newKey = Document.getPublicKey(document, 'additionalKey');
     expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
@@ -366,19 +366,19 @@ describe('OperationProcessor', async () => {
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    const didDocument = documentState!.document;
-    const newKey = DidDocument.getPublicKey(didDocument, 'new-key');
+    const document = documentState!.document;
+    const newKey = Document.getPublicKey(document, 'new-key');
     expect(newKey).not.toBeDefined(); // if update above went through, new key would be added.
   });
 
-  it('should rollback all', async () => {
+  it('should resolve as undefined if all operation of a DID is rolled back.', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateOtp, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
     const documentState = await resolver.resolve(didUniqueSuffix);
     expect(documentState).toBeDefined();
 
-    validateDidDocumentAfterUpdates(documentState!.document, numberOfUpdates);
+    validateDocumentAfterUpdates(documentState!.document, numberOfUpdates);
 
     // rollback
     await operationStore.delete();
@@ -484,7 +484,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
 
       it('should not apply update operation if signature is invalid.', async () => {
@@ -513,7 +513,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public signing keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
 
       it('should not apply update operation if specified public key is not found.', async () => {
@@ -542,7 +542,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
     });
 
@@ -605,7 +605,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
     });
   });

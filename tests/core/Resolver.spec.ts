@@ -1,8 +1,8 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
-import DidDocument from '../../lib/core/versions/latest/DidDocument';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
+import Document from '../../lib/core/versions/latest/Document';
 import DocumentState from '../../lib/core/models/DocumentState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -102,7 +102,7 @@ describe('Resolver', () => {
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
-      expect(documentState.document.publicKey.length).toEqual(2);
+      expect(documentState.document.publicKeys.length).toEqual(2);
       expect(documentState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
@@ -174,21 +174,21 @@ describe('Resolver', () => {
       // Validate recover operation getting applied.
       documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
 
-      const didDocument = documentState.document;
-      expect(didDocument).toBeDefined();
-      expect(didDocument.publicKey.length).toEqual(2);
-      const actualNewSigningPublicKey1 = DidDocument.getPublicKey(didDocument, '#newSigningKey');
-      const actualNewSigningPublicKey2 = DidDocument.getPublicKey(didDocument, '#newSigningKey2ByUpdate1AfterRecovery');
+      const document = documentState.document;
+      expect(document).toBeDefined();
+      expect(document.publicKeys.length).toEqual(2);
+      const actualNewSigningPublicKey1 = Document.getPublicKey(document, '#newSigningKey');
+      const actualNewSigningPublicKey2 = Document.getPublicKey(document, '#newSigningKey2ByUpdate1AfterRecovery');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
-      expect(didDocument.service).toBeDefined();
-      expect(didDocument.service.length).toEqual(1);
-      expect(didDocument.service[0].serviceEndpoint).toBeDefined();
-      expect(didDocument.service[0].serviceEndpoint.instances).toBeDefined();
-      expect(didDocument.service[0].serviceEndpoint.instances.length).toEqual(1);
-      expect(didDocument.service[0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
+      expect(document.service).toBeDefined();
+      expect(document.service.length).toEqual(1);
+      expect(document.service[0].serviceEndpoint).toBeDefined();
+      expect(document.service[0].serviceEndpoint.instances).toBeDefined();
+      expect(document.service[0].serviceEndpoint.instances.length).toEqual(1);
+      expect(document.service[0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
     });
   });
 });

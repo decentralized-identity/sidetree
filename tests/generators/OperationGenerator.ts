@@ -243,14 +243,20 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
-      publicKey: [signingPublicKey],
+      publicKeys: [signingPublicKey],
       service: serviceEndpoints
     };
 
+    const patches = [{
+      action: 'replace',
+      document
+    }];
+
     const operationData = {
       nextUpdateOtpHash,
-      document
+      patches
     };
+
     const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
     const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
 
@@ -283,7 +289,7 @@ export default class OperationGenerator {
     const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
     const anyNewSigningPublicKeyId = '#anyNewKey';
     const [anyNewSigningKey] = await Cryptography.generateKeyPairHex(anyNewSigningPublicKeyId);
-    const documentPatch = [
+    const patches = [
       {
         action: 'add-public-keys',
         publicKeys: [
@@ -301,7 +307,7 @@ export default class OperationGenerator {
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
-      documentPatch,
+      patches,
       signingKeyId,
       signingPrivateKey
     );
@@ -323,12 +329,12 @@ export default class OperationGenerator {
     didUniqueSuffix: string,
     updateOtp: string,
     nextUpdateOtpHash: string,
-    documentPatch: any,
+    patches: any,
     signingKeyId: string,
     signingPrivateKey: string
   ) {
     const operationData = {
-      documentPatch,
+      patches,
       nextUpdateOtpHash
     };
     const operationDataJsonString = JSON.stringify(operationData);
@@ -362,7 +368,7 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
-      publicKey: [newSigningPublicKey],
+      publicKeys: [newSigningPublicKey],
       service: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
@@ -383,10 +389,16 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     document: any) {
 
-    const operationData = {
-      nextUpdateOtpHash,
+    const patches = [{
+      action: 'replace',
       document
+    }];
+
+    const operationData = {
+      patches,
+      nextUpdateOtpHash
     };
+
     const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
     const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
 
@@ -470,7 +482,7 @@ export default class OperationGenerator {
     signingKeyId: string,
     signingPrivateKey: string) {
 
-    const documentPatch = [
+    const patches = [
       {
         action: 'add-public-keys',
         publicKeys: [
@@ -487,7 +499,7 @@ export default class OperationGenerator {
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
-      documentPatch,
+      patches,
       signingKeyId,
       signingPrivateKey
     );
@@ -506,7 +518,7 @@ export default class OperationGenerator {
     endpointsToRemove: string[],
     signingKeyId: string,
     signingPrivateKey: string) {
-    const documentPatch = [];
+    const patches = [];
 
     if (endpointsToAdd.length > 0) {
       const patch = {
@@ -515,7 +527,7 @@ export default class OperationGenerator {
         serviceEndpoints: endpointsToAdd
       };
 
-      documentPatch.push(patch);
+      patches.push(patch);
     }
 
     if (endpointsToRemove.length > 0) {
@@ -525,14 +537,14 @@ export default class OperationGenerator {
         serviceEndpoints: endpointsToRemove
       };
 
-      documentPatch.push(patch);
+      patches.push(patch);
     }
 
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       updateOtp,
       nextUpdateOtpHash,
-      documentPatch,
+      patches,
       signingKeyId,
       signingPrivateKey
     );
