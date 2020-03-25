@@ -13,13 +13,13 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, firstUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryOtpHash,
-        firstUpdateOtpHash,
+        recoveryCommitmentHash,
+        firstUpdateCommitmentHash,
         services
       );
 
@@ -33,13 +33,13 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
       const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, firstUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryOtpHash,
-        firstUpdateOtpHash,
+        recoveryCommitmentHash,
+        firstUpdateCommitmentHash,
         services
       );
 
@@ -60,7 +60,7 @@ describe('CreateOperation', async () => {
       const suffixData = {
         operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryKey: { publicKeyHex: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
-        nextRecoveryOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -72,7 +72,7 @@ describe('CreateOperation', async () => {
       const suffixData = {
         operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         // recoveryKey: { publicKeyHex: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' }, // Intentionally missing.
-        nextRecoveryOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -84,7 +84,7 @@ describe('CreateOperation', async () => {
       const suffixData = {
         operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryKey: { knownKeyType: 123 },
-        nextRecoveryOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))

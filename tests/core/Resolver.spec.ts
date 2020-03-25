@@ -33,15 +33,15 @@ describe('Resolver', () => {
       const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
       const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
-      const [firstRecoveryOtp, firstRecoveryOtpHash] = OperationGenerator.generateOtp();
-      const [firstUpdateOtp, firstUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [firstRecoveryRevealValue, firstRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       // Create the initial create operation and insert it to the operation store.
       const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        firstRecoveryOtpHash,
-        firstUpdateOtpHash,
+        firstRecoveryCommitmentHash,
+        firstUpdateCommitmentHash,
         [serviceEndpoint]
       );
       const createOperation = await CreateOperation.parse(operationBuffer);
@@ -58,13 +58,13 @@ describe('Resolver', () => {
       await operationStore.put([anchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
-      const [update2OtpPriorToRecovery, update2OtpHashPriorToRecovery] = OperationGenerator.generateOtp();
+      const [update2RevealValuePriorToRecovery, update2CommitmentHashPriorToRecovery] = OperationGenerator.generateCommitRevealPair();
       const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        firstUpdateOtp,
+        firstUpdateRevealValue,
         '#new-key1',
         '000000000000000000000000000000000000000000000000000000000000000000',
-        update2OtpHashPriorToRecovery,
+        update2CommitmentHashPriorToRecovery,
         signingPublicKey.id,
         signingPrivateKey
       );
@@ -82,8 +82,8 @@ describe('Resolver', () => {
       // Create another update operation and insert it to the operation store.
       const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
-        update2OtpPriorToRecovery,
-        'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA',
+        update2RevealValuePriorToRecovery,
+        'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
         ['dummyHubUri3'],
         [],
         signingPublicKey.id,
@@ -111,16 +111,16 @@ describe('Resolver', () => {
       const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
 
       // Create the recover operation and insert it to the operation store.
-      const [update1OtpAfterRecovery, update1OtpHashAfterRecovery] = OperationGenerator.generateOtp();
-      const [, recoveryOtpHashAfterRecovery] = OperationGenerator.generateOtp();
+      const [update1RevealValueAfterRecovery, update1CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
+      const [, recoveryCommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
       const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix,
-        firstRecoveryOtp,
+        firstRecoveryRevealValue,
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        recoveryOtpHashAfterRecovery,
-        update1OtpHashAfterRecovery,
+        recoveryCommitmentHashAfterRecovery,
+        update1CommitmentHashAfterRecovery,
         [newServiceEndpoint]
       );
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
@@ -129,13 +129,13 @@ describe('Resolver', () => {
       await operationStore.put([anchoredRecoverOperation]);
 
       // Create an update operation after the recover operation.
-      const [update2OtpAfterRecovery, update2OtpHashAfterRecovery] = OperationGenerator.generateOtp();
+      const [update2RevealValueAfterRecovery, update2CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        update1OtpAfterRecovery,
+        update1RevealValueAfterRecovery,
         '#newSigningKey2ByUpdate1AfterRecovery',
         '111111111111111111111111111111111111111111111111111111111111111111',
-        update2OtpHashAfterRecovery,
+        update2CommitmentHashAfterRecovery,
         newSigningPublicKey.id,
         newSigningPrivateKey
       );
@@ -153,8 +153,8 @@ describe('Resolver', () => {
       // Create another update and insert it to the operation store.
       const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
-        update2OtpAfterRecovery,
-        'EiD_UnusedNextUpdateOneTimePasswordHash_AAAAAA',
+        update2RevealValueAfterRecovery,
+        'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
         [],
         ['newDummyHubUri1'],
         newSigningPublicKey.id,

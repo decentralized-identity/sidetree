@@ -15,7 +15,7 @@ export default class DocumentComposer {
    */
   public static transformToExternalDocument (documentState: DocumentState, didMethodName: string): any {
     // If the DID is revoked.
-    if (documentState.nextRecoveryOtpHash === undefined) {
+    if (documentState.nextRecoveryCommitmentHash === undefined) {
       return { status: 'revoked' };
     }
 
@@ -261,7 +261,7 @@ export default class DocumentComposer {
     // Loop through all given public keys and add them if they don't exist already.
     for (let publicKey of patch.publicKeys) {
       // NOTE: If a key ID already exists, we will just replace the existing key.
-      // Not throwing error will minimize the need (thus risk) of reusing exposed update OTP.
+      // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
       publicKeyMap.set(publicKey.id, publicKey);
     }
 
@@ -284,7 +284,7 @@ export default class DocumentComposer {
         publicKeyMap.delete(publicKey);
       }
       // NOTE: Else we will just treat this key removal as a no-op.
-      // Not throwing error will minimize the need (thus risk) of reusing exposed update OTP.
+      // Not throwing error will minimize the need (thus risk) of reusing exposed update reveal value.
     }
 
     document.publicKeys = [...publicKeyMap.values()];

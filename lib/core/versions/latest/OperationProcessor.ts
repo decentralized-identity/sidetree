@@ -102,8 +102,8 @@ export default class OperationProcessor implements IOperationProcessor {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
       recoveryKey: operation.suffixData.recoveryKey,
-      nextRecoveryOtpHash: operation.suffixData.nextRecoveryOtpHash,
-      nextUpdateOtpHash: operationData ? operationData.nextUpdateOtpHash : undefined,
+      nextRecoveryCommitmentHash: operation.suffixData.nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash: operationData ? operationData.nextUpdateCommitmentHash : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -120,9 +120,9 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await UpdateOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.updateOtp, documentState.nextUpdateOtpHash!);
-    if (!isValidOtp) {
+    // Verify the actual reveal value hash against the expected commitment hash.
+    const isValidCommitReveal = Multihash.isValidHash(operation.updateRevealValue, documentState.nextUpdateCommitmentHash!);
+    if (!isValidCommitReveal) {
       return documentState;
     }
 
@@ -147,10 +147,10 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDocumentState = {
       didUniqueSuffix: documentState.didUniqueSuffix,
       recoveryKey: documentState.recoveryKey,
-      nextRecoveryOtpHash: documentState.nextRecoveryOtpHash,
+      nextRecoveryCommitmentHash: documentState.nextRecoveryCommitmentHash,
       // New values below.
       document: resultingDocument,
-      nextUpdateOtpHash: operation.operationData!.nextUpdateOtpHash,
+      nextUpdateCommitmentHash: operation.operationData!.nextUpdateCommitmentHash,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -167,9 +167,9 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp, documentState.nextRecoveryOtpHash!);
-    if (!isValidOtp) {
+    // Verify the reveal value hash.
+    const isValidCommitReveal = Multihash.isValidHash(operation.recoveryRevealValue, documentState.nextRecoveryCommitmentHash!);
+    if (!isValidCommitReveal) {
       return documentState;
     }
 
@@ -205,8 +205,8 @@ export default class OperationProcessor implements IOperationProcessor {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
       recoveryKey: operation.signedOperationData.recoveryKey,
-      nextRecoveryOtpHash: operation.signedOperationData.nextRecoveryOtpHash,
-      nextUpdateOtpHash: operationData ? operationData.nextUpdateOtpHash : undefined,
+      nextRecoveryCommitmentHash: operation.signedOperationData.nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash: operationData ? operationData.nextUpdateCommitmentHash : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -223,9 +223,9 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await RevokeOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Verify the actual OTP hash against the expected OTP hash.
-    const isValidOtp = Multihash.isValidHash(operation.recoveryOtp, documentState.nextRecoveryOtpHash!);
-    if (!isValidOtp) {
+    // Verify the reveal value hash.
+    const isValidCommitmentReveal = Multihash.isValidHash(operation.recoveryRevealValue, documentState.nextRecoveryCommitmentHash!);
+    if (!isValidCommitmentReveal) {
       return documentState;
     }
 
@@ -241,8 +241,8 @@ export default class OperationProcessor implements IOperationProcessor {
       document: documentState.document,
       // New values below.
       recoveryKey: undefined,
-      nextRecoveryOtpHash: undefined,
-      nextUpdateOtpHash: undefined,
+      nextRecoveryCommitmentHash: undefined,
+      nextUpdateCommitmentHash: undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
     return newDocumentState;

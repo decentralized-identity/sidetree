@@ -3,5 +3,5 @@
  */
 export default interface OperationDataModel {
   patches: any[];
-  nextUpdateOtpHash: string;
+  nextUpdateCommitmentHash: string;
 }

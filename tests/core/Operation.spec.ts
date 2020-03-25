@@ -13,7 +13,7 @@ describe('Operation', async () => {
     it('should throw if operation data contains an additional unknown property.', async () => {
       const operationData = {
         patches: 'any opaque content',
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
@@ -24,7 +24,7 @@ describe('Operation', async () => {
     it('should throw if operation data is missing patches property.', async () => {
       const operationData = {
         // patches: 'any opaque content', // Intentionally missing.
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));

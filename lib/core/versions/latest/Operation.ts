@@ -16,8 +16,8 @@ import UpdateOperation from './UpdateOperation';
  * A class that contains Sidetree operation utility methods.
  */
 export default class Operation {
-  /** Maximum allowed encoded OTP string length. */
-  public static readonly maxEncodedOtpLength = 50;
+  /** Maximum allowed encoded reveal value string length. */
+  public static readonly maxEncodedRevealValueLength = 50;
 
   /**
    * Parses the given buffer into an `OperationModel`.
@@ -65,8 +65,8 @@ export default class Operation {
     // Validate `patches` property using the DocumentComposer.
     DocumentComposer.validateDocumentPatches(operationData.patches);
 
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
+    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(operationData.nextUpdateCommitmentHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitmentHash);
 
     return operationData;
   }

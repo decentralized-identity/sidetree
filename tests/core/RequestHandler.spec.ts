@@ -85,14 +85,14 @@ describe('RequestHandler', () => {
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
-    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash,
+      nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash,
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
     didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -159,13 +159,13 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey');
-    const [, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash
+      nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash
     );
 
     // Submit the create request twice.
@@ -222,8 +222,8 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID revoke operation request is successful.', async () => {
-    const recoveryOtp = Encoder.encode(Buffer.from('unusedRecoveryOtp'));
-    const request = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryOtp, recoveryPrivateKey);
+    const recoveryRevealValue = Encoder.encode(Buffer.from('unusedRecoveryRevealValue'));
+    const request = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -232,10 +232,10 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
     const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
-    const [, anyNextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateOtp', '#additionalKey', anyPublicKeyHex, anyNextUpdateOtpHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, 'anyUpdateRevealValue', '#additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -246,8 +246,8 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
-    const recoveryOtp = 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA';
-    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryOtp, recoveryPrivateKey });
+    const recoveryRevealValue = 'EiD_UnusedRecoveryRevealValue_AAAAAAAAAAAA';
+    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey });
     const response = await requestHandler.handleOperationRequest(recoveryOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -268,7 +268,7 @@ describe('RequestHandler', () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
       const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey');
       const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
-      const [, anyOtpHash] = OperationGenerator.generateOtp();
+      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey]
       };
@@ -276,8 +276,8 @@ describe('RequestHandler', () => {
         didUniqueSuffix,
         document,
         lastOperationTransactionNumber: 123,
-        nextRecoveryOtpHash: anyOtpHash,
-        nextUpdateOtpHash: anyOtpHash,
+        nextRecoveryCommitmentHash: anyCommitmentHash,
+        nextUpdateCommitmentHash: anyCommitmentHash,
         recoveryKey: anyRecoveryPublicKey
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDocumentState));

@@ -29,13 +29,13 @@ interface GeneratedAnchoredCreateOperationData {
   signingKeyId: string;
   signingPublicKey: DidPublicKeyModel;
   signingPrivateKey: string;
-  nextRecoveryOtpEncodedString: string;
-  nextUpdateOtpEncodedString: string;
+  nextRecoveryRevealValueEncodedString: string;
+  nextUpdateRevealValueEncodedString: string;
 }
 
 interface RecoverOperationGenerationInput {
   didUniqueSuffix: string;
-  recoveryOtp: string;
+  recoveryRevealValue: string;
   recoveryPrivateKey: string;
 }
 
@@ -48,8 +48,8 @@ interface GeneratedRecoverOperationData {
   signingKeyId: string;
   signingPublicKey: DidPublicKeyModel;
   signingPrivateKey: string;
-  nextRecoveryOtpEncodedString: string;
-  nextUpdateOtpEncodedString: string;
+  nextRecoveryRevealValueEncodedString: string;
+  nextUpdateRevealValueEncodedString: string;
 }
 
 /**
@@ -69,16 +69,16 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an one-time password and its hash as encoded strings for use in opertaions.
-   * @returns [otpEncodedString, otpHashEncodedString]
+   * Generates a reveal value and commitment hash as encoded strings for use in opertaions.
+   * @returns [revealValueEncodedString, commitmentValueHashEncodedString]
    */
-  public static generateOtp (): [string, string] {
-    const otpBuffer = crypto.randomBytes(32);
-    const otpEncodedString = Encoder.encode(otpBuffer);
-    const otpHash = Multihash.hash(otpBuffer, 18); // 18 = SHA256;
-    const otpHashEncodedString = Encoder.encode(otpHash);
+  public static generateCommitRevealPair (): [string, string] {
+    const revealValueBuffer = crypto.randomBytes(32);
+    const revealValueEncodedString = Encoder.encode(revealValueBuffer);
+    const commitmentHash = Multihash.hash(revealValueBuffer, 18); // 18 = SHA256;
+    const commitmentHashEncodedString = Encoder.encode(commitmentHash);
 
-    return [otpEncodedString, otpHashEncodedString];
+    return [revealValueEncodedString, commitmentHashEncodedString];
   }
 
   /**
@@ -105,8 +105,8 @@ export default class OperationGenerator {
       signingKeyId: createOperationData.signingKeyId,
       signingPublicKey: createOperationData.signingPublicKey,
       signingPrivateKey: createOperationData.signingPrivateKey,
-      nextRecoveryOtpEncodedString: createOperationData.nextRecoveryOtpEncodedString,
-      nextUpdateOtpEncodedString: createOperationData.nextUpdateOtpEncodedString
+      nextRecoveryRevealValueEncodedString: createOperationData.nextRecoveryRevealValueEncodedString,
+      nextUpdateRevealValueEncodedString: createOperationData.nextUpdateRevealValueEncodedString
     };
   }
 
@@ -121,15 +121,15 @@ export default class OperationGenerator {
     const hubServiceEndpoint = 'did:sidetree:value0';
     const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
-    // Generate the next update and recover operation OTP.
-    const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    // Generate the next update and recover operation commitment hash reveal value pair.
+    const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash,
+      nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash,
       service
     );
 
@@ -146,8 +146,8 @@ export default class OperationGenerator {
       signingKeyId,
       signingPublicKey,
       signingPrivateKey,
-      nextRecoveryOtpEncodedString,
-      nextUpdateOtpEncodedString
+      nextRecoveryRevealValueEncodedString,
+      nextUpdateRevealValueEncodedString
     };
   }
 
@@ -162,18 +162,18 @@ export default class OperationGenerator {
     const hubServiceEndpoint = 'did:sidetree:value0';
     const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
 
-    // Generate the next update and recover operation OTP.
-    const [nextRecoveryOtpEncodedString, nextRecoveryOtpHash] = OperationGenerator.generateOtp();
-    const [nextUpdateOtpEncodedString, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    // Generate the next update and recover operation commitment hash reveal value pair.
+    const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     const operationJson = await OperationGenerator.generateRecoverOperationRequest(
       input.didUniqueSuffix,
-      input.recoveryOtp,
+      input.recoveryRevealValue,
       input.recoveryPrivateKey,
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash,
+      nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash,
       services
     );
 
@@ -189,8 +189,8 @@ export default class OperationGenerator {
       signingKeyId,
       signingPublicKey,
       signingPrivateKey,
-      nextRecoveryOtpEncodedString,
-      nextUpdateOtpEncodedString
+      nextRecoveryRevealValueEncodedString,
+      nextUpdateRevealValueEncodedString
     };
   }
 
@@ -233,14 +233,14 @@ export default class OperationGenerator {
 
   /**
    * Generates a create operation request.
-   * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
-   * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
+   * @param nextRecoveryCommitmentHash The encoded commitment hash for the next recovery.
+   * @param nextUpdateCommitmentHash The encoded commitment hash for the next update.
    */
   public static async generateCreateOperationRequest (
     recoveryPublicKey: PublicKeyModel,
     signingPublicKey: DidPublicKeyModel,
-    nextRecoveryOtpHash: string,
-    nextUpdateOtpHash: string,
+    nextRecoveryCommitmentHash: string,
+    nextUpdateCommitmentHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
       publicKeys: [signingPublicKey],
@@ -253,7 +253,7 @@ export default class OperationGenerator {
     }];
 
     const operationData = {
-      nextUpdateOtpHash,
+      nextUpdateCommitmentHash,
       patches
     };
 
@@ -263,7 +263,7 @@ export default class OperationGenerator {
     const suffixData = {
       operationDataHash,
       recoveryKey: { publicKeyHex: recoveryPublicKey.publicKeyHex },
-      nextRecoveryOtpHash
+      nextRecoveryCommitmentHash
     };
 
     const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
@@ -285,8 +285,8 @@ export default class OperationGenerator {
       didUniqueSuffix = OperationGenerator.generateRandomHash();
     }
 
-    const [updateOtp] = OperationGenerator.generateOtp();
-    const [, nextUpdateOtpHash] = OperationGenerator.generateOtp();
+    const [updateRevealValue] = OperationGenerator.generateCommitRevealPair();
+    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const anyNewSigningPublicKeyId = '#anyNewKey';
     const [anyNewSigningKey] = await Cryptography.generateKeyPairHex(anyNewSigningPublicKeyId);
     const patches = [
@@ -305,8 +305,8 @@ export default class OperationGenerator {
     const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const request = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      updateOtp,
-      nextUpdateOtpHash,
+      updateRevealValue,
+      nextUpdateCommitmentHash,
       patches,
       signingKeyId,
       signingPrivateKey
@@ -327,15 +327,15 @@ export default class OperationGenerator {
    */
   public static async createUpdateOperationRequest (
     didUniqueSuffix: string,
-    updateOtp: string,
-    nextUpdateOtpHash: string,
+    updateRevealValue: string,
+    nextUpdateCommitmentHash: string,
     patches: any,
     signingKeyId: string,
     signingPrivateKey: string
   ) {
     const operationData = {
       patches,
-      nextUpdateOtpHash
+      nextUpdateCommitmentHash
     };
     const operationDataJsonString = JSON.stringify(operationData);
     const encodedOperationDataString = Encoder.encode(operationDataJsonString);
@@ -347,7 +347,7 @@ export default class OperationGenerator {
     const updateOperationRequest = {
       type: OperationType.Update,
       didUniqueSuffix,
-      updateOtp,
+      updateRevealValue,
       operationData: encodedOperationDataString,
       signedOperationDataHash
     };
@@ -360,19 +360,19 @@ export default class OperationGenerator {
    */
   public static async generateRecoverOperationRequest (
     didUniqueSuffix: string,
-    recoveryOtp: string,
+    recoveryRevealValue: string,
     recoveryPrivateKey: string,
     newRecoveryPublicKey: PublicKeyModel,
     newSigningPublicKey: DidPublicKeyModel,
-    nextRecoveryOtpHash: string,
-    nextUpdateOtpHash: string,
+    nextRecoveryCommitmentHash: string,
+    nextUpdateCommitmentHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
       publicKeys: [newSigningPublicKey],
       service: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
-      didUniqueSuffix, recoveryOtp, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryOtpHash, nextUpdateOtpHash, document
+      didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryCommitmentHash, nextUpdateCommitmentHash, document
     );
     return recoverOperation;
   }
@@ -382,11 +382,11 @@ export default class OperationGenerator {
    */
   public static async createRecoverOperationRequest (
     didUniqueSuffix: string,
-    recoveryOtp: string,
+    recoveryRevealValue: string,
     recoveryPrivateKey: string,
     newRecoveryPublicKey: PublicKeyModel,
-    nextRecoveryOtpHash: string,
-    nextUpdateOtpHash: string,
+    nextRecoveryCommitmentHash: string,
+    nextUpdateCommitmentHash: string,
     document: any) {
 
     const patches = [{
@@ -396,7 +396,7 @@ export default class OperationGenerator {
 
     const operationData = {
       patches,
-      nextUpdateOtpHash
+      nextUpdateCommitmentHash
     };
 
     const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
@@ -405,7 +405,7 @@ export default class OperationGenerator {
     const signedOperationDataPayloadObject = {
       operationDataHash,
       recoveryKey: { publicKeyHex: newRecoveryPublicKey.publicKeyHex },
-      nextRecoveryOtpHash
+      nextRecoveryCommitmentHash
     };
     const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
     const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
@@ -414,7 +414,7 @@ export default class OperationGenerator {
     const operation = {
       type: OperationType.Recover,
       didUniqueSuffix,
-      recoveryOtp,
+      recoveryRevealValue,
       signedOperationData,
       operationData: operationDataEncodedString
     };
@@ -427,12 +427,12 @@ export default class OperationGenerator {
    */
   public static async generateRevokeOperationRequest (
     didUniqueSuffix: string,
-    recoveryOtp: string,
+    recoveryRevealValue: string,
     recoveryPrivateKey: string) {
 
     const signedOperationDataPayloadObject = {
       didUniqueSuffix,
-      recoveryOtp
+      recoveryRevealValue
     };
     const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
     const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
@@ -440,7 +440,7 @@ export default class OperationGenerator {
     const operation = {
       type: OperationType.Revoke,
       didUniqueSuffix,
-      recoveryOtp,
+      recoveryRevealValue,
       signedOperationData
     };
 
@@ -449,21 +449,21 @@ export default class OperationGenerator {
 
   /**
    * Generates a create operation request buffer.
-   * @param nextRecoveryOtpHash The encoded hash of the OTP for the next recovery.
-   * @param nextUpdateOtpHash The encoded hash of the OTP for the next update.
+   * @param nextRecoveryCommitmentHash The encoded commitment hash for the next recovery.
+   * @param nextUpdateCommitmentHash The encoded commitment hash for the next update.
    */
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: PublicKeyModel,
     signingPublicKey: DidPublicKeyModel,
-    nextRecoveryOtpHash: string,
-    nextUpdateOtpHash: string,
+    nextRecoveryCommitmentHash: string,
+    nextUpdateCommitmentHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryOtpHash,
-      nextUpdateOtpHash,
+      nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash,
       serviceEndpoints
     );
 
@@ -475,10 +475,10 @@ export default class OperationGenerator {
    */
   public static async createUpdateOperationRequestForAddingAKey (
     didUniqueSuffix: string,
-    updateOtp: string,
+    updateRevealValue: string,
     idOfNewKey: string,
     newPublicKeyHex: string,
-    nextUpdateOtpHash: string,
+    nextUpdateCommitmentHash: string,
     signingKeyId: string,
     signingPrivateKey: string) {
 
@@ -497,8 +497,8 @@ export default class OperationGenerator {
 
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      updateOtp,
-      nextUpdateOtpHash,
+      updateRevealValue,
+      nextUpdateCommitmentHash,
       patches,
       signingKeyId,
       signingPrivateKey
@@ -512,8 +512,8 @@ export default class OperationGenerator {
    */
   public static async createUpdateOperationRequestForHubEndpoints (
     didUniqueSuffix: string,
-    updateOtp: string,
-    nextUpdateOtpHash: string,
+    updateRevealValue: string,
+    nextUpdateCommitmentHash: string,
     endpointsToAdd: string[],
     endpointsToRemove: string[],
     signingKeyId: string,
@@ -542,8 +542,8 @@ export default class OperationGenerator {
 
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      updateOtp,
-      nextUpdateOtpHash,
+      updateRevealValue,
+      nextUpdateCommitmentHash,
       patches,
       signingKeyId,
       signingPrivateKey
@@ -570,9 +570,9 @@ export default class OperationGenerator {
    */
   public static async generateRevokeOperationBuffer (
     didUniqueSuffix: string,
-    recoveryOtpEncodedSring: string,
+    recoveryRevealValueEncodedSring: string,
     privateKey: string): Promise<Buffer> {
-    const operation = await OperationGenerator.generateRevokeOperationRequest(didUniqueSuffix, recoveryOtpEncodedSring, privateKey);
+    const operation = await OperationGenerator.generateRevokeOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 

@@ -12,7 +12,7 @@ import SidetreeError from '../../../common/SidetreeError';
 interface SuffixDataModel {
   operationDataHash: string;
   recoveryKey: PublicKeyModel;
-  nextRecoveryOtpHash: string;
+  nextRecoveryCommitmentHash: string;
 }
 
 /**
@@ -149,10 +149,10 @@ export default class CreateOperation implements OperationModel {
     Operation.validateRecoveryKeyObject(suffixData.recoveryKey);
 
     const operationDataHash = Encoder.decodeAsBuffer(suffixData.operationDataHash);
-    const nextRecoveryOtpHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryOtpHash);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryCommitmentHash);
 
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(operationDataHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryOtpHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return suffixData;
   }

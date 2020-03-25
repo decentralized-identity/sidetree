@@ -164,7 +164,7 @@ export default class AnchorFile {
     const recoverOperations = recoverOperationArray.map(operation => {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
-        recoveryOtp: operation,
+        recoveryRevealValue: operation,
         signedOperationData: operation.signedOperationDataJws.toJwsModel()
       };
     });
@@ -172,7 +172,7 @@ export default class AnchorFile {
     const revokeOperations = revokeOperationArray.map(operation => {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
-        recoveryOtp: operation.recoveryOtp,
+        recoveryRevealValue: operation.recoveryRevealValue,
         signedOperationData: operation.signedOperationDataJws.toJwsModel()
       };
     });
