@@ -340,9 +340,10 @@ slide-panel > *:not(header):not(footer) {
 
 .example {
   color: #cebe00;
-  background: #192027;
+  background: #1a1e23;
   border-left: 0.5em solid;
 }
+
 
   .example .notice-link {
     display: block;
