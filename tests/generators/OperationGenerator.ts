@@ -243,7 +243,7 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
-      publicKey: [signingPublicKey],
+      publicKeys: [signingPublicKey],
       service: serviceEndpoints
     };
 
@@ -368,7 +368,7 @@ export default class OperationGenerator {
     nextUpdateOtpHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
-      publicKey: [newSigningPublicKey],
+      publicKeys: [newSigningPublicKey],
       service: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(

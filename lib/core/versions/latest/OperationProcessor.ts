@@ -87,7 +87,7 @@ export default class OperationProcessor implements IOperationProcessor {
     let document = { };
     try {
       if (operationData !== undefined) {
-        DocumentComposer.applyPatches(document, operationData.patches);
+        document = DocumentComposer.applyPatches(document, operationData.patches);
       }
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -190,7 +190,7 @@ export default class OperationProcessor implements IOperationProcessor {
     let document = { };
     try {
       if (operationData !== undefined) {
-        DocumentComposer.applyPatches(document, operationData.patches);
+        document = DocumentComposer.applyPatches(document, operationData.patches);
       }
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;

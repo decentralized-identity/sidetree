@@ -47,7 +47,7 @@ export default class Operation {
    */
   public static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
     if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrNotString);
+      throw new SidetreeError(ErrorCode.OperationDataMissingOrNotString);
     }
 
     const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);

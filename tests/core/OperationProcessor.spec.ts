@@ -155,7 +155,7 @@ describe('OperationProcessor', async () => {
     didUniqueSuffix = createOp.didUniqueSuffix;
   });
 
-  fit('should return a DID Document for resolve(did) for a registered DID', async () => {
+  it('should return a DID Document for resolve(did) for a registered DID', async () => {
     await operationStore.put([createOp]);
 
     const documentState = await resolver.resolve(didUniqueSuffix);
@@ -484,7 +484,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
 
       it('should not apply update operation if signature is invalid.', async () => {
@@ -513,7 +513,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public signing keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
 
       it('should not apply update operation if specified public key is not found.', async () => {
@@ -542,7 +542,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
     });
 
@@ -605,7 +605,7 @@ describe('OperationProcessor', async () => {
         expect(newDocumentState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDocumentState!.document.publicKey.length).toEqual(1);
+        expect(newDocumentState!.document.publicKeys.length).toEqual(1);
       });
     });
   });

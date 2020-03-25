@@ -144,9 +144,9 @@ describe('DocumentComposer', async () => {
         }
       ];
 
-      DocumentComposer.applyPatches(document, patches);
+      const resultantDocument = DocumentComposer.applyPatches(document, patches);
 
-      expect(document.publicKeys).toEqual([
+      expect(resultantDocument.publicKeys).toEqual([
         { id: 'aRepeatingId', type: 'newTypeValue' },
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
@@ -157,7 +157,7 @@ describe('DocumentComposer', async () => {
   describe('validateDocument()', async () => {
     it('should throw if document contains 2 keys of with the same ID.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: '#key1',
             type: 'RsaVerificationKey2018',

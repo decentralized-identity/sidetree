@@ -270,7 +270,7 @@ describe('RequestHandler', () => {
       const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
       const [, anyOtpHash] = OperationGenerator.generateOtp();
       const document = {
-        publicKey: [anySigningPublicKey]
+        publicKeys: [anySigningPublicKey]
       };
       const mockedResolverReturnedDocumentState: DocumentState = {
         didUniqueSuffix,
@@ -284,7 +284,7 @@ describe('RequestHandler', () => {
 
       const documentState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(documentState.document.publicKey[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
+      expect(documentState.document.publicKeys[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
     });
   });
 });
