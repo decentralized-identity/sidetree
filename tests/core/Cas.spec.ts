@@ -1,5 +1,5 @@
 import Cas from '../../lib/core/Cas';
-import FetchResultCode from '../../lib/common/FetchResultCode';
+import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 

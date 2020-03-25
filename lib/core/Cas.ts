@@ -1,6 +1,6 @@
 import * as HttpStatus from 'http-status';
 import FetchResult from '../common/models/FetchResult';
-import FetchResultCode from '../common/FetchResultCode';
+import FetchResultCode from '../common/enums/FetchResultCode';
 import ICas from './interfaces/ICas';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';

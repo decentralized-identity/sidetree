@@ -1,18 +1,19 @@
 import Did from './Did';
+import DidState from '../../models/DidState';
 import DocumentComposer from './DocumentComposer';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
+import JsonAsync from './util/JsonAsync';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationProcessor from './OperationProcessor';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
+import ResponseModel from '../../../common/models/ResponseModel';
+import ResponseStatus from '../../../common/enums/ResponseStatus';
 import SidetreeError from '../../../common/SidetreeError';
-import { ResponseModel, ResponseStatus } from '../../../common/Response';
-import DocumentState from '../../models/DocumentState';
-import JsonAsync from './util/JsonAsync';
 
 /**
  * Sidetree operation request handler.
@@ -84,9 +85,9 @@ export default class RequestHandler implements IRequestHandler {
       switch (operationModel.type) {
         case OperationType.Create:
 
-          const documentState = await this.applyCreateOperation(operationModel);
+          const didState = await this.applyCreateOperation(operationModel);
 
-          if (documentState === undefined) {
+          if (didState === undefined) {
             response = {
               status: ResponseStatus.BadRequest,
               body: 'Invalid create operation.'
@@ -94,7 +95,7 @@ export default class RequestHandler implements IRequestHandler {
             break;
           }
 
-          const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
+          const document = DocumentComposer.transformToExternalDocument(didState, this.didMethodName);
 
           response = {
             status: ResponseStatus.Succeeded,
@@ -150,20 +151,20 @@ export default class RequestHandler implements IRequestHandler {
 
       const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 
-      let documentState: DocumentState | undefined;
+      let didState: DidState | undefined;
       if (did.isShortForm) {
-        documentState = await this.resolver.resolve(did.uniqueSuffix);
+        didState = await this.resolver.resolve(did.uniqueSuffix);
       } else {
-        documentState = await this.resolveLongFormDid(did);
+        didState = await this.resolveLongFormDid(did);
       }
 
-      if (documentState === undefined) {
+      if (didState === undefined) {
         return {
           status: ResponseStatus.NotFound
         };
       }
 
-      const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
+      const document = DocumentComposer.transformToExternalDocument(didState, this.didMethodName);
 
       return {
         status: ResponseStatus.Succeeded,
@@ -187,25 +188,25 @@ export default class RequestHandler implements IRequestHandler {
 
   /**
    * Resolves the given long-form DID by resolving using operations found over the network first;
-   * if no operations found, the given create operation will is used to construct the document state.
+   * if no operations found, the given create operation will is used to construct the DID state.
    */
-  private async resolveLongFormDid (did: Did): Promise<DocumentState | undefined> {
+  private async resolveLongFormDid (did: Did): Promise<DidState | undefined> {
     // Attempt to resolve the DID by using operations found from the network first.
-    let documentState = await this.resolver.resolve(did.uniqueSuffix);
+    let didState = await this.resolver.resolve(did.uniqueSuffix);
 
-    // If document state found then return it.
-    if (documentState !== undefined) {
-      return documentState;
+    // If DID state found then return it.
+    if (didState !== undefined) {
+      return didState;
     }
 
     // The code reaches here if this DID is not registered on the ledger.
 
-    documentState = await this.applyCreateOperation(did.createOperation!);
+    didState = await this.applyCreateOperation(did.createOperation!);
 
-    return documentState;
+    return didState;
   }
 
-  private async applyCreateOperation (createOpertion: OperationModel): Promise<DocumentState | undefined> {
+  private async applyCreateOperation (createOpertion: OperationModel): Promise<DidState | undefined> {
     const operationWithMockedAnchorTime = {
       didUniqueSuffix: createOpertion.didUniqueSuffix,
       type: OperationType.Create,
@@ -215,7 +216,7 @@ export default class RequestHandler implements IRequestHandler {
       operationBuffer: createOpertion.operationBuffer
     }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
 
-    const newDocumentState = await this.operationProcessor.apply(operationWithMockedAnchorTime, undefined);
-    return newDocumentState;
+    const newDidState = await this.operationProcessor.apply(operationWithMockedAnchorTime, undefined);
+    return newDidState;
   }
 }

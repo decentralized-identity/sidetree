@@ -7,7 +7,7 @@ import BatchFileModel from './models/BatchFileModel';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
-import FetchResultCode from '../../../common/FetchResultCode';
+import FetchResultCode from '../../../common/enums/FetchResultCode';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';

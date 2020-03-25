@@ -6,7 +6,7 @@ import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
-import FetchResultCode from '../../lib/common/FetchResultCode';
+import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MapFile from '../../lib/core/versions/latest/MapFile';

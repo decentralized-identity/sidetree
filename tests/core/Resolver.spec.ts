@@ -3,7 +3,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DidServiceEndpoint from '../common/DidServiceEndpoint';
 import Document from '../../lib/core/versions/latest/Document';
-import DocumentState from '../../lib/core/models/DocumentState';
+import DidState from '../../lib/core/models/DidState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -101,9 +101,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2PriorRecovery]);
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
-      let documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
-      expect(documentState.document.publicKeys.length).toEqual(2);
-      expect(documentState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
+      let didState = await resolver.resolve(didUniqueSuffix) as DidState;
+      expect(didState.document.publicKeys.length).toEqual(2);
+      expect(didState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
@@ -172,9 +172,9 @@ describe('Resolver', () => {
       await operationStore.put([anchoredUpdateOperation2AfterRecovery]);
 
       // Validate recover operation getting applied.
-      documentState = await resolver.resolve(didUniqueSuffix) as DocumentState;
+      didState = await resolver.resolve(didUniqueSuffix) as DidState;
 
-      const document = documentState.document;
+      const document = didState.document;
       expect(document).toBeDefined();
       expect(document.publicKeys.length).toEqual(2);
       const actualNewSigningPublicKey1 = Document.getPublicKey(document, '#newSigningKey');
