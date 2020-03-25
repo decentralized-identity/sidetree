@@ -1,16 +1,34 @@
 
 
-## DID State Patches
+## Patch Actions
 
-Sidetree defines a pluggable patching mechanism that can be extended to define new _Patch Actions_. There are only a few required _Patch Actions_ that every implementation MUST support, related to the handling and management of protocol-active keys (keys that are empowered to modify DID state). Support for any of the additional _Patch Actions_ defined in the spec is elective. Implementers MAY use the _Patch Action_ format to introduce new _Patch Actions_ that are as strict or permissive as they choose.
+Sidetree defines a general format, _Patch Actions_, for describing mutations of a DID's metadata state. Sidetree further defines a standard set of _Patch Actions_ (below) implementers MAY use to facilitate patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers MUST use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
 
-::: warning
-Implementers of Sidetree-based DID networks that are truly open, permissionless, and decentralized should carefully consider the ramifications of adding unstructured, free-form _Patch Actions_ that are not strictly evaluated by nodes at the time of ingest, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.
-:::
+```json
+{
+  "action": "add-public-keys",
+  ...
+}
 
-### Patching Protocol-Active Keys
+{
+  "action": "-custom-action",
+  ...
+}
+```
 
-#### Add public keys
+1. _Patch Actions_ MUST be represented as JSON objects.
+2. _Patch Action_ objects MUST include an `action` property, and its value MUST be one of the standard _Patch Action_ types listed in below, or, if the implementer chooses to create a custom _Patch Action_, a kebab-case string (dash-delimited lowercase words) with a leading dash, to indicate a custom _Patch Action_. Here is an example `action` value for a custom _Patch Action_: `-custom-action`.
+3. If the implementer elects to create a custom _Patch Action_, its `action` value must not conflict with the standard set of _Patch Actions_ defined in this specification, which are:
+    - `add-public-keys`
+    - `remove-public-keys`
+    - `add-service-endpoints`
+    - `remove-service-endpoints`
+
+### Standard Patch Actions
+
+The following set of standard _Patch Actions_ are specified to help align on a common set of _Patch Actions_ that provide a predictable usage patter across Sidetree-based DID Method implementations.
+
+#### `add-public-keys`
 
 ::: example
 ```json
@@ -18,26 +36,36 @@ Implementers of Sidetree-based DID networks that are truly open, permissionless,
   "action": "add-public-keys",
   "publicKeys": [
     {
-      "id": "123",
+      "id": "key1",
+      "usage": ["ops"],
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69",
+      "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV",
     }
   ]
 }
 ```
 :::
 
-The `add-public-keys` _Patch Action_ is required - implementers MUST support this mechanism as the means by which they ingest and track additions of keys to the protocol-active key set. To construct an `add-public-keys` patch, construct an object of the following composition:
+The `add-public-keys` _Patch Action_ describes the addition of cryptographic keys associated with a given DID. To construct an `add-public-keys` patch, compose an object as follows:
 
 1. The object MUST include an `action` property, and its value MUST be `add-public-keys`.
 2. The object MUST include a `publicKeys` property, and its value MUST be an array.
-3. Each protocol-active public key being added MUST be represented by an entry in the `publicKeys` array, and each entry must be an object composed as follows:
-    1. The object MUST include a `type` property, and its value MUST be `Secp256k1VerificationKey2018`. (future support for other key types will be addressed in future versions of the specification)
-    2. The object MUST include an `id` property, and its value MUST be a string of no greater than 7 bytes of ASCII encoded characters.
-    3. The object MUST include a `publicKeyHex` property, and its value MUST be the compressed format (66 chars) of the `Secp256k1VerificationKey2018` key type.
+3. Each key being added MUST be represented by an entry in the `publicKeys` array, and each entry must be an object composed as follows:
+    1. The object MUST include an `id` property, and its value MUST be a string with no more than seven (7) ASCII encoded characters.
+    2. The object MUST include a `type` property, and its value MUST be one of the following supported key types:
+        - `Secp256k1VerificationKey2018`
+    3. The object MUST include public key material in accordance with `type` value specified. The following mapping of `type` values to public key material property and value pairings MUST be used:
+        - If the `type` value is `Secp256k1VerificationKey2018`:
+            1. The object MUST include a `publicKeyBase58` property, and its value MUST be a `base58` encoded version of the key type.
+    4. The object MUST include a `usage` property, and its value MUST be an array that includes one or more of the following strings:
+    - `ops`: the key is allowed to generate DID operations for the DID.
+    - `general`: the key is to be included in the `publicKeys` section of the resolved _DID Document_.
+    - `auth`: the key is to be included in the `authentication` section of the resolved _DID Document_ as follows:
+        - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object will be included directly in the `authentication` section of the resolved _DID Document_. 
+        - If the `general` usage value IS present in the `usage` array, the key descriptor object will be directly included in the `publicKeys` section of the resolved _DID Document_, and included by reference in the `authentication` section. 
     
 
-#### Remove public keys
+#### `remove-public-keys`
 
 ::: example
 ```json
@@ -48,8 +76,36 @@ The `add-public-keys` _Patch Action_ is required - implementers MUST support thi
 ```
 :::
 
-The `remove-public-keys` _Patch Action_ is required - implementers MUST support this mechanism as the means by which they ingest and track removal of keys from the protocol-active key set. To construct a `remove-public-keys` patch, construct an object of the following composition:
+The `remove-public-keys` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. To construct a `remove-public-keys` _Patch Action_, compose an object as follows:
 
 1. The object MUST include an `action` property, and its value MUST be `remove-public-keys`.
-2. The object MUST include a `publicKeys` property, and its value MUST be an array.
-3. Each protocol-active public key being removed MUST be represented by an entry in the `publicKeys` array, and each entry must be an ASCII encoded string (of no greater than 7 bytes) that corresponds with a current key in the protocol-active key set.
+2. The object MUST include a `publicKeys` property, and its value MUST be an array of key IDs that correspond with keys presently associated with the DID that are to be removed.
+
+
+
+#### `ietf-json-patch`
+
+::: warning
+Implementers of Sidetree-based DID networks that are open, permissionless, and decentralized should carefully consider the ramifications of adding free-form _Patch Actions_ that are not strictly evaluated by nodes, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.
+:::
+
+::: example
+```json
+{
+  "action": "ietf-json-patch",
+  "patches": [
+    { "op": "add", ... },
+    { "op": "remove", ... },
+    { "op": "replace", ... },
+    { "op": "move", ... },
+    { "op": "copy", ... }
+  ]
+}
+```
+:::
+
+The `ietf-json-patch` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. To construct a `ietf-json-patch` _Patch Action_, compose an object as follows:
+
+1. The object MUST include an `action` property, and its value MUST be `ietf-json-patch`.
+2. The object MUST include a `patches` property, and its value MUST be an array of [IETF JSON Patch](https://tools.ietf.org/html/rfc6902) operation objects.
+
