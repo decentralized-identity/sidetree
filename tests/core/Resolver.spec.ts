@@ -83,7 +83,7 @@ describe('Resolver', () => {
       const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
         update2RevealValuePriorToRecovery,
-        'EiD_UnusedNextUpdateCommitmentHash_AAAAAA',
+        'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
         ['dummyHubUri3'],
         [],
         signingPublicKey.id,
@@ -154,7 +154,7 @@ describe('Resolver', () => {
       const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
         update2RevealValueAfterRecovery,
-        'EiD_UnusedNextUpdateCommitmentHash_AAAAAA',
+        'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
         [],
         ['newDummyHubUri1'],
         newSigningPublicKey.id,

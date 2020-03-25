@@ -191,7 +191,7 @@ describe('OperationProcessor', async () => {
         publicKeys: [signingKeyId]
       }
     ];
-    const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAA';
+    const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       firstUpdateRevealValue,
@@ -465,7 +465,7 @@ describe('OperationProcessor', async () => {
           'anIncorrectUpdateRevealValue',
           '#new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000',
-          'EiD_UnusedNextUpdateCommitmentHash_AAAAAA',
+          'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           signingPublicKey.id,
           signingPrivateKey
         );
@@ -494,7 +494,7 @@ describe('OperationProcessor', async () => {
           nextUpdateRevealValue,
           '#new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000',
-          'EiD_UnusedNextUpdateCommitmentHash_AAAAAA',
+          'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           signingPublicKey.id,
           recoveryPrivateKey // NOTE: Using recovery private key to generate an invalid signautre.
         );
@@ -523,7 +523,7 @@ describe('OperationProcessor', async () => {
           nextUpdateRevealValue,
           '#new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000',
-          'EiD_UnusedNextUpdateCommitmentHash_AAAAAA',
+          'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           '#non-existent-signing-key',
           signingPrivateKey
         );
