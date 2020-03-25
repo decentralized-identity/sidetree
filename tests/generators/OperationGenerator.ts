@@ -75,6 +75,7 @@ export default class OperationGenerator {
   public static generateOtp (): [string, string] {
     const otpBuffer = crypto.randomBytes(32);
     const otpEncodedString = Encoder.encode(otpBuffer);
+    
     const otpHash = Multihash.hash(otpBuffer, 18); // 18 = SHA256;
     const otpHashEncodedString = Encoder.encode(otpHash);
 
