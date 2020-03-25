@@ -12,11 +12,11 @@ import SidetreeError from '../../../common/SidetreeError';
 interface SuffixDataModel {
   operationDataHash: string;
   recoveryKey: PublicKeyModel;
-  nextRecoveryOtpHash: string;
+  nextRecoveryCommitmentHash: string;
 }
 
 interface OperationDataModel {
-  nextUpdateOtpHash: string;
+  nextUpdateCommitmentHash: string;
   document: any;
 }
 
@@ -154,10 +154,10 @@ export default class CreateOperation implements OperationModel {
     Operation.validateRecoveryKeyObject(suffixData.recoveryKey);
 
     const operationDataHash = Encoder.decodeAsBuffer(suffixData.operationDataHash);
-    const nextRecoveryOtpHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryOtpHash);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryCommitmentHash);
 
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(operationDataHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryOtpHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return suffixData;
   }
@@ -170,7 +170,7 @@ export default class CreateOperation implements OperationModel {
     const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
     const operationData = await JsonAsync.parse(operationDataJsonString);
 
-    const allowedProperties = new Set(['document', 'nextUpdateOtpHash']);
+    const allowedProperties = new Set(['document', 'nextUpdateCommitmentHash']);
     for (let property in operationData) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty);
@@ -179,8 +179,8 @@ export default class CreateOperation implements OperationModel {
 
     DocumentComposer.validateDocument(operationData.document);
 
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
+    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(operationData.nextUpdateCommitmentHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitmentHash);
 
     return operationData;
   }

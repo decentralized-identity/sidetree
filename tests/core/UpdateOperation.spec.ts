@@ -11,11 +11,11 @@ describe('UpdateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if didUniqueSuffix is not string.', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
-      const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-otp',
-        unusedNextUpdateOtpHash,
+        'unused-update-reveal-value',
+        unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
         signingPublicKey.id,
         signingPrivateKey
@@ -29,11 +29,11 @@ describe('UpdateOperation', async () => {
 
     it('should throw if operation type is incorrect', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
-      const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-otp',
-        unusedNextUpdateOtpHash,
+        'unused-update-reveal-value',
+        unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
         signingPublicKey.id,
         signingPrivateKey
@@ -45,38 +45,38 @@ describe('UpdateOperation', async () => {
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect));
     });
 
-    it('should throw if updateOtp is not string.', async () => {
+    it('should throw if updateRevealValue is not string.', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
-      const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-otp',
-        unusedNextUpdateOtpHash,
+        'unused-update-reveal-value',
+        unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
         signingPublicKey.id,
         signingPrivateKey
       );
 
-      (updateOperationRequest.updateOtp as any) = 123; // Intentionally incorrect type.
+      (updateOperationRequest.updateRevealValue as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateOtpMissingOrInvalidType));
+      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
     });
 
-    it('should throw if recoveryOtp is too long.', async () => {
+    it('should throw if recoveryRevealValue is too long.', async () => {
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#key');
-      const [, unusedNextUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp-super-long-otp',
-        unusedNextUpdateOtpHash,
+        'super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal',
+        unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
         signingPublicKey.id,
         signingPrivateKey
       );
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateOtpTooLong));
+      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong));
     });
   });
 
@@ -88,7 +88,7 @@ describe('UpdateOperation', async () => {
     it('should throw if operation data contains an additional unknown property.', async () => {
       const operationData = {
         documentPatch: 'any opaque content',
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
@@ -99,7 +99,7 @@ describe('UpdateOperation', async () => {
     it('should throw if operation data is missing documentPatch property.', async () => {
       const operationData = {
         // documentPatch: 'any opaque content', // Intentionally missing.
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedOperationData = Encoder.encode(JSON.stringify(operationData));

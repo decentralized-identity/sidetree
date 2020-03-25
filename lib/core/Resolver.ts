@@ -44,7 +44,7 @@ export default class Resolver {
     }
 
     // If last operation is a revoke. No need to continue further.
-    if (documentState.nextRecoveryOtpHash === undefined) {
+    if (documentState.nextRecoveryCommitmentHash === undefined) {
       return documentState;
     }
 

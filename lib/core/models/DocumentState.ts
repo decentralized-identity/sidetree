@@ -8,7 +8,7 @@ export default interface DocumentState {
   didUniqueSuffix: string;
   document: any;
   recoveryKey: PublicKeyModel | undefined ;
-  nextRecoveryOtpHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
-  nextUpdateOtpHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
+  nextRecoveryCommitmentHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
+  nextUpdateCommitmentHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
   lastOperationTransactionNumber: number;
 }

@@ -10,7 +10,7 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface OperationDataModel {
-  nextUpdateOtpHash: string;
+  nextUpdateCommitmentHash: string;
   documentPatch: any;
 }
 
@@ -29,7 +29,7 @@ export default class UpdateOperation implements OperationModel {
   public readonly type: OperationType;
 
   /** Encoded one-time password for the operation. */
-  public readonly updateOtp: string;
+  public readonly updateRevealValue: string;
 
   /** Signed one-time password for the operation. */
   public readonly signedOperationDataHash: Jws;
@@ -46,14 +46,14 @@ export default class UpdateOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    updateOtp: string,
+    updateRevealValue: string,
     signedOperationDataHash: Jws,
     encodedOperationData: string | undefined,
     operationData: OperationDataModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.updateOtp = updateOtp;
+    this.updateRevealValue = updateRevealValue;
     this.signedOperationDataHash = signedOperationDataHash;
     this.encodedOperationData = encodedOperationData;
     this.operationData = operationData;
@@ -100,15 +100,15 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    if (typeof operationObject.updateOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpMissingOrInvalidType);
+    if (typeof operationObject.updateRevealValue !== 'string') {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.updateOtp as string).length > Operation.maxEncodedOtpLength) {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpTooLong);
+    if ((operationObject.updateRevealValue as string).length > Operation.maxEncodedCommitmentRevealValueLength) {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
     }
 
-    const updateOtp = operationObject.updateOtp;
+    const updateRevealValue = operationObject.updateRevealValue;
 
     const signedOperationDataHash = Jws.parse(operationObject.signedOperationDataHash);
 
@@ -124,7 +124,8 @@ export default class UpdateOperation implements OperationModel {
       operationData = await UpdateOperation.parseOperationData(encodedOperationData);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix, updateOtp, signedOperationDataHash, encodedOperationData, operationData);
+    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
+      updateRevealValue, signedOperationDataHash, encodedOperationData, operationData);
   }
 
   private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
@@ -147,8 +148,8 @@ export default class UpdateOperation implements OperationModel {
     // Validate `documentPatch` property using the DocumentComposer.
     DocumentComposer.validateDocumentPatch(operationData.documentPatch);
 
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
+    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(operationData.nextUpdateCommitmentHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitmentHash);
 
     return operationData;
   }

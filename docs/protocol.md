@@ -203,14 +203,15 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 #### One Operation per DID per Batch
   Only one operation per DID per batch is allowed, this prevents the operation chain of any DID from growing at an intractable rate.
 
-#### One-Time Password (OTP) for Operations
+#### Commitment and Reveal for Operations
   Upon DID creation, the create operation payload must include:
-  1. The hash of a _one-time password_ (OTP) for the next recover operation.
-  1. The hash of a _one-time password_ (OTP) for the next update operation.
+  1. The hash of a _commitment_ value for the next recover operation.
+  1. The hash of a _commitment_ value for the next update operation.
+  https://en.wikipedia.org/wiki/Commitment_scheme
 
-  The DID owner must reproduce and present the correct OTP in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new OTP(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
+  The DID owner must reproduce and reveal the correct commitment value in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new commitment value(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
 
-  See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify OTPs and OTP hashes in each operation.
+  See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify commitment/reveal values and commitment hashes in each operation.
 
 ## Sidetree Transaction Processing
 A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increased by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
@@ -305,14 +306,14 @@ POST / HTTP/1.1
   "recoveryKey": {
     "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
   },
-  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
+  "nextRecoveryCommitmentHash": "Hash of the one-time password to be used for the next recovery."
 }
 ```
 
 #### `operationData` property schema
 ```json
 {
-    "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+    "nextUpdateCommitmentHash": "Hash of the one-time password to be used for the next update.",
     "document": "Document content."
 }
 ```
@@ -454,7 +455,7 @@ POST / HTTP/1.1
 {
   "type": "update",
   "didUniqueSuffix": "The unique suffix of the DID to be updated.",
-  "updateOtp": "The one-time password to be used for this update.",
+  "updateRevealValue": "The one-time password to be used for this update.",
   "signedOperationDataHash": {
     "protected": "JWS header.",
     "payload": "Hash of the operation data.",
@@ -468,7 +469,7 @@ POST / HTTP/1.1
 ```json
 {
   "documentPatch": ["An array of patches each must adhere to the document patch schema defined below."],
-  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update."
+  "nextUpdateCommitmentHash": "Hash of the one-time password to be used for the next update."
 }
 ```
 
@@ -599,8 +600,8 @@ Example:
       ]
     }
   ],
-  "updateOtp": "iDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLAa",
-  "nextUpdateOtpHash": "EiDJesPq9hAIPrBiDw7PBZG8OUCG4XT5d6debxCUIVFUrg",
+  "updateRevealValue": "iDk2RpPVuC4wNANUTn_4YXJczjzi10zLG1XE4AjkcGOLAa",
+  "nextUpdateCommitmentHash": "EiDJesPq9hAIPrBiDw7PBZG8OUCG4XT5d6debxCUIVFUrg",
 }
 ```
 
@@ -625,7 +626,7 @@ POST / HTTP/1.1
 {
   "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "recoveryOtp": "The encoded one-time password to be used for this recovery.",
+  "recoveryRevealValue": "The encoded one-time password to be used for this recovery.",
   "signedOperationData": {
     "protected": "JWS header.",
     "payload": "JWS encoded JSON object containing recover operation data that are signed.",
@@ -640,14 +641,14 @@ POST / HTTP/1.1
 {
   "operationDataHash": "Hash of the unsigned operation data.",
   "recoveryKey": "The new recovery key.",
-  "nextRecoveryOtpHash": "Hash of the one-time password to be used for the next recovery."
+  "nextRecoveryCommitmentHash": "Hash of the one-time password to be used for the next recovery."
 }
 ```
 
 #### `operationData` schema
 ```json
 {
-  "nextUpdateOtpHash": "Hash of the one-time password to be used for the next update.",
+  "nextUpdateCommitmentHash": "Hash of the one-time password to be used for the next update.",
   "document": "Opaque content."
 }
 ```
@@ -674,7 +675,7 @@ POST /
 {
   "type": "revoke",
   "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
-  "recoveryOtp": "The current one-time recovery password.",
+  "recoveryRevealValue": "The current one-time recovery password.",
   "signedOperationData": {
     "protected": "JWS header.",
     "payload": "JWS encoded JSON object containing revoke operation data that are signed.",
@@ -687,7 +688,7 @@ POST /
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
-  "recoveryOtp": "The current one-time recovery password.",
+  "recoveryRevealValue": "The current one-time recovery password.",
 }
 ```
 

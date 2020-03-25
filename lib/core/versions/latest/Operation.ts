@@ -11,8 +11,8 @@ import UpdateOperation from './UpdateOperation';
  * A class that contains Sidetree operation utility methods.
  */
 export default class Operation {
-  /** Maximum allowed encoded OTP string length. */
-  public static readonly maxEncodedOtpLength = 50;
+  /** Maximum allowed encoded commitment/reveal value string length. */
+  public static readonly maxEncodedCommitmentRevealValueLength = 50;
 
   /**
    * Parses the given buffer into an `OperationModel`.

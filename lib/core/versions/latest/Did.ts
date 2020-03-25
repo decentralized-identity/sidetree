@@ -94,7 +94,7 @@ export default class Did {
     return did;
   }
 
-  private static getEncodedCreateRequestFromDidString(didString: string, methodNameParts: string[]): string {
+  private static getEncodedCreateRequestFromDidString (didString: string, methodNameParts: string[]): string {
     let didStringUrl = undefined;
     try {
       didStringUrl = new URL(didString);
