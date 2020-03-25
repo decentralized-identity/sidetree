@@ -7,7 +7,7 @@ The protocol defines the following three file structures, which house DID operat
 
 ### Anchor File
 
-Anchor files contain [Create](#create), [Recover](#recover), and [Revoke](#revoke) operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
+Anchor files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
 
 ::: example
 ```json
@@ -33,7 +33,7 @@ Anchor files contain [Create](#create), [Recover](#recover), and [Revoke](#revok
       },
       {...}
     ],
-    "revoke": [
+    "deactivate": [
       {
         "id": DID_UNIQUE_SUFFIX,
         "recovery_reveal_value": REVEAL_VALUE,
@@ -49,7 +49,7 @@ Anchor files contain [Create](#create), [Recover](#recover), and [Revoke](#revok
 A valid Anchor File is a JSON document that MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size), and composed as follows:
 
 1. The Anchor File MUST contain a `map_file` property, and its value MUST be a _CAS URI_ for the related Map File.
-2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Revoke](#revoke) operations, the Anchor File MUST contain an `operations` property, and its value MUST be an object composed as follows:
+2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the Anchor File MUST contain an `operations` property, and its value MUST be an object composed as follows:
 
   - If there are any [Create](#create) operations to be included in the Anchor File:
     1. The `operations` object MUST include a `create` property, and its value MUST be an array.
@@ -98,9 +98,9 @@ A valid Anchor File is a JSON document that MUST NOT exceed the [`MAX_ANCHOR_FIL
   - The object MAY include a `new_recovery_key` property, and if included, its value MUST be the public key generated during the [Recovery](#recover) operation process.
 -->
 
-  - If there are any [Revoke](#revoke) operations to be included in the Anchor File:
-    1. The `operations` object MUST include a `revoke` property, and its value MUST be an array.
-    2. For each [Revoke](#revoke) operation to be included in the `revoke` array, use the following process to compose and include entries:
+  - If there are any [Deactivate](#deactivate) operations to be included in the Anchor File:
+    1. The `operations` object MUST include a `deactivate` property, and its value MUST be an array.
+    2. For each [Deactivate](#deactivate) operation to be included in the `deactivate` array, use the following process to compose and include entries:
         - The object MUST contain an `id` property, and its value MUST be the [DID Unique Suffix](#did-unique-suffix) of the DID the operation pertains to. An Anchor File MUST NOT contain more than one operation of any type with the same [DID Unique Suffix](#did-unique-suffix).
         - The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [COMMITMENT_VALUE](#commitment-value).
         - The object MUST contain a `sig` property, and its value MUST be a signature over the concatenated values of the `id` property and the `recovery_reveal_value` property.
