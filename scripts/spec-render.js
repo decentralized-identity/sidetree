@@ -1,1 +1,4 @@
-require('spec-up')(true);
+require('spec-up')({
+  nowatch: true,
+  renderOnInstall: true
+});
