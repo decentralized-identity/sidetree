@@ -65,9 +65,9 @@ Use the following process to generate a Sidetree-based DID:
     - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
     - The object MUST contain a `document_data` property, and its value MUST be the composed _Sidetree Document State Object_.
 
-### Revoke
+### Deactivate
 
-The following process must be used to revoke a Sidetree-based DID:
+The following process must be used to deactivate a Sidetree-based DID:
 
 1. Retrieve the _Recovery Reveal Value_ that matches the previously anchored _Recovery Commitment_.
 2. Concatenate the [DID Unique Suffix](#did-unique-suffix) hash with the _Recovery Reveal Value_ and sign over the resulting string using the [`SIGNATURE_ALGORITHM`](#sig-algorithm). Retain the signature for inclusion in an [Anchor File](#anchor-file)
