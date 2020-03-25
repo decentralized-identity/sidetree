@@ -26,7 +26,7 @@ export default class RevokeOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded one-time password for the operation. */
+  /** Encoded reveal value for the operation. */
   public readonly recoveryRevealValue: string;
 
   /** Signed encoded operation data. */

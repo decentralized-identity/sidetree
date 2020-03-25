@@ -28,10 +28,10 @@ export default class UpdateOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded one-time password for the operation. */
+  /** Encoded reveal value for the operation. */
   public readonly updateRevealValue: string;
 
-  /** Signed one-time password for the operation. */
+  /** Signed operation data for the operation. */
   public readonly signedOperationDataHash: Jws;
 
   /** Operation data. */

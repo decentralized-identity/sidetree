@@ -65,7 +65,7 @@ The DID unique suffix is computed deterministically by hashing, then encoding th
 
 1. Hash of the initial document.
 1. Recovery key.
-1. Hash of one-time password for recovery.
+1. Hash of reveal value for recovery, aka commitment hash.
 
 As a result, a requester can deterministically compute the DID before the create operation is requested and anchored on the blockchain.
 
@@ -306,14 +306,14 @@ POST / HTTP/1.1
   "recoveryKey": {
     "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
   },
-  "nextRecoveryCommitmentHash": "Hash of the one-time password to be used for the next recovery."
+  "nextRecoveryCommitmentHash": "Commitment hash to be used for the next recovery."
 }
 ```
 
 #### `operationData` property schema
 ```json
 {
-    "nextUpdateCommitmentHash": "Hash of the one-time password to be used for the next update.",
+    "nextUpdateCommitmentHash": "Commitment hash to be used for the next update.",
     "document": "Document content."
 }
 ```
@@ -455,7 +455,7 @@ POST / HTTP/1.1
 {
   "type": "update",
   "didUniqueSuffix": "The unique suffix of the DID to be updated.",
-  "updateRevealValue": "The one-time password to be used for this update.",
+  "updateRevealValue": "Commitment hash to be used for this update.",
   "signedOperationDataHash": {
     "protected": "JWS header.",
     "payload": "Hash of the operation data.",
@@ -469,7 +469,7 @@ POST / HTTP/1.1
 ```json
 {
   "documentPatch": ["An array of patches each must adhere to the document patch schema defined below."],
-  "nextUpdateCommitmentHash": "Hash of the one-time password to be used for the next update."
+  "nextUpdateCommitmentHash": "Commitment hash to be used for the next update."
 }
 ```
 
@@ -626,7 +626,7 @@ POST / HTTP/1.1
 {
   "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
-  "recoveryRevealValue": "The encoded one-time password to be used for this recovery.",
+  "recoveryRevealValue": "The reveal value to be used for this recovery.",
   "signedOperationData": {
     "protected": "JWS header.",
     "payload": "JWS encoded JSON object containing recover operation data that are signed.",
@@ -641,14 +641,14 @@ POST / HTTP/1.1
 {
   "operationDataHash": "Hash of the unsigned operation data.",
   "recoveryKey": "The new recovery key.",
-  "nextRecoveryCommitmentHash": "Hash of the one-time password to be used for the next recovery."
+  "nextRecoveryCommitmentHash": "Commitment hash to be used for the next recovery."
 }
 ```
 
 #### `operationData` schema
 ```json
 {
-  "nextUpdateCommitmentHash": "Hash of the one-time password to be used for the next update.",
+  "nextUpdateCommitmentHash": "Commitment hash to be used for the next update.",
   "document": "Opaque content."
 }
 ```
@@ -675,7 +675,7 @@ POST /
 {
   "type": "revoke",
   "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
-  "recoveryRevealValue": "The current one-time recovery password.",
+  "recoveryRevealValue": "The current reveal value to use for this request.",
   "signedOperationData": {
     "protected": "JWS header.",
     "payload": "JWS encoded JSON object containing revoke operation data that are signed.",
@@ -688,7 +688,7 @@ POST /
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
-  "recoveryRevealValue": "The current one-time recovery password.",
+  "recoveryRevealValue": "The current reveal value for recovery.",
 }
 ```
 
