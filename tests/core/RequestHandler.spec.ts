@@ -247,7 +247,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
-    const recoveryRevealValue = 'EiD_UnusedRecoveryOneTimePassword_AAAAAAAAAAAA';
+    const recoveryRevealValue = 'EiD_UnusedRecoveryRevealValue_AAAAAAAAAAAA';
     const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey });
     const response = await requestHandler.handleOperationRequest(recoveryOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
