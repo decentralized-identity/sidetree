@@ -7,7 +7,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
-import DocumentState from '../../lib/core/models/DocumentState';
+import DidState from '../../lib/core/models/DidState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -25,8 +25,9 @@ import OperationProcessor from '../../lib/core/versions/latest/OperationProcesso
 import OperationType from '../../lib/core/enums/OperationType';
 import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
+import Response from '../../lib/common/Response';
+import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import util = require('util');
-import { Response, ResponseStatus } from '../../lib/common/Response';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -272,7 +273,7 @@ describe('RequestHandler', () => {
       const document = {
         publicKeys: [anySigningPublicKey]
       };
-      const mockedResolverReturnedDocumentState: DocumentState = {
+      const mockedResolverReturnedDidState: DidState = {
         didUniqueSuffix,
         document,
         lastOperationTransactionNumber: 123,
@@ -280,11 +281,11 @@ describe('RequestHandler', () => {
         nextUpdateCommitmentHash: anyCommitmentHash,
         recoveryKey: anyRecoveryPublicKey
       };
-      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDocumentState));
+      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 
-      const documentState = await (requestHandler as any).resolveLongFormDid('unused');
+      const didState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(documentState.document.publicKeys[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
+      expect(didState.document.publicKeys[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
     });
   });
 });

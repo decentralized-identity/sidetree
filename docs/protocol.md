@@ -51,10 +51,16 @@ The following lists the parameters used by this version of the Sidetree protocol
 
 ## Sidetree Operations
 
-A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
-) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used. Sidetree protocol enables the creation of, lookup for, and updates to DID Documents through _Sidetree operations_.
+Sidetree protocol allows the following operations to be performed against a DID:
 
-An update operation to a document contains only the changes from the previous version of the document. Create and recover operations require a full document state of the DID as input.
+1. Create
+1. Resolve
+1. Update
+1. Recover
+1. Revoke
+
+A _DID Document_ is returned as the response to a _resolve_ request. A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
+) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used.
 
 ## Sidetree DID Unique Suffix
 A Sidetree _DID unique suffix_ is the globally unique portion of a DID. 

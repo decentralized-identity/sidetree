@@ -1,6 +1,6 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import FetchResult from '../../lib/common/models/FetchResult';
-import FetchResultCode from '../../lib/common/FetchResultCode';
+import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 

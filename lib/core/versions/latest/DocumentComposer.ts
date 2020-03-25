@@ -1,6 +1,6 @@
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
-import DocumentState from '../../models/DocumentState';
+import DidState from '../../models/DidState';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -11,20 +11,20 @@ import UpdateOperation from './UpdateOperation';
 export default class DocumentComposer {
 
   /**
-   * Transforms the given document state into a DID Document.
+   * Transforms the given DID state into a DID Document.
    */
-  public static transformToExternalDocument (documentState: DocumentState, didMethodName: string): any {
+  public static transformToExternalDocument (didState: DidState, didMethodName: string): any {
     // If the DID is revoked.
-    if (documentState.nextRecoveryCommitmentHash === undefined) {
+    if (didState.nextRecoveryCommitmentHash === undefined) {
       return { status: 'revoked' };
     }
 
-    const did = didMethodName + documentState.didUniqueSuffix;
+    const did = didMethodName + didState.didUniqueSuffix;
     const didDocument = {
       '@context': 'https://w3id.org/did/v1',
-      publicKey: documentState.document.publicKeys,
-      service: documentState.document.service,
-      recoveryKey: documentState.recoveryKey
+      publicKey: didState.document.publicKeys,
+      service: didState.document.service,
+      recoveryKey: didState.recoveryKey
     };
 
     DocumentComposer.addDidToDocument(didDocument, did);

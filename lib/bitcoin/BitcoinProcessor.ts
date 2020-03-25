@@ -2,6 +2,7 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
+import IBitcoinConfig from './IBitcoinConfig';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
@@ -10,6 +11,7 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
+import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SidetreeError from '../common/SidetreeError';
@@ -21,8 +23,6 @@ import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
-import { IBitcoinConfig } from './IBitcoinConfig';
-import { ResponseStatus } from '../common/Response';
 
 /**
  * Object representing a blockchain time and hash

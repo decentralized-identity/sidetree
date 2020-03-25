@@ -1,7 +1,8 @@
 import Core from '../../lib/core/Core';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
+import ResponseModel from '../../lib/common/models/ResponseModel';
+import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import { ResponseStatus, ResponseModel } from '../../lib/common/Response';
 
 describe('Core', async () => {
 

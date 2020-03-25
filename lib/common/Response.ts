@@ -1,20 +1,4 @@
-/**
- * Defines a Sidetree response object.
- */
-interface ResponseModel {
-  status: ResponseStatus;
-  body?: any;
-}
-
-/**
- * Possible Sidetree response status.
- */
-enum ResponseStatus {
-  BadRequest = 'bad-request',
-  NotFound = 'not-found',
-  ServerError = 'server-error',
-  Succeeded = 'succeeded'
-}
+import ResponseStatus from './enums/ResponseStatus';
 
 /**
  * Contains operations related to `IResponse`.
@@ -37,5 +21,3 @@ export default class Response {
     }
   }
 }
-
-export { Response, ResponseModel, ResponseStatus };

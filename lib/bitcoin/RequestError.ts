@@ -1,4 +1,5 @@
-import Response, { ResponseStatus } from '../common/Response';
+import Response from '../common/Response';
+import ResponseStatus from '../common/enums/ResponseStatus';
 
 /**
  * Error class used as a response to external requests.
