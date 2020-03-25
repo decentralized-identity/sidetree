@@ -25,10 +25,12 @@ let init = async () => {
         let path = config.rootResourcePrefix = normalizePath(json.resource_path);
         config.destinationResourcePrefix += path.replace(/^\/|^[./]+/, '');
       }
-      gulp.watch(
-        [config.spec_directory + '**/*', '!' + config.destination + 'index.html'],
-        render.bind(null, config)
-      )
+      if (!process.argv.includes('nowatch')) {
+        gulp.watch(
+          [config.spec_directory + '**/*', '!' + config.destination + 'index.html'],
+          render.bind(null, config)
+        )
+      }
       render.call(null, config);
     });
   }
