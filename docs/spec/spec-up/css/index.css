@@ -303,7 +303,7 @@ slide-panel > *:not(header):not(footer) {
 
 .notice {
   margin: 0 0 1em;
-  padding: 0.5em 0.5em 0.55em 0.6em;
+  padding: 0.5em 0.9em 0.55em 0.6em;
   border-left: .5em solid;
 }
 
