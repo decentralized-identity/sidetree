@@ -1,7 +1,7 @@
 import * as IPFS from 'ipfs';
 import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
-import FetchResultCode from '../common/FetchResultCode';
+import FetchResultCode from '../common/enums/FetchResultCode';
 import SidetreeError from '../common/SidetreeError';
 
 /**

@@ -1,16 +1,16 @@
-import DidDocumentModel from '../../lib/core/versions/latest/models/DidDocumentModel';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
+import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DocumentComposer', async () => {
-  describe('validateDocumentPatch()', async () => {
+  describe('validateDocumentPatches()', async () => {
     it('should throw error if `patches` is not an array.', async () => {
       const patches = 'shouldNotBeAString';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchNotArray);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchesNotArray);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if given `action` is unknown.', async () => {
@@ -18,7 +18,7 @@ describe('DocumentComposer', async () => {
       patches[0].action = 'invalidAction';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownAction);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if an add-public-keys patch contains additional unknown property.', async () => {
@@ -26,7 +26,7 @@ describe('DocumentComposer', async () => {
       (patches[0] as any).unknownProperty = 'unknownProperty';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
@@ -34,7 +34,7 @@ describe('DocumentComposer', async () => {
       (patches[0] as any).publicKeys = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeysNotArray);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if an entry in `publicKeys` in an add-public-keys patch contains additional unknown property.', async () => {
@@ -42,7 +42,7 @@ describe('DocumentComposer', async () => {
       (patches[0].publicKeys![0] as any).unknownProperty = 'unknownProperty';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if `id` of a public key in an add-public-keys patch is not a string.', async () => {
@@ -50,7 +50,7 @@ describe('DocumentComposer', async () => {
       (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyHex` format.', async () => {
@@ -60,7 +60,7 @@ describe('DocumentComposer', async () => {
       (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeySecp256k1NotCompressedHex);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if the type of a public key in an add-public-keys patch is not in the allowed list.', async () => {
@@ -68,7 +68,7 @@ describe('DocumentComposer', async () => {
       (patches[0].publicKeys![0] as any).type = 'unknownKeyType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if a remove-public-keys patch contains additional unknown property..', async () => {
@@ -76,7 +76,7 @@ describe('DocumentComposer', async () => {
       (patches[1] as any).unknownProperty = 'unknownProperty';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
@@ -84,7 +84,7 @@ describe('DocumentComposer', async () => {
       (patches[1] as any).publicKeys = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if any of the public keys in a remove-public-keys patch is not a string.', async () => {
@@ -92,7 +92,7 @@ describe('DocumentComposer', async () => {
       (patches[1].publicKeys![0] as any) = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if a add-service-endpoints patch contains additional unknown property.', async () => {
@@ -100,7 +100,7 @@ describe('DocumentComposer', async () => {
       (patches[2] as any).unknownProperty = 'unknownProperty';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if `serviceType` in an add-service-endpoints patch is not in the allowed list.', async () => {
@@ -108,7 +108,7 @@ describe('DocumentComposer', async () => {
       patches[2].serviceType = 'unknownServiceType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceTypeMissingOrUnknown);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if `serviceEndpoints` in an add-service-endpoints patch is not an array.', async () => {
@@ -116,7 +116,7 @@ describe('DocumentComposer', async () => {
       (patches[2] as any).serviceEndpoints = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if any of the service endpoints in the add-service-endpoints patch is not a valid DID.', async () => {
@@ -124,16 +124,14 @@ describe('DocumentComposer', async () => {
       patches[2].serviceEndpoints[0] = 111;
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointNotString);
-      expect(() => { DocumentComposer.validateDocumentPatch(patches); }).toThrow(expectedError);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
   });
 
-  describe('applyPatchesToDidDocument()', async () => {
+  describe('applyPatches()', async () => {
     it('should replace old key with the same ID with new values.', async () => {
-      const didDocument: DidDocumentModel = {
-        '@context': 'https://www.w3.org/ns/did/v1',
-        id: 'someId',
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+      const document: DocumentModel = {
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
         service: []
       };
       const patches = [
@@ -146,9 +144,9 @@ describe('DocumentComposer', async () => {
         }
       ];
 
-      (DocumentComposer as any).applyPatchesToDidDocument(didDocument, patches);
+      const resultantDocument = DocumentComposer.applyPatches(document, patches);
 
-      expect(didDocument.publicKey).toEqual([
+      expect(resultantDocument.publicKeys).toEqual([
         { id: 'aRepeatingId', type: 'newTypeValue' },
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
@@ -159,7 +157,7 @@ describe('DocumentComposer', async () => {
   describe('validateDocument()', async () => {
     it('should throw if document contains 2 keys of with the same ID.', async () => {
       const document = {
-        publicKey: [
+        publicKeys: [
           {
             id: '#key1',
             type: 'RsaVerificationKey2018',

@@ -302,7 +302,7 @@ slide-panel > *:not(header):not(footer) {
 }
 
 .notice {
-  margin: 0 0 1em;
+  margin: 1em 0;
   padding: 0.5em 0.9em 0.55em 0.6em;
   border-left: .5em solid;
 }
@@ -340,7 +340,7 @@ slide-panel > *:not(header):not(footer) {
 
 .example {
   color: #cebe00;
-  background: #192027;
+  background: #1a1e23;
   border-left: 0.5em solid;
 }
 

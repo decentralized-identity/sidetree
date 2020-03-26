@@ -52,6 +52,9 @@ The follow sequence of rules and processing steps must be followed to correctly 
 4. Iterate the [_Anchor File Recovery Entries_](#anchor-file-recovery-entry), and for each entry, process as follows:
     1. Ensure the [DID Unique Suffixes](#did-unique-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was present for the same DID, do not process the operation and move to the next operation in the array.
     2. Persist an entry for the operation within implementation in reference to its [DID Unique Suffixes](#did-unique-suffix) in the ledger-relative chronological order.
+5. Iterate the [_Anchor File Deactivate Entries_](#anchor-file-deactivate-entry), and for each entry, process as follows:
+    1. Ensure the [DID Unique Suffixes](#did-unique-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of this Anchor File. If another previous, valid operation was present for the same DID, do not process the operation and move to the next operation in the array.
+    2. Concatenate the [DID Unique Suffixes](#did-unique-suffix) and the _Recovery Reveal Value_ together and validate the signature present in the entry against the concatenated string value. If the signature is valid, update retained references to the DID to deactivate it. If the signature is invalid, do not process the operation and move to the next operation in the array.
     
 
 ::: todo

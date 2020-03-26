@@ -1,18 +1,11 @@
-import DocumentComposer from './DocumentComposer';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
-import Multihash from './Multihash';
 import Operation from './Operation';
+import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
-
-interface OperationDataModel {
-  nextUpdateOtpHash: string;
-  documentPatch: any;
-}
 
 /**
  * A class that represents an update operation.
@@ -28,10 +21,10 @@ export default class UpdateOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded one-time password for the operation. */
-  public readonly updateOtp: string;
+  /** Encoded reveal value for the operation. */
+  public readonly updateRevealValue: string;
 
-  /** Signed one-time password for the operation. */
+  /** Signed operation data for the operation. */
   public readonly signedOperationDataHash: Jws;
 
   /** Operation data. */
@@ -46,14 +39,14 @@ export default class UpdateOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    updateOtp: string,
+    updateRevealValue: string,
     signedOperationDataHash: Jws,
     encodedOperationData: string | undefined,
     operationData: OperationDataModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.updateOtp = updateOtp;
+    this.updateRevealValue = updateRevealValue;
     this.signedOperationDataHash = signedOperationDataHash;
     this.encodedOperationData = encodedOperationData;
     this.operationData = operationData;
@@ -100,15 +93,15 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    if (typeof operationObject.updateOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpMissingOrInvalidType);
+    if (typeof operationObject.updateRevealValue !== 'string') {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.updateOtp as string).length > Operation.maxEncodedOtpLength) {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpTooLong);
+    if ((operationObject.updateRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
     }
 
-    const updateOtp = operationObject.updateOtp;
+    const updateRevealValue = operationObject.updateRevealValue;
 
     const signedOperationDataHash = Jws.parse(operationObject.signedOperationDataHash);
 
@@ -121,35 +114,10 @@ export default class UpdateOperation implements OperationModel {
       }
 
       encodedOperationData = operationObject.operationData;
-      operationData = await UpdateOperation.parseOperationData(encodedOperationData);
+      operationData = await Operation.parseOperationData(encodedOperationData);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix, updateOtp, signedOperationDataHash, encodedOperationData, operationData);
-  }
-
-  private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrNotString);
-    }
-
-    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const operationData = await JsonAsync.parse(operationDataJsonString);
-
-    const properties = Object.keys(operationData);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrUnknownProperty);
-    }
-
-    if (operationData.documentPatch === undefined) {
-      throw new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing);
-    }
-
-    // Validate `documentPatch` property using the DocumentComposer.
-    DocumentComposer.validateDocumentPatch(operationData.documentPatch);
-
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
-
-    return operationData;
+    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
+      updateRevealValue, signedOperationDataHash, encodedOperationData, operationData);
   }
 }

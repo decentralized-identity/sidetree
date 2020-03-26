@@ -3,10 +3,8 @@
 // Core service exports.
 import SidetreeCore from './core/Core';
 import SidetreeConfig from './core/models/Config';
-import {
-  ResponseModel as SidetreeResponseModel,
-  Response as SidetreeResponse
-} from './common/Response';
+import SidetreeResponse from './common/Response';
+import SidetreeResponseModel from './common/models/ResponseModel';
 
 export {
   SidetreeConfig,
@@ -17,7 +15,7 @@ export {
 
 // Blockchain service exports.
 import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
-import { IBitcoinConfig as ISidetreeBitcoinConfig } from './bitcoin/IBitcoinConfig';
+import ISidetreeBitcoinConfig from './bitcoin/IBitcoinConfig';
 
 export {
   ISidetreeBitcoinConfig,

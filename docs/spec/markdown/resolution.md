@@ -11,21 +11,21 @@
 
 ### Unpublished DID Resolution
 
-DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through _DID Parameters_, as described in the [W3C DID spec](https://w3c.github.io/did-spec/#generic-did-parameter-names).
+DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through _DID Parameters_, as defined by the W3C Decentralized Identifiers specification.
 
-Many DID Methods feature a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying trust system (i.e. blockchain, ledger). The community has recognized the need for a mechanism to support resolution and use of identifiers during this period. As such, the community will introduce a _Generic DID Parameter_ `initial-values` that any DID method can use to signify initial state variables during this period. 
+Many DID Methods may allow or require a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying ledger system and other layers to which propagation delays may apply. In order support resolution and use of identifiers during this period Sidetree defines a Method-specific DID parameter `-METHOD_NAME-initial-state` that any DID method can use to signify initial state variables during this period.
 
-Sidetree uses the `initial-values` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `initial-values` DID Parameter to the DID, with the value being the encoded string of the create operation request.
+Sidetree uses the `-METHOD_NAME-initial-state` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `-METHOD_NAME-initial-state` DID Parameter to the DID, with the value being the encoded string of the create operation request.
 
-e.g. `did:sidetree:<unique-portion>;initial-values=<encoded-create-operation-request>`.
+e.g. `did:METHOD_NAME:<unique-portion>?-METHOD_NAME-initial-state=<encoded-create-operation-request>`
 
 This allows any entity to support all of the following usage patterns:
 
-- Resolving unpublished DIDs.
-- Authenticating with unpublished DIDs.
-- Signing and verifying credentials signed against unpublished DIDs.
-- Authenticating with either the DID or DID with `initial-values` parameter, after it is published.
-- Signing and verifying credentials signed against either the DID or DID with `initial-values` parameter, after it is published.
+Resolving unpublished DIDs.
+Authenticating with unpublished DIDs.
+Signing and verifying credentials signed against unpublished DIDs.
+Authenticating with either the DID or DID with `-METHOD_NAME-initial-state` parameter, after it is published.
+Signing and verifying credentials signed against either the DID or DID with `-METHOD_NAME-initial-state` parameter, after it is published.
 
 ### Resolver Metadata
 

@@ -4,8 +4,10 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
+import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import RequestError from '../../lib/bitcoin/RequestError';
+import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 import SidetreeError from '../../lib/common/SidetreeError';
 import SidetreeTransactionModel from '../../lib/bitcoin/models/SidetreeTransactionModel';
@@ -14,8 +16,6 @@ import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
-import { IBitcoinConfig } from '../../lib/bitcoin/IBitcoinConfig';
-import { ResponseStatus } from '../../lib/common/Response';
 import { Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {

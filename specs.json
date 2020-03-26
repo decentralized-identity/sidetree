@@ -13,21 +13,21 @@
       },
       "spec_directory": "./docs/spec",
       "markdown_paths": [
-        "title.md",
-        "abstract.md",
-        "intro.md",
-        "terminology.md",
-        "versioning-params.md",
-        "topology.md",
-        "file-structures.md",
-        "unique-suffix.md",
-        "operations.md",
-        "patches.md",
-        "processing.md",
-        "pof.md",
-        "resolution.md",
-        "method-versioning.md",
-        "protocol-versioning.md"
+        "markdown/title.md",
+        "markdown/abstract.md",
+        "markdown/intro.md",
+        "markdown/terminology.md",
+        "markdown/versioning-params.md",
+        "markdown/topology.md",
+        "markdown/file-structures.md",
+        "markdown/unique-suffix.md",
+        "markdown/operations.md",
+        "markdown/patches.md",
+        "markdown/processing.md",
+        "markdown/pof.md",
+        "markdown/resolution.md",
+        "markdown/method-versioning.md",
+        "markdown/protocol-versioning.md"
       ]
     }
   ]

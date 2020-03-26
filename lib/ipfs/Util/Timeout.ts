@@ -1,7 +1,7 @@
 /**
  * Class containing code execution timeout/timing utilities.
  */
-export class Timeout {
+export default class Timeout {
 
   /**
    * Monitors the given promise to see if it runs to completion within the specified timeout duration.
