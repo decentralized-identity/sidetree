@@ -52,7 +52,8 @@ describe('RevokeOperation', async () => {
       (revokeOperationRequest.recoveryRevealValue as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(revokeOperationRequest));
-      await expectAsync(RevokeOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueMissingOrInvalidType));
+      await expectAsync(RevokeOperation.parse(operationBuffer))
+              .toBeRejectedWith(new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueMissingOrInvalidType));
       done();
     });
 

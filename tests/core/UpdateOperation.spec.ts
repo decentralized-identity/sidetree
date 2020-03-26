@@ -58,7 +58,8 @@ describe('UpdateOperation', async () => {
       (updateOperationRequest.updateRevealValue as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
+      await expectAsync(UpdateOperation.parse(operationBuffer))
+              .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
     });
 
     it('should throw if recoveryRevealValue is too long.', async () => {

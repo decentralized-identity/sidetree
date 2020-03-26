@@ -29,7 +29,7 @@ export default class LockIdentifierSerializer {
     const splitDecodedString = decodedString.split(LockIdentifierSerializer.delimiter);
 
     if (splitDecodedString.length !== 2) {
-      throw new SidetreeError(ErrorCode.LockIdentifierIncorrectFormat);
+      throw new SidetreeError(ErrorCode.LockIdentifierIncorrectFormat, `Input: ${serialized}`);
     }
 
     return {
