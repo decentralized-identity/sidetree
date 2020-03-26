@@ -33,6 +33,7 @@ describe('LockMonitor', () => {
 
   beforeEach(() => {
     lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 60, 1200, 100, 2000);
+    lockMonitor['initialized'] = true;
   });
 
   describe('constructor', () => {
@@ -47,6 +48,11 @@ describe('LockMonitor', () => {
         () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000, 1234.56, 45),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
     });
+
+    it('should set the initialized flag to false', () => {
+      const monitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000, 1200, 45);
+      expect(monitor['initialized']).toBeFalsy();
+    });
   });
 
   describe('initialize', () => {
@@ -55,10 +61,12 @@ describe('LockMonitor', () => {
       const resolveSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockLockInfo));
       const pollSpy = spyOn(lockMonitor as any, 'periodicPoll').and.returnValue(Promise.resolve());
 
+      lockMonitor['initialized'] = false;
       await lockMonitor.initialize();
 
       expect(resolveSpy).toHaveBeenCalledBefore(pollSpy);
       expect(pollSpy).toHaveBeenCalled();
+      expect(lockMonitor['initialized']).toBeTruthy();
     });
   });
 
@@ -81,6 +89,25 @@ describe('LockMonitor', () => {
       expect(lockMonitor['periodicPollTimeoutId']).toEqual(setTimeoutOutput);
     });
 
+    it('should rethrow if the initialize flag is not true', async (done) => {
+      const mockErrorCode = 'error during initialization';
+      spyOn(lockMonitor as any, 'handlePeriodicPolling').and.callFake(() => {
+        throw new SidetreeError(mockErrorCode);
+      });
+
+      const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(123456 as any);
+
+      lockMonitor['periodicPollTimeoutId'] = undefined;
+      lockMonitor['initialized'] = false;
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => lockMonitor['periodicPoll'](),
+        mockErrorCode);
+
+      expect(setTimeoutSpy).toHaveBeenCalled();
+      done();
+    });
+
     it('should call setTimeout() at the end of the execution even if an exception is thrown.', async () => {
       const handlePollingSpy = spyOn(lockMonitor as any, 'handlePeriodicPolling').and.throwError('unhandled exception');
 
@@ -88,6 +115,7 @@ describe('LockMonitor', () => {
       const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(setTimeoutOutput as any);
 
       lockMonitor['periodicPollTimeoutId'] = undefined;
+      lockMonitor['initialized'] = true;
       await lockMonitor['periodicPoll']();
 
       expect(handlePollingSpy).toHaveBeenCalled();

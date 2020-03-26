@@ -77,7 +77,8 @@ describe('RecoverOperation', async () => {
       (recoverOperationRequest.recoveryRevealValue as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
-      await expectAsync(RecoverOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType));
+      await expectAsync(RecoverOperation.parse(operationBuffer))
+              .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType));
       done();
     });
 

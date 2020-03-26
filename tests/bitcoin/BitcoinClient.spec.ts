@@ -378,6 +378,30 @@ describe('BitcoinClient', async () => {
       expect(actual).toEqual(expectedFeeInSatoshis);
       expect(spy).toHaveBeenCalled();
     });
+
+    it('should throw if the feerate undefined', async (done) => {
+      const spy = mockRpcCall('estimatesmartfee', [1], { });
+
+      try {
+        await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKb']();
+        fail('should have thrown');
+      } catch (error) {
+        expect(spy).toHaveBeenCalled();
+      }
+      done();
+    });
+
+    it('should throw if the there are any errors returned', async (done) => {
+      const spy = mockRpcCall('estimatesmartfee', [1], { feerate: 1, errors: ['some error'] });
+
+      try {
+        await bitcoinClient['getCurrentEstimatedFeeInSatoshisPerKb']();
+        fail('should have thrown');
+      } catch (error) {
+        expect(spy).toHaveBeenCalled();
+      }
+      done();
+    });
   });
 
   describe('getTransactionOutValueInSatoshi', () => {

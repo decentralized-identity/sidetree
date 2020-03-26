@@ -407,7 +407,7 @@ export default class BitcoinClient {
 
     const feerateInBtc = response.feerate;
 
-    return Unit.fromBTC(feerateInBtc).toSatoshis();
+    return BitcoinClient.convertBtcToSatoshis(feerateInBtc);
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */
