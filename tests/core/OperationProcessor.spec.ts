@@ -35,13 +35,11 @@ async function createUpdateSequence (
     const patches = [
       {
         action: 'remove-service-endpoints',
-        serviceType: 'IdentityHub',
-        serviceEndpoints: ['did:sidetree:value' + (i - 1)]
+        serviceEndpointIds: ['did:sidetree:value' + (i - 1)]
       },
       {
         action: 'add-service-endpoints',
-        serviceType: 'IdentityHub',
-        serviceEndpoints: ['did:sidetree:value' + i]
+        serviceEndpoints: OperationGenerator.createIdentityHubUserServiceEndpoints('did:sidetree:value' + i)
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -106,7 +104,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.service![0].serviceEndpoint.instances[0]).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  expect(document!.service![0].id).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -135,7 +133,7 @@ describe('OperationProcessor', async () => {
     signingKeyId = '#signingKey';
     [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
     [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints('did:sidetree:value0');
 
     let recoveryCommitmentHash;
     let firstUpdateCommitmentHash;
@@ -269,6 +267,7 @@ describe('OperationProcessor', async () => {
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
+    console.log(didState!.document);
     validateDocumentAfterUpdates(didState!.document, numberOfUpdates);
 
     const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
@@ -404,7 +403,7 @@ describe('OperationProcessor', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
       [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
-      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
+      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint('dummyHubUri');
 
       // Create the initial create operation.
       let nextUpdateCommitmentHash;

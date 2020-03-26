@@ -118,8 +118,8 @@ export default class OperationGenerator {
     const signingKeyId = '#signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const hubServiceEndpoint = 'did:sidetree:value0';
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
+    const hubId = 'did:sidetree:value0';
+    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(hubId);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -159,8 +159,8 @@ export default class OperationGenerator {
     const signingKeyId = '#newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const hubServiceEndpoint = 'did:sidetree:value0';
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints([hubServiceEndpoint]);
+    const hubId = 'did:sidetree:value0';
+    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(hubId);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -514,27 +514,25 @@ export default class OperationGenerator {
     didUniqueSuffix: string,
     updateRevealValue: string,
     nextUpdateCommitmentHash: string,
-    endpointsToAdd: string[],
-    endpointsToRemove: string[],
+    idToAdd: string | undefined,
+    idsToRemove: string[],
     signingKeyId: string,
     signingPrivateKey: string) {
     const patches = [];
 
-    if (endpointsToAdd.length > 0) {
+    if (idToAdd !== undefined) {
       const patch = {
         action: 'add-service-endpoints',
-        serviceType: 'IdentityHub',
-        serviceEndpoints: endpointsToAdd
+        serviceEndpoints: OperationGenerator.createIdentityHubUserServiceEndpoints(idToAdd)
       };
 
       patches.push(patch);
     }
 
-    if (endpointsToRemove.length > 0) {
+    if (idsToRemove.length > 0) {
       const patch = {
         action: 'remove-service-endpoints',
-        serviceType: 'IdentityHub',
-        serviceEndpoints: endpointsToRemove
+        serviceEndpointIds: idsToRemove
       };
 
       patches.push(patch);
@@ -578,18 +576,14 @@ export default class OperationGenerator {
 
   /**
    * Generates a single element array with a identity hub service object for DID document
-   * @param instances the instance field in serviceEndpoint. A list of DIDs
+   * @param id the id field in serviceEndpoint.
    */
-  public static createIdentityHubUserServiceEndpoints (instances: string[]): any[] {
+  public static createIdentityHubUserServiceEndpoints (id: string): any[] {
     return [
       {
-        'id': 'IdentityHub',
+        'id': id,
         'type': 'IdentityHub',
-        'serviceEndpoint': {
-          '@context': 'schema.identity.foundation/hub',
-          '@type': 'UserServiceEndpoint',
-          'instances': instances
-        }
+        'serviceEndpoint': 'https://www.hub.com'
       }
     ];
   }

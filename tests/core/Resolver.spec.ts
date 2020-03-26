@@ -32,7 +32,7 @@ describe('Resolver', () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
-      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['dummyHubUri1', 'dummyHubUri2']);
+      const serviceEndpoint = DidServiceEndpoint.createHubServiceEndpoint('dummyHubUri1');
       const [firstRecoveryRevealValue, firstRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
@@ -84,7 +84,7 @@ describe('Resolver', () => {
         didUniqueSuffix,
         update2RevealValuePriorToRecovery,
         'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-        ['dummyHubUri3'],
+        'dummyUri2',
         [],
         signingPublicKey.id,
         signingPrivateKey
@@ -103,12 +103,12 @@ describe('Resolver', () => {
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
       expect(didState.document.publicKeys.length).toEqual(2);
-      expect(didState.document.service[0].serviceEndpoint.instances.length).toEqual(3);
+      expect(didState.document.service.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
       const [newSigningPublicKey, newSigningPrivateKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
-      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint(['newDummyHubUri1', 'newDummyHubUri2']);
+      const newServiceEndpoint = DidServiceEndpoint.createHubServiceEndpoint('newDummyHubUri1');
 
       // Create the recover operation and insert it to the operation store.
       const [update1RevealValueAfterRecovery, update1CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
@@ -155,7 +155,7 @@ describe('Resolver', () => {
         didUniqueSuffix,
         update2RevealValueAfterRecovery,
         'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-        [],
+        'newDummyHubUri2',
         ['newDummyHubUri1'],
         newSigningPublicKey.id,
         newSigningPrivateKey
@@ -184,11 +184,10 @@ describe('Resolver', () => {
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
       expect(document.service).toBeDefined();
+      console.log(document.service)
       expect(document.service.length).toEqual(1);
       expect(document.service[0].serviceEndpoint).toBeDefined();
-      expect(document.service[0].serviceEndpoint.instances).toBeDefined();
-      expect(document.service[0].serviceEndpoint.instances.length).toEqual(1);
-      expect(document.service[0].serviceEndpoint.instances[0]).toEqual('newDummyHubUri2');
+      expect(document.service[0].id).toEqual('newDummyHubUri2');
     });
   });
 });

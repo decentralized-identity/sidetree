@@ -119,7 +119,7 @@ describe('MongoDbOperationStore', async () => {
       didUniqueSuffix,
       'anyUnusedUpdateRevealValue',
       anyUnusedCommitmentHash,
-      ['anyUnusedServiceEndpointsToAdd'],
+      'someID',
       [],
       createOperationData.signingKeyId,
       createOperationData.signingPrivateKey
@@ -146,7 +146,7 @@ describe('MongoDbOperationStore', async () => {
       didUniqueSuffix,
       'anyUnusedUpdateRevealValue',
       anyUnusedCommitmentHash,
-      ['anyUnusedServiceEndpointsToAdd'],
+      'someId',
       [],
       createOperationData.signingKeyId,
       createOperationData.signingPrivateKey

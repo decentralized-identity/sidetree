@@ -7,14 +7,11 @@ export default class DidServiceEndpoint {
   /**
    * Test if a MongoDB service is running at the specified url.
    */
-  public static createHubServiceEndpoint (instances: string[]): DidServiceEndpointModel {
+  public static createHubServiceEndpoint (id: string): DidServiceEndpointModel {
     return {
+      id: id,
       type: 'IdentityHub',
-      serviceEndpoint: {
-        '@context': 'schema.identity.foundation/hub',
-        '@type': 'UserServiceEndpoint',
-        'instances': instances
-      }
+      serviceEndpoint: 'https://www.hub.com'
     };
   }
 }

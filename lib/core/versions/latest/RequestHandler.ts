@@ -102,6 +102,7 @@ export default class RequestHandler implements IRequestHandler {
             body: document
           };
           break;
+        // these cases do nothing because we cannot return an original document
         case OperationType.Update:
         case OperationType.Recover:
         case OperationType.Revoke:
