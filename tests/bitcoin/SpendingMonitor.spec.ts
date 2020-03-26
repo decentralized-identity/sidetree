@@ -1,9 +1,8 @@
-// import BitcoinProcessor from '../../lib/bitcoin/BitcoinProcessor';
+import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import SpendingMonitor from '../../lib/bitcoin/SpendingMonitor';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
-import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 
 describe('SpendingMonitor', () => {
 
