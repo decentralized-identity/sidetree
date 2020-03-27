@@ -163,8 +163,8 @@ For this version of the protocol, there will only exist a single Batch File that
 
 In this version of the protocol, Batch Files are constructed as follows:
 
-1. The Batch File MUST include an `operation` property, and its value MUST be an array.
-2. Each [operation](#did-operation) entry to be included in the Batch File MUST be a `base64` encoded value of the operation data matching the type of operation it represents, and shall be appended to the `operation` array as follows:
+1. The Batch File MUST include an `operations` property, and its value MUST be an array.
+2. Each [operation](#did-operations) entry to be included in the Batch File MUST be a `base64` encoded value of the operation data matching the type of operation it represents, and shall be appended to the `operations` array as follows:
     1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Data Objects_](#create-data-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
     2. If any Recovery operations were present in the associated Anchor File, append all [Recovery Operation Data Objects_](#recovery-data-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
     3. If any Update operations were present in the associated Map File, append all [Update Operation Data Objects_](#update-data-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).
