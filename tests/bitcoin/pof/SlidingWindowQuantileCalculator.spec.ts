@@ -6,14 +6,17 @@ describe('SlidingWindowQuantileCalculator', async () => {
   const maxValue = 128;
   const slidingWindowSize = 2;
   const medianQuantile = 0.5;
+  const deviationWindowFactor = 100; // Make the factor really large for testing
   let slidingWindowQuantileStore: ISlidingWindowQuantileStore;
   let slidingWindowQuantileCalculator: SlidingWindowQuantileCalculator;
 
   beforeAll(async () => {
     slidingWindowQuantileStore = new MockSlidingWindowQuantileStore();
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, deviationWindowFactor, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
+
+    spyOn(slidingWindowQuantileCalculator as any, 'calculateAdjustedQuantile').and.callFake((current: any, _previous: any) => current);
   });
 
   beforeEach(async () => {
@@ -145,7 +148,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     // start a new calculator with the same store
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, deviationWindowFactor, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
 
     // quantile of 0 is over [2x100], so 2
@@ -203,5 +206,46 @@ describe('SlidingWindowQuantileCalculator', async () => {
     quantile1 = slidingWindowQuantileCalculator.getQuantile(1);
     expect(quantile1).toBeDefined();
     expect(quantile1!).toBe(2);
+  });
+
+  describe('calculateAdjustedQuantile', () => {
+    let previousValue: number;
+    let lowerLimit: number;
+    let upperLimit: number;
+
+    beforeEach(() => {
+      // Make the factor really large for testing purpose
+      previousValue = 20;
+      lowerLimit = previousValue * (1 - slidingWindowQuantileCalculator['quantileDeviationWindowFactor']);
+      upperLimit = previousValue * (1 + slidingWindowQuantileCalculator['quantileDeviationWindowFactor']);
+    });
+
+    it('should return the current value if the previous is undefined', () => {
+      const currentValue = 1234;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, undefined);
+
+      expect(actual).toEqual(currentValue);
+    });
+
+    it('should return the current value if it is within the limit', () => {
+      const currentValue = lowerLimit + 1;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, previousValue);
+
+      expect(actual).toEqual(currentValue);
+    });
+
+    it('should return the lower limit if the current value is < lower limt', () => {
+      const currentValue = lowerLimit - 1;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, previousValue);
+
+      expect(actual).toEqual(lowerLimit);
+    });
+
+    it('should return the upper limit if the current value is > upper limit', () => {
+      const currentValue = upperLimit + 1;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, previousValue);
+
+      expect(actual).toEqual(upperLimit);
+    });
   });
 });

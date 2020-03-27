@@ -66,6 +66,7 @@ export default class SlidingWindowQuantileCalculator {
     maxValue: number,  // all values above maxValue are rounded down by maxValue
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
+    private readonly quantileDeviationWindowFactor: number, // Value to determine how much is the quantile value allowed to deviate from the previous value
     private readonly mongoStore: ISlidingWindowQuantileStore
     ) {
     this.valueApproximator = new ValueApproximator(this.feeApproximate, maxValue);
@@ -138,7 +139,10 @@ export default class SlidingWindowQuantileCalculator {
     }
 
     // calculate and materialize the quantile as of this groupId
-    const quantile = this.calculateCurrentQuantile();
+    const currentQuantile = this.calculateCurrentQuantile();
+    const previousQuantile = this.prevgroupId ? this.historicalQuantiles.get(this.prevgroupId) : undefined;
+
+    const quantile = this.calculateAdjustedQuantile(currentQuantile, previousQuantile);
     this.historicalQuantiles.set(groupId, quantile);
 
     // store it into mongo store
@@ -213,5 +217,24 @@ export default class SlidingWindowQuantileCalculator {
 
     // should never come here.
     return 0;
+  }
+
+  private calculateAdjustedQuantile (currentQuantile: number, previousQuantile: number | undefined): number {
+    if (!previousQuantile) {
+      return currentQuantile;
+    }
+
+    const lowerLimit = (1 - this.quantileDeviationWindowFactor) * previousQuantile;
+    const upperLimit = (1 + this.quantileDeviationWindowFactor) * previousQuantile;
+
+    if (currentQuantile < lowerLimit) {
+      return lowerLimit;
+    }
+
+    if (currentQuantile > upperLimit) {
+      return upperLimit;
+    }
+
+    return currentQuantile;
   }
 }

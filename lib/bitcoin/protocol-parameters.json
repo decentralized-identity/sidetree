@@ -3,6 +3,7 @@
   "windowSizeInGroups": 10,
   "sampleSizePerGroup": 25,
   "quantileMeasure": 0.5,
+  "quantileDeviationWindowFactor": 0.001,
 
   "maxInputCountForSampledTransaction": 100,
   "historicalOffsetInBlocks": 200,
