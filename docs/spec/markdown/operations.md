@@ -24,11 +24,11 @@ Use the following process to generate a Sidetree-based DID:
     ```json
     {
       "next_update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE,
-      "document_data": {...}
+      "patch_data": [ PATCH_1, PATCH_2, ... ]
     }
     ```
     - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
-    - The object MUST contain a `document_data` property, and its value MUST be the composed _Sidetree Document State Object_.
+    - The object MUST contain a `patch_data` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
 
 ### Update
 
@@ -39,11 +39,11 @@ The following process must be used to update the state a Sidetree-based DID:
     ```json
     {
       "next_update_commitment": COMMITMENT_HASH,
-      "patches": [ PATCH_1, PATCH_2, ... ]
+      "patch_data": [ PATCH_1, PATCH_2, ... ]
     }
     ```
     - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ (generated using the [`HASH_ALGORITHM`](#hash-algorithm)), to be revealed for the next Update operation.
-    - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
+    - The object MUST contain a `patch_data` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
 
 ### Recover
 
@@ -59,11 +59,11 @@ Use the following process to generate a Sidetree-based DID:
     ```json
     {
       "next_update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE,
-      "document_data": {...}
+      "patch_data": [ PATCH_1, PATCH_2, ... ]
     }
     ```
     - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
-    - The object MUST contain a `document_data` property, and its value MUST be the composed _Sidetree Document State Object_.
+    - The object MUST contain a `patch_data` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
 
 ### Deactivate
 
