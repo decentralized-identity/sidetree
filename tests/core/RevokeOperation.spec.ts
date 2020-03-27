@@ -72,17 +72,17 @@ describe('RevokeOperation', async () => {
     });
   });
 
-  describe('parseSignedOperationDataPayload()', async () => {
-    it('should throw if signed operation data contains an additional unknown property.', async (done) => {
+  describe('parseSignedDataPayload()', async () => {
+    it('should throw if signedData contains an additional unknown property.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
-      const signedOperationData = {
+      const signedData = {
         didUniqueSuffix,
         recoveryRevealValue,
         extraProperty: 'An unknown extra property'
       };
-      const encodedOperationData = Encoder.encode(JSON.stringify(signedOperationData));
-      await expectAsync((RevokeOperation as any).parseSignedOperationDataPayload(encodedOperationData, didUniqueSuffix, recoveryRevealValue))
+      const encodedPatchData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RevokeOperation as any).parseSignedDataPayload(encodedPatchData, didUniqueSuffix, recoveryRevealValue))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RevokeOperationSignedDataMissingOrUnknownProperty));
       done();
     });
@@ -90,12 +90,12 @@ describe('RevokeOperation', async () => {
     it('should throw if signed `didUniqueSuffix` is mismatching.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
-      const signedOperationData = {
+      const signedData = {
         didUniqueSuffix,
         recoveryRevealValue
       };
-      const encodedOperationData = Encoder.encode(JSON.stringify(signedOperationData));
-      await expectAsync((RevokeOperation as any).parseSignedOperationDataPayload(encodedOperationData, 'mismatchingDidUniqueSuffix', recoveryRevealValue))
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RevokeOperation as any).parseSignedDataPayload(encodedSignedData, 'mismatchingDidUniqueSuffix', recoveryRevealValue))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RevokeOperationSignedDidUniqueSuffixMismatch));
       done();
     });
@@ -103,12 +103,12 @@ describe('RevokeOperation', async () => {
     it('should throw if signed `recoveryRevealValue` is mismatching.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
-      const signedOperationData = {
+      const signedData = {
         didUniqueSuffix,
         recoveryRevealValue
       };
-      const encodedOperationData = Encoder.encode(JSON.stringify(signedOperationData));
-      await expectAsync((RevokeOperation as any).parseSignedOperationDataPayload(encodedOperationData, didUniqueSuffix, 'mismatchingRecoveryRevealValue'))
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RevokeOperation as any).parseSignedDataPayload(encodedSignedData, didUniqueSuffix, 'mismatchingRecoveryRevealValue'))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RevokeOperationSignedRecoveryRevealValueMismatch));
       done();
     });

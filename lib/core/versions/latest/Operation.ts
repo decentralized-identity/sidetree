@@ -4,9 +4,9 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
-import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
+import PatchDataModel from './models/PatchDataModel';
 import RecoverOperation from './RecoverOperation';
 import RevokeOperation from './RevokeOperation';
 import SidetreeError from '../../../common/SidetreeError';
@@ -43,32 +43,32 @@ export default class Operation {
   }
 
   /**
-   * Parses the given encoded operation data string.
+   * Parses the given encoded patch data string.
    */
-  public static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationDataMissingOrNotString);
+  public static async parsePatchData (patchDataEncodedString: any): Promise<PatchDataModel> {
+    if (typeof patchDataEncodedString !== 'string') {
+      throw new SidetreeError(ErrorCode.PatchDataMissingOrNotString);
     }
 
-    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const operationData = await JsonAsync.parse(operationDataJsonString);
+    const patchDataJsonString = Encoder.decodeAsString(patchDataEncodedString);
+    const patchData = await JsonAsync.parse(patchDataJsonString);
 
-    const properties = Object.keys(operationData);
+    const properties = Object.keys(patchData);
     if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.OperationDataMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.PatchDataMissingOrUnknownProperty);
     }
 
-    if (operationData.patches === undefined) {
+    if (patchData.patches === undefined) {
       throw new SidetreeError(ErrorCode.OperationDocumentPatchesMissing);
     }
 
     // Validate `patches` property using the DocumentComposer.
-    DocumentComposer.validateDocumentPatches(operationData.patches);
+    DocumentComposer.validateDocumentPatches(patchData.patches);
 
-    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(operationData.nextUpdateCommitmentHash);
+    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(patchData.nextUpdateCommitmentHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitmentHash);
 
-    return operationData;
+    return patchData;
   }
 
   /**

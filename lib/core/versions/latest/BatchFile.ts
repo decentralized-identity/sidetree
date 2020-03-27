@@ -28,35 +28,35 @@ export default class BatchFile {
     console.info(`Parsed batch file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
-    const allowedProperties = new Set(['operationData']);
+    const allowedProperties = new Set(['patchSet']);
     for (let property in batchFileObject) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.BatchFileUnexpectedProperty, `Unexpected property ${property} in batch file.`);
       }
     }
 
-    // Make sure operationData is an array.
-    if (!(batchFileObject.operationData instanceof Array)) {
-      throw new SidetreeError(ErrorCode.BatchFileOperationDataPropertyNotArray, 'Invalid batch file, operationData property is not an array.');
+    // Make sure patchSet is an array.
+    if (!(batchFileObject.patchSet instanceof Array)) {
+      throw new SidetreeError(ErrorCode.BatchFilePatchSetPropertyNotArray, 'Invalid batch file, patchData property is not an array.');
     }
 
     // Make sure all operations are strings.
-    batchFileObject.operationData.forEach((operation: any) => {
+    batchFileObject.patchSet.forEach((operation: any) => {
       if (typeof operation !== 'string') {
-        throw new SidetreeError(ErrorCode.BatchFileOperationDataNotArrayOfStrings, 'Invalid batch file, operationData property is not an array of strings.');
+        throw new SidetreeError(ErrorCode.BatchFilePatchSetNotArrayOfStrings, 'Invalid batch file, patchData property is not an array of strings.');
       }
     });
 
     const batchFileModel = batchFileObject as BatchFileModel;
 
-    for (const encodedOperationData of batchFileModel.operationData) {
-      const operationDataBuffer = Buffer.from(encodedOperationData);
+    for (const encodedPatchData of batchFileModel.patchSet) {
+      const patchDataBuffer = Buffer.from(encodedPatchData);
 
-      // Verify size of each operation data entry does not exceed the maximum allowed limit.
-      if (operationDataBuffer.length > ProtocolParameters.maxOperationDataSizeInBytes) {
+      // Verify size of each patch data entry does not exceed the maximum allowed limit.
+      if (patchDataBuffer.length > ProtocolParameters.maxPatchDataSizeInBytes) {
         throw new SidetreeError(
-          ErrorCode.BatchFileOperationDataSizeExceedsLimit,
-          `Operation size of ${operationDataBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxOperationDataSizeInBytes} bytes.`
+          ErrorCode.BatchFilePatchDataSizeExceedsLimit,
+          `Operation size of ${patchDataBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxPatchDataSizeInBytes} bytes.`
         );
       }
     }
@@ -68,13 +68,13 @@ export default class BatchFile {
    * Creates batch file buffer.
    */
   public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
-    const operationData = [];
-    operationData.push(...createOperations.map(operation => operation.encodedOperationData!));
-    operationData.push(...recoverOperations.map(operation => operation.encodedOperationData!));
-    operationData.push(...updateOperations.map(operation => operation.encodedOperationData!));
+    const patchSet = [];
+    patchSet.push(...createOperations.map(operation => operation.encodedPatchData!));
+    patchSet.push(...recoverOperations.map(operation => operation.encodedPatchData!));
+    patchSet.push(...updateOperations.map(operation => operation.encodedPatchData!));
 
     const batchFileModel = {
-      operationData
+      patchSet
     };
 
     const rawData = Buffer.from(JSON.stringify(batchFileModel));

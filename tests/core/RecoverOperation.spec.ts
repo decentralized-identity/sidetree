@@ -105,16 +105,16 @@ describe('RecoverOperation', async () => {
     });
   });
 
-  describe('parseSignedOperationDataPayload()', async () => {
-    it('should throw if signed operation data contains an additional unknown property.', async (done) => {
-      const signedOperationData = {
-        operationDataHash: 'anyUnusedHash',
+  describe('parseSignedDataPayload()', async () => {
+    it('should throw if signedData contains an additional unknown property.', async (done) => {
+      const signedData = {
+        patchDataHash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
-      const encodedOperationData = Encoder.encode(JSON.stringify(signedOperationData));
-      await expectAsync((RecoverOperation as any).parseSignedOperationDataPayload(encodedOperationData))
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty));
       done();
     });

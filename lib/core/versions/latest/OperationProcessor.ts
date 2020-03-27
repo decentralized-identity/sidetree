@@ -76,18 +76,18 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await CreateOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Ensure actual operation data hash matches expected operation data hash.
-    const isMatchingOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.suffixData.operationDataHash);
-    if (!isMatchingOperationData) {
+    // Ensure actual patch data hash matches expected patch data hash.
+    const isMatchingPatchData = Multihash.isValidHash(operation.encodedPatchData, operation.suffixData.patchDataHash);
+    if (!isMatchingPatchData) {
       return didState;
     }
 
     // Apply the given patches against an empty object.
-    const operationData = operation.operationData;
+    const patchData = operation.patchData;
     let document = { };
     try {
-      if (operationData !== undefined) {
-        document = DocumentComposer.applyPatches(document, operationData.patches);
+      if (patchData !== undefined) {
+        document = DocumentComposer.applyPatches(document, patchData.patches);
       }
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -103,7 +103,7 @@ export default class OperationProcessor implements IOperationProcessor {
       document,
       recoveryKey: operation.suffixData.recoveryKey,
       nextRecoveryCommitmentHash: operation.suffixData.nextRecoveryCommitmentHash,
-      nextUpdateCommitmentHash: operationData ? operationData.nextUpdateCommitmentHash : undefined,
+      nextUpdateCommitmentHash: patchData ? patchData.nextUpdateCommitmentHash : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -126,9 +126,9 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
-    // Verify the operation data hash against the expected operation data hash.
-    const isValidOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.signedOperationDataHash.payload);
-    if (!isValidOperationData) {
+    // Verify the patch data hash against the expected patch data hash.
+    const isValidPatchData = Multihash.isValidHash(operation.encodedPatchData, operation.signedData.payload);
+    if (!isValidPatchData) {
       return didState;
     }
 
@@ -150,7 +150,7 @@ export default class OperationProcessor implements IOperationProcessor {
       nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
       // New values below.
       document: resultingDocument,
-      nextUpdateCommitmentHash: operation.operationData!.nextUpdateCommitmentHash,
+      nextUpdateCommitmentHash: operation.patchData!.nextUpdateCommitmentHash,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -174,23 +174,23 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the signature.
-    const signatureIsValid = await operation.signedOperationDataJws.verifySignature(didState.recoveryKey!);
+    const signatureIsValid = await operation.signedDataJws.verifySignature(didState.recoveryKey!);
     if (!signatureIsValid) {
       return didState;
     }
 
-    // Verify the actual operation data hash against the expected operation data hash.
-    const isMatchingOperationData = Multihash.isValidHash(operation.encodedOperationData, operation.signedOperationData.operationDataHash);
-    if (!isMatchingOperationData) {
+    // Verify the actual patch data hash against the expected patch data hash.
+    const isMatchingPatchData = Multihash.isValidHash(operation.encodedPatchData, operation.signedData.patchDataHash);
+    if (!isMatchingPatchData) {
       return didState;
     }
 
     // Apply the given patches against an empty object.
-    const operationData = operation.operationData;
+    const patchData = operation.patchData;
     let document = { };
     try {
-      if (operationData !== undefined) {
-        document = DocumentComposer.applyPatches(document, operationData.patches);
+      if (patchData !== undefined) {
+        document = DocumentComposer.applyPatches(document, patchData.patches);
       }
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
@@ -204,9 +204,9 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDidState = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
-      recoveryKey: operation.signedOperationData.recoveryKey,
-      nextRecoveryCommitmentHash: operation.signedOperationData.nextRecoveryCommitmentHash,
-      nextUpdateCommitmentHash: operationData ? operationData.nextUpdateCommitmentHash : undefined,
+      recoveryKey: operation.signedData.recoveryKey,
+      nextRecoveryCommitmentHash: operation.signedData.nextRecoveryCommitmentHash,
+      nextUpdateCommitmentHash: patchData ? patchData.nextUpdateCommitmentHash : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -230,7 +230,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the signature.
-    const signatureIsValid = await operation.signedOperationDataJws.verifySignature(didState.recoveryKey!);
+    const signatureIsValid = await operation.signedDataJws.verifySignature(didState.recoveryKey!);
     if (!signatureIsValid) {
       return didState;
     }
