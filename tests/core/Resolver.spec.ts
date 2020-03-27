@@ -184,7 +184,7 @@ describe('Resolver', () => {
       expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
       expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
       expect(document.service).toBeDefined();
-      console.log(document.service)
+      console.log(document.service);
       expect(document.service.length).toEqual(1);
       expect(document.service[0].serviceEndpoint).toBeDefined();
       expect(document.service[0].id).toEqual('newDummyHubUri2');

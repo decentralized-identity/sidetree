@@ -214,7 +214,7 @@ export default class DocumentComposer {
     DocumentComposer.validateServiceEndpoints(patch.serviceEndpoints);
   }
 
-  private static validateServiceEndpoints(serviceEndpoints: any[]) {
+  private static validateServiceEndpoints (serviceEndpoints: any[]) {
     for (let serviceEndpoint of serviceEndpoints) {
       if (typeof serviceEndpoint.id !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdNotString);
@@ -223,7 +223,7 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdTooLong);
       }
       if (typeof serviceEndpoint.type !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString)
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString);
       }
       if (serviceEndpoint.type.length > 30) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);

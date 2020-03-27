@@ -105,7 +105,7 @@ describe('DocumentComposer', async () => {
   describe('validateDocument', () => {
     it('should throw DocumentComposerDocumentMissing if document is undefined', () => {
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
-      expect(() => { DocumentComposer.validateDocument(undefined); }).toThrow(expectedError)
+      expect(() => { DocumentComposer.validateDocument(undefined); }).toThrow(expectedError);
     });
 
     it('should throw DocumentComposerServiceNotArray if service is not an array', () => {
