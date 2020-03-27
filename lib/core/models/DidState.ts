@@ -1,10 +1,10 @@
 import PublicKeyModel from './PublicKeyModel';
 
 /**
- * Defines the internal generic document state after an operation is applied.
+ * Defines the internal generic DID state after an operation is applied.
  * This model is created so that it is agnostic to any particular external schema.
  */
-export default interface DocumentState {
+export default interface DidState {
   didUniqueSuffix: string;
   document: any;
   recoveryKey: PublicKeyModel | undefined ;

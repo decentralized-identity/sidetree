@@ -31,6 +31,7 @@ interface LockState {
  * Encapsulates functionality to monitor and create/remove amount locks on bitcoin.
  */
 export default class LockMonitor {
+  private initialized: boolean;
 
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
@@ -58,6 +59,8 @@ export default class LockMonitor {
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
+
+    this.initialized = false;
   }
 
   /**
@@ -67,6 +70,7 @@ export default class LockMonitor {
     this.currentLockState = await this.getCurrentLockState();
 
     await this.periodicPoll();
+    this.initialized = true;
   }
 
   /**
@@ -103,8 +107,14 @@ export default class LockMonitor {
       await this.handlePeriodicPolling();
 
     } catch (e) {
-      const message = `An error occured during periodic poll: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`;
+      const message = `An error occured during periodic poll: ${SidetreeError.stringify(e)}`;
       console.error(message);
+
+      // Rethrow if the error is in the initialization phase. We don't want to conitinue with the
+      // service during initialization.
+      if (!this.initialized) {
+        throw e;
+      }
     } finally {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * this.pollPeriodInSeconds);
     }

@@ -34,10 +34,10 @@ describe('Multihash', async () => {
 
   describe('isValidHash()', async () => {
     it('should return false if encountered an unexpected error.', async () => {
-      const [otp, otpHash] = OperationGenerator.generateOtp();
+      const [revealValue, commitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const multihashHashSpy = spyOn(Multihash, 'hash').and.throwError('Simulated error message.');
-      const result = Multihash.isValidHash(otp, otpHash);
+      const result = Multihash.isValidHash(revealValue, commitmentHash);
 
       expect(multihashHashSpy).toHaveBeenCalled();
       expect(result).toBeFalsy();

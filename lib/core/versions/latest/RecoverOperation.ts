@@ -1,10 +1,10 @@
-import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import Multihash from './Multihash';
 import Operation from './Operation';
+import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PublicKeyModel from '../../models/PublicKeyModel';
@@ -13,12 +13,7 @@ import SidetreeError from '../../../common/SidetreeError';
 interface SignedOperationDataModel {
   operationDataHash: string;
   recoveryKey: PublicKeyModel;
-  nextRecoveryOtpHash: string;
-}
-
-interface OperationDataModel {
-  nextUpdateOtpHash: string;
-  document: any;
+  nextRecoveryCommitmentHash: string;
 }
 
 /**
@@ -35,8 +30,8 @@ export default class RecoverOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded one-time password for the operation. */
-  public readonly recoveryOtp: string;
+  /** Encoded reveal value for the operation. */
+  public readonly recoveryRevealValue: string;
 
   /** Signed encoded operation data. */
   public readonly signedOperationDataJws: Jws;
@@ -51,12 +46,12 @@ export default class RecoverOperation implements OperationModel {
   public readonly operationData: OperationDataModel | undefined;
 
   /**
-   * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
+   * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    recoveryOtp: string,
+    recoveryRevealValue: string,
     signedOperationDataJws: Jws,
     signedOperationData: SignedOperationDataModel,
     encodedOperationData: string | undefined,
@@ -65,7 +60,7 @@ export default class RecoverOperation implements OperationModel {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Recover;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.recoveryOtp = recoveryOtp;
+    this.recoveryRevealValue = recoveryRevealValue;
     this.signedOperationDataJws = signedOperationDataJws;
     this.signedOperationData = signedOperationData;
     this.encodedOperationData = encodedOperationData;
@@ -113,15 +108,15 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    if (typeof operationObject.recoveryOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryOtpMissingOrInvalidType);
+    if (typeof operationObject.recoveryRevealValue !== 'string') {
+      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.recoveryOtp as string).length > Operation.maxEncodedOtpLength) {
-      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryOtpTooLong);
+    if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong);
     }
 
-    const recoveryOtp = operationObject.recoveryOtp;
+    const recoveryRevealValue = operationObject.recoveryRevealValue;
 
     const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
     const signedOperationData = await RecoverOperation.parseSignedOperationDataPayload(signedOperationDataJws.payload);
@@ -136,7 +131,7 @@ export default class RecoverOperation implements OperationModel {
 
       encodedOperationData = operationObject.operationData;
       try {
-        operationData = await RecoverOperation.parseOperationData(operationObject.operationData);
+        operationData = await Operation.parseOperationData(operationObject.operationData);
       } catch {
         // For compatibility with data pruning, we have to assume that operation data may be unavailable,
         // thus an operation with invalid operation data needs to be processed as an operation with unavailable operation data,
@@ -147,7 +142,7 @@ export default class RecoverOperation implements OperationModel {
     return new RecoverOperation(
       operationBuffer,
       operationObject.didUniqueSuffix,
-      recoveryOtp,
+      recoveryRevealValue,
       signedOperationDataJws,
       signedOperationData,
       encodedOperationData,
@@ -169,32 +164,9 @@ export default class RecoverOperation implements OperationModel {
     const operationDataHash = Encoder.decodeAsBuffer(signedOperationData.operationDataHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(operationDataHash);
 
-    const nextRecoveryOtpHash = Encoder.decodeAsBuffer(signedOperationData.nextRecoveryOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryOtpHash);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedOperationData.nextRecoveryCommitmentHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return signedOperationData;
-  }
-
-  private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoverOperationDataMissingOrNotString);
-    }
-
-    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const operationData = await JsonAsync.parse(operationDataJsonString);
-
-    const allowedProperties = new Set(['document', 'nextUpdateOtpHash']);
-    for (let property in operationData) {
-      if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.RecoverOperationDataMissingOrUnknownProperty);
-      }
-    }
-
-    DocumentComposer.validateDocument(operationData.document);
-
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
-
-    return operationData;
   }
 }

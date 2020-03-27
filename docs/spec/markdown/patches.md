@@ -85,11 +85,12 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 
 #### `ietf-json-patch`
 
-::: warning
-Implementers of Sidetree-based DID networks that are open, permissionless, and decentralized should carefully consider the ramifications of adding free-form _Patch Actions_ that are not strictly evaluated by nodes, as this is very likely to result in abuse of the implementation in a myriad of ways that are not intended, and could compromise the game theoretical economic viability of the implementation.
-:::
+The `ietf-json-patch` Patch Action describes a mechanism for modifying a DID's state using [IETF JSON Patch](https://tools.ietf.org/html/rfc6902). To construct a `ietf-json-patch` _Patch Action_, compose an object as follows:
 
-::: example
+1. The object MUST include an `action` property, and its value MUST be `ietf-json-patch`.
+2. The object MUST include a `patches` property, and its value MUST be an array of [IETF JSON Patch](https://tools.ietf.org/html/rfc6902) operation objects.
+
+::: example 1
 ```json
 {
   "action": "ietf-json-patch",
@@ -104,8 +105,31 @@ Implementers of Sidetree-based DID networks that are open, permissionless, and d
 ```
 :::
 
-The `ietf-json-patch` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. To construct a `ietf-json-patch` _Patch Action_, compose an object as follows:
+::: example 2
+```json
+{
+  "action": "ietf-json-patch",
+  "patches": [
+    {
+      "op": "replace",
+      "path": "/service",
+      "value": [
+          {
+              "id": "did:example:123#edv",
+              "type": "EncryptedDataVault",
+              "serviceEndpoint": "https://edv.example.com/",
+          },
+      ],
+      }
+  ]
+}
+```
+:::
 
-1. The object MUST include an `action` property, and its value MUST be `ietf-json-patch`.
-2. The object MUST include a `patches` property, and its value MUST be an array of [IETF JSON Patch](https://tools.ietf.org/html/rfc6902) operation objects.
+::: warning
+Use of `ietf-json-patch` may result in unrecoverable states, similar to "Deactivated".
+:::
 
+::: warning
+Use of `ietf-json-patch` may harm implementators ability to perform validation on operations at ingestion time, which could impact performance negatively.
+:::

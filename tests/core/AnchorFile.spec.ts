@@ -140,7 +140,7 @@ describe('AnchorFile', async () => {
 
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
         createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
-        'anyRecoveryOtp',
+        'anyRecoveryRevealValue',
         createOperationData.recoveryPrivateKey
       );
 
