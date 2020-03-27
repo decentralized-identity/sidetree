@@ -1,8 +1,8 @@
 ## Context
 
-Per the [DID Core Spec](https://github.com/w3c/did-core) an `@context` MAY be used to enable a DID Document to be valid JSON-LD / Linked Data Format.
+Per the [DID Core Spec](https://github.com/w3c/did-core) an `@context` MAY be used to represent a DID Document as Linked Data.
 
-Any properties not defined in DID Core, MUST be defined in this context, or in a DID Method Specific One.
+If an `@context` is present, any properties not defined in DID Core, MUST be defined in this context, or in a DID Method specific one.
 
 For example: 
 
@@ -16,18 +16,15 @@ For example:
 }
 ```
 
-
-### Terminology
-
-<h4 id="usage"><a href="#usage">usage</a></h4>
+### usage
 
 Deprecated. DO NOT USE.
 
-<h4 id="publicKeyJwk"><a href="#publicKeyJwk">publicKeyJwk</a></h4>
+### publicKeyJwk
 
 A secp256k1 public key in JWK format. A JSON Web Key (JWK) is a JavaScript Object Notation (JSON) data structure that represents a cryptographic key. Read [RFC7517](https://tools.ietf.org/html/rfc7517).
 
-#### Example:
+Example:
 
 ```json
 {
@@ -43,11 +40,11 @@ A secp256k1 public key in JWK format. A JSON Web Key (JWK) is a JavaScript Objec
 }
 ```
 
-<h4 id="publicKeyHex"><a href="#publicKeyHex">publicKeyHex</a></h4>
+### publicKeyHex
 
 A hex encoded secp256k1 compressed public key.
 
-#### Example:
+Example:
 
 ```json
 {
