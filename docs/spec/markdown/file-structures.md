@@ -147,7 +147,7 @@ A valid Map File is a JSON document that MUST NOT exceed the [`MAX_MAP_FILE_SIZE
 
 Batch Files are JSON Documents, compressed via the [COMPRESSION_ALGORITHM](#compression-algorithm) contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier's DID Document.
 
-For the this version of the protocol, there will only exist a single Batch File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into mutliple chunks, each with their own Batch File.
+For this version of the protocol, there will only exist a single Batch File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into multiple chunks, each with their own Batch File.
 
 ::: example Create operation Batch File entry
 ```json
