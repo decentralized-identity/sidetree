@@ -138,22 +138,22 @@ describe('RequestHandler', () => {
     const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
-    expect(batchFile.operationData.length).toEqual(1);
+    expect(batchFile.patchSet.length).toEqual(1);
   });
 
-  it('should return bad request if operation data given in request is larger than protocol limit.', async () => {
+  it('should return bad request if patch data given in request is larger than protocol limit.', async () => {
     const createOperationData = await OperationGenerator.generateCreateOperation();
     const createOperationRequest = createOperationData.operationRequest;
     const getRandomBytesAsync = util.promisify(crypto.randomBytes);
     const largeBuffer = await getRandomBytesAsync(4000);
-    createOperationRequest.operationData = Encoder.encode(largeBuffer);
+    createOperationRequest.patchData = Encoder.encode(largeBuffer);
 
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.RequestHandlerOperationDataExceedsMaximumSize);
+    expect(response.body.code).toEqual(ErrorCode.RequestHandlerPatchDataExceedsMaximumSize);
   });
 
   it('should return bad request if two operations for the same DID is received.', async () => {

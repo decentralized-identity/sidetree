@@ -2,9 +2,9 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import Operation from './Operation';
-import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
+import PatchDataModel from './models/PatchDataModel';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
@@ -24,14 +24,14 @@ export default class UpdateOperation implements OperationModel {
   /** Encoded reveal value for the operation. */
   public readonly updateRevealValue: string;
 
-  /** Signed operation data for the operation. */
-  public readonly signedOperationDataHash: Jws;
+  /** Signed data for the operation. */
+  public readonly signedData: Jws;
 
-  /** Operation data. */
-  public readonly operationData: OperationDataModel | undefined;
+  /** Patch data. */
+  public readonly patchData: PatchDataModel | undefined;
 
-  /** Encoded string of the operation data. */
-  public readonly encodedOperationData: string | undefined;
+  /** Encoded string of the patch data. */
+  public readonly encodedPatchData: string | undefined;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
@@ -40,16 +40,16 @@ export default class UpdateOperation implements OperationModel {
     operationBuffer: Buffer,
     didUniqueSuffix: string,
     updateRevealValue: string,
-    signedOperationDataHash: Jws,
-    encodedOperationData: string | undefined,
-    operationData: OperationDataModel | undefined) {
+    signedData: Jws,
+    encodedPatchData: string | undefined,
+    patchData: PatchDataModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
     this.updateRevealValue = updateRevealValue;
-    this.signedOperationDataHash = signedOperationDataHash;
-    this.encodedOperationData = encodedOperationData;
-    this.operationData = operationData;
+    this.signedData = signedData;
+    this.encodedPatchData = encodedPatchData;
+    this.patchData = patchData;
   }
 
   /**
@@ -76,7 +76,7 @@ export default class UpdateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `operationData` and `type` properties is expected to be absent.
+   * @param anchorFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<UpdateOperation> {
     let expectedPropertyCount = 5;
@@ -103,21 +103,21 @@ export default class UpdateOperation implements OperationModel {
 
     const updateRevealValue = operationObject.updateRevealValue;
 
-    const signedOperationDataHash = Jws.parse(operationObject.signedOperationDataHash);
+    const signedData = Jws.parse(operationObject.signedData);
 
-    // If not in anchor file mode, we need to validate `type` and `operationData` properties.
-    let encodedOperationData = undefined;
-    let operationData = undefined;
+    // If not in anchor file mode, we need to validate `type` and `patchData` properties.
+    let encodedPatchData = undefined;
+    let patchData = undefined;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }
 
-      encodedOperationData = operationObject.operationData;
-      operationData = await Operation.parseOperationData(encodedOperationData);
+      encodedPatchData = operationObject.patchData;
+      patchData = await Operation.parsePatchData(encodedPatchData);
     }
 
     return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
-      updateRevealValue, signedOperationDataHash, encodedOperationData, operationData);
+      updateRevealValue, signedData, encodedPatchData, patchData);
   }
 }

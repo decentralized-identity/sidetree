@@ -70,7 +70,7 @@ export default class MapFile {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         updateRevealValue: operation.updateRevealValue,
-        signedOperationDataHash: operation.signedOperationDataHash.toJwsModel()
+        signedData: operation.signedData.toJwsModel()
       };
     });
 

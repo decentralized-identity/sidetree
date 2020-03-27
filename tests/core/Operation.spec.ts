@@ -5,30 +5,30 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('Operation', async () => {
-  describe('parseOperationData()', async () => {
-    it('should throw if operation data is not string', async () => {
-      await expectAsync(Operation.parseOperationData(123)).toBeRejectedWith(new SidetreeError(ErrorCode.OperationDataMissingOrNotString));
+  describe('parsePatchData()', async () => {
+    it('should throw if patch data is not string', async () => {
+      await expectAsync(Operation.parsePatchData(123)).toBeRejectedWith(new SidetreeError(ErrorCode.PatchDataMissingOrNotString));
     });
 
-    it('should throw if operation data contains an additional unknown property.', async () => {
-      const operationData = {
+    it('should throw if patch data contains an additional unknown property.', async () => {
+      const patchData = {
         patches: 'any opaque content',
         nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
-      const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
-      await expectAsync(Operation.parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationDataMissingOrUnknownProperty));
+      const encodedPatchData = Encoder.encode(JSON.stringify(patchData));
+      await expectAsync(Operation.parsePatchData(encodedPatchData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.PatchDataMissingOrUnknownProperty));
     });
 
-    it('should throw if operation data is missing patches property.', async () => {
-      const operationData = {
+    it('should throw if patch data is missing patches property.', async () => {
+      const patchData = {
         // patches: 'any opaque content', // Intentionally missing.
         nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
-      const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
-      await expectAsync(Operation.parseOperationData(encodedOperationData))
+      const encodedPatchData = Encoder.encode(JSON.stringify(patchData));
+      await expectAsync(Operation.parsePatchData(encodedPatchData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationDocumentPatchesMissing));
     });
   });

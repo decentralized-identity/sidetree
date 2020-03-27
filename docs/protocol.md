@@ -16,7 +16,7 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 | Term                  | Description                                                                    |
 |-----------------------|--------------------------------------------------------------------------------|
 | Anchor file           | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file            | The file containing all the operation data batched together.                   |
+| Batch file            | The file containing all the patch data batched together.                   |
 | CAS                   | Same as DCAS.                                                                  |
 | DCAS                  | Distributed content-addressable storage.                                       |
 | DID Document          | A document containing metadata of a DID, see [DID specification](https://w3c-ccg.github.io/did-spec/). |
@@ -108,7 +108,7 @@ The Sidetree protocol increases operation throughput by batching multiple operat
 For every batch of Sidetree operations created, there are three files that are created and stored in the CAS layer:
 
 1. Batch file - The file containing the actual change data of all the operations batched together.
-1. Map file - This file contain references to one or more _batch files_. Currently this map file only reference one batch file, but this design allows for operation data to be separated in multiple batch files for optimized on-demand resolution. 
+1. Map file - This file contain references to one or more _batch files_. Currently this map file only reference one batch file, but this design allows for all the patch data to be separated into multiple batch files for optimized on-demand resolution. 
 1. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the following:
     1. Hash of the _map file_.
     1. Array of DID suffixes (the unique portion of the DID string that differentiates one DID from another) for all DIDs that are declared to have operations within the associated _batch file_.
@@ -118,10 +118,10 @@ For every batch of Sidetree operations created, there are three files that are c
 The _batch file_ is a ZIP compressed JSON document of the following schema:
 ```json
 {
-  "operationData": [
-    "Encoded operationData from 1st operation request",
-    "Encoded operationData from 2nd operation request",
-    "Encoded operationData from nth operation request",
+  "patchSet": [
+    "Encoded patchData from 1st operation request",
+    "Encoded patchData from 2nd operation request",
+    "Encoded patchData from nth operation request",
   ]
 }
 ```
@@ -131,7 +131,7 @@ The _map file_ is a JSON document of the following schema:
 ```json
 {
   "batchFileHash": "Encoded multihash of the batch file.",
-  "updateOperations": ["Update operation request excluding `type` and `operationData` properties.", "..."]
+  "updateOperations": ["Update operation request excluding `type` and `patchData` properties.", "..."]
 }
 ```
 
@@ -141,8 +141,8 @@ The _anchor file_ is a JSON document of the following schema:
 {
   "mapFileHash": "Encoded multihash of the map file.",
   "operations": {
-    "createOperations": ["Update operation request excluding `type` and `operationData` properties.", "..."],
-    "recoverOperations": ["Recover operation request excluding `type` and `operationData` properties.", "..."],
+    "createOperations": ["Update operation request excluding `type` and `patchData` properties.", "..."],
+    "recoverOperations": ["Recover operation request excluding `type` and `patchData` properties.", "..."],
     "revokeOperations": ["Recoke operation request excluding `type` properties.", "..."]
   }
 }
@@ -219,29 +219,6 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 
   See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify reveal values and commitment hashes in each operation.
 
-## Sidetree Transaction Processing
-A Sidetree transaction represents a batch of operations to be processed by Sidetree nodes. Each transaction is assigned a monotonically increasing number (but need not be increased by one), the _transaction number_ deterministically defines the order of transactions, and thus the order of operations. A _transaction number_ is assigned to all Sidetree transactions irrespective of their validity, however a transaction __must__ be  __valid__ before individual operations within it can be processed. An invalid transaction is simply discarded by Sidetree nodes. The following rules must be followed for determining the validity of a transaction:
-
-1. _Anchor file_ validation rules:
-   1. The anchor file must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
-   1. The anchor file fetched from CAS must not exceed the maximum allowed anchor file size.
-   1. Must use the hashing algorithm specified by the protocol.
-   1. All DID unique suffixes specified in the anchor file must be unique.
-1. _Batch file_ validation rules:
-   1. The batch file must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
-   1. The batch file must not exceed the maximum allowed batch file size.
-   1. Must use the hashing algorithm specified by the protocol.
-   1. DID unique suffixes found in the batch file must match DID unique suffixes found in anchor file exactly and in same order.
-1. The transaction must meet the proof-of-fee requirements defined by the protocol.
-1. Every operation in the batch file must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
-
-   1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
-
-   1. Must not exceed the operation size specified by the protocol.
-
-   1. Must use the hashing algorithm specified by the protocol.
-
-> NOTE: A transaction is __not__ considered to be _invalid_ if the corresponding _anchor file_ or _batch file_ cannot be found. Such transactions are _unresolvable transactions_, and must be reprocessed when the _anchor file_ or _batch file_ becomes available.
 
 ## DID Revocation and Recovery
 Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is revoked, it cannot be recovered.
@@ -301,14 +278,14 @@ POST / HTTP/1.1
 {
   "type": "create",
   "suffixData": "Encoded JSON object containing data used to compute the unique DID suffix.",
-  "operationData": "Encoded JSON object containing create operation data."
+  "patchData": "Encoded JSON object containing create patch data."
 }
 ```
 
 #### `suffixData` property schema
 ```json
 {
-  "operationDataHash": "Hash of the operation data.",
+  "patchDataHash": "Hash of the patch data.",
   "recoveryKey": {
     "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
   },
@@ -316,7 +293,7 @@ POST / HTTP/1.1
 }
 ```
 
-#### `operationData` property schema
+#### `patchData` property schema
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the document patch schema.",
@@ -437,16 +414,16 @@ POST / HTTP/1.1
   "type": "update",
   "didUniqueSuffix": "The unique suffix of the DID to be updated.",
   "updateRevealValue": "Reveal value for this update.",
-  "signedOperationDataHash": {
+  "signedData": {
     "protected": "JWS header.",
-    "payload": "Hash of the operation data.",
+    "payload": "Hash of the patch data.",
     "signature": "JWS signature."
   },
-  "operationData": "Encoded JSON object containing update operation data."
+  "patchData": "Encoded JSON object containing update patch data."
 }
 ```
 
-#### Update `operationData` property schema
+#### Decoded `patchData` schema
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the patch schema.",
@@ -478,25 +455,25 @@ POST / HTTP/1.1
   "type": "recover",
   "didUniqueSuffix": "The unique suffix of the DID to be recovered.",
   "recoveryRevealValue": "The reveal value for this recovery.",
-  "signedOperationData": {
+  "signedData": {
     "protected": "JWS header.",
-    "payload": "JWS encoded JSON object containing recover operation data that are signed.",
+    "payload": "JWS encoded JSON object containing recovery data that are signed.",
     "signature": "JWS signature."
   },
-  "operationData": "Encoded JSON object containing unsigned portion of the recovery request."
+  "patchData": "Encoded JSON object containing recovery patch data."
 }
 ```
 
-#### `signedOperationData` property schema
+#### `signedData` decoded payload schema
 ```json
 {
-  "operationDataHash": "Hash of the unsigned operation data.",
+  "patchDataHash": "Hash of the encoded patch data.",
   "recoveryKey": "The new recovery key.",
   "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
 }
 ```
 
-#### `operationData` schema
+#### Decoded `patchData` schema
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the patch schema.",
@@ -529,15 +506,15 @@ POST /
   "type": "revoke",
   "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
   "recoveryRevealValue": "The current reveal value to use for this request.",
-  "signedOperationData": {
+  "signedData": {
     "protected": "JWS header.",
-    "payload": "JWS encoded JSON object containing revoke operation data that are signed.",
+    "payload": "JWS encoded JSON object containing required data to be signed.",
     "signature": "JWS signature."
   }
 }
 ```
 
-#### `signedOperationData` property schema
+#### `signedData` decoded payload schema
 ```json
 {
   "didUniqueSuffix": "The unique suffix of the DID to be revoked.",

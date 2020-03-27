@@ -40,15 +40,15 @@ export default class RequestHandler implements IRequestHandler {
     try {
       const operationRequest = await JsonAsync.parse(request);
 
-      // Check `operationData` property data size if they exist in the operation.
+      // Check `patchData` property data size if they exist in the operation.
       if (operationRequest.type === OperationType.Create ||
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
-        const operationDataBuffer = Buffer.from(operationRequest.operationData);
-        if (operationDataBuffer.length > ProtocolParameters.maxOperationDataSizeInBytes) {
-          const errorMessage = `operationDdata byte size of ${operationDataBuffer.length} exceeded limit of ${ProtocolParameters.maxOperationDataSizeInBytes}`;
+        const patchDataBuffer = Buffer.from(operationRequest.patchData);
+        if (patchDataBuffer.length > ProtocolParameters.maxPatchDataSizeInBytes) {
+          const errorMessage = `operationDdata byte size of ${patchDataBuffer.length} exceeded limit of ${ProtocolParameters.maxPatchDataSizeInBytes}`;
           console.info(errorMessage);
-          throw new SidetreeError(ErrorCode.RequestHandlerOperationDataExceedsMaximumSize, errorMessage);
+          throw new SidetreeError(ErrorCode.RequestHandlerPatchDataExceedsMaximumSize, errorMessage);
         }
       }
 

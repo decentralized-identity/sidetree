@@ -512,7 +512,7 @@ describe('TransactionProcessor', () => {
       const mapFileBuffer = await MapFile.createBuffer(batchFileHash, [updateOperation]);
       const mapFileModel = await MapFile.parse(mapFileBuffer);
 
-      // Create batch file model with operation data for the 2 operations created above.
+      // Create batch file model with patch data for the 2 operations created above.
       const batchFileBuffer = await BatchFile.createBuffer([createOperation], [], [updateOperation]);
       const batchFileModel = await BatchFile.parse(batchFileBuffer);
 

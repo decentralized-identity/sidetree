@@ -50,7 +50,7 @@ export default class BatchWriter implements IBatchWriter {
     const revokeOperations = operationModels.filter(operation => operation.type === OperationType.Revoke) as RevokeOperation[];
 
     // Create the batch file buffer from the operation models.
-    // NOTE: revoke operations don't have operation data.
+    // NOTE: revoke operations don't have patch data.
     const batchFileBuffer = await BatchFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
     // Write the batch file to content addressable store.
