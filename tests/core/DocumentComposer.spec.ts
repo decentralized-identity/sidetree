@@ -33,7 +33,7 @@ describe('DocumentComposer', async () => {
         ]
       };
 
-      expect(result).toEqual(expected)
+      expect(result).toEqual(expected);
     });
   });
 
