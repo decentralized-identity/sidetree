@@ -77,7 +77,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    fit('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if serviceEndpoint is too long', () => {
+    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if serviceEndpoint is too long', () => {
       const patch = {
         serviceEndpoints: [{
           id: 'someId',
