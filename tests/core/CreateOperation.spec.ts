@@ -58,7 +58,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data contains an additional unknown property.', async () => {
       const suffixData = {
-        operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryKey: { publicKeyHex: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
@@ -70,7 +70,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data is missing recovery key.', async () => {
       const suffixData = {
-        operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         // recoveryKey: { publicKeyHex: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' }, // Intentionally missing.
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
@@ -82,7 +82,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data has invalid recovery key.', async () => {
       const suffixData = {
-        operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryKey: { knownKeyType: 123 },
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };

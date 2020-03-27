@@ -59,7 +59,7 @@ describe('UpdateOperation', async () => {
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer))
-      .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
+              .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
     });
 
     it('should throw if recoveryRevealValue is too long.', async () => {

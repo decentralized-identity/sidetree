@@ -6,8 +6,8 @@
   "maxEncodedHashStringLength": 100,
   "maxNumberOfOperationsPerTransactionTime": 600000,
   "maxNumberOfTransactionsPerTransactionTime": 300,
-  "maxOperationDataSizeInBytes": 1000,
   "maxOperationsPerBatch": 10000,
+  "maxPatchDataSizeInBytes": 1000,
   "maxNumberOfOperationsForNoValueTimeLock": 100,
   "normalizedFeeToPerOperationFeeMultiplier": 0.01,
   "valueTimeLockAmountMultiplier": 10

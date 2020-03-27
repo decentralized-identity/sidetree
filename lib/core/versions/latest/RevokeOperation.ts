@@ -7,7 +7,7 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
-interface SignedOperationDataModel {
+interface SignedDataModel {
   didUniqueSuffix: string;
   recoveryRevealValue: string;
 }
@@ -29,11 +29,11 @@ export default class RevokeOperation implements OperationModel {
   /** Encoded reveal value for the operation. */
   public readonly recoveryRevealValue: string;
 
-  /** Signed encoded operation data. */
-  public readonly signedOperationDataJws: Jws;
+  /** Signed data. */
+  public readonly signedDataJws: Jws;
 
-  /** Decoded signed operation data payload. */
-  public readonly signedOperationData: SignedOperationDataModel;
+  /** Decoded signed data payload. */
+  public readonly signedData: SignedDataModel;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
@@ -42,15 +42,15 @@ export default class RevokeOperation implements OperationModel {
     operationBuffer: Buffer,
     didUniqueSuffix: string,
     recoveryRevealValue: string,
-    signedOperationDataJws: Jws,
-    signedOperationData: SignedOperationDataModel
+    signedDataJws: Jws,
+    signedData: SignedDataModel
   ) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Revoke;
     this.didUniqueSuffix = didUniqueSuffix;
     this.recoveryRevealValue = recoveryRevealValue;
-    this.signedOperationDataJws = signedOperationDataJws;
-    this.signedOperationData = signedOperationData;
+    this.signedDataJws = signedDataJws;
+    this.signedData = signedData;
   }
 
   /**
@@ -77,7 +77,7 @@ export default class RevokeOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `operationData` and `type` properties is expected to be absent.
+   * @param anchorFileMode If set to true, then `type` is expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RevokeOperation> {
     let expectedPropertyCount = 4;
@@ -104,9 +104,9 @@ export default class RevokeOperation implements OperationModel {
 
     const recoveryRevealValue = operationObject.recoveryRevealValue;
 
-    const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
-    const signedOperationData = await RevokeOperation.parseSignedOperationDataPayload(
-      signedOperationDataJws.payload, operationObject.didUniqueSuffix, recoveryRevealValue);
+    const signedDataJws = Jws.parse(operationObject.signedData);
+    const signedData = await RevokeOperation.parseSignedDataPayload(
+      signedDataJws.payload, operationObject.didUniqueSuffix, recoveryRevealValue);
 
     // If not in anchor file mode, we need to validate `type` property.
     if (!anchorFileMode) {
@@ -119,30 +119,30 @@ export default class RevokeOperation implements OperationModel {
       operationBuffer,
       operationObject.didUniqueSuffix,
       recoveryRevealValue,
-      signedOperationDataJws,
-      signedOperationData
+      signedDataJws,
+      signedData
     );
   }
 
-  private static async parseSignedOperationDataPayload (
-    operationDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryRevealValue: string): Promise<SignedOperationDataModel> {
+  private static async parseSignedDataPayload (
+    patchDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryRevealValue: string): Promise<SignedDataModel> {
 
-    const signedOperationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const signedOperationData = await JsonAsync.parse(signedOperationDataJsonString);
+    const signedDataJsonString = Encoder.decodeAsString(patchDataEncodedString);
+    const signedData = await JsonAsync.parse(signedDataJsonString);
 
-    const properties = Object.keys(signedOperationData);
+    const properties = Object.keys(signedData);
     if (properties.length !== 2) {
       throw new SidetreeError(ErrorCode.RevokeOperationSignedDataMissingOrUnknownProperty);
     }
 
-    if (signedOperationData.didUniqueSuffix !== expectedDidUniqueSuffix) {
+    if (signedData.didUniqueSuffix !== expectedDidUniqueSuffix) {
       throw new SidetreeError(ErrorCode.RevokeOperationSignedDidUniqueSuffixMismatch);
     }
 
-    if (signedOperationData.recoveryRevealValue !== expectedRecoveryRevealValue) {
+    if (signedData.recoveryRevealValue !== expectedRecoveryRevealValue) {
       throw new SidetreeError(ErrorCode.RevokeOperationSignedRecoveryRevealValueMismatch);
     }
 
-    return signedOperationData;
+    return signedData;
   }
 }

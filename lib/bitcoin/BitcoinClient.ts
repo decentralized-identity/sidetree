@@ -102,6 +102,14 @@ export default class BitcoinClient {
   }
 
   /**
+   * Converts the amount from BTC to satoshis.
+   * @param amountInBtc The amount in BTC
+   */
+  public static convertBtcToSatoshis (amountInBtc: number): number {
+    return Unit.fromBTC(amountInBtc).toSatoshis();
+  }
+
+  /**
    * Broadcasts the specified data transaction.
    * @param bitcoinSidetreeTransaction The transaction object.
    */
@@ -116,7 +124,10 @@ export default class BitcoinClient {
    * @param bitcoinLockTransaction The transaction object.
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
-    return this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+    const transactionHash = this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+    console.info(`Broadcasted lock transaction: ${transactionHash}`);
+
+    return transactionHash;
   }
 
   /**
@@ -387,9 +398,16 @@ export default class BitcoinClient {
     };
 
     const response = await this.rpcCall(request, true);
+
+    if (!response.feerate ||
+        (response.errors && response.errors.length > 0)) {
+      const error = response.errors ? JSON.stringify(response.errors) : `Feerate is undefined`;
+      throw new Error(`Fee rate could not be estimated. Error: ${error}`);
+    }
+
     const feerateInBtc = response.feerate;
 
-    return Unit.fromBTC(feerateInBtc).toSatoshis();
+    return BitcoinClient.convertBtcToSatoshis(feerateInBtc);
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */

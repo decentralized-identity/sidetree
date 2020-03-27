@@ -91,9 +91,6 @@ export default class BitcoinProcessor {
 
   private readonly transactionSampler: ReservoirSampler;
 
-  /** satoshis per bitcoin */
-  private static readonly satoshiPerBitcoin = 100000000;
-
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
 
@@ -103,11 +100,11 @@ export default class BitcoinProcessor {
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
-      config.bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin,
+      BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
       this.transactionStore);
 
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
-    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinClient.convertBtcToSatoshis(1),
       ProtocolParameters.windowSizeInGroups,
       ProtocolParameters.quantileMeasure,
       mongoQuantileStore);
@@ -145,9 +142,9 @@ export default class BitcoinProcessor {
         this.mongoDbLockTransactionStore,
         this.lockResolver,
         config.valueTimeLockPollPeriodInSeconds || 10 * 60,
-        config.valueTimeLockAmountInBitcoins * BitcoinProcessor.satoshiPerBitcoin, // Desired lock amount in satoshis
-        valueTimeLockTransactionFeesInBtc * BitcoinProcessor.satoshiPerBitcoin,    // Txn Fees amoount in satoshis
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks);                  // Desired lock duration in blocks
+        BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
+        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amoount in satoshis
+        ProtocolParameters.maximumValueTimeLockDurationInBlocks);                 // Desired lock duration in blocks
   }
 
   /**
@@ -331,7 +328,10 @@ export default class BitcoinProcessor {
   public async getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel> {
 
     try {
-      return this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
+      // NOTE: must return the await response as otherwise, the following exception handler is not invoked
+      // (instead the caller's exception handler is invoked) and the correct status/error-code etc is not
+      // bubbled up above.
+      return await this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
     } catch (e) {
       console.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);

@@ -27,7 +27,8 @@
         "markdown/pof.md",
         "markdown/resolution.md",
         "markdown/method-versioning.md",
-        "markdown/protocol-versioning.md"
+        "markdown/protocol-versioning.md",
+        "markdown/context.md"
       ]
     }
   ]
