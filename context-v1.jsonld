@@ -1,0 +1,11 @@
+{
+  "@context": {
+    "sidetree": "https://identity.foundation/sidetree/docs/spec/#",
+    "usage": "sidetree:usage",
+    "publicKeyHex": "sidetree:publicKeyHex",
+    "publicKeyJwk": {
+      "@id": "sidetree:publicKeyJwk",
+      "@type": "@json"
+    }
+  }
+}
