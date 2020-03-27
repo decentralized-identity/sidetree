@@ -32,7 +32,7 @@ export default class VegetaLoadGenerator {
 
       const signingKeyId = '#signingKey';
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+      const services = OperationGenerator.generateServiceEndpoints(['did:sidetree:value0']);
 
       const [recover1RevealValue, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, recovery2CommitmentHash] = OperationGenerator.generateCommitRevealPair();

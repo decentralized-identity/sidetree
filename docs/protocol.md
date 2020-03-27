@@ -324,11 +324,7 @@ The response body is the constructed document of the DID created.
   "service": [{
     "id": "IdentityHub",
     "type": "IdentityHub",
-    "serviceEndpoint": {
-      "@context": "schema.identity.foundation/hub",
-      "@type": "UserServiceEndpoint",
-      "instance": ["did:bar:456", "did:zaz:789"]
-    }
+    "serviceEndpoint": "https://identityhub.com"
   }]
 }
 ```
@@ -385,11 +381,7 @@ GET /did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg?-sidetree-initi
   "service": [{
     "id": "IdentityHub",
     "type": "IdentityHub",
-    "serviceEndpoint": {
-      "@context": "schema.identity.foundation/hub",
-      "@type": "UserServiceEndpoint",
-      "instance": ["did:bar:456", "did:zaz:789"]
-    }
+    "serviceEndpoint": "https://identityhub.com"
   }]
 }
 ```
