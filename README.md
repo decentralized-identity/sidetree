@@ -12,7 +12,7 @@ See the [protocol document](docs/protocol.md) for the full Sidetree protocol spe
 See the [implementation document](docs/implementation.md) for the detailed description of this implementation.
 
 
-## Contribution Guidelines:
+## Code Contributions:
 
 1. Must pass `npm run test`.
 1. Must pass `npm run lint`.
@@ -23,13 +23,13 @@ See the [implementation document](docs/implementation.md) for the detailed descr
 
 ## Spec Editing/Contributions:
 
-1. Clone the repo
-2. Create a topic branch for your spec contributions
-3. Add the following entry to your local repo's `.git/info/exclude` file: `docs/spec/index.html`
+1. Clone the repo.
+2. Create a topic branch for your spec contributions.
+3. Add the following entry to your local repo's `.git/info/exclude` file: `docs/spec/index.html`.
 4. run `npm install`
 5. run `npm run spec:edit`
 6. Open the generated `index.html` rendering of the spec, located in the `docs/spec/` directory, in your browser. 
-7. Modify files in the `docs/spec/markdown/` directory to make changes, which will render realtime in the `index.html` file you have open in your browser
+7. Modify files in the `docs/spec/markdown/` directory to make changes, which will render realtime in the `index.html` file you have open in your browser.
 8. When you are happy with your changes, commit to your topic branch and open a Pull Request on GitHub and reviewers will be alerted to review for a potential merge.
 
 ## Docker
