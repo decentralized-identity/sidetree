@@ -85,7 +85,7 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 
 #### `ietf-json-patch`
 
-The `ietf-json-patch` _Patch Action_ describes an update to a DID Document, using [IETF JSON Patch](https://tools.ietf.org/html/rfc6902). To construct a `ietf-json-patch` _Patch Action_, compose an object as follows:
+The `ietf-json-patch` Patch Action describes a mechanism for modifying a DID's state using [IETF JSON Patch](https://tools.ietf.org/html/rfc6902). To construct a `ietf-json-patch` _Patch Action_, compose an object as follows:
 
 1. The object MUST include an `action` property, and its value MUST be `ietf-json-patch`.
 2. The object MUST include a `patches` property, and its value MUST be an array of [IETF JSON Patch](https://tools.ietf.org/html/rfc6902) operation objects.
