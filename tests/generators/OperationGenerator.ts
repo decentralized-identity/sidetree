@@ -118,8 +118,8 @@ export default class OperationGenerator {
     const signingKeyId = '#signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const hubId = 'did:sidetree:value0';
-    const service = OperationGenerator.createIdentityHubUserServiceEndpoints(hubId);
+    const id = 'did:sidetreevalue0';
+    const service = OperationGenerator.generateServiceEndpoints([id]);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -159,8 +159,8 @@ export default class OperationGenerator {
     const signingKeyId = '#newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const hubId = 'did:sidetree:value0';
-    const services = OperationGenerator.createIdentityHubUserServiceEndpoints(hubId);
+    const id = 'did:sidetree:value0';
+    const services = OperationGenerator.generateServiceEndpoints([id]);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -244,7 +244,7 @@ export default class OperationGenerator {
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
       publicKeys: [signingPublicKey],
-      service: serviceEndpoints
+      serviceEndpoints: serviceEndpoints
     };
 
     const patches = [{
@@ -369,7 +369,7 @@ export default class OperationGenerator {
     serviceEndpoints?: DidServiceEndpointModel[]) {
     const document = {
       publicKeys: [newSigningPublicKey],
-      service: serviceEndpoints
+      serviceEndpoints: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
       didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryCommitmentHash, nextUpdateCommitmentHash, document
@@ -514,25 +514,25 @@ export default class OperationGenerator {
     didUniqueSuffix: string,
     updateRevealValue: string,
     nextUpdateCommitmentHash: string,
-    idToAdd: string | undefined,
-    idsToRemove: string[],
+    idOfServiceEndpointToAdd: string | undefined,
+    idsOfServiceEndpointToRemove: string[],
     signingKeyId: string,
     signingPrivateKey: string) {
     const patches = [];
 
-    if (idToAdd !== undefined) {
+    if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
         action: 'add-service-endpoints',
-        serviceEndpoints: OperationGenerator.createIdentityHubUserServiceEndpoints(idToAdd)
+        serviceEndpoints: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);
     }
 
-    if (idsToRemove.length > 0) {
+    if (idsOfServiceEndpointToRemove.length > 0) {
       const patch = {
         action: 'remove-service-endpoints',
-        serviceEndpointIds: idsToRemove
+        serviceEndpointIds: idsOfServiceEndpointToRemove
       };
 
       patches.push(patch);
@@ -575,16 +575,20 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a single element array with a identity hub service object for DID document
-   * @param id the id field in serviceEndpoint.
+   * Generates an array of service endpoints with specified ids
+   * @param ids the id field in serviceEndpoint.
    */
-  public static createIdentityHubUserServiceEndpoints (id: string): any[] {
-    return [
-      {
-        'id': id,
-        'type': 'IdentityHub',
-        'serviceEndpoint': 'https://www.hub.com'
-      }
-    ];
+  public static generateServiceEndpoints (ids: string[]): any[] {
+    const serviceEndpoints = [];
+    for (const id of ids) {
+      serviceEndpoints.push(
+        {
+          'id': id,
+          'type': 'someType',
+          'serviceEndpoint': 'https://www.url.com'
+        }
+      );
+    }
+    return serviceEndpoints;
   }
 }

@@ -7,5 +7,5 @@ import DidServiceEndpointModel from './DidServiceEndpointModel';
  */
 export default interface DocumentModel {
   publicKeys: DidPublicKeyModel[];
-  service?: DidServiceEndpointModel[];
+  serviceEndpoints?: DidServiceEndpointModel[];
 }
