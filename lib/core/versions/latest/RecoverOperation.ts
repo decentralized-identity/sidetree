@@ -4,14 +4,14 @@ import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import Multihash from './Multihash';
 import Operation from './Operation';
-import OperationDataModel from './models/OperationDataModel';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
+import PatchDataModel from './models/PatchDataModel';
 import PublicKeyModel from '../../models/PublicKeyModel';
 import SidetreeError from '../../../common/SidetreeError';
 
-interface SignedOperationDataModel {
-  operationDataHash: string;
+interface SignedDataModel {
+  patchDataHash: string;
   recoveryKey: PublicKeyModel;
   nextRecoveryCommitmentHash: string;
 }
@@ -33,17 +33,17 @@ export default class RecoverOperation implements OperationModel {
   /** Encoded reveal value for the operation. */
   public readonly recoveryRevealValue: string;
 
-  /** Signed encoded operation data. */
-  public readonly signedOperationDataJws: Jws;
+  /** Signed data. */
+  public readonly signedDataJws: Jws;
 
-  /** Encoded string of the operation data. */
-  public readonly encodedOperationData: string | undefined;
+  /** Encoded string of the patch data. */
+  public readonly encodedPatchData: string | undefined;
 
-  /** Decoded signed operation data payload. */
-  public readonly signedOperationData: SignedOperationDataModel;
+  /** Decoded signed data payload. */
+  public readonly signedData: SignedDataModel;
 
-  /** Operation data. */
-  public readonly operationData: OperationDataModel | undefined;
+  /** Patch data. */
+  public readonly patchData: PatchDataModel | undefined;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
@@ -52,19 +52,19 @@ export default class RecoverOperation implements OperationModel {
     operationBuffer: Buffer,
     didUniqueSuffix: string,
     recoveryRevealValue: string,
-    signedOperationDataJws: Jws,
-    signedOperationData: SignedOperationDataModel,
-    encodedOperationData: string | undefined,
-    operationData: OperationDataModel | undefined
+    signedDataJws: Jws,
+    signedData: SignedDataModel,
+    encodedPatchData: string | undefined,
+    patchData: PatchDataModel | undefined
   ) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Recover;
     this.didUniqueSuffix = didUniqueSuffix;
     this.recoveryRevealValue = recoveryRevealValue;
-    this.signedOperationDataJws = signedOperationDataJws;
-    this.signedOperationData = signedOperationData;
-    this.encodedOperationData = encodedOperationData;
-    this.operationData = operationData;
+    this.signedDataJws = signedDataJws;
+    this.signedData = signedData;
+    this.encodedPatchData = encodedPatchData;
+    this.patchData = patchData;
   }
 
   /**
@@ -91,7 +91,7 @@ export default class RecoverOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `operationData` and `type` properties is expected to be absent.
+   * @param anchorFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RecoverOperation> {
     let expectedPropertyCount = 5;
@@ -118,24 +118,24 @@ export default class RecoverOperation implements OperationModel {
 
     const recoveryRevealValue = operationObject.recoveryRevealValue;
 
-    const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
-    const signedOperationData = await RecoverOperation.parseSignedOperationDataPayload(signedOperationDataJws.payload);
+    const signedDataJws = Jws.parse(operationObject.signedData);
+    const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
-    // If not in anchor file mode, we need to validate `type` and `operationData` properties.
-    let encodedOperationData = undefined;
-    let operationData = undefined;
+    // If not in anchor file mode, we need to validate `type` and `patchData` properties.
+    let encodedPatchData = undefined;
+    let patchData = undefined;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Recover) {
         throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
       }
 
-      encodedOperationData = operationObject.operationData;
+      encodedPatchData = operationObject.patchData;
       try {
-        operationData = await Operation.parseOperationData(operationObject.operationData);
+        patchData = await Operation.parsePatchData(operationObject.patchData);
       } catch {
-        // For compatibility with data pruning, we have to assume that operation data may be unavailable,
-        // thus an operation with invalid operation data needs to be processed as an operation with unavailable operation data,
-        // so here we let operation data be `undefined`.
+        // For compatibility with data pruning, we have to assume that patch data may be unavailable,
+        // thus an operation with invalid patch data needs to be processed as an operation with unavailable patch data,
+        // so here we let patch data be `undefined`.
       }
     }
 
@@ -143,30 +143,30 @@ export default class RecoverOperation implements OperationModel {
       operationBuffer,
       operationObject.didUniqueSuffix,
       recoveryRevealValue,
-      signedOperationDataJws,
-      signedOperationData,
-      encodedOperationData,
-      operationData
+      signedDataJws,
+      signedData,
+      encodedPatchData,
+      patchData
     );
   }
 
-  private static async parseSignedOperationDataPayload (operationDataEncodedString: string): Promise<SignedOperationDataModel> {
-    const signedOperationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const signedOperationData = await JsonAsync.parse(signedOperationDataJsonString);
+  private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {
+    const signedDataJsonString = Encoder.decodeAsString(signedDataEncodedString);
+    const signedData = await JsonAsync.parse(signedDataJsonString);
 
-    const properties = Object.keys(signedOperationData);
+    const properties = Object.keys(signedData);
     if (properties.length !== 3) {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
-    Operation.validateRecoveryKeyObject(signedOperationData.recoveryKey);
+    Operation.validateRecoveryKeyObject(signedData.recoveryKey);
 
-    const operationDataHash = Encoder.decodeAsBuffer(signedOperationData.operationDataHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(operationDataHash);
+    const patchDataHash = Encoder.decodeAsBuffer(signedData.patchDataHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(patchDataHash);
 
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedOperationData.nextRecoveryCommitmentHash);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.nextRecoveryCommitmentHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
-    return signedOperationData;
+    return signedData;
   }
 }

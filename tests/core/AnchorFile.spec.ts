@@ -76,8 +76,8 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if map file hash is not string.', async () => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createOperationData.createOperation;
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).mapFileHash = 1234; // Intentionally setting the mapFileHash as an incorrect type.
@@ -89,8 +89,8 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if map file hash is invalid.', async () => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createOperationData.createOperation;
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerlock', 'invalidMapFileHash', [createOperation], [], []);
 
       try {
@@ -104,8 +104,8 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if writer lock id is not string.', async () => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createOperationData.createOperation;
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
@@ -131,17 +131,17 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if there are multiple operations for the same DID.', async () => {
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const createOperationRequest = createOperationData.operationRequest;
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperationRequest = createPatchData.operationRequest;
 
       // Strip away properties not allowed in the createOperations array elements.
       delete createOperationRequest.type;
-      delete createOperationRequest.operationData;
+      delete createOperationRequest.patchData;
 
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
-        createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
+        createPatchData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
         'anyRecoveryRevealValue',
-        createOperationData.recoveryPrivateKey
+        createPatchData.recoveryPrivateKey
       );
 
       // Strip away properties not allowed in the revokeOperations array elements.
@@ -164,8 +164,8 @@ describe('AnchorFile', async () => {
   describe('createBuffer', async () => {
     it('should created a compressed buffer correctly.', async () => {
       const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createOperationData.createOperation;
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
 
       const anchoreFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, [createOperation], [], []);
 

@@ -252,26 +252,26 @@ export default class OperationGenerator {
       document
     }];
 
-    const operationData = {
+    const patchData = {
       nextUpdateCommitmentHash,
       patches
     };
 
-    const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
-    const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
+    const patchDataBuffer = Buffer.from(JSON.stringify(patchData));
+    const patchDataHash = Encoder.encode(Multihash.hash(patchDataBuffer));
 
     const suffixData = {
-      operationDataHash,
+      patchDataHash,
       recoveryKey: { publicKeyHex: recoveryPublicKey.publicKeyHex },
       nextRecoveryCommitmentHash
     };
 
     const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
-    const operationDataEncodedString = Encoder.encode(operationDataBuffer);
+    const patchDataEncodedString = Encoder.encode(patchDataBuffer);
     const operation = {
       type: OperationType.Create,
       suffixData: suffixDataEncodedString,
-      operationData: operationDataEncodedString
+      patchData: patchDataEncodedString
     };
 
     return operation;
@@ -333,23 +333,23 @@ export default class OperationGenerator {
     signingKeyId: string,
     signingPrivateKey: string
   ) {
-    const operationData = {
+    const patchData = {
       patches,
       nextUpdateCommitmentHash
     };
-    const operationDataJsonString = JSON.stringify(operationData);
-    const encodedOperationDataString = Encoder.encode(operationDataJsonString);
+    const patchDataJsonString = JSON.stringify(patchData);
+    const encodedPatchDataString = Encoder.encode(patchDataJsonString);
 
-    const operationDataHash = Multihash.hash(Buffer.from(operationDataJsonString));
-    const encodedOperationDataHash = Encoder.encode(operationDataHash);
-    const signedOperationDataHash = await OperationGenerator.signUsingEs256k(encodedOperationDataHash, signingKeyId, signingPrivateKey);
+    const patchDataHash = Multihash.hash(Buffer.from(patchDataJsonString));
+    const encodedPatchDataHash = Encoder.encode(patchDataHash);
+    const signedData = await OperationGenerator.signUsingEs256k(encodedPatchDataHash, signingKeyId, signingPrivateKey);
 
     const updateOperationRequest = {
       type: OperationType.Update,
       didUniqueSuffix,
       updateRevealValue,
-      operationData: encodedOperationDataString,
-      signedOperationDataHash
+      patchData: encodedPatchDataString,
+      signedData
     };
 
     return updateOperationRequest;
@@ -394,29 +394,29 @@ export default class OperationGenerator {
       document
     }];
 
-    const operationData = {
+    const patchData = {
       patches,
       nextUpdateCommitmentHash
     };
 
-    const operationDataBuffer = Buffer.from(JSON.stringify(operationData));
-    const operationDataHash = Encoder.encode(Multihash.hash(operationDataBuffer));
+    const patchDataBuffer = Buffer.from(JSON.stringify(patchData));
+    const patchDataHash = Encoder.encode(Multihash.hash(patchDataBuffer));
 
-    const signedOperationDataPayloadObject = {
-      operationDataHash,
+    const signedDataPayloadObject = {
+      patchDataHash,
       recoveryKey: { publicKeyHex: newRecoveryPublicKey.publicKeyHex },
       nextRecoveryCommitmentHash
     };
-    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
-    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+    const signedDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedDataPayloadObject));
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
 
-    const operationDataEncodedString = Encoder.encode(operationDataBuffer);
+    const patchDataEncodedString = Encoder.encode(patchDataBuffer);
     const operation = {
       type: OperationType.Recover,
       didUniqueSuffix,
       recoveryRevealValue,
-      signedOperationData,
-      operationData: operationDataEncodedString
+      signedData,
+      patchData: patchDataEncodedString
     };
 
     return operation;
@@ -430,18 +430,18 @@ export default class OperationGenerator {
     recoveryRevealValue: string,
     recoveryPrivateKey: string) {
 
-    const signedOperationDataPayloadObject = {
+    const signedDataPayloadObject = {
       didUniqueSuffix,
       recoveryRevealValue
     };
-    const signedOperationDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedOperationDataPayloadObject));
-    const signedOperationData = await OperationGenerator.signUsingEs256k(signedOperationDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+    const signedDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedDataPayloadObject));
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Revoke,
       didUniqueSuffix,
       recoveryRevealValue,
-      signedOperationData
+      signedData
     };
 
     return operation;

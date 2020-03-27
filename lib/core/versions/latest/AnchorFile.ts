@@ -165,7 +165,7 @@ export default class AnchorFile {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         recoveryRevealValue: operation,
-        signedOperationData: operation.signedOperationDataJws.toJwsModel()
+        signedData: operation.signedDataJws.toJwsModel()
       };
     });
 
@@ -173,7 +173,7 @@ export default class AnchorFile {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         recoveryRevealValue: operation.recoveryRevealValue,
-        signedOperationData: operation.signedOperationDataJws.toJwsModel()
+        signedData: operation.signedDataJws.toJwsModel()
       };
     });
 

@@ -39,18 +39,18 @@ export default class DocumentComposer {
    */
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
     // The current document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(document, operation.signedOperationDataHash.kid);
+    const publicKey = Document.getPublicKey(document, operation.signedData.kid);
     if (!publicKey) {
       throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
     }
 
     // Verfiy the signature.
-    if (!(await operation.signedOperationDataHash.verifySignature(publicKey))) {
+    if (!(await operation.signedData.verifySignature(publicKey))) {
       throw new SidetreeError(ErrorCode.DocumentComposerInvalidSignature);
     }
 
     // The operation passes all checks, apply the patches.
-    const resultantDocument = DocumentComposer.applyPatches(document, operation.operationData!.patches);
+    const resultantDocument = DocumentComposer.applyPatches(document, operation.patchData!.patches);
 
     return resultantDocument;
   }
