@@ -118,8 +118,7 @@ export default class OperationGenerator {
     const signingKeyId = 'signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const id = 'did:sidetreevalue0';
-    const service = OperationGenerator.generateServiceEndpoints([id]);
+    const service = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -159,8 +158,7 @@ export default class OperationGenerator {
     const signingKeyId = 'newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const id = 'did:sidetree:value0';
-    const services = OperationGenerator.generateServiceEndpoints([id]);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();

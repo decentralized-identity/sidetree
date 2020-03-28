@@ -355,7 +355,7 @@ describe('DocumentComposer', async () => {
   });
 
   describe('validateId()', async () => {
-    it('should throw if document contains 2 keys of with the same ID.', async () => {
+    it('should throw if ID given is not using characters from Base64URL character set.', async () => {
       const invalidId = 'AnInavlidIdWith#';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
@@ -368,12 +368,12 @@ describe('DocumentComposer', async () => {
       const document = {
         publicKeys: [
           {
-            id: '#key1',
+            id: 'key1',
             type: 'RsaVerificationKey2018',
             publicKeyHex: 'anything'
           },
           {
-            id: '#key1', // Intentional duplicated key ID.
+            id: 'key1', // Intentional duplicated key ID.
             type: 'RsaVerificationKey2018',
             publicKeyPem: 'anything'
           }
@@ -409,7 +409,7 @@ function generatePatchesForPublicKeys () {
       action: 'add-public-keys',
       publicKeys: [
         {
-          id: '#keyX',
+          id: 'keyX',
           type: 'Secp256k1VerificationKey2018',
           publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
         }
@@ -417,11 +417,11 @@ function generatePatchesForPublicKeys () {
     },
     {
       action: 'remove-public-keys',
-      publicKeys: ['#keyY']
+      publicKeys: ['keyY']
     },
     {
       action: 'add-service-endpoints',
-      serviceEndpoints: OperationGenerator.generateServiceEndpoints(['did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
+      serviceEndpoints: OperationGenerator.generateServiceEndpoints(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
     }
   ];
 }

@@ -261,7 +261,12 @@ export default class DocumentComposer {
   }
 
   private static isBase64UrlString (input: string): boolean {
-    const isBase64UrlString = /[[A-Za-z0-9_-]]/.test(input);
+    // NOTE: 
+    // '/<expression>/ denotes regex.
+    // ^ denotes beginning of string.
+    // $ denotes end of string.
+    // + denotes one or more characters.
+    const isBase64UrlString = /^[A-Za-z0-9_-]+$/.test(input);
     return isBase64UrlString;
   }
   /**
