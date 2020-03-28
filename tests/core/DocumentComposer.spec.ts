@@ -68,7 +68,7 @@ describe('DocumentComposer', async () => {
         action: 'remove-service-endpoints',
         serviceEndpointIds: [1234]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdNotString);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotString);
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
@@ -77,7 +77,7 @@ describe('DocumentComposer', async () => {
         action: 'remove-service-endpoints',
         serviceEndpointIds: ['super long super long super long super long super long super long super long super long super long']
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdTooLong);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
   });
@@ -99,7 +99,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdTooLong if id is too long', () => {
+    it('should throw DocumentComposerIdTooLong if id is too long', () => {
       const patch = {
         action: 'add-service-endpoint',
         serviceEndpoints: [{
@@ -108,7 +108,7 @@ describe('DocumentComposer', async () => {
           serviceEndpoint: 'something'
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdTooLong);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
@@ -265,7 +265,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdNotString);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotString);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
@@ -351,6 +351,15 @@ describe('DocumentComposer', async () => {
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
 
+    });
+  });
+
+  describe('validateId()', async () => {
+    it('should throw if document contains 2 keys of with the same ID.', async () => {
+      const invalidId = 'AnInavlidIdWith#';
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
+      expect(() => { (DocumentComposer as any).validateId(invalidId); }).toThrow(expectedError);
     });
   });
 

@@ -4,7 +4,6 @@ import DidState from '../../models/DidState';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-
 /**
  * Class that handles the composition of operations into final external-facing document.
  */
@@ -141,9 +140,7 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
-      if (typeof publicKey.id !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdNotString);
-      }
+      DocumentComposer.validateId(publicKey.id);
 
       // 'id' must be unique
       if (publicKeyIdSet.has(publicKey.id)) {
@@ -194,7 +191,7 @@ export default class DocumentComposer {
     }
 
     for (const id of patch.serviceEndpointIds) {
-      DocumentComposer.validateServiceEndpointId(id);
+      DocumentComposer.validateId(id);
     }
   }
 
@@ -225,7 +222,8 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
       }
 
-      DocumentComposer.validateServiceEndpointId(serviceEndpoint.id);
+      DocumentComposer.validateId(serviceEndpoint.id);
+
       if (typeof serviceEndpoint.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString);
       }
@@ -249,15 +247,23 @@ export default class DocumentComposer {
     }
   }
 
-  private static validateServiceEndpointId (serviceEndpointId: any) {
-    if (typeof serviceEndpointId !== 'string') {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdNotString);
+  private static validateId (id: any) {
+    if (typeof id !== 'string') {
+      throw new SidetreeError(ErrorCode.DocumentComposerIdNotString);
     }
-    if (serviceEndpointId.length > 20) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdTooLong);
+    if (id.length > 20) {
+      throw new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
+    }
+
+    if (!DocumentComposer.isBase64UrlString(id)) {
+      throw new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
     }
   }
 
+  private static isBase64UrlString (input: string): boolean {
+    const isBase64UrlString = /[[A-Za-z0-9_-]]/.test(input);
+    return isBase64UrlString;
+  }
   /**
    * Applies the given patches in order to the given document.
    * NOTE: Assumes no schema validation is needed, since validation should've already occurred at the time of the operation being parsed.

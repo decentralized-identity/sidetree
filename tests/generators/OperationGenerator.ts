@@ -114,8 +114,8 @@ export default class OperationGenerator {
    * Generates an create operation.
    */
   public static async generateCreateOperation () {
-    const recoveryKeyId = '#recoveryKey';
-    const signingKeyId = '#signingKey';
+    const recoveryKeyId = 'recoveryKey';
+    const signingKeyId = 'signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const id = 'did:sidetreevalue0';
@@ -155,8 +155,8 @@ export default class OperationGenerator {
    * Generates a recover operation payload.
    */
   public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
-    const recoveryKeyId = '#newRecoveryKey';
-    const signingKeyId = '#newSigningKey';
+    const recoveryKeyId = 'newRecoveryKey';
+    const signingKeyId = 'newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex(recoveryKeyId);
     const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const id = 'did:sidetree:value0';
@@ -287,7 +287,7 @@ export default class OperationGenerator {
 
     const [updateRevealValue] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const anyNewSigningPublicKeyId = '#anyNewKey';
+    const anyNewSigningPublicKeyId = 'anyNewKey';
     const [anyNewSigningKey] = await Cryptography.generateKeyPairHex(anyNewSigningPublicKeyId);
     const patches = [
       {
@@ -301,7 +301,7 @@ export default class OperationGenerator {
         ]
       }
     ];
-    const signingKeyId = '#anySigningKeyId';
+    const signingKeyId = 'anySigningKeyId';
     const [, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
     const request = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
@@ -408,7 +408,7 @@ export default class OperationGenerator {
       nextRecoveryCommitmentHash
     };
     const signedDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedDataPayloadObject));
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadEncodedString, 'recovery', recoveryPrivateKey);
 
     const patchDataEncodedString = Encoder.encode(patchDataBuffer);
     const operation = {
@@ -435,7 +435,7 @@ export default class OperationGenerator {
       recoveryRevealValue
     };
     const signedDataPayloadEncodedString = Encoder.encode(JSON.stringify(signedDataPayloadObject));
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadEncodedString, '#recovery', recoveryPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadEncodedString, 'recovery', recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Revoke,
