@@ -132,7 +132,7 @@ describe('OperationProcessor', async () => {
     signingKeyId = 'signingKey';
     [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('key1');
     [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
 
     let recoveryCommitmentHash;
     let firstUpdateCommitmentHash;
