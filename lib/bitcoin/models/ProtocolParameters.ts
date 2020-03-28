@@ -15,8 +15,8 @@ export default interface ProtocolParameters {
   /** Quantile measure we use for proof of fee; e.g., 0.5 would be the median */
   quantileMeasure: number;
 
-  /** Factor used to calculate how much the quantile values allowed to deviate from the previous value */
-  quantileDeviationWindowFactor: number;
+  /** The max amount that a quantile value are allowed to deviate from the previous value */
+  maxQuantileDeviationPercentage: number;
 
   maxInputCountForSampledTransaction: number;
   historicalOffsetInBlocks: number;

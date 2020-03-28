@@ -107,7 +107,7 @@ export default class BitcoinProcessor {
     this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinClient.convertBtcToSatoshis(1),
       ProtocolParameters.windowSizeInGroups,
       ProtocolParameters.quantileMeasure,
-      ProtocolParameters.quantileDeviationWindowFactor,
+      ProtocolParameters.maxQuantileDeviationPercentage,
       mongoQuantileStore);
     this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
 

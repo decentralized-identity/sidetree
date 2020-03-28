@@ -30,11 +30,13 @@ export default class SlidingWindowQuantileCalculator {
   /**
    * The value to use as an input to the ValueApproximator.
    */
-  private readonly feeApproximate: number = 1.1;
+  private readonly feeApproximate: number = 1.414;
   /**
    * Size of a frequency vector; 1 + max normalized value
    */
   private frequencyVectorSize: number;
+
+  private maxQuantileDeviationPercentageValue: number;
 
   /**
    * The latest sliding window consisting of the last 'size'
@@ -66,13 +68,15 @@ export default class SlidingWindowQuantileCalculator {
     maxValue: number,  // all values above maxValue are rounded down by maxValue
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
-    private readonly quantileDeviationWindowFactor: number, // Value to determine how much is the quantile value allowed to deviate from the previous value
+    maxQuantileDeviationPercentage: number, // How much is a quantile value allowed to deviate from the previous value
     private readonly mongoStore: ISlidingWindowQuantileStore
     ) {
     this.valueApproximator = new ValueApproximator(this.feeApproximate, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize).fill(0);
+    this.maxQuantileDeviationPercentageValue = maxQuantileDeviationPercentage / 100;
+
     if (this.quantileMeasure < 0 || this.quantileMeasure > 1) {
       throw Error(`Invalid quantile measure ${quantileMeasure}`);
     }
@@ -224,8 +228,10 @@ export default class SlidingWindowQuantileCalculator {
       return currentQuantile;
     }
 
-    const lowerLimit = (1 - this.quantileDeviationWindowFactor) * previousQuantile;
-    const upperLimit = (1 + this.quantileDeviationWindowFactor) * previousQuantile;
+    const deviationAllowed = this.maxQuantileDeviationPercentageValue * previousQuantile;
+
+    const lowerLimit = previousQuantile - deviationAllowed;
+    const upperLimit = previousQuantile + deviationAllowed;
 
     if (currentQuantile < lowerLimit) {
       return lowerLimit;
