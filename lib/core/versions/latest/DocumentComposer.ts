@@ -4,6 +4,7 @@ import DidState from '../../models/DidState';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
+
 /**
  * Class that handles the composition of operations into final external-facing document.
  */
