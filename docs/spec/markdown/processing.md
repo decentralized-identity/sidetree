@@ -6,7 +6,7 @@ Once an Anchor File, Map File, and associated Batch Files have been assembled fo
 
 1. Generate a transaction for the underlying ledger
 2. Generate and include the following value, herein referred to as the [_Anchor String_](#anchor-string){id="anchor-string"}, within the transaction:
-    1. Convert the total number of operations in the Batch File to a 4 byte little endian string, then `base64` encode the result, herein referred to as the _Operation Count_.
+    1. Convert the total number of operations in the Batch File to a 4 byte little endian string, then `Base64URL` encode the result, herein referred to as the _Operation Count_.
     2. Using the [`CID_ALGORITHM`](#cid-algorithm), generate a CID for the Anchor File, herein referred to as the _Anchor File CID_.
     3. Join the _Operation Count_ and _Anchor File CID_ with a `.` as follows:
         ```js
@@ -43,10 +43,11 @@ Regardless of the ledger system an implementer chooses, the implementer MUST be 
 
 The follow sequence of rules and processing steps must be followed to correctly process an Anchor File:
 
-1. The anchor file MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size) - if it does, cease processing and discard the file data.
-2. The anchor file MUST validate against the protocol-defined [Anchor File](#anchor-file) schema and construction rules - if it DOES NOT, cease processing and discard the file data.
-    - While this rule is articulated in the [Anchor File](#anchor-file) section of the specification, it should be emphasized to ensure accurate processing: an [Anchor File](#anchor-file) MUST NOT include multiple operations in the `operations` section of the Anchor File for the same [DID Unique Suffixes](#did-unique-suffix) - if any duplicates are found, cease processing and discard the file data.
-3. Iterate the [_Anchor File Create Entries_](#anchor-file-create-entry), and for each entry, process as follows:
+1. The Anchor File MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The Anchor File MUST validate against the protocol-defined [Anchor File](#anchor-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+    - While this rule is articulated in the [Anchor File](#anchor-file) section of the specification, it should be emphasized to ensure accurate processing: an [Anchor File](#anchor-file) MUST NOT include multiple operations in the `operations` section of the Anchor File for the same [DID Unique Suffixes](#did-unique-suffix) - if any duplicates are found, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. If processing of rules 1 and 2 above resulted in successful validation of the Anchor File, initiate retrieval of the Map File via the [`CAS_PROTOCOL`](#cas-protocol) using the [`map_file`](#map-file-property) property's  _CID_ value. This is only a SUGGESTED point at which to begin retrieval of the Map File, not a blocking procedural step, so you may continue with processing before retrieval of the Map File is complete.
+4. Iterate the [_Anchor File Create Entries_](#anchor-file-create-entry), and for each entry, process as follows:
     1. Derive the [DID Unique Suffixes](#did-unique-suffix) from the values present in the entry, and ensure there IS NOT an existing DID matching the same [DID Unique Suffixes](#did-unique-suffix) in the state-history of the implementation. If another valid [Create](#create) operation has already anchored a DID of the same [DID Unique Suffixes](#did-unique-suffix) in a transaction preceding the transaction that anchors the entries being iterated, do not process the operation and move to the next operation in the array.
     2. Persist an entry for the new DID within the implementation to hold this and future operational data, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry) for use in validating a future Recovery operation.
 4. Iterate the [_Anchor File Recovery Entries_](#anchor-file-recovery-entry), and for each entry, process as follows:
@@ -65,21 +66,33 @@ Make sure we do allow multiple ops being processed if some are invalid.
 Confirm how we handle ops where there was not a previous op found.
 :::
 
-1. _Anchor file_ validation rules:
-   1. The anchor file must strictly follow the schema defined by the protocol. An anchor file with missing or additional properties is invalid.
-   1. The anchor file fetched from CAS must not exceed the maximum allowed anchor file size.
-   1. Must use the hashing algorithm specified by the protocol.
-   1. All DID unique suffixes specified in the anchor file must be unique.
-1. _Batch file_ validation rules:
-   1. The batch file must strictly follow the schema defined by the protocol. A batch file with missing or additional properties is invalid.
-   1. The batch file must not exceed the maximum allowed batch file size.
-   1. Must use the hashing algorithm specified by the protocol.
-   1. DID unique suffixes found in the batch file must match DID unique suffixes found in anchor file exactly and in same order.
-1. The transaction must meet the proof-of-fee requirements defined by the protocol.
-1. Every operation in the batch file must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
+### Map File Processing
+
+The follow sequence of rules and processing steps must be followed to correctly process a Map File:
+
+1. The Map File MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-map-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The Map File MUST validate against the protocol-defined [Map File](#map-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. If processing of rules 1 and 2 above resulted in successful validation of the Map File, begin retrieval of the included Batch File chunks by iterating the `chunks` array and using the [`CAS_PROTOCOL`](#cas-protocol) to fetch each entry's `chunk_hash` _CID_. This is only a SUGGESTED point at which to begin retrieval of the Map File, not a blocking procedural step, so you may continue with processing before retrieval of the Batch File chunks is complete.
+4. Iterate the [_Map File Update Entries_](#map-file-update-entry), and for each entry, process as follows:
+    1. Derive the [DID Unique Suffixes](#did-unique-suffix) from the values present in the entry, and ensure there IS NOT an existing DID matching the same [DID Unique Suffixes](#did-unique-suffix) in the state-history of the implementation. If another valid [Create](#create) operation has already anchored a DID of the same [DID Unique Suffixes](#did-unique-suffix) in a transaction preceding the transaction that anchors the entries being iterated, do not process the operation and move to the next operation in the array.
+
+### Batch File Processing
+
+The follow sequence of rules and processing steps must be followed to correctly process a Batch File chunk:
+
+1. The [Batch File](#batch-file) chunk MUST NOT exceed the [`MAX_BATCH_FILE_SIZE`](#max-batch-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The [Batch File](#batch-file) MUST validate against the protocol-defined [Batch File](#batch-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. Iterate the [_Batch File Patch Entries_](#batch-file-patch-entry), and for each entry, process as follows:
+    1. Identify which DID the [_Batch File Patch Entry_](#batch-file-patch-entry) corresponds to, and insert the entry into the DID's persistent operation storage in ledger-relative chronological order (if other entries are present).
+
+::: todo
+Add the ordering rules for ensuring the order matches the order expected from the Anchor/Map files
+:::
+
+<!-- 1. Every operation in the batch file must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
 
    1. Follow the operation schema defined by the protocol, it must not have missing or additional properties.
 
    1. Must not exceed the operation size specified by the protocol.
 
-   1. Must use the hashing algorithm specified by the protocol.
+   1. Must use the hashing algorithm specified by the protocol. -->
