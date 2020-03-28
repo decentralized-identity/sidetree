@@ -16,7 +16,7 @@ Anchor files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
   "operations": {
     "create": [
       {
-        "initial_document_hash": DOCUMENT_HASH,
+        "initial_state_hash": STATE_PATCHES_HASH,
         "initial_recovery_key": RECOVERY_PUBLIC_KEY,
         "initial_recovery_commitment": COMMITMENT_HASH
       },
@@ -27,7 +27,7 @@ Anchor files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
         "id": DID_UNIQUE_SUFFIX,
         "recovery_reveal_value": REVEAL_VALUE,
         "new_recovery_commitment": COMMITMENT_HASH,
-        "new_document_hash": DOCUMENT_HASH,
+        "new_state_hash": STATE_PATCHES_HASH,
         "new_recovery_key": RECOVERY_PUBLIC_KEY,
         "sig": KEY_SIGNATURE
       },
@@ -48,7 +48,7 @@ Anchor files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 
 A valid Anchor File is a JSON document that MUST NOT exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size), and composed as follows:
 
-1. The Anchor File MUST contain a `map_file` property, and its value MUST be a _CAS URI_ for the related Map File.
+1. The Anchor File MUST contain a [`map_file`](#map-file-property){id="map-file-property"} property, and its value MUST be a _CAS URI_ for the related Map File.
 2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the Anchor File MUST contain an `operations` property, and its value MUST be an object composed as follows:
 
   - If there are any [Create](#create) operations to be included in the Anchor File:
@@ -56,12 +56,12 @@ A valid Anchor File is a JSON document that MUST NOT exceed the [`MAX_ANCHOR_FIL
     2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include each entry:
         - The object MUST contain an [`initial_recovery_key`](#initial-recovery-key){id="initial-recovery-key"} property, and its value MUST be an _Initial Recovery Public Key_, as generated via the [Create](#create) operation process.
         - The object MUST contain an [`initial_recovery_commitment`](#initial-recovery-commitment){id="initial-recovery-commitment"} property, and its value MUST be an _Initial Recovery Commitment Hash_, as generated via the [Create](#create) operation process.
-        - The object MUST contain an `initial_document_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Create Operation Data Object_](#create-data-object) (ensure this is a hash of the `base64` encoded version of the object).
+        - The object MUST contain an `initial_state_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Create Operation Data Object_](#create-data-object) (ensure this is a hash of the `Base64URL` encoded version of the object).
     3. The Anchor File MUST NOT include multiple [Create](#create) operations that produce the same [DID Unique Suffix](#did-unique-suffix).
     
 
 <!--
-  - The object MUST contain an `initial_state` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the following `base64` encoded object:
+  - The object MUST contain an `initial_state` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the following `Base64URL` encoded object:
 
       ```json
       {
@@ -80,13 +80,13 @@ A valid Anchor File is a JSON document that MUST NOT exceed the [`MAX_ANCHOR_FIL
         - The object MUST contain an `id` property, and its value MUST be the [DID Unique Suffix](#did-unique-suffix) of the DID the operation pertains to. An Anchor File MUST NOT contain more than one operation of any type with the same [DID Unique Suffix](#did-unique-suffix).
         - The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [COMMITMENT_VALUE](#commitment-value).
         - The object MUST contain a `new_recovery_commitment` property, and its value MUST be the next _Recovery Commitment Hash_ generated during the [Recovery](#recover) operation process.
-        - The object MUST contain an `new_document_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Recovery Operation Data Object_](#recover-data-object) (ensure this is a hash of the `base64` encoded version of the object).
+        - The object MUST contain an `new_state_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Recovery Operation Data Object_](#recover-data-object) (ensure this is a hash of the `Base64URL` encoded version of the object).
         - The object MUST contain a `sig` property, and its value MUST be a signature over the other values present in the object.
         - The object MAY include a `new_recovery_key` property, and if included, its value MUST be the public key generated during the [Recovery](#recover) operation process.
 
 
 <!--
-  - The object MUST contain an `new_state_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the following `base64` encoded object:
+  - The object MUST contain an `new_state_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the following `Base64URL` encoded object:
 
       ```json
       {
@@ -119,7 +119,7 @@ The Map file in the Sidetree protocol contains Update operation proving data, as
       {
         "id": DID_UNIQUE_SUFFIX,
         "update_reveal_value": REVEALED_COMMITMENT_VALUE,
-        "update_patch_hash": PATCH_HASH,
+        "update_state_hash": STATE_PATCHES_HASH,
         "sig": UPDATE_KEY_SIGNATURE
       },
       {...}
@@ -139,7 +139,7 @@ A valid Map File is a JSON document that MUST NOT exceed the [`MAX_MAP_FILE_SIZE
   2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry), use the following process to compose and include entries:
         - The object MUST contain an `id` property, and its value MUST be the [DID Unique Suffix](#did-unique-suffix) of the DID the operation pertains to.
         - The object MUST contain a `update_reveal_value` property, and its value MUST be the last update [COMMITMENT_VALUE](#commitment-value).
-        - The object MUST contain an `update_patch_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Update Operation Data Object_](#update-data-object) (ensure this is a hash of the `base64` encoded version of the object).
+        - The object MUST contain an `update_state_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Update Operation Data Object_](#update-data-object) (ensure this is a hash of the `Base64URL` encoded version of the object).
         - The object MUST contain a `sig` property, and its value MUST be a signature over the other values present in the object.
         - The object MAY include a `new_recovery_key` property, and if included, its value MUST be the public key generated during the [Recovery](#recover) operation process.
 
@@ -152,9 +152,9 @@ For this version of the protocol, there will only exist a single Batch File that
 ::: example Create operation Batch File entry
 ```json
 {
-  "operations": [
-    { SIDETREE_OPERATION },
-    { SIDETREE_OPERATION },
+  "patch_data": [
+    { DID_STATE_PATCHES },
+    { DID_STATE_PATCHES },
     ...
   ]
 }
@@ -163,8 +163,8 @@ For this version of the protocol, there will only exist a single Batch File that
 
 In this version of the protocol, Batch Files are constructed as follows:
 
-1. The Batch File MUST include an `operation` property, and its value MUST be an array.
-2. Each [operation](#did-operation) entry to be included in the Batch File MUST be a `base64` encoded value of the operation data matching the type of operation it represents, and shall be appended to the `operation` array as follows:
+1. The Batch File MUST include an `patch_data` property, and its value MUST be an array.
+2. Each [_Batch File Patch Entry_](#batch-file-patch-entry){id="batch-file-patch-entry"} to be included in the Batch File MUST be a `Base64URL` encoded value of the DID State Patches, and shall be appended to the `patch_data` array as follows:
     1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Data Objects_](#create-data-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
     2. If any Recovery operations were present in the associated Anchor File, append all [Recovery Operation Data Objects_](#recovery-data-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
     3. If any Update operations were present in the associated Map File, append all [Update Operation Data Objects_](#update-data-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).

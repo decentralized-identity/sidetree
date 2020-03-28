@@ -1,8 +1,8 @@
 
 
-## Patch Actions
+## DID State Patches
 
-Sidetree defines a general format, _Patch Actions_, for describing mutations of a DID's metadata state. Sidetree further defines a standard set of _Patch Actions_ (below) implementers MAY use to facilitate patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers MUST use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
+Sidetree defines a general format for patching DID State, called _Patch Actions_, for describing mutations of a DID's metadata state. Sidetree further defines a standard set of _Patch Actions_ (below) implementers MAY use to facilitate patching within their implementations. Support of the standard set of _Patch Actions_ defined herein IS NOT required, but implementers MUST use the _Patch Action_ format for defining patch mechanisms within their implementation. The general _Patch Action_ format is defined as follows:
 
 ```json
 {
@@ -39,7 +39,7 @@ The following set of standard _Patch Actions_ are specified to help align on a c
       "id": "key1",
       "usage": ["ops"],
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyBase58": "H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV",
+      "publicKeyHex": "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71",
     }
   ]
 }
@@ -56,7 +56,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
         - `Secp256k1VerificationKey2018`
     3. The object MUST include public key material in accordance with `type` value specified. The following mapping of `type` values to public key material property and value pairings MUST be used:
         - If the `type` value is `Secp256k1VerificationKey2018`:
-            1. The object MUST include a `publicKeyBase58` property, and its value MUST be a `base58` encoded version of the key type.
+            1. The object MUST include a `publicKeyHex` property, and its value MUST be a `HEX` encoded version of the key type.
     4. The object MUST include a `usage` property, and its value MUST be an array that includes one or more of the following strings:
     - `ops`: the key is allowed to generate DID operations for the DID.
     - `general`: the key is to be included in the `publicKeys` section of the resolved _DID Document_.
@@ -81,7 +81,53 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
 1. The object MUST include an `action` property, and its value MUST be `remove-public-keys`.
 2. The object MUST include a `publicKeys` property, and its value MUST be an array of key IDs that correspond with keys presently associated with the DID that are to be removed.
 
+#### `add-service-endpoints`
 
+::: example
+```json
+{
+  "action": "add-service-endpoints",
+  "serviceEndpoints": [
+    {
+      "id": "sds1",
+      "type": "SecureDataStore",
+      "serviceEndpoint": "http://hub.my-personal-server.com"
+    },
+    {
+      "id": "sds2",
+      "type": "SecureDataStore",
+      "serviceEndpoint": "http://some-cloud.com/hub"
+    }
+  ]
+}
+```
+:::
+
+The `add-service-endpoints` _Patch Action_ describes the addition of [Service Endpoints](https://w3c.github.io/did-core/#service-endpoints) to a DID's state. To construct an `add-service-endpoints` patch, compose an object as follows:
+
+1. The object MUST include an `action` property, and its value MUST be `add-service-endpoints`.
+2. The object MUST include a `serviceEndpoints` property, and its value MUST be an array.
+3. Each key being added MUST be represented by an entry in the `serviceEndpoints` array, and each entry must be an object composed as follows:
+    1. The object MUST include an `id` property, and its value MUST be a string with a length of no more than twenty (20) ASCII encoded characters.
+    2. The object MUST include a `type` property, and its value MUST be a string with a length of no more than thirty (30) ASCII encoded characters.
+    3. The object MUST include a `serviceEndpoint` property, and its value MUST be a valid URI string (including a scheme segment: i.e. http://, git://) with a length of no more than one hundred (100) ASCII encoded characters.
+
+
+#### `remove-service-endpoints`
+
+::: example
+```json
+{
+  "action": "remove-service-endpoints",
+  "serviceEndpointIds": ["sds1", "sds2"]
+}
+```
+:::
+
+The `remove-service-endpoints` _Patch Action_ describes the removal of cryptographic keys associated with a given DID. To construct a `remove-service-endpoints` _Patch Action_, compose an object as follows:
+
+1. The object MUST include an `action` property, and its value MUST be `remove-service-endpoints`.
+2. The object MUST include a `serviceEndpointIds` property, and its value MUST be an array of Service Endpoint IDs that correspond with Service Endpoints presently associated with the DID that are to be removed.
 
 #### `ietf-json-patch`
 
@@ -131,5 +177,5 @@ Use of `ietf-json-patch` may result in unrecoverable states, similar to "Deactiv
 :::
 
 ::: warning
-Use of `ietf-json-patch` may harm implementators ability to perform validation on operations at ingestion time, which could impact performance negatively.
+Use of `ietf-json-patch` may harm an implmentation's ability to perform validation on operations at ingestion time, which could impact performance negatively.
 :::

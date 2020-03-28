@@ -143,9 +143,9 @@ h6 code {
   border-radius: 3px;
 }
 
-ol {
+ol, ul {
   margin: 0;
-  padding: 0 2em;
+  padding: 0 1.5em;
 }
 
 dt {
@@ -157,6 +157,10 @@ dd {
 }
 
 table {
+  display: block;
+  width: -webkit-fill-available;
+  width: fit-content;
+  max-width: 100%;
   margin: 1.5em 0 1.75em;
   border-spacing: 0;
   border-collapse: collapse;
@@ -658,11 +662,11 @@ pre[class*="language-"] {
     width: 100%;
     min-width: auto;
     max-width: none;
-    padding: 0.5em 1.75em 1.5em 1.75em;
+    padding: 0.5em 1.25em 1.5em 1.25em;
   }
  
   #header {
-    margin: -0.5em -1.75em 0em -1.75em;
+    margin: -0.5em -1.25em 0em -1.25em;
   }
 
   #toc header [panel-toggle] {
@@ -672,6 +676,14 @@ pre[class*="language-"] {
   #header #toc_toggle {
     display: flex;
   }
+}
+
+@media (max-width: 550px) {
+
+  td {
+    font-size: 0.8em;
+  }
+
 }
 
 @keyframes display-show {

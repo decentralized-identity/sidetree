@@ -9,9 +9,10 @@ Sidetree Protocol
 **Editors:**
 ~ [Daniel Buchner](https://www.linkedin.com/in/dbuchner/) (Microsoft)
 ~ [Orie Steele](https://www.linkedin.com/in/or13b/) (Transmute)
-~ [Henry Tsai](https://www.linkedin.com/in/henry-tsai-6b884014/) (Microsoft)
 
 **Contributors:**
+~ [Henry Tsai](https://www.linkedin.com/in/henry-tsai-6b884014/) (Microsoft)
+~ [Troy Ronda](https://www.linkedin.com/in/troyronda/) (SecureKey)
 
 **Participate:**
 ~ [GitHub repo](https://github.com/decentralized-identity/sidetree)
