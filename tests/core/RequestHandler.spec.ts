@@ -178,7 +178,7 @@ describe('RequestHandler', () => {
     expect(response.body.code).toEqual(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
   });
 
-  it('should return a resolved DID Document given a known DID.', async () => {
+  it('should return a correctly resolved DID Document given a known DID.', async () => {
     const response = await requestHandler.handleResolveRequest(did);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -296,7 +296,16 @@ describe('RequestHandler', () => {
 function validateDidReferencesInDidDocument (didDocument: any, did: string) {
   expect(didDocument.id).toEqual(did);
 
-  for (let publicKey of didDocument.publicKey) {
-    expect(publicKey.controller).toEqual(did);
+  if (didDocument.publicKey) {
+    for (let publicKeyEntry of didDocument.publicKey) {
+      expect(publicKeyEntry.controller).toEqual(did);
+      expect((publicKeyEntry.id as string).startsWith(did + '#'));
+    }
+  }
+
+  if (didDocument.service) {
+    for (let serviceEntry of didDocument.service) {
+      expect((serviceEntry.id as string).startsWith(did + '#'));
+    }
   }
 }

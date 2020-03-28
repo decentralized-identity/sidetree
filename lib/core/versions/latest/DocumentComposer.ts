@@ -261,7 +261,7 @@ export default class DocumentComposer {
   }
 
   private static isBase64UrlString (input: string): boolean {
-    // NOTE: 
+    // NOTE:
     // '/<expression>/ denotes regex.
     // ^ denotes beginning of string.
     // $ denotes end of string.
@@ -379,11 +379,7 @@ export default class DocumentComposer {
   }
 
   /**
-   * Adds DID references in the given DID document using the given DID
-   * because client creating the document will not have these value set.
-   * Specifically:
-   * 1. `id` is added.
-   * 1. `controller` of the public-keys is added.
+   * Adds DID references in the given document using the given DID to make the document DID spec compliant.
    *
    * @param didDocument The document to update.
    * @param did The DID which gets added to the document.
@@ -392,10 +388,18 @@ export default class DocumentComposer {
 
     didDocument.id = did;
 
-    // Only update the publickey if the array is present
+    // Only update `publickey` if the array is present
     if (Array.isArray(didDocument.publicKey)) {
       for (let publicKeyEntry of didDocument.publicKey) {
+        publicKeyEntry.id = did + '#' + publicKeyEntry.id;
         publicKeyEntry.controller = did;
+      }
+    }
+
+    // Only update `service` if the array is present
+    if (Array.isArray(didDocument.service)) {
+      for (let serviceEntry of didDocument.service) {
+        serviceEntry.id = did + '#' + serviceEntry.id;
       }
     }
   }
