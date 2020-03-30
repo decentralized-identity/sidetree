@@ -1,6 +1,6 @@
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 
 describe('Encoder', async () => {
   describe('decodeAsBuffer()', async () => {

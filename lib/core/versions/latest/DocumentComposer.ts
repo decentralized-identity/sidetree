@@ -250,7 +250,7 @@ export default class DocumentComposer {
 
   private static validateId (id: any) {
     if (typeof id !== 'string') {
-      throw new SidetreeError(ErrorCode.DocumentComposerIdNotString, `ID not string: ${JSON.stringify(id)}`);
+      throw new SidetreeError(ErrorCode.DocumentComposerIdNotString, `ID not string: ${JSON.stringify(id)} is of type '${typeof id}'`);
     }
     if (id.length > 20) {
       throw new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
