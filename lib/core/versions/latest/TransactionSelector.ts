@@ -42,11 +42,21 @@ export default class TransactionSelector implements ITransactionSelector {
     const transactionsPriorityQueue = TransactionSelector.getTransactionPriorityQueue();
 
     const currentBlockHeight = transactions[0].transactionTime;
+    const writerToTransactionNumMap = new Map();
     for (const transaction of transactions) {
+      // expect all transactions to be in the same transaction time
       if (transaction.transactionTime !== currentBlockHeight) {
         throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting, investigate and fix');
       }
-      transactionsPriorityQueue.push(transaction);
+      // only 1 transaction is allowed per writer
+      if (writerToTransactionNumMap.has(transaction.writer)) {
+        const acceptedTransactionNum = writerToTransactionNumMap.get(transaction.writer);
+        // tslint:disable-next-line:max-line-length
+        console.info(`Multiple transactions found in block ${currentBlockHeight} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNum} and ignoring ${transaction.transactionNumber}`);
+      } else {
+        transactionsPriorityQueue.push(transaction);
+        writerToTransactionNumMap.set(transaction.writer, transaction.transactionNumber)
+      }
     }
 
     const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInBlock(currentBlockHeight);
