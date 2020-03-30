@@ -23,6 +23,7 @@ Sidetree defines a general format for patching DID State, called _Patch Actions_
     - `remove-public-keys`
     - `add-service-endpoints`
     - `remove-service-endpoints`
+    - `ietf-json-patch`
 
 ### Standard Patch Actions
 
