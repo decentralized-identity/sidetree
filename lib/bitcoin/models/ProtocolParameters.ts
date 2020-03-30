@@ -15,7 +15,7 @@ export default interface ProtocolParameters {
   /** Quantile measure we use for proof of fee; e.g., 0.5 would be the median */
   quantileMeasure: number;
 
-  /** The max amount that a quantile value are allowed to deviate from the previous value */
+  /** The max amount that a quantile value is allowed to deviate from the previous value */
   maxQuantileDeviationPercentage: number;
 
   maxInputCountForSampledTransaction: number;
