@@ -74,6 +74,8 @@ export default {
   DocumentIncorretEncodedFormat: 'document_incorrect_encoded_format',
   DocumentNotJson: 'document_not_json',
   DocumentNotValidOriginalDocument: 'document_not_valid_original_document',
+  EncoderValidateBase64UrlStringInputNotBase64UrlString: 'encoder_validate_base64url_string_input_not_base64url_string',
+  EncoderValidateBase64UrlStringInputNotString: 'encoder_validate_base64url_string_input_not_string',
   JwsProtectedHeaderMissingOrIncorrectAlg: 'jws_protected_header_missing_or_incorrect_alg',
   JwsProtectedHeaderMissingOrIncorrectKid: 'jws_protected_header_missing_or_incorrect_kid',
   JwsProtectedHeaderMissingOrUnknownProperty: 'jws_protected_header_missing_or_unknown_property',

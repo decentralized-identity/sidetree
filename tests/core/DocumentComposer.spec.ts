@@ -63,16 +63,18 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdsIdNotString if an id is not a string', () => {
+    it('should throw DocumentComposerIdTooLong if an id is not a string', () => {
       const patch = {
         action: 'remove-service-endpoints',
         serviceEndpointIds: [1234]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotString);
-      expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }, ErrorCode.DocumentComposerIdNotString
+      );
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdsIdTooLong if an id is too long', () => {
+    it('should throw DocumentComposerIdTooLong if an id is too long', () => {
       const patch = {
         action: 'remove-service-endpoints',
         serviceEndpointIds: ['super long super long super long super long super long super long super long super long super long']
@@ -265,8 +267,9 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => { DocumentComposer.validateDocumentPatches(patches); }, ErrorCode.DocumentComposerIdNotString
+      );
     });
 
     it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyHex` format.', async () => {
