@@ -55,7 +55,7 @@ export default class TransactionSelector implements ITransactionSelector {
         console.info(`Multiple transactions found in block ${currentBlockHeight} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNum} and ignoring ${transaction.transactionNumber}`);
       } else {
         transactionsPriorityQueue.push(transaction);
-        writerToTransactionNumMap.set(transaction.writer, transaction.transactionNumber)
+        writerToTransactionNumMap.set(transaction.writer, transaction.transactionNumber);
       }
     }
 
