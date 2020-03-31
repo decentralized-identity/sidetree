@@ -258,13 +258,13 @@ describe('TransactionSelector', () => {
     });
   });
 
-  describe('getNumberOfOperationsAndTransactionsAlreadyInBlock', () => {
+  describe('getNumberOfOperationsAndTransactionsAlreadyInTransactionTime', () => {
     it('should handle when transactions store returns undefined', async () => {
       spyOn(transactionStore, 'getTransactionsStartingFrom').and.returnValue(new Promise((resolve) => {
         resolve(undefined);
       }));
 
-      const result = await transactionSelector['getNumberOfOperationsAndTransactionsAlreadyInBlock'](1);
+      const result = await transactionSelector['getNumberOfOperationsAndTransactionsAlreadyInTransactionTime'](1);
       expect(result).toEqual([0, 0]);
     });
   });
