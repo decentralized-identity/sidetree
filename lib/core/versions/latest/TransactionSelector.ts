@@ -69,16 +69,16 @@ export default class TransactionSelector implements ITransactionSelector {
 
   // if multiple transactions have the same writer, take the first one in the array and enqueue into trasnactionPriorityQueue
   private static enqueueFirstTransactionFromEachWriter (transactions: TransactionModel[], currentTransactionTime: number, transactionsPriorityQueue: any) {
-    const writerToTransactionNumMap = new Map();
+    const writerToTransactionNumberMap = new Map();
     for (const transaction of transactions) {
       // only 1 transaction is allowed per writer
-      if (writerToTransactionNumMap.has(transaction.writer)) {
-        const acceptedTransactionNum = writerToTransactionNumMap.get(transaction.writer);
+      if (writerToTransactionNumberMap.has(transaction.writer)) {
+        const acceptedTransactionNum = writerToTransactionNumberMap.get(transaction.writer);
         // tslint:disable-next-line:max-line-length
         console.info(`Multiple transactions found in transaction time ${currentTransactionTime} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNum} and ignoring ${transaction.transactionNumber}`);
       } else {
         transactionsPriorityQueue.push(transaction);
-        writerToTransactionNumMap.set(transaction.writer, transaction.transactionNumber);
+        writerToTransactionNumberMap.set(transaction.writer, transaction.transactionNumber);
       }
     }
   }
