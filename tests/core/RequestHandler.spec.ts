@@ -84,11 +84,11 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     // Generate a unique key-pair used for each test.
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
+    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('key1');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const services = OperationGenerator.generateServiceEndpoints(['did:sidetree:value0']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
@@ -158,8 +158,8 @@ describe('RequestHandler', () => {
 
   it('should return bad request if two operations for the same DID is received.', async () => {
     // Create the initial create operation.
-    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('#signingKey');
+    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+    const [signingPublicKey] = await Cryptography.generateKeyPairHex('signingKey');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
@@ -178,7 +178,7 @@ describe('RequestHandler', () => {
     expect(response.body.code).toEqual(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
   });
 
-  it('should return a resolved DID Document given a known DID.', async () => {
+  it('should return a correctly resolved DID Document given a known DID.', async () => {
     const response = await requestHandler.handleResolveRequest(did);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -232,11 +232,11 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
-    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
+    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('signingKey');
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateRevealValue', '#additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, 'anyUpdateRevealValue', 'additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -267,8 +267,8 @@ describe('RequestHandler', () => {
 
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#anyRecoveryKey');
-      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('#anySigningKey');
+      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('anyRecoveryKey');
+      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('anySigningKey');
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey]
@@ -296,7 +296,16 @@ describe('RequestHandler', () => {
 function validateDidReferencesInDidDocument (didDocument: any, did: string) {
   expect(didDocument.id).toEqual(did);
 
-  for (let publicKey of didDocument.publicKey) {
-    expect(publicKey.controller).toEqual(did);
+  if (didDocument.publicKey) {
+    for (let publicKeyEntry of didDocument.publicKey) {
+      expect(publicKeyEntry.controller).toEqual(did);
+      expect((publicKeyEntry.id as string).startsWith(did + '#'));
+    }
+  }
+
+  if (didDocument.service) {
+    for (let serviceEntry of didDocument.service) {
+      expect((serviceEntry.id as string).startsWith(did + '#'));
+    }
   }
 }
