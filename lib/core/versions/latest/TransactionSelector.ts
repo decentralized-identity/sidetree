@@ -67,9 +67,9 @@ export default class TransactionSelector implements ITransactionSelector {
     }
   }
 
-  // if multiple transactions have the same writer, take the first one in the array and enqueue into trasnactionPriorityQueue
   private static enqueueFirstTransactionFromEachWriter (transactions: TransactionModel[], currentTransactionTime: number, transactionsPriorityQueue: any) {
     const writerToTransactionNumberMap = new Map();
+    // if multiple transactions have the same writer, take the first one in the array and enqueue into transactionPriorityQueue
     for (const transaction of transactions) {
       // only 1 transaction is allowed per writer
       if (writerToTransactionNumberMap.has(transaction.writer)) {
