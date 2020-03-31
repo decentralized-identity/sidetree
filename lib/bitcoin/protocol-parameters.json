@@ -1,8 +1,9 @@
 {
   "groupSizeInBlocks": 100,
-  "windowSizeInGroups": 10,
-  "sampleSizePerGroup": 25,
-  "quantileMeasure": 0.5,
+  "windowSizeInGroups": 1000,
+  "sampleSizePerGroup": 100,
+  "quantileMeasure": 0.25,
+  "maxQuantileDeviationPercentage": 0.1,
 
   "maxInputCountForSampledTransaction": 100,
   "historicalOffsetInBlocks": 200,
