@@ -131,7 +131,7 @@ The Map file in the Sidetree protocol contains Update operation proving data, as
 
 A valid Map File is a JSON document that MUST NOT exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size), and composed as follows:
 
-1. The Anchor File MUST contain a `chunks` property, and its value MUST be an array of _Batch Chunk Entries_ for the related Batch File data.
+1. The Map File MUST contain a `chunks` property, and its value MUST be an array of _Batch Chunk Entries_ for the related Batch File data.
     - Future versions of the protocol will specify a process for separating the total operations in a batch into multiple _Batch Chunk Entries_, but for this version of the protocol there MUST be only one _Batch Chunk Entry_ object present in the array, which is composed as follows:
       1. The _Batch Chunk Entry_ object MUST contain a `chunk_hash` property, and its value MUST be a Content Identifier representing the single Batch File, generated via the [`CID_ALGORITHM`](#cid-algorithm).
 2. If there are any [Update](#update) operations to be included in the Map File, the Map File MUST include an `operations` property, and its value MUST be an object composed as follows:
