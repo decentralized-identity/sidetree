@@ -104,6 +104,23 @@ describe('TransactionSelector', () => {
       expect(result).toEqual(expected);
     });
 
+    it('should return the expected transactions with limit on 1 transaction per writer', async () => {
+      // max operation is 25 by default in before each
+      const transactions = getTestTransactionsFor1Block();
+
+      // make all transactions the same writer except the last one
+      for (const transaction of transactions) {
+        transaction.writer = 'sameWriterForAllExceptLast';
+      }
+      transactions[transactions.length - 1].writer = 'aDifferentWriter';
+
+      const result = await transactionSelector.selectQualifiedTransactions(transactions);
+
+      // expect the first and last transaction because the first one is the first from the repeating writer and the last one is from a different writer
+      const expected = [transactions[0], transactions[transactions.length - 1]];
+      expect(result).toEqual(expected);
+    });
+
     it('should return the expected transactions with limit on transaction', async () => {
       transactionSelector = new TransactionSelector(transactionStore);
       // set transactions limit to 1 to see proper limiting, and set operation to 100 so it does not filter.
@@ -241,13 +258,13 @@ describe('TransactionSelector', () => {
     });
   });
 
-  describe('getNumberOfOperationsAndTransactionsAlreadyInBlock', () => {
+  describe('getNumberOfOperationsAndTransactionsAlreadyInTransactionTime', () => {
     it('should handle when transactions store returns undefined', async () => {
       spyOn(transactionStore, 'getTransactionsStartingFrom').and.returnValue(new Promise((resolve) => {
         resolve(undefined);
       }));
 
-      const result = await transactionSelector['getNumberOfOperationsAndTransactionsAlreadyInBlock'](1);
+      const result = await transactionSelector['getNumberOfOperationsAndTransactionsAlreadyInTransactionTime'](1);
       expect(result).toEqual([0, 0]);
     });
   });

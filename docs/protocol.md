@@ -182,11 +182,15 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 
 #### Rate limiting
    
-   To prevent spam attack causing transaction and operation stores to grow at an unhealthy rate, rate limiting is put in place. 
+   To prevent spam attack causing transaction and operation stores to grow at an unhealthy rate, 2 types of rate limiting is put in place. 
 
-   The current implementation caps the number of operations and transactions allowed to be observed and processed. The selection logic when the caps are exceeded is the following:
+   1. writer rate limiting
+   Each writer is allowed 1 transaction per transaction time. If a writer has more than 1 transaction, the one with the lowest transaction number is chosen to be considered.
+
+   2. operation and transaction rate limiting
+   After getting 1 transaction per writer, transaction and operation rate limiting is applied. A cap is put on the number of operations and transactions allowed to be observed in a transaction time. The selection logic when the caps are exceeded is the following:
    
-   higher fee per transaction comes first, if transaction fee is the same, lower transaction number comes first.
+   higher fee per transaction comes first, if transaction fee is the same, lower transaction number comes first, in that order, fill the cap and ignore the rest.
    
    By picking the transactions with higher transaction fee, it encourages batching, while allowing small transactions to have the opportunity to also be included if they are willing to pay a slightly higher transaction fee. Alternatives to this approach are highest fee per operation and first comes first serve, but they don't encourage batching and discourage writing near the end of a transaction time.
 

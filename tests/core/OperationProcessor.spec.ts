@@ -34,11 +34,11 @@ async function createUpdateSequence (
     const patches = [
       {
         action: 'remove-service-endpoints',
-        serviceEndpointIds: ['did:sidetree:value' + (i - 1)]
+        serviceEndpointIds: ['serviceEndpointId' + (i - 1)]
       },
       {
         action: 'add-service-endpoints',
-        serviceEndpoints: OperationGenerator.generateServiceEndpoints(['did:sidetree:value' + i])
+        serviceEndpoints: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -103,7 +103,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.serviceEndpoints![0].id).toEqual('did:sidetree:value' + (numberOfUpdates - 1));
+  expect(document!.serviceEndpoints![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -129,10 +129,10 @@ describe('OperationProcessor', async () => {
     resolver = new Resolver(versionManager, operationStore);
 
     // Generate a unique key-pair used for each test.
-    signingKeyId = '#signingKey';
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
+    signingKeyId = 'signingKey';
+    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('key1');
     [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['did:sidetree:value0']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
 
     let recoveryCommitmentHash;
     let firstUpdateCommitmentHash;
@@ -329,7 +329,7 @@ describe('OperationProcessor', async () => {
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateRevealValue, '#additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, '#nonExistentKey', signingPrivateKey
+      didUniqueSuffix, firstUpdateRevealValue, 'additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, 'nonExistentKey', signingPrivateKey
     );
 
     // Generate operation with an invalid key
@@ -349,11 +349,11 @@ describe('OperationProcessor', async () => {
   it('should ignore update operation with an invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const [, anyIncorrectSigningPrivateKey] = await Cryptography.generateKeyPairHex('#key1');
+    const [, anyIncorrectSigningPrivateKey] = await Cryptography.generateKeyPairHex('key1');
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateRevealValue, '#additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, signingKeyId, anyIncorrectSigningPrivateKey
+      didUniqueSuffix, firstUpdateRevealValue, 'additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, signingKeyId, anyIncorrectSigningPrivateKey
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -400,8 +400,8 @@ describe('OperationProcessor', async () => {
       didState = undefined;
 
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
-      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('#signingKey');
+      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('signingKey');
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
 
       // Create the initial create operation.
@@ -461,7 +461,7 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           'anIncorrectUpdateRevealValue',
-          '#new-key1',
+          'new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000',
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           signingPublicKey.id,
@@ -490,7 +490,7 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           nextUpdateRevealValue,
-          '#new-key1',
+          'new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000',
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           signingPublicKey.id,
@@ -519,10 +519,10 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           nextUpdateRevealValue,
-          '#new-key1',
+          'new-key1',
           '000000000000000000000000000000000000000000000000000000000000000000',
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          '#non-existent-signing-key',
+          'non-existent-signing-key',
           signingPrivateKey
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -576,7 +576,7 @@ describe('OperationProcessor', async () => {
 
       it('should apply successfully with document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
-        const [anyNewRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
+        const [anyNewRecoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
         const [, anyNewRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const [, anyNewUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(

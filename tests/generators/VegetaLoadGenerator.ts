@@ -26,13 +26,13 @@ export default class VegetaLoadGenerator {
 
     for (let i = 0; i < uniqueDidCount; i++) {
       // Generate a random pair of public-private key pair and save them on disk.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
       fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
 
-      const signingKeyId = '#signingKey';
+      const signingKeyId = 'signingKey';
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-      const services = OperationGenerator.generateServiceEndpoints(['did:sidetree:value0']);
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointsId123']);
 
       const [recover1RevealValue, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, recovery2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -55,7 +55,7 @@ export default class VegetaLoadGenerator {
 
       // Generate an update operation
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-        didUniqueSuffix, update1RevealValue, '#additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        didUniqueSuffix, update1RevealValue, 'additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         update2CommitmentHash, signingKeyId, signingPrivateKey
       );
 
@@ -64,8 +64,8 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
 
       // Generate a recover operation request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('newRecoveryKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix, recover1RevealValue, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2CommitmentHash, update2CommitmentHash
       );

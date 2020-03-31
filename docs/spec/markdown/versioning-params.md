@@ -5,8 +5,8 @@ The rules and parameters of the Sidetree protocol MAY change in future versions.
 | Protocol Parameter          | Description                                                                   | Suggested Defaults |
 |-----------------------------|-------------------------------------------------------------------------------|:-------------------|
 | `HASH_ALGORITHM` { #hash-algorithm }       | Algorithm for generating hashes of protocol-related values.    |             SHA256 |
-| `KEY_ALGORITHM` { #key-algorithm }         | Asymmetric public key algorithm for signing DID operations.    |          secp256k1 |
-| `SIGNATURE_ALGORITHM` { #sig-algorithm }   | Asymmetric public key signature algorithm.                     |             ES256K |
+| `KEY_ALGORITHM` { #key-algorithm }         | Asymmetric public key algorithm for signing DID operations. Must be a valid JWK `crv`.    |          secp256k1 |
+| `SIGNATURE_ALGORITHM` { #sig-algorithm }   | Asymmetric public key signature algorithm. Must be a valid JWS `alg`.                    |             ES256K |
 | `CAS_PROTOCOL` { #cas-protocol }       | The CAS network protocol used within an implementation.            |               IPFS |
 | `CID_ALGORITHM` { #cid-algorithm }       | Algorithm for generating CAS Identifiers.                        |           IPFS CID |
 | `COMPRESSION_ALGORITHM` { #compression-algorithm } | File compression algorithm                             |                ZIP |
