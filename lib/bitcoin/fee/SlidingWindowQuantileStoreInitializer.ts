@@ -2,7 +2,6 @@ import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileSto
 import ProtocolParameters from '../ProtocolParameters';
 import RunLengthTransformer from './RunLengthTransformer';
 import QuantileInfo from '../models/QuantileInfo';
-import ValueApproximator from './ValueApproximator';
 
 /**
  * We want to insert some static data in the quantile db to bootstrap the calculation. This class
@@ -23,23 +22,20 @@ export default class SlidingWindowQuantileStoreInitializer {
    * Initializes the database if it is empty.
    *
    * @param genesisBlockNumber The genesis block.
-   * @param valueApproximator The value approximator.
    * @param mongoDbStore The data store.
    */
   public static async initializeDatabaseIfEmpty (
     genesisBlockNumber: number,
-    valueApproximator: ValueApproximator,
     mongoDbStore: ISlidingWindowQuantileStore) {
 
     // The quantile value below is what we have decided to be the value for the initial
     // static value. Since this value is normalized, we'll use the approximator to get
     // the original value.
-    const quantile = 25000;
-    const approximatedQuantile = valueApproximator.getDenormalizedValue(quantile);
+    const initialQuantileValue = 25000;
 
     const dataInitializer = SlidingWindowQuantileStoreInitializer.createInstance(
       genesisBlockNumber,
-      approximatedQuantile,
+      initialQuantileValue,
       mongoDbStore);
 
     await dataInitializer.addDataIfNecessary();
@@ -62,7 +58,7 @@ export default class SlidingWindowQuantileStoreInitializer {
   private async addDataIfNecessary (): Promise<boolean> {
     const dbIsEmpty = (await this.mongoDbStore.getFirstGroupId()) === undefined;
 
-    if (dbIsEmpty) {
+    if (!dbIsEmpty) {
       console.info(`The sliding window quantile store is not empty. Skipping data initialization.`);
       return false;
     }
@@ -70,7 +66,7 @@ export default class SlidingWindowQuantileStoreInitializer {
     console.info(`The sliding window quantile store is empty. Starting data initialization.`);
 
     // Figure out how far in the past do we need to go.
-    //  - The end is the group is just before the group represented by the genesis block. The
+    //  - If the genesis block is in block: X then the end-group is `block-gensis - 1`. The
     //    genesis block will be processed normally and its group will be entered normally.
     const endGroupId = Math.floor(this.genesisBlockNumber / this.groupSizeInBlocks) - 1;
 

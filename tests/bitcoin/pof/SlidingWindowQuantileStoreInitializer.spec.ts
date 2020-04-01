@@ -1,10 +1,8 @@
-import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
 import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import ProtocolParameters from '../../../lib/bitcoin/ProtocolParameters';
 import QuantileInfo from '../../../lib/bitcoin/models/QuantileInfo';
 import RunLengthTransformer from '../../../lib/bitcoin/fee/RunLengthTransformer';
 import SlidingWindowQuantileStoreInitializer from '../../../lib/bitcoin/fee/SlidingWindowQuantileStoreInitializer';
-import ValueApproximator from '../../../lib/bitcoin/fee/ValueApproximator';
 
 describe('SlidingWindowQuantileStoreInitializer', () => {
   let quantileStoreInitializer: SlidingWindowQuantileStoreInitializer;
@@ -20,13 +18,11 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
       const addSpy = spyOn(quantileStoreInitializer as any, 'addDataIfNecessary').and.returnValue(Promise.resolve(true));
 
       const genesisBlockInput = 98765;
-      const valueApproximatorInput = new ValueApproximator(1.414, BitcoinClient.convertBtcToSatoshis(1));
       const quantileStoreInput = new MockSlidingWindowQuantileStore();
 
-      await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(genesisBlockInput, valueApproximatorInput, quantileStoreInput);
+      await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(genesisBlockInput, quantileStoreInput);
 
-      const expectedQuantileValue = valueApproximatorInput.getDenormalizedValue(25000);
-      expect(createSpy).toHaveBeenCalledWith(genesisBlockInput, expectedQuantileValue, quantileStoreInput);
+      expect(createSpy).toHaveBeenCalledWith(genesisBlockInput, 25000, quantileStoreInput);
       expect(addSpy).toHaveBeenCalled();
       done();
     });
@@ -51,7 +47,7 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
   describe('addDataIfNecessary', () => {
     it('should not add if the database is not empty', async (done) => {
       const insertSpy = spyOn(quantileStoreInitializer as any, 'insertValuesInStore');
-      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(undefined));
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(1234));
 
       const actual = await quantileStoreInitializer['addDataIfNecessary']();
       expect(actual).toBeFalsy();
@@ -61,7 +57,7 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
 
     it('should call insert with the correct values', async (done) => {
       const insertSpy = spyOn(quantileStoreInitializer as any, 'insertValuesInStore').and.returnValue(Promise.resolve());
-      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(1234));
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(undefined));
 
       const actual = await quantileStoreInitializer['addDataIfNecessary']();
       expect(actual).toBeTruthy();

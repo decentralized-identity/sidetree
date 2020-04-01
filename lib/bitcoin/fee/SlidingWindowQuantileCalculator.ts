@@ -89,7 +89,7 @@ export default class SlidingWindowQuantileCalculator {
     await this.mongoStore.initialize();
 
     // This special call to initialize the quantile db if it is empty.
-    await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.valueApproximator, this.mongoStore);
+    await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.mongoStore);
 
     const firstGroupId = await this.mongoStore.getFirstGroupId();
     const lastGroupId = await this.mongoStore.getLastGroupId();
@@ -183,7 +183,9 @@ export default class SlidingWindowQuantileCalculator {
    * Get the quantile as of a specific groupId.
    */
   public getQuantile (groupId: number): number | undefined {
-    return this.historicalQuantiles.get(groupId);
+    const quantile = this.historicalQuantiles.get(groupId);
+
+    return quantile ? Math.ceil(quantile) : undefined;
   }
 
   /**

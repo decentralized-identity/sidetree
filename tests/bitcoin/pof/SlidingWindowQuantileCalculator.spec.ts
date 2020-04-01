@@ -3,7 +3,7 @@ import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantil
 import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/fee/SlidingWindowQuantileCalculator';
 import SlidingWindowQuantileStoreInitializer from '../../../lib/bitcoin/fee/SlidingWindowQuantileStoreInitializer';
 
-fdescribe('SlidingWindowQuantileCalculator', async () => {
+describe('SlidingWindowQuantileCalculator', async () => {
   const maxValue = 128;
   const slidingWindowSize = 2;
   const medianQuantile = 0.5;
@@ -152,10 +152,7 @@ fdescribe('SlidingWindowQuantileCalculator', async () => {
       maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, genesisBlockNumber, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
 
-    expect(quantileDbInitializerSpy).toHaveBeenCalledWith(
-      slidingWindowQuantileCalculator['genesisBlockNumber'],
-      slidingWindowQuantileCalculator['valueApproximator'],
-      slidingWindowQuantileCalculator['mongoStore']);
+    expect(quantileDbInitializerSpy).toHaveBeenCalledWith(slidingWindowQuantileCalculator['genesisBlockNumber'], slidingWindowQuantileCalculator['mongoStore']);
 
     const quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();
