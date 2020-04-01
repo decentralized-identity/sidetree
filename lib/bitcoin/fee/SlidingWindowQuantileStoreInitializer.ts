@@ -31,8 +31,7 @@ export default class SlidingWindowQuantileStoreInitializer {
     mongoDbStore: ISlidingWindowQuantileStore) {
 
     // The quantile value below is what we have decided to be the value for the initial
-    // static value. Since this value is normalized, we'll use the approximator to get
-    // the original value.
+    // static value.
     const quantile = 25000;
     const normalizedQuantile = valueApproximator.getNormalizedValue(quantile);
 
@@ -69,13 +68,15 @@ export default class SlidingWindowQuantileStoreInitializer {
     console.info(`The sliding window quantile store is empty. Starting data initialization.`);
 
     // Figure out how far in the past do we need to go.
-    //  - If the genesis block is in block: X then the end-group is `block-gensis - 1`. The
+    //  - If the genesis block belongs to group: X then the end-group is `X - 1`. The
     //    genesis block will be processed normally and its group will be entered normally.
-    const endGroupId = Math.floor(this.genesisBlockNumber / this.groupSizeInBlocks) - 1;
+    const groupOfGenesisBlock = Math.floor(this.genesisBlockNumber / this.groupSizeInBlocks);
+    const endGroupId = groupOfGenesisBlock - 1;
 
-    //  - Start is going back full window size (-2 === go a little further back just to be safe)
+    //  - Start is going back at least full window size (-2 === go a little further back just to be safe)
     let startGroupId = endGroupId - this.windowSizeInGroup - 2;
 
+    console.info(`Genesis block: ${this.genesisBlockNumber}; Start group: ${startGroupId}; End group; ${endGroupId}`);
     await this.insertValuesInStore(startGroupId, endGroupId);
 
     return true;
@@ -89,6 +90,8 @@ export default class SlidingWindowQuantileStoreInitializer {
 
     // Get the value to be actually saved in the DB.
     const encodedFrequencyVector = RunLengthTransformer.encode(frequencyVector);
+
+    console.info(`Inserting Quantile: ${this.initialQuantileValue}; Frequency vector: ${encodedFrequencyVector}`);
 
     // Now insert the values
     while (startGroupId <= endGroupId) {
