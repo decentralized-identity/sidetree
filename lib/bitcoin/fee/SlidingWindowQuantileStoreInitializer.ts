@@ -58,14 +58,6 @@ export default class SlidingWindowQuantileStoreInitializer {
   }
 
   private async addDataIfNecessary (): Promise<boolean> {
-    const dbIsEmpty = (await this.mongoDbStore.getFirstGroupId()) === undefined;
-
-    if (!dbIsEmpty) {
-      console.info(`The sliding window quantile store is not empty. Skipping data initialization.`);
-      return false;
-    }
-
-    console.info(`The sliding window quantile store is empty. Starting data initialization.`);
 
     // Figure out how far in the past do we need to go.
     //  - If the genesis block belongs to group: X then the end-group is `X - 1`. The
@@ -75,14 +67,20 @@ export default class SlidingWindowQuantileStoreInitializer {
 
     //  - Start is going back at least full window size (-2 === go a little further back just to be safe)
     let startGroupId = endGroupId - this.windowSizeInGroup - 2;
+    console.info(`Genesis block: ${this.genesisBlockNumber}; Intended start group: ${startGroupId}; Intended end group; ${endGroupId}`);
 
-    console.info(`Genesis block: ${this.genesisBlockNumber}; Start group: ${startGroupId}; End group; ${endGroupId}`);
-    await this.insertValuesInStore(startGroupId, endGroupId);
+    if ((await this.isDataInsertionRequired(startGroupId, endGroupId))) {
 
-    return true;
+      console.info(`The sliding window quantile store is empty. Starting data initialization.`);
+      await this.insertValuesInDb(startGroupId, endGroupId);
+
+      return true;
+    }
+
+    return false;
   }
 
-  private async insertValuesInStore (startGroupId: number, endGroupId: number): Promise<void> {
+  private async insertValuesInDb (startGroupId: number, endGroupId: number): Promise<void> {
 
     // Mock that all of the transactions sampled have the same value for quantile.
     const frequencyVector = new Array<number>(this.sampleSizePerGroup);
@@ -94,16 +92,42 @@ export default class SlidingWindowQuantileStoreInitializer {
     console.info(`Inserting Quantile: ${this.initialQuantileValue}; Frequency vector: ${encodedFrequencyVector}`);
 
     // Now insert the values
-    while (startGroupId <= endGroupId) {
+    for (let currentGroupId = startGroupId; currentGroupId <= endGroupId; currentGroupId++) {
 
       const quantileInfo: QuantileInfo = {
-        groupId: startGroupId,
+        groupId: currentGroupId,
         quantile: this.initialQuantileValue,
         groupFreqVector: encodedFrequencyVector
       };
 
       await this.mongoDbStore.put(quantileInfo);
-      startGroupId++;
     }
+  }
+
+  private async isDataInsertionRequired (startGroupId: number, endGroupId: number): Promise<boolean> {
+    const firstGroupIdInDb = await this.mongoDbStore.getFirstGroupId();
+
+    if (!firstGroupIdInDb) {
+      console.info(`The sliding window quantile store is empty; need to insert the initialization data.`);
+      return true;
+    }
+
+    const lastGroupIdInDb = await this.mongoDbStore.getLastGroupId();
+
+    console.info(`Start group in Db: ${firstGroupIdInDb}. End group in Db: ${lastGroupIdInDb}`);
+
+    const dbDataIsCorrect = (firstGroupIdInDb === startGroupId) && (lastGroupIdInDb! >= endGroupId);
+
+    if (!dbDataIsCorrect) {
+      // Partial data is present (maybe the node crashed during initialization). Just
+      // delete everything and start over.
+      console.info(`Deleting everything in the quantile Db.`);
+
+      await this.mongoDbStore.clear();
+      return true;
+    }
+
+    console.info(`Quantile db is in correct state; no need to insert any data.`);
+    return false;
   }
 }

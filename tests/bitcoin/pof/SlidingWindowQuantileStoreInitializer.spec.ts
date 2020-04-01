@@ -48,9 +48,9 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
   });
 
   describe('addDataIfNecessary', () => {
-    it('should not add if the database is not empty', async (done) => {
-      const insertSpy = spyOn(quantileStoreInitializer as any, 'insertValuesInStore');
-      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(1234));
+    it('should not add if the data insertion is not required', async (done) => {
+      const insertSpy = spyOn(quantileStoreInitializer as any, 'insertValuesInDb');
+      spyOn(quantileStoreInitializer as any, 'isDataInsertionRequired').and.returnValue(Promise.resolve(false));
 
       const actual = await quantileStoreInitializer['addDataIfNecessary']();
       expect(actual).toBeFalsy();
@@ -59,8 +59,8 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
     });
 
     it('should call insert with the correct values', async (done) => {
-      const insertSpy = spyOn(quantileStoreInitializer as any, 'insertValuesInStore').and.returnValue(Promise.resolve());
-      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(undefined));
+      const insertSpy = spyOn(quantileStoreInitializer as any, 'insertValuesInDb').and.returnValue(Promise.resolve());
+      spyOn(quantileStoreInitializer as any, 'isDataInsertionRequired').and.returnValue(Promise.resolve(true));
 
       const actual = await quantileStoreInitializer['addDataIfNecessary']();
       expect(actual).toBeTruthy();
@@ -72,18 +72,17 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
     });
   });
 
-  describe('insertValuesInStore', () => {
+  describe('insertValuesInDb', () => {
     it('should insert the correct values in the DB.', async (done) => {
       const startGroupInput = 100;
       const endGroupInput = 150;
-
-      let startGroupInserted = false;
-      let endGroupInserted = false;
 
       const frequencyVector = new Array<number>(ProtocolParameters.sampleSizePerGroup);
       frequencyVector.fill(quantileStoreInitializer['initialQuantileValue']);
 
       const expectedFrequencyVector = RunLengthTransformer.encode(frequencyVector);
+
+      const insertedGroupIds = new Set<number>();
 
       const putSpy = spyOn(quantileStoreInitializer['mongoDbStore'], 'put').and.callFake(async (input: QuantileInfo | undefined) => {
 
@@ -91,23 +90,89 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
         expect(input!.quantile).toEqual(quantileStoreInitializer['initialQuantileValue']);
         expect(input!.groupFreqVector).toEqual(expectedFrequencyVector);
 
-        if (input!.groupId === startGroupInput) {
-          startGroupInserted = true;
-        }
-
-        if (input!.groupId === endGroupInput) {
-          endGroupInserted = true;
-        }
-
+        insertedGroupIds.add(input!.groupId);
         return Promise.resolve();
       });
 
-      await quantileStoreInitializer['insertValuesInStore'](startGroupInput, endGroupInput);
+      await quantileStoreInitializer['insertValuesInDb'](startGroupInput, endGroupInput);
 
-      expect(putSpy).toHaveBeenCalledTimes(endGroupInput - startGroupInput + 1);
-      expect(startGroupInserted).toBeTruthy();
-      expect(endGroupInserted).toBeTruthy();
+      const expectedNumberOfInserts = endGroupInput - startGroupInput + 1;
 
+      expect(putSpy).toHaveBeenCalledTimes(expectedNumberOfInserts);
+      expect(insertedGroupIds.size).toEqual(expectedNumberOfInserts);
+      expect(insertedGroupIds.has(startGroupInput)).toBeTruthy();
+      expect(insertedGroupIds.has(endGroupInput)).toBeTruthy();
+
+      done();
+    });
+  });
+
+  describe('isDataInsertionRequired', () => {
+    it('should return true if the database is empty', async (done) => {
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(undefined));
+
+      const actual = await quantileStoreInitializer['isDataInsertionRequired'](10, 20);
+      expect(actual).toBeTruthy();
+      done();
+    });
+
+    it('should return true and clear mongo db if the database has invalid first group', async (done) => {
+      const startGroupInput = 123;
+      const endGroupInput = 200;
+
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(startGroupInput - 1));
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getLastGroupId').and.returnValue(Promise.resolve(endGroupInput + 1));
+
+      const clearStoreSpy = spyOn(quantileStoreInitializer['mongoDbStore'], 'clear').and.returnValue(Promise.resolve());
+
+      const actual = await quantileStoreInitializer['isDataInsertionRequired'](10, 20);
+      expect(actual).toBeTruthy();
+      expect(clearStoreSpy).toHaveBeenCalled();
+      done();
+    });
+
+    it('should return true and clear mongo db if the database has invalid first group 2', async (done) => {
+      const startGroupInput = 123;
+      const endGroupInput = 200;
+
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(startGroupInput + 1));
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getLastGroupId').and.returnValue(Promise.resolve(endGroupInput));
+
+      const clearStoreSpy = spyOn(quantileStoreInitializer['mongoDbStore'], 'clear').and.returnValue(Promise.resolve());
+
+      const actual = await quantileStoreInitializer['isDataInsertionRequired'](startGroupInput, endGroupInput);
+      expect(actual).toBeTruthy();
+      expect(clearStoreSpy).toHaveBeenCalled();
+      done();
+    });
+
+    it('should return true and clear mongo db if the database has invalid last group', async (done) => {
+      const startGroupInput = 123;
+      const endGroupInput = 200;
+
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(startGroupInput));
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getLastGroupId').and.returnValue(Promise.resolve(endGroupInput - 1));
+
+      const clearStoreSpy = spyOn(quantileStoreInitializer['mongoDbStore'], 'clear').and.returnValue(Promise.resolve());
+
+      const actual = await quantileStoreInitializer['isDataInsertionRequired'](startGroupInput, endGroupInput);
+      expect(actual).toBeTruthy();
+      expect(clearStoreSpy).toHaveBeenCalled();
+      done();
+    });
+
+    it('should return false if the database has valid inputs', async (done) => {
+      const startGroupInput = 123;
+      const endGroupInput = 200;
+
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getFirstGroupId').and.returnValue(Promise.resolve(startGroupInput));
+      spyOn(quantileStoreInitializer['mongoDbStore'], 'getLastGroupId').and.returnValue(Promise.resolve(endGroupInput));
+
+      const clearStoreSpy = spyOn(quantileStoreInitializer['mongoDbStore'], 'clear').and.returnValue(Promise.resolve());
+
+      const actual = await quantileStoreInitializer['isDataInsertionRequired'](startGroupInput, endGroupInput);
+      expect(actual).toBeFalsy();
+      expect(clearStoreSpy).not.toHaveBeenCalled();
       done();
     });
   });
