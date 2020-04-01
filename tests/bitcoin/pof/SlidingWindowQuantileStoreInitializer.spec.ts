@@ -3,6 +3,7 @@ import ProtocolParameters from '../../../lib/bitcoin/ProtocolParameters';
 import QuantileInfo from '../../../lib/bitcoin/models/QuantileInfo';
 import RunLengthTransformer from '../../../lib/bitcoin/fee/RunLengthTransformer';
 import SlidingWindowQuantileStoreInitializer from '../../../lib/bitcoin/fee/SlidingWindowQuantileStoreInitializer';
+import ValueApproximator from '../../../lib/bitcoin/fee/ValueApproximator';
 
 describe('SlidingWindowQuantileStoreInitializer', () => {
   let quantileStoreInitializer: SlidingWindowQuantileStoreInitializer;
@@ -19,10 +20,12 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
 
       const genesisBlockInput = 98765;
       const quantileStoreInput = new MockSlidingWindowQuantileStore();
+      const approximatorInput = new ValueApproximator(1.414, Number.MAX_VALUE);
 
-      await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(genesisBlockInput, quantileStoreInput);
+      await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(genesisBlockInput, approximatorInput, quantileStoreInput);
 
-      expect(createSpy).toHaveBeenCalledWith(genesisBlockInput, 25000, quantileStoreInput);
+      const expectedQuantile = approximatorInput.getNormalizedValue(25000);
+      expect(createSpy).toHaveBeenCalledWith(genesisBlockInput, expectedQuantile, quantileStoreInput);
       expect(addSpy).toHaveBeenCalled();
       done();
     });

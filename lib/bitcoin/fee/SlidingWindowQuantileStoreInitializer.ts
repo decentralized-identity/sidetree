@@ -2,6 +2,7 @@ import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileSto
 import ProtocolParameters from '../ProtocolParameters';
 import RunLengthTransformer from './RunLengthTransformer';
 import QuantileInfo from '../models/QuantileInfo';
+import ValueApproximator from './ValueApproximator';
 
 /**
  * We want to insert some static data in the quantile db to bootstrap the calculation. This class
@@ -26,16 +27,18 @@ export default class SlidingWindowQuantileStoreInitializer {
    */
   public static async initializeDatabaseIfEmpty (
     genesisBlockNumber: number,
+    valueApproximator: ValueApproximator,
     mongoDbStore: ISlidingWindowQuantileStore) {
 
     // The quantile value below is what we have decided to be the value for the initial
     // static value. Since this value is normalized, we'll use the approximator to get
     // the original value.
-    const initialQuantileValue = 25000;
+    const quantile = 25000;
+    const normalizedQuantile = valueApproximator.getNormalizedValue(quantile);
 
     const dataInitializer = SlidingWindowQuantileStoreInitializer.createInstance(
       genesisBlockNumber,
-      initialQuantileValue,
+      normalizedQuantile,
       mongoDbStore);
 
     await dataInitializer.addDataIfNecessary();

@@ -89,7 +89,7 @@ export default class SlidingWindowQuantileCalculator {
     await this.mongoStore.initialize();
 
     // This special call to initialize the quantile db if it is empty.
-    await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.mongoStore);
+    await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.valueApproximator, this.mongoStore);
 
     const firstGroupId = await this.mongoStore.getFirstGroupId();
     const lastGroupId = await this.mongoStore.getLastGroupId();
