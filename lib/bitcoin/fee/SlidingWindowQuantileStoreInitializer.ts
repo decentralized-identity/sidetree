@@ -13,11 +13,10 @@ export default class SlidingWindowQuantileStoreInitializer {
   private constructor (
     private genesisBlockNumber: number,
     private groupSizeInBlocks: number,
-    private slidingWindowSizeInGroups: number,
-    private sampleSize: number,
+    private windowSizeInGroup: number,
+    private sampleSizePerGroup: number,
     private initialQuantileValue: number,
-    private valueApproximator: ValueApproximator,
-    private slidingWindowQuantileStore: ISlidingWindowQuantileStore) {
+    private mongoDbStore: ISlidingWindowQuantileStore) {
   }
 
   /**
@@ -25,31 +24,45 @@ export default class SlidingWindowQuantileStoreInitializer {
    *
    * @param genesisBlockNumber The genesis block.
    * @param valueApproximator The value approximator.
-   * @param slidingWindowQuantileStore The data store.
+   * @param mongoDbStore The data store.
    */
   public static async initializeDatabaseIfEmpty (
     genesisBlockNumber: number,
     valueApproximator: ValueApproximator,
-    slidingWindowQuantileStore: ISlidingWindowQuantileStore) {
+    mongoDbStore: ISlidingWindowQuantileStore) {
 
-    const initialQuantileValue = 25000;
+    // The quantile value below is what we have decided to be the value for the initial
+    // static value. Since this value is normalized, we'll use the approximator to get
+    // the original value.
+    const quantile = 25000;
+    const approximatedQuantile = valueApproximator.getDenormalizedValue(quantile);
 
-    const dataInitializer = new SlidingWindowQuantileStoreInitializer(
+    const dataInitializer = SlidingWindowQuantileStoreInitializer.createInstance(
       genesisBlockNumber,
-      ProtocolParameters.groupSizeInBlocks,
-      ProtocolParameters.windowSizeInGroups,
-      ProtocolParameters.sampleSizePerGroup,
-      initialQuantileValue,
-      valueApproximator,
-      slidingWindowQuantileStore);
+      approximatedQuantile,
+      mongoDbStore);
 
     await dataInitializer.addDataIfNecessary();
   }
 
-  private async addDataIfNecessary (): Promise<boolean> {
-    const dbIsNotEmpty = (await this.slidingWindowQuantileStore.getFirstGroupId()) !== undefined;
+  private static createInstance (
+    genesisBlockNumber: number,
+    initialQuantileValue: number,
+    mongoDbStore: ISlidingWindowQuantileStore) {
 
-    if (dbIsNotEmpty) {
+    return new SlidingWindowQuantileStoreInitializer(
+        genesisBlockNumber,
+        ProtocolParameters.groupSizeInBlocks,
+        ProtocolParameters.windowSizeInGroups,
+        ProtocolParameters.sampleSizePerGroup,
+        initialQuantileValue,
+        mongoDbStore);
+  }
+
+  private async addDataIfNecessary (): Promise<boolean> {
+    const dbIsEmpty = (await this.mongoDbStore.getFirstGroupId()) === undefined;
+
+    if (dbIsEmpty) {
       console.info(`The sliding window quantile store is not empty. Skipping data initialization.`);
       return false;
     }
@@ -58,36 +71,36 @@ export default class SlidingWindowQuantileStoreInitializer {
 
     // Figure out how far in the past do we need to go.
     //  - The end is the group is just before the group represented by the genesis block. The
-    //    genesis block will be processed normally and it's group will be entered normally.
+    //    genesis block will be processed normally and its group will be entered normally.
     const endGroupId = Math.floor(this.genesisBlockNumber / this.groupSizeInBlocks) - 1;
 
-    //  - Start is full window size (-2 === go a little further back just to be safe)
-    let startGroupId = endGroupId - this.slidingWindowSizeInGroups - 2;
+    //  - Start is going back full window size (-2 === go a little further back just to be safe)
+    let startGroupId = endGroupId - this.windowSizeInGroup - 2;
 
     await this.insertValuesInStore(startGroupId, endGroupId);
+
     return true;
   }
 
   private async insertValuesInStore (startGroupId: number, endGroupId: number): Promise<void> {
 
-    const normalizedQuantile = this.valueApproximator.getNormalizedValue(this.initialQuantileValue);
-
     // Mock that all of the transactions sampled have the same value for quantile.
-    const frequencyVector = new Array<number>(this.sampleSize);
-    frequencyVector.fill(normalizedQuantile);
+    const frequencyVector = new Array<number>(this.sampleSizePerGroup);
+    frequencyVector.fill(this.initialQuantileValue);
 
+    // Get the value to be actually saved in the DB.
     const encodedFrequencyVector = RunLengthTransformer.encode(frequencyVector);
 
-    // Now insert the values in the quantile DB
+    // Now insert the values
     while (startGroupId <= endGroupId) {
 
       const quantileInfo: QuantileInfo = {
         groupId: startGroupId,
-        quantile: normalizedQuantile,
+        quantile: this.initialQuantileValue,
         groupFreqVector: encodedFrequencyVector
       };
 
-      await this.slidingWindowQuantileStore.put(quantileInfo);
+      await this.mongoDbStore.put(quantileInfo);
       startGroupId++;
     }
   }
