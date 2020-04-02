@@ -69,8 +69,8 @@ export default class MapFile {
     const updateOperations = updateOperationArray.map(operation => {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
-        updateOtp: operation.updateOtp,
-        signedOperationDataHash: operation.signedOperationDataHash.toJwsModel()
+        updateRevealValue: operation.updateRevealValue,
+        signedData: operation.signedData.toJwsModel()
       };
     });
 

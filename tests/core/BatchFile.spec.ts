@@ -12,8 +12,8 @@ describe('BatchFile', async () => {
 
       const decompressedBatchFileModel = await BatchFile.parse(batchFileBuffer);
 
-      expect(decompressedBatchFileModel.operationData.length).toEqual(1);
-      expect(decompressedBatchFileModel.operationData[0]).toEqual(createOperation.encodedOperationData!);
+      expect(decompressedBatchFileModel.patchSet.length).toEqual(1);
+      expect(decompressedBatchFileModel.patchSet[0]).toEqual(createOperation.encodedPatchData!);
     });
   });
 });

@@ -2,6 +2,7 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
+import IBitcoinConfig from './IBitcoinConfig';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
@@ -10,6 +11,7 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
 import ReservoirSampler from './fee/ReservoirSampler';
+import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SidetreeError from '../common/SidetreeError';
@@ -21,8 +23,6 @@ import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
-import { IBitcoinConfig } from './IBitcoinConfig';
-import { ResponseStatus } from '../common/Response';
 
 /**
  * Object representing a blockchain time and hash
@@ -91,9 +91,6 @@ export default class BitcoinProcessor {
 
   private readonly transactionSampler: ReservoirSampler;
 
-  /** satoshis per bitcoin */
-  private static readonly satoshiPerBitcoin = 100000000;
-
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
 
@@ -103,13 +100,15 @@ export default class BitcoinProcessor {
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
-      config.bitcoinFeeSpendingCutoff * BitcoinProcessor.satoshiPerBitcoin,
+      BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
       this.transactionStore);
 
     const mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
-    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinProcessor.satoshiPerBitcoin,
+    this.quantileCalculator = new SlidingWindowQuantileCalculator(BitcoinClient.convertBtcToSatoshis(1),
       ProtocolParameters.windowSizeInGroups,
       ProtocolParameters.quantileMeasure,
+      ProtocolParameters.maxQuantileDeviationPercentage,
+      config.genesisBlockNumber,
       mongoQuantileStore);
     this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
 
@@ -127,23 +126,27 @@ export default class BitcoinProcessor {
         config.sidetreeTransactionFeeMarkupPercentage || 0);
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient);
-    this.lockResolver = new LockResolver(this.bitcoinClient);
+
+    this.lockResolver =
+      new LockResolver(
+        this.bitcoinClient,
+        ProtocolParameters.minimumValueTimeLockDurationInBlocks,
+        ProtocolParameters.maximumValueTimeLockDurationInBlocks);
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
                                               : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
 
-    const numberOfBlocksInOneMonth = BitcoinClient.estimatedNumberOfBlocksInOneHour * 24 * 30;
-
     this.lockMonitor =
       new LockMonitor(
         this.bitcoinClient,
         this.mongoDbLockTransactionStore,
+        this.lockResolver,
         config.valueTimeLockPollPeriodInSeconds || 10 * 60,
-        config.valueTimeLockAmountInBitcoins * BitcoinProcessor.satoshiPerBitcoin, // Desired lock amount in satoshis
-        valueTimeLockTransactionFeesInBtc * BitcoinProcessor.satoshiPerBitcoin,    // Txn Fees amoount in satoshis
-        numberOfBlocksInOneMonth);                                                 // Desired lock duration in blocks
+        BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
+        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amoount in satoshis
+        ProtocolParameters.maximumValueTimeLockDurationInBlocks);                 // Desired lock duration in blocks
   }
 
   /**
@@ -327,7 +330,10 @@ export default class BitcoinProcessor {
   public async getValueTimeLock (lockIdentifier: string): Promise<ValueTimeLockModel> {
 
     try {
-      return this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
+      // NOTE: must return the await response as otherwise, the following exception handler is not invoked
+      // (instead the caller's exception handler is invoked) and the correct status/error-code etc is not
+      // bubbled up above.
+      return await this.lockResolver.resolveSerializedLockIdentifierAndThrowOnError(lockIdentifier);
     } catch (e) {
       console.info(`Value time lock not found. Identifier: ${lockIdentifier}. Error: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
       throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);

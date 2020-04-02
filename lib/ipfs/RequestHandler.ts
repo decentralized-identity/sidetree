@@ -1,11 +1,12 @@
 import base64url from 'base64url';
 import ErrorCode from '../ipfs/ErrorCode';
-import FetchResultCode from '../common/FetchResultCode';
+import FetchResultCode from '../common/enums/FetchResultCode';
 import IpfsStorage from './IpfsStorage';
+import ResponseModel from '../common/models/ResponseModel';
+import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import SidetreeError from '../common/SidetreeError';
-import { ResponseModel, ResponseStatus } from '../common/Response';
-import { Timeout } from './Util/Timeout';
+import Timeout from './Util/Timeout';
 
 const multihashes = require('multihashes');
 

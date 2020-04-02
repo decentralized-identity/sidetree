@@ -7,7 +7,7 @@ import BatchFileModel from './models/BatchFileModel';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
-import FetchResultCode from '../../../common/FetchResultCode';
+import FetchResultCode from '../../../common/enums/FetchResultCode';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
@@ -222,13 +222,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
     operations.push(...updateOperations);
     operations.push(...revokeOperations);
 
-    // If batch file is found/given, add operation data from batch file to to each operation.
-    // NOTE: there is no operation data for revoke operations.
+    // If batch file is found/given, add patch data from batch file to each operation.
+    // NOTE: there is no patch data for revoke operations.
     if (batchFile !== undefined) {
       const operationCountExcludingRevokes = createOperations.length + recoverOperations.length + updateOperations.length;
       for (let i = 0; i < operationCountExcludingRevokes &&
-                      i < batchFile.operationData.length; i++) {
-        operations[i].operationData = batchFile.operationData[i];
+                      i < batchFile.patchSet.length; i++) {
+        operations[i].patchData = batchFile.patchSet[i];
       }
     }
 

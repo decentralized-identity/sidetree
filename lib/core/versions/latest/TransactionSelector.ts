@@ -41,15 +41,12 @@ export default class TransactionSelector implements ITransactionSelector {
 
     const transactionsPriorityQueue = TransactionSelector.getTransactionPriorityQueue();
 
-    const currentBlockHeight = transactions[0].transactionTime;
-    for (const transaction of transactions) {
-      if (transaction.transactionTime !== currentBlockHeight) {
-        throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting, investigate and fix');
-      }
-      transactionsPriorityQueue.push(transaction);
-    }
+    const currentTransactionTime = transactions[0].transactionTime;
 
-    const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInBlock(currentBlockHeight);
+    TransactionSelector.validateTransactions(transactions, currentTransactionTime);
+    TransactionSelector.enqueueFirstTransactionFromEachWriter(transactions, currentTransactionTime, transactionsPriorityQueue);
+
+    const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInTransactionTime(currentTransactionTime);
     let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
     let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
 
@@ -61,8 +58,33 @@ export default class TransactionSelector implements ITransactionSelector {
     return transactionsToReturn;
   }
 
-  private async getNumberOfOperationsAndTransactionsAlreadyInBlock (blockHeight: number): Promise<number[]> {
-    const transactions = await this.transactionStore.getTransactionsStartingFrom(blockHeight, blockHeight);
+  private static validateTransactions (transactions: TransactionModel[], currentTransactionTime: number) {
+    for (const transaction of transactions) {
+      // expect all transactions to be in the same transaction time
+      if (transaction.transactionTime !== currentTransactionTime) {
+        throw new SidetreeError(ErrorCode.TransactionsNotInSameBlock, 'transaction must be in the same block to perform rate limiting, investigate and fix');
+      }
+    }
+  }
+
+  private static enqueueFirstTransactionFromEachWriter (transactions: TransactionModel[], currentTransactionTime: number, transactionsPriorityQueue: any) {
+    const writerToTransactionNumberMap = new Map();
+    // if multiple transactions have the same writer, take the first one in the array and enqueue into transactionPriorityQueue
+    for (const transaction of transactions) {
+      // only 1 transaction is allowed per writer
+      if (writerToTransactionNumberMap.has(transaction.writer)) {
+        const acceptedTransactionNumber = writerToTransactionNumberMap.get(transaction.writer);
+        // tslint:disable-next-line:max-line-length
+        console.info(`Multiple transactions found in transaction time ${currentTransactionTime} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNumber} and ignoring ${transaction.transactionNumber}`);
+      } else {
+        transactionsPriorityQueue.push(transaction);
+        writerToTransactionNumberMap.set(transaction.writer, transaction.transactionNumber);
+      }
+    }
+  }
+
+  private async getNumberOfOperationsAndTransactionsAlreadyInTransactionTime (transactionTime: number): Promise<number[]> {
+    const transactions = await this.transactionStore.getTransactionsStartingFrom(transactionTime, transactionTime);
     let numberOfOperations = 0;
     if (transactions) {
       for (const transaction of transactions) {

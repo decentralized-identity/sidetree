@@ -6,6 +6,7 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
+import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
@@ -26,24 +27,31 @@ describe('LockMonitor', () => {
 
   const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
+  const lockResolver = new LockResolver(bitcoinClient, 500, 600);
 
   let lockMonitor: LockMonitor;
 
   beforeEach(() => {
-    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, 60, 1200, 100, 2000);
+    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 60, 1200, 100, 2000);
+    lockMonitor['initialized'] = true;
   });
 
   describe('constructor', () => {
     it('should throw if the desired lock amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000.34, 25, 1234),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000.34, 25, 1234),
         ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber);
     });
 
     it('should throw if the txn fees amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, 10, 1000, 1234.56, 45),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000, 1234.56, 45),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
+    });
+
+    it('should set the initialized flag to false', () => {
+      const monitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000, 1200, 45);
+      expect(monitor['initialized']).toBeFalsy();
     });
   });
 
@@ -53,10 +61,12 @@ describe('LockMonitor', () => {
       const resolveSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(Promise.resolve(mockLockInfo));
       const pollSpy = spyOn(lockMonitor as any, 'periodicPoll').and.returnValue(Promise.resolve());
 
+      lockMonitor['initialized'] = false;
       await lockMonitor.initialize();
 
       expect(resolveSpy).toHaveBeenCalledBefore(pollSpy);
       expect(pollSpy).toHaveBeenCalled();
+      expect(lockMonitor['initialized']).toBeTruthy();
     });
   });
 
@@ -79,6 +89,25 @@ describe('LockMonitor', () => {
       expect(lockMonitor['periodicPollTimeoutId']).toEqual(setTimeoutOutput);
     });
 
+    it('should rethrow if the initialize flag is not true', async (done) => {
+      const mockErrorCode = 'error during initialization';
+      spyOn(lockMonitor as any, 'handlePeriodicPolling').and.callFake(() => {
+        throw new SidetreeError(mockErrorCode);
+      });
+
+      const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(123456 as any);
+
+      lockMonitor['periodicPollTimeoutId'] = undefined;
+      lockMonitor['initialized'] = false;
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => lockMonitor['periodicPoll'](),
+        mockErrorCode);
+
+      expect(setTimeoutSpy).toHaveBeenCalled();
+      done();
+    });
+
     it('should call setTimeout() at the end of the execution even if an exception is thrown.', async () => {
       const handlePollingSpy = spyOn(lockMonitor as any, 'handlePeriodicPolling').and.throwError('unhandled exception');
 
@@ -86,6 +115,7 @@ describe('LockMonitor', () => {
       const setTimeoutSpy = spyOn(global, 'setTimeout').and.returnValue(setTimeoutOutput as any);
 
       lockMonitor['periodicPollTimeoutId'] = undefined;
+      lockMonitor['initialized'] = true;
       await lockMonitor['periodicPoll']();
 
       expect(handlePollingSpy).toHaveBeenCalled();
@@ -350,7 +380,7 @@ describe('LockMonitor', () => {
   describe('getCurrentLockState', () => {
     it('should return an empty object if no locks were found in the db.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction');
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError');
+      const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError');
 
       spyOn(lockMonitor['lockTransactionStore'], 'getLastLock').and.returnValue(Promise.resolve(undefined));
 
@@ -364,7 +394,7 @@ describe('LockMonitor', () => {
 
     it('should rebroadcast if the last lock transaction is not yet broadcasted.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError');
+      const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError');
 
       const mockLastLock: SavedLockedModel = {
         createTimestamp: 121314,
@@ -389,7 +419,7 @@ describe('LockMonitor', () => {
 
     it('should just return without resolving anything if the last transaction was return-to-wallet.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError');
+      const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError');
 
       const mockLastLock: SavedLockedModel = {
         createTimestamp: 121314,
@@ -422,7 +452,7 @@ describe('LockMonitor', () => {
         unlockTransactionTime: 1234,
         lockTransactionTime: 1220
       };
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
+      const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
 
       const mockLastLock: SavedLockedModel = {
         createTimestamp: 121314,
@@ -448,7 +478,7 @@ describe('LockMonitor', () => {
     it('should return pending if the lock resolver throws not-confirmed error.', async () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
 
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
+      const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
         throw new SidetreeError(ErrorCode.LockResolverTransactionNotConfirmed);
       });
 
@@ -477,7 +507,7 @@ describe('LockMonitor', () => {
       const rebroadcastSpy = spyOn(lockMonitor as any, 'rebroadcastTransaction').and.returnValue(Promise.resolve());
 
       const mockErrorCode = 'some other unhandled error code';
-      const resolveLockSpy = spyOn(lockMonitor['lockResolver'], 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
+      const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.callFake(() => {
         throw new SidetreeError(mockErrorCode);
       });
 

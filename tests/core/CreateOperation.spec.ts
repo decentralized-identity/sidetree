@@ -10,16 +10,16 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('CreateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
-      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, firstUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryOtpHash,
-        firstUpdateOtpHash,
+        recoveryCommitmentHash,
+        firstUpdateCommitmentHash,
         services
       );
 
@@ -30,16 +30,16 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw if operation type is incorrect', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
-      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
-      const [, recoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, firstUpdateOtpHash] = OperationGenerator.generateOtp();
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryOtpHash,
-        firstUpdateOtpHash,
+        recoveryCommitmentHash,
+        firstUpdateCommitmentHash,
         services
       );
 
@@ -58,9 +58,9 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data contains an additional unknown property.', async () => {
       const suffixData = {
-        operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryKey: { publicKeyHex: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
-        nextRecoveryOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -70,9 +70,9 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data is missing recovery key.', async () => {
       const suffixData = {
-        operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         // recoveryKey: { publicKeyHex: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' }, // Intentionally missing.
-        nextRecoveryOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -82,41 +82,13 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data has invalid recovery key.', async () => {
       const suffixData = {
-        operationDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryKey: { knownKeyType: 123 },
-        nextRecoveryOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid));
-    });
-  });
-
-  describe('parseOperationData()', async () => {
-    it('should throw if operation data is not string', async () => {
-      await expectAsync((CreateOperation as any).parseOperationData(123)).toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDataMissingOrNotString));
-    });
-
-    it('should throw if operation data contains an additional unknown property.', async () => {
-      const operationData = {
-        document: 'any opaque content',
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        extraProperty: 'An unknown extra property'
-      };
-      const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
-      await expectAsync((CreateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDataMissingOrUnknownProperty));
-    });
-
-    it('should throw if operation data is missing document property.', async () => {
-      const operationData = {
-        // document: 'any opaque content', // Intentionally missing.
-        nextUpdateOtpHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        unknownProperty: 'An unknown property'
-      };
-      const encodedOperationData = Encoder.encode(JSON.stringify(operationData));
-      await expectAsync((CreateOperation as any).parseOperationData(encodedOperationData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationDocumentMissing));
     });
   });
 });

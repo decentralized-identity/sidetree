@@ -3,10 +3,7 @@
  * NOTE: The class intentionally contains "Endpoint" to disambiguate from overloaded term "Service".
  */
 export default interface DidServiceEndpointModel {
+  id: string;
   type: string;
-  serviceEndpoint: {
-    '@context': string;
-    '@type': string;
-    instances: string[]
-  };
+  serviceEndpoint: string;
 }

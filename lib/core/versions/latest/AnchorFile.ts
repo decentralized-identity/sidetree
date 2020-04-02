@@ -164,16 +164,16 @@ export default class AnchorFile {
     const recoverOperations = recoverOperationArray.map(operation => {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
-        recoveryOtp: operation,
-        signedOperationData: operation.signedOperationDataJws.toJwsModel()
+        recoveryRevealValue: operation,
+        signedData: operation.signedDataJws.toJwsModel()
       };
     });
 
     const revokeOperations = revokeOperationArray.map(operation => {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
-        recoveryOtp: operation.recoveryOtp,
-        signedOperationData: operation.signedOperationDataJws.toJwsModel()
+        recoveryRevealValue: operation.recoveryRevealValue,
+        signedData: operation.signedDataJws.toJwsModel()
       };
     });
 

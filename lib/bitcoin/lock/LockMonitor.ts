@@ -31,16 +31,16 @@ interface LockState {
  * Encapsulates functionality to monitor and create/remove amount locks on bitcoin.
  */
 export default class LockMonitor {
+  private initialized: boolean;
 
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
   private currentLockState: LockState;
 
-  private lockResolver: LockResolver;
-
   constructor (
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
+    private lockResolver: LockResolver,
     private pollPeriodInSeconds: number,
     private desiredLockAmountInSatoshis: number,
     private transactionFeesAmountInSatoshis: number,
@@ -54,12 +54,13 @@ export default class LockMonitor {
       throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
 
-    this.lockResolver = new LockResolver(this.bitcoinClient);
     this.currentLockState = {
       activeValueTimeLock: undefined,
       latestSavedLockInfo: undefined,
       status: LockStatus.None
     };
+
+    this.initialized = false;
   }
 
   /**
@@ -69,6 +70,7 @@ export default class LockMonitor {
     this.currentLockState = await this.getCurrentLockState();
 
     await this.periodicPoll();
+    this.initialized = true;
   }
 
   /**
@@ -105,8 +107,14 @@ export default class LockMonitor {
       await this.handlePeriodicPolling();
 
     } catch (e) {
-      const message = `An error occured during periodic poll: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`;
+      const message = `An error occured during periodic poll: ${SidetreeError.stringify(e)}`;
       console.error(message);
+
+      // Rethrow if the error is in the initialization phase. We don't want to conitinue with the
+      // service during initialization.
+      if (!this.initialized) {
+        throw e;
+      }
     } finally {
       this.periodicPollTimeoutId = setTimeout(this.periodicPoll.bind(this), 1000 * this.pollPeriodInSeconds);
     }
@@ -307,7 +315,7 @@ export default class LockMonitor {
     // the wallet and let the next poll iteration start a new lock.
     if (latestSavedLockInfo.desiredLockAmountInSatoshis !== desiredLockAmountInSatoshis) {
       // tslint:disable-next-line: max-line-length
-      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to releast the lock.`);
+      console.info(`Current desired lock amount ${desiredLockAmountInSatoshis} satoshis is different from the previous desired lock amount ${latestSavedLockInfo.desiredLockAmountInSatoshis} satoshis. Going to release the lock.`);
 
       await this.releaseLock(currentValueTimeLock, desiredLockAmountInSatoshis);
       return true;

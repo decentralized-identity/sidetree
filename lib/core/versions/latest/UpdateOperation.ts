@@ -1,18 +1,11 @@
-import DocumentComposer from './DocumentComposer';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
-import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
+import PatchDataModel from './models/PatchDataModel';
 import SidetreeError from '../../../common/SidetreeError';
-
-interface OperationDataModel {
-  nextUpdateOtpHash: string;
-  documentPatch: any;
-}
 
 /**
  * A class that represents an update operation.
@@ -28,17 +21,17 @@ export default class UpdateOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded one-time password for the operation. */
-  public readonly updateOtp: string;
+  /** Encoded reveal value for the operation. */
+  public readonly updateRevealValue: string;
 
-  /** Signed one-time password for the operation. */
-  public readonly signedOperationDataHash: Jws;
+  /** Signed data for the operation. */
+  public readonly signedData: Jws;
 
-  /** Operation data. */
-  public readonly operationData: OperationDataModel | undefined;
+  /** Patch data. */
+  public readonly patchData: PatchDataModel | undefined;
 
-  /** Encoded string of the operation data. */
-  public readonly encodedOperationData: string | undefined;
+  /** Encoded string of the patch data. */
+  public readonly encodedPatchData: string | undefined;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
@@ -46,17 +39,17 @@ export default class UpdateOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    updateOtp: string,
-    signedOperationDataHash: Jws,
-    encodedOperationData: string | undefined,
-    operationData: OperationDataModel | undefined) {
+    updateRevealValue: string,
+    signedData: Jws,
+    encodedPatchData: string | undefined,
+    patchData: PatchDataModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.updateOtp = updateOtp;
-    this.signedOperationDataHash = signedOperationDataHash;
-    this.encodedOperationData = encodedOperationData;
-    this.operationData = operationData;
+    this.updateRevealValue = updateRevealValue;
+    this.signedData = signedData;
+    this.encodedPatchData = encodedPatchData;
+    this.patchData = patchData;
   }
 
   /**
@@ -83,7 +76,7 @@ export default class UpdateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `operationData` and `type` properties is expected to be absent.
+   * @param anchorFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<UpdateOperation> {
     let expectedPropertyCount = 5;
@@ -100,56 +93,31 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    if (typeof operationObject.updateOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpMissingOrInvalidType);
+    if (typeof operationObject.updateRevealValue !== 'string') {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.updateOtp as string).length > Operation.maxEncodedOtpLength) {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateOtpTooLong);
+    if ((operationObject.updateRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
     }
 
-    const updateOtp = operationObject.updateOtp;
+    const updateRevealValue = operationObject.updateRevealValue;
 
-    const signedOperationDataHash = Jws.parse(operationObject.signedOperationDataHash);
+    const signedData = Jws.parse(operationObject.signedData);
 
-    // If not in anchor file mode, we need to validate `type` and `operationData` properties.
-    let encodedOperationData = undefined;
-    let operationData = undefined;
+    // If not in anchor file mode, we need to validate `type` and `patchData` properties.
+    let encodedPatchData = undefined;
+    let patchData = undefined;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }
 
-      encodedOperationData = operationObject.operationData;
-      operationData = await UpdateOperation.parseOperationData(encodedOperationData);
+      encodedPatchData = operationObject.patchData;
+      patchData = await Operation.parsePatchData(encodedPatchData);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix, updateOtp, signedOperationDataHash, encodedOperationData, operationData);
-  }
-
-  private static async parseOperationData (operationDataEncodedString: any): Promise<OperationDataModel> {
-    if (typeof operationDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrNotString);
-    }
-
-    const operationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const operationData = await JsonAsync.parse(operationDataJsonString);
-
-    const properties = Object.keys(operationData);
-    if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.UpdateOperationDataMissingOrUnknownProperty);
-    }
-
-    if (operationData.documentPatch === undefined) {
-      throw new SidetreeError(ErrorCode.UpdateOperationDocumentPatchMissing);
-    }
-
-    // Validate `documentPatch` property using the DocumentComposer.
-    DocumentComposer.validateDocumentPatch(operationData.documentPatch);
-
-    const nextUpdateOtpHash = Encoder.decodeAsBuffer(operationData.nextUpdateOtpHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateOtpHash);
-
-    return operationData;
+    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
+      updateRevealValue, signedData, encodedPatchData, patchData);
   }
 }

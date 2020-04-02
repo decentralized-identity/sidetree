@@ -44,7 +44,7 @@ describe('LockResolver', () => {
 
   beforeEach(() => {
     let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
-    lockResolver = new LockResolver(bitcoinClient);
+    lockResolver = new LockResolver(bitcoinClient, 200, 250);
   });
 
   describe('resolveSerializedLockIdentifierAndThrowOnError', () => {
@@ -111,6 +111,8 @@ describe('LockResolver', () => {
       const mockLockStartBlock = 12345;
       spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(12345));
 
+      const lockDurationSpy = spyOn(lockResolver as any, 'isLockDurationValid').and.returnValue(true);
+
       const expectedOutput: ValueTimeLockModel = {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
@@ -126,6 +128,7 @@ describe('LockResolver', () => {
       expect(createScriptSpy).toHaveBeenCalledWith(mockLockIdentifier.redeemScriptAsHex);
       expect(checkLockScriptSpy).toHaveBeenCalled();
       expect(payToScriptSpy).toHaveBeenCalledWith(mockTransaction.outputs[0], validScript);
+      expect(lockDurationSpy).toHaveBeenCalledWith(mockLockStartBlock, mockLockScriptVerifyResult.unlockAtBlock);
     });
 
     it('should throw if redeem script is not a lock script.', async () => {
@@ -176,6 +179,38 @@ describe('LockResolver', () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
         ErrorCode.LockResolverTransactionIsNotPayingToScript
+      );
+    });
+
+    it('should throw if the lock duration is invalid.', async () => {
+
+      const mockLockIdentifier: LockIdentifierModel = {
+        transactionId: 'some transactoin id',
+        redeemScriptAsHex: 'validScript to - Hex'
+      };
+
+      const mockTransaction: BitcoinTransactionModel = {
+        id: 'some transaction id',
+        blockHash: 'block hash',
+        confirmations: 5,
+        inputs: [],
+        outputs: [
+          { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
+        ]
+      };
+
+      const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, 123);
+
+      spyOn(lockResolver as any, 'getTransaction').and.returnValue(Promise.resolve(mockTransaction));
+      spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
+      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
+      spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(true);
+      spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(1234));
+      spyOn(lockResolver as any, 'isLockDurationValid').and.returnValue(false);
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
+        ErrorCode.LockResolverDurationIsInvalid
       );
     });
   });
@@ -317,6 +352,41 @@ describe('LockResolver', () => {
         ErrorCode.LockResolverTransactionNotConfirmed);
 
       done();
+    });
+  });
+
+  describe('isLockDurationValid', () => {
+    it('should return true if the lock duration is exactly on the min limit.', () => {
+      const startBlock = 100;
+      const unlockBlock = startBlock + lockResolver['minimumLockDurationInBlocks'];
+
+      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
+      expect(actual).toBeTruthy();
+    });
+
+    it('should return true if the lock duration is exactly on the max limit.', () => {
+      const startBlock = 100;
+      const unlockBlock = startBlock + lockResolver['maximumLockDurationInBlocks'];
+
+      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
+      expect(actual).toBeTruthy();
+    });
+
+    it('should return false if the lock duration is greater than the max limit.', () => {
+      const startBlock = 100;
+      const unlockBlock = startBlock + lockResolver['maximumLockDurationInBlocks'] + 1;
+
+      const actual = lockResolver['isLockDurationValid'](startBlock, unlockBlock);
+      expect(actual).toBeFalsy();
+    });
+
+    it('should return false if the lock duration is below the min limit.', () => {
+      const intendedStartBlock = 100;
+      const unlockBlock = intendedStartBlock + lockResolver['minimumLockDurationInBlocks'];
+      const actualStartBlock = intendedStartBlock + 1;
+
+      const actual = lockResolver['isLockDurationValid'](actualStartBlock, unlockBlock);
+      expect(actual).toBeFalsy();
     });
   });
 });
