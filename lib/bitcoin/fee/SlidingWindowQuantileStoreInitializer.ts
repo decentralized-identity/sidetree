@@ -67,11 +67,12 @@ export default class SlidingWindowQuantileStoreInitializer {
 
     //  - Start is going back at least full window size (-2 === go a little further back just to be safe)
     let startGroupId = endGroupId - this.windowSizeInGroup - 2;
-    console.info(`Genesis block: ${this.genesisBlockNumber}; Intended start group: ${startGroupId}; Intended end group; ${endGroupId}`);
+
+    console.info(`Genesis block: ${this.genesisBlockNumber}; Initialization start group: ${startGroupId}; Initialization end group: ${endGroupId}`);
 
     if ((await this.isDataInsertionRequired(startGroupId, endGroupId))) {
 
-      console.info(`The sliding window quantile store is empty. Starting data initialization.`);
+      console.info(`Starting data initialization.`);
       await this.insertValuesInDb(startGroupId, endGroupId);
 
       return true;
