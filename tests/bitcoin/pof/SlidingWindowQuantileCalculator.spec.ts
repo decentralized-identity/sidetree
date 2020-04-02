@@ -1,19 +1,24 @@
 import ISlidingWindowQuantileStore from '../../../lib/bitcoin/interfaces/ISlidingWindowQuantileStore';
 import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/fee/SlidingWindowQuantileCalculator';
+import SlidingWindowQuantileStoreInitializer from '../../../lib/bitcoin/fee/SlidingWindowQuantileStoreInitializer';
 
 describe('SlidingWindowQuantileCalculator', async () => {
   const maxValue = 128;
   const slidingWindowSize = 2;
   const medianQuantile = 0.5;
   const maxQuantileDeviationPercentage = 100; // Make the factor really large for testing
+  const genesisBlockNumber = 1234;
   let slidingWindowQuantileStore: ISlidingWindowQuantileStore;
   let slidingWindowQuantileCalculator: SlidingWindowQuantileCalculator;
+  let quantileDbInitializerSpy: jasmine.Spy;
 
   beforeAll(async () => {
+    quantileDbInitializerSpy = spyOn(SlidingWindowQuantileStoreInitializer, 'initializeDatabaseIfEmpty').and.returnValue(Promise.resolve());
+
     slidingWindowQuantileStore = new MockSlidingWindowQuantileStore();
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, genesisBlockNumber, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
 
     spyOn(slidingWindowQuantileCalculator as any, 'calculateAdjustedQuantile').and.callFake((current: any, _previous: any) => current);
@@ -144,8 +149,13 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     // start a new calculator with the same store
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, genesisBlockNumber, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
+
+    expect(quantileDbInitializerSpy).toHaveBeenCalledWith(
+      slidingWindowQuantileCalculator['genesisBlockNumber'],
+      slidingWindowQuantileCalculator['valueApproximator'],
+      slidingWindowQuantileCalculator['mongoStore']);
 
     const quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();

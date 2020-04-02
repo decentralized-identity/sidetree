@@ -1,6 +1,7 @@
 import RunLengthTransformer from './RunLengthTransformer';
 import ValueApproximator from './ValueApproximator';
 import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileStore';
+import SlidingWindowQuantileStoreInitializer from './SlidingWindowQuantileStoreInitializer';
 
 /**
  * Frequency vector is an array of numbers representing frequencies of
@@ -69,6 +70,7 @@ export default class SlidingWindowQuantileCalculator {
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
     maxQuantileDeviationPercentage: number, // How much is a quantile value allowed to deviate from the previous value
+    private readonly genesisBlockNumber: number,
     private readonly mongoStore: ISlidingWindowQuantileStore
     ) {
     this.valueApproximator = new ValueApproximator(this.feeApproximate, maxValue);
@@ -85,6 +87,10 @@ export default class SlidingWindowQuantileCalculator {
   /** Initialize self from state stored in mongo store */
   public async initialize (): Promise<void> {
     await this.mongoStore.initialize();
+
+    // This special call to initialize the quantile db if it is empty.
+    await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.valueApproximator, this.mongoStore);
+
     const firstGroupId = await this.mongoStore.getFirstGroupId();
     const lastGroupId = await this.mongoStore.getLastGroupId();
 
@@ -177,7 +183,9 @@ export default class SlidingWindowQuantileCalculator {
    * Get the quantile as of a specific groupId.
    */
   public getQuantile (groupId: number): number | undefined {
-    return this.historicalQuantiles.get(groupId);
+    const quantile = this.historicalQuantiles.get(groupId);
+
+    return quantile ? Math.ceil(quantile) : undefined;
   }
 
   /**
