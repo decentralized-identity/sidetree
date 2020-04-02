@@ -43,6 +43,14 @@ export default class SlidingWindowQuantileStoreInitializer {
     await dataInitializer.addDataIfNecessary();
   }
 
+  /**
+   * Creates an instance of this object. This function is really created to help with unit testing.
+   * The output of this function can be mocked to test the callers.
+   *
+   * @param genesisBlockNumber The genesis block
+   * @param initialQuantileValue Initial quantile value to use.
+   * @param mongoDbStore The quantile db store.
+   */
   private static createInstance (
     genesisBlockNumber: number,
     initialQuantileValue: number,
