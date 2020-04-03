@@ -14,7 +14,7 @@ The rules and parameters of the Sidetree protocol MAY change in future versions.
 | `GENESIS_TIME` { #genesis-time }                 | The point in the target ledger's transaction history at which Sidetree implementation is first activated (e.g. block number in a blockchain).    |             630000 |
 | `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | Maximum compressed anchor file size.                     |               1 MB |
 | `MAX_MAP_FILE_SIZE` { #max-map-file-size }       | Maximum compressed map file size.                        |               1 MB |
-| `MAX_BATCH_FILE_SIZE`  { #max-batch-file-size }  | Maximum compressed batch file size.                      |              10 MB |
+| `MAX_BATCH_FILE_SIZE`  { #max-chunk-file-size }  | Maximum compressed batch file size.                      |              10 MB |
 | `MAX_ENCODED_HASH_LENGTH`   | Maximum accepted string length of an encoded hash.                            |          100 bytes |
 | `MAX_OPERATION_SIZE`        | Maximum uncompressed operation size.                                          |               1 kb |
 | `MAX_OPERATION_COUNT`       | Maximum number of operations per batch.                                       |             10,000 |
