@@ -38,7 +38,7 @@ async function createOperationChain (
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
       updateRevealValueEncodedString,
-      `#key${i}`,
+      `key${i}`,
       '000000000000000000000000000000000000000000000000000000000000000000',
       nextUpdateCommitmentHash,
       signingKeyId,

@@ -1,6 +1,7 @@
 import RunLengthTransformer from './RunLengthTransformer';
 import ValueApproximator from './ValueApproximator';
 import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileStore';
+import SlidingWindowQuantileStoreInitializer from './SlidingWindowQuantileStoreInitializer';
 
 /**
  * Frequency vector is an array of numbers representing frequencies of
@@ -30,11 +31,13 @@ export default class SlidingWindowQuantileCalculator {
   /**
    * The value to use as an input to the ValueApproximator.
    */
-  private readonly feeApproximate: number = 1.1;
+  private readonly feeApproximate: number = 1.414;
   /**
    * Size of a frequency vector; 1 + max normalized value
    */
   private frequencyVectorSize: number;
+
+  private maxQuantileDeviationPercentageValue: number;
 
   /**
    * The latest sliding window consisting of the last 'size'
@@ -66,12 +69,16 @@ export default class SlidingWindowQuantileCalculator {
     maxValue: number,  // all values above maxValue are rounded down by maxValue
     private readonly slidingWindowSize: number, // size of the sliding window used to compute quantiles
     private readonly quantileMeasure: number, // quantile measure (e.g., 0.5) that is tracked by the calculator
+    maxQuantileDeviationPercentage: number, // How much is a quantile value allowed to deviate from the previous value
+    private readonly genesisBlockNumber: number,
     private readonly mongoStore: ISlidingWindowQuantileStore
     ) {
     this.valueApproximator = new ValueApproximator(this.feeApproximate, maxValue);
     this.frequencyVectorSize = 1 + this.valueApproximator.getMaximumNormalizedValue();
     this.slidingWindow = new Array<FrequencyVector>();
     this.frequencyVectorAggregated = new Array(this.frequencyVectorSize).fill(0);
+    this.maxQuantileDeviationPercentageValue = maxQuantileDeviationPercentage / 100;
+
     if (this.quantileMeasure < 0 || this.quantileMeasure > 1) {
       throw Error(`Invalid quantile measure ${quantileMeasure}`);
     }
@@ -80,6 +87,10 @@ export default class SlidingWindowQuantileCalculator {
   /** Initialize self from state stored in mongo store */
   public async initialize (): Promise<void> {
     await this.mongoStore.initialize();
+
+    // This special call to initialize the quantile db if it is empty.
+    await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.valueApproximator, this.mongoStore);
+
     const firstGroupId = await this.mongoStore.getFirstGroupId();
     const lastGroupId = await this.mongoStore.getLastGroupId();
 
@@ -138,7 +149,10 @@ export default class SlidingWindowQuantileCalculator {
     }
 
     // calculate and materialize the quantile as of this groupId
-    const quantile = this.calculateCurrentQuantile();
+    const currentQuantile = this.calculateCurrentQuantile();
+    const previousQuantile = this.prevgroupId ? this.historicalQuantiles.get(this.prevgroupId) : undefined;
+
+    const quantile = this.calculateAdjustedQuantile(currentQuantile, previousQuantile);
     this.historicalQuantiles.set(groupId, quantile);
 
     // store it into mongo store
@@ -169,7 +183,9 @@ export default class SlidingWindowQuantileCalculator {
    * Get the quantile as of a specific groupId.
    */
   public getQuantile (groupId: number): number | undefined {
-    return this.historicalQuantiles.get(groupId);
+    const quantile = this.historicalQuantiles.get(groupId);
+
+    return quantile ? Math.ceil(quantile) : undefined;
   }
 
   /**
@@ -213,5 +229,26 @@ export default class SlidingWindowQuantileCalculator {
 
     // should never come here.
     return 0;
+  }
+
+  private calculateAdjustedQuantile (currentQuantile: number, previousQuantile: number | undefined): number {
+    if (!previousQuantile) {
+      return currentQuantile;
+    }
+
+    const deviationAllowed = this.maxQuantileDeviationPercentageValue * previousQuantile;
+
+    const lowerLimit = previousQuantile - deviationAllowed;
+    const upperLimit = previousQuantile + deviationAllowed;
+
+    if (currentQuantile < lowerLimit) {
+      return lowerLimit;
+    }
+
+    if (currentQuantile > upperLimit) {
+      return upperLimit;
+    }
+
+    return currentQuantile;
   }
 }

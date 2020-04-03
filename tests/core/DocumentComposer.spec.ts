@@ -63,21 +63,23 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdsIdNotString if an id is not a string', () => {
+    it('should throw DocumentComposerIdTooLong if an id is not a string', () => {
       const patch = {
         action: 'remove-service-endpoints',
         serviceEndpointIds: [1234]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdNotString);
-      expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }, ErrorCode.DocumentComposerIdNotString
+      );
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdsIdTooLong if an id is too long', () => {
+    it('should throw DocumentComposerIdTooLong if an id is too long', () => {
       const patch = {
         action: 'remove-service-endpoints',
         serviceEndpointIds: ['super long super long super long super long super long super long super long super long super long']
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdTooLong);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
   });
@@ -99,7 +101,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateRemoveServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointIdTooLong if id is too long', () => {
+    it('should throw DocumentComposerIdTooLong if id is too long', () => {
       const patch = {
         action: 'add-service-endpoint',
         serviceEndpoints: [{
@@ -108,7 +110,7 @@ describe('DocumentComposer', async () => {
           serviceEndpoint: 'something'
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdTooLong);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
@@ -265,8 +267,9 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdNotString);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
+        () => { DocumentComposer.validateDocumentPatches(patches); }, ErrorCode.DocumentComposerIdNotString
+      );
     });
 
     it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyHex` format.', async () => {
@@ -354,17 +357,26 @@ describe('DocumentComposer', async () => {
     });
   });
 
+  describe('validateId()', async () => {
+    it('should throw if ID given is not using characters from Base64URL character set.', async () => {
+      const invalidId = 'AnInavlidIdWith#';
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
+      expect(() => { (DocumentComposer as any).validateId(invalidId); }).toThrow(expectedError);
+    });
+  });
+
   describe('validateDocument()', async () => {
     it('should throw if document contains 2 keys of with the same ID.', async () => {
       const document = {
         publicKeys: [
           {
-            id: '#key1',
+            id: 'key1',
             type: 'RsaVerificationKey2018',
             publicKeyHex: 'anything'
           },
           {
-            id: '#key1', // Intentional duplicated key ID.
+            id: 'key1', // Intentional duplicated key ID.
             type: 'RsaVerificationKey2018',
             publicKeyPem: 'anything'
           }
@@ -400,7 +412,7 @@ function generatePatchesForPublicKeys () {
       action: 'add-public-keys',
       publicKeys: [
         {
-          id: '#keyX',
+          id: 'keyX',
           type: 'Secp256k1VerificationKey2018',
           publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
         }
@@ -408,11 +420,11 @@ function generatePatchesForPublicKeys () {
     },
     {
       action: 'remove-public-keys',
-      publicKeys: ['#keyY']
+      publicKeys: ['keyY']
     },
     {
       action: 'add-service-endpoints',
-      serviceEndpoints: OperationGenerator.generateServiceEndpoints(['did:sidetree:EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
+      serviceEndpoints: OperationGenerator.generateServiceEndpoints(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
     }
   ];
 }

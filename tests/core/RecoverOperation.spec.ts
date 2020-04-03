@@ -10,9 +10,9 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('RecoverOperation', async () => {
   describe('parse()', async () => {
     it('should throw if operation type is incorrect', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
@@ -34,9 +34,9 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if didUniqueSuffix is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
@@ -58,9 +58,9 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
@@ -83,9 +83,9 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is too long.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#singingKey');
+      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 

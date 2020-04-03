@@ -15,7 +15,7 @@ export default class Document {
     for (let i = 0; i < document.publicKeys.length; i++) {
       const publicKey = document.publicKeys[i];
 
-      if (publicKey.id && publicKey.id.endsWith(keyId)) {
+      if (publicKey.id === keyId) {
         return publicKey;
       }
     }

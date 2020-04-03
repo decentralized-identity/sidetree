@@ -11,6 +11,6 @@
 | DID Suffix Data       | Data required to deterministically generate a DID.                             |
 | DID Operation         | Set of delta-based modifications that change the state of a DID Document when applied.                                               |
 | Operation Request     | JWS formatted request sent to a _Sidetree Node_ to include a _DID Operation_ in a batch of operations.     |
-| Recovery Key          | Public/private key pair used to perform a Recovery or Revocation operation.          |
+| Recovery Key          | Public/private key pair used to perform a Recovery or Deactivate operation. Must be encoded as JWK or Hex.          |
 | Sidetree Node         | Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.                            |
 | Transaction           | Ledger transaction that anchors a set of Sidetree operations, via a CAS URI for an associated Anchor File.          |

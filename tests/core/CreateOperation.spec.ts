@@ -10,9 +10,9 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('CreateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
-      const services = OperationGenerator.generateServiceEndpoints(['did:sidetree:value0']);
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
@@ -30,9 +30,9 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw if operation type is incorrect', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('#key1');
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('#key2');
-      const services = OperationGenerator.generateServiceEndpoints(['did:sidetree:value0']);
+      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+      const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(

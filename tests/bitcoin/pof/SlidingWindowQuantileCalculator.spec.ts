@@ -1,19 +1,27 @@
 import ISlidingWindowQuantileStore from '../../../lib/bitcoin/interfaces/ISlidingWindowQuantileStore';
 import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import SlidingWindowQuantileCalculator from '../../../lib/bitcoin/fee/SlidingWindowQuantileCalculator';
+import SlidingWindowQuantileStoreInitializer from '../../../lib/bitcoin/fee/SlidingWindowQuantileStoreInitializer';
 
 describe('SlidingWindowQuantileCalculator', async () => {
   const maxValue = 128;
   const slidingWindowSize = 2;
   const medianQuantile = 0.5;
+  const maxQuantileDeviationPercentage = 100; // Make the factor really large for testing
+  const genesisBlockNumber = 1234;
   let slidingWindowQuantileStore: ISlidingWindowQuantileStore;
   let slidingWindowQuantileCalculator: SlidingWindowQuantileCalculator;
+  let quantileDbInitializerSpy: jasmine.Spy;
 
   beforeAll(async () => {
+    quantileDbInitializerSpy = spyOn(SlidingWindowQuantileStoreInitializer, 'initializeDatabaseIfEmpty').and.returnValue(Promise.resolve());
+
     slidingWindowQuantileStore = new MockSlidingWindowQuantileStore();
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, genesisBlockNumber, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
+
+    spyOn(slidingWindowQuantileCalculator as any, 'calculateAdjustedQuantile').and.callFake((current: any, _previous: any) => current);
   });
 
   beforeEach(async () => {
@@ -26,7 +34,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, new Array(100).fill(singleValue));
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile!).toBe(2);
+    expect(quantile!).toBe(3);
   });
 
   it('should compute correct median with distinct values', async () => {
@@ -38,7 +46,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, values);
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile).toBe(50); // This value changes based on the valueApproximation field
+    expect(quantile).toBe(64); // This value changes based on the valueApproximation field
   });
 
   it('should compute correct median at boundary', async () => {
@@ -54,7 +62,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, values);
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile).toBe(2);
+    expect(quantile).toBe(3);
   });
 
   it('should compute correct median at boundary (higher)', async () => {
@@ -70,7 +78,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, values);
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile).toBe(4);
+    expect(quantile).toBe(6);
   });
 
   it('should compute correct median modulo permutation', async () => {
@@ -85,7 +93,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
     await slidingWindowQuantileCalculator.add(0, values);
     const quantile = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile).toBeDefined();
-    expect(quantile).toBe(50); // This value changes based on the valueApproximation field
+    expect(quantile).toBe(64); // This value changes based on the valueApproximation field
   });
 
   it('should compute correct median with a window', async () => {
@@ -95,15 +103,13 @@ describe('SlidingWindowQuantileCalculator', async () => {
     // 1: 2x100
     await slidingWindowQuantileCalculator.add(1, new Array(100).fill(2));
 
-    // quantile of 0 is over 100 4's, so 4
     const quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();
-    expect(quantile0!).toBe(4);
+    expect(quantile0!).toBe(6);
 
-    // quantile of 1 has 4x100, 2x100, so 2
     const quantile1 = slidingWindowQuantileCalculator.getQuantile(1);
     expect(quantile1).toBeDefined();
-    expect(quantile1!).toBe(2);
+    expect(quantile1!).toBe(3);
   });
 
   it('should correctly slide out old groups', async () => {
@@ -113,15 +119,13 @@ describe('SlidingWindowQuantileCalculator', async () => {
     // 1: 4x100
     await slidingWindowQuantileCalculator.add(1, new Array(100).fill(4));
 
-    // quantile of 0 is over [2x100], so 2
     const quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();
-    expect(quantile0!).toBe(2);
+    expect(quantile0!).toBe(3);
 
-    // quantile of 1 is over [2x100, 4x100], so 2
     const quantile1 = slidingWindowQuantileCalculator.getQuantile(1);
     expect(quantile1).toBeDefined();
-    expect(quantile1!).toBe(2);
+    expect(quantile1!).toBe(3);
 
     // 2: 2x99, 1x4; if the first group is slided out, the resulting
     // frequency is [4x100, 4, 2x99], so median is 4;
@@ -133,7 +137,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     const quantile2 = slidingWindowQuantileCalculator.getQuantile(2);
     expect(quantile2).toBeDefined();
-    expect(quantile2!).toBe(4);
+    expect(quantile2!).toBe(6);
   });
 
   it('should correctly initialize itself from store', async () => {
@@ -145,18 +149,21 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     // start a new calculator with the same store
     slidingWindowQuantileCalculator = new SlidingWindowQuantileCalculator(
-      maxValue, slidingWindowSize, medianQuantile, slidingWindowQuantileStore);
+      maxValue, slidingWindowSize, medianQuantile, maxQuantileDeviationPercentage, genesisBlockNumber, slidingWindowQuantileStore);
     await slidingWindowQuantileCalculator.initialize();
 
-    // quantile of 0 is over [2x100], so 2
+    expect(quantileDbInitializerSpy).toHaveBeenCalledWith(
+      slidingWindowQuantileCalculator['genesisBlockNumber'],
+      slidingWindowQuantileCalculator['valueApproximator'],
+      slidingWindowQuantileCalculator['mongoStore']);
+
     const quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();
-    expect(quantile0!).toBe(2);
+    expect(quantile0!).toBe(3);
 
-    // quantile of 1 is over [2x100, 4x100], so 2
     const quantile1 = slidingWindowQuantileCalculator.getQuantile(1);
     expect(quantile1).toBeDefined();
-    expect(quantile1!).toBe(2);
+    expect(quantile1!).toBe(3);
 
     // 2: 2x99, 1x4; if the first group is slided out, the resulting
     // frequency is [4x100, 4, 2x99], so median is 4;
@@ -168,7 +175,7 @@ describe('SlidingWindowQuantileCalculator', async () => {
 
     const quantile2 = slidingWindowQuantileCalculator.getQuantile(2);
     expect(quantile2).toBeDefined();
-    expect(quantile2!).toBe(4);
+    expect(quantile2!).toBe(6);
   });
 
   it('should correctly revert', async () => {
@@ -178,15 +185,13 @@ describe('SlidingWindowQuantileCalculator', async () => {
     // 1: 8x100
     await slidingWindowQuantileCalculator.add(1, new Array(100).fill(8));
 
-    // quantile of 0 is over [4x100], so 4
     let quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();
-    expect(quantile0!).toBe(4);
+    expect(quantile0!).toBe(6);
 
-    // quantile of 1 is over [4x100, 8x100], so 4
     let quantile1 = slidingWindowQuantileCalculator.getQuantile(1);
     expect(quantile1).toBeDefined();
-    expect(quantile1!).toBe(4);
+    expect(quantile1!).toBe(6);
 
     // remove 1
     await slidingWindowQuantileCalculator.removeGroupsGreaterThanOrEqual(1);
@@ -194,14 +199,53 @@ describe('SlidingWindowQuantileCalculator', async () => {
     // 1: 2x100
     await slidingWindowQuantileCalculator.add(1, new Array(100).fill(2));
 
-    // quantile of 0 is over [4x100], so 4
     quantile0 = slidingWindowQuantileCalculator.getQuantile(0);
     expect(quantile0).toBeDefined();
-    expect(quantile0!).toBe(4);
+    expect(quantile0!).toBe(6);
 
-    // quantile of 1 is over [2x100, 4x100], so 2
     quantile1 = slidingWindowQuantileCalculator.getQuantile(1);
     expect(quantile1).toBeDefined();
-    expect(quantile1!).toBe(2);
+    expect(quantile1!).toBe(3);
+  });
+
+  describe('calculateAdjustedQuantile', () => {
+    let previousValue: number;
+    let lowerLimit: number;
+    let upperLimit: number;
+
+    beforeEach(() => {
+      slidingWindowQuantileCalculator['maxQuantileDeviationPercentageValue'] = 0.01; // 1% deviation allowed
+      previousValue = 100;
+      lowerLimit = 99;
+      upperLimit = 101;
+    });
+
+    it('should return the current value if the previous is undefined', () => {
+      const currentValue = 1234;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, undefined);
+
+      expect(actual).toEqual(currentValue);
+    });
+
+    it('should return the current value if it is within the limit', () => {
+      const currentValue = lowerLimit + 1;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, previousValue);
+
+      expect(actual).toEqual(currentValue);
+    });
+
+    it('should return the lower limit if the current value is < lower limt', () => {
+      const currentValue = lowerLimit - 1;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, previousValue);
+
+      expect(actual).toEqual(lowerLimit);
+    });
+
+    it('should return the upper limit if the current value is > upper limit', () => {
+      const currentValue = upperLimit + 1;
+      const actual = slidingWindowQuantileCalculator['calculateAdjustedQuantile'](currentValue, previousValue);
+
+      expect(actual).toEqual(upperLimit);
+    });
   });
 });
