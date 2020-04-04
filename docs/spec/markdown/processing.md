@@ -80,7 +80,7 @@ The follow sequence of rules and processing steps must be followed to correctly 
 
 The follow sequence of rules and processing steps must be followed to correctly process a Chunk File chunk:
 
-1. The [Chunk File](#chunk-file) chunk MUST NOT exceed the [`MAX_BATCH_FILE_SIZE`](#max-chunk-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+1. The [Chunk File](#chunk-file) chunk MUST NOT exceed the [`MAX_CHUNK_FILE_SIZE`](#max-chunk-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Chunk File](#chunk-file) MUST validate against the protocol-defined [Chunk File](#chunk-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 3. Iterate the [_Chunk File Patch Entries_](#chunk-file-patch-entry), and for each entry, process as follows:
     1. Identify which DID the [_Chunk File Patch Entry_](#chunk-file-patch-entry) corresponds to, and insert the entry into the DID's persistent operation storage in ledger-relative chronological order (if other entries are present).
