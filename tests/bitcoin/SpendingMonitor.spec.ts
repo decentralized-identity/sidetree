@@ -1,4 +1,4 @@
-import BitcoinProcessor from '../../lib/bitcoin/BitcoinProcessor';
+import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import SpendingMonitor from '../../lib/bitcoin/SpendingMonitor';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -9,7 +9,7 @@ describe('SpendingMonitor', () => {
   let spendingMonitor: SpendingMonitor;
 
   const bitcoinFeeSpendingCutoffPeriodInBlocks = 100;
-  const bitcoinFeeSpendingCutoffInSatoshis = 3 * BitcoinProcessor['satoshiPerBitcoin'];
+  const bitcoinFeeSpendingCutoffInSatoshis = BitcoinClient.convertBtcToSatoshis(3); // 3 * BitcoinProcessor['satoshiPerBitcoin'];
   const mockTxns: TransactionModel[] = [
     // tslint:disable-next-line: max-line-length
     { transactionNumber: 12345, transactionTime: 10, transactionTimeHash: 'hash1', anchorString: 'anchor_string1', transactionFeePaid: 100, normalizedTransactionFee: 90, writer: 'writer1' },

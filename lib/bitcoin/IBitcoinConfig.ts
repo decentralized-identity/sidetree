@@ -1,7 +1,7 @@
 /**
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
-export interface IBitcoinConfig {
+export default interface IBitcoinConfig {
   bitcoinFeeSpendingCutoffPeriodInBlocks: number;
   bitcoinFeeSpendingCutoff: number;
   bitcoinPeerUri: string;

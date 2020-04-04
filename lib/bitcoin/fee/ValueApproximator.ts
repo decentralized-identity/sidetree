@@ -46,7 +46,7 @@ export default class ValueApproximator {
     if (normalizedValue === 0) {
       return 0;
     }
-    return Math.round(Math.pow(this.approximation, normalizedValue - 1));
+    return Math.pow(this.approximation, normalizedValue - 1);
   }
 
   /**

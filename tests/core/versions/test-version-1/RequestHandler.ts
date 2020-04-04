@@ -1,7 +1,7 @@
 import IOperationQueue from '../../../../lib/core/versions/latest/interfaces/IOperationQueue';
 import IRequestHandler from '../../../../lib/core/interfaces/IRequestHandler';
 import Resolver from '../../../../lib/core/Resolver';
-import { ResponseModel } from '../../../../lib/common/Response';
+import ResponseModel from '../../../../lib/common/models/ResponseModel';
 
 /**
  * Request handler.

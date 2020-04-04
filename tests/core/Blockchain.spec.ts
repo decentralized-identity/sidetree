@@ -1,5 +1,6 @@
 import Blockchain from '../../lib/core/Blockchain';
 import CoreErrorCode from '../../lib/core/ErrorCode';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -451,21 +452,19 @@ describe('Blockchain', async () => {
       done();
     });
 
-    it('should throw pending-state error if that is returned by the network call.', async (done) => {
+    it('should return undefined if pending-state error is returned by the network call.', async (done) => {
       const blockchainClient = new Blockchain('unused');
 
       const mockFetchResponse = {
         status: 404,
-        body: JSON.stringify({ code: SharedErrorCode.ValueTimeLockInPendingState })
+        body: JSON.stringify({ code: ErrorCode.ValueTimeLockInPendingState })
       };
 
       spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
       spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => blockchainClient.getWriterValueTimeLock(),
-        SharedErrorCode.ValueTimeLockInPendingState);
-
+      const actual = await blockchainClient.getWriterValueTimeLock();
+      expect(actual).toBeUndefined();
       done();
     });
 

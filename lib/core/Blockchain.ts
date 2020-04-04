@@ -218,11 +218,6 @@ export default class Blockchain implements IBlockchain {
     const responseBody = await JsonAsync.parse(responseBodyString);
 
     if (response.status === HttpStatus.NOT_FOUND) {
-
-      if (responseBody.code === SharedErrorCode.ValueTimeLockInPendingState) {
-        throw new SidetreeError(SharedErrorCode.ValueTimeLockInPendingState);
-      }
-
       return undefined;
     }
 

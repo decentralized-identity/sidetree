@@ -76,7 +76,11 @@ export default class Multihash {
   /**
    * Verifies the given content against the given multihash.
    */
-  public static isValidHash (encodedContent: string, encodedMultihash: string): boolean {
+  public static isValidHash (encodedContent: string | undefined, encodedMultihash: string): boolean {
+    if (encodedContent === undefined) {
+      return false;
+    }
+
     try {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
       const multihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);

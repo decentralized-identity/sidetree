@@ -26,25 +26,25 @@ export default class VegetaLoadGenerator {
 
     for (let i = 0; i < uniqueDidCount; i++) {
       // Generate a random pair of public-private key pair and save them on disk.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('#recoveryKey');
+      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
       fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
 
-      const signingKeyId = '#signingKey';
+      const signingKeyId = 'signingKey';
       const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
-      const services = OperationGenerator.createIdentityHubUserServiceEndpoints(['did:sidetree:value0']);
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointsId123']);
 
-      const [recover1OTP, recoveryOtpHash] = OperationGenerator.generateOtp();
-      const [, recovery2OtpHash] = OperationGenerator.generateOtp();
-      const [update1Otp, update1OtpHash] = OperationGenerator.generateOtp();
-      const [, update2OtpHash] = OperationGenerator.generateOtp();
+      const [recover1RevealValue, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, recovery2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [update1RevealValue, update1CommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, update2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryOtpHash,
-        update1OtpHash,
+        recoveryCommitmentHash,
+        update1CommitmentHash,
         services
       );
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
@@ -55,7 +55,8 @@ export default class VegetaLoadGenerator {
 
       // Generate an update operation
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-        didUniqueSuffix, update1Otp, '#additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', update2OtpHash, signingKeyId, signingPrivateKey
+        didUniqueSuffix, update1RevealValue, 'additionalKey', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        update2CommitmentHash, signingKeyId, signingPrivateKey
       );
 
       // Save the update operation request on disk.
@@ -63,10 +64,10 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/update${i}.json`, updateOperationBuffer);
 
       // Generate a recover operation request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('#newRecoveryKey');
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('#newSigningKey');
+      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('newRecoveryKey');
+      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        didUniqueSuffix, recover1OTP, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2OtpHash, update2OtpHash
+        didUniqueSuffix, recover1RevealValue, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2CommitmentHash, update2CommitmentHash
       );
 
       // Save the recover operation request on disk.

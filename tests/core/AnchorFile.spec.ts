@@ -1,19 +1,18 @@
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import SidetreeError from '../../lib/common/SidetreeError';
-import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
+import OperationGenerator from '../generators/OperationGenerator';
 
 describe('AnchorFile', async () => {
-  describe('parseAndValidate()', async () => {
+  describe('parse()', async () => {
     it('should throw if buffer given is not valid JSON.', async () => {
       const anchorFileBuffer = Buffer.from('NotJsonString');
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parseAndValidate(anchorFileCompressed),
+        () => AnchorFile.parse(anchorFileCompressed),
         ErrorCode.AnchorFileNotJson);
     });
 
@@ -25,160 +24,155 @@ describe('AnchorFile', async () => {
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => AnchorFile.parseAndValidate(anchorFileBuffer),
+        () => AnchorFile.parse(anchorFileBuffer),
         ErrorCode.AnchorFileDecompressionFailure);
     });
 
     it('should throw if has an unknown property.', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
+        writerlockId: 'writer lock',
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: []
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
     });
 
     it('should throw if missing map file hash.', async () => {
       const anchorFile = {
         // mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what is missing.
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing));
     });
 
-    it('should throw if missing DID unique suffix.', async () => {
+    it('should throw if missing operations property.', async () => {
       const anchorFile = {
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
-        // didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A'], // Intentionally kept to show what is missing.
+        // operations: {}, // Intentionally missing operations.
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesMissing));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty));
+    });
+
+    it('should throw if any additional property.', async () => {
+      const anchorFile = {
+        invalidProperty: 'some property value',
+        mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
+        operations: {}
+      };
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty));
     });
 
     it('should throw if map file hash is not string.', async () => {
-      const anchorFile = {
-        mapFileHash: 12345,
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
-      };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
+
+      (anchorFileModel as any).mapFileHash = 1234; // Intentionally setting the mapFileHash as an incorrect type.
+
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString));
     });
 
     it('should throw if map file hash is invalid.', async () => {
-      const anchorFile = {
-        mapFileHash: 'InvalidHash',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
-      };
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('writerlock', 'invalidMapFileHash', [createOperation], [], []);
+
       try {
-        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
+        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
         const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-        await AnchorFile.parseAndValidate(anchorFileCompressed);
+        await AnchorFile.parse(anchorFileCompressed);
       } catch (error) {
         expect(error.code).toEqual(ErrorCode.AnchorFileMapFileHashUnsupported);
       }
     });
 
-    it('should throw if DID unique suffixes is not an array.', async () => {
+    it('should throw if writer lock id is not string.', async () => {
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
+
+      (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
+
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileWriterLockIPropertyNotString));
+    });
+
+    it('should throw if `createOperations` is not an array.', async () => {
       const anchorFile = {
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: 'IncorrectType'
+        operations: {
+          createOperations: 'IncorrectType'
+        }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesNotArray));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileCreateOperationsNotArray));
     });
 
-    it('should throw if operation count exceeded limit.', async () => {
+    it('should throw if there are multiple operations for the same DID.', async () => {
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperationRequest = createPatchData.operationRequest;
+
+      // Strip away properties not allowed in the createOperations array elements.
+      delete createOperationRequest.type;
+      delete createOperationRequest.patchData;
+
+      const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
+        createPatchData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
+        'anyRecoveryRevealValue',
+        createPatchData.recoveryPrivateKey
+      );
+
+      // Strip away properties not allowed in the revokeOperations array elements.
+      delete revokeOperationRequest.type;
       const anchorFile = {
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA4zvhtvzTdeLAg8_Pvdtk5xJreNuIpvSpCCbtiTVc8Ow']
+        operations: {
+          createOperations: [createOperationRequest],
+          revokeOperations: [revokeOperationRequest]
+        }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      // Overreid the default max operation count per batch.
-      const originalMaxOperationsPerBatch = ProtocolParameters.maxOperationsPerBatch;
-      ProtocolParameters.maxOperationsPerBatch = 1;
-
-      try {
-        await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileExceededMaxOperationCount));
-      } finally {
-        ProtocolParameters.maxOperationsPerBatch = originalMaxOperationsPerBatch;
-      }
-    });
-
-    it('should throw if DID unique suffixes has duplicates.', async () => {
-      const anchorFile = {
-        mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 'EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A']
-      };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
-
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixesHasDuplicates));
-    });
-
-    it('should throw if a DID unique suffix is not string.', async () => {
-      const anchorFile = {
-        mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['EiA-GtHEOH9IcEEoBQ9p1KCMIjTmTO8x2qXJPb20ry6C0A', 12345]
-      };
-      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
-
-      await expectAsync(AnchorFile.parseAndValidate(anchorFileCompressed))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileDidUniqueSuffixEntryNotString));
-    });
-
-    it('should throw if a DID unique suffix is invalid.', async () => {
-      const anchorFile = {
-        mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
-        didUniqueSuffixes: ['SuperLongDidUniqueSuffixSuperLongDidUniqueSuffixSuperLongDidUniqueSuffix']
-      };
-      try {
-        const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
-        const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
-
-        await AnchorFile.parseAndValidate(anchorFileCompressed);
-      } catch (error) {
-        expect(error.code).toEqual(ErrorCode.AnchorFileDidUniqueSuffixTooLong);
-      }
+      await expectAsync(AnchorFile.parse(anchorFileCompressed))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid));
     });
   });
 
-  describe('createBufferFromAnchorFileModel', async () => {
+  describe('createBuffer', async () => {
     it('should created a compressed buffer correctly.', async () => {
-      const anchorFile = {
-        mapFileHash: 'val1',
-        didUniqueSuffixes: ['val2']
-      };
+      const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+      const createPatchData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createPatchData.createOperation;
 
-      const bufferFromCode = await AnchorFile.createBufferFromAnchorFileModel(anchorFile);
+      const anchoreFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, [createOperation], [], []);
 
-      // Calculated this manually to validate the output
-      const expectedEncodedBuffer = 'H4sIAAAAAAAACqtWyk0scMvMSfVILM5QslIqS8wxVNJRSslMCc3LLCxNDS5NS8usSC1WsooGyRkpxdYCACZUzsYzAAAA';
-      const expectedBuffer = Encoder.decodeAsBuffer(expectedEncodedBuffer);
+      const anchorFile = await AnchorFile.parse(anchoreFileBuffer);
 
-      // Removing the first 10 bytes of the buffer as those are the header bytes in gzip are
-      // the header bytes which are effected by the current operating system. So if the tests
-      // run on a different OS, those bytes change even though they don't effect the actual
-      // decompression/compression.
-      expect(bufferFromCode.slice(10)).toEqual(expectedBuffer.slice(10));
+      expect(anchorFile.model.mapFileHash).toEqual(mapFileHash);
+      expect(anchorFile.model.operations.createOperations![0].suffixData).toEqual(createOperation.encodedSuffixData);
     });
   });
 });

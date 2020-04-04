@@ -1,17 +1,19 @@
 import Did from './Did';
+import DidState from '../../models/DidState';
 import DocumentComposer from './DocumentComposer';
 import ErrorCode from './ErrorCode';
 import IOperationQueue from './interfaces/IOperationQueue';
 import IRequestHandler from '../../interfaces/IRequestHandler';
+import JsonAsync from './util/JsonAsync';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationProcessor from './OperationProcessor';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
+import ResponseModel from '../../../common/models/ResponseModel';
+import ResponseStatus from '../../../common/enums/ResponseStatus';
 import SidetreeError from '../../../common/SidetreeError';
-import { ResponseModel, ResponseStatus } from '../../../common/Response';
-import DocumentState from '../../models/DocumentState';
 
 /**
  * Sidetree operation request handler.
@@ -34,20 +36,28 @@ export default class RequestHandler implements IRequestHandler {
     console.info(`Handling operation request of size ${request.length} bytes...`);
 
     // Perform common validation for any write request and parse it into an `OperationModel`.
-    let operation: OperationModel;
+    let operationModel: OperationModel;
     try {
-      // Validate operation request size.
-      if (request.length > ProtocolParameters.maxOperationByteSize) {
-        const errorMessage = `Operation byte size of ${request.length} exceeded limit of ${ProtocolParameters.maxOperationByteSize}`;
-        console.info(errorMessage);
-        throw new SidetreeError(ErrorCode.OperationExceedsMaximumSize, errorMessage);
+      const operationRequest = await JsonAsync.parse(request);
+
+      // Check `patchData` property data size if they exist in the operation.
+      if (operationRequest.type === OperationType.Create ||
+          operationRequest.type === OperationType.Recover ||
+          operationRequest.type === OperationType.Update) {
+        const patchDataBuffer = Buffer.from(operationRequest.patchData);
+        if (patchDataBuffer.length > ProtocolParameters.maxPatchDataSizeInBytes) {
+          const errorMessage = `operationDdata byte size of ${patchDataBuffer.length} exceeded limit of ${ProtocolParameters.maxPatchDataSizeInBytes}`;
+          console.info(errorMessage);
+          throw new SidetreeError(ErrorCode.RequestHandlerPatchDataExceedsMaximumSize, errorMessage);
+        }
       }
 
-      operation = await Operation.parse(request);
+      operationModel = await Operation.parse(request);
 
       // Reject operation if there is already an operation for the same DID waiting to be batched and anchored.
-      if (await this.operationQueue.contains(operation.didUniqueSuffix)) {
-        throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed);
+      if (await this.operationQueue.contains(operationModel.didUniqueSuffix)) {
+        const errorMessage = `An operation request already exists in queue for DID '${operationModel.didUniqueSuffix}', only one is allowed at a time.`;
+        throw new SidetreeError(ErrorCode.QueueingMultipleOperationsPerDidNotAllowed, errorMessage);
       }
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
@@ -68,16 +78,16 @@ export default class RequestHandler implements IRequestHandler {
     }
 
     try {
-      console.info(`Operation type: '${operation.type}', DID unique suffix: '${operation.didUniqueSuffix}'`);
+      console.info(`Operation type: '${operationModel.type}', DID unique suffix: '${operationModel.didUniqueSuffix}'`);
 
       // Passed common operation validation, hand off to specific operation handler.
       let response: ResponseModel;
-      switch (operation.type) {
+      switch (operationModel.type) {
         case OperationType.Create:
 
-          const documentState = await this.applyCreateOperation(operation);
+          const didState = await this.applyCreateOperation(operationModel);
 
-          if (documentState === undefined) {
+          if (didState === undefined) {
             response = {
               status: ResponseStatus.BadRequest,
               body: 'Invalid create operation.'
@@ -85,13 +95,14 @@ export default class RequestHandler implements IRequestHandler {
             break;
           }
 
-          const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
+          const document = DocumentComposer.transformToExternalDocument(didState, this.didMethodName);
 
           response = {
             status: ResponseStatus.Succeeded,
             body: document
           };
           break;
+        // these cases do nothing because we do not know the latest document state unless we resolve.
         case OperationType.Update:
         case OperationType.Recover:
         case OperationType.Revoke:
@@ -108,7 +119,7 @@ export default class RequestHandler implements IRequestHandler {
 
       // if the operation was processed successfully, queue the original request buffer for batching.
       if (response.status === ResponseStatus.Succeeded) {
-        await this.operationQueue.enqueue(operation.didUniqueSuffix, operation.operationBuffer);
+        await this.operationQueue.enqueue(operationModel.didUniqueSuffix, operationModel.operationBuffer);
       }
 
       return response;
@@ -132,8 +143,8 @@ export default class RequestHandler implements IRequestHandler {
   /**
    * Handles resolve operation.
    * @param shortOrLongFormDid Can either be:
-   *   1. A short-form DID. e.g. 'did:sidetree:abc' or
-   *   2. A long-form DID. e.g. 'did:sidetree:<unique-portion>;initial-values=<encoded-original-did-document>'.
+   *   1. A short-form DID. e.g. 'did:<methodName>:abc' or
+   *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<encoded-original-did-document>'.
    */
   public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
     try {
@@ -141,20 +152,20 @@ export default class RequestHandler implements IRequestHandler {
 
       const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 
-      let documentState: DocumentState | undefined;
+      let didState: DidState | undefined;
       if (did.isShortForm) {
-        documentState = await this.resolver.resolve(did.uniqueSuffix);
+        didState = await this.resolver.resolve(did.uniqueSuffix);
       } else {
-        documentState = await this.resolveLongFormDid(did);
+        didState = await this.resolveLongFormDid(did);
       }
 
-      if (documentState === undefined) {
+      if (didState === undefined) {
         return {
           status: ResponseStatus.NotFound
         };
       }
 
-      const document = DocumentComposer.transformToExternalDocument(documentState, this.didMethodName);
+      const document = DocumentComposer.transformToExternalDocument(didState, this.didMethodName);
 
       return {
         status: ResponseStatus.Succeeded,
@@ -178,25 +189,25 @@ export default class RequestHandler implements IRequestHandler {
 
   /**
    * Resolves the given long-form DID by resolving using operations found over the network first;
-   * if no operations found, the given create operation will is used to construct the document state.
+   * if no operations found, the given create operation will is used to construct the DID state.
    */
-  private async resolveLongFormDid (did: Did): Promise<DocumentState | undefined> {
+  private async resolveLongFormDid (did: Did): Promise<DidState | undefined> {
     // Attempt to resolve the DID by using operations found from the network first.
-    let documentState = await this.resolver.resolve(did.uniqueSuffix);
+    let didState = await this.resolver.resolve(did.uniqueSuffix);
 
-    // If document state found then return it.
-    if (documentState !== undefined) {
-      return documentState;
+    // If DID state found then return it.
+    if (didState !== undefined) {
+      return didState;
     }
 
     // The code reaches here if this DID is not registered on the ledger.
 
-    documentState = await this.applyCreateOperation(did.createOperation!);
+    didState = await this.applyCreateOperation(did.createOperation!);
 
-    return documentState;
+    return didState;
   }
 
-  private async applyCreateOperation (createOpertion: OperationModel): Promise<DocumentState | undefined> {
+  private async applyCreateOperation (createOpertion: OperationModel): Promise<DidState | undefined> {
     const operationWithMockedAnchorTime = {
       didUniqueSuffix: createOpertion.didUniqueSuffix,
       type: OperationType.Create,
@@ -206,7 +217,7 @@ export default class RequestHandler implements IRequestHandler {
       operationBuffer: createOpertion.operationBuffer
     }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
 
-    const newDocumentState = await this.operationProcessor.apply(operationWithMockedAnchorTime, undefined);
-    return newDocumentState;
+    const newDidState = await this.operationProcessor.apply(operationWithMockedAnchorTime, undefined);
+    return newDidState;
   }
 }

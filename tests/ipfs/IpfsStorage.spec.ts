@@ -1,5 +1,5 @@
 import * as IPFS from 'ipfs';
-import FetchResultCode from '../../lib/common/FetchResultCode';
+import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IpfsStorage from '../../lib/ipfs/IpfsStorage';
 import MockAsyncIterable from '../mocks/MockAsyncIterable';
 import { randomBytes } from 'crypto';

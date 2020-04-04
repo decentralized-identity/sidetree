@@ -1,0 +1,675 @@
+openapi: 3.0.0
+# Added by API Auto Mocking Plugin
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/sidetree/0.0.1
+info:
+  description: This is an experimental Open API Specification for the Sidetree Protocol.
+  version: "0.0.1"
+  title: Sidetree REST API
+tags:
+  - name: Sidetree
+    description: APIs for interacting with the Sidetree Node.
+  - name: Blockchain
+    description: APIs for interacting with the Blockchain system.
+  - name: Content Addressed Storage
+    description: APIs for interacting with the CAS system.
+paths:
+  /sidetree/operations:
+    post:
+      tags:
+        - Sidetree
+      summary: Writes an Opertaion to Sidetree.
+      operationId: writeSidetreeOperation
+      parameters:
+        - in: body
+          schema:
+            $ref: '#/components/schemas/SidetreeOperation'
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+  /sidetree/{did-with-or-without-initial-state}:
+    get:
+      tags:
+        - Sidetree
+      summary: Resolve a Sidetree DID.
+      operationId: resolveSidetreeDID
+      parameters:
+        - in: path
+          required: true
+          name: did-with-or-without-initial-state
+          schema:
+            type: string
+          description: A DID to resolve
+          example: "did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg?-sidetree-initial-state=eyJ0eXBlIjoiY3JlYXRlIiwic3VmZml4RGF0YSI6ImV5SnZjR1Z5WVhScGIyNUVZWFJoU0dGemFDSTZJa1ZwUW13Mk9IUktSRFp3YmxadVdHWTFURUZqY1VGWWJsRkhOR2syY2xKSGVuUmZlazEzYXpkaFZWUTBlVUVpTENKeVpXTnZkbVZ5ZVV0bGVTSTZleUp3ZFdKc2FXTkxaWGxJWlhnaU9pSXdNalE0WkRWaFlUbGxZamxqWVdZNE5EWmhNalZoTkRReE1qbGlPR013TURBek9HUTFObVJsTlROaVptTTNZbUU1TkRneU1tRTFNV1ZpTUdabU1EazNNbU1pZlN3aWJtVjRkRkpsWTI5MlpYSjVUM1J3U0dGemFDSTZJa1ZwUTI5aU5YZFZkMEV5U0VObVRGUjZjbmRHZG14b2JVSm5TRnB0ZEVsZmRXVXhNa1JuWHpsVlkxOXdlR2NpZlEiLCJvcGVyYXRpb25EYXRhIjoiZXlKdVpYaDBWWEJrWVhSbFQzUndTR0Z6YUNJNklrVnBSSEZMVDJ0ZlRsZHVZMkZrT0RJelYySm9WVGwyZUVwcmQwVnVTVFZHUlVNeU0xbDViRE5rUlZnNWJtY2lMQ0prYjJOMWJXVnVkQ0k2ZXlKQVkyOXVkR1Y0ZENJNkltaDBkSEJ6T2k4dmR6TnBaQzV2Y21jdlpHbGtMM1l4SWl3aWNIVmliR2xqUzJWNUlqcGJleUpwWkNJNklpTnphV2R1YVc1blMyVjVJaXdpZEhsd1pTSTZJbE5sWTNBeU5UWnJNVlpsY21sbWFXTmhkR2x2Ymt0bGVUSXdNVGdpTENKMWMyRm5aU0k2SW5OcFoyNXBibWNpTENKd2RXSnNhV05MWlhsSVpYZ2lPaUl3TTJKa01HVTBOREF3TlRKaU9UUXlaVE13T0dJNVptUXdPR1JpTWpsaFltTTRaRFl6TmpZNE5ESXpNMkZsT0Raa09Ea3lZVEk1WmpCak5qRTJabVV3TldVaWZWMHNJbk5sY25acFkyVWlPbHQ3SW1sa0lqb2lTV1JsYm5ScGRIbElkV0lpTENKMGVYQmxJam9pU1dSbGJuUnBkSGxJZFdJaUxDSnpaWEoyYVdObFJXNWtjRzlwYm5RaU9uc2lRR052Ym5SbGVIUWlPaUp6WTJobGJXRXVhV1JsYm5ScGRIa3VabTkxYm1SaGRHbHZiaTlvZFdJaUxDSkFkSGx3WlNJNklsVnpaWEpUWlhKMmFXTmxSVzVrY0c5cGJuUWlMQ0pwYm5OMFlXNWpaWE1pT2xzaVpHbGtPbk5wWkdWMGNtVmxPblpoYkhWbE1DSmRmWDFkZlgwIn0"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+          
+  /blockchain/time:
+    get:
+      tags:
+        - Blockchain
+      summary: Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
+      operationId: getTime
+      description: A blockchain time hash must not be predictable/pre-computable, a canonical implementation would be to use the block number as the time and the block hash as the time hash. It is intentional that the concepts related to blockchain blocks are hidden from the layers above.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainTimeResponse'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+  /blockchain/time/{time-hash}:
+    get:
+      tags:
+        - Blockchain
+      summary: Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
+      operationId: getTimeByHash
+      description: A blockchain time hash must not be predictable/pre-computable, a canonical implementation would be to use the block number as the time and the block hash as the time hash. It is intentional that the concepts related to blockchain blocks are hidden from the layers above.
+      parameters:
+        - in: path
+          required: true
+          name: time-hash
+          schema:
+            type: string
+          description: The hash associated with the blockchain time
+          example: "0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainTimeResponse'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+  /blockchain/transactions:
+    post:
+      tags:
+        - Blockchain
+      summary: Writes a Sidetree transaction to the underlying blockchain.
+      operationId: writeBlockchainTransaction
+      parameters:
+        - in: body
+          schema:
+            $ref: '#/components/schemas/BlockchainWriteRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainTransaction'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      code: 
+                        type: string
+                        const: "spending_cap_per_period_reached"
+                        description: If with the given fee (derived from minimumFee) this node will exceed the spending limit as configured in the parameters.
+                  - type: object
+                    properties:
+                      code: 
+                        type: string
+                        const: "not_enough_balace_for_write"
+                        description: If the wallet configured in the parameters does not have enough balance to complete the write operation.
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+          type: object
+          properties:
+            code: 
+              type: string
+              const: "normalized_fee_cannot_be_computed"
+              description: Error while computing the normalized fee.
+    get:
+      tags:
+        - Blockchain
+      summary: Fetches Sidetree transactions in chronological order.
+      operationId: getTransactions
+      description: "Note: The call may not to return all Sidetree transactions in one batch, in which case the caller can use the transaction number of the last transaction in the returned batch to fetch subsequent transactions."
+      parameters:
+        - in: query
+          required: false
+          name: since
+          schema:
+            type: string
+          description: A transaction number. When not given, all Sidetree transactions since inception will be returned. When given, only Sidetree transactions after the specified transaction will be returned.
+          example: "170"
+        - in: query
+          required: false
+          name: transaction-time-hash
+          schema:
+            type: string
+          description: MUST BE given if since parameter is specified. This is the hash associated with the time the transaction specified by the since parameter is anchored on blockchain. Multiple transactions can have the same transaction time and thus the same transaction time hash. The transaction time hash helps the blockchain layer detect block reorganizations (temporary forks); HTTP 400 Bad Request with invalid_transaction_number_or_time_hash as the code parameter value in a JSON body is returned on such events.
+          example: "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainTransactions'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {
+                  "code": "invalid_transaction_number_or_time_hash"
+                }
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+  /blockchain/transactions/firstValid:
+    post:
+      tags:
+        - Blockchain
+      summary: Get first valid Sidetree transaction
+      operationId: getFirstValidTransactions
+      description: Given a list of Sidetree transactions, returns the first transaction in the list that is valid. Returns 404 NOT FOUND if none of the given transactions are valid. This API is primarily used by the Sidetree core library to determine a transaction that can be used as a marker in time to reprocess transactions in the event of a block reorganization (temporary fork).
+      parameters:
+        - in: body
+          required: false
+          name: transactions
+          schema:
+            type: array
+            example: [
+              {
+                "transactionNumber": 19,
+                "transactionTime": 545236,
+                "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+                "anchorString": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg",
+                "transactionFeePaid": 5000,
+                "normalizedTransactionFee": 100,
+                "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
+              },
+              {
+                "transactionNumber": 18,
+                "transactionTime": 545236,
+                "transactionTimeHash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
+                "anchorString": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb",
+                "transactionFeePaid": 30,
+                "normalizedTransactionFee": 10,
+                "writer": "0af7eccefa3aaa37421782523b4a2034ed5a0ad0"
+              },
+              {
+                "transactionNumber": 16,
+                "transactionTime": 545200,
+                "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
+                "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
+                "transactionFeePaid": 50000,
+                "normalizedTransactionFee": 150,
+                "writer": "0af7eccefa3aaa87421782523b4a2034ed5a0ad0"
+              }
+            ]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainTransaction'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+  /blockchain/fee:
+    get:
+      tags:
+        - Blockchain
+      summary: Fetches the normalized transaction fee used for proof-of-fee calculation, given the blockchain time.
+      operationId: getFee
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainFeeResponse'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
+  /blockchain/locks/{lock-identifier}:
+    get:
+      tags:
+        - Blockchain
+      summary: Fetches the lock object used for value-time-lock calculation, given the lock identifier.
+      operationId: getLock
+      parameters:
+        - in: path
+          required: true
+          name: lock-identifier
+          schema:
+            type: string
+          example: "gHasdfasodf23230o0jlk23323"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainLock'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      code: 
+                        type: string
+                        const: "blockchain_time_out_of_range"
+                        description: Blockchain time given is out of computable range.
+        '401':
+          description: Unauthorized
+        '404':
+          oneof:
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "value_time_lock_not_found"
+                  description:  Lock not found.
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "value_time_lock_in_pending_state"
+                  description:  If there is a lock but is not confirmed on the blockchain yet.
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      code: 
+                        type: string
+                        const: "normalized_fee_cannot_be_computed"
+                        description: Error while computing the normalized fee.
+    /blockchain/writerlock:
+      get:
+        tags:
+          - Blockchain
+        operationId: getWriterLock
+        responses:
+          '200':
+            description: Success
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/BlockchainLock'
+          '400':
+            description: Bad Request
+          '401':
+            description: Unauthorized
+          '404':
+            oneof:
+              - type: object
+                properties:
+                  code: 
+                    type: string
+                    const: "value_time_lock_not_found"
+                    description:  Lock not found.
+              - type: object
+                properties:
+                  code: 
+                    type: string
+                    const: "value_time_lock_in_pending_state"
+                    description:  If there is a lock but is not confirmed on the blockchain yet.
+          '500':
+            description: Server Error
+    /blockchain/version:
+      get:
+        tags:
+          - Blockchain
+        operationId: getVersion
+        responses:
+          '200':
+            description: Success
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Version'
+          '400':
+            description: Bad Request
+          '401':
+            description: Unauthorized
+          '404':
+            oneof:
+              - type: object
+                properties:
+                  code: 
+                    type: string
+                    const: "value_time_lock_not_found"
+                    description:  Lock not found.
+              - type: object
+                properties:
+                  code: 
+                    type: string
+                    const: "value_time_lock_in_pending_state"
+                    description:  If there is a lock but is not confirmed on the blockchain yet.
+          '500':
+            description: Server Error
+
+  /cas/version:
+      get:
+        tags:
+          - Content Addressed Storage
+        operationId: getCASVersion
+        responses:
+          '200':
+            description: Success
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Version'
+          '400':
+            description: Bad Request
+          '401':
+            description: Unauthorized
+          '404':
+            description: Not Found
+          '500':
+            description: Server Error
+  /cas/{hash}:
+    get:
+      tags:
+        - Content Addressed Storage
+      operationId: readContent
+      parameters:
+        - in: path
+          required: true
+          name: hash
+          schema:
+            type: string
+          example: "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
+        - in: query
+          required: true
+          name: max-size
+          schema:
+            type: string
+          description: If the content exceeds the specified maximum allowed size, HTTP 400 Bad Request with content_exceeds_maximum_allowed_size as the value for the code parameter in a JSON body is returned.
+          example: "170"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/octet-stream
+          
+        '400':
+          description: Bad Request
+          oneof:
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "content_exceeds_maximum_allowed_size"
+                  description:  Content exceeds maximum allowed size
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "content_not_a_file"
+                  description:  Content not a file
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "content_hash_invalid"
+                  description:  Content hash is invalid
+        '401':
+          description: Unauthorized
+        '404':
+          oneof:
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "value_time_lock_not_found"
+                  description:  Lock not found.
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "value_time_lock_in_pending_state"
+                  description:  If there is a lock but is not confirmed on the blockchain yet.
+        '500':
+          description: Server Error
+  /cas/:
+    post:
+      tags:
+        - Content Addressed Storage
+      operationId: writeContent
+      parameters:
+          - in: header
+            name: Content-Type
+            schema:
+              type: string
+              const: application/octet-stream
+            required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CASWriteResponse'
+        '400':
+          description: Bad Request
+          
+components:
+  schemas:
+    Version:
+      type: object
+      properties:
+        name: 
+          type: string
+          description: A string representing the name of the service.
+        version: 
+          type: string
+          description: A string representing the version of currently running service.
+      example: {
+        "name": "bitcoin",
+        "version": "1.0.0"
+      }
+    SidetreeOperation:
+      type: string
+      description: Compact JWS See https://identity.foundation/sidetree/docs/spec/#note-1
+      example: eyJ0eXBlIjoiY3JlYXRlIiwic3VmZml4RGF0YSI6ImV5SnZjR1Z5WVhScGIyNUVZWFJoU0dGemFDSTZJa1ZwUW13Mk9IUktSRFp3YmxadVdHWTFURUZqY1VGWWJsRkhOR2syY2xKSGVuUmZlazEzYXpkaFZWUTBlVUVpTENKeVpXTnZkbVZ5ZVV0bGVTSTZleUp3ZFdKc2FXTkxaWGxJWlhnaU9pSXdNalE0WkRWaFlUbGxZamxqWVdZNE5EWmhNalZoTkRReE1qbGlPR013TURBek9HUTFObVJsTlROaVptTTNZbUU1TkRneU1tRTFNV1ZpTUdabU1EazNNbU1pZlN3aWJtVjRkRkpsWTI5MlpYSjVUM1J3U0dGemFDSTZJa1ZwUTI5aU5YZFZkMEV5U0VObVRGUjZjbmRHZG14b2JVSm5TRnB0ZEVsZmRXVXhNa1JuWHpsVlkxOXdlR2NpZlEiLCJvcGVyYXRpb25EYXRhIjoiZXlKdVpYaDBWWEJrWVhSbFQzUndTR0Z6YUNJNklrVnBSSEZMVDJ0ZlRsZHVZMkZrT0RJelYySm9WVGwyZUVwcmQwVnVTVFZHUlVNeU0xbDViRE5rUlZnNWJtY2lMQ0prYjJOMWJXVnVkQ0k2ZXlKQVkyOXVkR1Y0ZENJNkltaDBkSEJ6T2k4dmR6TnBaQzV2Y21jdlpHbGtMM1l4SWl3aWNIVmliR2xqUzJWNUlqcGJleUpwWkNJNklpTnphV2R1YVc1blMyVjVJaXdpZEhsd1pTSTZJbE5sWTNBeU5UWnJNVlpsY21sbWFXTmhkR2x2Ymt0bGVUSXdNVGdpTENKMWMyRm5aU0k2SW5OcFoyNXBibWNpTENKd2RXSnNhV05MWlhsSVpYZ2lPaUl3TTJKa01HVTBOREF3TlRKaU9UUXlaVE13T0dJNVptUXdPR1JpTWpsaFltTTRaRFl6TmpZNE5ESXpNMkZsT0Raa09Ea3lZVEk1WmpCak5qRTJabVV3TldVaWZWMHNJbk5sY25acFkyVWlPbHQ3SW1sa0lqb2lTV1JsYm5ScGRIbElkV0lpTENKMGVYQmxJam9pU1dSbGJuUnBkSGxJZFdJaUxDSnpaWEoyYVdObFJXNWtjRzlwYm5RaU9uc2lRR052Ym5SbGVIUWlPaUp6WTJobGJXRXVhV1JsYm5ScGRIa3VabTkxYm1SaGRHbHZiaTlvZFdJaUxDSkFkSGx3WlNJNklsVnpaWEpUWlhKMmFXTmxSVzVrY0c5cGJuUWlMQ0pwYm5OMFlXNWpaWE1pT2xzaVpHbGtPbk5wWkdWMGNtVmxPblpoYkhWbE1DSmRmWDFkZlgwIn0
+    CASWriteResponse:
+      type: object
+      properties:
+        hash:
+          type: string
+          description: Hash of data written to CAS
+          example: "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
+    BlockchainTimeResponse:
+      type: object
+      properties:
+        time:
+          type: string
+          description: The logical blockchain time.
+          example: "545236"
+        hash:
+          type: string
+          description: The hash associated with the blockchain time.
+          example: "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051"
+    BlockchainTransaction:
+      type: object
+      properties:
+        transactionNumber:
+          type: number
+          description: A monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction.
+        transactionTime:
+          type: number
+          description: The logical blockchain time this transaction is anchored. Used for protocol version selection.
+        transactionTimeHash:
+          type: string
+          description: The hash associated with the transaction time.
+        anchorString: 
+          type: string
+          description: The string written to the blockchain for this transaction.
+        transactionFeePaid:
+          type: string
+          description: A number representing the fee paid for this transaction.
+        normalizedTransactionFee:
+          type: string
+          description: A number representing the normalized transaction fee used for proof-of-fee calculation.
+        writer:
+          type: string
+          description: A string representing the writer of the transaction. Used in the value time lock calculations.
+      example: {
+        "transactionNumber": 89,
+        "transactionTime": 545236,
+        "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+        "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+        "transactionFeePaid": 40000,
+        "normalizedTransactionFee": 100,
+        "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
+      }
+    BlockchainTransactions:
+      type: object
+      properties:
+        moreTransactions:
+          type: bool
+          description: True if there are more transactions beyond the returned batch. False otherwise.
+          example: "false"
+        transactions:
+          type: array
+          description: The transactions array must always end with a complete block of data, but can start in the middle of a block if since query parameter is provided.
+      example: {
+        "moreTransactions": false,
+        "transactions": [
+          {
+            "transactionNumber": 89,
+            "transactionTime": 545236,
+            "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+            "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+            "transactionFeePaid": 40000,
+            "normalizedTransactionFee": 100,
+            "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
+          },
+          {
+            "transactionNumber": 100,
+            "transactionTime": 545236,
+            "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
+            "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
+            "transactionFeePaid": 600000,
+            "normalizedTransactionFee": 400,
+            "writer": "0af7eccefa3aaa37421782523b4a2034ed5a0ad0"
+          }
+        ]
+      }
+    BlockchainWriteRequest:
+      type: object
+      description: if with the given fee (derived from minimumFee) this node will exceed the spending limit as configured in the parameters.
+      properties:
+        anchorString: 
+          type: string
+          description: The string to be written to the blockchain for this transaction.
+        minimumFee: 
+          type: string
+          description: A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee is dynamically calculated and can be higher than this amount (but not lower).
+      example: {
+        "minimumFee": 200000,
+        "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+      }
+
+    BlockchainFeeResponse:
+      type: object
+      properties:
+        normalizedTransactionFee: 
+          type: string
+          description: A number representing the normalized transaction fee used for proof-of-fee calculation.
+      example: {
+        "normalizedTransactionFee": 200000
+      }
+    BlockchainLock:
+      type: object
+      properties:
+        amountLocked: 
+          type: number
+          description: A number representing the amount that was locked.
+        identifier: 
+          type: number
+          description: The string representing the identifier of the lock. This is the same value which is passed in the request path.
+        lockTransactionTime: 
+          type: number
+          description: A number representing the transaction time at which the lock became active.
+        owner: 
+          type: string
+          description: A string reprsenting the owner of the lock.
+        unlockTransactionTime:
+          type: string
+          description: A number representing the transaction time at which the lock became inactive.
+      example: {
+        "amountLocked": 1235696,
+        "identifier": "gHasdfasodf23230o0jlk23323",
+        "lockTransactionTime": 167520,
+        "owner": "Hhdofkeio209aanoiyyoiknadfsedsed652",
+        "unlockTransactionTime": 167530
+      }
+    
+      
+    
+      

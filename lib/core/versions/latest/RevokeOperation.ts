@@ -7,9 +7,9 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
-interface SignedOperationDataModel {
+interface SignedDataModel {
   didUniqueSuffix: string;
-  recoveryOtp: string;
+  recoveryRevealValue: string;
 }
 
 /**
@@ -26,14 +26,14 @@ export default class RevokeOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded one-time password for the operation. */
-  public readonly recoveryOtp: string;
+  /** Encoded reveal value for the operation. */
+  public readonly recoveryRevealValue: string;
 
-  /** Signed encoded operation data. */
-  public readonly signedOperationDataJws: Jws;
+  /** Signed data. */
+  public readonly signedDataJws: Jws;
 
-  /** Decoded signed operation data payload. */
-  public readonly signedOperationData: SignedOperationDataModel;
+  /** Decoded signed data payload. */
+  public readonly signedData: SignedDataModel;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
@@ -41,16 +41,25 @@ export default class RevokeOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    recoveryOtp: string,
-    signedOperationDataJws: Jws,
-    signedOperationData: SignedOperationDataModel
+    recoveryRevealValue: string,
+    signedDataJws: Jws,
+    signedData: SignedDataModel
   ) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Revoke;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.recoveryOtp = recoveryOtp;
-    this.signedOperationDataJws = signedOperationDataJws;
-    this.signedOperationData = signedOperationData;
+    this.recoveryRevealValue = recoveryRevealValue;
+    this.signedDataJws = signedDataJws;
+    this.signedData = signedData;
+  }
+
+  /**
+   * Parses the given input as a revoke operation entry in the anchor file.
+   */
+  public static async parseOpertionFromAnchorFile (input: any): Promise<RevokeOperation> {
+    const opertionBuffer = Buffer.from(JSON.stringify(input));
+    const operation = await RevokeOperation.parseObject(input, opertionBuffer, true);
+    return operation;
   }
 
   /**
@@ -59,7 +68,7 @@ export default class RevokeOperation implements OperationModel {
   public static async parse (operationBuffer: Buffer): Promise<RevokeOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const revokeOperation = await RevokeOperation.parseObject(operationObject, operationBuffer);
+    const revokeOperation = await RevokeOperation.parseObject(operationObject, operationBuffer, false);
     return revokeOperation;
   }
 
@@ -68,63 +77,72 @@ export default class RevokeOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
+   * @param anchorFileMode If set to true, then `type` is expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer): Promise<RevokeOperation> {
-    const properties = Object.keys(operationObject);
-    if (properties.length !== 4) {
-      throw new SidetreeError(ErrorCode.RevokeOperationMissingOrUnknownProperty);
+  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RevokeOperation> {
+    let expectedPropertyCount = 4;
+    if (anchorFileMode) {
+      expectedPropertyCount = 3;
     }
 
-    if (operationObject.type !== OperationType.Revoke) {
-      throw new SidetreeError(ErrorCode.RevokeOperationTypeIncorrect);
+    const properties = Object.keys(operationObject);
+    if (properties.length !== expectedPropertyCount) {
+      throw new SidetreeError(ErrorCode.RevokeOperationMissingOrUnknownProperty);
     }
 
     if (typeof operationObject.didUniqueSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.RevokeOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    if (typeof operationObject.recoveryOtp !== 'string') {
-      throw new SidetreeError(ErrorCode.RevokeOperationRecoveryOtpMissingOrInvalidType);
+    if (typeof operationObject.recoveryRevealValue !== 'string') {
+      throw new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.recoveryOtp as string).length > Operation.maxEncodedOtpLength) {
-      throw new SidetreeError(ErrorCode.RevokeOperationRecoveryOtpTooLong);
+    if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueTooLong);
     }
 
-    const recoveryOtp = operationObject.recoveryOtp;
+    const recoveryRevealValue = operationObject.recoveryRevealValue;
 
-    const signedOperationDataJws = Jws.parse(operationObject.signedOperationData);
-    const signedOperationData = await RevokeOperation.parseSignedOperationDataPayload(
-      signedOperationDataJws.payload, operationObject.didUniqueSuffix, recoveryOtp);
+    const signedDataJws = Jws.parse(operationObject.signedData);
+    const signedData = await RevokeOperation.parseSignedDataPayload(
+      signedDataJws.payload, operationObject.didUniqueSuffix, recoveryRevealValue);
+
+    // If not in anchor file mode, we need to validate `type` property.
+    if (!anchorFileMode) {
+      if (operationObject.type !== OperationType.Revoke) {
+        throw new SidetreeError(ErrorCode.RevokeOperationTypeIncorrect);
+      }
+    }
 
     return new RevokeOperation(
       operationBuffer,
       operationObject.didUniqueSuffix,
-      recoveryOtp,
-      signedOperationDataJws,
-      signedOperationData
+      recoveryRevealValue,
+      signedDataJws,
+      signedData
     );
   }
 
-  private static async parseSignedOperationDataPayload (
-    operationDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryOtp: string): Promise<SignedOperationDataModel> {
+  private static async parseSignedDataPayload (
+    patchDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryRevealValue: string): Promise<SignedDataModel> {
 
-    const signedOperationDataJsonString = Encoder.decodeAsString(operationDataEncodedString);
-    const signedOperationData = await JsonAsync.parse(signedOperationDataJsonString);
+    const signedDataJsonString = Encoder.decodeAsString(patchDataEncodedString);
+    const signedData = await JsonAsync.parse(signedDataJsonString);
 
-    const properties = Object.keys(signedOperationData);
+    const properties = Object.keys(signedData);
     if (properties.length !== 2) {
       throw new SidetreeError(ErrorCode.RevokeOperationSignedDataMissingOrUnknownProperty);
     }
 
-    if (signedOperationData.didUniqueSuffix !== expectedDidUniqueSuffix) {
+    if (signedData.didUniqueSuffix !== expectedDidUniqueSuffix) {
       throw new SidetreeError(ErrorCode.RevokeOperationSignedDidUniqueSuffixMismatch);
     }
 
-    if (signedOperationData.recoveryOtp !== expectedRecoveryOtp) {
-      throw new SidetreeError(ErrorCode.RevokeOperationSignedRecoveryOtpMismatch);
+    if (signedData.recoveryRevealValue !== expectedRecoveryRevealValue) {
+      throw new SidetreeError(ErrorCode.RevokeOperationSignedRecoveryRevealValueMismatch);
     }
 
-    return signedOperationData;
+    return signedData;
   }
 }

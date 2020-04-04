@@ -1,7 +1,8 @@
-import FetchResultCode from '../../lib/common/FetchResultCode';
+import FetchResultCode from '../../lib/common/enums/FetchResultCode';
+import ResponseModel from '../../lib/common/models/ResponseModel';
 import RequestHandler from '../../lib/ipfs/RequestHandler';
+import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import { Response, ResponseStatus } from '../../lib/common/Response';
 
 describe('RequestHandler', async () => {
   let maxFileSize: number;
@@ -16,7 +17,7 @@ describe('RequestHandler', async () => {
   });
 
   it('should return the correct response object for invalid multihash for fetch request.', async () => {
-    const expectedResponse: Response = {
+    const expectedResponse: ResponseModel = {
       status: ResponseStatus.BadRequest,
       body: { code: FetchResultCode.InvalidHash }
     };
@@ -28,7 +29,7 @@ describe('RequestHandler', async () => {
   });
 
   it('should return the correct response body with content for fetch request', async () => {
-    const expectedResponse: Response = {
+    const expectedResponse: ResponseModel = {
       status: ResponseStatus.Succeeded,
       body: Buffer.from('dummyContent')
     };
@@ -41,7 +42,7 @@ describe('RequestHandler', async () => {
   });
 
   it('should return the correct response body with content for write request', async () => {
-    const expectedResponse: Response = {
+    const expectedResponse: ResponseModel = {
       status: ResponseStatus.Succeeded,
       body: { hash: 'EiCcvAfD-ZFyWDajqipYHKICkZiqQgudmbwOEx2fPiy-Rw' }
     };

@@ -1,4 +1,5 @@
-import Response, { ResponseStatus } from '../../lib/common/Response';
+import Response from '../../lib/common/Response';
+import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 
 describe('Response', () => {
 

@@ -8,9 +8,10 @@ import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
 import Observer from './Observer';
 import Resolver from './Resolver';
+import ResponseModel from '../common/models/ResponseModel';
+import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
 import VersionManager, { ProtocolVersionModel } from './VersionManager';
-import { ResponseModel, ResponseStatus } from '../common/Response';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
