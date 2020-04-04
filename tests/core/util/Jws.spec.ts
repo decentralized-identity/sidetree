@@ -1,5 +1,6 @@
 import Cryptography from '../../../lib/core/versions/latest/util/Cryptography';
 import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
+import Jwk from '../../../lib/core/versions/latest/util/Jwk';
 import Jws from '../../../lib/core/versions/latest/util/Jws';
 import SidetreeError from '../../../lib/common/SidetreeError';
 
@@ -53,6 +54,37 @@ describe('Jws', async () => {
 
       expect(() => { Jws.parse(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg));
 
+    });
+  });
+
+  describe('verifyCompactJws()', async () => {
+    it('should return true if given compact JWS string has a valid signature.', async (done) => {
+      const [publicKey, privateKey] = await Jwk.generateSecp256k1KeyPair();
+
+      const payload = { abc: 'unused value' };
+      const compactJws = Jws.signAsCompactJws(payload, privateKey);
+
+      expect(Jws.verifyCompactJws(compactJws, publicKey)).toBeTruthy();
+      done();
+    });
+
+    it('should return false if given compact JWS string has an ivalid signature.', async (done) => {
+      const [publicKey1] = await Jwk.generateSecp256k1KeyPair();
+      const [, privateKey2] = await Jwk.generateSecp256k1KeyPair();
+
+      const payload = { abc: 'some value' };
+      const compactJws = Jws.signAsCompactJws(payload, privateKey2); // Intentionally signing with a different key.
+
+      expect(Jws.verifyCompactJws(compactJws, publicKey1)).toBeFalsy();
+      done();
+    });
+
+    it('should return false if input is not a valid JWS string', async (done) => {
+      const input = 'some invalid string';
+      const [publicKey] = await Jwk.generateSecp256k1KeyPair();
+
+      expect(Jws.verifyCompactJws(input, publicKey)).toBeFalsy();
+      done();
     });
   });
 });

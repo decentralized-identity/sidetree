@@ -4,6 +4,7 @@ import ErrorCode from '../ErrorCode';
 import JwsModel from '../models/JwsModel';
 import PublicKeyModel from '../../../models/PublicKeyModel';
 import SidetreeError from '../../../../common/SidetreeError';
+import { JWS } from 'jose';
 
 /**
  * Class containing reusable JWS operations.
@@ -88,6 +89,16 @@ export default class Jws {
     return verified;
   }
 
+  public static verifyCompactJws (compactJws: string, jwk: any): boolean {
+    try {
+      JWS.verify(compactJws, jwk);
+      return true;
+    } catch (error) {
+      console.log(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError('FIX', error)}`);
+      return false;
+    }
+  }
+
   /**
    * Signs the given protected header and payload as a JWS.
    * NOTE: this is mainly used by tests to create valid test data.
@@ -121,6 +132,11 @@ export default class Jws {
     };
 
     return jws;
+  }
+
+  public static signAsCompactJws (payload: object, privateKey: any): string {
+    const compactJws = JWS.sign(payload, privateKey);
+    return compactJws;
   }
 
   /**
