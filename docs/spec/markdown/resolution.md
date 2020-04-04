@@ -4,7 +4,7 @@
 
 
 <!--
-2. The `recovery_reveal_value` MUST be the value that corresponds to the currently valid _Recovery Commitment Hash_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
+2. The `recovery_reveal_value` MUST be the value that corresponds to the currently valid _Recovery Commitment_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
     3. The included signature MUST a signature over the operation values that validates against the currently valid _Recovery Public Key_ - if it DOES NOT, cease processing the operation and move to the next operation in the array.
     4. With the reveal value and signature validated, persist the operation data within the implementation to hold this and future operational data, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry) for use in validating a future Recovery operation.
 -->

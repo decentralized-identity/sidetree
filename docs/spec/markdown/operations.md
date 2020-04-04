@@ -15,9 +15,9 @@ While virtually all DID owners will engage User Agent applications on their loca
 
 Use the following process to generate a Sidetree-based DID:
 
-1. Generate a key pair via the [`KEY_ALGORITHM`](#key-algorithm). The public key MUST be retained for use as the _Initial Recovery Public Key_ portion of the [DID Unique Suffix](#did-unique-suffix), while the the private key MUST be securely stored for use in subsequent [Recovery](#recovery) operations.
+1. Generate a key pair via the [`KEY_ALGORITHM`](#key-algorithm). The public key MUST be retained for use as the _Initial Recovery Public Key_ portion of the [DID Suffix](#did-suffix), while the the private key MUST be securely stored for use in subsequent [Recovery](#recovery) operations.
 2. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Recovery operation, herein referred to as _Initial Recovery Commitment_.
-3. Generate a _Recovery Commitment Hash_ using the [`HASH_ALGORITHM`](#hash-algorithm) and retain the hash for inclusion in an [Anchor File](#anchor-file), if publication of the DID is desired.
+3. Generate a _Recovery Commitment_ using the [`HASH_ALGORITHM`](#hash-algorithm) and retain the hash for inclusion in an [Anchor File](#anchor-file), if publication of the DID is desired.
 4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Update operation, herein referred to as _Update Commitment_.
 5. Generate an _Update Commitment Hash_ using the [`HASH_ALGORITHM`](#hash-algorithm) and retain the hash for inclusion in an [Anchor File](#anchor-file), if publication of the DID is desired.
 6. Generate a `Base64URL` encoded representation of the following object, herein referred to as the [_Create Operation Data Object_](#create-data-object){ id="create-data-object" }:
@@ -51,7 +51,7 @@ Use the following process to generate a Sidetree-based DID:
 
 1. Retrieve the _Recovery Reveal Value_ that matches the previously anchored _Recovery Commitment_.
 2. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Recovery operation, herein referred to as _Next Recovery Commitment_.
-3. Generate a _Recovery Commitment Hash_ of the _Next Recovery Commitment_ using the [`HASH_ALGORITHM`](#hash-algorithm), and retain the hash for inclusion in an [Anchor File](#anchor-file).
+3. Generate a _Recovery Commitment_ of the _Next Recovery Commitment_ using the [`HASH_ALGORITHM`](#hash-algorithm), and retain the hash for inclusion in an [Anchor File](#anchor-file).
 4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Update operation, herein referred to as _Next Update Commitment_.
 4. Generate an _Update Commitment Hash_ of the _Next Update Commitment_ using the [`HASH_ALGORITHM`](#hash-algorithm), and retain the hash for inclusion in an [Anchor File](#anchor-file).
 6. Optionally, the recovering entity MAY generate a new key pair, via the [`KEY_ALGORITHM`](#key-algorithm), for inclusion in the Anchor File (to support key rolling, etc.). The private key MUST be securely stored for use in subsequent [Recovery](#recover) operations.
@@ -70,4 +70,4 @@ Use the following process to generate a Sidetree-based DID:
 The following process must be used to deactivate a Sidetree-based DID:
 
 1. Retrieve the _Recovery Reveal Value_ that matches the previously anchored _Recovery Commitment_.
-2. Concatenate the [DID Unique Suffix](#did-unique-suffix) hash with the _Recovery Reveal Value_ and sign over the resulting string using the [`SIGNATURE_ALGORITHM`](#sig-algorithm). Retain the signature for inclusion in an [Anchor File](#anchor-file)
+2. Concatenate the [DID Suffix](#did-suffix) hash with the _Recovery Reveal Value_ and sign over the resulting string using the [`SIGNATURE_ALGORITHM`](#sig-algorithm). Retain the signature for inclusion in an [Anchor File](#anchor-file)

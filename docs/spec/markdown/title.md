@@ -4,7 +4,7 @@ Sidetree Protocol
 **Specification Status:** Editor's Draft
 
 **Latest published version:**
-  [identity.foundation/sidetree/spec](https://identity.foundation/sidetree/spec)
+  [identity.foundation/sidetree/docs/spec](https://identity.foundation/sidetree/docs/spec)
 
 **Editors:**
 ~ [Daniel Buchner](https://www.linkedin.com/in/dbuchner/) (Microsoft)

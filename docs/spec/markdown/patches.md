@@ -17,8 +17,7 @@ Sidetree defines a general format for patching DID State, called _Patch Actions_
 ```
 
 1. _Patch Actions_ MUST be represented as JSON objects.
-2. _Patch Action_ objects MUST include an `action` property, and its value MUST be one of the standard _Patch Action_ types listed in below, or, if the implementer chooses to create a custom _Patch Action_, a kebab-case string (dash-delimited lowercase words) with a leading dash, to indicate a custom _Patch Action_. Here is an example `action` value for a custom _Patch Action_: `-custom-action`.
-3. If the implementer elects to create a custom _Patch Action_, its `action` value must not conflict with the standard set of _Patch Actions_ defined in this specification, which are:
+2. _Patch Action_ objects MUST include an `action` property, and its value SHOULD be one of the standard _Patch Action_ types listed in below, or, if the implementer chooses to create a custom _Patch Action_, a kebab-case string (dash-delimited lowercase words) with a leading dash, to indicate a custom _Patch Action_, for example: `-custom-action`.
     - `add-public-keys`
     - `remove-public-keys`
     - `add-service-endpoints`
