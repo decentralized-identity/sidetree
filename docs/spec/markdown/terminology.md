@@ -14,3 +14,4 @@
 | Recovery Key          | Public/private key pair used to perform a Recovery or Deactivate operation. Must be encoded as JWK or Hex.          |
 | Sidetree Node         | Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.                            |
 | Transaction           | Ledger transaction that anchors a set of Sidetree operations, via a CAS URI for an associated Anchor File.          |
+| Ledger Time { #ledger-time }          | The deterministic logical clock variable manifested in the underlying ledger system that can be used as a deterministic chronological reference (e.g. Bitcoin block numbers).         |
