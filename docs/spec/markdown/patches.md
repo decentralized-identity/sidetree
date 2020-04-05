@@ -51,7 +51,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 2. The object MUST include a `publicKeys` property, and its value MUST be an array.
 3. Each key being added MUST be represented by an entry in the `publicKeys` array, and each entry must be an object composed as follows:
     1. The object MUST include an `id` property, and its value MUST be a string with no more than seven (7) ASCII encoded characters.
-    2. The object MUST include a `jwk` property, and its value MUST be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation.
+    2. The object MUST include a `jwk` property, and its value MUST be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation.
     3. The object MUST include a `usage` property, and its value MUST be an array that includes one or more of the following strings:
     - `ops`: the key is allowed to generate DID operations for the DID.
     - `general`: the key is to be included in the `publicKeys` section of the resolved _DID Document_.
