@@ -17,8 +17,7 @@ Sidetree defines a general format for patching DID State, called _Patch Actions_
 ```
 
 1. _Patch Actions_ MUST be represented as JSON objects.
-2. _Patch Action_ objects MUST include an `action` property, and its value MUST be one of the standard _Patch Action_ types listed in below, or, if the implementer chooses to create a custom _Patch Action_, a kebab-case string (dash-delimited lowercase words) with a leading dash, to indicate a custom _Patch Action_. Here is an example `action` value for a custom _Patch Action_: `-custom-action`.
-3. If the implementer elects to create a custom _Patch Action_, its `action` value must not conflict with the standard set of _Patch Actions_ defined in this specification, which are:
+2. _Patch Action_ objects MUST include an `action` property, and its value SHOULD be one of the standard _Patch Action_ types listed in below, or, if the implementer chooses to create a custom _Patch Action_, a kebab-case string (dash-delimited lowercase words) with a leading dash, to indicate a custom _Patch Action_, for example: `-custom-action`.
     - `add-public-keys`
     - `remove-public-keys`
     - `add-service-endpoints`
@@ -39,8 +38,7 @@ The following set of standard _Patch Actions_ are specified to help align on a c
     {
       "id": "key1",
       "usage": ["ops"],
-      "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "02b97c30de767f084ce3080168ee293053ba33b235d7116a3263d29f1450936b71",
+      "jwk": {...}
     }
   ]
 }
@@ -53,12 +51,8 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 2. The object MUST include a `publicKeys` property, and its value MUST be an array.
 3. Each key being added MUST be represented by an entry in the `publicKeys` array, and each entry must be an object composed as follows:
     1. The object MUST include an `id` property, and its value MUST be a string with no more than seven (7) ASCII encoded characters.
-    2. The object MUST include a `type` property, and its value MUST be one of the following supported key types:
-        - `Secp256k1VerificationKey2018`
-    3. The object MUST include public key material in accordance with `type` value specified. The following mapping of `type` values to public key material property and value pairings MUST be used:
-        - If the `type` value is `Secp256k1VerificationKey2018`:
-            1. The object MUST include a `publicKeyHex` property, and its value MUST be a `HEX` encoded version of the key type.
-    4. The object MUST include a `usage` property, and its value MUST be an array that includes one or more of the following strings:
+    2. The object MUST include a `jwk` property, and its value MUST be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation.
+    3. The object MUST include a `usage` property, and its value MUST be an array that includes one or more of the following strings:
     - `ops`: the key is allowed to generate DID operations for the DID.
     - `general`: the key is to be included in the `publicKeys` section of the resolved _DID Document_.
     - `auth`: the key is to be included in the `authentication` section of the resolved _DID Document_ as follows:

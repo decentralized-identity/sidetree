@@ -17,7 +17,8 @@
         "markdown/abstract.md",
         "markdown/intro.md",
         "markdown/terminology.md",
-        "markdown/versioning-params.md",
+        "markdown/versioning.md",
+        "markdown/parameters.md",
         "markdown/topology.md",
         "markdown/file-structures.md",
         "markdown/unique-suffix.md",
@@ -27,7 +28,6 @@
         "markdown/pof.md",
         "markdown/resolution.md",
         "markdown/method-versioning.md",
-        "markdown/protocol-versioning.md",
         "markdown/context.md"
       ]
     }
