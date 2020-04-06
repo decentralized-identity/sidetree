@@ -222,9 +222,9 @@ describe('RequestHandler', () => {
     expect(response.body.code).toEqual(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
   });
 
-  it('should respond with HTTP 200 when DID revoke operation request is successful.', async () => {
+  it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {
     const recoveryRevealValue = Encoder.encode(Buffer.from('unusedRecoveryRevealValue'));
-    const request = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
+    const request = await OperationGenerator.generateDeactivateOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(request);
     const httpStatus = Response.toHttpStatus(response.status);
 

@@ -14,9 +14,9 @@ export default class DocumentComposer {
    * Transforms the given DID state into a DID Document.
    */
   public static transformToExternalDocument (didState: DidState, did: string): any {
-    // If the DID is revoked.
+    // If the DID is deactivated.
     if (didState.nextRecoveryCommitmentHash === undefined) {
-      return { status: 'revoked' };
+      return { status: 'deactivated' };
     }
 
     const didDocument = {

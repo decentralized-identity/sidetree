@@ -8,7 +8,7 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PatchDataModel from './models/PatchDataModel';
 import RecoverOperation from './RecoverOperation';
-import RevokeOperation from './RevokeOperation';
+import DeactivateOperation from './DeactivateOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -35,8 +35,8 @@ export default class Operation {
       return UpdateOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else if (operationType === OperationType.Recover) {
       return RecoverOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
-    } else if (operationType === OperationType.Revoke) {
-      return RevokeOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
+    } else if (operationType === OperationType.Deactivate) {
+      return DeactivateOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else {
       throw new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing);
     }

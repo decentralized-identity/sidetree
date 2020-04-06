@@ -7,7 +7,7 @@ import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
-import RevokeOperation from './RevokeOperation';
+import DeactivateOperation from './DeactivateOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -37,8 +37,8 @@ export default class OperationProcessor implements IOperationProcessor {
       appliedDidState = await this.applyUpdateOperation(anchoredOperationModel, didState!);
     } else if (anchoredOperationModel.type === OperationType.Recover) {
       appliedDidState = await this.applyRecoverOperation(anchoredOperationModel, didState!);
-    } else if (anchoredOperationModel.type === OperationType.Revoke) {
-      appliedDidState = await this.applyRevokeOperation(anchoredOperationModel, didState!);
+    } else if (anchoredOperationModel.type === OperationType.Deactivate) {
+      appliedDidState = await this.applyDeactivateOperation(anchoredOperationModel, didState!);
     } else {
       throw new SidetreeError(ErrorCode.OperationProcessorUnknownOperationType);
     }
@@ -215,12 +215,12 @@ export default class OperationProcessor implements IOperationProcessor {
   /**
    * @returns new DID state if operation is applied successfully; the given DID state otherwise.
    */
-  private async applyRevokeOperation (
+  private async applyDeactivateOperation (
     anchoredOperationModel: AnchoredOperationModel,
     didState: DidState
   ): Promise<DidState> {
 
-    const operation = await RevokeOperation.parse(anchoredOperationModel.operationBuffer);
+    const operation = await DeactivateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the reveal value hash.
     const isValidCommitmentReveal = Multihash.isValidHash(operation.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);

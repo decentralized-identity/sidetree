@@ -245,7 +245,7 @@ describe('TransactionProcessor', () => {
         didUniqueSuffixes: ['abc', 'def'],
         model: { writerLockId: 'lock', mapFileHash: 'map_hash', operations: {} },
         recoverOperations: [],
-        revokeOperations: []
+        deactivateOperations: []
       };
       spyOn(AnchorFile, 'parse').and.returnValue(Promise.resolve(mockAnchorFile));
 
