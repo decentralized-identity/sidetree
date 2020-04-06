@@ -203,7 +203,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
 
-    validateDidReferencesInDidDocument(response.body, shortFormDid);
+    validateDidReferencesInDidDocument(response.body, longFormDid);
   });
 
   it('should return NotFound given an unknown DID.', async () => {
@@ -274,7 +274,6 @@ describe('RequestHandler', () => {
         publicKeys: [anySigningPublicKey]
       };
       const mockedResolverReturnedDidState: DidState = {
-        didUniqueSuffix,
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: anyCommitmentHash,
@@ -298,14 +297,14 @@ function validateDidReferencesInDidDocument (didDocument: any, did: string) {
 
   if (didDocument.publicKey) {
     for (let publicKeyEntry of didDocument.publicKey) {
-      expect(publicKeyEntry.controller).toEqual(did);
-      expect((publicKeyEntry.id as string).startsWith(did + '#'));
+      expect(publicKeyEntry.controller).toEqual('');
+      expect((publicKeyEntry.id as string).startsWith('#'));
     }
   }
 
   if (didDocument.service) {
     for (let serviceEntry of didDocument.service) {
-      expect((serviceEntry.id as string).startsWith(did + '#'));
+      expect((serviceEntry.id as string).startsWith('#'));
     }
   }
 }

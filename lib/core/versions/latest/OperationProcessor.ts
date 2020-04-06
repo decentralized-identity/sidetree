@@ -145,7 +145,6 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     const newDidState = {
-      didUniqueSuffix: didState.didUniqueSuffix,
       recoveryKey: didState.recoveryKey,
       nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
       // New values below.
@@ -237,7 +236,6 @@ export default class OperationProcessor implements IOperationProcessor {
 
     // The operation passes all checks.
     const newDidState = {
-      didUniqueSuffix: didState.didUniqueSuffix,
       document: didState.document,
       // New values below.
       recoveryKey: undefined,

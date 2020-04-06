@@ -13,15 +13,14 @@ export default class DocumentComposer {
   /**
    * Transforms the given DID state into a DID Document.
    */
-  public static transformToExternalDocument (didState: DidState, didMethodName: string): any {
+  public static transformToExternalDocument (didState: DidState, did: string): any {
     // If the DID is revoked.
     if (didState.nextRecoveryCommitmentHash === undefined) {
       return { status: 'revoked' };
     }
 
-    const did = didMethodName + didState.didUniqueSuffix;
     const didDocument = {
-      '@context': 'https://w3id.org/did/v1',
+      '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }],
       publicKey: didState.document.publicKeys,
       service: didState.document.serviceEndpoints,
       recoveryKey: didState.recoveryKey
@@ -392,15 +391,15 @@ export default class DocumentComposer {
     // Only update `publickey` if the array is present
     if (Array.isArray(didDocument.publicKey)) {
       for (let publicKeyEntry of didDocument.publicKey) {
-        publicKeyEntry.id = did + '#' + publicKeyEntry.id;
-        publicKeyEntry.controller = did;
+        publicKeyEntry.id = '#' + publicKeyEntry.id;
+        publicKeyEntry.controller = '';
       }
     }
 
     // Only update `service` if the array is present
     if (Array.isArray(didDocument.service)) {
       for (let serviceEntry of didDocument.service) {
-        serviceEntry.id = did + '#' + serviceEntry.id;
+        serviceEntry.id = '#' + serviceEntry.id;
       }
     }
   }
