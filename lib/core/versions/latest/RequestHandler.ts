@@ -95,7 +95,8 @@ export default class RequestHandler implements IRequestHandler {
             break;
           }
 
-          const document = DocumentComposer.transformToExternalDocument(didState, this.didMethodName);
+          const did = this.didMethodName + operationModel.didUniqueSuffix;
+          const document = DocumentComposer.transformToExternalDocument(didState, did);
 
           response = {
             status: ResponseStatus.Succeeded,
@@ -165,7 +166,7 @@ export default class RequestHandler implements IRequestHandler {
         };
       }
 
-      const document = DocumentComposer.transformToExternalDocument(didState, this.didMethodName);
+      const document = DocumentComposer.transformToExternalDocument(didState, shortOrLongFormDid);
 
       return {
         status: ResponseStatus.Succeeded,

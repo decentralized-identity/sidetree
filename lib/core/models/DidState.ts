@@ -5,7 +5,6 @@ import PublicKeyModel from './PublicKeyModel';
  * This model is created so that it is agnostic to any particular external schema.
  */
 export default interface DidState {
-  didUniqueSuffix: string;
   document: any;
   recoveryKey: PublicKeyModel | undefined ;
   nextRecoveryCommitmentHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
