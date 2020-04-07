@@ -55,7 +55,7 @@ describe('Jws', async () => {
       const invalidProtectedHeader = {
         kid: signingKeyId,
         alg: true // Invalid type.
-      }
+      };
       jws.protected = Encoder.encode(JSON.stringify(invalidProtectedHeader));
 
       expect(() => { Jws.parse(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg));
