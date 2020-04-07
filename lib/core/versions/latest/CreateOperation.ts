@@ -1,17 +1,18 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import Jwk from './util/Jwk';
+import JwkEs256k from '../../models/JwkEs256k';
 import Multihash from './Multihash';
 import PatchDataModel from './models/PatchDataModel';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import PublicKeyModel from '../../models/PublicKeyModel';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SuffixDataModel {
   patchDataHash: string;
-  recoveryKey: PublicKeyModel;
+  recoveryKey: JwkEs256k;
   nextRecoveryCommitmentHash: string;
 }
 
@@ -146,7 +147,7 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
-    Operation.validateRecoveryKeyObject(suffixData.recoveryKey);
+    Jwk.validateJwkEs256k(suffixData.recoveryKey);
 
     const patchDataHash = Encoder.decodeAsBuffer(suffixData.patchDataHash);
     const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryCommitmentHash);

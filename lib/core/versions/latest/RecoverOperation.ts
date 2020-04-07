@@ -1,18 +1,19 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import Jwk from './util/Jwk';
+import JwkEs256k from '../../models/JwkEs256k';
 import Jws from './util/Jws';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PatchDataModel from './models/PatchDataModel';
-import PublicKeyModel from '../../models/PublicKeyModel';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
   patchDataHash: string;
-  recoveryKey: PublicKeyModel;
+  recoveryKey: JwkEs256k;
   nextRecoveryCommitmentHash: string;
 }
 
@@ -159,7 +160,7 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
-    Operation.validateRecoveryKeyObject(signedData.recoveryKey);
+    Jwk.validateJwkEs256k(signedData.recoveryKey);
 
     const patchDataHash = Encoder.decodeAsBuffer(signedData.patchDataHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(patchDataHash);

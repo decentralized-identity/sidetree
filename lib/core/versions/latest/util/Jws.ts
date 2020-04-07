@@ -1,9 +1,9 @@
-import Cryptography from './Cryptography';
 import Encoder from '../Encoder';
 import ErrorCode from '../ErrorCode';
+import JwkEs256k from '../../../models/JwkEs256k';
 import JwsModel from '../models/JwsModel';
-import PublicKeyModel from '../../../models/PublicKeyModel';
 import SidetreeError from '../../../../common/SidetreeError';
+import { JWS } from 'jose';
 
 /**
  * Class containing reusable JWS operations.
@@ -68,7 +68,7 @@ export default class Jws {
    * Verifies the JWS signature.
    * @returns true if signature is successfully verified, false otherwise.
    */
-  public async verifySignature (publicKey: PublicKeyModel): Promise<boolean> {
+  public async verifySignature (publicKey: JwkEs256k): Promise<boolean> {
     return Jws.verifySignature(this.protected, this.payload, this.signature, publicKey);
   }
 
@@ -80,12 +80,25 @@ export default class Jws {
     encodedProtectedHeader: string,
     encodedPayload: string,
     signature: string,
-    publicKey: PublicKeyModel
+    publicKey: JwkEs256k
   ): Promise<boolean> {
-    // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
-    const jwsSigningInput = encodedProtectedHeader + '.' + encodedPayload;
-    const verified = await Cryptography.verifySignature(jwsSigningInput, signature, publicKey);
-    return verified;
+    const jwsSigningInput = encodedProtectedHeader + '.' + encodedPayload + '.' + signature;
+    const signatureValid = Jws.verifyCompactJws(jwsSigningInput, publicKey);
+    return signatureValid;
+  }
+
+  /**
+   * Verifies the compact JWS string using the given JWK key.
+   * @returns true if signature is valid; else otherwise.
+   */
+  public static verifyCompactJws (compactJws: string, jwk: any): boolean {
+    try {
+      JWS.verify(compactJws, jwk);
+      return true;
+    } catch (error) {
+      console.log(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError(ErrorCode.JwsFailedSignatureValidation, error)}`);
+      return false;
+    }
   }
 
   /**
@@ -98,40 +111,26 @@ export default class Jws {
   public static async sign (
     protectedHeader: any,
     payload: any,
-    privateKey: string
+    privateKey: JwkEs256k
   ): Promise<JwsModel> {
-    const protectedHeaderJsonString = JSON.stringify(protectedHeader);
-    const protectedHeaderEncodedString = Encoder.encode(protectedHeaderJsonString);
 
-    let encodedPayload: string;
-    if (typeof payload === 'string') {
-      encodedPayload = payload;
-    } else {
-      const payloadJsonString = JSON.stringify(payload);
-      encodedPayload = Encoder.encode(payloadJsonString);
-    }
-
-    // Generate the signature.
-    const signature = await Jws.signInternal(protectedHeaderEncodedString, encodedPayload, privateKey);
-
+    const flattenedJws = JWS.sign.flattened(payload, privateKey as any, protectedHeader);
     const jws = {
-      protected: protectedHeaderEncodedString,
-      payload: encodedPayload,
-      signature
+      protected: flattenedJws.protected!,
+      payload: flattenedJws.payload,
+      signature: flattenedJws.signature
     };
 
     return jws;
   }
 
   /**
-   * Signs the given encoded protected headder and encoded payload using the given private key.
-   * @param privateKey A SECP256K1 private-key either in HEX string format (or JWK format, future support).
+   * Signs the given payload as a compact JWS string.
+   * This is mainly used by tests to create valid test data.
    */
-  private static async signInternal (encodedProtectedHeader: string, encodedPayload: string, privateKey: string): Promise<string> {
-    // JWS Signing Input spec: ASCII(BASE64URL(UTF8(JWS Protected Header)) || '.' || BASE64URL(JWS Payload))
-    const jwsSigningInput = encodedProtectedHeader + '.' + encodedPayload;
-    const signature = await Cryptography.sign(jwsSigningInput, privateKey);
-    return signature;
+  public static signAsCompactJws (payload: object, privateKey: any): string {
+    const compactJws = JWS.sign(payload, privateKey);
+    return compactJws;
   }
 
   /**

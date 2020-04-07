@@ -9,7 +9,7 @@ describe('DocumentComposer', async () => {
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from serviceEndpoints', () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
         serviceEndpoints: [
           { id: '1', type: 't', serviceEndpoint: 'se' },
           { id: '2', type: 't', serviceEndpoint: 'se' },
@@ -26,7 +26,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
         serviceEndpoints: [
           { id: '2', type: 't', serviceEndpoint: 'se' },
           { id: '4', type: 't', serviceEndpoint: 'se' }
@@ -272,13 +272,13 @@ describe('DocumentComposer', async () => {
       );
     });
 
-    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyHex` format.', async () => {
+    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyJwk` format.', async () => {
       const patches = generatePatchesForPublicKeys();
-      delete (patches[0].publicKeys![0] as any).publicKeyHex;
+      delete (patches[0].publicKeys![0] as any).publicKeyJwk;
 
       (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeySecp256k1NotCompressedHex);
+      const expectedError = new SidetreeError(ErrorCode.JwkEs256kUndefined);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
@@ -334,7 +334,7 @@ describe('DocumentComposer', async () => {
   describe('applyPatches()', async () => {
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
         serviceEndpoints: []
       };
       const patches = [
@@ -414,7 +414,12 @@ function generatePatchesForPublicKeys () {
         {
           id: 'keyX',
           type: 'Secp256k1VerificationKey2018',
-          publicKeyHex: '0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69'
+          publicKeyJwk: {
+            kty: 'EC',
+            crv: 'secp256k1',
+            x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
+            y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
+          }
         }
       ]
     },

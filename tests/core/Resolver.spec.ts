@@ -1,9 +1,9 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Document from '../../lib/core/versions/latest/Document';
 import DidState from '../../lib/core/models/DidState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -29,8 +29,8 @@ describe('Resolver', () => {
   describe('Recovery operation', () => {
     it('should apply correctly with updates that came before and after the recover operation.', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('signingKey');
+      const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
       const [firstRecoveryRevealValue, firstRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -58,11 +58,11 @@ describe('Resolver', () => {
 
       // Create an update operation and insert it to the operation store.
       const [update2RevealValuePriorToRecovery, update2CommitmentHashPriorToRecovery] = OperationGenerator.generateCommitRevealPair();
+      const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
       const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         firstUpdateRevealValue,
-        'new-key1',
-        '000000000000000000000000000000000000000000000000000000000000000000',
+        additionalKey,
         update2CommitmentHashPriorToRecovery,
         signingPublicKey.id,
         signingPrivateKey
@@ -105,8 +105,8 @@ describe('Resolver', () => {
       expect(didState.document.serviceEndpoints.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('newRecoveryKey');
-      const [newSigningPublicKey, newSigningPrivateKey] = await Cryptography.generateKeyPairHex('newSigningKey');
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+      const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
@@ -129,11 +129,11 @@ describe('Resolver', () => {
 
       // Create an update operation after the recover operation.
       const [update2RevealValueAfterRecovery, update2CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
+      const [newKey2ForUpdate1AfterRecovery] = await OperationGenerator.generateKeyPair(`newKey2Updte1PostRec`);
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         update1RevealValueAfterRecovery,
-        'newKey2Updte1PostRec',
-        '111111111111111111111111111111111111111111111111111111111111111111',
+        newKey2ForUpdate1AfterRecovery,
         update2CommitmentHashAfterRecovery,
         newSigningPublicKey.id,
         newSigningPrivateKey
@@ -180,8 +180,8 @@ describe('Resolver', () => {
       const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
-      expect(actualNewSigningPublicKey1!.publicKeyHex).toEqual(newSigningPublicKey.publicKeyHex);
-      expect(actualNewSigningPublicKey2!.publicKeyHex).toEqual('111111111111111111111111111111111111111111111111111111111111111111');
+      expect(actualNewSigningPublicKey1!.publicKeyJwk).toEqual(newSigningPublicKey.publicKeyJwk);
+      expect(actualNewSigningPublicKey2!.publicKeyJwk).toEqual(newKey2ForUpdate1AfterRecovery.publicKeyJwk);
       expect(document.serviceEndpoints).toBeDefined();
       expect(document.serviceEndpoints.length).toEqual(1);
       expect(document.serviceEndpoints[0].serviceEndpoint).toBeDefined();

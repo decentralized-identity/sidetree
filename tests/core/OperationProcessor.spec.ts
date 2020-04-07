@@ -1,19 +1,20 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
-import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import DidState from '../../lib/core/models/DidState';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
+import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import Resolver from '../../lib/core/Resolver';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
@@ -112,11 +113,11 @@ describe('OperationProcessor', async () => {
   let versionManager: IVersionManager;
   let operationProcessor: IOperationProcessor;
   let createOp: AnchoredOperationModel;
-  let recoveryPublicKey: DidPublicKeyModel;
-  let recoveryPrivateKey: string;
+  let recoveryPublicKey: JwkEs256k;
+  let recoveryPrivateKey: JwkEs256k;
   let signingKeyId: string;
-  let signingPublicKey: DidPublicKeyModel;
-  let signingPrivateKey: string;
+  let signingPublicKey: PublicKeyModel;
+  let signingPrivateKey: JwkEs256k;
   let didUniqueSuffix: string;
   let firstUpdateRevealValue: string;
   let recoveryRevealValue: string;
@@ -130,8 +131,8 @@ describe('OperationProcessor', async () => {
 
     // Generate a unique key-pair used for each test.
     signingKeyId = 'signingKey';
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('key1');
-    [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex(signingKeyId);
+    [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+    [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
 
     let recoveryCommitmentHash;
@@ -327,9 +328,9 @@ describe('OperationProcessor', async () => {
     await operationStore.put([createOp]);
 
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateRevealValue, 'additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, 'nonExistentKey', signingPrivateKey
+      didUniqueSuffix, firstUpdateRevealValue, anyPublicKey, anyNextUpdateCommitmentHash, 'nonExistentKey', signingPrivateKey
     );
 
     // Generate operation with an invalid key
@@ -349,11 +350,11 @@ describe('OperationProcessor', async () => {
   it('should ignore update operation with an invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const [, anyIncorrectSigningPrivateKey] = await Cryptography.generateKeyPairHex('key1');
+    const [, anyIncorrectSigningPrivateKey] = await OperationGenerator.generateKeyPair('key1');
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const anyPublicKeyHex = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, firstUpdateRevealValue, 'additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, signingKeyId, anyIncorrectSigningPrivateKey
+      didUniqueSuffix, firstUpdateRevealValue, anyPublicKey, anyNextUpdateCommitmentHash, signingKeyId, anyIncorrectSigningPrivateKey
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -385,10 +386,10 @@ describe('OperationProcessor', async () => {
   });
 
   describe('apply()', () => {
-    let recoveryPublicKey: DidPublicKeyModel;
-    let recoveryPrivateKey: string;
-    let signingPublicKey: DidPublicKeyModel;
-    let signingPrivateKey: string;
+    let recoveryPublicKey: JwkEs256k;
+    let recoveryPrivateKey: JwkEs256k;
+    let signingPublicKey: PublicKeyModel;
+    let signingPrivateKey: JwkEs256k;
     let namedAnchoredCreateOperationModel: AnchoredOperationModel;
     let didState: DidState | undefined;
     let nextRecoveryRevealValue: string;
@@ -400,8 +401,8 @@ describe('OperationProcessor', async () => {
       didState = undefined;
 
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
-      [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
-      [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('signingKey');
+      [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
 
       // Create the initial create operation.
@@ -441,7 +442,7 @@ describe('OperationProcessor', async () => {
       const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, didState);
       expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
       expect(newDidState!.document).toBeDefined();
-      expect(newDidState!.recoveryKey!.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
+      expect(newDidState!.recoveryKey).toEqual(recoveryPublicKey);
     });
 
     describe('applyCreateOperation()', () => {
@@ -451,18 +452,18 @@ describe('OperationProcessor', async () => {
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, didState);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.recoveryKey!.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect(newDidState!.recoveryKey).toEqual(recoveryPublicKey);
       });
     });
 
     describe('applyUpdateOperation()', () => {
       it('should not apply update operation if update RevealValue is invalid.', async () => {
         // Create an update using the create operation generated in `beforeEach()`.
+        const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           'anIncorrectUpdateRevealValue',
-          'new-key1',
-          '000000000000000000000000000000000000000000000000000000000000000000',
+          additionalKey,
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           signingPublicKey.id,
           signingPrivateKey
@@ -487,11 +488,11 @@ describe('OperationProcessor', async () => {
 
       it('should not apply update operation if signature is invalid.', async () => {
         // Create an update using the create operation generated in `beforeEach()`.
+        const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           nextUpdateRevealValue,
-          'new-key1',
-          '000000000000000000000000000000000000000000000000000000000000000000',
+          additionalKey,
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           signingPublicKey.id,
           recoveryPrivateKey // NOTE: Using recovery private key to generate an invalid signautre.
@@ -516,11 +517,11 @@ describe('OperationProcessor', async () => {
 
       it('should not apply update operation if specified public key is not found.', async () => {
         // Create an update using the create operation generated in `beforeEach()`.
+        const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           nextUpdateRevealValue,
-          'new-key1',
-          '000000000000000000000000000000000000000000000000000000000000000000',
+          additionalKey,
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
           'non-existent-signing-key',
           signingPrivateKey
@@ -557,7 +558,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
 
         // Verify that the recovery key is still the same as prior to the application of the recover operation.
-        expect(newDidState!.recoveryKey!.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect(newDidState!.recoveryKey).toEqual(recoveryPublicKey);
       });
 
       it('should not apply if recovery RevealValue is invalid.', async () => {
@@ -571,12 +572,12 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
 
         // Verify that the recovery key is still the same as prior to the application of the recover operation.
-        expect(newDidState!.recoveryKey!.publicKeyHex).toEqual(recoveryPublicKey.publicKeyHex!);
+        expect(newDidState!.recoveryKey).toEqual(recoveryPublicKey);
       });
 
       it('should apply successfully with document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
-        const [anyNewRecoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+        const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
         const [, anyNewRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const [, anyNewUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
@@ -595,7 +596,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.document).toEqual({ });
 
-        expect(newDidState!.recoveryKey!.publicKeyHex).toEqual(anyNewRecoveryPublicKey.publicKeyHex!);
+        expect(newDidState!.recoveryKey).toEqual(anyNewRecoveryPublicKey);
       });
     });
 

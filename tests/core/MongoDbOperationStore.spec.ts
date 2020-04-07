@@ -1,5 +1,6 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import OperationGenerator from '../generators/OperationGenerator';
@@ -23,7 +24,7 @@ async function createOperationChain (
   firstUpdateRevealValueEncodedString: string,
   chainLength: number,
   signingKeyId: string,
-  signingPrivateKey: string,
+  signingPrivateKey: JwkEs256k,
   transactionNumber?: number):
   Promise<AnchoredOperationModel[]> {
   const didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -35,11 +36,11 @@ async function createOperationChain (
     const transactionTimeToUse = transactionNumberToUse;
 
     const [nextUpdateRevealValue, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [newPublicKey] = await OperationGenerator.generateKeyPair(`key${i}`);
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
       updateRevealValueEncodedString,
-      `key${i}`,
-      '000000000000000000000000000000000000000000000000000000000000000000',
+      newPublicKey,
       nextUpdateCommitmentHash,
       signingKeyId,
       signingPrivateKey
