@@ -13,9 +13,9 @@ interface SignedDataModel {
 }
 
 /**
- * A class that represents a revoke operation.
+ * A class that represents a deactivate operation.
  */
-export default class RevokeOperation implements OperationModel {
+export default class DeactivateOperation implements OperationModel {
 
   /** The original request buffer sent by the requester. */
   public readonly operationBuffer: Buffer;
@@ -46,7 +46,7 @@ export default class RevokeOperation implements OperationModel {
     signedData: SignedDataModel
   ) {
     this.operationBuffer = operationBuffer;
-    this.type = OperationType.Revoke;
+    this.type = OperationType.Deactivate;
     this.didUniqueSuffix = didUniqueSuffix;
     this.recoveryRevealValue = recoveryRevealValue;
     this.signedDataJws = signedDataJws;
@@ -54,32 +54,32 @@ export default class RevokeOperation implements OperationModel {
   }
 
   /**
-   * Parses the given input as a revoke operation entry in the anchor file.
+   * Parses the given input as a deactivate operation entry in the anchor file.
    */
-  public static async parseOpertionFromAnchorFile (input: any): Promise<RevokeOperation> {
+  public static async parseOpertionFromAnchorFile (input: any): Promise<DeactivateOperation> {
     const opertionBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await RevokeOperation.parseObject(input, opertionBuffer, true);
+    const operation = await DeactivateOperation.parseObject(input, opertionBuffer, true);
     return operation;
   }
 
   /**
    * Parses the given buffer as a `UpdateOperation`.
    */
-  public static async parse (operationBuffer: Buffer): Promise<RevokeOperation> {
+  public static async parse (operationBuffer: Buffer): Promise<DeactivateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const revokeOperation = await RevokeOperation.parseObject(operationObject, operationBuffer, false);
-    return revokeOperation;
+    const deactivateOperation = await DeactivateOperation.parseObject(operationObject, operationBuffer, false);
+    return deactivateOperation;
   }
 
   /**
-   * Parses the given operation object as a `RevokeOperation`.
+   * Parses the given operation object as a `DeactivateOperation`.
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    * @param anchorFileMode If set to true, then `type` is expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RevokeOperation> {
+  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<DeactivateOperation> {
     let expectedPropertyCount = 4;
     if (anchorFileMode) {
       expectedPropertyCount = 3;
@@ -87,35 +87,35 @@ export default class RevokeOperation implements OperationModel {
 
     const properties = Object.keys(operationObject);
     if (properties.length !== expectedPropertyCount) {
-      throw new SidetreeError(ErrorCode.RevokeOperationMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty);
     }
 
     if (typeof operationObject.didUniqueSuffix !== 'string') {
-      throw new SidetreeError(ErrorCode.RevokeOperationMissingOrInvalidDidUniqueSuffix);
+      throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
     if (typeof operationObject.recoveryRevealValue !== 'string') {
-      throw new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueMissingOrInvalidType);
+      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
     if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
-      throw new SidetreeError(ErrorCode.RevokeOperationRecoveryRevealValueTooLong);
+      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong);
     }
 
     const recoveryRevealValue = operationObject.recoveryRevealValue;
 
     const signedDataJws = Jws.parse(operationObject.signedData);
-    const signedData = await RevokeOperation.parseSignedDataPayload(
+    const signedData = await DeactivateOperation.parseSignedDataPayload(
       signedDataJws.payload, operationObject.didUniqueSuffix, recoveryRevealValue);
 
     // If not in anchor file mode, we need to validate `type` property.
     if (!anchorFileMode) {
-      if (operationObject.type !== OperationType.Revoke) {
-        throw new SidetreeError(ErrorCode.RevokeOperationTypeIncorrect);
+      if (operationObject.type !== OperationType.Deactivate) {
+        throw new SidetreeError(ErrorCode.DeactivateOperationTypeIncorrect);
       }
     }
 
-    return new RevokeOperation(
+    return new DeactivateOperation(
       operationBuffer,
       operationObject.didUniqueSuffix,
       recoveryRevealValue,
@@ -132,15 +132,15 @@ export default class RevokeOperation implements OperationModel {
 
     const properties = Object.keys(signedData);
     if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.RevokeOperationSignedDataMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty);
     }
 
     if (signedData.didUniqueSuffix !== expectedDidUniqueSuffix) {
-      throw new SidetreeError(ErrorCode.RevokeOperationSignedDidUniqueSuffixMismatch);
+      throw new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch);
     }
 
     if (signedData.recoveryRevealValue !== expectedRecoveryRevealValue) {
-      throw new SidetreeError(ErrorCode.RevokeOperationSignedRecoveryRevealValueMismatch);
+      throw new SidetreeError(ErrorCode.DeactivateOperationSignedRecoveryRevealValueMismatch);
     }
 
     return signedData;

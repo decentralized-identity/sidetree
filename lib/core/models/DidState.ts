@@ -7,7 +7,7 @@ import PublicKeyModel from './PublicKeyModel';
 export default interface DidState {
   document: any;
   recoveryKey: PublicKeyModel | undefined ;
-  nextRecoveryCommitmentHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
-  nextUpdateCommitmentHash: string | undefined; // NOTE: Can be undefined after a revoke operation is applied.
+  nextRecoveryCommitmentHash: string | undefined; // NOTE: Can be undefined after a deactivate operation is applied.
+  nextUpdateCommitmentHash: string | undefined; // NOTE: Can be undefined after a deactivate operation is applied.
   lastOperationTransactionNumber: number;
 }

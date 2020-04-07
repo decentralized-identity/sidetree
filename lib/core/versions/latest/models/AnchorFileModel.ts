@@ -7,6 +7,6 @@ export default interface AnchorFileModel {
   operations: {
     createOperations?: any[],
     recoverOperations?: any[],
-    revokeOperations?: any[]
+    deactivateOperations?: any[]
   };
 }

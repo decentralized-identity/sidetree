@@ -1,6 +1,7 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
@@ -14,7 +15,6 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
-import RevokeOperation from '../../lib/core/versions/latest/RevokeOperation';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 
@@ -259,7 +259,7 @@ describe('OperationProcessor', async () => {
     }
   });
 
-  it('should process revoke operation correctly.', async () => {
+  it('should process deactivate operation correctly.', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, firstUpdateRevealValue, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
     await operationStore.put(ops);
@@ -269,38 +269,38 @@ describe('OperationProcessor', async () => {
     console.log(didState!.document);
     validateDocumentAfterUpdates(didState!.document, numberOfUpdates);
 
-    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
-    const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-    const anchoredRevokeOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(
-      revokeOperation, numberOfUpdates + 1, numberOfUpdates + 1, 0);
-    await operationStore.put([anchoredRevokeOperation]);
+    const deactivateOperationBuffer = await OperationGenerator.generateDeactivateOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
+    const deactivateOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
+    const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(
+      deactivateOperation, numberOfUpdates + 1, numberOfUpdates + 1, 0);
+    await operationStore.put([anchoredDeactivateOperation]);
 
-    const revokedDidState = await resolver.resolve(didUniqueSuffix);
-    expect(revokedDidState).toBeDefined();
-    expect(revokedDidState!.recoveryKey).toBeUndefined();
-    expect(revokedDidState!.nextRecoveryCommitmentHash).toBeUndefined();
-    expect(revokedDidState!.nextUpdateCommitmentHash).toBeUndefined();
-    expect(revokedDidState!.lastOperationTransactionNumber).toEqual(numberOfUpdates + 1);
+    const deactivatedDidState = await resolver.resolve(didUniqueSuffix);
+    expect(deactivatedDidState).toBeDefined();
+    expect(deactivatedDidState!.recoveryKey).toBeUndefined();
+    expect(deactivatedDidState!.nextRecoveryCommitmentHash).toBeUndefined();
+    expect(deactivatedDidState!.nextUpdateCommitmentHash).toBeUndefined();
+    expect(deactivatedDidState!.lastOperationTransactionNumber).toEqual(numberOfUpdates + 1);
   });
 
-  it('should ignore a revoke operation of a non-existent did', async () => {
-    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
-    const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-    const anchoredRevokeOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0);
-    await operationStore.put([anchoredRevokeOperation]);
+  it('should ignore a deactivate operation of a non-existent did', async () => {
+    const deactivateOperationBuffer = await OperationGenerator.generateDeactivateOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
+    const deactivateOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
+    const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 1, 1, 0);
+    await operationStore.put([anchoredDeactivateOperation]);
 
-    const didDocumentAfterRevoke = await resolver.resolve(didUniqueSuffix);
-    expect(didDocumentAfterRevoke).toBeUndefined();
+    const didDocumentAfterDeactivate = await resolver.resolve(didUniqueSuffix);
+    expect(didDocumentAfterDeactivate).toBeUndefined();
   });
 
-  it('should ignore a revoke operation with invalid signature', async () => {
+  it('should ignore a deactivate operation with invalid signature', async () => {
     await operationStore.put([createOp]);
 
-    const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(
+    const deactivateOperationBuffer = await OperationGenerator.generateDeactivateOperationBuffer(
       didUniqueSuffix, recoveryRevealValue, signingPrivateKey); // Intentionally signing with the wrong key.
-    const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-    const anchoredRevokeOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(revokeOperation, 1, 1, 0);
-    await operationStore.put([anchoredRevokeOperation]);
+    const deactivateOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
+    const anchoredDeactivateOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 1, 1, 0);
+    await operationStore.put([anchoredDeactivateOperation]);
 
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -599,16 +599,16 @@ describe('OperationProcessor', async () => {
       });
     });
 
-    describe('applyRevokeOperation()', () => {
+    describe('applyDeactivateOperation()', () => {
       it('should not apply if recovery RevealValue is invalid.', async () => {
-        // Create revoke operation payload.
-        const revokeOperationBuffer = await OperationGenerator.generateRevokeOperationBuffer(
+        // Create deactivate operation payload.
+        const deactivateOperationBuffer = await OperationGenerator.generateDeactivateOperationBuffer(
           didUniqueSuffix, 'invalideRecoveryRevealValue', recoveryPrivateKey
         );
-        const revokeOperation = await RevokeOperation.parse(revokeOperationBuffer);
-        const anchoredRevokeOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(revokeOperation, 2, 2, 2);
+        const deactivateOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
+        const anchoredDeactivateOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 2, 2, 2);
 
-        const newDidState = await operationProcessor.apply(anchoredRevokeOperationModel, didState);
+        const newDidState = await operationProcessor.apply(anchoredDeactivateOperationModel, didState);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toBeDefined();
 

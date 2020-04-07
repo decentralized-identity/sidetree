@@ -37,7 +37,7 @@ describe('UpdateOperation', async () => {
         signingPrivateKey
       );
 
-      updateOperationRequest.type = OperationType.Revoke;
+      updateOperationRequest.type = OperationType.Deactivate;
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect));
