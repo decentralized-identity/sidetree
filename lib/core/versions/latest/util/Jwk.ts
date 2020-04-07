@@ -56,7 +56,7 @@ export default class Jwk {
       throw new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeX);
     }
 
-    if (typeof publicKey.x !== 'string') {
+    if (typeof publicKey.y !== 'string') {
       throw new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeY);
     }
   }
