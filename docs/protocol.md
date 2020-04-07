@@ -8,7 +8,7 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, Recover, and Revoke) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, Recover, and Deactivate) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
 
 ## Terminology
@@ -23,7 +23,7 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 | DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
 | Operation             | A change to a document of a DID.                                               |
 | Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
-| Recovery key          | A key that is used to perform recovery or revoke operation.                    |
+| Recovery key          | A key that is used to perform recovery or deactivate operation.                    |
 | Sidetree node         | A logical server executing Sidetree protocol rules.                            |
 | Suffix data           | Data required to deterministically generate a DID .                            |
 | Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
@@ -57,7 +57,7 @@ Sidetree protocol allows the following operations to be performed against a DID:
 1. Resolve
 1. Update
 1. Recover
-1. Revoke
+1. Deactivate
 
 A _DID Document_ is returned as the response to a _resolve_ request. A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
 ) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used.
@@ -143,7 +143,7 @@ The _anchor file_ is a JSON document of the following schema:
   "operations": {
     "createOperations": ["Update operation request excluding `type` and `patchData` properties.", "..."],
     "recoverOperations": ["Recover operation request excluding `type` and `patchData` properties.", "..."],
-    "revokeOperations": ["Recoke operation request excluding `type` properties.", "..."]
+    "deactivateOperations": ["Deactivate operation request excluding `type` properties.", "..."]
   }
 }
 ```
@@ -224,8 +224,8 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
   See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify reveal values and commitment hashes in each operation.
 
 
-## DID Revocation and Recovery
-Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is revoked, it cannot be recovered.
+## DID Deactivate and Recovery
+Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is deactivated, it cannot be recovered.
 
 The most basic recover operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
 
@@ -483,8 +483,8 @@ See [document patch schema](#Document-patch-schema) section for all the supporte
 None.
 
 
-### DID Revocation
-The API to revoke a given DID.
+### DID Deactivation
+The API to deactivate a given DID.
 
 #### Request path
 ```
@@ -496,11 +496,11 @@ POST /
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
-#### Revoke request body schema
+#### Deactivate request body schema
 ```json
 {
-  "type": "revoke",
-  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "type": "deactivate",
+  "didUniqueSuffix": "The unique suffix of the DID to be deactivated.",
   "recoveryRevealValue": "The current reveal value to use for this request.",
   "signedData": {
     "protected": "JWS header.",
@@ -513,7 +513,7 @@ POST /
 #### `signedData` decoded payload schema
 ```json
 {
-  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "didUniqueSuffix": "The unique suffix of the DID to be deactivated.",
   "recoveryRevealValue": "The current reveal value for recovery.",
 }
 ```

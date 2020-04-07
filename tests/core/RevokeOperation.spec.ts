@@ -1,9 +1,9 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
+import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
-import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DeactivateOperation', async () => {

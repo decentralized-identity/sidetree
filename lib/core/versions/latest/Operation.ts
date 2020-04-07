@@ -1,4 +1,5 @@
 import CreateOperation from './CreateOperation';
+import DeactivateOperation from './DeactivateOperation';
 import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
@@ -8,7 +9,6 @@ import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import PatchDataModel from './models/PatchDataModel';
 import RecoverOperation from './RecoverOperation';
-import DeactivateOperation from './DeactivateOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 

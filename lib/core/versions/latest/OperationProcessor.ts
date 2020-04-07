@@ -1,5 +1,6 @@
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import CreateOperation from './CreateOperation';
+import DeactivateOperation from './DeactivateOperation';
 import DocumentComposer from './DocumentComposer';
 import DidState from '../../models/DidState';
 import ErrorCode from './ErrorCode';
@@ -7,7 +8,6 @@ import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
-import DeactivateOperation from './DeactivateOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 

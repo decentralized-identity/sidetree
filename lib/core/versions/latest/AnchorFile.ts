@@ -2,13 +2,13 @@ import AnchorFileModel from './models/AnchorFileModel';
 import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
+import DeactivateOperation from './DeactivateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
-import DeactivateOperation from './DeactivateOperation';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
