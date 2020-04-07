@@ -1,13 +1,13 @@
 
-function delegateEvent(type, selector, fn, container){
-  return (container || document).addEventListener(type, e => {
+function delegateEvent(type, selector, fn, options = {}){
+  return (options.container || document).addEventListener(type, e => {
     let node = e.target;
     let match = node.matches(selector);
     if (!match) while (node.parentElement) {
       node = node.parentElement.matches(selector) ? match = node : node.parentElement;
     }
     else if (match) fn.call(node, e, node);
-  });
+  }, options);
 }
 
 var markdown = window.markdownit();
@@ -16,7 +16,7 @@ var markdown = window.markdownit();
 
 delegateEvent('pointerup', '[panel-toggle]', (e, delegate) => {
   slidepanels.toggle(delegate.getAttribute('panel-toggle'));
-});
+}, { passive: true });
 
 window.addEventListener('hashchange', (e) => {
   slidepanels.close();

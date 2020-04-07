@@ -138,19 +138,19 @@ describe('AnchorFile', async () => {
       delete createOperationRequest.type;
       delete createOperationRequest.patchData;
 
-      const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
         createPatchData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
         'anyRecoveryRevealValue',
         createPatchData.recoveryPrivateKey
       );
 
-      // Strip away properties not allowed in the revokeOperations array elements.
-      delete revokeOperationRequest.type;
+      // Strip away properties not allowed in the deactivateOperations array elements.
+      delete deactivateOperationRequest.type;
       const anchorFile = {
         mapFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           createOperations: [createOperationRequest],
-          revokeOperations: [revokeOperationRequest]
+          deactivateOperations: [deactivateOperationRequest]
         }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));

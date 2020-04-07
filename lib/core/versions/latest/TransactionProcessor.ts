@@ -209,24 +209,24 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     let createOperations = anchorFile.createOperations;
     let recoverOperations = anchorFile.recoverOperations;
-    let revokeOperations = anchorFile.revokeOperations;
+    let deactivateOperations = anchorFile.deactivateOperations;
     let updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
 
     // Add `type` property for later convenience.
     updateOperations = updateOperations.map((operation) => Object.assign(operation, { type: OperationType.Update }));
 
-    // Add the operations in the following order of types: create, recover, update, revoke.
+    // Add the operations in the following order of types: create, recover, update, deactivate.
     const operations = [];
     operations.push(...createOperations);
     operations.push(...recoverOperations);
     operations.push(...updateOperations);
-    operations.push(...revokeOperations);
+    operations.push(...deactivateOperations);
 
     // If batch file is found/given, add patch data from batch file to each operation.
-    // NOTE: there is no patch data for revoke operations.
+    // NOTE: there is no patch data for deactivate operations.
     if (batchFile !== undefined) {
-      const operationCountExcludingRevokes = createOperations.length + recoverOperations.length + updateOperations.length;
-      for (let i = 0; i < operationCountExcludingRevokes &&
+      const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
+      for (let i = 0; i < operationCountExcludingDeactivates &&
                       i < batchFile.patchSet.length; i++) {
         operations[i].patchData = batchFile.patchSet[i];
       }

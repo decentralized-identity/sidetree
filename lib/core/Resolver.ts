@@ -25,21 +25,21 @@ export default class Resolver {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
     const operations = await this.operationStore.get(didUniqueSuffix);
-    const createAndRecoverAndRevokeOperations = operations.filter(
+    const createAndRecoverAndDeactivateOperations = operations.filter(
       op => op.type === OperationType.Create ||
       op.type === OperationType.Recover ||
-      op.type === OperationType.Revoke);
+      op.type === OperationType.Deactivate);
 
     // Apply "full" operations first.
     let didState: DidState | undefined;
-    didState = await this.applyOperations(createAndRecoverAndRevokeOperations, didState);
+    didState = await this.applyOperations(createAndRecoverAndDeactivateOperations, didState);
 
     // If no valid full operation is found at all, the DID is not anchored.
     if (didState === undefined) {
       return undefined;
     }
 
-    // If last operation is a revoke. No need to continue further.
+    // If last operation is a deactivate. No need to continue further.
     if (didState.nextRecoveryCommitmentHash === undefined) {
       return didState;
     }

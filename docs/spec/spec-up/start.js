@@ -90,7 +90,7 @@ const md = require('markdown-it')({
   .use(require('markdown-it-ins'))
   .use(require('markdown-it-latex').default)
   .use(require('markdown-it-mark'))
-  .use(require('markdown-it-mermaid').default)
+  .use(require('markdown-it-textual-uml'))
   .use(require('markdown-it-multimd-table'), {
     multiline:  true,
     rowspan:    true,

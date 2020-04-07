@@ -2,13 +2,13 @@ import AnchorFileModel from './models/AnchorFileModel';
 import ArrayMethods from './util/ArrayMethods';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
+import DeactivateOperation from './DeactivateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
-import RevokeOperation from './RevokeOperation';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
@@ -26,7 +26,7 @@ export default class AnchorFile {
     public readonly didUniqueSuffixes: string[],
     public readonly createOperations: CreateOperation[],
     public readonly recoverOperations: RecoverOperation[],
-    public readonly revokeOperations: RevokeOperation[]) { }
+    public readonly deactivateOperations: DeactivateOperation[]) { }
 
   /**
    * Parses and validates the given anchor file buffer.
@@ -80,7 +80,7 @@ export default class AnchorFile {
 
     // `operations` validations.
 
-    const allowedOperationsProperties = new Set(['createOperations', 'recoverOperations', 'revokeOperations']);
+    const allowedOperationsProperties = new Set(['createOperations', 'recoverOperations', 'deactivateOperations']);
     const operations = anchorFileModel.operations;
     for (let property in operations) {
       if (!allowedOperationsProperties.has(property)) {
@@ -121,18 +121,18 @@ export default class AnchorFile {
       }
     }
 
-    // Validate `revokeOperations` if exists.
-    const revokeOperations: RevokeOperation[] = [];
-    if (operations.revokeOperations !== undefined) {
-      if (!Array.isArray(operations.revokeOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileRevokeOperationsNotArray);
+    // Validate `deactivateOperations` if exists.
+    const deactivateOperations: DeactivateOperation[] = [];
+    if (operations.deactivateOperations !== undefined) {
+      if (!Array.isArray(operations.deactivateOperations)) {
+        throw new SidetreeError(ErrorCode.AnchorFileDeactivateOperationsNotArray);
       }
 
       // Validate every operation.
-      for (const operation of operations.revokeOperations) {
-        const revokeOperation = await RevokeOperation.parseOpertionFromAnchorFile(operation);
-        revokeOperations.push(revokeOperation);
-        didUniqueSuffixes.push(revokeOperation.didUniqueSuffix);
+      for (const operation of operations.deactivateOperations) {
+        const deactivateOperation = await DeactivateOperation.parseOpertionFromAnchorFile(operation);
+        deactivateOperations.push(deactivateOperation);
+        didUniqueSuffixes.push(deactivateOperation.didUniqueSuffix);
       }
     }
 
@@ -140,7 +140,7 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMultipleOperationsForTheSameDid);
     }
 
-    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, revokeOperations);
+    const anchorFile = new AnchorFile(anchorFileModel, didUniqueSuffixes, createOperations, recoverOperations, deactivateOperations);
     return anchorFile;
   }
 
@@ -152,7 +152,7 @@ export default class AnchorFile {
     mapFileHash: string,
     createOperationArray: CreateOperation[],
     recoverOperationArray: RecoverOperation[],
-    revokeOperationArray: RevokeOperation[]
+    deactivateOperationArray: DeactivateOperation[]
   ): Promise<AnchorFileModel> {
 
     const createOperations = createOperationArray.map(operation => {
@@ -169,7 +169,7 @@ export default class AnchorFile {
       };
     });
 
-    const revokeOperations = revokeOperationArray.map(operation => {
+    const deactivateOperations = deactivateOperationArray.map(operation => {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         recoveryRevealValue: operation.recoveryRevealValue,
@@ -183,7 +183,7 @@ export default class AnchorFile {
       operations: {
         createOperations,
         recoverOperations,
-        revokeOperations
+        deactivateOperations
       }
     };
 
@@ -198,9 +198,9 @@ export default class AnchorFile {
     mapFileHash: string,
     createOperations: CreateOperation[],
     recoverOperations: RecoverOperation[],
-    revokeOperations: RevokeOperation[]
+    deactivateOperations: DeactivateOperation[]
   ): Promise<Buffer> {
-    const anchorFileModel = await AnchorFile.createModel(writerLockId, mapFileHash, createOperations, recoverOperations, revokeOperations);
+    const anchorFileModel = await AnchorFile.createModel(writerLockId, mapFileHash, createOperations, recoverOperations, deactivateOperations);
     const anchorFileJson = JSON.stringify(anchorFileModel);
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 

@@ -89,7 +89,7 @@ A valid Anchor File is a JSON document that MUST NOT exceed the [`MAX_ANCHOR_FIL
 
   - If there are any [Recovery](#recover) operations to be included in the Anchor File:
     1. The `operations` object MUST include a `recover` property, and its value MUST be an array.
-    2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Anchor File Recovery Entries_](#anchor-file-recovery-entry), use the following process to compose and include entries:
+    2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Anchor File Recovery Entries_](#anchor-file-recovery-entry){id="anchor-file-recovery-entry"}, use the following process to compose and include entries:
         - The object MUST contain an `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An Anchor File MUST NOT contain more than one operation of any type with the same [DID Suffix](#did-suffix).
         - The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [COMMITMENT_VALUE](#commitment-value).
         - The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
@@ -156,7 +156,7 @@ A valid Map File is a JSON document that MUST NOT exceed the [`MAX_MAP_FILE_SIZE
     1. The _Chunk Entry_ object MUST contain a `chunk_file_uri` property, and its value MUST be a URI representing the corresponding CAS file entry, generated via the [`CID_ALGORITHM`](#cid-algorithm).
 2. If there are any [Update](#update) operations to be included in the Map File, the Map File MUST include an `operations` property, and its value MUST be an object composed as follows:
   1. The `operations` object MUST include an `update` property, and its value MUST be an array.
-  2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry), use the following process to compose and include entries:
+  2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry){id="map-file-update-entry"}, use the following process to compose and include entries:
         - The object MUST contain an `id` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
         - The object MUST contain a `update_reveal_value` property, and its value MUST be the last update [COMMITMENT_VALUE](#commitment-value).
         - The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
@@ -192,5 +192,5 @@ In this version of the protocol, Chunk Files are constructed as follows:
 
 3. Each [_Chunk File Delta Entry_](#chunk-file-patch-entry) MUST be appended to the `deltas` array as follows:
     1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Data Objects_](#create-data-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
-    2. If any Recovery operations were present in the associated Anchor File, append all [Recovery Operation Data Objects_](#recovery-data-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
-    3. If any Update operations were present in the associated Map File, append all [Update Operation Data Objects_](#update-data-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).
+    2. If any Recovery operations were present in the associated Anchor File, append all [_Recovery Operation Data Objects_](#recovery-data-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
+    3. If any Update operations were present in the associated Map File, append all [_Update Operation Data Objects_](#update-data-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).
