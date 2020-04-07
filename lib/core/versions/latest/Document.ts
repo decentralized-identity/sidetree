@@ -1,5 +1,5 @@
-import DidPublicKeyModel from './models/DidPublicKeyModel';
 import DocumentModel from './models/DocumentModel';
+import PublicKeyModel from './models/PublicKeyModel';
 
 /**
  * Class containing reusable document related operations.
@@ -11,7 +11,7 @@ export default class Document {
    * Returns undefined if not found.
    * @param keyId The ID of the public-key.
    */
-  public static getPublicKey (document: DocumentModel, keyId: string): DidPublicKeyModel | undefined {
+  public static getPublicKey (document: DocumentModel, keyId: string): PublicKeyModel | undefined {
     for (let i = 0; i < document.publicKeys.length; i++) {
       const publicKey = document.publicKeys[i];
 

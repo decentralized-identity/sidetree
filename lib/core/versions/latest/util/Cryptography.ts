@@ -1,7 +1,5 @@
 import * as crypto from 'crypto';
 import DidPublicKeyModel from '../models/DidPublicKeyModel';
-import Encoder from '../Encoder';
-import PublicKeyModel from '../../../models/PublicKeyModel';
 
 const secp256k1 = require('secp256k1');
 
@@ -38,44 +36,5 @@ export default class Cryptography {
     };
 
     return [didPublicKey, privateKeyHex];
-  }
-
-  /**
-   * Signs the given content using the given private key.
-   * @param content Content to be signed.
-   * @param privateKey A SECP256K1 private-key either in HEX string format (or JWK format, future support).
-   */
-  public static async sign (content: string, privateKey: string): Promise<string> {
-
-    let signature;
-    // This is the HEX string case. JWK will be supported in the future
-    const hash = Cryptography.sha256hash(Buffer.from(content));
-    const privateKeyBuffer = Buffer.from(privateKey, 'hex');
-    const signatureObject = secp256k1.sign(hash, privateKeyBuffer);
-    signature = Encoder.encode(signatureObject.signature);
-
-    return signature;
-  }
-
-  /**
-   * Verifies that the given signature matches the given content being signed.
-   * @param content Content signed.
-   * @param encodedSignature Encoded signature.
-   * @param publicKey The public key to be used for verification.
-   * @returns true if signature is successfully verified, false otherwise.
-   */
-  public static async verifySignature (content: string, encodedSignature: string, publicKey: PublicKeyModel): Promise<boolean> {
-    try {
-      let verified = false;
-      if (publicKey.publicKeyHex !== undefined) {
-        const hash = Cryptography.sha256hash(Buffer.from(content));
-        const publicKeyBuffer = Buffer.from(publicKey.publicKeyHex, 'hex');
-        verified = secp256k1.verify(hash, Encoder.decodeAsBuffer(encodedSignature), publicKeyBuffer);
-      }
-
-      return verified;
-    } catch {
-      return false;
-    }
   }
 }

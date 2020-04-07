@@ -1,4 +1,3 @@
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -8,7 +7,7 @@ import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 describe('UpdateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if didUniqueSuffix is not string.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('key');
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
@@ -26,7 +25,7 @@ describe('UpdateOperation', async () => {
     });
 
     it('should throw if operation type is incorrect', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('key');
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
@@ -44,7 +43,7 @@ describe('UpdateOperation', async () => {
     });
 
     it('should throw if updateRevealValue is not string.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('key');
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
@@ -63,7 +62,7 @@ describe('UpdateOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is too long.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await Cryptography.generateKeyPairHex('key');
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',

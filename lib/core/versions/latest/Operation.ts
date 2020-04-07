@@ -70,20 +70,4 @@ export default class Operation {
 
     return patchData;
   }
-
-  /**
-   * Validates the given recovery key object is in valid format.
-   * @throws SidetreeError if given recovery key is invalid.
-   */
-  public static validateRecoveryKeyObject (recoveryKey: any) {
-    if (recoveryKey === undefined) {
-      throw new SidetreeError(ErrorCode.OperationRecoveryKeyUndefined);
-    }
-
-    const recoveryKeyObjectPropertyCount = Object.keys(recoveryKey);
-    if (recoveryKeyObjectPropertyCount.length !== 1 ||
-        typeof recoveryKey.publicKeyHex !== 'string') {
-      throw new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid);
-    }
-  }
 }

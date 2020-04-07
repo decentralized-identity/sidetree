@@ -1,6 +1,7 @@
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -10,8 +11,8 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('RecoverOperation', async () => {
   describe('parse()', async () => {
     it('should throw if operation type is incorrect', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -34,8 +35,8 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if didUniqueSuffix is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -58,8 +59,8 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -83,8 +84,8 @@ describe('RecoverOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is too long.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
-      const [newRecoveryPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('singingKey');
       const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();

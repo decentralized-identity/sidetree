@@ -1,6 +1,6 @@
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import RevokeOperation from '../../lib/core/versions/latest/RevokeOperation';
@@ -9,7 +9,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('RevokeOperation', async () => {
   describe('parse()', async () => {
     it('should throw if operation type is incorrect', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
         'unused-DID-unique-suffix',
@@ -25,7 +25,7 @@ describe('RevokeOperation', async () => {
     });
 
     it('should throw if didUniqueSuffix is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
         'unused-DID-unique-suffix',
@@ -41,7 +41,7 @@ describe('RevokeOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
         'unused-DID-unique-suffix',
@@ -58,7 +58,7 @@ describe('RevokeOperation', async () => {
     });
 
     it('should throw if recoveryRevealValue is too long.', async (done) => {
-      const [, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
       const revokeOperationRequest = await OperationGenerator.generateRevokeOperationRequest(
         'unused-DID-unique-suffix',

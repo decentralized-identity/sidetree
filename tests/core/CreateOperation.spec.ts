@@ -2,6 +2,7 @@ import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -10,7 +11,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('CreateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+      const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -30,7 +31,7 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw if operation type is incorrect', async () => {
-      const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('key1');
+      const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -77,18 +78,18 @@ describe('CreateOperation', async () => {
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyUndefined));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.JwkEs256kUndefined));
     });
 
-    it('should throw if suffix data has invalid recovery key.', async () => {
+    it('should throw if suffix data has recovery key with unknown property.', async () => {
       const suffixData = {
         patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryKey: { knownKeyType: 123 },
+        recoveryKey: { knownProperty: 123 },
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationRecoveryKeyInvalid));
+        .toBeRejectedWith(new SidetreeError(ErrorCode.JwkEs256kHasUnknownProperty));
     });
   });
 });

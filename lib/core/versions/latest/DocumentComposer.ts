@@ -2,6 +2,8 @@ import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import ErrorCode from './ErrorCode';
+import Jwk from './util/Jwk';
+import PublicKeyModel from './models/PublicKeyModel';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -39,12 +41,10 @@ export default class DocumentComposer {
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
     // The current document must contain the public key mentioned in the operation ...
     const publicKey = Document.getPublicKey(document, operation.signedData.kid);
-    if (!publicKey) {
-      throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
-    }
+    DocumentComposer.validateOperationKey(publicKey);
 
     // Verify the signature.
-    if (!(await operation.signedData.verifySignature(publicKey))) {
+    if (!(await operation.signedData.verifySignature(publicKey!.publicKeyJwk))) {
       throw new SidetreeError(ErrorCode.DocumentComposerInvalidSignature);
     }
 
@@ -149,15 +149,27 @@ export default class DocumentComposer {
       publicKeyIdSet.add(publicKey.id);
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {
-        // The key must be in compressed bitcoin-key format.
-        if (typeof publicKey.publicKeyHex !== 'string' ||
-            publicKey.publicKeyHex.length !== 66) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeySecp256k1NotCompressedHex);
-        }
+        // The key must be in JWK format.
+        Jwk.validateJwkEs256k(publicKey.publicKeyJwk);
       } else if (publicKey.type !== 'RsaVerificationKey2018') {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
       }
     }
+  }
+
+  /**
+   * Ensures the given key is an operation key allowed to perform document modification.
+   */
+  private static validateOperationKey (publicKey: PublicKeyModel | undefined) {
+    if (!publicKey) {
+      throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
+    }
+
+    if (publicKey.type !== 'Secp256k1VerificationKey2018') {
+      throw new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
+    }
+
+    Jwk.validateJwkEs256k(publicKey.publicKeyJwk);
   }
 
   private static validateRemovePublicKeysPatch (patch: any) {

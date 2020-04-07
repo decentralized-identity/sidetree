@@ -6,7 +6,6 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
-import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidState from '../../lib/core/models/DidState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
@@ -15,6 +14,8 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
@@ -47,8 +48,8 @@ describe('RequestHandler', () => {
   let requestHandler: RequestHandler;
   let versionManager: IVersionManager;
 
-  let recoveryPublicKey: DidPublicKeyModel;
-  let recoveryPrivateKey: any;
+  let recoveryPublicKey: JwkEs256k;
+  let recoveryPrivateKey: JwkEs256k;
   let did: string; // This DID is created at the beginning of every test.
   let didUniqueSuffix: string;
 
@@ -84,7 +85,7 @@ describe('RequestHandler', () => {
     blockchain.setLatestTime(mockLatestTime);
 
     // Generate a unique key-pair used for each test.
-    [recoveryPublicKey, recoveryPrivateKey] = await Cryptography.generateKeyPairHex('key1');
+    [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -158,7 +159,7 @@ describe('RequestHandler', () => {
 
   it('should return bad request if two operations for the same DID is received.', async () => {
     // Create the initial create operation.
-    const [recoveryPublicKey] = await Cryptography.generateKeyPairHex('recoveryKey');
+    const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await Cryptography.generateKeyPairHex('signingKey');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -232,11 +233,11 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
-    const [, anySigningPrivateKey] = await Cryptography.generateKeyPairHex('signingKey');
+    const [, anySigningPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const anyPublicKeyHex = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+    const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateRevealValue', 'additionalKey', anyPublicKeyHex, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, 'anyUpdateRevealValue', additionalKey, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -267,7 +268,7 @@ describe('RequestHandler', () => {
 
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const [anyRecoveryPublicKey] = await Cryptography.generateKeyPairHex('anyRecoveryKey');
+      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('anySigningKey');
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
