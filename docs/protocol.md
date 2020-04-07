@@ -290,9 +290,7 @@ POST / HTTP/1.1
 ```json
 {
   "patchDataHash": "Hash of the patch data.",
-  "recoveryKey": {
-    "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
-  },
+  "recoveryKey": "A SECP256K1 public key expressed in compressed JWK format.",
   "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
 }
 ```
@@ -315,24 +313,6 @@ See [document patch schema](#Document-patch-schema) section for all the supporte
 #### Response body schema
 The response body is the constructed document of the DID created.
 
-#### Response body example
-```json
-{
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
-  "publicKey": [{
-    "id": "#key1",
-    "type": "Secp256k1VerificationKey2018",
-    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
-  }],
-  "service": [{
-    "id": "IdentityHub",
-    "type": "IdentityHub",
-    "serviceEndpoint": "https://identityhub.com"
-  }]
-}
-```
-
 
 ### DID resolution
 This API fetches the latest document of a DID.
@@ -345,9 +325,6 @@ Two forms of string can be passed in the URI:
    The latest document will be returned if found.
 
 1. DID with `-<method-name>-initial-state` DID parameter: `did:sidetree:<unique-portion>?-<method-name>-initial-state=<encoded-create-operation-request>`
-
-   e.g.
-   ```did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg?-sidetree-initial-state=eyJ0eXBlIjoiY3JlYXRlIiwic3VmZml4RGF0YSI6ImV5SnZjR1Z5WVhScGIyNUVZWFJoU0dGemFDSTZJa1ZwUW13Mk9IUktSRFp3YmxadVdHWTFURUZqY1VGWWJsRkhOR2syY2xKSGVuUmZlazEzYXpkaFZWUTBlVUVpTENKeVpXTnZkbVZ5ZVV0bGVTSTZleUp3ZFdKc2FXTkxaWGxJWlhnaU9pSXdNalE0WkRWaFlUbGxZamxqWVdZNE5EWmhNalZoTkRReE1qbGlPR013TURBek9HUTFObVJsTlROaVptTTNZbUU1TkRneU1tRTFNV1ZpTUdabU1EazNNbU1pZlN3aWJtVjRkRkpsWTI5MlpYSjVUM1J3U0dGemFDSTZJa1ZwUTI5aU5YZFZkMEV5U0VObVRGUjZjbmRHZG14b2JVSm5TRnB0ZEVsZmRXVXhNa1JuWHpsVlkxOXdlR2NpZlEiLCJvcGVyYXRpb25EYXRhIjoiZXlKdVpYaDBWWEJrWVhSbFQzUndTR0Z6YUNJNklrVnBSSEZMVDJ0ZlRsZHVZMkZrT0RJelYySm9WVGwyZUVwcmQwVnVTVFZHUlVNeU0xbDViRE5rUlZnNWJtY2lMQ0prYjJOMWJXVnVkQ0k2ZXlKQVkyOXVkR1Y0ZENJNkltaDBkSEJ6T2k4dmR6TnBaQzV2Y21jdlpHbGtMM1l4SWl3aWNIVmliR2xqUzJWNUlqcGJleUpwWkNJNklpTnphV2R1YVc1blMyVjVJaXdpZEhsd1pTSTZJbE5sWTNBeU5UWnJNVlpsY21sbWFXTmhkR2x2Ymt0bGVUSXdNVGdpTENKMWMyRm5aU0k2SW5OcFoyNXBibWNpTENKd2RXSnNhV05MWlhsSVpYZ2lPaUl3TTJKa01HVTBOREF3TlRKaU9UUXlaVE13T0dJNVptUXdPR1JpTWpsaFltTTRaRFl6TmpZNE5ESXpNMkZsT0Raa09Ea3lZVEk1WmpCak5qRTJabVV3TldVaWZWMHNJbk5sY25acFkyVWlPbHQ3SW1sa0lqb2lTV1JsYm5ScGRIbElkV0lpTENKMGVYQmxJam9pU1dSbGJuUnBkSGxJZFdJaUxDSnpaWEoyYVdObFJXNWtjRzlwYm5RaU9uc2lRR052Ym5SbGVIUWlPaUp6WTJobGJXRXVhV1JsYm5ScGRIa3VabTkxYm1SaGRHbHZiaTlvZFdJaUxDSkFkSGx3WlNJNklsVnpaWEpUWlhKMmFXTmxSVzVrY0c5cGJuUWlMQ0pwYm5OMFlXNWpaWE1pT2xzaVpHbGtPbk5wWkdWMGNtVmxPblpoYkhWbE1DSmRmWDFkZlgwIn0```
 
    Standard resolution is performed if the DID is found to registered on the blockchain. If the DID cannot be found, the data given in the `-<method-name>-initial-state` DID parameter is used directly to generate and resolve the DID.
 
@@ -366,30 +343,6 @@ None.
 ```http
 GET /did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg HTTP/1.1
 ```
-
-#### Request example - Resolution request with initial state.
-```http
-GET /did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg?-sidetree-initial-state=eyJ0eXBlIjoiY3JlYXRlIiwic3VmZml4RGF0YSI6ImV5SnZjR1Z5WVhScGIyNUVZWFJoU0dGemFDSTZJa1ZwUW13Mk9IUktSRFp3YmxadVdHWTFURUZqY1VGWWJsRkhOR2syY2xKSGVuUmZlazEzYXpkaFZWUTBlVUVpTENKeVpXTnZkbVZ5ZVV0bGVTSTZleUp3ZFdKc2FXTkxaWGxJWlhnaU9pSXdNalE0WkRWaFlUbGxZamxqWVdZNE5EWmhNalZoTkRReE1qbGlPR013TURBek9HUTFObVJsTlROaVptTTNZbUU1TkRneU1tRTFNV1ZpTUdabU1EazNNbU1pZlN3aWJtVjRkRkpsWTI5MlpYSjVUM1J3U0dGemFDSTZJa1ZwUTI5aU5YZFZkMEV5U0VObVRGUjZjbmRHZG14b2JVSm5TRnB0ZEVsZmRXVXhNa1JuWHpsVlkxOXdlR2NpZlEiLCJvcGVyYXRpb25EYXRhIjoiZXlKdVpYaDBWWEJrWVhSbFQzUndTR0Z6YUNJNklrVnBSSEZMVDJ0ZlRsZHVZMkZrT0RJelYySm9WVGwyZUVwcmQwVnVTVFZHUlVNeU0xbDViRE5rUlZnNWJtY2lMQ0prYjJOMWJXVnVkQ0k2ZXlKQVkyOXVkR1Y0ZENJNkltaDBkSEJ6T2k4dmR6TnBaQzV2Y21jdlpHbGtMM1l4SWl3aWNIVmliR2xqUzJWNUlqcGJleUpwWkNJNklpTnphV2R1YVc1blMyVjVJaXdpZEhsd1pTSTZJbE5sWTNBeU5UWnJNVlpsY21sbWFXTmhkR2x2Ymt0bGVUSXdNVGdpTENKMWMyRm5aU0k2SW5OcFoyNXBibWNpTENKd2RXSnNhV05MWlhsSVpYZ2lPaUl3TTJKa01HVTBOREF3TlRKaU9UUXlaVE13T0dJNVptUXdPR1JpTWpsaFltTTRaRFl6TmpZNE5ESXpNMkZsT0Raa09Ea3lZVEk1WmpCak5qRTJabVV3TldVaWZWMHNJbk5sY25acFkyVWlPbHQ3SW1sa0lqb2lTV1JsYm5ScGRIbElkV0lpTENKMGVYQmxJam9pU1dSbGJuUnBkSGxJZFdJaUxDSnpaWEoyYVdObFJXNWtjRzlwYm5RaU9uc2lRR052Ym5SbGVIUWlPaUp6WTJobGJXRXVhV1JsYm5ScGRIa3VabTkxYm1SaGRHbHZiaTlvZFdJaUxDSkFkSGx3WlNJNklsVnpaWEpUWlhKMmFXTmxSVzVrY0c5cGJuUWlMQ0pwYm5OMFlXNWpaWE1pT2xzaVpHbGtPbk5wWkdWMGNtVmxPblpoYkhWbE1DSmRmWDFkZlgwIn0 HTTP/1.1
-```
-
-#### Response body example
-```json
-{
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
-  "publicKey": [{
-    "id": "#key1",
-    "type": "Secp256k1VerificationKey2018",
-    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
-  }],
-  "service": [{
-    "id": "IdentityHub",
-    "type": "IdentityHub",
-    "serviceEndpoint": "https://identityhub.com"
-  }]
-}
-```
-
 
 ### Updating the document of a DID.
 The API to update the document of a DID.
@@ -592,7 +545,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
+      "publicKeyJwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
     }
   ],
   "serviceEndpoints": [
@@ -612,7 +565,12 @@ HTTP/1.1 200 OK
     {
       "id": "key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+      "publicKeyJwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
+        "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
+      }
     }
   ],
   "serviceEndpoints": [
@@ -634,7 +592,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
+      "publicKeyJwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
     }
   ]
 }
@@ -648,7 +606,12 @@ Example:
     {
       "id": "key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+      "publicKeyJwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
+        "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
+      }
     },
     {
       "id": "key2",
