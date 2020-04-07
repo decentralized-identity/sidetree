@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from './OperationGenerator';
 
@@ -71,7 +70,7 @@ export default class VegetaLoadGenerator {
 
       // Generate a recover operation request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [newSigningPublicKey] = await Cryptography.generateKeyPairHex('newSigningKey');
+      const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix, recover1RevealValue, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2CommitmentHash, update2CommitmentHash
       );

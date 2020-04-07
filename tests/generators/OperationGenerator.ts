@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
@@ -27,7 +26,7 @@ interface GeneratedAnchoredCreateOperationData {
   recoveryPublicKey: JwkEs256k;
   recoveryPrivateKey: JwkEs256k;
   signingKeyId: string;
-  signingPublicKey: DidPublicKeyModel;
+  signingPublicKey: PublicKeyModel;
   signingPrivateKey: JwkEs256k;
   nextRecoveryRevealValueEncodedString: string;
   nextUpdateRevealValueEncodedString: string;
@@ -45,7 +44,7 @@ interface GeneratedRecoverOperationData {
   recoveryPublicKey: JwkEs256k;
   recoveryPrivateKey: JwkEs256k;
   signingKeyId: string;
-  signingPublicKey: DidPublicKeyModel;
+  signingPublicKey: PublicKeyModel;
   signingPrivateKey: JwkEs256k;
   nextRecoveryRevealValueEncodedString: string;
   nextUpdateRevealValueEncodedString: string;
@@ -229,7 +228,7 @@ export default class OperationGenerator {
    */
   public static async generateCreateOperationRequest (
     recoveryPublicKey: JwkEs256k,
-    signingPublicKey: DidPublicKeyModel,
+    signingPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
@@ -349,7 +348,7 @@ export default class OperationGenerator {
     recoveryRevealValue: string,
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
-    newSigningPublicKey: DidPublicKeyModel,
+    newSigningPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]) {
@@ -438,7 +437,7 @@ export default class OperationGenerator {
    */
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: JwkEs256k,
-    signingPublicKey: DidPublicKeyModel,
+    signingPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
     serviceEndpoints?: DidServiceEndpointModel[]

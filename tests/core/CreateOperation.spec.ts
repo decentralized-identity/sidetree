@@ -1,5 +1,4 @@
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -12,7 +11,7 @@ describe('CreateOperation', async () => {
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+      const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -32,7 +31,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if operation type is incorrect', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+      const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();

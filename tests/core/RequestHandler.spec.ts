@@ -4,7 +4,6 @@ import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import Cryptography from '../../lib/core/versions/latest/util/Cryptography';
 import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
@@ -86,7 +85,7 @@ describe('RequestHandler', () => {
 
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('key2');
+    const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
@@ -160,7 +159,7 @@ describe('RequestHandler', () => {
   it('should return bad request if two operations for the same DID is received.', async () => {
     // Create the initial create operation.
     const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-    const [signingPublicKey] = await Cryptography.generateKeyPairHex('signingKey');
+    const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
@@ -269,7 +268,7 @@ describe('RequestHandler', () => {
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
       const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [anySigningPublicKey] = await Cryptography.generateKeyPairHex('anySigningKey');
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey]
@@ -285,7 +284,7 @@ describe('RequestHandler', () => {
 
       const didState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(didState.document.publicKeys[0].publicKeyHex).toEqual(anySigningPublicKey.publicKeyHex);
+      expect(didState.document.publicKeys[0].publicKeyJwk).toEqual(anySigningPublicKey.publicKeyJwk);
     });
   });
 });

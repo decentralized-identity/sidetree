@@ -1,6 +1,5 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import DidPublicKeyModel from '../../lib/core/versions/latest/models/DidPublicKeyModel';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import DidState from '../../lib/core/models/DidState';
@@ -8,16 +7,17 @@ import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
+import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import Resolver from '../../lib/core/Resolver';
 import RevokeOperation from '../../lib/core/versions/latest/RevokeOperation';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
-import JwkEs256k from '../../lib/core/models/JwkEs256k';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -116,7 +116,7 @@ describe('OperationProcessor', async () => {
   let recoveryPublicKey: JwkEs256k;
   let recoveryPrivateKey: JwkEs256k;
   let signingKeyId: string;
-  let signingPublicKey: DidPublicKeyModel;
+  let signingPublicKey: PublicKeyModel;
   let signingPrivateKey: JwkEs256k;
   let didUniqueSuffix: string;
   let firstUpdateRevealValue: string;
@@ -388,7 +388,7 @@ describe('OperationProcessor', async () => {
   describe('apply()', () => {
     let recoveryPublicKey: JwkEs256k;
     let recoveryPrivateKey: JwkEs256k;
-    let signingPublicKey: DidPublicKeyModel;
+    let signingPublicKey: PublicKeyModel;
     let signingPrivateKey: JwkEs256k;
     let namedAnchoredCreateOperationModel: AnchoredOperationModel;
     let didState: DidState | undefined;
