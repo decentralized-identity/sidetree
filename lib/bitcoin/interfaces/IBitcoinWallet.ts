@@ -1,0 +1,36 @@
+import { Address, Script, Transaction } from 'bitcore-lib';
+
+/**
+ * Represents a bitcoin wallet.
+ */
+export default interface IBitcoinWallet {
+
+  /**
+   * Gets the public key associated with this wallet.
+   *
+   * @returns The public key associated with this wallet as Buffer.
+   */
+  getPublicKey (): Buffer;
+
+  /**
+   * Gets the address objecr associated with this wallet.
+   */
+  getAddress (): Address;
+
+  /**
+   * Signs the specified transaction using the keys associated with this wallet.
+   *
+   * @param sidetreeTransaction The sidetree transaction to sign.
+   * @returns The signed transaction.
+   */
+  signTransaction (sidetreeTransaction: Transaction): Promise<Transaction>;
+
+  /**
+   * Signs the specified transaction using the keys associated with this wallet.
+   *
+   * @param lockTransaction The lock transaction to sign.
+   * @param redeemScript The redeem script for the previously frozen transaction.
+   * @returns The signed transaction.
+   */
+  signSpendFromFreezeTransaction (lockTransaction: Transaction, redeemScript: Script): Promise<Transaction>;
+}

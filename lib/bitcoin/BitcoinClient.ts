@@ -42,7 +42,7 @@ export default class BitcoinClient {
     private bitcoinPeerUri: string,
     bitcoinRpcUsername: string | undefined,
     bitcoinRpcPassword: string | undefined,
-    bitcoinWalletImportString: string, 
+    bitcoinWalletImportString: string,
     private requestTimeout: number,
     private requestMaxRetries: number,
     private sidetreeTransactionFeeMarkupPercentage: number) {
