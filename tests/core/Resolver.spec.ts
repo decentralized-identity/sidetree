@@ -180,8 +180,8 @@ describe('Resolver', () => {
       const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
-      expect(actualNewSigningPublicKey1!.publicKeyJwk).toEqual(newSigningPublicKey.publicKeyJwk);
-      expect(actualNewSigningPublicKey2!.publicKeyJwk).toEqual(newKey2ForUpdate1AfterRecovery.publicKeyJwk);
+      expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
+      expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
       expect(document.serviceEndpoints).toBeDefined();
       expect(document.serviceEndpoints.length).toEqual(1);
       expect(document.serviceEndpoints[0].serviceEndpoint).toBeDefined();

@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -12,6 +11,7 @@ import OperationModel from '../../lib/core/versions/latest/models/OperationModel
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
+import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 interface AnchoredCreateOperationGenerationInput {
@@ -89,7 +89,7 @@ export default class OperationGenerator {
     const publicKeyModel = {
       id,
       type: 'Secp256k1VerificationKey2018',
-      publicKeyJwk: publicKey
+      jwk: publicKey
     };
 
     return [publicKeyModel, privateKey];
@@ -231,7 +231,7 @@ export default class OperationGenerator {
     signingPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]) {
+    serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
       publicKeys: [signingPublicKey],
       serviceEndpoints: serviceEndpoints
@@ -351,7 +351,7 @@ export default class OperationGenerator {
     newSigningPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]) {
+    serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
       publicKeys: [newSigningPublicKey],
       serviceEndpoints: serviceEndpoints
@@ -440,7 +440,7 @@ export default class OperationGenerator {
     signingPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]
+    serviceEndpoints?: ServiceEndpointModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,

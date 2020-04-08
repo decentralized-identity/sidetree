@@ -545,7 +545,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyJwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
+      "jwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
     }
   ],
   "serviceEndpoints": [
@@ -565,7 +565,7 @@ HTTP/1.1 200 OK
     {
       "id": "key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyJwk": {
+      "jwk": {
         "kty": "EC",
         "crv": "secp256k1",
         "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
@@ -592,7 +592,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyJwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
+      "jwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
     }
   ]
 }
@@ -606,7 +606,7 @@ Example:
     {
       "id": "key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyJwk": {
+      "jwk": {
         "kty": "EC",
         "crv": "secp256k1",
         "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",

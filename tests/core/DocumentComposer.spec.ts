@@ -9,7 +9,7 @@ describe('DocumentComposer', async () => {
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from serviceEndpoints', () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value' }],
         serviceEndpoints: [
           { id: '1', type: 't', serviceEndpoint: 'se' },
           { id: '2', type: 't', serviceEndpoint: 'se' },
@@ -26,7 +26,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value' }],
         serviceEndpoints: [
           { id: '2', type: 't', serviceEndpoint: 'se' },
           { id: '4', type: 't', serviceEndpoint: 'se' }
@@ -272,9 +272,9 @@ describe('DocumentComposer', async () => {
       );
     });
 
-    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyJwk` format.', async () => {
+    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not specified in `jwk` property.', async () => {
       const patches = generatePatchesForPublicKeys();
-      delete (patches[0].publicKeys![0] as any).publicKeyJwk;
+      delete (patches[0].publicKeys![0] as any).jwk;
 
       (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
@@ -334,7 +334,7 @@ describe('DocumentComposer', async () => {
   describe('applyPatches()', async () => {
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value' }],
         serviceEndpoints: []
       };
       const patches = [
@@ -414,7 +414,7 @@ function generatePatchesForPublicKeys () {
         {
           id: 'keyX',
           type: 'Secp256k1VerificationKey2018',
-          publicKeyJwk: {
+          jwk: {
             kty: 'EC',
             crv: 'secp256k1',
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
