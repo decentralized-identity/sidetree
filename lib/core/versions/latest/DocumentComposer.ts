@@ -4,6 +4,7 @@ import DidState from '../../models/DidState';
 import ErrorCode from './ErrorCode';
 import Jwk from './util/Jwk';
 import PublicKeyModel from './models/PublicKeyModel';
+import PublicKeyUsage from '../../enums/PublicKeyUsage';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -23,19 +24,35 @@ export default class DocumentComposer {
 
     const document = didState.document as DocumentModel;
 
-    // Only transform `publicKeys` to  `publickey` if the array is present.
-    let publicKeys;
+    // Only populate `publicKey` if general usage exists.
+    // Only populate `authentication` if auth usage exists.
+    const authentication: any[] = [];
+    const publicKeys: any[] = [];
+    const operationPublicKeys: any[] = [];
     if (Array.isArray(document.publicKeys)) {
-      publicKeys = [];
       for (let publicKey of document.publicKeys) {
+        const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
-          id: '#' + publicKey.id,
+          id: id,
           controller: '',
           type: publicKey.type,
           publicKeyJwk: publicKey.jwk
         };
+        const usageSet: Set<string> = new Set(publicKey.usage);
 
-        publicKeys.push(didDocumentPublicKey);
+        if (usageSet.has(PublicKeyUsage.Ops)) {
+          operationPublicKeys.push(didDocumentPublicKey);
+        }
+        if (usageSet.has(PublicKeyUsage.General)) {
+          publicKeys.push(didDocumentPublicKey);
+          if (usageSet.has(PublicKeyUsage.Auth)) {
+            // add into authentication by reference if has auth and has general
+            authentication.push(did + id);
+          }
+        } else if (usageSet.has(PublicKeyUsage.Auth)) {
+          // add into authentication by object if has auth but no general
+          authentication.push(didDocumentPublicKey);
+        }
       }
     }
 
@@ -44,25 +61,43 @@ export default class DocumentComposer {
     if (Array.isArray(document.serviceEndpoints)) {
       serviceEndpoints = [];
       for (let serviceEndpoint of document.serviceEndpoints) {
-        const didDocumentServiceEnpoint = {
+        const didDocumentServiceEndpoint = {
           id: '#' + serviceEndpoint.id,
           type: serviceEndpoint.type,
           serviceEndpoint: serviceEndpoint.serviceEndpoint
         };
 
-        serviceEndpoints.push(didDocumentServiceEnpoint);
+        serviceEndpoints.push(didDocumentServiceEndpoint);
       }
     }
 
-    const didDocument = {
+    const didDocument: any = {
       id: did,
       '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }],
-      publicKey: publicKeys,
-      service: serviceEndpoints,
-      recoveryKey: didState.recoveryKey
+      service: serviceEndpoints
     };
 
-    return didDocument;
+    if (publicKeys.length !== 0) {
+      didDocument.publicKey = publicKeys;
+    }
+
+    if (authentication.length !== 0) {
+      didDocument.authentication = authentication;
+    }
+
+    const didResolutionResult: any = {
+      '@context': 'https://www.w3.org/ns/did-resolution/v1',
+      didDocument: didDocument,
+      methodMetadata: {
+        operationPublicKeys: operationPublicKeys
+      }
+    };
+
+    if (didState.recoveryKey) {
+      didResolutionResult.methodMetadata.recoveryKey = didState.recoveryKey;
+    }
+
+    return didResolutionResult;
   }
 
   /**
@@ -168,7 +203,8 @@ export default class DocumentComposer {
     const publicKeyIdSet: Set<string> = new Set();
     for (let publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      if (publicKeyProperties.length !== 3) {
+      // the expected fields are id, usage, type and jwk
+      if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
@@ -179,6 +215,22 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdDuplicated);
       }
       publicKeyIdSet.add(publicKey.id);
+
+      if (!Array.isArray(publicKey.usage) || publicKey.usage.length === 0) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageMissingOrUnknown);
+      }
+
+      if (publicKey.usage.length > 3) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageExceedsMaxLength);
+      }
+
+      const validUsages = new Set(Object.values(PublicKeyUsage));
+      // usage must be one of the valid ones in PublicKeyUsage
+      for (const usage of publicKey.usage) {
+        if (!validUsages.has(usage)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidUsage);
+        }
+      }
 
       if (publicKey.type === 'Secp256k1VerificationKey2018') {
         // The key must be in JWK format.
@@ -349,7 +401,7 @@ export default class DocumentComposer {
    * Adds public keys to document.
    */
   private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = document.publicKeys ? new Map(document.publicKeys.map(publicKey => [publicKey.id, publicKey])) : new Map();
+    const publicKeyMap = new Map(document.publicKeys.map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them if they don't exist already.
     for (let publicKey of patch.publicKeys) {

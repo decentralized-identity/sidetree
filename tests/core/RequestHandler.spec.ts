@@ -104,7 +104,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
     expect(httpStatus).toEqual(200);
     expect(response).toBeDefined();
-    expect(response.body.id).toEqual(did);
+    expect(response.body.didDocument.id).toEqual(did);
 
     // Inser the create operation into DB.
     const namedAnchoredCreateOperationModel: AnchoredOperationModel = {
@@ -185,7 +185,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
 
-    validateDidReferencesInDidDocument(response.body, did);
+    validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
   it('should return a resolved DID Document given a valid long-form DID.', async () => {
@@ -203,7 +203,7 @@ describe('RequestHandler', () => {
     expect(httpStatus).toEqual(200);
     expect(response.body).toBeDefined();
 
-    validateDidReferencesInDidDocument(response.body, longFormDid);
+    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
   });
 
   it('should return NotFound given an unknown DID.', async () => {
@@ -284,6 +284,7 @@ describe('RequestHandler', () => {
 
       const didState = await (requestHandler as any).resolveLongFormDid('unused');
 
+      expect(didState.document.publicKeys.length).toEqual(1);
       expect(didState.document.publicKeys[0].jwk).toEqual(anySigningPublicKey.jwk);
     });
   });
