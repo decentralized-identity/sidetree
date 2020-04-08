@@ -1,4 +1,5 @@
 export default {
+  BitcoinWalletIncorrectImportString: 'bitcoin_wallet_incorrect_import_string',
   LockIdentifierIncorrectFormat: 'lock_identifier_incorrect_format',
   LockMonitorCurrentValueTimeLockInPendingState: 'lock_monitor_current_value_time_lock_in_pending_state',
   LockMonitorDesiredLockAmountIsNotWholeNumber: 'lock_monitor_desired_lock_amount_is_not_whole_number',

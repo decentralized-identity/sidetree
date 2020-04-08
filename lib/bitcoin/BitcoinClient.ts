@@ -38,33 +38,16 @@ export default class BitcoinClient {
 
   private readonly bitcoinWallet: IBitcoinWallet;
 
-  /** Wallet private key */
-  // private readonly walletPrivateKey: PrivateKey;
-  // private readonly walletAddress: Address;
-  // private readonly walletPublicKeyAsBuffer: Buffer;
-
   constructor (
     private bitcoinPeerUri: string,
     bitcoinRpcUsername: string | undefined,
     bitcoinRpcPassword: string | undefined,
-    bitcoinWalletImportString: string,
+    bitcoinWalletImportString: string, 
     private requestTimeout: number,
     private requestMaxRetries: number,
     private sidetreeTransactionFeeMarkupPercentage: number) {
 
     this.bitcoinWallet = new BitcoinWallet(bitcoinWalletImportString);
-
-    // // Bitcore has a type file error on PrivateKey
-    // try {
-    //   this.walletPrivateKey = (PrivateKey as any).fromWIF(bitcoinWalletImportString);
-    // } catch (error) {
-    //   throw new Error(`Failed creating private key from '${bitcoinWalletImportString}': ${error.message}`);
-    // }
-
-    // this.walletAddress = this.walletPrivateKey.toAddress();
-
-    // const walletPublicKey = this.walletPrivateKey.toPublicKey();
-    // this.walletPublicKeyAsBuffer = walletPublicKey.toBuffer();
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
@@ -621,19 +604,6 @@ export default class BitcoinClient {
     // Now sign the transaction
     const previousFreezeScript = BitcoinClient.createFreezeScript(previousFreezeUntilBlock, this.bitcoinWallet.getAddress());
     await this.bitcoinWallet.signSpendFromFreezeTransaction(spendTransaction, previousFreezeScript);
-
-    // // Create signature
-    // const signatureType = 0x1; // https://github.com/bitpay/bitcore-lib/blob/44eb5b264b9a28e376cdcf3506160a95cc499533/lib/crypto/signature.js#L308
-    // const inputIndexToSign = 0;
-    // const signature = (Transaction as any).sighash.sign(spendTransaction, this.walletPrivateKey, signatureType, inputIndexToSign, previousFreezeScript);
-
-    // // Create a script and add it to the input.
-    // const inputScript = Script.empty()
-    //                           .add(signature.toTxFormat())
-    //                           .add(this.walletPublicKeyAsBuffer)
-    //                           .add(previousFreezeScript.toBuffer());
-
-    // (spendTransaction.inputs[0] as any).setScript(inputScript);
 
     return spendTransaction;
   }
