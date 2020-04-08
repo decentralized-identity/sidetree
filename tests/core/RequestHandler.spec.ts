@@ -284,7 +284,7 @@ describe('RequestHandler', () => {
 
       const didState = await (requestHandler as any).resolveLongFormDid('unused');
 
-      expect(didState.document.publicKeys[0].publicKeyJwk).toEqual(anySigningPublicKey.publicKeyJwk);
+      expect(didState.document.publicKeys[0].jwk).toEqual(anySigningPublicKey.jwk);
     });
   });
 });
