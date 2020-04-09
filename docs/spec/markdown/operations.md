@@ -27,8 +27,8 @@ Use the following process to generate a Sidetree-based DID:
       "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
     }
     ```
-    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
     - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
+    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
 
 ### Update
 
@@ -42,9 +42,9 @@ The following process must be used to update the state a Sidetree-based DID:
       "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
     }
     ```
-    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
     - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
-
+    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
+    
 ### Recover
 
 Use the following process to generate a Sidetree-based DID:
@@ -62,9 +62,9 @@ Use the following process to generate a Sidetree-based DID:
       "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
     }
     ```
-    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
     - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
-
+    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
+    
 ### Deactivate
 
 The following process must be used to deactivate a Sidetree-based DID:
