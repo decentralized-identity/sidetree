@@ -52,15 +52,15 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 3. Each key being added MUST be represented by an entry in the `public_keys` array, and each entry must be an object composed as follows:
     1. The object MUST include an `id` property, and its value MUST be a string with no more than twenty (20) ASCII encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ MUST be discarded, without any of it being used to modify the DID's state.
     2. The object MUST include a `type` property, and its value MUST be one of the registered [Cryptographic Suite](https://w3c-ccg.github.io/ld-cryptosuite-registry/) identifier strings in the list below. If the value is not of the correct type or is not one of the identifier strings listed below, the entire _Patch Action_ MUST be discarded, without any of it being used to modify the DID's state.
-      - `EcdsaSecp256k1VerificationKey2019`
-      - `JwsVerificationKey2020`
+        - `EcdsaSecp256k1VerificationKey2019`
+        - `JwsVerificationKey2020`
     3. The object MUST include a `jwk` property, and its value MUST be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. If the value is not a compliant JWK representation, the entire _Patch Action_ MUST be discarded, without any of it being used to modify the DID's state.
     4. The object MUST include a `usage` property, and its value MUST be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ MUST be discarded, without any of it being used to modify the DID's state.
-      - `ops`: the key MUST be allowed to sign operations for the DID. If no other string is present in the `usage` array, the key SHOULD NOT be projected into the output DID Document. If the `ops` string is present, the implementer MAY choose to include a DID Document compliant public key entry for it in its [Method-specific resolution metadata](https://w3c-ccg.github.io/did-resolution/#example) output.
-      - `general`: the key MUST be included in the `public_keys` section of the resolved _DID Document_.
-      - `auth`: the key MUST be included in the `authentication` section of the resolved _DID Document_, as follows:
-          - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object MUST be included directly in the `authentication` section of the resolved _DID Document_. 
-          - If the `general` usage value IS present in the `usage` array, the key descriptor object MUST be directly included in the `public_keys` section of the resolved _DID Document_, and MUST be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section. 
+        - `ops`: the key MUST be allowed to sign operations for the DID. If no other string is present in the `usage` array, the key SHOULD NOT be projected into the output DID Document. If the `ops` string is present, the implementer MAY choose to include a DID Document compliant public key entry for it in its [Method-specific resolution metadata](https://w3c-ccg.github.io/did-resolution/#example) output.
+        - `general`: the key MUST be included in the `public_keys` section of the resolved _DID Document_.
+        - `auth`: the key MUST be included in the `authentication` section of the resolved _DID Document_, as follows:
+            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object MUST be included directly in the `authentication` section of the resolved _DID Document_. 
+            - If the `general` usage value IS present in the `usage` array, the key descriptor object MUST be directly included in the `public_keys` section of the resolved _DID Document_, and MUST be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section. 
     
 
 #### `remove-public-keys`
