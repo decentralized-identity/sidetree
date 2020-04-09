@@ -316,7 +316,7 @@ describe('TransactionProcessor', () => {
   });
 
   describe('downloadAndVerifyMapFile', () => {
-    it('should validates the map file when the map file does not declare the updateOperations property.', async (done) => {
+    it('should validate the map file when the map file does not declare the updateOperations property.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
       const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);

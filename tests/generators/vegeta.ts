@@ -3,7 +3,7 @@
  */
 import VegetaLoadGenerator from './VegetaLoadGenerator';
 
-const uniqueDidCount = 10;
+const uniqueDidCount = 20000;
 const endpointUrl = 'http://localhost:3000/';
 const outputFolder = `d:/vegeta-localhost-jws`;
 

@@ -11,7 +11,7 @@ import UpdateOperation from './UpdateOperation';
  */
 export default class MapFile {
   /**
-   * Class that represents map file.
+   * Class that represents a map file.
    * NOTE: this class is introduced as an internal structure in replacement to `MapFileModel`
    * to keep useful metadata so that repeated computation can be avoided.
    */
