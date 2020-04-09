@@ -316,7 +316,7 @@ describe('TransactionProcessor', () => {
   });
 
   describe('downloadAndVerifyMapFile', () => {
-    it('should validates the map file when the map file does declare the updateOperations property.', async (done) => {
+    it('should validate the map file when the map file does not declare the updateOperations property.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
       const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
@@ -332,8 +332,8 @@ describe('TransactionProcessor', () => {
       const fetchedMapFile = await transactionProcessor['downloadAndVerifyMapFile'](anchorFile, totalPaidOperationCount);
 
       expect(fetchedMapFile).toBeDefined();
-      expect(fetchedMapFile!.updateOperations).toBeUndefined();
-      expect(fetchedMapFile!.batchFileHash).toEqual(batchFileHash);
+      expect(fetchedMapFile!.updateOperations.length).toEqual(0);
+      expect(fetchedMapFile!.model.batchFileHash).toEqual(batchFileHash);
       done();
     });
 
@@ -517,7 +517,7 @@ describe('TransactionProcessor', () => {
       const batchFileModel = await BatchFile.parse(batchFileBuffer);
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
-      const anchoredOperationModels = transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, batchFileModel);
+      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, batchFileModel);
 
       expect(anchoredOperationModels.length).toEqual(2);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);
@@ -547,7 +547,7 @@ describe('TransactionProcessor', () => {
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
-      const anchoredOperationModels = transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, undefined, undefined);
+      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, undefined, undefined);
 
       expect(anchoredOperationModels.length).toEqual(1);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);

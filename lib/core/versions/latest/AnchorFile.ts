@@ -17,7 +17,7 @@ import SidetreeError from '../../../common/SidetreeError';
 export default class AnchorFile {
 
   /**
-   * Class that represends an anchor file.
+   * Class that represents an anchor file.
    * NOTE: this class is introduced as an internal structure in replacement to `AnchorFileModel`
    * to keep useful metadata so that repeated computation can be avoided.
    */
