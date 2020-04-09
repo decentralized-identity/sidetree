@@ -11,9 +11,8 @@ import FetchResultCode from '../../../common/enums/FetchResultCode';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
+import JsonAsync from './util/JsonAsync';
 import MapFile from './MapFile';
-import MapFileModel from './models/MapFileModel';
-import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
@@ -37,13 +36,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const anchorFile = await this.downloadAndVerifyAnchorFile(transaction, anchoredData.anchorFileHash, anchoredData.numberOfOperations);
 
       // Download and verify map file.
-      const mapFileModel = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
+      const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
       // Download and verify batch file.
-      const batchFileModel = await this.downloadAndVerifyBatchFile(mapFileModel);
+      const batchFileModel = await this.downloadAndVerifyBatchFile(mapFile);
 
       // Compose into operations from all the files downloaded.
-      const operations = this.composeAnchoredOperationModels(transaction, anchorFile, mapFileModel, batchFileModel);
+      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, batchFileModel);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
@@ -111,38 +110,33 @@ export default class TransactionProcessor implements ITransactionProcessor {
    * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
    * It is a design choice to hide the complexity of map file downloading and construction within this method,
    * instead of throwing errors and letting the caller handle them.
-   * @returns `MapFileModel` if downloaded file is valid; `undefined` otherwise.
+   * @returns `MapFile` if downloaded file is valid; `undefined` otherwise.
    * @throws SidetreeErrors that are retryable.
    */
-  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFileModel | undefined> {
+  private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFile | undefined> {
     try {
       const anchorFileModel = anchorFile.model;
       console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
       const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileHash, ProtocolParameters.maxMapFileSizeInBytes);
-      const mapFileModel = await MapFile.parse(fileBuffer);
+      const mapFile = await MapFile.parse(fileBuffer);
 
       // Calulate the max paid update operation count.
       const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
       const maxPaidUpdateOperationCount = paidOperationCount - operationCountInAnchorFile;
 
       // If the actual update operation count is greater than the max paid update operation count, the map file is invalid.
-      const updateOperationCount = mapFileModel.updateOperations ? mapFileModel.updateOperations.length : 0;
+      const updateOperationCount = mapFile.updateOperations ? mapFile.updateOperations.length : 0;
       if (updateOperationCount > maxPaidUpdateOperationCount) {
         return undefined;
       }
 
       // If we find operations for the same DID between anchor and map files, the map file is invalid.
-      let didUniqueSuffixesInMapFile: string[] = [];
-      if (mapFileModel.updateOperations !== undefined) {
-        didUniqueSuffixesInMapFile = mapFileModel.updateOperations.map(operation => operation.didUniqueSuffix);
-
-        if (!ArrayMethods.areMutuallyExclusive(anchorFile.didUniqueSuffixes, didUniqueSuffixesInMapFile)) {
-          return undefined;
-        }
+      if (!ArrayMethods.areMutuallyExclusive(anchorFile.didUniqueSuffixes, mapFile.didUniqueSuffixes)) {
+        return undefined;
       }
 
-      return mapFileModel;
+      return mapFile;
     } catch (error) {
       if (error instanceof SidetreeError) {
         // If error is related to CAS network issues, we will surface them so retry can happen.
@@ -169,7 +163,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
    * @throws SidetreeErrors that are retryable.
    */
   private async downloadAndVerifyBatchFile (
-    mapFile: MapFileModel | undefined
+    mapFile: MapFile | undefined
   ): Promise<BatchFileModel | undefined> {
     // Can't download batch file if map file is not given.
     if (mapFile === undefined) {
@@ -177,7 +171,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
 
     try {
-      const batchFileHash = mapFile.batchFileHash;
+      const batchFileHash = mapFile.model.batchFileHash;
       console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
 
       const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
@@ -194,26 +188,23 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching batch file ${mapFile.batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching batch file ${mapFile.model.batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
   }
 
-  private composeAnchoredOperationModels (
+  private async composeAnchoredOperationModels (
     transaction: TransactionModel,
     anchorFile: AnchorFile,
-    mapFile: MapFileModel | undefined,
+    mapFile: MapFile | undefined,
     batchFile: BatchFileModel | undefined
-  ): AnchoredOperationModel[] {
+  ): Promise<AnchoredOperationModel[]> {
 
     let createOperations = anchorFile.createOperations;
     let recoverOperations = anchorFile.recoverOperations;
     let deactivateOperations = anchorFile.deactivateOperations;
     let updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
-
-    // Add `type` property for later convenience.
-    updateOperations = updateOperations.map((operation) => Object.assign(operation, { type: OperationType.Update }));
 
     // Add the operations in the following order of types: create, recover, update, deactivate.
     const operations = [];
@@ -222,13 +213,25 @@ export default class TransactionProcessor implements ITransactionProcessor {
     operations.push(...updateOperations);
     operations.push(...deactivateOperations);
 
-    // If batch file is found/given, add patch data from batch file to each operation.
+    // If batch file is found/given, we need to add `type` and `patchData` from batch file to each operation.
     // NOTE: there is no patch data for deactivate operations.
+    const patchedOperationBuffers: Buffer[] = [];
     if (batchFile !== undefined) {
+
+      // TODO: https://github.com/decentralized-identity/sidetree/issues/442
+      // Use actual operation request object instead of buffer.
+
       const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
       for (let i = 0; i < operationCountExcludingDeactivates &&
                       i < batchFile.patchSet.length; i++) {
-        operations[i].patchData = batchFile.patchSet[i];
+        const operation = operations[i];
+        const operationJsonString = operation.operationBuffer.toString();
+        const operationObject = await JsonAsync.parse(operationJsonString);
+        operationObject.type = operation.type;
+        operationObject.patchData = batchFile.patchSet[i];
+
+        const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
+        patchedOperationBuffers.push(patchedOperationBuffer);
       }
     }
 
@@ -236,12 +239,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const anchoredOperationModels = [];
     for (let i = 0; i < operations.length; i++) {
       const operation = operations[i];
-      const operationBuffer = Buffer.from(JSON.stringify(operation));
 
       const anchoredOperationModel: AnchoredOperationModel = {
         didUniqueSuffix: operation.didUniqueSuffix,
         type: operation.type,
-        operationBuffer,
+        operationBuffer: patchedOperationBuffers[i],
         operationIndex: i,
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime
