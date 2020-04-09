@@ -84,12 +84,13 @@ export default class OperationGenerator {
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, usage?: string[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
       type: 'Secp256k1VerificationKey2018',
-      jwk: publicKey
+      jwk: publicKey,
+      usage: usage || ['ops', 'general', 'auth']
     };
 
     return [publicKeyModel, privateKey];
