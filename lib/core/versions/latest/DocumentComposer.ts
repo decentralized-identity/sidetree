@@ -253,7 +253,7 @@ export default class DocumentComposer {
     }
 
     if (!publicKey.usage.includes(PublicKeyUsage.Ops)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey)
+      throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
     }
 
     Jwk.validateJwkEs256k(publicKey.jwk);

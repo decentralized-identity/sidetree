@@ -89,6 +89,18 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateOperationKey'](undefined); }).toThrow(expectedError);
     });
 
+    it('should throw if usage does not contain ops', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
+      expect(() => {
+        DocumentComposer['validateOperationKey']({
+          id: 'someId',
+          type: 'Secp256k1VerificationKey2018',
+          jwk: {},
+          usage: []
+        });
+      }).toThrow(expectedError);
+    });
+
     it('should throw if type is not Secp256k1VerificationKey2018', () => {
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
       expect(() => {
@@ -113,7 +125,7 @@ describe('DocumentComposer', async () => {
         serviceEndpoints: [{
           id: 'someId',
           type: 'someType',
-          serviceEndpoint: 'someEndpoint',}]
+          serviceEndpoint: 'someEndpoint'}]
       };
 
       const result = DocumentComposer['addServiceEndpoints'](document, patch);
@@ -415,8 +427,17 @@ describe('DocumentComposer', async () => {
     it('should throw error if the type of a public key in an add-public-keys patch is not in the allowed list.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).type = 'unknownKeyType';
+      (patches[0].publicKeys![0] as any).usage = ['general'];
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+    });
+
+    it('should throw error if the type of a operation public key in an add-public-keys patch is not secp.', async () => {
+      const patches = generatePatchesForPublicKeys();
+      (patches[0].publicKeys![0] as any).type = 'notSecp';
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
@@ -504,13 +525,13 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'RsaVerificationKey2018',
             publicKeyHex: 'anything',
-            usage: ['ops']
+            usage: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
             type: 'RsaVerificationKey2018',
             publicKeyPem: 'anything',
-            usage: ['ops']
+            usage: ['general']
           }
         ]
       };
@@ -616,7 +637,7 @@ function generatePatchesForPublicKeys () {
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
             y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
           },
-          usage: ['ops', 'general', 'auth']
+          usage: ['ops']
         }
       ]
     },
