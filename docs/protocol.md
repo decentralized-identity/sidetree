@@ -594,7 +594,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 20 characters.",
       "type": "Secp256k1VerificationKey2019 | EcdsaSecp256k1VerificationKey2019 | JwsVerificationKey2020",
-      "jwk": "Must be JWK format for Secp256k1VerificationKey2019, else another property can be used.",
+      "jwk": "Must be JWK format.",
       "usage": "Must be an array containing one or more of the valid usage types: ops, general, or auth"
     }
   ]
