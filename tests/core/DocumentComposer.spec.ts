@@ -562,7 +562,7 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: 'anything',
+            jwk: {},
             usage: undefined
           }
         ]
