@@ -8,7 +8,7 @@ Using blockchains for anchoring and tracking unique, non-transferable, digital e
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
-Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, Recover, and Revoke) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
+Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, Recover, and Deactivate) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
 
 
 ## Terminology
@@ -23,7 +23,7 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 | DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
 | Operation             | A change to a document of a DID.                                               |
 | Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
-| Recovery key          | A key that is used to perform recovery or revoke operation.                    |
+| Recovery key          | A key that is used to perform recovery or deactivate operation.                    |
 | Sidetree node         | A logical server executing Sidetree protocol rules.                            |
 | Suffix data           | Data required to deterministically generate a DID .                            |
 | Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
@@ -57,7 +57,7 @@ Sidetree protocol allows the following operations to be performed against a DID:
 1. Resolve
 1. Update
 1. Recover
-1. Revoke
+1. Deactivate
 
 A _DID Document_ is returned as the response to a _resolve_ request. A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
 ) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used.
@@ -143,7 +143,7 @@ The _anchor file_ is a JSON document of the following schema:
   "operations": {
     "createOperations": ["Update operation request excluding `type` and `patchData` properties.", "..."],
     "recoverOperations": ["Recover operation request excluding `type` and `patchData` properties.", "..."],
-    "revokeOperations": ["Recoke operation request excluding `type` properties.", "..."]
+    "deactivateOperations": ["Deactivate operation request excluding `type` properties.", "..."]
   }
 }
 ```
@@ -224,8 +224,8 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
   See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify reveal values and commitment hashes in each operation.
 
 
-## DID Revocation and Recovery
-Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is revoked, it cannot be recovered.
+## DID Deactivate and Recovery
+Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is deactivated, it cannot be recovered.
 
 The most basic recover operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
 
@@ -290,9 +290,7 @@ POST / HTTP/1.1
 ```json
 {
   "patchDataHash": "Hash of the patch data.",
-  "recoveryKey": {
-    "publicKeyHex": "A SECP256K1 public key expressed in compressed HEX format."
-  },
+  "recoveryKey": "A SECP256K1 public key expressed in compressed JWK format.",
   "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
 }
 ```
@@ -315,24 +313,6 @@ See [document patch schema](#Document-patch-schema) section for all the supporte
 #### Response body schema
 The response body is the constructed document of the DID created.
 
-#### Response body example
-```json
-{
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
-  "publicKey": [{
-    "id": "#key1",
-    "type": "Secp256k1VerificationKey2018",
-    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
-  }],
-  "service": [{
-    "id": "IdentityHub",
-    "type": "IdentityHub",
-    "serviceEndpoint": "https://identityhub.com"
-  }]
-}
-```
-
 
 ### DID resolution
 This API fetches the latest document of a DID.
@@ -345,9 +325,6 @@ Two forms of string can be passed in the URI:
    The latest document will be returned if found.
 
 1. DID with `-<method-name>-initial-state` DID parameter: `did:sidetree:<unique-portion>?-<method-name>-initial-state=<encoded-create-operation-request>`
-
-   e.g.
-   ```did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg?-sidetree-initial-state=eyJ0eXBlIjoiY3JlYXRlIiwic3VmZml4RGF0YSI6ImV5SnZjR1Z5WVhScGIyNUVZWFJoU0dGemFDSTZJa1ZwUW13Mk9IUktSRFp3YmxadVdHWTFURUZqY1VGWWJsRkhOR2syY2xKSGVuUmZlazEzYXpkaFZWUTBlVUVpTENKeVpXTnZkbVZ5ZVV0bGVTSTZleUp3ZFdKc2FXTkxaWGxJWlhnaU9pSXdNalE0WkRWaFlUbGxZamxqWVdZNE5EWmhNalZoTkRReE1qbGlPR013TURBek9HUTFObVJsTlROaVptTTNZbUU1TkRneU1tRTFNV1ZpTUdabU1EazNNbU1pZlN3aWJtVjRkRkpsWTI5MlpYSjVUM1J3U0dGemFDSTZJa1ZwUTI5aU5YZFZkMEV5U0VObVRGUjZjbmRHZG14b2JVSm5TRnB0ZEVsZmRXVXhNa1JuWHpsVlkxOXdlR2NpZlEiLCJvcGVyYXRpb25EYXRhIjoiZXlKdVpYaDBWWEJrWVhSbFQzUndTR0Z6YUNJNklrVnBSSEZMVDJ0ZlRsZHVZMkZrT0RJelYySm9WVGwyZUVwcmQwVnVTVFZHUlVNeU0xbDViRE5rUlZnNWJtY2lMQ0prYjJOMWJXVnVkQ0k2ZXlKQVkyOXVkR1Y0ZENJNkltaDBkSEJ6T2k4dmR6TnBaQzV2Y21jdlpHbGtMM1l4SWl3aWNIVmliR2xqUzJWNUlqcGJleUpwWkNJNklpTnphV2R1YVc1blMyVjVJaXdpZEhsd1pTSTZJbE5sWTNBeU5UWnJNVlpsY21sbWFXTmhkR2x2Ymt0bGVUSXdNVGdpTENKMWMyRm5aU0k2SW5OcFoyNXBibWNpTENKd2RXSnNhV05MWlhsSVpYZ2lPaUl3TTJKa01HVTBOREF3TlRKaU9UUXlaVE13T0dJNVptUXdPR1JpTWpsaFltTTRaRFl6TmpZNE5ESXpNMkZsT0Raa09Ea3lZVEk1WmpCak5qRTJabVV3TldVaWZWMHNJbk5sY25acFkyVWlPbHQ3SW1sa0lqb2lTV1JsYm5ScGRIbElkV0lpTENKMGVYQmxJam9pU1dSbGJuUnBkSGxJZFdJaUxDSnpaWEoyYVdObFJXNWtjRzlwYm5RaU9uc2lRR052Ym5SbGVIUWlPaUp6WTJobGJXRXVhV1JsYm5ScGRIa3VabTkxYm1SaGRHbHZiaTlvZFdJaUxDSkFkSGx3WlNJNklsVnpaWEpUWlhKMmFXTmxSVzVrY0c5cGJuUWlMQ0pwYm5OMFlXNWpaWE1pT2xzaVpHbGtPbk5wWkdWMGNtVmxPblpoYkhWbE1DSmRmWDFkZlgwIn0```
 
    Standard resolution is performed if the DID is found to registered on the blockchain. If the DID cannot be found, the data given in the `-<method-name>-initial-state` DID parameter is used directly to generate and resolve the DID.
 
@@ -366,30 +343,6 @@ None.
 ```http
 GET /did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg HTTP/1.1
 ```
-
-#### Request example - Resolution request with initial state.
-```http
-GET /did:sidetree:EiAC2jrPmjaLI4xMiHTGWaKK29HmU9USFWA22lYc6CV0Bg?-sidetree-initial-state=eyJ0eXBlIjoiY3JlYXRlIiwic3VmZml4RGF0YSI6ImV5SnZjR1Z5WVhScGIyNUVZWFJoU0dGemFDSTZJa1ZwUW13Mk9IUktSRFp3YmxadVdHWTFURUZqY1VGWWJsRkhOR2syY2xKSGVuUmZlazEzYXpkaFZWUTBlVUVpTENKeVpXTnZkbVZ5ZVV0bGVTSTZleUp3ZFdKc2FXTkxaWGxJWlhnaU9pSXdNalE0WkRWaFlUbGxZamxqWVdZNE5EWmhNalZoTkRReE1qbGlPR013TURBek9HUTFObVJsTlROaVptTTNZbUU1TkRneU1tRTFNV1ZpTUdabU1EazNNbU1pZlN3aWJtVjRkRkpsWTI5MlpYSjVUM1J3U0dGemFDSTZJa1ZwUTI5aU5YZFZkMEV5U0VObVRGUjZjbmRHZG14b2JVSm5TRnB0ZEVsZmRXVXhNa1JuWHpsVlkxOXdlR2NpZlEiLCJvcGVyYXRpb25EYXRhIjoiZXlKdVpYaDBWWEJrWVhSbFQzUndTR0Z6YUNJNklrVnBSSEZMVDJ0ZlRsZHVZMkZrT0RJelYySm9WVGwyZUVwcmQwVnVTVFZHUlVNeU0xbDViRE5rUlZnNWJtY2lMQ0prYjJOMWJXVnVkQ0k2ZXlKQVkyOXVkR1Y0ZENJNkltaDBkSEJ6T2k4dmR6TnBaQzV2Y21jdlpHbGtMM1l4SWl3aWNIVmliR2xqUzJWNUlqcGJleUpwWkNJNklpTnphV2R1YVc1blMyVjVJaXdpZEhsd1pTSTZJbE5sWTNBeU5UWnJNVlpsY21sbWFXTmhkR2x2Ymt0bGVUSXdNVGdpTENKMWMyRm5aU0k2SW5OcFoyNXBibWNpTENKd2RXSnNhV05MWlhsSVpYZ2lPaUl3TTJKa01HVTBOREF3TlRKaU9UUXlaVE13T0dJNVptUXdPR1JpTWpsaFltTTRaRFl6TmpZNE5ESXpNMkZsT0Raa09Ea3lZVEk1WmpCak5qRTJabVV3TldVaWZWMHNJbk5sY25acFkyVWlPbHQ3SW1sa0lqb2lTV1JsYm5ScGRIbElkV0lpTENKMGVYQmxJam9pU1dSbGJuUnBkSGxJZFdJaUxDSnpaWEoyYVdObFJXNWtjRzlwYm5RaU9uc2lRR052Ym5SbGVIUWlPaUp6WTJobGJXRXVhV1JsYm5ScGRIa3VabTkxYm1SaGRHbHZiaTlvZFdJaUxDSkFkSGx3WlNJNklsVnpaWEpUWlhKMmFXTmxSVzVrY0c5cGJuUWlMQ0pwYm5OMFlXNWpaWE1pT2xzaVpHbGtPbk5wWkdWMGNtVmxPblpoYkhWbE1DSmRmWDFkZlgwIn0 HTTP/1.1
-```
-
-#### Response body example
-```json
-{
-  "@context": "https://w3id.org/did/v1",
-  "id": "did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw",
-  "publicKey": [{
-    "id": "#key1",
-    "type": "Secp256k1VerificationKey2018",
-    "publicKeyHex": "029a4774d543094deaf342663ae672728e12f03b3b6d9816b0b79995fade0fab23"
-  }],
-  "service": [{
-    "id": "IdentityHub",
-    "type": "IdentityHub",
-    "serviceEndpoint": "https://identityhub.com"
-  }]
-}
-```
-
 
 ### Updating the document of a DID.
 The API to update the document of a DID.
@@ -483,8 +436,8 @@ See [document patch schema](#Document-patch-schema) section for all the supporte
 None.
 
 
-### DID Revocation
-The API to revoke a given DID.
+### DID Deactivation
+The API to deactivate a given DID.
 
 #### Request path
 ```
@@ -496,11 +449,11 @@ POST /
 | --------------------- | ---------------------- |
 | ```Content-Type```    | ```application/json``` |
 
-#### Revoke request body schema
+#### Deactivate request body schema
 ```json
 {
-  "type": "revoke",
-  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "type": "deactivate",
+  "didUniqueSuffix": "The unique suffix of the DID to be deactivated.",
   "recoveryRevealValue": "The current reveal value to use for this request.",
   "signedData": {
     "protected": "JWS header.",
@@ -513,7 +466,7 @@ POST /
 #### `signedData` decoded payload schema
 ```json
 {
-  "didUniqueSuffix": "The unique suffix of the DID to be revoked.",
+  "didUniqueSuffix": "The unique suffix of the DID to be deactivated.",
   "recoveryRevealValue": "The current reveal value for recovery.",
 }
 ```
@@ -592,7 +545,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
+      "jwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
     }
   ],
   "serviceEndpoints": [
@@ -612,7 +565,12 @@ HTTP/1.1 200 OK
     {
       "id": "key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+      "jwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
+        "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
+      }
     }
   ],
   "serviceEndpoints": [
@@ -634,7 +592,7 @@ HTTP/1.1 200 OK
     {
       "id": "A string no longer than 7 characters.",
       "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "publicKeyHex": "Must be compressed format (66 chars) for Secp256k1VerificationKey2018, else another property can be used.",
+      "jwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
     }
   ]
 }
@@ -648,7 +606,12 @@ Example:
     {
       "id": "key1",
       "type": "Secp256k1VerificationKey2018",
-      "publicKeyHex": "0268ccc80007f82d49c2f2ee25a9dae856559330611f0a62356e59ec8cdb566e69"
+      "jwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
+        "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
+      }
     },
     {
       "id": "key2",

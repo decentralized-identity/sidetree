@@ -106,7 +106,7 @@ export default class RequestHandler implements IRequestHandler {
         // these cases do nothing because we do not know the latest document state unless we resolve.
         case OperationType.Update:
         case OperationType.Recover:
-        case OperationType.Revoke:
+        case OperationType.Deactivate:
           response = {
             status: ResponseStatus.Succeeded
           };

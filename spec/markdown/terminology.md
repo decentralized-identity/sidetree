@@ -2,7 +2,7 @@
 
 | Term                  | Description                                                                    |
 |-----------------------|--------------------------------------------------------------------------------|
-| Anchor File           | JSON Document containing proving and index data for Create, Recovery, and Revocation operations, and a CAS URI for the associated Map File. This file is anchored to the target ledger. |
+| Anchor File           | JSON Document containing proving and index data for Create, Recovery, and Deactivate operations, and a CAS URI for the associated Map File. This file is anchored to the target ledger. |
 | Map File              | JSON Document containing Update operation proving and index data, as well as CAS URI for Chunk File chunks.                   |
 | Chunk File            | JSON Document containing all verbose operation data for the corresponding set of DIDs specified in the related Map File.                   |
 | CAS                   | Content-addressable storage protocol/network (e.g. IPFS)                       |
@@ -14,3 +14,4 @@
 | Recovery Key          | Public/private key pair used to perform a Recovery or Deactivate operation. Must be encoded as JWK or Hex.          |
 | Sidetree Node         | Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.                            |
 | Transaction           | Ledger transaction that anchors a set of Sidetree operations, via a CAS URI for an associated Anchor File.          |
+| Ledger Time { #ledger-time }          | The deterministic logical clock variable manifested in the underlying ledger system that can be used as a deterministic chronological reference (e.g. Bitcoin block numbers).         |

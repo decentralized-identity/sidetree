@@ -3,6 +3,7 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
 import BatchFile from './BatchFile';
 import CreateOperation from './CreateOperation';
+import DeactivateOperation from './DeactivateOperation';
 import FeeManager from './FeeManager';
 import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
@@ -13,7 +14,6 @@ import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
-import RevokeOperation from './RevokeOperation';
 import UpdateOperation from './UpdateOperation';
 import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
@@ -47,10 +47,10 @@ export default class BatchWriter implements IBatchWriter {
     const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
     const recoverOperations = operationModels.filter(operation => operation.type === OperationType.Recover) as RecoverOperation[];
     const updateOperations = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
-    const revokeOperations = operationModels.filter(operation => operation.type === OperationType.Revoke) as RevokeOperation[];
+    const deactivateOperations = operationModels.filter(operation => operation.type === OperationType.Deactivate) as DeactivateOperation[];
 
     // Create the batch file buffer from the operation models.
-    // NOTE: revoke operations don't have patch data.
+    // NOTE: deactivate operations don't have patch data.
     const batchFileBuffer = await BatchFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
     // Write the batch file to content addressable store.
@@ -64,7 +64,7 @@ export default class BatchWriter implements IBatchWriter {
 
     // Write the anchor file to content addressable store.
     const writerLock = currentLock ? currentLock.identifier : undefined;
-    const anchorFileBuffer = await AnchorFile.createBuffer(writerLock, mapFileHash, createOperations, recoverOperations, revokeOperations);
+    const anchorFileBuffer = await AnchorFile.createBuffer(writerLock, mapFileHash, createOperations, recoverOperations, deactivateOperations);
     const anchorFileHash = await this.cas.write(anchorFileBuffer);
     console.info(`Wrote anchor file ${anchorFileHash} to content addressable store.`);
 

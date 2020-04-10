@@ -1,6 +1,6 @@
 
 {
-  "resource_path": "./docs/spec",
+  "resource_path": "./spec",
   "specs": [
     {
       "title": "DIF Sidetree Protocol",
@@ -11,7 +11,7 @@
         "account": "decentralized-identity",
         "repo": "sidetree"
       },
-      "spec_directory": "./docs/spec",
+      "spec_directory": "./spec",
       "markdown_paths": [
         "markdown/title.md",
         "markdown/abstract.md",

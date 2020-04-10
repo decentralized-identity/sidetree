@@ -53,9 +53,9 @@ export default class UpdateOperation implements OperationModel {
   }
 
   /**
-   * Parses the given input as a recover operation entry in the anchor file.
+   * Parses the given input as an update operation entry in the map file.
    */
-  public static async parseOpertionFromAnchorFile (input: any): Promise<UpdateOperation> {
+  public static async parseOpertionFromMapFile (input: any): Promise<UpdateOperation> {
     const opertionBuffer = Buffer.from(JSON.stringify(input));
     const operation = await UpdateOperation.parseObject(input, opertionBuffer, true);
     return operation;
@@ -76,11 +76,11 @@ export default class UpdateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
+   * @param mapFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
    */
-  public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<UpdateOperation> {
+  public static async parseObject (operationObject: any, operationBuffer: Buffer, mapFileMode: boolean): Promise<UpdateOperation> {
     let expectedPropertyCount = 5;
-    if (anchorFileMode) {
+    if (mapFileMode) {
       expectedPropertyCount = 3;
     }
 
@@ -105,10 +105,10 @@ export default class UpdateOperation implements OperationModel {
 
     const signedData = Jws.parse(operationObject.signedData);
 
-    // If not in anchor file mode, we need to validate `type` and `patchData` properties.
+    // If not in map file mode, we need to validate `type` and `patchData` properties.
     let encodedPatchData = undefined;
     let patchData = undefined;
-    if (!anchorFileMode) {
+    if (!mapFileMode) {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }

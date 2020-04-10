@@ -11,10 +11,20 @@ import UpdateOperation from './UpdateOperation';
  */
 export default class MapFile {
   /**
+   * Class that represents a map file.
+   * NOTE: this class is introduced as an internal structure in replacement to `MapFileModel`
+   * to keep useful metadata so that repeated computation can be avoided.
+   */
+  private constructor (
+    public readonly model: MapFileModel,
+    public readonly didUniqueSuffixes: string[],
+    public readonly updateOperations: UpdateOperation[]) { }
+
+  /**
    * Parses and validates the given map file buffer.
    * @throws `SidetreeError` if failed parsing or validation.
    */
-  public static async parse (mapFileBuffer: Buffer): Promise<MapFileModel> {
+  public static async parse (mapFileBuffer: Buffer): Promise<MapFile> {
 
     let decompressedBuffer;
     try {
@@ -23,42 +33,45 @@ export default class MapFile {
       throw SidetreeError.createFromError(ErrorCode.MapFileDecompressionFailure, error);
     }
 
-    let mapFile;
+    let mapFileModel;
     try {
-      mapFile = await JsonAsync.parse(decompressedBuffer);
+      mapFileModel = await JsonAsync.parse(decompressedBuffer);
     } catch (error) {
       throw SidetreeError.createFromError(ErrorCode.MapFileNotJson, error);
     }
 
     const allowedProperties = new Set(['batchFileHash', 'updateOperations']);
-    for (let property in mapFile) {
+    for (let property in mapFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.MapFileHasUnknownProperty);
       }
     }
 
-    if (typeof mapFile.batchFileHash !== 'string') {
+    if (typeof mapFileModel.batchFileHash !== 'string') {
       throw new SidetreeError(ErrorCode.MapFileBatchFileHashMissingOrIncorrectType);
     }
 
     // Validate `updateOperations` if exists.
-    const updateOperations = mapFile.updateOperations;
-    if (updateOperations !== undefined) {
-      if (!Array.isArray(updateOperations)) {
+    const updateOperations: UpdateOperation[] = [];
+    let didUniqueSuffixes: string[] = [];
+    if (mapFileModel.updateOperations !== undefined) {
+      if (!Array.isArray(mapFileModel.updateOperations)) {
         throw new SidetreeError(ErrorCode.MapFileUpdateOperationsNotArray);
       }
 
       // Validate each operation.
-      for (const operation of updateOperations) {
-        await UpdateOperation.parseOpertionFromAnchorFile(operation);
+      for (const operation of mapFileModel.updateOperations) {
+        const updateOperation = await UpdateOperation.parseOpertionFromMapFile(operation);
+        updateOperations.push(updateOperation);
       }
 
-      const didUniqueSuffixes = (mapFile as MapFileModel).updateOperations!.map(operation => operation.didUniqueSuffix);
+      didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
       if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
         throw new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid);
       }
     }
 
+    const mapFile = new MapFile(mapFileModel, didUniqueSuffixes, updateOperations);
     return mapFile;
   }
 

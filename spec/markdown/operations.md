@@ -23,12 +23,12 @@ Use the following process to generate a Sidetree-based DID:
 6. Generate a `Base64URL` encoded representation of the following object, herein referred to as the [_Create Operation Data Object_](#create-data-object){ id="create-data-object" }:
     ```json
     {
-      "next_update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE,
-      "patch_data": [ PATCH_1, PATCH_2, ... ]
+      "patches": [ PATCH_1, PATCH_2, ... ],
+      "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
     }
     ```
-    - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
-    - The object MUST contain a `patch_data` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
+    - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
+    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
 
 ### Update
 
@@ -38,13 +38,13 @@ The following process must be used to update the state a Sidetree-based DID:
 2. Generate an object, herein referred to as the [_Update Operation Data Object_](#update-data-object){ id="update-data-object" }, composed as follows:
     ```json
     {
-      "next_update_commitment": COMMITMENT_HASH,
-      "patch_data": [ PATCH_1, PATCH_2, ... ]
+      "patches": [ PATCH_1, PATCH_2, ... ],
+      "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
     }
     ```
-    - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ (generated using the [`HASH_ALGORITHM`](#hash-algorithm)), to be revealed for the next Update operation.
-    - The object MUST contain a `patch_data` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
-
+    - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
+    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
+    
 ### Recover
 
 Use the following process to generate a Sidetree-based DID:
@@ -58,13 +58,13 @@ Use the following process to generate a Sidetree-based DID:
 7. Generate a `Base64URL` encoded representation of the following object, herein referred to as the [_Recovery Operation Data Object_](#recover-data-object){ id="recover-data-object" }, composed as follows:
     ```json
     {
-      "next_update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE,
-      "patch_data": [ PATCH_1, PATCH_2, ... ]
+      "patches": [ PATCH_1, PATCH_2, ... ],
+      "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
     }
     ```
-    - The object MUST contain a `next_update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
-    - The object MUST contain a `patch_data` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
-
+    - The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
+    - The object MUST contain a `update_commitment` property, and its value MUST be the hash of a new _Update Commitment_ to be revealed for the next Update operation.
+    
 ### Deactivate
 
 The following process must be used to deactivate a Sidetree-based DID:
