@@ -545,8 +545,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: []
           }
         ]
@@ -561,8 +561,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: 'anything',
             usage: undefined
           }
         ]
@@ -577,8 +577,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: ['ops', 'ops', 'ops', 'ops']
           }
         ]
@@ -593,8 +593,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: ['ops', 'somethingInvalid']
           }
         ]
