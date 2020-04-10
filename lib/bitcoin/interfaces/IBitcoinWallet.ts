@@ -8,12 +8,12 @@ export default interface IBitcoinWallet {
   /**
    * Gets the public key associated with this wallet.
    *
-   * @returns The public key associated with this wallet as Buffer.
+   * @returns The public key associated with this wallet as a he string.
    */
-  getPublicKey (): Buffer;
+  getPublicKeyAsHex (): string;
 
   /**
-   * Gets the address objecr associated with this wallet.
+   * Gets the address object associated with this wallet.
    */
   getAddress (): Address;
 
@@ -23,7 +23,7 @@ export default interface IBitcoinWallet {
    * @param sidetreeTransaction The sidetree transaction to sign.
    * @returns The signed transaction.
    */
-  signTransaction (sidetreeTransaction: Transaction): Promise<Transaction>;
+  signTransaction (transaction: Transaction): Promise<Transaction>;
 
   /**
    * Signs the specified transaction using the keys associated with this wallet.

@@ -11,6 +11,7 @@ export default class BitcoinWallet implements IBitcoinWallet {
   private readonly walletPrivateKey: PrivateKey;
   private readonly walletAddress: Address;
   private readonly walletPublicKeyAsBuffer: Buffer;
+  private readonly walletPublicKeyAsHex: string;
 
   constructor (bitcoinWalletImportString: string) {
     try {
@@ -23,18 +24,19 @@ export default class BitcoinWallet implements IBitcoinWallet {
 
     const walletPublicKey = this.walletPrivateKey.toPublicKey();
     this.walletPublicKeyAsBuffer = walletPublicKey.toBuffer();
+    this.walletPublicKeyAsHex = this.walletPublicKeyAsBuffer.toString('hex');
   }
 
-  public getPublicKey (): Buffer {
-    return this.walletPublicKeyAsBuffer;
+  public getPublicKeyAsHex (): string {
+    return this.walletPublicKeyAsHex;
   }
 
   public getAddress (): Address {
     return this.walletAddress;
   }
 
-  public async signTransaction (sidetreeTransaction: Transaction): Promise<Transaction> {
-    return sidetreeTransaction.sign(this.walletPrivateKey);
+  public async signTransaction (transaction: Transaction): Promise<Transaction> {
+    return transaction.sign(this.walletPrivateKey);
   }
 
   public async signSpendFromFreezeTransaction (lockTransaction: Transaction, redeemScript: Script): Promise<Transaction> {

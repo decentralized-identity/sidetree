@@ -65,7 +65,7 @@ export default class BitcoinClient {
     if (!await this.isAddressAddedToWallet(walletAddress.toString())) {
       console.debug(`Configuring bitcoin peer to watch address ${walletAddress}. This can take up to 10 minutes.`);
 
-      const publicKeyAsHex = this.bitcoinWallet.getPublicKey().toString('hex');
+      const publicKeyAsHex = this.bitcoinWallet.getPublicKeyAsHex();
       await this.addWatchOnlyAddressToWallet(publicKeyAsHex, true);
     } else {
       console.debug('Wallet found.');
