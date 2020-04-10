@@ -58,6 +58,7 @@ export default {
   DocumentComposerPatchServiceEndpointsNotArray: 'document_composer_patch_service_endpoints_not_array',
   DocumentComposerPatchServiceTypeMissingOrUnknown: 'document_composer_patch_service_type_missing_or_unknown',
   DocumentComposerPublicKeyIdDuplicated: 'document_composer_public_key_id_duplicated',
+  DocumentComposerPublicKeyNotOperationKey: 'document_composer_public_key_not_operation_key',
   DocumentComposerPublicKeyMissingOrUnknownProperty: 'document_composer_public_key_missing_or_unknown_property',
   DocumentComposerPublicKeysNotArray: 'document_composer_public_keys_not_array',
   DocumentComposerPublicKeyTypeMissingOrUnknown: 'document_composer_patch_public_key_type_missing_or_unknown',

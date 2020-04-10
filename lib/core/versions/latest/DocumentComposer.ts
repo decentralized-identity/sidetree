@@ -232,10 +232,9 @@ export default class DocumentComposer {
         }
       }
 
-      if (publicKey.type === 'Secp256k1VerificationKey2018') {
-        // The key must be in JWK format.
-        Jwk.validateJwkEs256k(publicKey.jwk);
-      } else if (publicKey.type !== 'RsaVerificationKey2018') {
+      if (publicKey.usage.includes(PublicKeyUsage.Ops)) { // ops key and is secp
+        DocumentComposer.validateOperationKey(publicKey);
+      } else if (publicKey.type !== 'RsaVerificationKey2018') { // neither ops key nor secp
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
       }
     }
@@ -251,6 +250,10 @@ export default class DocumentComposer {
 
     if (publicKey.type !== 'Secp256k1VerificationKey2018') {
       throw new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
+    }
+
+    if (!publicKey.usage.includes(PublicKeyUsage.Ops)) {
+      throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey)
     }
 
     Jwk.validateJwkEs256k(publicKey.jwk);
