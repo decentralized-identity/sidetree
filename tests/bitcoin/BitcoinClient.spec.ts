@@ -375,6 +375,20 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('createTransactionFromBuffer', () => {
+    it('should create the Transaction object correctly.', () => {
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 100);
+      const unspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 500);
+      transaction.from([unspentOutput]);
+
+      const actual = BitcoinClient['createTransactionFromBuffer']((transaction as any).toBuffer());
+      expect(actual.inputs.length).toEqual(transaction.inputs.length);
+      expect(actual.inputs[0].script.toASM()).toEqual(transaction.inputs[0].script.toASM());
+      expect(actual.outputs.length).toEqual(transaction.outputs.length);
+      expect(actual.outputs[0].script.toASM()).toEqual(transaction.outputs[0].script.toASM());
+    });
+  });
+
   describe('createBitcoreTransactionWrapper', () => {
     it('should create the transaction object with the inputs passed in', () => {
       const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 400);
