@@ -33,7 +33,7 @@ describe('DocumentComposer', async () => {
         operationPublicKeys: [{
           id: '#anySigningKey', // ops usage keys go here
           controller: '',
-          type: 'Secp256k1VerificationKey2018',
+          type: 'Secp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
         recoveryKey: { kty: 'EC', crv: 'secp256k1', x: anyRecoveryPublicKey.x, y: anyRecoveryPublicKey.y }
@@ -45,7 +45,7 @@ describe('DocumentComposer', async () => {
         publicKey: [{
           id: '#anySigningKey',
           controller: '',
-          type: 'Secp256k1VerificationKey2018',
+          type: 'Secp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
         authentication: [
@@ -53,7 +53,7 @@ describe('DocumentComposer', async () => {
           {
             id: '#authePbulicKey', // object here because it is an auth usage only key
             controller: '',
-            type: 'Secp256k1VerificationKey2018',
+            type: 'Secp256k1VerificationKey2019',
             publicKeyJwk: {
               kty: 'EC', crv: 'secp256k1', x: authPublicKey.jwk.x, y: authPublicKey.jwk.y
             }
@@ -89,7 +89,19 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateOperationKey'](undefined); }).toThrow(expectedError);
     });
 
-    it('should throw if type is not Secp256k1VerificationKey2018', () => {
+    it('should throw if usage does not contain ops', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
+      expect(() => {
+        DocumentComposer['validateOperationKey']({
+          id: 'someId',
+          type: 'Secp256k1VerificationKey2019',
+          jwk: {},
+          usage: []
+        });
+      }).toThrow(expectedError);
+    });
+
+    it('should throw if type is not Secp256k1VerificationKey2019', () => {
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
       expect(() => {
         DocumentComposer['validateOperationKey']({
@@ -113,7 +125,7 @@ describe('DocumentComposer', async () => {
         serviceEndpoints: [{
           id: 'someId',
           type: 'someType',
-          serviceEndpoint: 'someEndpoint',}]
+          serviceEndpoint: 'someEndpoint'}]
       };
 
       const result = DocumentComposer['addServiceEndpoints'](document, patch);
@@ -415,8 +427,17 @@ describe('DocumentComposer', async () => {
     it('should throw error if the type of a public key in an add-public-keys patch is not in the allowed list.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).type = 'unknownKeyType';
+      (patches[0].publicKeys![0] as any).usage = ['general'];
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+    });
+
+    it('should throw error if the type of a operation public key in an add-public-keys patch is not secp.', async () => {
+      const patches = generatePatchesForPublicKeys();
+      (patches[0].publicKeys![0] as any).type = 'notSecp';
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
@@ -502,15 +523,15 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
+            type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyHex: 'anything',
-            usage: ['ops']
+            usage: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
-            type: 'RsaVerificationKey2018',
+            type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyPem: 'anything',
-            usage: ['ops']
+            usage: ['general']
           }
         ]
       };
@@ -524,8 +545,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: []
           }
         ]
@@ -540,8 +561,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: undefined
           }
         ]
@@ -556,8 +577,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: ['ops', 'ops', 'ops', 'ops']
           }
         ]
@@ -572,8 +593,8 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
             usage: ['ops', 'somethingInvalid']
           }
         ]
@@ -609,14 +630,14 @@ function generatePatchesForPublicKeys () {
       publicKeys: [
         {
           id: 'keyX',
-          type: 'Secp256k1VerificationKey2018',
+          type: 'Secp256k1VerificationKey2019',
           jwk: {
             kty: 'EC',
             crv: 'secp256k1',
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
             y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
           },
-          usage: ['ops', 'general', 'auth']
+          usage: ['ops']
         }
       ]
     },
