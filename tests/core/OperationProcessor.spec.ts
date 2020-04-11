@@ -4,6 +4,7 @@ import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperat
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import DidState from '../../lib/core/models/DidState';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
@@ -19,7 +20,6 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
