@@ -83,7 +83,7 @@ export default class MapFile {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         updateRevealValue: operation.updateRevealValue,
-        signedData: operation.signedData.toJwsModel()
+        signedData: operation.signedData.toCompactJws()
       };
     });
 

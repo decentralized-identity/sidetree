@@ -5,7 +5,7 @@ import SidetreeError from '../../../lib/common/SidetreeError';
 import Encoder from '../../../lib/core/versions/latest/Encoder';
 
 describe('Jws', async () => {
-  describe('parse()', async () => {
+  describe('createCompactJws()', async () => {
     it('should throw error if protected header contains unexpected property.', async () => {
       const signingKeyId = 'signingKey';
       const [, signingPrivateKey] = await Jwk.generateEs256kKeyPair();
@@ -18,24 +18,24 @@ describe('Jws', async () => {
 
       const payload = { anyProperty: 'anyValue' };
 
-      const jws = await Jws.sign(protectedHeader, payload, signingPrivateKey);
+      const jws = Jws.signAsCompactJws(payload, signingPrivateKey, protectedHeader);
 
-      expect(() => { Jws.parse(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrUnknownProperty));
+      expect(() => { Jws.parseCompactJws(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrUnknownProperty));
     });
 
     it('should throw error if `kid` in header is missing or is in incorrect type.', async () => {
       const [, signingPrivateKey] = await Jwk.generateEs256kKeyPair();
 
-      const protectedHeader = {
-        kid: true, // Incorect type.
+      const invalidProtectedHeader = {
+        kid: true, // Invalid type.
         alg: 'ES256K'
       };
 
       const payload = { anyProperty: 'anyValue' };
 
-      const jws = await Jws.sign(protectedHeader, payload, signingPrivateKey);
+      const jws = Jws.signAsCompactJws(payload, signingPrivateKey, invalidProtectedHeader);
 
-      expect(() => { Jws.parse(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid));
+      expect(() => { Jws.parseCompactJws(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid));
     });
 
     it('should throw error if `alg` in header is missing or is in incorrect type.', async () => {
@@ -56,9 +56,11 @@ describe('Jws', async () => {
         kid: signingKeyId,
         alg: true // Invalid type.
       };
-      jws.protected = Encoder.encode(JSON.stringify(invalidProtectedHeader));
+      const invalidEncodedProtectedHeader = Encoder.encode(JSON.stringify(invalidProtectedHeader));
 
-      expect(() => { Jws.parse(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg));
+      const compactJws = Jws.createCompactJws(invalidEncodedProtectedHeader, jws.payload, jws.signature);
+
+      expect(() => { Jws.parseCompactJws(compactJws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg));
 
     });
   });

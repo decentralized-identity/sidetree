@@ -119,7 +119,7 @@ export default class RecoverOperation implements OperationModel {
 
     const recoveryRevealValue = operationObject.recoveryRevealValue;
 
-    const signedDataJws = Jws.parse(operationObject.signedData);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `patchData` properties.
