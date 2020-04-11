@@ -20,9 +20,10 @@ export default class Jws {
 
   /**
    * Constructs a JWS object.
-   * @param input Input should be a compact JWS string.
+   * @param compactJws Input should be a compact JWS string.
+   * @param expectKidInHeader If set to `true`, the given compact JWS must contain `kid`; else the compact JWS must not contain `kid`.
    */
-  private constructor (compactJws: any) {
+  private constructor (compactJws: any, expectKidInHeader: boolean) {
     if (typeof compactJws !== 'string') {
       throw new SidetreeError(ErrorCode.JwsCompactJwsNotString);
     }
@@ -39,27 +40,32 @@ export default class Jws {
     const decodedProtectedHeadJsonString = Encoder.decodeBase64UrlAsString(protectedHeader);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
+    let expectedHeaderPropertyCount = 1; // By default we must have header property is `alg`.
+    if (expectKidInHeader) {
+      expectedHeaderPropertyCount = 2;
+    }
+
     const headerProperties = Object.keys(decodedProtectedHeader);
-    if (headerProperties.length !== 2) {
+    if (headerProperties.length !== expectedHeaderPropertyCount) {
       throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrUnknownProperty);
     }
 
-    // 'protected' property must contain a string 'kid' property.
-    if (typeof decodedProtectedHeader.kid !== 'string') {
-      throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid);
-    }
-
-    // 'protected' property must contain 'alg' property with value 'ES256K'.
+    // Protected header must contain 'alg' property with value 'ES256K'.
     if (decodedProtectedHeader.alg !== 'ES256K') {
       throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg);
     }
 
-    // Must contain string 'signature' property.
+    // If protected header contains 2 properties, the 2nd property must be a string 'kid' property.
+    if (headerProperties.length === 2 && typeof decodedProtectedHeader.kid !== 'string') {
+      throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid);
+    }
+
+    // Must contain Base64URL string 'signature' property.
     if (!Encoder.isBase64UrlString(signature)) {
       throw new SidetreeError(ErrorCode.JwsSignatureNotBase64UrlString);
     }
 
-    // Must contain string 'payload' property.
+    // Must contain Base64URL string 'payload' property.
     if (!Encoder.isBase64UrlString(payload)) {
       throw new SidetreeError(ErrorCode.JwsPayloadNotBase64UrlString);
     }
@@ -148,9 +154,10 @@ export default class Jws {
 
   /**
    * Parses the input as a `Jws` object.
+   * @param expectKidInHeader If set to `true`, the given compact JWS must contain `kid`; else the compact JWS must not contain `kid`.
    */
-  public static parseCompactJws (compactJws: any): Jws {
-    return new Jws(compactJws);
+  public static parseCompactJws (compactJws: any, expectKidInHeader: boolean): Jws {
+    return new Jws(compactJws, expectKidInHeader);
   }
 
   /**

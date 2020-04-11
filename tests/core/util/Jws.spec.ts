@@ -5,7 +5,23 @@ import SidetreeError from '../../../lib/common/SidetreeError';
 import Encoder from '../../../lib/core/versions/latest/Encoder';
 
 describe('Jws', async () => {
-  describe('createCompactJws()', async () => {
+  describe('parseCompactJws()', async () => {
+    it('should throw error if given input to parse is not a string.', async () => {
+      const expectKidInHeader = false;
+
+      const anyObject = { a: 'abc' };
+
+      expect(() => { Jws.parseCompactJws(anyObject, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsCompactJwsNotString));
+    });
+
+    it('should throw error if given input string has more than 3 parts separated by a "." character.', async () => {
+      const expectKidInHeader = false;
+
+      const invalidCompactJwsString = 'aaa.bbb.ccc.ddd';
+
+      expect(() => { Jws.parseCompactJws(invalidCompactJwsString, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsCompactJwsInvalid));
+    });
+
     it('should throw error if protected header contains unexpected property.', async () => {
       const signingKeyId = 'signingKey';
       const [, signingPrivateKey] = await Jwk.generateEs256kKeyPair();
@@ -19,8 +35,9 @@ describe('Jws', async () => {
       const payload = { anyProperty: 'anyValue' };
 
       const jws = Jws.signAsCompactJws(payload, signingPrivateKey, protectedHeader);
+      const expectKidInHeader = true;
 
-      expect(() => { Jws.parseCompactJws(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrUnknownProperty));
+      expect(() => { Jws.parseCompactJws(jws, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrUnknownProperty));
     });
 
     it('should throw error if `kid` in header is missing or is in incorrect type.', async () => {
@@ -34,8 +51,9 @@ describe('Jws', async () => {
       const payload = { anyProperty: 'anyValue' };
 
       const jws = Jws.signAsCompactJws(payload, signingPrivateKey, invalidProtectedHeader);
+      const expectKidInHeader = true;
 
-      expect(() => { Jws.parseCompactJws(jws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid));
+      expect(() => { Jws.parseCompactJws(jws, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid));
     });
 
     it('should throw error if `alg` in header is missing or is in incorrect type.', async () => {
@@ -59,9 +77,33 @@ describe('Jws', async () => {
       const invalidEncodedProtectedHeader = Encoder.encode(JSON.stringify(invalidProtectedHeader));
 
       const compactJws = Jws.createCompactJws(invalidEncodedProtectedHeader, jws.payload, jws.signature);
+      const expectKidInHeader = true;
 
-      expect(() => { Jws.parseCompactJws(compactJws); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg));
+      expect(() => { Jws.parseCompactJws(compactJws, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg));
+    });
 
+    it('should throw error if payload is not Base64URL string.', async () => {
+      const protectedHeader = {
+        alg: 'ES256K'
+      };
+      const encodedProtectedHeader = Encoder.encode(JSON.stringify(protectedHeader));
+
+      const compactJws = Jws.createCompactJws(encodedProtectedHeader, '***InvalidPayloadString****', 'anyValidBase64UrlStringAsSignature');
+      const expectKidInHeader = false;
+
+      expect(() => { Jws.parseCompactJws(compactJws, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsPayloadNotBase64UrlString));
+    });
+
+    it('should throw error if signature is not Base64URL string.', async () => {
+      const protectedHeader = {
+        alg: 'ES256K'
+      };
+      const encodedProtectedHeader = Encoder.encode(JSON.stringify(protectedHeader));
+
+      const compactJws = Jws.createCompactJws(encodedProtectedHeader, 'anyValidBase64UrlStringAsPayload', '***InvalidSignatureString****');
+      const expectKidInHeader = false;
+
+      expect(() => { Jws.parseCompactJws(compactJws, expectKidInHeader); }).toThrow(new SidetreeError(ErrorCode.JwsSignatureNotBase64UrlString));
     });
   });
 

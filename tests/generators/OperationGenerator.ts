@@ -393,7 +393,7 @@ export default class OperationGenerator {
       recoveryKey: newRecoveryPublicKey,
       nextRecoveryCommitmentHash
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey, 'recovery');
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const patchDataEncodedString = Encoder.encode(patchDataBuffer);
     const operation = {
@@ -419,7 +419,7 @@ export default class OperationGenerator {
       didUniqueSuffix,
       recoveryRevealValue
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey, 'recovery');
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
@@ -532,7 +532,7 @@ export default class OperationGenerator {
   /**
    * Signs the given payload as a ES256K compact JWS.
    */
-  public static async signUsingEs256k (payload: any, privateKey: JwkEs256k, signingKeyId: string): Promise<string> {
+  public static async signUsingEs256k (payload: any, privateKey: JwkEs256k, signingKeyId?: string): Promise<string> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'

@@ -94,7 +94,7 @@ export default class OperationProcessor implements IOperationProcessor {
       const transactionNumber = anchoredOperationModel.transactionNumber;
       console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the update.
+      // Return the given DID state if error is encountered applying the patches.
       return didState;
     }
 
@@ -140,7 +140,7 @@ export default class OperationProcessor implements IOperationProcessor {
       const transactionNumber = anchoredOperationModel.transactionNumber;
       console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the update.
+      // Return the given DID state if error is encountered applying the patches.
       return didState;
     }
 
@@ -196,7 +196,7 @@ export default class OperationProcessor implements IOperationProcessor {
       const transactionNumber = anchoredOperationModel.transactionNumber;
       console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the update.
+      // Return the given DID state if error is encountered applying the patches.
       return didState;
     }
 
