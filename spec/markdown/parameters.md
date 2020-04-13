@@ -12,7 +12,7 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `COMPRESSION_ALGORITHM` { #compression-algorithm } | File compression algorithm                             |                ZIP |
 | `COMMITMENT_VALUE` { #commitment-value } | Cryptographically unguessable value to be revealed in the next operation. |      32 bytes |
 | `GENESIS_TIME` { #genesis-time }                 | The point in the target ledger's transaction history at which Sidetree implementation is first activated (e.g. block number in a blockchain).    |             630000 |
-| `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | Maximum compressed anchor file size.                     |               1 MB |
+| `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | Maximum compressed Anchor File size.                     |               1 MB |
 | `MAX_MAP_FILE_SIZE` { #max-map-file-size }       | Maximum compressed map file size.                        |               1 MB |
 | `MAX_CHUNK_FILE_SIZE`  { #max-chunk-file-size }  | Maximum compressed batch file size.                      |              10 MB |
 | `MAX_ENCODED_HASH_LENGTH`   | Maximum accepted string length of an encoded hash.                            |          100 bytes |
