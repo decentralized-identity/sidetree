@@ -32,9 +32,6 @@ interface BitcoreTransactionWrapper {
  */
 export default class BitcoinClient {
 
-  /** The estimated number of blocks written on bitcoin in one hour */
-  public static estimatedNumberOfBlocksInOneHour = 6;
-
   /** Bitcoin peer's RPC basic authorization credentials */
   private readonly bitcoinAuthorization?: string;
 
@@ -57,6 +54,7 @@ export default class BitcoinClient {
     if (!bitcoinWalletImportString && !bitcoinWallet) {
       throw new SidetreeError(ErrorCode.BitcoinProcessorWalletOrImportStringRequired, 'Either wallet or import string are required');
     }
+
     this.bitcoinWallet = bitcoinWallet || new BitcoinWallet(bitcoinWalletImportString!);
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
