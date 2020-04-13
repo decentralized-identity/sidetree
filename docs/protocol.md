@@ -543,14 +543,15 @@ HTTP/1.1 200 OK
 {
   "publicKeys": [
     {
-      "id": "A string no longer than 7 characters.",
-      "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "jwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
+      "id": "A string no longer than 20 characters.",
+      "type": "Secp256k1VerificationKey2019 | EcdsaSecp256k1VerificationKey2019 | JwsVerificationKey2020",
+      "jwk": "Must be JWK format.",
+      "usage": "must be an array containing one or more of the 3 usage types: ops, general, or auth"
     }
   ],
   "serviceEndpoints": [
     {
-      "id": "A string no longer than 7 characters.",
+      "id": "A string no longer than 20 characters.",
       "type": "A string no longer than 30 characters.",
       "serviceEndpoint": "URIs beginning with a scheme segment (i.e. http://, git://), and be no longer than 80 characters."
     }
@@ -564,13 +565,14 @@ HTTP/1.1 200 OK
   "publicKeys": [
     {
       "id": "key1",
-      "type": "Secp256k1VerificationKey2018",
+      "type": "Secp256k1VerificationKey2019",
       "jwk": {
         "kty": "EC",
         "crv": "secp256k1",
         "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
         "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
-      }
+      },
+      "usage": ["ops"]
     }
   ],
   "serviceEndpoints": [
@@ -590,9 +592,10 @@ HTTP/1.1 200 OK
   "action": "add-public-keys",
   "publicKeys": [
     {
-      "id": "A string no longer than 7 characters.",
-      "type": "Secp256k1VerificationKey2018 | RsaVerificationKey2018",
-      "jwk": "Must be JWK format for Secp256k1VerificationKey2018, else another property can be used.",
+      "id": "A string no longer than 20 characters.",
+      "type": "Secp256k1VerificationKey2019 | EcdsaSecp256k1VerificationKey2019 | JwsVerificationKey2020",
+      "jwk": "Must be JWK format.",
+      "usage": "Must be an array containing one or more of the valid usage types: ops, general, or auth"
     }
   ]
 }
@@ -605,18 +608,25 @@ Example:
   "publicKeys": [
     {
       "id": "key1",
-      "type": "Secp256k1VerificationKey2018",
+      "type": "Secp256k1VerificationKey2019",
       "jwk": {
         "kty": "EC",
         "crv": "secp256k1",
         "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
         "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
-      }
+      },
+      "usage": ["ops"]
     },
     {
       "id": "key2",
-      "type": "RsaVerificationKey2018",
-      "publicKeyPem": "-----BEGIN PUBLIC KEY...END PUBLIC KEY-----"
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "jwk": {
+        "kty": "EC",
+        "crv": "secp256k1",
+        "x": "5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM",
+        "y": "v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"
+      },
+      "usage": ["general"]
     }
   ]
 }
