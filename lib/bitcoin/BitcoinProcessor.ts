@@ -95,7 +95,7 @@ export default class BitcoinProcessor {
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
 
-  public constructor (config: IBitcoinConfig, bitcoinWallet: IBitcoinWallet | undefined = undefined) {
+  public constructor (config: IBitcoinConfig, bitcoinWallet?: IBitcoinWallet) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
