@@ -8,7 +8,8 @@ export default interface IBitcoinWallet {
   /**
    * Gets the public key associated with this wallet.
    *
-   * @returns The public key associated with this wallet as a he string.
+   * @returns The public key associated with this wallet as a hex string.
+
    */
   getPublicKeyAsHex (): string;
 
