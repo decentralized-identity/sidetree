@@ -130,6 +130,32 @@ describe('IpfsStorage', () => {
     });
   });
 
+  describe('getNode', () => {
+    it('should get node with default repo if not argument supplied', async () => {
+      const createSpy = spyOn(IPFS, 'create').and.returnValue({} as any);
+      const result = await IpfsStorage['getNode']();
+      expect(createSpy).toHaveBeenCalledWith({ repo: 'sidetree-ipfs' });
+      expect(result).toEqual({} as any);
+    });
+
+    it('should get node with passed in repo if argument supplied', async () => {
+      const createSpy = spyOn(IPFS, 'create').and.returnValue({} as any);
+      const result = await IpfsStorage['getNode']('something');
+      expect(createSpy).toHaveBeenCalledWith({ repo: 'something' });
+      expect(result).toEqual({} as any);
+    });
+  });
+
+  describe('restart', () => {
+    it('should restart the ipfs node and continue to be functional', async () => {
+      const stopSpy = spyOn(ipfsStorage['node'], 'stop');
+      const getNodeSpy = spyOn(IpfsStorage as any, 'getNode');
+      await ipfsStorage.restart();
+      expect(stopSpy).toHaveBeenCalled();
+      expect(getNodeSpy).toHaveBeenCalledWith(ipfsStorage['repo']);
+    });
+  });
+
   describe('getSingleton', () => {
     it('should throw error if instance does not exist', () => {
       const ipfsStorageHolder = IpfsStorage['ipfsStorageSingleton'];

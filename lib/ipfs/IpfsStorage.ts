@@ -11,6 +11,7 @@ export default class IpfsStorage {
 
   /**  IPFS node instance  */
   private node: IPFS;
+  private repo: any;
 
   /** singleton holding the instance of ipfsStorage to use */
   private static ipfsStorageSingleton: IpfsStorage | undefined;
@@ -23,13 +24,8 @@ export default class IpfsStorage {
       throw new SidetreeError(ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce,
         'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
     }
-
-    const localRepoName = 'sidetree-ipfs';
-    const options = {
-      repo: repo !== undefined ? repo : localRepoName
-    };
-    const node = await IPFS.create(options);
-    IpfsStorage.ipfsStorageSingleton = new IpfsStorage(node);
+    const node = await IpfsStorage.getNode(repo);
+    IpfsStorage.ipfsStorageSingleton = new IpfsStorage(node, repo);
     return IpfsStorage.ipfsStorageSingleton;
   }
 
@@ -44,8 +40,27 @@ export default class IpfsStorage {
     return IpfsStorage.ipfsStorageSingleton;
   }
 
-  private constructor (node: IPFS) {
+  private constructor (node: IPFS, repo: any) {
+    this.repo = repo;
     this.node = node;
+  }
+
+  private static async getNode (repo?: any): Promise<IPFS> {
+    const localRepoName = 'sidetree-ipfs';
+    const options = {
+      repo: repo !== undefined ? repo : localRepoName
+    };
+    const node = await IPFS.create(options);
+    return node;
+  }
+
+  /**
+   * restarts the IPFS node
+   */
+  public async restart () {
+    await this.node.stop();
+    console.log('old node stopped, starting a new one');
+    this.node = await IpfsStorage.getNode(this.repo);
   }
 
   /**
