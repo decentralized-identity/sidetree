@@ -54,7 +54,7 @@ Use the following process to generate a Sidetree-based DID:
 3. Generate a _Recovery Commitment_ of the _Next Recovery Commitment_ using the [`HASH_ALGORITHM`](#hash-algorithm), and retain the hash for inclusion in an [Anchor File](#anchor-file).
 4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Update operation, herein referred to as _Next Update Commitment_.
 4. Generate an _Update Commitment Hash_ of the _Next Update Commitment_ using the [`HASH_ALGORITHM`](#hash-algorithm), and retain the hash for inclusion in an [Anchor File](#anchor-file).
-6. Optionally, the recovering entity MAY generate a new key pair, via the [`KEY_ALGORITHM`](#key-algorithm), for inclusion in the Anchor File (to support key rolling, etc.). The private key MUST be securely stored for use in subsequent [Recovery](#recover) operations.
+6. Optionally, the recovering entity MAY generate a new key pair, via the [`KEY_ALGORITHM`](#key-algorithm), for inclusion in the [Anchor File](#anchor-file) (to support key rolling, etc.). The private key MUST be securely stored for use in subsequent [Recovery](#recover) operations.
 7. Generate a `Base64URL` encoded representation of the following object, herein referred to as the [_Recovery Operation Data Object_](#recover-data-object){ id="recover-data-object" }, composed as follows:
     ```json
     {

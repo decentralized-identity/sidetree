@@ -57,7 +57,6 @@ export default class BitcoinClient {
     if (!bitcoinWalletImportString && !bitcoinWallet) {
       throw new SidetreeError(ErrorCode.BitcoinProcessorWalletOrImportStringRequired, 'Either wallet or import string are required');
     }
-
     this.bitcoinWallet = bitcoinWallet || new BitcoinWallet(bitcoinWalletImportString!);
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
