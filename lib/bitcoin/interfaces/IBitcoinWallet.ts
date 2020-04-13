@@ -9,7 +9,7 @@ export default interface IBitcoinWallet {
    * Gets the public key associated with this wallet.
    *
    * @returns The public key associated with this wallet as a hex string.
-
+   *
    */
   getPublicKeyAsHex (): string;
 
@@ -22,7 +22,7 @@ export default interface IBitcoinWallet {
    * Signs the specified transaction using the keys associated with this wallet.
    *
    * @param transaction The transaction to sign.
-
+   *
    * @returns The signed transaction.
    */
   signTransaction (transaction: Transaction): Promise<Transaction>;
