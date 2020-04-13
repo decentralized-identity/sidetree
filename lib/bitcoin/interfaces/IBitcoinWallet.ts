@@ -21,7 +21,8 @@ export default interface IBitcoinWallet {
   /**
    * Signs the specified transaction using the keys associated with this wallet.
    *
-   * @param sidetreeTransaction The sidetree transaction to sign.
+   * @param transaction The transaction to sign.
+
    * @returns The signed transaction.
    */
   signTransaction (transaction: Transaction): Promise<Transaction>;
