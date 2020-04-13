@@ -139,37 +139,6 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
     });
-
-    it('should throw if the wallet import string is incorrect', () => {
-      const config: IBitcoinConfig = {
-        bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
-        bitcoinFeeSpendingCutoff: 1,
-        bitcoinPeerUri: randomString(),
-        bitcoinRpcUsername: 'admin',
-        bitcoinRpcPassword: '1234',
-        bitcoinWalletImportString: 'wrong!',
-        databaseName: randomString(),
-        genesisBlockNumber: randomNumber(),
-        mongoDbConnectionString: randomString(),
-        sidetreeTransactionPrefix: randomString(4),
-        lowBalanceNoticeInDays: undefined,
-        requestTimeoutInMilliseconds: undefined,
-        requestMaxRetries: undefined,
-        transactionPollPeriodInSeconds: undefined,
-        sidetreeTransactionFeeMarkupPercentage: 0,
-        valueTimeLockPollPeriodInSeconds: 60,
-        valueTimeLockAmountInBitcoins: 1,
-        valueTimeLockTransactionFeesAmountInBitcoins: undefined
-      };
-
-      try {
-        /* tslint:disable-next-line:no-unused-expression */
-        new BitcoinProcessor(config);
-        fail('expected to throw');
-      } catch (error) {
-        expect(error.message).toContain('Failed creating private key');
-      }
-    });
   });
 
   describe('initialize', () => {
@@ -774,6 +743,26 @@ describe('BitcoinProcessor', () => {
         clearTimeout(bitcoinProcessor['pollTimeoutId']);
         done();
       }, 300);
+    });
+
+    it('should clear the prevoius timeout if set', async (done) => {
+
+      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve());
+      const clearTimeoutSpy = spyOn(global, 'clearTimeout').and.returnValue();
+
+      bitcoinProcessor['pollTimeoutId'] = 1234;
+
+      await bitcoinProcessor['periodicPoll']();
+
+      // need to wait for the process call
+      setTimeout(() => {
+        expect(bitcoinProcessor['pollTimeoutId']).toBeDefined();
+        // clean up
+        clearTimeout(bitcoinProcessor['pollTimeoutId']);
+        done();
+      }, 300);
+
+      expect(clearTimeoutSpy).toHaveBeenCalled();
     });
   });
 

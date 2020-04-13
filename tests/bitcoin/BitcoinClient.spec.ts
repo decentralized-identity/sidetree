@@ -4,6 +4,7 @@ import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
+import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
@@ -22,8 +23,9 @@ describe('BitcoinClient', async () => {
     bitcoinWalletImportString = BitcoinClient.generatePrivateKey('testnet');
     bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', bitcoinWalletImportString, 10, maxRetries, 0);
 
-    privateKeyFromBitcoinClient = bitcoinClient['walletPrivateKey'];
-    walletAddressFromBitcoinClient = bitcoinClient['walletAddress'];
+    const bitcoinWallet = bitcoinClient['bitcoinWallet'] as BitcoinWallet;
+    privateKeyFromBitcoinClient = bitcoinWallet['walletPrivateKey'];
+    walletAddressFromBitcoinClient = bitcoinWallet.getAddress();
 
     // this is always mocked to protect against actual calls to the bitcoin network
     fetchSpy = spyOn(nodeFetchPackage, 'default');
@@ -44,6 +46,8 @@ describe('BitcoinClient', async () => {
 
   function generateBitcoreTransactionWrapper (bitcoinWalletImportString: string, outputSatoshis: number = 1, confirmations: number = 0) {
     const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, outputSatoshis);
+    const unspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, outputSatoshis + 500);
+    transaction.from([unspentOutput]);
 
     // Create the class' internal object
     return {
@@ -74,14 +78,26 @@ describe('BitcoinClient', async () => {
   });
 
   describe('generatePrivateKey', () => {
-    it('should construct a PrivateKey and export its WIF', () => {
-      const privateKey = BitcoinClient.generatePrivateKey('testnet');
+    function validateGeneratedPrivateKey (privateKey: string | undefined): void {
       expect(privateKey).toBeDefined();
       expect(typeof privateKey).toEqual('string');
-      expect(privateKey.length).toBeGreaterThan(0);
+      expect(privateKey!.length).toBeGreaterThan(0);
       expect(() => {
         (PrivateKey as any).fromWIF(privateKey);
       }).not.toThrow();
+    }
+
+    it('should construct a PrivateKey and export its WIF', () => {
+      const privateKey = BitcoinClient.generatePrivateKey('testnet');
+      validateGeneratedPrivateKey(privateKey);
+    });
+
+    it('should return the values for mainnet/livenet', () => {
+      const mainNetKey = BitcoinClient.generatePrivateKey('mainnet');
+      validateGeneratedPrivateKey(mainNetKey);
+
+      const livenetKey = BitcoinClient.generatePrivateKey('livenet');
+      validateGeneratedPrivateKey(livenetKey);
     });
   });
 
@@ -100,6 +116,16 @@ describe('BitcoinClient', async () => {
       await bitcoinClient.initialize();
       expect(walletExistsSpy).toHaveBeenCalled();
       expect(importSpy).toHaveBeenCalled();
+    });
+
+    it('should not import key if the wallet already exist', async () => {
+      const walletExistsSpy = spyOn(bitcoinClient as any, 'isAddressAddedToWallet').and.returnValue(Promise.resolve(true));
+
+      const importSpy = spyOn(bitcoinClient as any, 'addWatchOnlyAddressToWallet');
+
+      await bitcoinClient.initialize();
+      expect(walletExistsSpy).toHaveBeenCalled();
+      expect(importSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -346,6 +372,20 @@ describe('BitcoinClient', async () => {
       const actual = await bitcoinClient['getRawTransactionRpc'](txnId);
       expect(actual).toEqual(mockTransaction);
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe('createTransactionFromBuffer', () => {
+    it('should create the Transaction object correctly.', () => {
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 100);
+      const unspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 500);
+      transaction.from([unspentOutput]);
+
+      const actual = BitcoinClient['createTransactionFromBuffer']((transaction as any).toBuffer());
+      expect(actual.inputs.length).toEqual(transaction.inputs.length);
+      expect(actual.inputs[0].script.toASM()).toEqual(transaction.inputs[0].script.toASM());
+      expect(actual.outputs.length).toEqual(transaction.outputs.length);
+      expect(actual.outputs[0].script.toASM()).toEqual(transaction.outputs[0].script.toASM());
     });
   });
 
