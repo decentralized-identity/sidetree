@@ -7,8 +7,8 @@ import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransaction
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
-import ReadableStream from '../../lib/common/ReadableStream';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import ReadableStream from '../../lib/common/ReadableStream';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
