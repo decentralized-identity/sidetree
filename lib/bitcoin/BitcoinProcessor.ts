@@ -3,6 +3,7 @@ import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
+import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
@@ -94,7 +95,7 @@ export default class BitcoinProcessor {
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
 
-  public constructor (config: IBitcoinConfig) {
+  public constructor (config: IBitcoinConfig, bitcoinWallet: IBitcoinWallet | undefined = undefined) {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
@@ -115,12 +116,14 @@ export default class BitcoinProcessor {
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
+
     this.bitcoinClient =
       new BitcoinClient(
         config.bitcoinPeerUri,
         config.bitcoinRpcUsername,
         config.bitcoinRpcPassword,
         config.bitcoinWalletImportString,
+        bitcoinWallet,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3,
         config.sidetreeTransactionFeeMarkupPercentage || 0);

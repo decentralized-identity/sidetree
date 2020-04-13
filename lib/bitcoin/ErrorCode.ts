@@ -1,4 +1,6 @@
 export default {
+  BitcoinProcessorWalletOrImportStringRequired: 'bitcoin_process_wallet_or_import_string_required',
+  BitcoinProcessorWalletAndImportStringSpecified: 'bitcoin_processor_wallet_and_import_string_specified',
   BitcoinWalletIncorrectImportString: 'bitcoin_wallet_incorrect_import_string',
   LockIdentifierIncorrectFormat: 'lock_identifier_incorrect_format',
   LockMonitorCurrentValueTimeLockInPendingState: 'lock_monitor_current_value_time_lock_in_pending_state',

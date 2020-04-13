@@ -7,8 +7,10 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
+import ErrorCode from './ErrorCode';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
+import SidetreeError from '../common/SidetreeError';
 import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
@@ -42,12 +44,21 @@ export default class BitcoinClient {
     private bitcoinPeerUri: string,
     bitcoinRpcUsername: string | undefined,
     bitcoinRpcPassword: string | undefined,
-    bitcoinWalletImportString: string,
+    bitcoinWalletImportString: string | undefined,
+    bitcoinWallet: IBitcoinWallet | undefined,
     private requestTimeout: number,
     private requestMaxRetries: number,
     private sidetreeTransactionFeeMarkupPercentage: number) {
 
-    this.bitcoinWallet = new BitcoinWallet(bitcoinWalletImportString);
+    if (bitcoinWalletImportString && bitcoinWallet) {
+      throw new SidetreeError(ErrorCode.BitcoinProcessorWalletAndImportStringSpecified, 'Both bitcoin wallet and import string are not allowed.');
+    }
+
+    if (!bitcoinWalletImportString && !bitcoinWallet) {
+      throw new SidetreeError(ErrorCode.BitcoinProcessorWalletOrImportStringRequired, 'Either wallet or import string are required');
+    }
+
+    this.bitcoinWallet = bitcoinWallet || new BitcoinWallet(bitcoinWalletImportString!);
 
     if (bitcoinRpcUsername && bitcoinRpcPassword) {
       this.bitcoinAuthorization = Buffer.from(`${bitcoinRpcUsername}:${bitcoinRpcPassword}`).toString('base64');
