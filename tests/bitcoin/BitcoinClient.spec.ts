@@ -5,11 +5,11 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
-import ReadableStream from '../../lib/common/ReadableStream';
-import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
-import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
-import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
+import ReadableStream from '../../lib/common/ReadableStream';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
 describe('BitcoinClient', async () => {
 
