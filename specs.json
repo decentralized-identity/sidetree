@@ -28,7 +28,8 @@
         "markdown/pof.md",
         "markdown/resolution.md",
         "markdown/method-versioning.md",
-        "markdown/context.md"
+        "markdown/context.md",
+        "markdown/rest-api.md"
       ]
     }
   ]
