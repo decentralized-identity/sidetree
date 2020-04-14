@@ -10,5 +10,5 @@
   "maxPatchDataSizeInBytes": 1000,
   "maxNumberOfOperationsForNoValueTimeLock": 100,
   "normalizedFeeToPerOperationFeeMultiplier": 0.01,
-  "valueTimeLockAmountMultiplier": 10
+  "valueTimeLockAmountMultiplier": 600
 }
