@@ -4,6 +4,7 @@ import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperat
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import DidState from '../../lib/core/models/DidState';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
@@ -15,9 +16,10 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
-import Resolver from '../../lib/core/Resolver';
-import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
+import Resolver from '../../lib/core/Resolver';
+import SidetreeError from '../../lib/common/SidetreeError';
+import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,
@@ -433,6 +435,16 @@ describe('OperationProcessor', async () => {
       // Sanity check the create operation.
       expect(didState).toBeDefined();
       expect(didState!.document).toBeDefined();
+    });
+
+    it('should throw if operation of unknown type is given.', async () => {
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
+      const anchoredOperationModel = createOperationData.anchoredOperationModel;
+
+      (anchoredOperationModel.type as any) = 'UnknownType'; // Intentionally setting type to be an unknown type.
+
+      await expectAsync(operationProcessor.apply(createOperationData.anchoredOperationModel, didState))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationProcessorUnknownOperationType));
     });
 
     it('should continue if logging of an invalid operation application throws for unexpected reason', async () => {

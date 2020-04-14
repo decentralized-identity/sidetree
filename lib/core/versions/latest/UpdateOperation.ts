@@ -103,7 +103,8 @@ export default class UpdateOperation implements OperationModel {
 
     const updateRevealValue = operationObject.updateRevealValue;
 
-    const signedData = Jws.parse(operationObject.signedData);
+    const expectKidInHeader = true;
+    const signedData = Jws.parseCompactJws(operationObject.signedData, expectKidInHeader);
 
     // If not in map file mode, we need to validate `type` and `patchData` properties.
     let encodedPatchData = undefined;

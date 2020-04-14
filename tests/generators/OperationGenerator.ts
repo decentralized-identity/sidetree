@@ -5,7 +5,6 @@ import Encoder from '../../lib/core/versions/latest/Encoder';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Jws from '../../lib/core/versions/latest/util/Jws';
-import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -329,7 +328,7 @@ export default class OperationGenerator {
     const encodedPatchDataString = Encoder.encode(patchDataJsonString);
 
     const patchDataHash = Multihash.hash(Buffer.from(patchDataJsonString));
-    const signedData = await OperationGenerator.signUsingEs256k(patchDataHash, signingKeyId, signingPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(patchDataHash, signingPrivateKey, signingKeyId);
 
     const updateOperationRequest = {
       type: OperationType.Update,
@@ -394,7 +393,7 @@ export default class OperationGenerator {
       recoveryKey: newRecoveryPublicKey,
       nextRecoveryCommitmentHash
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, 'recovery', recoveryPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const patchDataEncodedString = Encoder.encode(patchDataBuffer);
     const operation = {
@@ -420,7 +419,7 @@ export default class OperationGenerator {
       didUniqueSuffix,
       recoveryRevealValue
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, 'recovery', recoveryPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
@@ -531,16 +530,16 @@ export default class OperationGenerator {
   }
 
   /**
-   * Signs the given payload as a ES256K JWS.
+   * Signs the given payload as a ES256K compact JWS.
    */
-  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: JwkEs256k): Promise<JwsModel> {
+  public static async signUsingEs256k (payload: any, privateKey: JwkEs256k, signingKeyId?: string): Promise<string> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
     };
 
-    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
-    return operationJws;
+    const compactJws = Jws.signAsCompactJws(payload, privateKey, protectedHeader);
+    return compactJws;
   }
 
   /**
