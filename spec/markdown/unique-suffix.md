@@ -10,7 +10,7 @@ did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw
 
 The process below MUST be used to correctly generate a Sidetree-based DID identifier string:
 
-1. From the values generated during the [Create](#create) operation process, assemble a valid [_Anchor File Create Entry_](#anchor-file-create-entry) JSON object, composed as follows:
+1. From the values generated during the [Create](#create) operation process, assemble the [_Anchor File Create Entry_](#anchor-file-create-entry) `suffix_data` object, composed as follows:
     
     ```json
     {
