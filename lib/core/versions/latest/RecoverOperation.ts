@@ -1,3 +1,4 @@
+import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
@@ -8,7 +9,6 @@ import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import DeltaModel from './models/DeltaModel';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {

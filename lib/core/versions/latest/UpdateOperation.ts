@@ -1,10 +1,10 @@
+import DeltaModel from './models/DeltaModel';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import DeltaModel from './models/DeltaModel';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**

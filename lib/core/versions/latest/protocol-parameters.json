@@ -3,7 +3,6 @@
   "maxAnchorFileSizeInBytes": 1000000,
   "maxMapFileSizeInBytes": 1000000,
   "maxBatchFileSizeInBytes": 20000000,
-  "maxEncodedHashStringLength": 100,
   "maxNumberOfOperationsPerTransactionTime": 600000,
   "maxNumberOfTransactionsPerTransactionTime": 300,
   "maxOperationsPerBatch": 10000,

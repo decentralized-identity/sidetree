@@ -1,5 +1,6 @@
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
+import DeltaModel from './models/DeltaModel';
 import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
@@ -7,7 +8,6 @@ import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import DeltaModel from './models/DeltaModel';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
