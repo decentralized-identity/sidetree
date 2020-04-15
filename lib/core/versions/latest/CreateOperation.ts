@@ -1,19 +1,19 @@
+import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jwk from './util/Jwk';
 import JwkEs256k from '../../models/JwkEs256k';
 import Multihash from './Multihash';
-import PatchDataModel from './models/PatchDataModel';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SuffixDataModel {
-  patchDataHash: string;
+  deltaHash: string;
   recoveryKey: JwkEs256k;
-  nextRecoveryCommitmentHash: string;
+  recoveryCommitment: string;
 }
 
 /**
@@ -33,14 +33,14 @@ export default class CreateOperation implements OperationModel {
   /** Data used to generate the unique DID suffix. */
   public readonly suffixData: SuffixDataModel;
 
-  /** Patch data. */
-  public readonly patchData: PatchDataModel | undefined;
+  /** Delta. */
+  public readonly delta: DeltaModel | undefined;
 
   /** Encoded string of the suffix data. */
   public readonly encodedSuffixData: string;
 
-  /** Encoded string of the patch data. */
-  public readonly encodedPatchData: string | undefined;
+  /** Encoded string of the delta. */
+  public readonly encodedDelta: string | undefined;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
@@ -50,15 +50,15 @@ export default class CreateOperation implements OperationModel {
     didUniqueSuffix: string,
     encodedSuffixData: string,
     suffixData: SuffixDataModel,
-    encodedPatchData: string | undefined,
-    patchData: PatchDataModel | undefined) {
+    encodedDelta: string | undefined,
+    delta: DeltaModel | undefined) {
     this.didUniqueSuffix = didUniqueSuffix;
     this.type = OperationType.Create;
     this.operationBuffer = operationBuffer;
     this.encodedSuffixData = encodedSuffixData;
     this.suffixData = suffixData;
-    this.encodedPatchData = encodedPatchData;
-    this.patchData = patchData;
+    this.encodedDelta = encodedDelta;
+    this.delta = delta;
   }
 
   /**
@@ -74,10 +74,10 @@ export default class CreateOperation implements OperationModel {
   /**
    * Parses the given input as a create operation entry in the anchor file.
    */
-  public static async parseOpertionFromAnchorFile (input: any): Promise<CreateOperation> {
+  public static async parseOperationFromAnchorFile (input: any): Promise<CreateOperation> {
     // Issue #442 - Replace `operationBuffer` in `OperationModel` and `AnchoredOperationModel` with actual operation request
-    const opertionBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await CreateOperation.parseObject(input, opertionBuffer, true);
+    const operationBuffer = Buffer.from(JSON.stringify(input));
+    const operation = await CreateOperation.parseObject(input, operationBuffer, true);
     return operation;
   }
 
@@ -96,7 +96,7 @@ export default class CreateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param anchorFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
+   * @param anchorFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<CreateOperation> {
     let expectedPropertyCount = 3;
@@ -109,29 +109,29 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty);
     }
 
-    const encodedSuffixData = operationObject.suffixData;
+    const encodedSuffixData = operationObject.suffix_data;
     const suffixData = await CreateOperation.parseSuffixData(encodedSuffixData);
 
-    // If not in anchor file mode, we need to validate `type` and `patchData` properties.
-    let encodedPatchData = undefined;
-    let patchData = undefined;
+    // If not in anchor file mode, we need to validate `type` and `delta` properties.
+    let encodedDelta = undefined;
+    let delta = undefined;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Create) {
         throw new SidetreeError(ErrorCode.CreateOperationTypeIncorrect);
       }
 
-      encodedPatchData = operationObject.patchData;
+      encodedDelta = operationObject.delta;
       try {
-        patchData = await Operation.parsePatchData(operationObject.patchData);
+        delta = await Operation.parseDelta(operationObject.delta);
       } catch {
-        // For compatibility with data pruning, we have to assume that patch data may be unavailable,
-        // thus an operation with invalid patch data needs to be processed as an operation with unavailable patch data,
-        // so here we let patch data be `undefined`.
+        // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
+        // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
+        // so here we let `delta` be `undefined`.
       }
     }
 
-    const didUniqueSuffix = CreateOperation.computeDidUniqueSuffix(operationObject.suffixData);
-    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedPatchData, patchData);
+    const didUniqueSuffix = CreateOperation.computeDidUniqueSuffix(operationObject.suffix_data);
+    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedDelta, delta);
   }
 
   private static async parseSuffixData (suffixDataEncodedString: any): Promise<SuffixDataModel> {
@@ -147,14 +147,18 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(suffixData.recoveryKey);
+    Jwk.validateJwkEs256k(suffixData.recovery_key);
 
-    const patchDataHash = Encoder.decodeAsBuffer(suffixData.patchDataHash);
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(suffixData.nextRecoveryCommitmentHash);
+    const deltaHash = Encoder.decodeAsBuffer(suffixData.delta_hash);
+    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recovery_commitment);
 
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(patchDataHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
 
-    return suffixData;
+    return {
+      deltaHash: suffixData.delta_hash,
+      recoveryKey: suffixData.recovery_key,
+      recoveryCommitment: suffixData.recovery_commitment
+    };
   }
 }

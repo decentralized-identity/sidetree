@@ -18,50 +18,69 @@ export default class Jws {
   /** Signature. */
   public readonly signature: string;
 
-  private constructor (input: any) {
-    const decodedProtectedHeadJsonString = Encoder.decodeAsString(input.protected);
+  /**
+   * Constructs a JWS object.
+   * @param compactJws Input should be a compact JWS string.
+   * @param expectKidInHeader If set to `true`, the given compact JWS must contain `kid`; else the compact JWS must not contain `kid`.
+   */
+  private constructor (compactJws: any, expectKidInHeader: boolean) {
+    if (typeof compactJws !== 'string') {
+      throw new SidetreeError(ErrorCode.JwsCompactJwsNotString);
+    }
+
+    const parts = compactJws.split('.');
+    if (parts.length !== 3) {
+      throw new SidetreeError(ErrorCode.JwsCompactJwsInvalid);
+    }
+
+    const protectedHeader = parts[0];
+    const payload = parts[1];
+    const signature = parts[2];
+
+    const decodedProtectedHeadJsonString = Encoder.decodeBase64UrlAsString(protectedHeader);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
+    let expectedHeaderPropertyCount = 1; // By default we must have header property is `alg`.
+    if (expectKidInHeader) {
+      expectedHeaderPropertyCount = 2;
+    }
+
     const headerProperties = Object.keys(decodedProtectedHeader);
-    if (headerProperties.length !== 2) {
+    if (headerProperties.length !== expectedHeaderPropertyCount) {
       throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrUnknownProperty);
     }
 
-    // 'protected' property must contain a string 'kid' property.
-    if (typeof decodedProtectedHeader.kid !== 'string') {
-      throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid);
-    }
-
-    // 'protected' property must contain 'alg' property with value 'ES256k'.
+    // Protected header must contain 'alg' property with value 'ES256K'.
     if (decodedProtectedHeader.alg !== 'ES256K') {
       throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectAlg);
     }
 
-    // Must contain string 'signature' property.
-    if (typeof input.signature !== 'string') {
-      throw new SidetreeError(ErrorCode.JwsMissingOrIncorrectSignature);
+    // If protected header contains 2 properties, the 2nd property must be a string 'kid' property.
+    if (headerProperties.length === 2 && typeof decodedProtectedHeader.kid !== 'string') {
+      throw new SidetreeError(ErrorCode.JwsProtectedHeaderMissingOrIncorrectKid);
     }
 
-    // Must contain string 'payload' property.
-    if (typeof input.payload !== 'string') {
-      throw new SidetreeError(ErrorCode.JwsMissingOrIncorrectPayload);
+    // Must contain Base64URL string 'signature' property.
+    if (!Encoder.isBase64UrlString(signature)) {
+      throw new SidetreeError(ErrorCode.JwsSignatureNotBase64UrlString);
+    }
+
+    // Must contain Base64URL string 'payload' property.
+    if (!Encoder.isBase64UrlString(payload)) {
+      throw new SidetreeError(ErrorCode.JwsPayloadNotBase64UrlString);
     }
 
     this.kid = decodedProtectedHeader.kid;
-    this.protected = input.protected;
-    this.payload = input.payload;
-    this.signature = input.signature;
+    this.protected = protectedHeader;
+    this.payload = payload;
+    this.signature = signature;
   }
 
   /**
-   * Returns this object as a JwsModel object.
+   * Converts this object to a compact JWS string.
    */
-  public toJwsModel (): JwsModel {
-    return {
-      protected: this.protected,
-      payload: this.payload,
-      signature: this.signature
-    };
+  public toCompactJws (): string {
+    return Jws.createCompactJws(this.protected, this.payload, this.signature);
   }
 
   /**
@@ -128,15 +147,23 @@ export default class Jws {
    * Signs the given payload as a compact JWS string.
    * This is mainly used by tests to create valid test data.
    */
-  public static signAsCompactJws (payload: object, privateKey: any): string {
-    const compactJws = JWS.sign(payload, privateKey);
+  public static signAsCompactJws (payload: object, privateKey: any, protectedHeader?: object): string {
+    const compactJws = JWS.sign(payload, privateKey, protectedHeader);
     return compactJws;
   }
 
   /**
    * Parses the input as a `Jws` object.
+   * @param expectKidInHeader If set to `true`, the given compact JWS must contain `kid`; else the compact JWS must not contain `kid`.
    */
-  public static parse (input: any): Jws {
-    return new Jws(input);
+  public static parseCompactJws (compactJws: any, expectKidInHeader: boolean): Jws {
+    return new Jws(compactJws, expectKidInHeader);
+  }
+
+  /**
+   * Creates a compact JWS string using the given input. No string validation is performed.
+   */
+  public static createCompactJws (protectedHeader: string, payload: string, signature: string): string {
+    return protectedHeader + '.' + payload + '.' + signature;
   }
 }

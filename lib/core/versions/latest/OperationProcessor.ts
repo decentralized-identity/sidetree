@@ -76,25 +76,25 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await CreateOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Ensure actual patch data hash matches expected patch data hash.
-    const isMatchingPatchData = Multihash.isValidHash(operation.encodedPatchData, operation.suffixData.patchDataHash);
-    if (!isMatchingPatchData) {
+    // Ensure actual delta hash matches expected delta hash.
+    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.suffixData.deltaHash);
+    if (!isMatchingDelta) {
       return didState;
     }
 
     // Apply the given patches against an empty object.
-    const patchData = operation.patchData;
+    const delta = operation.delta;
     let document = { };
     try {
-      if (patchData !== undefined) {
-        document = DocumentComposer.applyPatches(document, patchData.patches);
+      if (delta !== undefined) {
+        document = DocumentComposer.applyPatches(document, delta.patches);
       }
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
       console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the update.
+      // Return the given DID state if error is encountered applying the patches.
       return didState;
     }
 
@@ -102,8 +102,8 @@ export default class OperationProcessor implements IOperationProcessor {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
       recoveryKey: operation.suffixData.recoveryKey,
-      nextRecoveryCommitmentHash: operation.suffixData.nextRecoveryCommitmentHash,
-      nextUpdateCommitmentHash: patchData ? patchData.nextUpdateCommitmentHash : undefined,
+      nextRecoveryCommitmentHash: operation.suffixData.recoveryCommitment,
+      nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -126,9 +126,9 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
-    // Verify the patch data hash against the expected patch data hash.
-    const isValidPatchData = Multihash.isValidHash(operation.encodedPatchData, operation.signedData.payload);
-    if (!isValidPatchData) {
+    // Verify the delta hash against the expected delta hash.
+    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.payload);
+    if (!isValidDelta) {
       return didState;
     }
 
@@ -140,7 +140,7 @@ export default class OperationProcessor implements IOperationProcessor {
       const transactionNumber = anchoredOperationModel.transactionNumber;
       console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the update.
+      // Return the given DID state if error is encountered applying the patches.
       return didState;
     }
 
@@ -149,7 +149,7 @@ export default class OperationProcessor implements IOperationProcessor {
       nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
       // New values below.
       document: resultingDocument,
-      nextUpdateCommitmentHash: operation.patchData!.nextUpdateCommitmentHash,
+      nextUpdateCommitmentHash: operation.delta!.updateCommitment,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
@@ -178,25 +178,25 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
-    // Verify the actual patch data hash against the expected patch data hash.
-    const isMatchingPatchData = Multihash.isValidHash(operation.encodedPatchData, operation.signedData.patchDataHash);
-    if (!isMatchingPatchData) {
+    // Verify the actual delta hash against the expected delta hash.
+    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
+    if (!isMatchingDelta) {
       return didState;
     }
 
     // Apply the given patches against an empty object.
-    const patchData = operation.patchData;
+    const delta = operation.delta;
     let document = { };
     try {
-      if (patchData !== undefined) {
-        document = DocumentComposer.applyPatches(document, patchData.patches);
+      if (delta !== undefined) {
+        document = DocumentComposer.applyPatches(document, delta.patches);
       }
     } catch (error) {
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
       const transactionNumber = anchoredOperationModel.transactionNumber;
       console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the update.
+      // Return the given DID state if error is encountered applying the patches.
       return didState;
     }
 
@@ -205,7 +205,7 @@ export default class OperationProcessor implements IOperationProcessor {
       document,
       recoveryKey: operation.signedData.recoveryKey,
       nextRecoveryCommitmentHash: operation.signedData.nextRecoveryCommitmentHash,
-      nextUpdateCommitmentHash: patchData ? patchData.nextUpdateCommitmentHash : undefined,
+      nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 

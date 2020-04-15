@@ -50,7 +50,7 @@ export default class BatchWriter implements IBatchWriter {
     const deactivateOperations = operationModels.filter(operation => operation.type === OperationType.Deactivate) as DeactivateOperation[];
 
     // Create the batch file buffer from the operation models.
-    // NOTE: deactivate operations don't have patch data.
+    // NOTE: deactivate operations don't have delta.
     const batchFileBuffer = await BatchFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
     // Write the batch file to content addressable store.

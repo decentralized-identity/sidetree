@@ -1,5 +1,6 @@
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
+import DeltaModel from './models/DeltaModel';
 import DocumentComposer from './DocumentComposer';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
@@ -7,7 +8,6 @@ import JsonAsync from './util/JsonAsync';
 import Multihash from './Multihash';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import PatchDataModel from './models/PatchDataModel';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -43,31 +43,34 @@ export default class Operation {
   }
 
   /**
-   * Parses the given encoded patch data string.
+   * Parses the given encoded delta string into an internal `DeltaModel`.
    */
-  public static async parsePatchData (patchDataEncodedString: any): Promise<PatchDataModel> {
-    if (typeof patchDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.PatchDataMissingOrNotString);
+  public static async parseDelta (deltaEncodedString: any): Promise<DeltaModel> {
+    if (typeof deltaEncodedString !== 'string') {
+      throw new SidetreeError(ErrorCode.DeltaMissingOrNotString);
     }
 
-    const patchDataJsonString = Encoder.decodeAsString(patchDataEncodedString);
-    const patchData = await JsonAsync.parse(patchDataJsonString);
+    const deltaJsonString = Encoder.decodeAsString(deltaEncodedString);
+    const delta = await JsonAsync.parse(deltaJsonString);
 
-    const properties = Object.keys(patchData);
+    const properties = Object.keys(delta);
     if (properties.length !== 2) {
-      throw new SidetreeError(ErrorCode.PatchDataMissingOrUnknownProperty);
+      throw new SidetreeError(ErrorCode.DeltaMissingOrUnknownProperty);
     }
 
-    if (patchData.patches === undefined) {
+    if (delta.patches === undefined) {
       throw new SidetreeError(ErrorCode.OperationDocumentPatchesMissing);
     }
 
     // Validate `patches` property using the DocumentComposer.
-    DocumentComposer.validateDocumentPatches(patchData.patches);
+    DocumentComposer.validateDocumentPatches(delta.patches);
 
-    const nextUpdateCommitmentHash = Encoder.decodeAsBuffer(patchData.nextUpdateCommitmentHash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitmentHash);
+    const nextUpdateCommitment = Encoder.decodeAsBuffer(delta.update_commitment);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitment);
 
-    return patchData;
+    return {
+      patches: delta.patches,
+      updateCommitment: delta.update_commitment
+    };
   }
 }

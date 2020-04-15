@@ -10,8 +10,8 @@ export default interface ProtocolParameters {
   maxMapFileSizeInBytes: number;
   /** Maximum allowed size of batch file stored in Content Addressable Storage. */
   maxBatchFileSizeInBytes: number;
-  /** Maximum allowed length of any encoded hash string across all protocol versions until current point in time. */
-  maxEncodedHashStringLength: number;
+  /** Maximum size of the `delta` property in bytes. */
+  maxDeltaSizeInBytes: number;
   /** Max number of operations observed per transaction time */
   maxNumberOfOperationsPerTransactionTime: number;
   /** Maximum number of operations allowed with no lock. */
@@ -20,8 +20,6 @@ export default interface ProtocolParameters {
   maxNumberOfTransactionsPerTransactionTime: number;
   /** Maximum operations per batch. */
   maxOperationsPerBatch: number;
-  /** Maximum size of the `patchData` property in bytes. */
-  maxPatchDataSizeInBytes: number;
   /** The multiplier that converts the normalized fee from blockchain into a 'per operation' fee. */
   normalizedFeeToPerOperationFeeMultiplier: number;
   /** The multiplier that converts the normalized 'per operation' fee into 'per operation lock amount' */

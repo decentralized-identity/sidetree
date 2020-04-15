@@ -108,7 +108,7 @@ describe('RecoverOperation', async () => {
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {
-        patchDataHash: 'anyUnusedHash',
+        delta_hash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'

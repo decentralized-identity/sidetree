@@ -213,8 +213,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
     operations.push(...updateOperations);
     operations.push(...deactivateOperations);
 
-    // If batch file is found/given, we need to add `type` and `patchData` from batch file to each operation.
-    // NOTE: there is no patch data for deactivate operations.
+    // If batch file is found/given, we need to add `type` and `delta` from batch file to each operation.
+    // NOTE: there is no delta for deactivate operations.
     const patchedOperationBuffers: Buffer[] = [];
     if (batchFile !== undefined) {
 
@@ -228,7 +228,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
         const operationJsonString = operation.operationBuffer.toString();
         const operationObject = await JsonAsync.parse(operationJsonString);
         operationObject.type = operation.type;
-        operationObject.patchData = batchFile.patchSet[i];
+        operationObject.delta = batchFile.patchSet[i];
 
         const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
         patchedOperationBuffers.push(patchedOperationBuffer);

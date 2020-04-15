@@ -1,6 +1,7 @@
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Jwk from './util/Jwk';
 import PublicKeyModel from './models/PublicKeyModel';
@@ -116,7 +117,7 @@ export default class DocumentComposer {
     }
 
     // The operation passes all checks, apply the patches.
-    const resultantDocument = DocumentComposer.applyPatches(document, operation.patchData!.patches);
+    const resultantDocument = DocumentComposer.applyPatches(document, operation.delta!.patches);
 
     return resultantDocument;
   }
@@ -356,20 +357,11 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
     }
 
-    if (!DocumentComposer.isBase64UrlString(id)) {
+    if (!Encoder.isBase64UrlString(id)) {
       throw new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
     }
   }
 
-  private static isBase64UrlString (input: string): boolean {
-    // NOTE:
-    // '/<expression>/ denotes regex.
-    // ^ denotes beginning of string.
-    // $ denotes end of string.
-    // + denotes one or more characters.
-    const isBase64UrlString = /^[A-Za-z0-9_-]+$/.test(input);
-    return isBase64UrlString;
-  }
   /**
    * Applies the given patches in order to the given document.
    * NOTE: Assumes no schema validation is needed, since validation should've already occurred at the time of the operation being parsed.

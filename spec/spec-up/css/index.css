@@ -145,7 +145,7 @@ h6 code {
 
 ol, ul {
   margin: 0;
-  padding: 0 1.5em;
+  padding: 0 0 0 1.2em;
 }
 
 dt {
@@ -575,7 +575,7 @@ pre[class*="language-"] {
 }
 
 .toc {
-  padding: 0;
+  padding: 0 0 1.75em;
   font-size: 0.85em;
 }
 
