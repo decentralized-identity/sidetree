@@ -5,30 +5,30 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('Operation', async () => {
-  describe('parsePatchData()', async () => {
-    it('should throw if patch data is not string', async () => {
-      await expectAsync(Operation.parsePatchData(123)).toBeRejectedWith(new SidetreeError(ErrorCode.PatchDataMissingOrNotString));
+  describe('parseDelta()', async () => {
+    it('should throw if delta is not string', async () => {
+      await expectAsync(Operation.parseDelta(123)).toBeRejectedWith(new SidetreeError(ErrorCode.DeltaMissingOrNotString));
     });
 
-    it('should throw if patch data contains an additional unknown property.', async () => {
-      const patchData = {
+    it('should throw if delta contains an additional unknown property.', async () => {
+      const delta = {
         patches: 'any opaque content',
-        nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        update_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
-      const encodedPatchData = Encoder.encode(JSON.stringify(patchData));
-      await expectAsync(Operation.parsePatchData(encodedPatchData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.PatchDataMissingOrUnknownProperty));
+      const encodedDelta = Encoder.encode(JSON.stringify(delta));
+      await expectAsync(Operation.parseDelta(encodedDelta))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.DeltaMissingOrUnknownProperty));
     });
 
-    it('should throw if patch data is missing patches property.', async () => {
-      const patchData = {
+    it('should throw if delta is missing patches property.', async () => {
+      const delta = {
         // patches: 'any opaque content', // Intentionally missing.
-        nextUpdateCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        update_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
-      const encodedPatchData = Encoder.encode(JSON.stringify(patchData));
-      await expectAsync(Operation.parsePatchData(encodedPatchData))
+      const encodedDelta = Encoder.encode(JSON.stringify(delta));
+      await expectAsync(Operation.parseDelta(encodedDelta))
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationDocumentPatchesMissing));
     });
   });

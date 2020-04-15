@@ -224,14 +224,14 @@ export default class OperationGenerator {
 
   /**
    * Generates a create operation request.
-   * @param nextRecoveryCommitmentHash The encoded commitment hash for the next recovery.
-   * @param nextUpdateCommitmentHash The encoded commitment hash for the next update.
+   * @param nextRecoveryCommitment The encoded commitment hash for the next recovery.
+   * @param nextUpdateCommitment The encoded commitment hash for the next update.
    */
   public static async generateCreateOperationRequest (
     recoveryPublicKey: JwkEs256k,
     signingPublicKey: PublicKeyModel,
-    nextRecoveryCommitmentHash: string,
-    nextUpdateCommitmentHash: string,
+    nextRecoveryCommitment: string,
+    nextUpdateCommitment: string,
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
       publicKeys: [signingPublicKey],
@@ -243,26 +243,26 @@ export default class OperationGenerator {
       document
     }];
 
-    const patchData = {
-      nextUpdateCommitmentHash,
+    const delta = {
+      update_commitment: nextUpdateCommitment,
       patches
     };
 
-    const patchDataBuffer = Buffer.from(JSON.stringify(patchData));
-    const patchDataHash = Encoder.encode(Multihash.hash(patchDataBuffer));
+    const deltaBuffer = Buffer.from(JSON.stringify(delta));
+    const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
 
     const suffixData = {
-      patchDataHash,
-      recoveryKey: recoveryPublicKey,
-      nextRecoveryCommitmentHash
+      delta_hash: deltaHash,
+      recovery_key: recoveryPublicKey,
+      recovery_commitment: nextRecoveryCommitment
     };
 
     const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
-    const patchDataEncodedString = Encoder.encode(patchDataBuffer);
+    const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Create,
-      suffixData: suffixDataEncodedString,
-      patchData: patchDataEncodedString
+      suffix_data: suffixDataEncodedString,
+      delta: deltaEncodedString
     };
 
     return operation;
@@ -320,21 +320,21 @@ export default class OperationGenerator {
     signingKeyId: string,
     signingPrivateKey: JwkEs256k
   ) {
-    const patchData = {
+    const delta = {
       patches,
-      nextUpdateCommitmentHash
+      update_commitment: nextUpdateCommitmentHash
     };
-    const patchDataJsonString = JSON.stringify(patchData);
-    const encodedPatchDataString = Encoder.encode(patchDataJsonString);
+    const deltaJsonString = JSON.stringify(delta);
+    const encodedDeltaString = Encoder.encode(deltaJsonString);
 
-    const patchDataHash = Multihash.hash(Buffer.from(patchDataJsonString));
-    const signedData = await OperationGenerator.signUsingEs256k(patchDataHash, signingPrivateKey, signingKeyId);
+    const deltaHash = Multihash.hash(Buffer.from(deltaJsonString));
+    const signedData = await OperationGenerator.signUsingEs256k(deltaHash, signingPrivateKey, signingKeyId);
 
     const updateOperationRequest = {
       type: OperationType.Update,
       didUniqueSuffix,
       updateRevealValue,
-      patchData: encodedPatchDataString,
+      delta: encodedDeltaString,
       signedData
     };
 
@@ -380,28 +380,28 @@ export default class OperationGenerator {
       document
     }];
 
-    const patchData = {
+    const delta = {
       patches,
-      nextUpdateCommitmentHash
+      update_commitment: nextUpdateCommitmentHash
     };
 
-    const patchDataBuffer = Buffer.from(JSON.stringify(patchData));
-    const patchDataHash = Encoder.encode(Multihash.hash(patchDataBuffer));
+    const deltaBuffer = Buffer.from(JSON.stringify(delta));
+    const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
 
     const signedDataPayloadObject = {
-      patchDataHash,
+      deltaHash,
       recoveryKey: newRecoveryPublicKey,
       nextRecoveryCommitmentHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
-    const patchDataEncodedString = Encoder.encode(patchDataBuffer);
+    const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Recover,
       didUniqueSuffix,
       recoveryRevealValue,
       signedData,
-      patchData: patchDataEncodedString
+      delta: deltaEncodedString
     };
 
     return operation;

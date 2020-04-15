@@ -16,14 +16,14 @@ Architecturally, a Sidetree network is a network consisting of multiple logical 
 | Term                  | Description                                                                    |
 |-----------------------|--------------------------------------------------------------------------------|
 | Anchor file           | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file            | The file containing all the patch data batched together.                   |
+| Batch file            | The file containing the deltas from all the batch operations.                  |
 | CAS                   | Same as DCAS.                                                                  |
 | DCAS                  | Distributed content-addressable storage.                                       |
 | DID Document          | A document containing metadata of a DID, see [DID specification](https://w3c-ccg.github.io/did-spec/). |
 | DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
 | Operation             | A change to a document of a DID.                                               |
 | Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
-| Recovery key          | A key that is used to perform recovery or deactivate operation.                    |
+| Recovery key          | A key that is used to perform recovery or deactivate operation.                |
 | Sidetree node         | A logical server executing Sidetree protocol rules.                            |
 | Suffix data           | Data required to deterministically generate a DID .                            |
 | Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
@@ -102,57 +102,11 @@ This feature allows any entity to support all of the following usage patterns:
 
 At such time an ID is published/anchored, a user can provide either the parametered or unparametered version of the ION DID URI to an external party, and it will be resolvable. There is no required change for any party that had been holding the parametered version of the URI - it will continue to resolve just as it had prior to being anchored. In addition, the community will introduce a generic, standard property: `published` in the [DID resolution spec](https://w3c-ccg.github.io/did-resolution/#output-resolvermetadata), that is added to the DID resolution response. The `published` property indicates whether a DID has been published/anchored in the underlying trust system a DID Method writes to. When an entity resolves any DID from any DID Method and finds that the DID has been published, the entity may drop the `-<method-name>-initial-state` DID parameter from their held references to the DID in question, if they so desire. However, dropping the `-<method-name>-initial-state` DID parameter after publication is purely an elective act - the ID will resolve correctly regardless.
 
-
-## Sidetree Operation Batching
-The Sidetree protocol increases operation throughput by batching multiple operations together then anchoring a reference to this operation batch on the blockchain.
-For every batch of Sidetree operations created, there are three files that are created and stored in the CAS layer:
-
-1. Batch file - The file containing the actual change data of all the operations batched together.
-1. Map file - This file contain references to one or more _batch files_. Currently this map file only reference one batch file, but this design allows for all the patch data to be separated into multiple batch files for optimized on-demand resolution. 
-1. Anchor file - The hash of the _anchor file_ is written to the blockchain as a Sidetree transaction, hence the name _'anchor'_. This file contains the following:
-    1. Hash of the _map file_.
-    1. Array of DID suffixes (the unique portion of the DID string that differentiates one DID from another) for all DIDs that are declared to have operations within the associated _batch file_.
-
-
-### Batch File Schema
-The _batch file_ is a ZIP compressed JSON document of the following schema:
-```json
-{
-  "patchSet": [
-    "Encoded patchData from 1st operation request",
-    "Encoded patchData from 2nd operation request",
-    "Encoded patchData from nth operation request",
-  ]
-}
-```
-
-### Map File Schema
-The _map file_ is a JSON document of the following schema:
-```json
-{
-  "batchFileHash": "Encoded multihash of the batch file.",
-  "updateOperations": ["Update operation request excluding `type` and `patchData` properties.", "..."]
-}
-```
-
-### Anchor File Schema
-The _anchor file_ is a JSON document of the following schema:
-```json
-{
-  "mapFileHash": "Encoded multihash of the map file.",
-  "operations": {
-    "createOperations": ["Update operation request excluding `type` and `patchData` properties.", "..."],
-    "recoverOperations": ["Recover operation request excluding `type` and `patchData` properties.", "..."],
-    "deactivateOperations": ["Deactivate operation request excluding `type` properties.", "..."]
-  }
-}
-```
-
-### Anchor String Schema
+## Anchor String Schema
 The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
 
 ```
-[encoded_number_of_operations].[hash_of_batch_file]
+[encoded_number_of_operations].[hash_of_anchor_file]
 
 WHERE
 
@@ -161,14 +115,14 @@ WHERE
  hash_of_batch_file: The hash of the batch file
 ```
 
-#### Example
+### Example
 The following anchor string encodes 10000 operations and the hash of the batch file.
 
 ```
 ECcAAA.QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
 ```
 
-### Operation chaining of a DID
+## Operation chaining of a DID
 ![DID Operation Chaining](./diagrams/operationChaining.png)
 
 
@@ -281,25 +235,25 @@ POST / HTTP/1.1
 ```json
 {
   "type": "create",
-  "suffixData": "Encoded JSON object containing data used to compute the unique DID suffix.",
-  "patchData": "Encoded JSON object containing create patch data."
+  "suffix_data": "Encoded JSON object containing data used to compute the unique DID suffix.",
+  "delta": "Encoded JSON object containing data on document patches."
 }
 ```
 
-#### `suffixData` property schema
+#### `suffix_data` property schema
 ```json
 {
-  "patchDataHash": "Hash of the patch data.",
-  "recoveryKey": "A SECP256K1 public key expressed in compressed JWK format.",
-  "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
+  "delta_hash": "Hash of the delta property.",
+  "recovery_key": "A SECP256K1 public key expressed in compressed JWK format.",
+  "recovery_commitment": "Commitment hash for the next recovery."
 }
 ```
 
-#### `patchData` property schema
+#### `delta` property schema
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the document patch schema.",
-  "nextUpdateCommitmentHash": "Commitment hash to for the next update.",
+  "update_commitment": "Commitment hash to for the next update.",
 }
 ```
 
@@ -365,18 +319,18 @@ POST / HTTP/1.1
   "updateRevealValue": "Reveal value for this update.",
   "signedData": {
     "protected": "JWS header.",
-    "payload": "Hash of the patch data.",
+    "payload": "Hash of the delta.",
     "signature": "JWS signature."
   },
-  "patchData": "Encoded JSON object containing update patch data."
+  "delta": "Encoded JSON object containing update delta."
 }
 ```
 
-#### Decoded `patchData` schema
+#### Decoded `delta` schema
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the patch schema.",
-  "nextUpdateCommitmentHash": "Commitment hash for the next update."
+  "update_commitment": "Commitment hash for the next update."
 }
 ```
 
@@ -409,24 +363,24 @@ POST / HTTP/1.1
     "payload": "JWS encoded JSON object containing recovery data that are signed.",
     "signature": "JWS signature."
   },
-  "patchData": "Encoded JSON object containing recovery patch data."
+  "delta": "Encoded JSON object containing recovery delta."
 }
 ```
 
 #### `signedData` decoded payload schema
 ```json
 {
-  "patchDataHash": "Hash of the encoded patch data.",
+  "deltaHash": "Hash of the encoded delta.",
   "recoveryKey": "The new recovery key.",
   "nextRecoveryCommitmentHash": "Commitment hash for the next recovery."
 }
 ```
 
-#### Decoded `patchData` schema
+#### Decoded `delta` schema
 ```json
 {
   "patches": "An array of patches where each entry is a patch defined by the patch schema.",
-  "nextUpdateCommitmentHash": "Commitment hash for the next update.",
+  "update_commitment": "Commitment hash for the next update.",
 }
 ```
 

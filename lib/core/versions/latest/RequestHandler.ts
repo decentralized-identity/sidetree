@@ -40,15 +40,15 @@ export default class RequestHandler implements IRequestHandler {
     try {
       const operationRequest = await JsonAsync.parse(request);
 
-      // Check `patchData` property data size if they exist in the operation.
+      // Check `delta` property data size if they exist in the operation.
       if (operationRequest.type === OperationType.Create ||
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
-        const patchDataBuffer = Buffer.from(operationRequest.patchData);
-        if (patchDataBuffer.length > ProtocolParameters.maxPatchDataSizeInBytes) {
-          const errorMessage = `operationDdata byte size of ${patchDataBuffer.length} exceeded limit of ${ProtocolParameters.maxPatchDataSizeInBytes}`;
+        const deltaBuffer = Buffer.from(operationRequest.delta);
+        if (deltaBuffer.length > ProtocolParameters.maxDeltaSizeInBytes) {
+          const errorMessage = `operationDdata byte size of ${deltaBuffer.length} exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes}`;
           console.info(errorMessage);
-          throw new SidetreeError(ErrorCode.RequestHandlerPatchDataExceedsMaximumSize, errorMessage);
+          throw new SidetreeError(ErrorCode.RequestHandlerDeltaExceedsMaximumSize, errorMessage);
         }
       }
 
@@ -208,14 +208,14 @@ export default class RequestHandler implements IRequestHandler {
     return didState;
   }
 
-  private async applyCreateOperation (createOpertion: OperationModel): Promise<DidState | undefined> {
+  private async applyCreateOperation (createOperation: OperationModel): Promise<DidState | undefined> {
     const operationWithMockedAnchorTime = {
-      didUniqueSuffix: createOpertion.didUniqueSuffix,
+      didUniqueSuffix: createOperation.didUniqueSuffix,
       type: OperationType.Create,
       transactionTime: 0,
       transactionNumber: 0,
       operationIndex: 0,
-      operationBuffer: createOpertion.operationBuffer
+      operationBuffer: createOperation.operationBuffer
     }; // NOTE: The transaction timing does not matter here, we are just computing a "theoretical" document if it were anchored on blockchain.
 
     const newDidState = await this.operationProcessor.apply(operationWithMockedAnchorTime, undefined);

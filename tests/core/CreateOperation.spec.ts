@@ -59,9 +59,9 @@ describe('CreateOperation', async () => {
     it('should throw if suffix data contains an additional unknown property.', async () => {
       const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const suffixData = {
-        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryKey: anyRecoveryPublicKey,
-        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_key: anyRecoveryPublicKey,
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         extraProperty: 'An unknown extra property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -72,8 +72,8 @@ describe('CreateOperation', async () => {
     it('should throw if suffix data is missing recovery key.', async () => {
       // Intentionally missing `recoveryKey`.
       const suffixData = {
-        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         unknownProperty: 'An unknown property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -83,9 +83,9 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data has recovery key with unknown property.', async () => {
       const suffixData = {
-        patchDataHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recoveryKey: { knownProperty: 123 },
-        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_key: { knownProperty: 123 },
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
