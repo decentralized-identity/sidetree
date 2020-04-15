@@ -17,7 +17,7 @@ import SidetreeError from '../../../common/SidetreeError';
 export default class AnchorFile {
 
   /**
-   * Class that represends an anchor file.
+   * Class that represents an anchor file.
    * NOTE: this class is introduced as an internal structure in replacement to `AnchorFileModel`
    * to keep useful metadata so that repeated computation can be avoided.
    */
@@ -165,7 +165,7 @@ export default class AnchorFile {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         recoveryRevealValue: operation,
-        signedData: operation.signedDataJws.toJwsModel()
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 
@@ -173,7 +173,7 @@ export default class AnchorFile {
       return {
         didUniqueSuffix: operation.didUniqueSuffix,
         recoveryRevealValue: operation.recoveryRevealValue,
-        signedData: operation.signedDataJws.toJwsModel()
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 

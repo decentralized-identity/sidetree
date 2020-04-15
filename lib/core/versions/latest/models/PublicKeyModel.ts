@@ -4,5 +4,6 @@
 export default interface PublicKeyModel {
   id: string;
   type: string;
-  publicKeyJwk: any;
+  jwk: any;
+  usage: string[];
 }

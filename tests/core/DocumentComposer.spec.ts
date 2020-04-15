@@ -1,15 +1,143 @@
+import DidState from '../../lib/core/models/DidState';
 import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DocumentComposer', async () => {
+
+  describe('transformToExternalDocument', () => {
+    it('should output the expected resolution result', async () => {
+      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
+      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: anyCommitmentHash,
+        nextUpdateCommitmentHash: anyCommitmentHash,
+        recoveryKey: anyRecoveryPublicKey
+      };
+
+      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
+
+      expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
+      expect(result.methodMetadata).toEqual({
+        operationPublicKeys: [{
+          id: '#anySigningKey', // ops usage keys go here
+          controller: '',
+          type: 'Secp256k1VerificationKey2019',
+          publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
+        }],
+        recoveryKey: { kty: 'EC', crv: 'secp256k1', x: anyRecoveryPublicKey.x, y: anyRecoveryPublicKey.y }
+      });
+      expect(result.didDocument).toEqual({
+        id: 'did:method:suffix',
+        '@context': [ 'https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' } ],
+        service: undefined,
+        publicKey: [{
+          id: '#anySigningKey',
+          controller: '',
+          type: 'Secp256k1VerificationKey2019',
+          publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
+        }],
+        authentication: [
+          'did:method:suffix#anySigningKey', // reference because it is a general usage key
+          {
+            id: '#authePbulicKey', // object here because it is an auth usage only key
+            controller: '',
+            type: 'Secp256k1VerificationKey2019',
+            publicKeyJwk: {
+              kty: 'EC', crv: 'secp256k1', x: authPublicKey.jwk.x, y: authPublicKey.jwk.y
+            }
+          }
+        ]
+      });
+    });
+
+    it('should return status deactivated if next recovery commit hash is undefined', async () => {
+      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
+      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const document = {
+        publicKeys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: undefined,
+        nextUpdateCommitmentHash: anyCommitmentHash,
+        recoveryKey: anyRecoveryPublicKey
+      };
+
+      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
+      expect(result).toEqual({ status: 'deactivated' });
+    });
+  });
+
+  describe('validateOperationKey', () => {
+    it('should throw if undefined is passed in', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
+      expect(() => { DocumentComposer['validateOperationKey'](undefined); }).toThrow(expectedError);
+    });
+
+    it('should throw if usage does not contain ops', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
+      expect(() => {
+        DocumentComposer['validateOperationKey']({
+          id: 'someId',
+          type: 'Secp256k1VerificationKey2019',
+          jwk: {},
+          usage: []
+        });
+      }).toThrow(expectedError);
+    });
+
+    it('should throw if type is not Secp256k1VerificationKey2019', () => {
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
+      expect(() => {
+        DocumentComposer['validateOperationKey']({
+          id: 'someId',
+          type: 'invalidType',
+          jwk: {},
+          usage: []
+        });
+      }).toThrow(expectedError);
+    });
+  });
+
+  describe('addServiceEndpoints', () => {
+    it('should add expected service endpoints to document', () => {
+      const document: DocumentModel = {
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }]
+      };
+
+      const patch = {
+        action: 'add-service-endpoints',
+        serviceEndpoints: [{
+          id: 'someId',
+          type: 'someType',
+          serviceEndpoint: 'someEndpoint'}]
+      };
+
+      const result = DocumentComposer['addServiceEndpoints'](document, patch);
+
+      expect(result.serviceEndpoints).toEqual([{ id: 'someId', type: 'someType', serviceEndpoint: 'someEndpoint' }]);
+    });
+  });
+
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from serviceEndpoints', () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
         serviceEndpoints: [
           { id: '1', type: 't', serviceEndpoint: 'se' },
           { id: '2', type: 't', serviceEndpoint: 'se' },
@@ -26,7 +154,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
         serviceEndpoints: [
           { id: '2', type: 't', serviceEndpoint: 'se' },
           { id: '4', type: 't', serviceEndpoint: 'se' }
@@ -34,6 +162,20 @@ describe('DocumentComposer', async () => {
       };
 
       expect(result).toEqual(expected);
+    });
+
+    it('should leave document unchanged if it does not have service endpoint property', () => {
+      const document: DocumentModel = {
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }]
+      };
+
+      const patch = {
+        action: 'remove-service-endpoints',
+        serviceEndpointIds: ['1', '3']
+      };
+
+      const result = DocumentComposer['removeServiceEndpoints'](document, patch);
+      expect(result).toEqual(document);
     });
   });
 
@@ -272,9 +414,9 @@ describe('DocumentComposer', async () => {
       );
     });
 
-    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not in `publicKeyJwk` format.', async () => {
+    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not specified in `jwk` property.', async () => {
       const patches = generatePatchesForPublicKeys();
-      delete (patches[0].publicKeys![0] as any).publicKeyJwk;
+      delete (patches[0].publicKeys![0] as any).jwk;
 
       (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
@@ -285,8 +427,17 @@ describe('DocumentComposer', async () => {
     it('should throw error if the type of a public key in an add-public-keys patch is not in the allowed list.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].publicKeys![0] as any).type = 'unknownKeyType';
+      (patches[0].publicKeys![0] as any).usage = ['general'];
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+    });
+
+    it('should throw error if the type of a operation public key in an add-public-keys patch is not secp.', async () => {
+      const patches = generatePatchesForPublicKeys();
+      (patches[0].publicKeys![0] as any).type = 'notSecp';
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
@@ -334,7 +485,7 @@ describe('DocumentComposer', async () => {
   describe('applyPatches()', async () => {
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKeys: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value' }],
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
         serviceEndpoints: []
       };
       const patches = [
@@ -372,18 +523,84 @@ describe('DocumentComposer', async () => {
         publicKeys: [
           {
             id: 'key1',
-            type: 'RsaVerificationKey2018',
-            publicKeyHex: 'anything'
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            publicKeyHex: 'anything',
+            usage: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
-            type: 'RsaVerificationKey2018',
-            publicKeyPem: 'anything'
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            publicKeyPem: 'anything',
+            usage: ['general']
           }
         ]
       };
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyIdDuplicated);
+      expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document public key usage is empty array.', async () => {
+      const document = {
+        publicKeys: [
+          {
+            id: 'key1',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
+            usage: []
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageMissingOrUnknown);
+      expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document publicKeys usage is not an array.', async () => {
+      const document = {
+        publicKeys: [
+          {
+            id: 'key1',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
+            usage: undefined
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageMissingOrUnknown);
+      expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document publicKeys is bigger than expected length.', async () => {
+      const document = {
+        publicKeys: [
+          {
+            id: 'key1',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
+            usage: ['ops', 'ops', 'ops', 'ops']
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageExceedsMaxLength);
+      expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
+    });
+
+    it('should throw if document publicKeys contains invalid usage', async () => {
+      const document = {
+        publicKeys: [
+          {
+            id: 'key1',
+            type: 'EcdsaSecp256k1VerificationKey2019',
+            jwk: {},
+            usage: ['ops', 'somethingInvalid']
+          }
+        ]
+      };
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidUsage);
       expect(() => { DocumentComposer.validateDocument(document); }).toThrow(expectedError);
     });
 
@@ -413,13 +630,14 @@ function generatePatchesForPublicKeys () {
       publicKeys: [
         {
           id: 'keyX',
-          type: 'Secp256k1VerificationKey2018',
-          publicKeyJwk: {
+          type: 'Secp256k1VerificationKey2019',
+          jwk: {
             kty: 'EC',
             crv: 'secp256k1',
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
             y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
-          }
+          },
+          usage: ['ops']
         }
       ]
     },

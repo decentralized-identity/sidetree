@@ -1,9 +1,11 @@
 import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Jwk from './util/Jwk';
 import PublicKeyModel from './models/PublicKeyModel';
+import PublicKeyUsage from '../../enums/PublicKeyUsage';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -21,16 +23,82 @@ export default class DocumentComposer {
       return { status: 'deactivated' };
     }
 
-    const didDocument = {
+    const document = didState.document as DocumentModel;
+
+    // Only populate `publicKey` if general usage exists.
+    // Only populate `authentication` if auth usage exists.
+    const authentication: any[] = [];
+    const publicKeys: any[] = [];
+    const operationPublicKeys: any[] = [];
+    if (Array.isArray(document.publicKeys)) {
+      for (let publicKey of document.publicKeys) {
+        const id = '#' + publicKey.id;
+        const didDocumentPublicKey = {
+          id: id,
+          controller: '',
+          type: publicKey.type,
+          publicKeyJwk: publicKey.jwk
+        };
+        const usageSet: Set<string> = new Set(publicKey.usage);
+
+        if (usageSet.has(PublicKeyUsage.Ops)) {
+          operationPublicKeys.push(didDocumentPublicKey);
+        }
+        if (usageSet.has(PublicKeyUsage.General)) {
+          publicKeys.push(didDocumentPublicKey);
+          if (usageSet.has(PublicKeyUsage.Auth)) {
+            // add into authentication by reference if has auth and has general
+            authentication.push(did + id);
+          }
+        } else if (usageSet.has(PublicKeyUsage.Auth)) {
+          // add into authentication by object if has auth but no general
+          authentication.push(didDocumentPublicKey);
+        }
+      }
+    }
+
+    // Only update `serviceEndpoints` if the array is present
+    let serviceEndpoints;
+    if (Array.isArray(document.serviceEndpoints)) {
+      serviceEndpoints = [];
+      for (let serviceEndpoint of document.serviceEndpoints) {
+        const didDocumentServiceEndpoint = {
+          id: '#' + serviceEndpoint.id,
+          type: serviceEndpoint.type,
+          serviceEndpoint: serviceEndpoint.serviceEndpoint
+        };
+
+        serviceEndpoints.push(didDocumentServiceEndpoint);
+      }
+    }
+
+    const didDocument: any = {
+      id: did,
       '@context': ['https://www.w3.org/ns/did/v1', { '@base': did }],
-      publicKey: didState.document.publicKeys,
-      service: didState.document.serviceEndpoints,
-      recoveryKey: didState.recoveryKey
+      service: serviceEndpoints
     };
 
-    DocumentComposer.addDidToDocument(didDocument, did);
+    if (publicKeys.length !== 0) {
+      didDocument.publicKey = publicKeys;
+    }
 
-    return didDocument;
+    if (authentication.length !== 0) {
+      didDocument.authentication = authentication;
+    }
+
+    const didResolutionResult: any = {
+      '@context': 'https://www.w3.org/ns/did-resolution/v1',
+      didDocument: didDocument,
+      methodMetadata: {
+        operationPublicKeys: operationPublicKeys
+      }
+    };
+
+    if (didState.recoveryKey) {
+      didResolutionResult.methodMetadata.recoveryKey = didState.recoveryKey;
+    }
+
+    return didResolutionResult;
   }
 
   /**
@@ -44,7 +112,7 @@ export default class DocumentComposer {
     DocumentComposer.validateOperationKey(publicKey);
 
     // Verify the signature.
-    if (!(await operation.signedData.verifySignature(publicKey!.publicKeyJwk))) {
+    if (!(await operation.signedData.verifySignature(publicKey!.jwk))) {
       throw new SidetreeError(ErrorCode.DocumentComposerInvalidSignature);
     }
 
@@ -136,7 +204,8 @@ export default class DocumentComposer {
     const publicKeyIdSet: Set<string> = new Set();
     for (let publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      if (publicKeyProperties.length !== 3) {
+      // the expected fields are id, usage, type and jwk
+      if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
@@ -148,10 +217,27 @@ export default class DocumentComposer {
       }
       publicKeyIdSet.add(publicKey.id);
 
-      if (publicKey.type === 'Secp256k1VerificationKey2018') {
-        // The key must be in JWK format.
-        Jwk.validateJwkEs256k(publicKey.publicKeyJwk);
-      } else if (publicKey.type !== 'RsaVerificationKey2018') {
+      if (!Array.isArray(publicKey.usage) || publicKey.usage.length === 0) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageMissingOrUnknown);
+      }
+
+      if (publicKey.usage.length > 3) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageExceedsMaxLength);
+      }
+
+      const validUsages = new Set(Object.values(PublicKeyUsage));
+      // usage must be one of the valid ones in PublicKeyUsage
+      for (const usage of publicKey.usage) {
+        if (!validUsages.has(usage)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidUsage);
+        }
+      }
+
+      const validTypes = new Set(['EcdsaSecp256k1VerificationKey2019', 'JwsVerificationKey2020']);
+
+      if (publicKey.usage.includes(PublicKeyUsage.Ops)) {
+        DocumentComposer.validateOperationKey(publicKey);
+      } else if (!validTypes.has(publicKey.type)) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrUnknown);
       }
     }
@@ -165,11 +251,15 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
     }
 
-    if (publicKey.type !== 'Secp256k1VerificationKey2018') {
+    if (publicKey.type !== 'Secp256k1VerificationKey2019') {
       throw new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
     }
 
-    Jwk.validateJwkEs256k(publicKey.publicKeyJwk);
+    if (!publicKey.usage.includes(PublicKeyUsage.Ops)) {
+      throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
+    }
+
+    Jwk.validateJwkEs256k(publicKey.jwk);
   }
 
   private static validateRemovePublicKeysPatch (patch: any) {
@@ -267,20 +357,11 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerIdTooLong);
     }
 
-    if (!DocumentComposer.isBase64UrlString(id)) {
+    if (!Encoder.isBase64UrlString(id)) {
       throw new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
     }
   }
 
-  private static isBase64UrlString (input: string): boolean {
-    // NOTE:
-    // '/<expression>/ denotes regex.
-    // ^ denotes beginning of string.
-    // $ denotes end of string.
-    // + denotes one or more characters.
-    const isBase64UrlString = /^[A-Za-z0-9_-]+$/.test(input);
-    return isBase64UrlString;
-  }
   /**
    * Applies the given patches in order to the given document.
    * NOTE: Assumes no schema validation is needed, since validation should've already occurred at the time of the operation being parsed.
@@ -317,7 +398,7 @@ export default class DocumentComposer {
    * Adds public keys to document.
    */
   private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = document.publicKeys ? new Map(document.publicKeys.map(publicKey => [publicKey.id, publicKey])) : new Map();
+    const publicKeyMap = new Map(document.publicKeys.map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them if they don't exist already.
     for (let publicKey of patch.publicKeys) {
@@ -388,31 +469,5 @@ export default class DocumentComposer {
     document.serviceEndpoints = document.serviceEndpoints.filter(serviceEndpoint => !idToRemove.has(serviceEndpoint.id));
 
     return document;
-  }
-
-  /**
-   * Adds DID references in the given document using the given DID to make the document DID spec compliant.
-   *
-   * @param didDocument The document to update.
-   * @param did The DID which gets added to the document.
-   */
-  private static addDidToDocument (didDocument: any, did: string): void {
-
-    didDocument.id = did;
-
-    // Only update `publickey` if the array is present
-    if (Array.isArray(didDocument.publicKey)) {
-      for (let publicKeyEntry of didDocument.publicKey) {
-        publicKeyEntry.id = '#' + publicKeyEntry.id;
-        publicKeyEntry.controller = '';
-      }
-    }
-
-    // Only update `service` if the array is present
-    if (Array.isArray(didDocument.service)) {
-      for (let serviceEntry of didDocument.service) {
-        serviceEntry.id = '#' + serviceEntry.id;
-      }
-    }
   }
 }

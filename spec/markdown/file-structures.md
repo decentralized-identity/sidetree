@@ -14,7 +14,6 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 {
   "map_file_uri": CAS_URI,
   "operations": {
-    "operations": {
     "create": [
       {
         "suffix_data": { // Base64URL encoded

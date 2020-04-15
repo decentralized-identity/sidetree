@@ -8,6 +8,22 @@ import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DeactivateOperation', async () => {
   describe('parse()', async () => {
+    it('should throw if operation contains unknown property', async (done) => {
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+
+      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+        'unused-DID-unique-suffix',
+        'unused-recovery-reveal-value',
+        recoveryPrivateKey
+      );
+
+      (deactivateOperationRequest as any).unknownProperty = 'unknown property value'; // Intentionally creating an unknown property.
+
+      const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
+      await expectAsync(DeactivateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty));
+      done();
+    });
+
     it('should throw if operation type is incorrect', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 

@@ -104,7 +104,8 @@ export default class DeactivateOperation implements OperationModel {
 
     const recoveryRevealValue = operationObject.recoveryRevealValue;
 
-    const signedDataJws = Jws.parse(operationObject.signedData);
+    const expectKidInHeader = false;
+    const signedDataJws = Jws.parseCompactJws(operationObject.signedData, expectKidInHeader);
     const signedData = await DeactivateOperation.parseSignedDataPayload(
       signedDataJws.payload, operationObject.didUniqueSuffix, recoveryRevealValue);
 

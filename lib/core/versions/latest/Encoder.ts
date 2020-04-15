@@ -4,6 +4,7 @@ import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Class that encodes binary blobs into strings.
+ * Note that the encode/decode methods may change underlying encoding scheme.
  */
 export default class Encoder {
   /**
@@ -25,12 +26,19 @@ export default class Encoder {
   }
 
   /**
-   * Decodes the given Base64URL string into a string.
+   * Decodes the given input into the original string.
    */
   public static decodeAsString (encodedContent: string): string {
-    Encoder.validateBase64UrlString(encodedContent);
+    return Encoder.decodeBase64UrlAsString(encodedContent);
+  }
 
-    const content = base64url.decode(encodedContent);
+  /**
+   * Decodes the given Base64URL string into the original string.
+   */
+  public static decodeBase64UrlAsString (input: string): string {
+    Encoder.validateBase64UrlString(input);
+
+    const content = base64url.decode(input);
     return content;
   }
 
@@ -45,13 +53,22 @@ export default class Encoder {
       throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotString, `Input '${input}' not a string.`);
     }
 
+    const isBase64UrlString = Encoder.isBase64UrlString(input);
+    if (!isBase64UrlString) {
+      throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString, `Input '${input}' not a Base64URL string.`);
+    }
+  }
+
+  /**
+   * Tests if the given string is a Base64URL string.
+   */
+  public static isBase64UrlString (input: string): boolean {
+    // NOTE:
     // '/<expression>/ denotes regex.
     // ^ denotes beginning of string.
     // $ denotes end of string.
     // + denotes one or more characters.
     const isBase64UrlString = /^[A-Za-z0-9_-]+$/.test(input);
-    if (!isBase64UrlString) {
-      throw new SidetreeError(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString, `Input '${input}' not a Base64URL string.`);
-    }
+    return isBase64UrlString;
   }
 }

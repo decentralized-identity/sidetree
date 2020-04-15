@@ -1,17 +1,17 @@
 import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
-import DidServiceEndpointModel from '../../lib/core/versions/latest/models/DidServiceEndpointModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Jws from '../../lib/core/versions/latest/util/Jws';
-import JwsModel from '../../lib/core/versions/latest/models/JwsModel';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
+import PublicKeyUsage from '../../lib/core/enums/PublicKeyUsage';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
+import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 interface AnchoredCreateOperationGenerationInput {
@@ -80,16 +80,17 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates SECP256K1 key pair to be used in an operation.
+   * Generates SECP256K1 key pair to be used in an operation. If usage not supplied, all usages will be included
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, usage?: string[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
-      type: 'Secp256k1VerificationKey2018',
-      publicKeyJwk: publicKey
+      type: 'Secp256k1VerificationKey2019',
+      jwk: publicKey,
+      usage: usage || Object.values(PublicKeyUsage)
     };
 
     return [publicKeyModel, privateKey];
@@ -231,7 +232,7 @@ export default class OperationGenerator {
     signingPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]) {
+    serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
       publicKeys: [signingPublicKey],
       serviceEndpoints: serviceEndpoints
@@ -327,7 +328,7 @@ export default class OperationGenerator {
     const encodedPatchDataString = Encoder.encode(patchDataJsonString);
 
     const patchDataHash = Multihash.hash(Buffer.from(patchDataJsonString));
-    const signedData = await OperationGenerator.signUsingEs256k(patchDataHash, signingKeyId, signingPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(patchDataHash, signingPrivateKey, signingKeyId);
 
     const updateOperationRequest = {
       type: OperationType.Update,
@@ -351,7 +352,7 @@ export default class OperationGenerator {
     newSigningPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]) {
+    serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
       publicKeys: [newSigningPublicKey],
       serviceEndpoints: serviceEndpoints
@@ -392,7 +393,7 @@ export default class OperationGenerator {
       recoveryKey: newRecoveryPublicKey,
       nextRecoveryCommitmentHash
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, 'recovery', recoveryPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const patchDataEncodedString = Encoder.encode(patchDataBuffer);
     const operation = {
@@ -418,7 +419,7 @@ export default class OperationGenerator {
       didUniqueSuffix,
       recoveryRevealValue
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, 'recovery', recoveryPrivateKey);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
@@ -440,7 +441,7 @@ export default class OperationGenerator {
     signingPublicKey: PublicKeyModel,
     nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
-    serviceEndpoints?: DidServiceEndpointModel[]
+    serviceEndpoints?: ServiceEndpointModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
@@ -529,16 +530,16 @@ export default class OperationGenerator {
   }
 
   /**
-   * Signs the given payload as a ES256K JWS.
+   * Signs the given payload as a ES256K compact JWS.
    */
-  public static async signUsingEs256k (payload: any, signingKeyId: string, privateKey: JwkEs256k): Promise<JwsModel> {
+  public static async signUsingEs256k (payload: any, privateKey: JwkEs256k, signingKeyId?: string): Promise<string> {
     const protectedHeader = {
       kid: signingKeyId,
       alg: 'ES256K'
     };
 
-    const operationJws = await Jws.sign(protectedHeader, payload, privateKey);
-    return operationJws;
+    const compactJws = Jws.signAsCompactJws(payload, privateKey, protectedHeader);
+    return compactJws;
   }
 
   /**
