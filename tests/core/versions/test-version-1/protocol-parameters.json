@@ -2,7 +2,6 @@
   "hashAlgorithmInMultihashCode": 18,
   "maxAnchorFileSizeInBytes": 1000000,
   "maxBatchFileSizeInBytes": 20000000,
-  "maxEncodedHashStringLength": 100,
-  "maxPatchDataSizeInBytes": 2000,
+  "maxDeltaSizeInBytes": 2000,
   "maxOperationsPerBatch": 10000
 }

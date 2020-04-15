@@ -117,7 +117,7 @@ export default class DocumentComposer {
     }
 
     // The operation passes all checks, apply the patches.
-    const resultantDocument = DocumentComposer.applyPatches(document, operation.patchData!.patches);
+    const resultantDocument = DocumentComposer.applyPatches(document, operation.delta!.patches);
 
     return resultantDocument;
   }

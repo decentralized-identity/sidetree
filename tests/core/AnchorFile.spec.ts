@@ -76,8 +76,8 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if map file hash is not string.', async () => {
-      const createPatchData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createPatchData.createOperation;
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).mapFileHash = 1234; // Intentionally setting the mapFileHash as an incorrect type.
@@ -89,8 +89,8 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if map file hash is invalid.', async () => {
-      const createPatchData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createPatchData.createOperation;
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerlock', 'invalidMapFileHash', [createOperation], [], []);
 
       try {
@@ -104,8 +104,8 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if writer lock id is not string.', async () => {
-      const createPatchData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createPatchData.createOperation;
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
@@ -131,17 +131,17 @@ describe('AnchorFile', async () => {
     });
 
     it('should throw if there are multiple operations for the same DID.', async () => {
-      const createPatchData = await OperationGenerator.generateCreateOperation();
-      const createOperationRequest = createPatchData.operationRequest;
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperationRequest = createOperationData.operationRequest;
 
       // Strip away properties not allowed in the createOperations array elements.
       delete createOperationRequest.type;
-      delete createOperationRequest.patchData;
+      delete createOperationRequest.delta;
 
       const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
-        createPatchData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
+        createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
         'anyRecoveryRevealValue',
-        createPatchData.recoveryPrivateKey
+        createOperationData.recoveryPrivateKey
       );
 
       // Strip away properties not allowed in the deactivateOperations array elements.
@@ -164,15 +164,15 @@ describe('AnchorFile', async () => {
   describe('createBuffer', async () => {
     it('should created a compressed buffer correctly.', async () => {
       const mapFileHash = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
-      const createPatchData = await OperationGenerator.generateCreateOperation();
-      const createOperation = createPatchData.createOperation;
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
 
       const anchoreFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, [createOperation], [], []);
 
       const anchorFile = await AnchorFile.parse(anchoreFileBuffer);
 
       expect(anchorFile.model.mapFileHash).toEqual(mapFileHash);
-      expect(anchorFile.model.operations.createOperations![0].suffixData).toEqual(createOperation.encodedSuffixData);
+      expect(anchorFile.model.operations.createOperations![0].suffix_data).toEqual(createOperation.encodedSuffixData);
     });
   });
 });

@@ -37,26 +37,26 @@ export default class BatchFile {
 
     // Make sure patchSet is an array.
     if (!(batchFileObject.patchSet instanceof Array)) {
-      throw new SidetreeError(ErrorCode.BatchFilePatchSetPropertyNotArray, 'Invalid batch file, patchData property is not an array.');
+      throw new SidetreeError(ErrorCode.BatchFilePatchSetPropertyNotArray, 'Invalid batch file, patchSet property is not an array.');
     }
 
     // Make sure all operations are strings.
     batchFileObject.patchSet.forEach((operation: any) => {
       if (typeof operation !== 'string') {
-        throw new SidetreeError(ErrorCode.BatchFilePatchSetNotArrayOfStrings, 'Invalid batch file, patchData property is not an array of strings.');
+        throw new SidetreeError(ErrorCode.BatchFilePatchSetNotArrayOfStrings, 'Invalid batch file, patchSet property is not an array of strings.');
       }
     });
 
     const batchFileModel = batchFileObject as BatchFileModel;
 
-    for (const encodedPatchData of batchFileModel.patchSet) {
-      const patchDataBuffer = Buffer.from(encodedPatchData);
+    for (const encodedDelta of batchFileModel.patchSet) {
+      const deltaBuffer = Buffer.from(encodedDelta);
 
-      // Verify size of each patch data entry does not exceed the maximum allowed limit.
-      if (patchDataBuffer.length > ProtocolParameters.maxPatchDataSizeInBytes) {
+      // Verify size of each delta does not exceed the maximum allowed limit.
+      if (deltaBuffer.length > ProtocolParameters.maxDeltaSizeInBytes) {
         throw new SidetreeError(
-          ErrorCode.BatchFilePatchDataSizeExceedsLimit,
-          `Operation size of ${patchDataBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxPatchDataSizeInBytes} bytes.`
+          ErrorCode.BatchFileDeltaSizeExceedsLimit,
+          `Operation size of ${deltaBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxDeltaSizeInBytes} bytes.`
         );
       }
     }
@@ -69,9 +69,9 @@ export default class BatchFile {
    */
   public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
     const patchSet = [];
-    patchSet.push(...createOperations.map(operation => operation.encodedPatchData!));
-    patchSet.push(...recoverOperations.map(operation => operation.encodedPatchData!));
-    patchSet.push(...updateOperations.map(operation => operation.encodedPatchData!));
+    patchSet.push(...createOperations.map(operation => operation.encodedDelta!));
+    patchSet.push(...recoverOperations.map(operation => operation.encodedDelta!));
+    patchSet.push(...updateOperations.map(operation => operation.encodedDelta!));
 
     const batchFileModel = {
       patchSet

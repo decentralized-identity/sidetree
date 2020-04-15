@@ -1,10 +1,10 @@
+import DeltaModel from './models/DeltaModel';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
-import PatchDataModel from './models/PatchDataModel';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
@@ -28,10 +28,10 @@ export default class UpdateOperation implements OperationModel {
   public readonly signedData: Jws;
 
   /** Patch data. */
-  public readonly patchData: PatchDataModel | undefined;
+  public readonly delta: DeltaModel | undefined;
 
-  /** Encoded string of the patch data. */
-  public readonly encodedPatchData: string | undefined;
+  /** Encoded string of the delta. */
+  public readonly encodedDelta: string | undefined;
 
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
@@ -41,23 +41,23 @@ export default class UpdateOperation implements OperationModel {
     didUniqueSuffix: string,
     updateRevealValue: string,
     signedData: Jws,
-    encodedPatchData: string | undefined,
-    patchData: PatchDataModel | undefined) {
+    encodedDelta: string | undefined,
+    delta: DeltaModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
     this.updateRevealValue = updateRevealValue;
     this.signedData = signedData;
-    this.encodedPatchData = encodedPatchData;
-    this.patchData = patchData;
+    this.encodedDelta = encodedDelta;
+    this.delta = delta;
   }
 
   /**
    * Parses the given input as an update operation entry in the map file.
    */
-  public static async parseOpertionFromMapFile (input: any): Promise<UpdateOperation> {
-    const opertionBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await UpdateOperation.parseObject(input, opertionBuffer, true);
+  public static async parseOperationFromMapFile (input: any): Promise<UpdateOperation> {
+    const operationBuffer = Buffer.from(JSON.stringify(input));
+    const operation = await UpdateOperation.parseObject(input, operationBuffer, true);
     return operation;
   }
 
@@ -76,7 +76,7 @@ export default class UpdateOperation implements OperationModel {
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
    * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
    * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
-   * @param mapFileMode If set to true, then `patchData` and `type` properties are expected to be absent.
+   * @param mapFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, mapFileMode: boolean): Promise<UpdateOperation> {
     let expectedPropertyCount = 5;
@@ -106,19 +106,19 @@ export default class UpdateOperation implements OperationModel {
     const expectKidInHeader = true;
     const signedData = Jws.parseCompactJws(operationObject.signedData, expectKidInHeader);
 
-    // If not in map file mode, we need to validate `type` and `patchData` properties.
-    let encodedPatchData = undefined;
-    let patchData = undefined;
+    // If not in map file mode, we need to validate `type` and `delta` properties.
+    let encodedDelta = undefined;
+    let delta = undefined;
     if (!mapFileMode) {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }
 
-      encodedPatchData = operationObject.patchData;
-      patchData = await Operation.parsePatchData(encodedPatchData);
+      encodedDelta = operationObject.delta;
+      delta = await Operation.parseDelta(encodedDelta);
     }
 
     return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
-      updateRevealValue, signedData, encodedPatchData, patchData);
+      updateRevealValue, signedData, encodedDelta, delta);
   }
 }

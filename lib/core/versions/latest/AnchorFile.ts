@@ -100,7 +100,7 @@ export default class AnchorFile {
 
       // Validate every operation.
       for (const operation of operations.createOperations) {
-        const createOperation = await CreateOperation.parseOpertionFromAnchorFile(operation);
+        const createOperation = await CreateOperation.parseOperationFromAnchorFile(operation);
         createOperations.push(createOperation);
         didUniqueSuffixes.push(createOperation.didUniqueSuffix);
       }
@@ -115,7 +115,7 @@ export default class AnchorFile {
 
       // Validate every operation.
       for (const operation of operations.recoverOperations) {
-        const recoverOperation = await RecoverOperation.parseOpertionFromAnchorFile(operation);
+        const recoverOperation = await RecoverOperation.parseOperationFromAnchorFile(operation);
         recoverOperations.push(recoverOperation);
         didUniqueSuffixes.push(recoverOperation.didUniqueSuffix);
       }
@@ -130,7 +130,7 @@ export default class AnchorFile {
 
       // Validate every operation.
       for (const operation of operations.deactivateOperations) {
-        const deactivateOperation = await DeactivateOperation.parseOpertionFromAnchorFile(operation);
+        const deactivateOperation = await DeactivateOperation.parseOperationFromAnchorFile(operation);
         deactivateOperations.push(deactivateOperation);
         didUniqueSuffixes.push(deactivateOperation.didUniqueSuffix);
       }
@@ -157,7 +157,7 @@ export default class AnchorFile {
 
     const createOperations = createOperationArray.map(operation => {
       return {
-        suffixData: operation.encodedSuffixData
+        suffix_data: operation.encodedSuffixData
       };
     });
 

@@ -56,9 +56,9 @@ export default class DeactivateOperation implements OperationModel {
   /**
    * Parses the given input as a deactivate operation entry in the anchor file.
    */
-  public static async parseOpertionFromAnchorFile (input: any): Promise<DeactivateOperation> {
-    const opertionBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await DeactivateOperation.parseObject(input, opertionBuffer, true);
+  public static async parseOperationFromAnchorFile (input: any): Promise<DeactivateOperation> {
+    const operationBuffer = Buffer.from(JSON.stringify(input));
+    const operation = await DeactivateOperation.parseObject(input, operationBuffer, true);
     return operation;
   }
 
@@ -126,9 +126,9 @@ export default class DeactivateOperation implements OperationModel {
   }
 
   private static async parseSignedDataPayload (
-    patchDataEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryRevealValue: string): Promise<SignedDataModel> {
+    deltaEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryRevealValue: string): Promise<SignedDataModel> {
 
-    const signedDataJsonString = Encoder.decodeAsString(patchDataEncodedString);
+    const signedDataJsonString = Encoder.decodeAsString(deltaEncodedString);
     const signedData = await JsonAsync.parse(signedDataJsonString);
 
     const properties = Object.keys(signedData);

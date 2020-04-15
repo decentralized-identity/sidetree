@@ -61,7 +61,7 @@ export default class MapFile {
 
       // Validate each operation.
       for (const operation of mapFileModel.updateOperations) {
-        const updateOperation = await UpdateOperation.parseOpertionFromMapFile(operation);
+        const updateOperation = await UpdateOperation.parseOperationFromMapFile(operation);
         updateOperations.push(updateOperation);
       }
 

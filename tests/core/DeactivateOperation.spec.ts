@@ -99,8 +99,8 @@ describe('DeactivateOperation', async () => {
         recoveryRevealValue,
         extraProperty: 'An unknown extra property'
       };
-      const encodedPatchData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedPatchData, didUniqueSuffix, recoveryRevealValue))
+      const encodedDelta = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedDelta, didUniqueSuffix, recoveryRevealValue))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty));
       done();
     });
