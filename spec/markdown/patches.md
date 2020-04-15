@@ -38,6 +38,7 @@ The following set of standard _Patch Actions_ are specified to help align on a c
     {
       "id": "key1",
       "usage": ["ops"],
+      "type": "EcdsaSecp256k1VerificationKey2019",
       "jwk": {...}
     }
   ]

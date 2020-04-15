@@ -15,11 +15,13 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
   "map_file_uri": CAS_URI,
   "operations": {
     "create": [
-      { // Base64URL encoded
-        "delta_hash": DELTA_HASH,
-        "recovery_key": JWK_OBJECT,
-        "recovery_commitment": COMMITMENT_HASH
-      },
+      {
+        "suffix_data": { // Base64URL encoded
+          "delta_hash": DELTA_HASH,
+          "recovery_key": JWK_OBJECT,
+          "recovery_commitment": COMMITMENT_HASH
+        }
+      }
       {...}
     ],
     "recover": [
@@ -65,10 +67,11 @@ A valid [Anchor File](#anchor-file) is a JSON document that MUST NOT exceed the 
 
     - If there are any [Create](#create) operations to be included in the Anchor File:
       1. The `operations` object MUST include a `create` property, and its value MUST be an array.
-      2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include each entry:
-          - The object MUST contain an [`recovery_key`](#initial-recovery-key){id="initial-recovery-key"} property, and its value MUST be an [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation of the _Initial Recovery Public Key_, generated as described in the [Create](#create) operation process.
-          - The object MUST contain an [`recovery_commitment`](#initial-recovery-commitment){id="initial-recovery-commitment"} property, and its value MUST be an _Initial Recovery Commitment_, as generated via the [Create](#create) operation process.
-          - The object MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Create Operation Data Object_](#create-data-object) (ensure this is a hash of the `Base64URL` encoded version of the object).
+      2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
+          - Each entry object must contain a `suffix_data` property, and it MUST be a `Base64URL` encoded JSON object, composed as follows:
+            - The object MUST contain an [`recovery_key`](#initial-recovery-key){id="initial-recovery-key"} property, and its value MUST be an [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation of the _Initial Recovery Public Key_, generated as described in the [Create](#create) operation process.
+            - The object MUST contain an [`recovery_commitment`](#initial-recovery-commitment){id="initial-recovery-commitment"} property, and its value MUST be an _Initial Recovery Commitment_, as generated via the [Create](#create) operation process.
+            - The object MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Create Operation Delta Object_](#create-delta-object) (ensure this is a hash of the `Base64URL` encoded version of the object).
       3. The [Anchor File](#anchor-file) MUST NOT include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
     - If there are any [Recovery](#recover) operations to be included in the Anchor File:
       1. The `operations` object MUST include a `recover` property, and its value MUST be an array.
@@ -158,7 +161,7 @@ In this version of the protocol, Chunk Files are constructed as follows:
     1. The object MUST contain a `patches` property, and its value MUST be an array of [DID State Patches](#did-state-patches).
     2. The payload MUST contain an `update_commitment` property, and its value MUST be the next _Update Commitment_ generated during the operation process associated with the type of operation being performed.
 
-3. Each [_Chunk File Delta Entry_](#chunk-file-delta-entry) MUST be appended to the `deltas` array as follows:
-    1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Data Objects_](#create-data-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
+3. Each [_Chunk File Delta Entry_](#chunk-file-delta-entry) MUST be appended to the `deltas` array as follows, in this order:
+    1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Delta Objects_](#create-delta-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
     2. If any Recovery operations were present in the associated Anchor File, append all [_Recovery Operation Data Objects_](#recovery-data-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
     3. If any Update operations were present in the associated Map File, append all [_Update Operation Data Objects_](#update-data-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).
