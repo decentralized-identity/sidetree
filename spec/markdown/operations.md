@@ -35,7 +35,7 @@ Use the following process to generate a Sidetree-based DID:
 The following process must be used to update the state a Sidetree-based DID:
 
 1. Retrieve the _Update Reveal Value_ that matches the previously anchored _Update Commitment_.
-2. Generate an object, herein referred to as the [_Update Operation Data Object_](#update-data-object){ id="update-data-object" }, composed as follows:
+2. Generate an object, herein referred to as the [_Update Operation Data Object_](#update-delta-object){ id="update-delta-object" }, composed as follows:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],

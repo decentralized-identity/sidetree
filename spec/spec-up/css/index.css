@@ -54,6 +54,11 @@ h1 {
   line-height: 1.2em;
 }
 
+main article > ol,
+main article > ul {
+  padding: 0 0 0 2em;
+}
+
 main article h1,
 main article h2,
 main article h3,

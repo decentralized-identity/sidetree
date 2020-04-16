@@ -131,7 +131,7 @@ A valid [Map File](#map-file) is a JSON document that MUST NOT exceed the [`MAX_
         - The object MUST contain an `id` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
         - The object MUST contain a `update_reveal_value` property, and its value MUST be the last update [`COMMITMENT_VALUE`](#commitment-value).
         - The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against one of the currently active operation keys, and contains the following payload values:
-          - The object MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the `Base64URL` encoded [_Update Operation Data Object_](#update-data-object).
+          - The object MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the `Base64URL` encoded [_Update Operation Data Object_](#update-delta-object).
 
 ### Chunk Files
 
@@ -163,5 +163,5 @@ In this version of the protocol, Chunk Files are constructed as follows:
 
 3. Each [_Chunk File Delta Entry_](#chunk-file-delta-entry) MUST be appended to the `deltas` array as follows, in this order:
     1. If any Create operations were present in the associated Anchor File, append all [_Create Operation Delta Objects_](#create-delta-object) in the same index order as their matching [_Anchor File Create Entry_](#anchor-file-create-entry).
-    2. If any Recovery operations were present in the associated Anchor File, append all [_Recovery Operation Data Objects_](#recovery-data-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
-    3. If any Update operations were present in the associated Map File, append all [_Update Operation Data Objects_](#update-data-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).
+    2. If any Recovery operations were present in the associated Anchor File, append all [_Recovery Operation Delta Objects_](#recovery-delta-object) in the same index order as their matching [_Anchor File Recovery Entry_](#anchor-file-recovery-entry).
+    3. If any Update operations were present in the associated Map File, append all [_Update Operation Delta Objects_](#update-delta-object) in the same index order as their matching [_Map File Update Entry_](#map-file-update-entry).

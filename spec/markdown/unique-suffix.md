@@ -22,19 +22,25 @@ The process below MUST be used to correctly generate a Sidetree-based DID identi
     - The object MUST contain a `delta_hash` property, and its value MUST be a hash of the [Create Operation Delta Object](#create-delta-object).
     - The object MUST contain a `recovery_key` property, and its value MUST be the _Initial Recovery Public Key_.
     - The object MUST contain a `recovery_commitment` property, and its value MUST be the _Initial Recovery Commitment_.
-2. Once assembled, `Base64URL` encode the JSON object.
+2. Once assembled, `Base64URL` encode the JSON object. _(NOTE: Implementers MAY choose to canonicalize the object prior to `Base64URL` encoding it. This does not affect the outcome or other components in the system that deal with this object.)_
 3. Use the [`HASH_ALGORITHM`](#hash-algorithm) to generate a [Multihash](#multihash) of the `Base64URL` encoded object.
-4. Convert the output from a raw [Multihash](#multihash) buffer to its ASCII encoded representation.
+4. Convert the output from a raw [Multihash](#multihash) buffer to its `Base64URL` encoded representation.
+5. Convert the `Base64URL` encoded representation of the [Multihash](#multihash) to its ASCII encoded representation.
 
-The following is a graphical representation of the process enumerated above: 
+The following are graphical representations of the process enumerated above: 
+
+```js
+Suffix = ASCII( Base64URL( Multihash( SHA256( Base64URL( UTF8(suffix_data JSON)))))))
+```
 
 ```mermaid
 graph TB
 
 ID(did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw)-->ASCII(ASCII Encoder)
-ASCII-->Hash(Multihash Encoder)
-Hash-->Base64URL(Base64URL Encoder)
-Base64URL-->SuffixObject(JSON Object)
+ASCII-->Base64URLHash(Base64URL Encoder)
+Base64URLHash-->Hash(Multihash Encoder)
+Hash-->Base64URLObject(Base64URL Encoder)
+Base64URLObject-->SuffixObject(JSON Object)
 SuffixObject-->|delta_hash| E(xKwW0h6HjS...)
 SuffixObject-->|recovery_key| F(tB4W0i61jS...)
 SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
