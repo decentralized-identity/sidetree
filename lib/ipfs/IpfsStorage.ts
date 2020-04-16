@@ -59,7 +59,7 @@ export default class IpfsStorage {
   }
 
   /**
-   * performs health check once every minute
+   * Start periodic health check.
    */
   public startPeriodicHealthCheck () {
     setImmediate(async () => this.healthCheck());
