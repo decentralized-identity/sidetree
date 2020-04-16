@@ -115,12 +115,13 @@ export default class BitcoinProcessor {
     this.pollPeriod = config.transactionPollPeriodInSeconds || 60;
     this.lowBalanceNoticeDays = config.lowBalanceNoticeInDays || 28;
     this.serviceInfoProvider = new ServiceInfoProvider('bitcoin');
+
     this.bitcoinClient =
       new BitcoinClient(
         config.bitcoinPeerUri,
         config.bitcoinRpcUsername,
         config.bitcoinRpcPassword,
-        config.bitcoinWalletImportString,
+        config.bitcoinWalletOrImportString,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3,
         config.sidetreeTransactionFeeMarkupPercentage || 0);

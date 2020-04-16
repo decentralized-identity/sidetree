@@ -1,3 +1,5 @@
+import IBitcoinWallet from './interfaces/IBitcoinWallet';
+
 /**
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
@@ -7,7 +9,7 @@ export default interface IBitcoinConfig {
   bitcoinPeerUri: string;
   bitcoinRpcUsername: string | undefined;
   bitcoinRpcPassword: string | undefined;
-  bitcoinWalletImportString: string;
+  bitcoinWalletOrImportString: IBitcoinWallet | string;
   lowBalanceNoticeInDays: number | undefined;
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;

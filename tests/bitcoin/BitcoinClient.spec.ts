@@ -5,6 +5,7 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
+import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
@@ -58,6 +59,27 @@ describe('BitcoinClient', async () => {
       outputs: transaction.outputs
     };
   }
+
+  describe('constructor', () => {
+    let ctorWallet: IBitcoinWallet;
+    let ctorImportString: string;
+
+    beforeAll(() => {
+      ctorImportString = BitcoinClient.generatePrivateKey('testnet');
+      ctorWallet = new BitcoinWallet(ctorImportString);
+    });
+
+    it('should use the wallet that was passed in the parameters', () => {
+      const actual = new BitcoinClient('uri:mock', 'u', 'p', ctorWallet, 10, 10, 10);
+      expect(actual['bitcoinWallet']).toEqual(ctorWallet);
+    });
+
+    it('should use the wallet created by the import-string parameter', () => {
+      const expectedWallet = new BitcoinWallet(bitcoinWalletImportString);
+      const actual = new BitcoinClient('uri:mock', 'u', 'p', bitcoinWalletImportString, 10, 10, 10);
+      expect(actual['bitcoinWallet']).toEqual(expectedWallet);
+    });
+  });
 
   describe('createSidetreeTransaction', () => {
     it('should return the expected result', async () => {
