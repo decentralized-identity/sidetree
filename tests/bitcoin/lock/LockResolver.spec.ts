@@ -43,7 +43,7 @@ describe('LockResolver', () => {
   let lockResolver: LockResolver;
 
   beforeEach(() => {
-    let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, undefined, 10, 1, 0);
+    let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
     lockResolver = new LockResolver(bitcoinClient, 200, 250);
   });
 

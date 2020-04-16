@@ -5,9 +5,7 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinLockTransactionModel from '../../lib/bitcoin/models/BitcoinLockTransactionModel';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BitcoinWallet from '../../lib/bitcoin/BitcoinWallet';
-import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinWallet from '../../lib/bitcoin/interfaces/IBitcoinWallet';
-import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import { Address, PrivateKey, Script, Transaction } from 'bitcore-lib';
 
@@ -24,7 +22,7 @@ describe('BitcoinClient', async () => {
 
   beforeEach(() => {
     bitcoinWalletImportString = BitcoinClient.generatePrivateKey('testnet');
-    bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', bitcoinWalletImportString, undefined, 10, maxRetries, 0);
+    bitcoinClient = new BitcoinClient(bitcoinPeerUri, 'u', 'p', bitcoinWalletImportString, 10, maxRetries, 0);
 
     const bitcoinWallet = bitcoinClient['bitcoinWallet'] as BitcoinWallet;
     privateKeyFromBitcoinClient = bitcoinWallet['walletPrivateKey'];
@@ -71,26 +69,14 @@ describe('BitcoinClient', async () => {
       ctorWallet = new BitcoinWallet(ctorImportString);
     });
 
-    it('should throw if both the wallet and the import string are specified', () => {
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new BitcoinClient('uri:mock','u','p', ctorImportString, ctorWallet, 10, 10, 10),
-        ErrorCode.BitcoinProcessorWalletAndImportStringSpecified);
-    });
-
-    it('should throw if neither the wallet nor the import string are specified', () => {
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new BitcoinClient('uri:mock','u','p', undefined, undefined, 10, 10, 10),
-        ErrorCode.BitcoinProcessorWalletOrImportStringRequired);
-    });
-
     it('should use the wallet that was passed in the parameters', () => {
-      const actual = new BitcoinClient('uri:mock', 'u', 'p', undefined, ctorWallet, 10, 10, 10);
+      const actual = new BitcoinClient('uri:mock', 'u', 'p', ctorWallet, 10, 10, 10);
       expect(actual['bitcoinWallet']).toEqual(ctorWallet);
     });
 
     it('should use the wallet created by the import-string parameter', () => {
       const expectedWallet = new BitcoinWallet(bitcoinWalletImportString);
-      const actual = new BitcoinClient('uri:mock', 'u', 'p', bitcoinWalletImportString, undefined, 10, 10, 10);
+      const actual = new BitcoinClient('uri:mock', 'u', 'p', bitcoinWalletImportString, 10, 10, 10);
       expect(actual['bitcoinWallet']).toEqual(expectedWallet);
     });
   });
