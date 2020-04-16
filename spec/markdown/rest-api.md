@@ -93,7 +93,7 @@ Use the following process to generate a Sidetree update operation JSON document 
 1. The object MUST contain a `type` property, and its value MUST be `update`.
 2. The object MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 3. The object MUST contain a `update_reveal_value` property, and its value MUST be the last update [COMMITMENT_VALUE](#commitment-value).
-4. The object MUST contain an `operation_data` property, and its value MUST be a `Base64URL` encoded [_Update Operation Data Object_](#update-data-object).
+4. The object MUST contain an `operation_data` property, and its value MUST be a `Base64URL` encoded [_Update Operation Data Object_](#update-delta-object).
 5. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
 as defined in [Map File](#map-file) for Update operations.
 
