@@ -62,6 +62,9 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
         - `auth`: the key MUST be included in the `authentication` section of the resolved _DID Document_, as follows:
             - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object MUST be included directly in the `authentication` section of the resolved _DID Document_. 
             - If the `general` usage value IS present in the `usage` array, the key descriptor object MUST be directly included in the `public_keys` section of the resolved _DID Document_, and MUST be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section. 
+        - `agreement`: the key MUST be included in the `keyAgreement` section of the resolved _DID Document_, as follows:
+            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object MUST be included directly in the `keyAgreement` section of the resolved _DID Document_. 
+            - If the `general` usage value IS present in the `usage` array, the key descriptor object MUST be directly included in the `public_keys` section of the resolved _DID Document_, and MUST be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `keyAgreement` section.
     
 
 #### `remove-public-keys`
