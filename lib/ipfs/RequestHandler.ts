@@ -39,6 +39,7 @@ export default class RequestHandler {
         throw e;
       }
     }
+    ipfsStorage.startPeriodicHealthCheck();
     return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
   }
 
@@ -56,7 +57,7 @@ export default class RequestHandler {
    * Handles read request
    * @param base64urlEncodedMultihash Content Identifier Hash.
    */
-  public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number, retryCount?: number): Promise<ResponseModel> {
+  public async handleFetchRequest (base64urlEncodedMultihash: string, maxSizeInBytes?: number): Promise<ResponseModel> {
     console.log(`Handling fetch request for '${base64urlEncodedMultihash}'...`);
 
     if (maxSizeInBytes === undefined) {
@@ -109,16 +110,11 @@ export default class RequestHandler {
         body: fetchResult.content
       };
     } catch (error) {
-      if (retryCount !== undefined && retryCount > 2) {
-        console.error(`Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${error}`);
-        return {
-          status: ResponseStatus.ServerError,
-          body: error.message
-        };
-      }
-      const nextRetryCount = retryCount ? retryCount++ : 1;
-      await this.ipfsStorage.restart(); // this is a band-aid solution for the underlying IPFS issue.
-      return this.handleFetchRequest(base64urlEncodedMultihash, maxSizeInBytes, nextRetryCount);
+      console.error(`Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${error}`);
+      return {
+        status: ResponseStatus.ServerError,
+        body: error.message
+      };
     }
   }
 
@@ -126,7 +122,7 @@ export default class RequestHandler {
    * Handles sidetree content write request
    * @param content Sidetree content to write into CAS storage
    */
-  public async handleWriteRequest (content: Buffer, retryCount?: number): Promise<ResponseModel> {
+  public async handleWriteRequest (content: Buffer): Promise<ResponseModel> {
     console.log(`Writing content of ${content.length} bytes...`);
 
     let response: ResponseModel;
@@ -142,16 +138,11 @@ export default class RequestHandler {
       };
       console.info(`Wrote content '${base64urlEncodedMultihash}'.`);
     } catch (err) {
-      if (retryCount !== undefined && retryCount > 2) {
-        console.error(`Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${err}`);
-        response = {
-          status: ResponseStatus.ServerError,
-          body: err.message
-        };
-      }
-      const nextRetryCount = retryCount ? retryCount++ : 1;
-      await this.ipfsStorage.restart(); // this is a band-aid solution for the underlying IPFS issue.
-      response = await this.handleWriteRequest(content, nextRetryCount);
+      console.error(`Hit unexpected error fetching '${base64urlEncodedMultihash}, investigate and fix: ${err}`);
+      response = {
+        status: ResponseStatus.ServerError,
+        body: err.message
+      };
     }
 
     return response;

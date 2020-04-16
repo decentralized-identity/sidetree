@@ -56,7 +56,7 @@ describe('IpfsStorage', () => {
       expect(expectedErrorCode).toEqual(fetchedContent.code);
     });
 
-    it('should throw unexpected error if cat.next throws an unexpected error', async () => {
+    it('should return error code when cat.next throws an unexpected error', async () => {
       spyOn(ipfsStorage['node'].pin, 'add').and.returnValue(Promise.resolve([true]));
 
       const mockIterable = new MockAsyncIterable();
@@ -65,12 +65,8 @@ describe('IpfsStorage', () => {
       };
 
       spyOn(ipfsStorage['node'], 'cat').and.returnValue(mockIterable);
-      try {
-        await ipfsStorage.read('abc123', maxFileSize);
-        fail('expect test to throw error but did not');
-      } catch (e) {
-        expect(e.message).toEqual('A test error thrown by unit test');
-      }
+      const result = await ipfsStorage.read('abc123', maxFileSize);
+      expect(result).toEqual({ code: FetchResultCode.CasNotReachable });
     });
 
     it('should return size exceeded if content size exceeds maxFileSize during download.', async () => {
@@ -153,6 +149,24 @@ describe('IpfsStorage', () => {
       await ipfsStorage.restart();
       expect(stopSpy).toHaveBeenCalled();
       expect(getNodeSpy).toHaveBeenCalledWith(ipfsStorage['repo']);
+    });
+  });
+
+  describe('healthCheck', () => {
+    it('should not restart if is healthy', async () => {
+      ipfsStorage['healthy'] = true;
+      const restartSpy = spyOn(ipfsStorage, 'restart');
+      await ipfsStorage['healthCheck']();
+      expect(restartSpy).toHaveBeenCalledTimes(0);
+    });
+
+    it('should call restart if is not healthy', async () => {
+      const restartSpy = spyOn(ipfsStorage, 'restart').and.callFake(async () => { console.log('fake message from test'); });
+      ipfsStorage['healthCheckInternalInSeconds'] = 0;
+      ipfsStorage['healthy'] = false;
+      await ipfsStorage['healthCheck']();
+      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(ipfsStorage['healthy']).toEqual(true);
     });
   });
 

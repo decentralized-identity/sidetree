@@ -12,6 +12,8 @@ export default class IpfsStorage {
   /**  IPFS node instance  */
   private node: IPFS;
   private repo: any;
+  private healthy: boolean;
+  private healthCheckInternalInSeconds: number;
 
   /** singleton holding the instance of ipfsStorage to use */
   private static ipfsStorageSingleton: IpfsStorage | undefined;
@@ -43,6 +45,8 @@ export default class IpfsStorage {
   private constructor (node: IPFS, repo: any) {
     this.repo = repo;
     this.node = node;
+    this.healthy = true;
+    this.healthCheckInternalInSeconds = 60;
   }
 
   private static async getNode (repo?: any): Promise<IPFS> {
@@ -52,6 +56,25 @@ export default class IpfsStorage {
     };
     const node = await IPFS.create(options);
     return node;
+  }
+
+  /**
+   * performs health check once every minute
+   */
+  public startPeriodicHealthCheck () {
+    setImmediate(async () => this.healthCheck());
+  }
+
+  private async healthCheck () {
+    console.log('performing health check');
+    if (!this.healthy) {
+      console.log('Unhealthy, restarting IPFS node...');
+      await this.restart();
+      this.healthy = true;
+    } else {
+      console.log('healthy');
+    }
+    setTimeout(async () => this.healthCheck(), this.healthCheckInternalInSeconds * 1000);
   }
 
   /**
@@ -73,14 +96,20 @@ export default class IpfsStorage {
    *          The result `code` is set to `FetchResultCode.NotAFile` if the content being downloaded is not a file (e.g. a directory).
    */
   public async read (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
-    const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
+    try {
+      const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
 
-    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
-    if (fetchResult.code === FetchResultCode.Success) {
-      await this.node.pin.add(hash);
+      // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
+      if (fetchResult.code === FetchResultCode.Success) {
+        await this.node.pin.add(hash);
+      }
+      return fetchResult;
+    } catch {
+      this.healthy = false;
+      return {
+        code: FetchResultCode.CasNotReachable
+      };
     }
-
-    return fetchResult;
   }
 
   /**
