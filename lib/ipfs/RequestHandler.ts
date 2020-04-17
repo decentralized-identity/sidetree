@@ -125,11 +125,11 @@ export default class RequestHandler {
       const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
       base64urlEncodedMultihash = base64url.encode(multihashBuffer);
 
+      console.info(`Wrote content '${base64urlEncodedMultihash}'.`);
       return {
         status: ResponseStatus.Succeeded,
         body: { hash: base64urlEncodedMultihash }
       };
-      console.info(`Wrote content '${base64urlEncodedMultihash}'.`);
     } catch (err) {
       console.error(`Hit unexpected error writing '${base64urlEncodedMultihash}, investigate and fix: ${err}`);
       return {
