@@ -156,7 +156,7 @@ describe('IpfsStorage', () => {
     });
 
     it('should get node with passed in repo if argument supplied', async () => {
-      const repoHolder = ipfsStorage['repo']
+      const repoHolder = ipfsStorage['repo'];
       ipfsStorage['repo'] = 'something';
       const result = await ipfsStorage['getNode']();
       expect(createSpy).toHaveBeenCalledWith({ repo: 'something' });
