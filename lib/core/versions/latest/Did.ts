@@ -15,7 +15,7 @@ export default class Did {
   /** `true` if DID is short form; `false` if DID is long-form. */
   public isShortForm: boolean;
   /** DID method name. */
-  public didMethodName: string;
+  public methodName: string;
   /** DID unique suffix. */
   public uniqueSuffix: string;
   /** The create operation if the DID given is long-form, `undefined` otherwise. */
@@ -27,14 +27,15 @@ export default class Did {
    * Parses the input string as Sidetree DID.
    * NOTE: Must not call this constructor directly, use the factory `create` method instead.
    * @param did Short or long-form DID string.
-   * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
+   * @param expectedMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
    */
-  private constructor (did: string, didMethodName: string) {
-    if (!did.startsWith(didMethodName)) {
+  private constructor (did: string, expectedMethodName: string) {
+    const didPrefix = `did:${expectedMethodName}:`; // e.g. 'did:sidetree:'
+    if (!did.startsWith(didPrefix)) {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
 
-    this.didMethodName = didMethodName;
+    this.methodName = expectedMethodName;
 
     const indexOfQuestionMarkChar = did.indexOf('?');
     // If there is no question mark, then DID can only be in short-form.
@@ -45,35 +46,29 @@ export default class Did {
     }
 
     if (this.isShortForm) {
-      this.uniqueSuffix = did.substring(didMethodName.length);
+      this.uniqueSuffix = did.substring(didPrefix.length);
     } else {
       // This is long-form.
-      this.uniqueSuffix = did.substring(didMethodName.length, indexOfQuestionMarkChar);
+      this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
     }
 
     if (this.uniqueSuffix.length === 0) {
       throw new SidetreeError(ErrorCode.DidNoUniqueSuffix);
     }
 
-    this.shortForm = didMethodName + this.uniqueSuffix;
+    this.shortForm = didPrefix + this.uniqueSuffix;
   }
 
   /**
    * Parses the input string as Sidetree DID.
    * @param didString Short or long-form DID string.
    */
-  public static async create (didString: string, expectedDidPrefix: string): Promise<Did> {
-    const didPrefixParts = expectedDidPrefix.split(':');
-    if (didPrefixParts.length < 2) {
-      throw new SidetreeError(ErrorCode.DidInvalidMethodName);
-    }
-    const methodName = didPrefixParts[1];
-
-    const did = new Did(didString, expectedDidPrefix);
+  public static async create (didString: string, expectedMethodName: string): Promise<Did> {
+    const did = new Did(didString, expectedMethodName);
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      const initialState = Did.getInitialStateFromDidString(didString, methodName);
+      const initialState = Did.getInitialStateFromDidString(didString, expectedMethodName);
       const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
