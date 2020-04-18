@@ -3,6 +3,7 @@ import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import SidetreeError from '../../../common/SidetreeError';
+import OperationType from '../../enums/OperationType';
 
 /**
  * Class containing reusable Sidetree DID related operations.
@@ -61,19 +62,19 @@ export default class Did {
    * Parses the input string as Sidetree DID.
    * @param didString Short or long-form DID string.
    */
-  public static async create (didString: string, didMethodName: string): Promise<Did> {
-    const methodNameParts = didMethodName.split(':');
-    if (methodNameParts.length < 2) {
+  public static async create (didString: string, expectedDidPrefix: string): Promise<Did> {
+    const didPrefixParts = expectedDidPrefix.split(':');
+    if (didPrefixParts.length < 2) {
       throw new SidetreeError(ErrorCode.DidInvalidMethodName);
     }
+    const methodName = didPrefixParts[1];
 
-    const did = new Did(didString, didMethodName);
+    const did = new Did(didString, expectedDidPrefix);
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      const encodedCreateRequest = Did.getEncodedCreateRequestFromDidString(didString, methodNameParts);
-      const createRequestBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
-      const createOperation = await CreateOperation.parse(createRequestBuffer);
+      const initialState = Did.getInitialStateFromDidString(didString, methodName);
+      const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
       // becasue the hashing algorithm used maybe different from the short form DID given.
@@ -94,7 +95,7 @@ export default class Did {
     return did;
   }
 
-  private static getEncodedCreateRequestFromDidString (didString: string, methodNameParts: string[]): string {
+  private static getInitialStateFromDidString (didString: string, methodName: string): string {
     let didStringUrl = undefined;
     try {
       didStringUrl = new URL(didString);
@@ -102,27 +103,58 @@ export default class Did {
       throw new SidetreeError(ErrorCode.DidInvalidDidString);
     }
     let queryParamCounter = 0;
-    let encodedCreateRequest = '';
+    let initialStateValue;
 
+    // Verify that `-<method-name>-initial-state` is the one and only parameter.
     didStringUrl.searchParams.forEach((value, key) => {
       queryParamCounter += 1;
       if (queryParamCounter > 1) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
       }
 
-      // expect key to be -<method>-initial-state
-      const expectedKey = `-${methodNameParts[1]}-${Did.initialStateParameterSuffix}`;
+      // expect key to be -<method-name>-initial-state
+      const expectedKey = `-${methodName}-${Did.initialStateParameterSuffix}`;
       if (key !== expectedKey) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
       }
 
-      encodedCreateRequest = value;
+      initialStateValue = value;
     });
 
-    if (encodedCreateRequest === '') {
+    if (initialStateValue === undefined) {
       throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
     }
 
-    return encodedCreateRequest;
+    return initialStateValue;
+  }
+
+  private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
+    // Initial state should be in the format: <suffix-data>.<delta>
+    const firstIndexOfDot = initialState.indexOf('.');
+    if (firstIndexOfDot === -1) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsNoDot);
+    }
+
+    const lastIndexOfDot = initialState.lastIndexOf('.');
+    if (lastIndexOfDot !== firstIndexOfDot) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsMoreThanOneDot);
+    }
+
+    if (firstIndexOfDot === (initialState.length - 1)) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
+    }
+
+    const initialStateParts = initialState.split('.');
+    const suffixData = initialStateParts[0];
+    const delta = initialStateParts[1];
+    const createOperationRequest = {
+      type: OperationType.Create,
+      suffix_data: suffixData,
+      delta
+    };
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const createOperation = await CreateOperation.parseObject(createOperationRequest, createOperationBuffer, false);
+
+    return createOperation;
   }
 }
