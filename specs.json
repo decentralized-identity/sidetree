@@ -19,6 +19,7 @@
         "markdown/terminology.md",
         "markdown/versioning.md",
         "markdown/parameters.md",
+        "markdown/common-functions.md",
         "markdown/topology.md",
         "markdown/file-structures.md",
         "markdown/unique-suffix.md",

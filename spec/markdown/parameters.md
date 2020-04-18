@@ -5,12 +5,14 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | Protocol Parameter          | Description                                                                   | Suggested Defaults |
 |-----------------------------|-------------------------------------------------------------------------------|:-------------------|
 | `HASH_ALGORITHM` { #hash-algorithm }       | Algorithm for generating hashes of protocol-related values.    |             SHA256 |
+| `HASH_PROTOCOL` { #hash-protocol }       | Protocol for generating hash representations in Sidetree implementations, using the [`HASH_ALGORITHM`](#hash-algorithm) | [Multihash](#multihash) |
+| `DATA_ENCODING_SCHEME` { #data-encoding-scheme } | Encoding selected for various data (JSON, hashes, etc.) used within an implementation, the output of which MUST be in ASCII format. |    Base64URL |
 | `KEY_ALGORITHM` { #key-algorithm }         | Asymmetric public key algorithm for signing DID operations. Must be a valid JWK `crv`.    |          secp256k1 |
 | `SIGNATURE_ALGORITHM` { #sig-algorithm }   | Asymmetric public key signature algorithm. Must be a valid JWS `alg`.                    |             ES256K |
 | `CAS_PROTOCOL` { #cas-protocol }       | The CAS network protocol used within an implementation.            |               IPFS |
 | `CID_ALGORITHM` { #cid-algorithm }       | Algorithm for generating CAS Identifiers.                        |           IPFS CID |
 | `COMPRESSION_ALGORITHM` { #compression-algorithm } | File compression algorithm                             |                ZIP |
-| `COMMITMENT_VALUE` { #commitment-value } | Cryptographically unguessable value to be revealed in the next operation. |      32 bytes |
+| `COMMITMENT_VALUE` { #commitment-value } | Cryptographically random value to be revealed in the next operation. |      32 bytes |
 | `GENESIS_TIME` { #genesis-time }                 | The point in the target ledger's transaction history at which Sidetree implementation is first activated (e.g. block number in a blockchain).    |             630000 |
 | `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | Maximum compressed Anchor File size.                     |               1 MB |
 | `MAX_MAP_FILE_SIZE` { #max-map-file-size }       | Maximum compressed map file size.                        |               1 MB |

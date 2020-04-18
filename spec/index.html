@@ -175,6 +175,16 @@
 <td style="text-align:left">SHA256</td>
 </tr>
 <tr>
+<td id="hash-protocol"><code>HASH_PROTOCOL</code></td>
+<td>Protocol for generating hash representations in Sidetree implementations, using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a></td>
+<td style="text-align:left"><a href="#multihash">Multihash</a></td>
+</tr>
+<tr>
+<td id="data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></td>
+<td>Encoding selected for various data (JSON, hashes, etc.) used within an implementation, the output of which MUST be in ASCII format.</td>
+<td style="text-align:left">Base64URL</td>
+</tr>
+<tr>
 <td id="key-algorithm"><code>KEY_ALGORITHM</code></td>
 <td>Asymmetric public key algorithm for signing DID operations. Must be a valid JWK <code>crv</code>.</td>
 <td style="text-align:left">secp256k1</td>
@@ -201,7 +211,7 @@
 </tr>
 <tr>
 <td id="commitment-value"><code>COMMITMENT_VALUE</code></td>
-<td>Cryptographically unguessable value to be revealed in the next operation.</td>
+<td>Cryptographically random value to be revealed in the next operation.</td>
 <td style="text-align:left">32 bytes</td>
 </tr>
 <tr>
@@ -241,6 +251,18 @@
 </tr>
 </tbody>
 </table>
+<h2 id="common-functions"><a class="toc-anchor" href="#common-functions">§</a> Common Functions</h2>
+<p>The following is a list of functional procedures that are commonly used across the protocol. These functions are defined once here and referenced throughout the specification, wherever an implementer must invoke them to comply with normative processes.</p>
+<h3 id="hashing-process"><a class="toc-anchor" href="#hashing-process">§</a> Hashing Process</h3>
+<p>All data hashed within the bounds of the protocol follow the same procedural steps, and yield a consistently encoded output. Given a data value, the following steps are used to generated a hashed output:</p>
+<ol>
+<li>Generate a hash of the data value using the <a href="#hash-protocol"><code>HASH_PROTOCOL</code></a> with the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>.</li>
+<li>Encode the resulting output using the <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>.</li>
+<li>Return the encoded hashing output.</li>
+</ol>
+<p>Pseudo-code example using current protocol defaults:</p>
+<pre class="language-js"><code class="language-js"><span class="token keyword">let</span> HashingOutput <span class="token operator">=</span> <span class="token function">Base64URL</span><span class="token punctuation">(</span> <span class="token function">Multihash</span><span class="token punctuation">(</span><span class="token constant">DATA</span><span class="token punctuation">,</span> <span class="token string">'sha2-256'</span><span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></pre>
 <h2 id="network-topology"><a class="toc-anchor" href="#network-topology">§</a> Network Topology</h2>
 <p>The figure below illustrates the three primary components of a Sidetree-based DID overlay network:</p>
 <ol>
@@ -254,7 +276,7 @@
 <img src="../docs/diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
 <h3 id="anchor-file"><a class="toc-anchor" href="#anchor-file">§</a> Anchor File</h3>
 <p>Anchor Files contain <a href="#create">Create</a>, <a href="#recover">Recover</a>, and <a href="#deactivate">Deactivate</a> operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor Files are anchored to the target ledger system via embedding a CAS URI in the ledger’s transactional history.</p>
-<div id="example-205" class="notice example"><a class="notice-link" href="#example-205">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-883" class="notice example"><a class="notice-link" href="#example-883">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"map_file_uri"</span><span class="token operator">:</span> CAS_URI<span class="token punctuation">,</span>
   <span class="token property">"operations"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
     <span class="token property">"create"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
@@ -304,24 +326,15 @@
 </div>
 <p>A valid <a href="#anchor-file">Anchor File</a> is a JSON document that MUST NOT exceed the <a href="#max-anchor-file-size"><code>MAX_ANCHOR_FILE_SIZE</code></a>, and composed as follows:</p>
 <ol>
-<li>
-<p>The <a href="#anchor-file">Anchor File</a> MUST contain a <a href="#map-file-property" id="map-file-property"><code>map_file_uri</code></a> property, and its value MUST be a <em>CAS URI</em> for the related Map File.</p>
-</li>
-<li>
-<p>If the set of operations to be anchored contain any <a href="#create">Create</a>, <a href="#recovery">Recover</a>, or <a href="#deactivate">Deactivate</a> operations, the <a href="#anchor-file">Anchor File</a> MUST contain an <code>operations</code> property, and its value MUST be an object composed as follows:</p>
+<li>The <a href="#anchor-file">Anchor File</a> MUST contain a <a href="#map-file-property" id="map-file-property"><code>map_file_uri</code></a> property, and its value MUST be a <em>CAS URI</em> for the related Map File.</li>
+<li>If the set of operations to be anchored contain any <a href="#create">Create</a>, <a href="#recovery">Recover</a>, or <a href="#deactivate">Deactivate</a> operations, the <a href="#anchor-file">Anchor File</a> MUST contain an <code>operations</code> property, and its value MUST be an object composed as follows:
 <ul>
 <li>If there are any <a href="#create">Create</a> operations to be included in the Anchor File:
 <ol>
 <li>The <code>operations</code> object MUST include a <code>create</code> property, and its value MUST be an array.</li>
 <li>For each <a href="#create">Create</a> operation to be included in the <code>create</code> array, herein referred to as <a href="#anchor-file-create-entry" id="anchor-file-create-entry"><em>Anchor File Create Entries</em></a>, use the following process to compose and include a JSON object for each entry:
 <ul>
-<li>Each entry object must contain a <code>suffix_data</code> property, and it MUST be a <code>Base64URL</code> encoded JSON object, composed as follows:
-<ul>
-<li>The object MUST contain an <a href="#initial-recovery-key" id="initial-recovery-key"><code>recovery_key</code></a> property, and its value MUST be an <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation of the <em>Initial Recovery Public Key</em>, generated as described in the <a href="#create">Create</a> operation process.</li>
-<li>The object MUST contain an <a href="#initial-recovery-commitment" id="initial-recovery-commitment"><code>recovery_commitment</code></a> property, and its value MUST be an <em>Initial Recovery Commitment</em>, as generated via the <a href="#create">Create</a> operation process.</li>
-<li>The object MUST contain a <code>delta_hash</code> property, and its value MUST be a hash (generated via the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>) of the <a href="#create-delta-object"><em>Create Operation Delta Object</em></a> (ensure this is a hash of the <code>Base64URL</code> encoded version of the object).</li>
-</ul>
-</li>
+<li>Each entry object must contain a <code>suffix_data</code> property, and its value MUST be a <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a>.</li>
 </ul>
 </li>
 <li>The <a href="#anchor-file">Anchor File</a> MUST NOT include multiple <a href="#create">Create</a> operations that produce the same <a href="#did-suffix">DID Suffix</a>.</li>
@@ -334,13 +347,7 @@
 <ul>
 <li>The object MUST contain a <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to. An <a href="#anchor-file">Anchor File</a> MUST NOT contain more than one operation of any type with the same <a href="#did-suffix">DID Suffix</a>.</li>
 <li>The object MUST contain a <code>recovery_reveal_value</code> property, and its value MUST be the last recovery <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>.</li>
-<li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
-<ul>
-<li>The payload MUST contain a <code>delta_hash</code> property, and its value MUST be a hash (generated via the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>) of the <code>Base64URL</code> encoded <a href="#recover-data-object"><em>Recovery Operation Data Object</em></a>.</li>
-<li>The payload MUST contain a <code>recovery_commitment</code> property, and its value MUST be the next <em>Recovery Commitment</em> generated during the <a href="#recover">Recovery</a> operation process.</li>
-<li>The payload MAY include a <code>recovery_key</code> property, and if included, its value MUST be an <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation of a public key, generated as described in the <a href="#recover">Recovery</a> operation process.</li>
-</ul>
-</li>
+<li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="#recovery-signed-data-object"><em>Recovery Operation Signed Data Object</em></a>.</li>
 </ul>
 </li>
 </ol>
@@ -352,12 +359,7 @@
 <ul>
 <li>The object MUST contain a <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to. An <a href="#anchor-file">Anchor File</a> MUST NOT contain more than one operation of any type with the same <a href="#did-suffix">DID Suffix</a>.</li>
 <li>The object MUST contain a <code>recovery_reveal_value</code> property, and its value MUST be the last recovery <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>.</li>
-<li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
-<ul>
-<li>The payload MUST contain a <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
-<li>The payload MUST contain a <code>recovery_reveal_value</code> property, and its value MUST be the last recovery <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>.</li>
-</ul>
-</li>
+<li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="#deactivate-signed-data-object"><em>Deactivate Operation Signed Data Object</em></a>.</li>
 </ul>
 </li>
 </ol>
@@ -367,7 +369,7 @@
 </ol>
 <h3 id="map-file"><a class="toc-anchor" href="#map-file">§</a> Map File</h3>
 <p>The Map file in the Sidetree protocol contains Update operation proving data, as well as the CAS-linked Chunk file chunks.</p>
-<div id="example-206" class="notice example"><a class="notice-link" href="#example-206">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-884" class="notice example"><a class="notice-link" href="#example-884">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"chunks"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> <span class="token property">"chunk_file_uri"</span><span class="token operator">:</span> CHUNK_HASH <span class="token punctuation">}</span><span class="token punctuation">,</span>
     <span class="token punctuation">{</span>...<span class="token punctuation">}</span>
@@ -402,20 +404,16 @@
 <li>The <code>operations</code> object MUST include an <code>update</code> property, and its value MUST be an array.</li>
 <li>For each <a href="#update">Update</a> operation to be included in the <code>update</code> array, herein referred to as <a href="#map-file-update-entry" id="map-file-update-entry">Map File Update Entries</a>, use the following process to compose and include entries:
 <ul>
-<li>The object MUST contain an <code>id</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
+<li>The object MUST contain an <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
 <li>The object MUST contain a <code>update_reveal_value</code> property, and its value MUST be the last update <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>.</li>
-<li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object with a signature that validates against one of the currently active operation keys, and contains the following payload values:
-<ul>
-<li>The object MUST contain a <code>delta_hash</code> property, and its value MUST be a hash (generated via the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>) of the <code>Base64URL</code> encoded <a href="#update-delta-object"><em>Update Operation Data Object</em></a>.</li>
-</ul>
-</li>
+<li>The object MUST contain a <code>signed_data</code> property, and its value MUST be an <a href="#update-signed-data-object"><em>Update Operation Signed Data Object</em></a>.</li>
 </ul>
 </li>
 </ol>
 <h3 id="chunk-files"><a class="toc-anchor" href="#chunk-files">§</a> Chunk Files</h3>
 <p>Chunk Files are JSON Documents, compressed via the <a href="#compression-algorithm">COMPRESSION_ALGORITHM</a> contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier’s DID Document.</p>
 <p>For this version of the protocol, there will only exist a single Chunk File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into multiple chunks, each with their own Chunk File.</p>
-<div id="create-operation-chunk-file-entry-17" class="notice example"><a class="notice-link" href="#create-operation-chunk-file-entry-17">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="create-operation-chunk-file-entry-73" class="notice example"><a class="notice-link" href="#create-operation-chunk-file-entry-73">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"deltas"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
        
     <span class="token punctuation">{</span> <span class="token comment">// JSON.stringify()-ed, and Base64URL encoded</span>
@@ -449,110 +447,108 @@
 </li>
 </ol>
 <h2 id="did-suffix-composition"><a class="toc-anchor" href="#did-suffix-composition">§</a> DID Suffix Composition</h2>
-<p>DID Methods based on the Sidetree protocol all share the same identifier format. The unique identifier string is a hash of a set of initialization values the controller generates when they create a Sidetree-based DID. This composite hash of initial state values enables Sidetree DIDs to be <em>self-certifying</em>, meaning the person or entity who generates a Sidetree-based DID knows their unique identifier immediately, and it is cryptographic secured for instant use (for more on instant use capabilities of Sidetree DIDs see <a href="#">Long-Form DID Resolution</a>).</p>
-<p>Example of a resulting DID, with scheme, Method identifier, and suffix string:</p>
+<p>DID Methods based on the Sidetree protocol all share the same identifier format. The unique identifier string is a hash of the <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a>, known as the <a href="#short-form-did" id="short-form-did"><em>Short-Form DID URI</em></a>, which contains values such as the initial recovery public key and patches representing the initial state of the DID Document. The unique identifier string being cryptographically bound to these values enables Sidetree DIDs to be <em>self-certifying</em>, meaning the person or entity who creates a Sidetree-based DID knows their unique identifier the time it is generated, and it is cryptographic secure for instant use (for more on the instant use capabilities of Sidetree DIDs, see <a href="#unpublished-did-resolution">Unpublished DID Resolution</a>).</p>
+<p>To generate the unique identifier string of a Sidetree DID, use the <a href="#hashing-process">Hashing Process</a> to generate a hash of the <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a>. The following is an example of a resulting colon (<code>:</code>) separated DID URI composed of the URI scheme (<code>did:</code>), Method identifier (<code>sidetree:</code>), and unique identifier string (<code>EiBJz4...</code>):</p>
 <pre class="language-css"><code class="language-css"><span class="token property">did</span><span class="token punctuation">:</span><span class="token property">sidetree</span><span class="token punctuation">:</span>EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw
 </code></pre>
-<p>The process below MUST be used to correctly generate a Sidetree-based DID identifier string:</p>
+<h2 id="did-operations"><a class="toc-anchor" href="#did-operations">§</a> DID Operations</h2>
+<p>Sidetree-based DIDs support a variety of DID operations, all of which require the DID owner to generate specific data values and cryptographic material. The sections below describe how to perform each type of operation, and how those operations are represented in the CAS-replicated files that are anchored to the underlying ledger system.</p>
+<p>While virtually all DID owners will engage User Agent applications on their local devices to perform these operations, most will not generate the anchoring transactions on the underlying ledger. Instead, most users will likely send the anchoring-related operation values they generate to external nodes for anchoring. This is relatively safe, because operations require signatures that an external node cannot forge. The only attack available to a rogue node operator is to not anchor the operations a DID owner sends them. However, the DID owner can detect this (via a scan of subsequent blocks) and send their operation to a different node or do it themselves, if they so desire.</p>
+<div id="note-187" class="notice note"><a class="notice-link" href="#note-187">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
+</div>
+<h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
+<p>Use the following process to generate a Sidetree-based DID:</p>
 <ol>
-<li>
-<p>From the values generated during the <a href="#create">Create</a> operation process, assemble the <a href="#anchor-file-create-entry"><em>Anchor File Create Entry</em></a> <code>suffix_data</code> object, composed as follows:</p>
-<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<li>Generate a key pair via the <a href="#key-algorithm"><code>KEY_ALGORITHM</code></a>. The public key MUST be retained for use as the <a href="#initial-recovery-key" id="initial-recovery-key"><em>Initial Recovery Public Key</em></a> portion of the <a href="#did-suffix">DID Suffix</a>, while the the private key MUST be securely stored for use in subsequent <a href="#recovery">Recovery</a> operations.</li>
+<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Recovery operation, herein referred to as <a href="#initial-recovery-commitment" id="initial-recovery-commitment"><em>Initial Recovery Commitment</em></a>.</li>
+<li>Generate a <em>Recovery Commitment</em> hash using the <a href="#hashing-process">Hashing Process</a> to generate a hash of the <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>, and retain the resulting hash value for inclusion in an <a href="#anchor-file">Anchor File</a> (if publication of the DID is desired).</li>
+<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Update operation, herein referred to as <em>Update Reveal Value</em>.</li>
+<li>Generate an <em>Update Commitment</em> hash by using the <a href="#hashing-process">Hashing Process</a> to generate a hash of the <em>Update Reveal Value</em>, and retain the resulting hash value for inclusion in an <a href="#anchor-file">Anchor File</a> (if publication of the DID is desired).</li>
+<li>Generate an encoded representation of the following object using the implementation’s <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <a href="#create-delta-object" id="create-delta-object"><em>Create Operation Delta Object</em></a>:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span> PATCH_<span class="token number">1</span><span class="token punctuation">,</span> PATCH_<span class="token number">2</span><span class="token punctuation">,</span> ... <span class="token punctuation">]</span><span class="token punctuation">,</span>
+  <span class="token property">"update_commitment"</span><span class="token operator">:</span> HASH_OF_UPDATE_COMMITMENT_VALUE
+<span class="token punctuation">}</span>
+</code></pre>
+<ul>
+<li>The object MUST contain a <code>patches</code> property, and its value MUST be an array of <a href="#did-state-patches">DID State Patches</a>.</li>
+<li>The object MUST contain a <code>update_commitment</code> property, and its value MUST be the <em>Update Commitment</em>, as described above.</li>
+</ul>
+</li>
+<li>Generate an encoded representation of the following object using the implementation’s <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <a href="#create-suffix-data-object" id="create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a>:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"delta_hash"</span><span class="token operator">:</span> DELTA_HASH<span class="token punctuation">,</span>
   <span class="token property">"recovery_key"</span><span class="token operator">:</span> JWK_OBJECT<span class="token punctuation">,</span>
   <span class="token property">"recovery_commitment"</span><span class="token operator">:</span> COMMITMENT_HASH
 <span class="token punctuation">}</span>
 </code></pre>
 <ul>
-<li>The object MUST contain a <code>delta_hash</code> property, and its value MUST be a hash of the <a href="#create-delta-object">Create Operation Delta Object</a>.</li>
-<li>The object MUST contain a <code>recovery_key</code> property, and its value MUST be the <em>Initial Recovery Public Key</em>.</li>
-<li>The object MUST contain a <code>recovery_commitment</code> property, and its value MUST be the <em>Initial Recovery Commitment</em>.</li>
-</ul>
-</li>
-<li>
-<p>Once assembled, <code>Base64URL</code> encode the JSON object. <em>(NOTE: Implementers MAY choose to canonicalize the object prior to <code>Base64URL</code> encoding it. This does not affect the outcome or other components in the system that deal with this object.)</em></p>
-</li>
-<li>
-<p>Use the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a> to generate a <a href="#multihash">Multihash</a> of the <code>Base64URL</code> encoded object.</p>
-</li>
-<li>
-<p>Convert the output from a raw <a href="#multihash">Multihash</a> buffer to its <code>Base64URL</code> encoded representation.</p>
-</li>
-<li>
-<p>Convert the <code>Base64URL</code> encoded representation of the <a href="#multihash">Multihash</a> to its ASCII encoded representation.</p>
-</li>
-</ol>
-<p>The following are graphical representations of the process enumerated above:</p>
-<pre class="language-js"><code class="language-js">Suffix <span class="token operator">=</span> <span class="token constant">ASCII</span><span class="token punctuation">(</span> <span class="token function">Base64URL</span><span class="token punctuation">(</span> <span class="token function">Multihash</span><span class="token punctuation">(</span> <span class="token constant">SHA256</span><span class="token punctuation">(</span> <span class="token function">Base64URL</span><span class="token punctuation">(</span> <span class="token constant">UTF8</span><span class="token punctuation">(</span>suffix_data <span class="token constant">JSON</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-</code></pre>
-<div class="mermaid">
-graph TB
-
-ID(did:sidetree:EiBJz4qd3Lvof3boqBQgzhMDYXWQ_wZs67jGiAhFCiQFjw)-->ASCII(ASCII Encoder)
-ASCII-->Base64URLHash(Base64URL Encoder)
-Base64URLHash-->Hash(Multihash Encoder)
-Hash-->Base64URLObject(Base64URL Encoder)
-Base64URLObject-->SuffixObject(JSON Object)
-SuffixObject-->|delta_hash| E(xKwW0h6HjS...)
-SuffixObject-->|recovery_key| F(tB4W0i61jS...)
-SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
-</div>
-<h2 id="did-operations"><a class="toc-anchor" href="#did-operations">§</a> DID Operations</h2>
-<p>Sidetree-based DIDs support a variety of DID operations, all of which require the DID owner to generate specific data values and cryptographic material. The sections below describe how to perform each type of operation, and how those operations are represented in the CAS-replicated files that are anchored to the underlying ledger system.</p>
-<p>While virtually all DID owners will engage User Agent applications on their local devices to perform these operations, most will not generate the anchoring transactions on the underlying ledger. Instead, most users will likely send the anchoring-related operation values they generate to external nodes for anchoring. This is relatively safe, because operations require signatures that an external node cannot forge. The only attack available to a rogue node operator is to not anchor the operations a DID owner sends them. However, the DID owner can detect this (via a scan of subsequent blocks) and send their operation to a different node or do it themselves, if they so desire.</p>
-<div id="note-35" class="notice note"><a class="notice-link" href="#note-35">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
-</div>
-<h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
-<p>Use the following process to generate a Sidetree-based DID:</p>
-<ol>
-<li>Generate a key pair via the <a href="#key-algorithm"><code>KEY_ALGORITHM</code></a>. The public key MUST be retained for use as the <em>Initial Recovery Public Key</em> portion of the <a href="#did-suffix">DID Suffix</a>, while the the private key MUST be securely stored for use in subsequent <a href="#recovery">Recovery</a> operations.</li>
-<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Recovery operation, herein referred to as <em>Initial Recovery Commitment</em>.</li>
-<li>Generate a <em>Recovery Commitment</em> using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a> and retain the hash for inclusion in an <a href="#anchor-file">Anchor File</a>, if publication of the DID is desired.</li>
-<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Update operation, herein referred to as <em>Update Commitment</em>.</li>
-<li>Generate an <em>Update Commitment Hash</em> using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a> and retain the hash for inclusion in an <a href="#anchor-file">Anchor File</a>, if publication of the DID is desired.</li>
-<li>Generate a <code>Base64URL</code> encoded representation of the following object, herein referred to as the <a href="#create-delta-object" id="create-delta-object"><em>Create Operation Delta Object</em></a>:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
-  <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span> PATCH_<span class="token number">1</span><span class="token punctuation">,</span> PATCH_<span class="token number">2</span><span class="token punctuation">,</span> ... <span class="token punctuation">]</span><span class="token punctuation">,</span>
-  <span class="token property">"update_commitment"</span><span class="token operator">:</span> HASH_OF_UPDATE_COMMITMENT_VALUE
-<span class="token punctuation">}</span>
-</code></pre>
-<ul>
-<li>The object MUST contain a <code>patches</code> property, and its value MUST be an array of <a href="#did-state-patches">DID State Patches</a>.</li>
-<li>The object MUST contain a <code>update_commitment</code> property, and its value MUST be the hash of a new <em>Update Commitment</em> to be revealed for the next Update operation.</li>
+<li>The object MUST contain a <code>delta_hash</code> property, and its value MUST be a hash of the <a href="#create-delta-object"><em>Create Operation Delta Object</em></a> (detailed above), generated via the <a href="#hashing-process">Hashing Process</a>.</li>
+<li>The object MUST contain the <code>recovery_key</code> property, and its value MUST be an <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation of the <a href="#initial-recovery-key"><em>Initial Recovery Public Key</em></a> (detailed above).</li>
+<li>The object MUST contain an <code>recovery_commitment</code> property, and its value MUST be an <a href="#initial-recovery-commitment"><em>Initial Recovery Commitment</em></a> (detailed above).</li>
 </ul>
 </li>
 </ol>
+<div id="note-188" class="notice note"><a class="notice-link" href="#note-188">NOTE</a><p>Implementers MAY choose to canonicalize their <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Objects</em></a> prior applying the <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>. This does not affect the outcome or other components in the system that deal with this object.</p>
+</div>
 <h3 id="update"><a class="toc-anchor" href="#update">§</a> Update</h3>
 <p>The following process must be used to update the state a Sidetree-based DID:</p>
 <ol>
 <li>Retrieve the <em>Update Reveal Value</em> that matches the previously anchored <em>Update Commitment</em>.</li>
-<li>Generate an object, herein referred to as the <a href="#update-delta-object" id="update-delta-object"><em>Update Operation Data Object</em></a>, composed as follows:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<li>Generate an encoded representation of the following object using the implementation’s <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <a href="#update-delta-object" id="update-delta-object"><em>Update Operation Delta Object</em></a>, composed as follows:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span> PATCH_<span class="token number">1</span><span class="token punctuation">,</span> PATCH_<span class="token number">2</span><span class="token punctuation">,</span> ... <span class="token punctuation">]</span><span class="token punctuation">,</span>
   <span class="token property">"update_commitment"</span><span class="token operator">:</span> HASH_OF_UPDATE_COMMITMENT_VALUE
 <span class="token punctuation">}</span>
 </code></pre>
 <ul>
 <li>The object MUST contain a <code>patches</code> property, and its value MUST be an array of <a href="#did-state-patches">DID State Patches</a>.</li>
-<li>The object MUST contain a <code>update_commitment</code> property, and its value MUST be the hash of a new <em>Update Commitment</em> to be revealed for the next Update operation.</li>
+<li>The object MUST contain a <code>update_commitment</code> property, and its value MUST be a new <em>Update Commitment</em>, the value of which will be revealed for the next Update operation.</li>
+</ul>
+</li>
+<li>Generate an encoded representation of the following object using the implementation’s <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <a href="#update-signed-data-object" id="update-signed-data-object"><em>Update Operation Signed Data Object</em></a>. The object MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object with a signature that validates against a currently active operation key, and contains the following payload values:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"protected"</span><span class="token operator">:</span> <span class="token punctuation">{</span>...<span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"payload"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"delta_hash"</span><span class="token operator">:</span> DELTA_HASH
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"signature"</span><span class="token operator">:</span> SIGNATURE_STRING
+<span class="token punctuation">}</span>
+</code></pre>
+<ul>
+<li>The JWS <code>payload</code> object MUST contain a <code>delta_hash</code> property, and its value MUST be a hash of the <a href="#update-delta-object"><em>Update Operation Delta Object</em></a>, generated via the <a href="#hashing-process">Hashing Process</a>.</li>
 </ul>
 </li>
 </ol>
 <h3 id="recover"><a class="toc-anchor" href="#recover">§</a> Recover</h3>
 <p>Use the following process to generate a Sidetree-based DID:</p>
 <ol>
-<li>Retrieve the <em>Recovery Reveal Value</em> that matches the previously anchored <em>Recovery Commitment</em>.</li>
-<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Recovery operation, herein referred to as <em>Next Recovery Commitment</em>.</li>
-<li>Generate a <em>Recovery Commitment</em> of the <em>Next Recovery Commitment</em> using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>, and retain the hash for inclusion in an <a href="#anchor-file">Anchor File</a>.</li>
-<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Update operation, herein referred to as next <em>Update Commitment</em>.</li>
-<li>Generate an <em>Update Commitment Hash</em> of the next <em>Update Commitment</em> using the <a href="#hash-algorithm"><code>HASH_ALGORITHM</code></a>, and retain the hash for inclusion in an <a href="#anchor-file">Anchor File</a>.</li>
+<li>Retrieve the <em>Recovery Reveal Value</em> that matches the previously anchored <em>Recovery Commitment</em>. This value will be used in constructing an <a href="#anchor-file-recovery-entry"><em>Anchor File Recovery Entry</em></a> for the DID being recovered.</li>
+<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Recovery operation, herein referred to as the <em>Recovery Reveal Value</em>.</li>
+<li>Generate a <a href="#recovery-commitment" id="recovery-commitment"><em>Recovery Commitment</em></a> hash using the <a href="#hashing-process">Hashing Process</a> to generate a hash of the <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>, and retain the resulting hash value for inclusion in an <a href="#anchor-file">Anchor File</a>.</li>
+<li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Update operation, herein referred to as the <em>Update Reveal Value</em>.</li>
+<li>Generate an <em>Update Commitment</em> hash using the <a href="#hashing-process">Hashing Process</a> to generate a hash of the <em>Update Reveal Value</em>, and retain the resulting hash value for inclusion in an <a href="#anchor-file">Anchor File</a>.</li>
 <li>Optionally, the recovering entity MAY generate a new key pair, via the <a href="#key-algorithm"><code>KEY_ALGORITHM</code></a>, for inclusion in the <a href="#anchor-file">Anchor File</a> (to support key rolling, etc.). The private key MUST be securely stored for use in subsequent <a href="#recover">Recovery</a> operations.</li>
-<li>Generate a <code>Base64URL</code> encoded representation of the following object, herein referred to as the <a href="#recover-data-object" id="recover-data-object"><em>Recovery Operation Data Object</em></a>, composed as follows:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<li>Generate a <code>Base64URL</code> encoded representation of the following object, herein referred to as the <a href="#recover-delta-object" id="recover-delta-object"><em>Recovery Operation Delta Object</em></a>, composed as follows:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span> PATCH_<span class="token number">1</span><span class="token punctuation">,</span> PATCH_<span class="token number">2</span><span class="token punctuation">,</span> ... <span class="token punctuation">]</span><span class="token punctuation">,</span>
   <span class="token property">"update_commitment"</span><span class="token operator">:</span> HASH_OF_UPDATE_COMMITMENT_VALUE
 <span class="token punctuation">}</span>
 </code></pre>
 <ul>
 <li>The object MUST contain a <code>patches</code> property, and its value MUST be an array of <a href="#did-state-patches">DID State Patches</a>.</li>
-<li>The object MUST contain a <code>update_commitment</code> property, and its value MUST be the hash of a new <em>Update Commitment</em> to be revealed for the next Update operation.</li>
+<li>The object MUST contain a <code>update_commitment</code> property, and its value MUST be the <em>Update Commitment</em>, as described above.</li>
+</ul>
+</li>
+<li>Generate an encoded representation of the following object using the implementation’s <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <a href="#recovery-signed-data-object" id="recovery-signed-data-object"><em>Recovery Operation Signed Data Object</em></a>. The object MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object with a signature that validates against the currently active recovery key, and contains the following <code>payload</code> values:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+  <span class="token property">"protected"</span><span class="token operator">:</span> <span class="token punctuation">{</span>...<span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"payload"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token property">"recovery_commitment"</span><span class="token operator">:</span> COMMITMENT_HASH<span class="token punctuation">,</span>
+      <span class="token property">"delta_hash"</span><span class="token operator">:</span> DELTA_HASH<span class="token punctuation">,</span>
+      <span class="token property">"recovery_key"</span><span class="token operator">:</span> JWK_OBJECT
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"signature"</span><span class="token operator">:</span> SIGNATURE_STRING
+<span class="token punctuation">}</span>
+</code></pre>
+<ul>
+<li>The JWS <code>payload</code> object MUST contain a <code>delta_hash</code> property, and its value MUST be a hash of the <a href="#recover-delta-object"><em>Recovery Operation Delta Object</em></a>, generated via the <a href="#hashing-process">Hashing Process</a>.</li>
+<li>The JWS <code>payload</code> object MUST contain a <code>recovery_commitment</code> property, and its value MUST be the next <a href="#recovery-commitment"><em>Recovery Commitment</em></a>, as described above.</li>
+<li>The JWS <code>payload</code> object MAY include a <code>recovery_key</code> property, and if included, its value MUST be an <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation of a public key, as described above.</li>
 </ul>
 </li>
 </ol>
@@ -560,7 +556,20 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <p>The following process must be used to deactivate a Sidetree-based DID:</p>
 <ol>
 <li>Retrieve the <em>Recovery Reveal Value</em> that matches the previously anchored <em>Recovery Commitment</em>.</li>
-<li>Concatenate the <a href="#did-suffix">DID Suffix</a> hash with the <em>Recovery Reveal Value</em> and sign over the resulting string using the <a href="#sig-algorithm"><code>SIGNATURE_ALGORITHM</code></a>. Retain the signature for inclusion in an <a href="#anchor-file">Anchor File</a></li>
+<li>Generate an encoded representation of the following object using the implementation’s <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <a href="#deactivate-signed-data-object" id="deactivate-signed-data-object"><em>Deactivate Operation Signed Data Object</em></a>. The object MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span> <span class="token comment">// Base64URL encoded, compact JWS</span>
+  <span class="token property">"protected"</span><span class="token operator">:</span> <span class="token punctuation">{</span>...<span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"payload"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+    <span class="token property">"did_suffix"</span><span class="token operator">:</span> SUFFIX_STRING<span class="token punctuation">,</span>
+    <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE
+  <span class="token punctuation">}</span><span class="token punctuation">,</span>
+  <span class="token property">"signature"</span><span class="token operator">:</span> SIGNATURE_STRING
+<span class="token punctuation">}</span>
+</code></pre>
+<ul>
+<li>The JWS <code>payload</code> object MUST contain a <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
+<li>The JWS <code>payload</code> object MUST contain a <code>recovery_reveal_value</code> property, and its value MUST be the last recovery <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a>.</li>
+</ul>
+</li>
 </ol>
 <h2 id="did-state-patches"><a class="toc-anchor" href="#did-state-patches">§</a> DID State Patches</h2>
 <p>Sidetree defines a general format for patching DID State, called <em>Patch Actions</em>, for describing mutations of a DID’s metadata state. Sidetree further defines a standard set of <em>Patch Actions</em> (below) implementers MAY use to facilitate patching within their implementations. Support of the standard set of <em>Patch Actions</em> defined herein IS NOT required, but implementers MUST use the <em>Patch Action</em> format for defining patch mechanisms within their implementation. The general <em>Patch Action</em> format is defined as follows:</p>
@@ -589,7 +598,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <h3 id="standard-patch-actions"><a class="toc-anchor" href="#standard-patch-actions">§</a> Standard Patch Actions</h3>
 <p>The following set of standard <em>Patch Actions</em> are specified to help align on a common set of <em>Patch Actions</em> that provide a predictable usage patter across Sidetree-based DID Method implementations.</p>
 <h4 id="add-public-keys"><a class="toc-anchor" href="#add-public-keys">§</a> <code>add-public-keys</code></h4>
-<div id="example-207" class="notice example"><a class="notice-link" href="#example-207">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-885" class="notice example"><a class="notice-link" href="#example-885">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"public_keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -618,18 +627,24 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <li>The object MUST include a <code>jwk</code> property, and its value MUST be a public key expressed as a <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation for a <a href="#key-algorithm"><code>KEY_ALGORITHM</code></a> supported by the implementation. If the value is not a compliant JWK representation, the entire <em>Patch Action</em> MUST be discarded, without any of it being used to modify the DID’s state.</li>
 <li>The object MUST include a <code>usage</code> property, and its value MUST be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire <em>Patch Action</em> MUST be discarded, without any of it being used to modify the DID’s state.
 <ul>
-<li><code>ops</code>: the key MUST be allowed to sign operations for the DID. If no other string is present in the <code>usage</code> array, the key SHOULD NOT be projected into the output DID Document. If the <code>ops</code> string is present, the implementer MAY choose to include a DID Document compliant public key entry for it in its <a href="https://w3c-ccg.github.io/did-resolution/#example">Method-specific resolution metadata</a> output.</li>
-<li><code>general</code>: the key MUST be included in the <code>public_keys</code> section of the resolved <em>DID Document</em>.</li>
-<li><code>auth</code>: the key MUST be included in the <code>authentication</code> section of the resolved <em>DID Document</em>, as follows:
+<li><strong><code>ops</code></strong>: the key MUST be allowed to sign operations for the DID. If no other string is present in the <code>usage</code> array, the key SHOULD NOT be projected into the output DID Document. If the <code>ops</code> string is present, the implementer MAY choose to include a DID Document compliant public key entry for it in its <a href="https://w3c-ccg.github.io/did-resolution/#example">Method-specific resolution metadata</a> output.</li>
+<li><strong><code>general</code></strong>: the key MUST be included in the <code>public_keys</code> section of the resolved <em>DID Document</em>.</li>
+<li><strong><code>auth</code></strong>: the key MUST be included in the <code>authentication</code> section of the resolved <em>DID Document</em>, as follows:
 <ul>
 <li>If the <code>general</code> usage value IS NOT present in the <code>usage</code> array, the key descriptor object MUST be included directly in the <code>authentication</code> section of the resolved <em>DID Document</em>.</li>
 <li>If the <code>general</code> usage value IS present in the <code>usage</code> array, the key descriptor object MUST be directly included in the <code>public_keys</code> section of the resolved <em>DID Document</em>, and MUST be included by <a href="https://w3c.github.io/did-core/#relative-did-urls">relative DID URL reference</a> in the <code>authentication</code> section.</li>
 </ul>
 </li>
-<li><code>agreement</code>: the key MUST be included in the <code>keyAgreement</code> section of the resolved <em>DID Document</em>, as follows:
+<li><strong><code>agreement</code></strong>: the key MUST be included in the <code>keyAgreement</code> section of the resolved <em>DID Document</em>, as follows:
 <ul>
 <li>If the <code>general</code> usage value IS NOT present in the <code>usage</code> array, the key descriptor object MUST be included directly in the <code>keyAgreement</code> section of the resolved <em>DID Document</em>.</li>
 <li>If the <code>general</code> usage value IS present in the <code>usage</code> array, the key descriptor object MUST be directly included in the <code>public_keys</code> section of the resolved <em>DID Document</em>, and MUST be included by <a href="https://w3c.github.io/did-core/#relative-did-urls">relative DID URL reference</a> in the <code>keyAgreement</code> section.</li>
+</ul>
+</li>
+<li><strong><code>assertion</code></strong>: the key MUST be included in the <code>assertionMethod</code> section of the resolved <em>DID Document</em>, as follows:
+<ul>
+<li>If the <code>general</code> usage value IS NOT present in the <code>usage</code> array, the key descriptor object MUST be included directly in the <code>assertionMethod</code> section of the resolved <em>DID Document</em>.</li>
+<li>If the <code>general</code> usage value IS present in the <code>usage</code> array, the key descriptor object MUST be directly included in the <code>public_keys</code> section of the resolved <em>DID Document</em>, and MUST be included by <a href="https://w3c.github.io/did-core/#relative-did-urls">relative DID URL reference</a> in the <code>assertionMethod</code> section.</li>
 </ul>
 </li>
 </ul>
@@ -638,7 +653,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 </li>
 </ol>
 <h4 id="remove-public-keys"><a class="toc-anchor" href="#remove-public-keys">§</a> <code>remove-public-keys</code></h4>
-<div id="example-208" class="notice example"><a class="notice-link" href="#example-208">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-886" class="notice example"><a class="notice-link" href="#example-886">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"public_keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"key1"</span><span class="token punctuation">,</span> <span class="token string">"key2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -650,7 +665,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <li>The object MUST include a <code>public_keys</code> property, and its value MUST be an array of key IDs that correspond with keys presently associated with the DID that are to be removed. If the value is not of the correct type or includes a string value that is not associated with a key in the document, the entire <em>Patch Action</em> MUST be discarded, without any of it being used to modify the DID’s state.</li>
 </ol>
 <h4 id="add-service-endpoints"><a class="toc-anchor" href="#add-service-endpoints">§</a> <code>add-service-endpoints</code></h4>
-<div id="example-209" class="notice example"><a class="notice-link" href="#example-209">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-887" class="notice example"><a class="notice-link" href="#example-887">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-service-endpoints"</span><span class="token punctuation">,</span>
   <span class="token property">"service_endpoints"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -680,7 +695,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 </li>
 </ol>
 <h4 id="remove-service-endpoints"><a class="toc-anchor" href="#remove-service-endpoints">§</a> <code>remove-service-endpoints</code></h4>
-<div id="example-210" class="notice example"><a class="notice-link" href="#example-210">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-888" class="notice example"><a class="notice-link" href="#example-888">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-service-endpoints"</span><span class="token punctuation">,</span>
   <span class="token property">"ids"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"sds1"</span><span class="token punctuation">,</span> <span class="token string">"sds2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -697,7 +712,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <li>The object MUST include an <code>action</code> property, and its value MUST be <code>ietf-json-patch</code>.</li>
 <li>The object MUST include a <code>patches</code> property, and its value MUST be an array of <a href="https://tools.ietf.org/html/rfc6902">IETF JSON Patch</a> operation objects.</li>
 </ol>
-<div id="1-17" class="notice example"><a class="notice-link" href="#1-17">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="1-73" class="notice example"><a class="notice-link" href="#1-73">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"ietf-json-patch"</span><span class="token punctuation">,</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> <span class="token property">"op"</span><span class="token operator">:</span> <span class="token string">"add"</span><span class="token punctuation">,</span> ... <span class="token punctuation">}</span><span class="token punctuation">,</span>
@@ -709,7 +724,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <span class="token punctuation">}</span>
 </code></pre>
 </div>
-<div id="2-17" class="notice example"><a class="notice-link" href="#2-17">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="2-73" class="notice example"><a class="notice-link" href="#2-73">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"ietf-json-patch"</span><span class="token punctuation">,</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -727,9 +742,9 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <span class="token punctuation">}</span>
 </code></pre>
 </div>
-<div id="warning-35" class="notice warning"><a class="notice-link" href="#warning-35">WARNING</a><p>Use of <code>ietf-json-patch</code> may result in unrecoverable states, similar to “Deactivated”.</p>
+<div id="warning-147" class="notice warning"><a class="notice-link" href="#warning-147">WARNING</a><p>Use of <code>ietf-json-patch</code> may result in unrecoverable states, similar to “Deactivated”.</p>
 </div>
-<div id="warning-36" class="notice warning"><a class="notice-link" href="#warning-36">WARNING</a><p>Use of <code>ietf-json-patch</code> may harm an implmentation’s ability to perform validation on operations at ingestion time, which could impact performance negatively.</p>
+<div id="warning-148" class="notice warning"><a class="notice-link" href="#warning-148">WARNING</a><p>Use of <code>ietf-json-patch</code> may harm an implmentation’s ability to perform validation on operations at ingestion time, which could impact performance negatively.</p>
 </div>
 <h2 id="transaction-operation-processing"><a class="toc-anchor" href="#transaction-operation-processing">§</a> Transaction &amp; Operation Processing</h2>
 <h3 id="transaction-anchoring"><a class="toc-anchor" href="#transaction-anchoring">§</a> Transaction Anchoring</h3>
@@ -738,7 +753,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 <li>Generate a transaction for the underlying ledger</li>
 <li>Generate and include the following value, herein referred to as the <a href="#anchor-string" id="anchor-string"><em>Anchor String</em></a>, within the transaction:
 <ol>
-<li>Convert the total number of operations in the Chunk File to a 4 byte little endian string, then <code>Base64URL</code> encode the result, herein referred to as the <em>Operation Count</em>.</li>
+<li>Convert the total number of operations in the Chunk File to a 4 byte little endian string and encode it using the <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>, herein referred to as the <em>Operation Count</em>.</li>
 <li>Using the <a href="#cid-algorithm"><code>CID_ALGORITHM</code></a>, generate a CID for the Anchor File, herein referred to as the <em>Anchor File CID</em>.</li>
 <li>Join the <em>Operation Count</em> and <em>Anchor File CID</em> with a <code>.</code> as follows:<pre class="language-js"><code class="language-js"><span class="token string">"ECcAAA"</span> <span class="token operator">+</span> <span class="token string">"."</span> <span class="token operator">+</span> <span class="token string">"QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"</span>
 </code></pre>
@@ -805,7 +820,7 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 </ol>
 </li>
 </ol>
-<div id="todo-35" class="notice todo"><a class="notice-link" href="#todo-35">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
+<div id="todo-147" class="notice todo"><a class="notice-link" href="#todo-147">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
 </div>
 <h3 id="map-file-processing"><a class="toc-anchor" href="#map-file-processing">§</a> Map File Processing</h3>
 <p>The follow sequence of rules and processing steps must be followed to correctly process a Map File:</p>
@@ -836,9 +851,9 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
 </ol>
 </li>
 </ol>
-<div id="note-36" class="notice note"><a class="notice-link" href="#note-36">NOTE</a><p>The assembly and processing of Chunk Files will change in a future update to the protocol, to accommodate the introduction of multiple chunk files. The current protocol version is designed around one Chunk File, but the scaffolding is present to move to multiple Chunk Files as development progresses.</p>
+<div id="note-189" class="notice note"><a class="notice-link" href="#note-189">NOTE</a><p>The assembly and processing of Chunk Files will change in a future update to the protocol, to accommodate the introduction of multiple chunk files. The current protocol version is designed around one Chunk File, but the scaffolding is present to move to multiple Chunk Files as development progresses.</p>
 </div>
-<div id="todo-36" class="notice todo"><a class="notice-link" href="#todo-36">TODO</a><p>Add the ordering rules for ensuring the order matches the order expected from the Anchor/Map files</p>
+<div id="todo-148" class="notice todo"><a class="notice-link" href="#todo-148">TODO</a><p>Add the ordering rules for ensuring the order matches the order expected from the Anchor/Map files</p>
 </div>
 <!-- 1. Every operation in the batch file must adhere to the following requirements to be considered a _well-formed operation_, one _not-well-formed_ operation in the batch file renders the entire transaction invalid:
 
@@ -866,19 +881,21 @@ SuffixObject-->|recovery_commitment| D(oqBQgzhMDw...)
     4. With the reveal value and signature validated, persist the operation data within the implementation to hold this and future operational data, and retain the [_Initial Recovery Commitment_](#initial-recovery-commitment) and [_Initial Recovery Key](#initial-recovery-key) values from [_Anchor File Create Entries_](#anchor-file-create-entry) for use in validating a future Recovery operation.
 -->
 <h3 id="unpublished-did-resolution"><a class="toc-anchor" href="#unpublished-did-resolution">§</a> Unpublished DID Resolution</h3>
-<p>DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through <em>DID Parameters</em>, as defined by the W3C Decentralized Identifiers specification.</p>
-<p>Many DID Methods may allow or require a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying ledger system and other layers to which propagation delays may apply. In order support resolution and use of identifiers during this period Sidetree defines a Method-specific DID parameter <code>-METHOD_NAME-initial-state</code> that any DID method can use to signify initial state variables during this period.</p>
-<p>Sidetree uses the <code>-METHOD_NAME-initial-state</code> DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the <code>-METHOD_NAME-initial-state</code> DID Parameter to the DID, with the value being the encoded string of the create operation request.</p>
-<p>e.g. <code>did:METHOD_NAME:&lt;unique-portion&gt;?-METHOD_NAME-initial-state=&lt;encoded-create-operation-request&gt;</code></p>
-<p>This allows any entity to support all of the following usage patterns:</p>
-<p>Resolving unpublished DIDs.
-Authenticating with unpublished DIDs.
-Signing and verifying credentials signed against unpublished DIDs.
-Authenticating with either the DID or DID with <code>-METHOD_NAME-initial-state</code> parameter, after it is published.
-Signing and verifying credentials signed against either the DID or DID with <code>-METHOD_NAME-initial-state</code> parameter, after it is published.</p>
+<p>DID URI strings may include additional values that are used in resolution and other activities. The standard way to pass these values are through <em>DID URL Parameters</em>, as defined by the <a href="https://w3c.github.io/did-core/">W3C Decentralized Identifiers</a> specification.</p>
+<p>Many DID Methods require a period of time (which may be indefinite) between the generation of a DID and the DID being anchored/propagated in the underlying ledger system, and other layers for which propagation delays may apply. Sidetree introduces the <code>-METHOD-initial-state</code> <em>DID URL Parameter</em> to enable resolution of unpropagated and unpublished DIDs. To use a Sidetree-based DID immediately after generation, the controller MUST include the <code>-METHOD-initial-state</code> <em>DID URL Parameter</em> in the DID URI string, with the value being a string composed of the <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a> and the <a href="#create-delta-object"><em>Create Operation Delta Object</em></a>, separated by a period (<code>.</code>):</p>
+<pre class="language-html"><code class="language-html">did:METHOD:<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>did-suffix</span><span class="token punctuation">></span></span>?-METHOD-initial-state=<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>create-delta-object</span><span class="token punctuation">></span></span>.<span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>create-suffix-data-object</span><span class="token punctuation">></span></span>
+</code></pre>
+<p>The addition of this <em>DID URL Parameter</em> mechanism of conveying the initial, <em>self-certifying</em> state of a DID, known as the <a href="#long-form-did" id="long-form-did"><em>Long-Form DID URI</em></a> supports the following features and usage patterns:</p>
+<ul>
+<li>Resolving the DID Documents of unpublished DIDs.</li>
+<li>Authenticating with unpublished DIDs.</li>
+<li>Signing and verifying credentials signed against unpublished DIDs.</li>
+<li>After publication and propagation are complete, authenticating with either the <a href="#short-form-did"><em>Short-Form DID URI</em></a> or <a href="#long-form-did"><em>Long-Form DID URI</em></a>.</li>
+<li>After publication and propagation are complete, signing and verifying credentials signed against either the <a href="#short-form-did"><em>Short-Form DID URI</em></a> or <a href="#long-form-did"><em>Long-Form DID URI</em></a>.</li>
+</ul>
 <h3 id="resolver-metadata"><a class="toc-anchor" href="#resolver-metadata">§</a> Resolver Metadata</h3>
 <h4 id="published-property"><a class="toc-anchor" href="#published-property">§</a> <code>published</code> property</h4>
-<p>At such time an ID is published/anchored, a user can provide either the parametered or unparametered version of the Sidetree DID URI to an external party, and it will be resolvable. There is no required change for any party that had been holding the parametered version of the URI - it will continue to resolve just as it had prior to being anchored. In addition, the community will introduce a generic, standard property: <code>published</code> in the <a href="https://w3c-ccg.github.io/did-resolution/#output-resolvermetadata">DID resolution spec</a>, that is added to the DID resolution response. The <code>published</code> property indicates whether a DID has been published/anchored in the underlying trust system a DID Method writes to. When an entity resolves any DID from any DID Method and finds that the DID has been published, the entity may drop the <code>initial-values</code> DID parameter from their held references to the DID in question, if they so desire. However, dropping the <code>initial-values</code> DID parameter after publication is purely an elective act - the ID will resolve correctly regardless.</p>
+<p>At such time an ID is published/anchored, a user can provide either the parametered or unparametered version of the Sidetree DID URI to an external party, and it will be resolvable. There is no required change for any party that had been holding the parametered version of the URI - it will continue to resolve just as it had prior to being anchored. In addition, the community will introduce a generic, standard property: <code>published</code> in the <a href="https://w3c-ccg.github.io/did-resolution/#output-resolvermetadata">DID resolution spec</a>, that is added to the DID resolution response. The <code>published</code> property indicates whether a DID has been published/anchored in the underlying trust system a DID Method writes to. When an entity resolves any DID from any DID Method and finds that the DID has been published, the entity may drop the <code>initial-state</code> DID parameter from their held references to the DID in question, if they so desire. However, dropping the <code>initial-state</code> DID parameter after publication is purely an elective act - the ID will resolve correctly regardless.</p>
 <h2 id="method-versioning"><a class="toc-anchor" href="#method-versioning">§</a> Method Versioning</h2>
 <p>It is RECOMMENDED that Sidetree based DID Methods implement the following versioning structures to support development, testing, staging and production network deployments.</p>
 <p>We define a network suffix as follows for a given DID Method:</p>
@@ -935,7 +952,7 @@ did:elem:EiD0x0JeWXQbVIpBpyeyF5FDdZN1U7enAfHnd13Qk_CYpQ
 <p>Sidetree resolution requests to the REST API consist of a DID and MAY include DID parameters.
 As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY include the initial state DID parameter.</p>
 <p>The server responds with the Resolution Response Object composed of the DID Document and Method Metadata.</p>
-<div id="example-211" class="notice example"><a class="notice-link" href="#example-211">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-889" class="notice example"><a class="notice-link" href="#example-889">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"did_document"</span><span class="token operator">:</span> DID_DOCUMENT_OBJECT<span class="token punctuation">,</span>
     <span class="token property">"metadata"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
         <span class="token property">"published"</span><span class="token operator">:</span> boolean
@@ -969,7 +986,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 </ol>
 <h3 id="sidetree-operations"><a class="toc-anchor" href="#sidetree-operations">§</a> Sidetree Operations</h3>
 <p>Sidetree operation requests to the REST API consist of a type property indicating the operation to be performed along with operation-specific properties and data.</p>
-<div id="example-212" class="notice example"><a class="notice-link" href="#example-212">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-890" class="notice example"><a class="notice-link" href="#example-890">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> OPERATION_TYPE<span class="token punctuation">,</span>
     ...
 <span class="token punctuation">}</span>
@@ -984,10 +1001,10 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>The server MUST respond with HTTP status 200 when successful. Otherwise, for failure, the server MUST respond with an appropriate HTTP Status Code (400, 401, 404, 500).</li>
 </ol>
 <h4 id="create-2"><a class="toc-anchor" href="#create-2">§</a> Create</h4>
-<div id="example-213" class="notice example"><a class="notice-link" href="#example-213">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-891" class="notice example"><a class="notice-link" href="#example-891">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"create"</span><span class="token punctuation">,</span>
     <span class="token property">"suffix_data"</span><span class="token operator">:</span> SUFFIX_DATA_OBJECT<span class="token punctuation">,</span>
-    <span class="token property">"operation_data"</span><span class="token operator">:</span> OPERATION_DATA_OBJECT
+    <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT
 <span class="token punctuation">}</span>
 </code></pre>
 </div>
@@ -995,14 +1012,14 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <ol>
 <li>The object MUST contain a <code>type</code> property, and its value MUST be <code>create</code>.</li>
 <li>The object MUST contain a <code>suffix_data</code> property, and its value must be a <code>Base64URL</code> encoded <em>Suffix Data Object</em>(#anchor-file-create-entry).</li>
-<li>The object MUST contain an <code>operation_data</code> property, and its value must be a <code>Base64URL</code> encoded <a href="#create-data-object"><em>Create Operation Data Object</em></a>.</li>
+<li>The object MUST contain an <code>delta</code> property, and its value must be a <code>Base64URL</code> encoded <a href="#create-data-object"><em>Create Operation Data Object</em></a>.</li>
 </ol>
 <h4 id="update-2"><a class="toc-anchor" href="#update-2">§</a> Update</h4>
-<div id="example-214" class="notice example"><a class="notice-link" href="#example-214">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-892" class="notice example"><a class="notice-link" href="#example-892">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"update"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"update_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
-    <span class="token property">"operation_data"</span><span class="token operator">:</span> OPERATION_DATA_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT<span class="token punctuation">,</span>
     <span class="token property">"signed_data"</span><span class="token operator">:</span> JWS_SIGNED_VALUE
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1012,16 +1029,16 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>The object MUST contain a <code>type</code> property, and its value MUST be <code>update</code>.</li>
 <li>The object MUST contain a <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
 <li>The object MUST contain a <code>update_reveal_value</code> property, and its value MUST be the last update <a href="#commitment-value">COMMITMENT_VALUE</a>.</li>
-<li>The object MUST contain an <code>operation_data</code> property, and its value MUST be a <code>Base64URL</code> encoded <a href="#update-delta-object"><em>Update Operation Data Object</em></a>.</li>
+<li>The object MUST contain an <code>delta</code> property, and its value MUST be a <code>Base64URL</code> encoded <a href="#update-data-object"><em>Update Operation Delta Object</em></a>.</li>
 <li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object
 as defined in <a href="#map-file">Map File</a> for Update operations.</li>
 </ol>
 <h4 id="recover-2"><a class="toc-anchor" href="#recover-2">§</a> Recover</h4>
-<div id="example-215" class="notice example"><a class="notice-link" href="#example-215">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-893" class="notice example"><a class="notice-link" href="#example-893">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"recover"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
-    <span class="token property">"operation_data"</span><span class="token operator">:</span> OPERATION_DATA_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT<span class="token punctuation">,</span>
     <span class="token property">"signed_data"</span><span class="token operator">:</span> JWS_SIGNED_VALUE
 <span class="token punctuation">}</span>
 </code></pre>
@@ -1031,12 +1048,12 @@ as defined in <a href="#map-file">Map File</a> for Update operations.</li>
 <li>The object MUST contain a <code>type</code> property, and its value MUST be <code>recover</code>.</li>
 <li>The object MUST contain a <code>did_suffix</code> property, and its value MUST be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
 <li>The object MUST contain a <code>recovery_reveal_value</code> property, and its value MUST be the last recovery <a href="#commitment-value">COMMITMENT_VALUE</a>.</li>
-<li>The object MUST contain an <code>operation_data</code> property, and its value MUST be a <code>Base64URL</code> encoded <a href="#recover-data-object"><em>Recovery Operation Data Object</em></a>.</li>
+<li>The object MUST contain an <code>delta</code> property, and its value MUST be a <code>Base64URL</code> encoded <a href="#recover-delta-object"><em>Recovery Operation Delta Object</em></a>.</li>
 <li>The object MUST contain a <code>signed_data</code> property, and its value MUST be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object
 as defined in <a href="#anchor-file">Anchor File</a> for Recovery operations.</li>
 </ol>
 <h4 id="deactivate-2"><a class="toc-anchor" href="#deactivate-2">§</a> Deactivate</h4>
-<div id="example-216" class="notice example"><a class="notice-link" href="#example-216">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-894" class="notice example"><a class="notice-link" href="#example-894">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"deactivate"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
@@ -1086,6 +1103,11 @@ as defined in <a href="#anchor-file">Anchor File</a> for Deactivate operations.<
 </ul>
 </li>
 <li><a href="#default-parameters">Default Parameters</a></li>
+<li><a href="#common-functions">Common Functions</a>
+<ul>
+<li><a href="#hashing-process">Hashing Process</a></li>
+</ul>
+</li>
 <li><a href="#network-topology">Network Topology</a></li>
 <li><a href="#file-structures">File Structures</a>
 <ul>
@@ -1170,7 +1192,7 @@ as defined in <a href="#anchor-file">Anchor File</a> for Deactivate operations.<
             </slide-panels>
 
           </body>
-          <script>window.specConfig = {"title":"DIF Sidetree Protocol","logo":"https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg","logo_link":"https://identity.foundation","source":{"host":"github","account":"decentralized-identity","repo":"sidetree"},"spec_directory":"./spec/","markdown_paths":["markdown/title.md","markdown/abstract.md","markdown/intro.md","markdown/terminology.md","markdown/versioning.md","markdown/parameters.md","markdown/topology.md","markdown/file-structures.md","markdown/unique-suffix.md","markdown/operations.md","markdown/patches.md","markdown/processing.md","markdown/pof.md","markdown/resolution.md","markdown/method-versioning.md","markdown/context.md","markdown/rest-api.md"],"destination":"./spec/","destinationResourcePrefix":"../spec/","rootResourcePrefix":"./spec/"}</script>
+          <script>window.specConfig = {"title":"DIF Sidetree Protocol","logo":"https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg","logo_link":"https://identity.foundation","source":{"host":"github","account":"decentralized-identity","repo":"sidetree"},"spec_directory":"./spec/","markdown_paths":["markdown/title.md","markdown/abstract.md","markdown/intro.md","markdown/terminology.md","markdown/versioning.md","markdown/parameters.md","markdown/common-functions.md","markdown/topology.md","markdown/file-structures.md","markdown/unique-suffix.md","markdown/operations.md","markdown/patches.md","markdown/processing.md","markdown/pof.md","markdown/resolution.md","markdown/method-versioning.md","markdown/context.md","markdown/rest-api.md"],"destination":"./spec/","destinationResourcePrefix":"../spec/","rootResourcePrefix":"./spec/"}</script>
           <script src="../spec/spec-up/js/markdown-it.js"></script>
           <script src="../spec/spec-up/js/prism.js" data-manual></script>
           <script src="../spec/spec-up/js/mermaid.js"></script>

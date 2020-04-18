@@ -64,32 +64,23 @@ A valid [Anchor File](#anchor-file) is a JSON document that MUST NOT exceed the 
 
 1. The [Anchor File](#anchor-file) MUST contain a [`map_file_uri`](#map-file-property){id="map-file-property"} property, and its value MUST be a _CAS URI_ for the related Map File.
 2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the [Anchor File](#anchor-file) MUST contain an `operations` property, and its value MUST be an object composed as follows:
-
     - If there are any [Create](#create) operations to be included in the Anchor File:
       1. The `operations` object MUST include a `create` property, and its value MUST be an array.
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
-          - Each entry object must contain a `suffix_data` property, and it MUST be a `Base64URL` encoded JSON object, composed as follows:
-            - The object MUST contain an [`recovery_key`](#initial-recovery-key){id="initial-recovery-key"} property, and its value MUST be an [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation of the _Initial Recovery Public Key_, generated as described in the [Create](#create) operation process.
-            - The object MUST contain an [`recovery_commitment`](#initial-recovery-commitment){id="initial-recovery-commitment"} property, and its value MUST be an _Initial Recovery Commitment_, as generated via the [Create](#create) operation process.
-            - The object MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the [_Create Operation Delta Object_](#create-delta-object) (ensure this is a hash of the `Base64URL` encoded version of the object).
+          - Each entry object must contain a `suffix_data` property, and its value MUST be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
       3. The [Anchor File](#anchor-file) MUST NOT include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
     - If there are any [Recovery](#recover) operations to be included in the Anchor File:
       1. The `operations` object MUST include a `recover` property, and its value MUST be an array.
       2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Anchor File Recovery Entries_](#anchor-file-recovery-entry){id="anchor-file-recovery-entry"}, use the following process to compose and include entries:
           - The object MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Anchor File](#anchor-file) MUST NOT contain more than one operation of any type with the same [DID Suffix](#did-suffix).
           - The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [`COMMITMENT_VALUE`](#commitment-value).
-          - The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
-            - The payload MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the `Base64URL` encoded [_Recovery Operation Data Object_](#recover-data-object).
-            - The payload MUST contain a `recovery_commitment` property, and its value MUST be the next _Recovery Commitment_ generated during the [Recovery](#recover) operation process.
-            - The payload MAY include a `recovery_key` property, and if included, its value MUST be an [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation of a public key, generated as described in the [Recovery](#recover) operation process.
+          - The object MUST contain a `signed_data` property, and its value MUST be a [_Recovery Operation Signed Data Object_](#recovery-signed-data-object).
     - If there are any [Deactivate](#deactivate) operations to be included in the Anchor File:
       1. The `operations` object MUST include a `deactivate` property, and its value MUST be an array.
       2. For each [Deactivate](#deactivate) operation to be included in the `deactivate` array, use the following process to compose and include entries:
           - The object MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Anchor File](#anchor-file) MUST NOT contain more than one operation of any type with the same [DID Suffix](#did-suffix).
           - The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [`COMMITMENT_VALUE`](#commitment-value).
-          - The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
-            - The payload MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-            - The payload MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [`COMMITMENT_VALUE`](#commitment-value).
+          - The object MUST contain a `signed_data` property, and its value MUST be a [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object).
 
 ### Map File
 
@@ -128,10 +119,9 @@ A valid [Map File](#map-file) is a JSON document that MUST NOT exceed the [`MAX_
 2. If there are any [Update](#update) operations to be included in the Map File, the [Map File](#map-file) MUST include an `operations` property, and its value MUST be an object composed as follows:
   1. The `operations` object MUST include an `update` property, and its value MUST be an array.
   2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry){id="map-file-update-entry"}, use the following process to compose and include entries:
-        - The object MUST contain an `id` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+        - The object MUST contain an `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
         - The object MUST contain a `update_reveal_value` property, and its value MUST be the last update [`COMMITMENT_VALUE`](#commitment-value).
-        - The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against one of the currently active operation keys, and contains the following payload values:
-          - The object MUST contain a `delta_hash` property, and its value MUST be a hash (generated via the [`HASH_ALGORITHM`](#hash-algorithm)) of the `Base64URL` encoded [_Update Operation Data Object_](#update-delta-object).
+        - The object MUST contain a `signed_data` property, and its value MUST be an [_Update Operation Signed Data Object_](#update-signed-data-object).
 
 ### Chunk Files
 
