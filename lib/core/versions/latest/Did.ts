@@ -2,8 +2,8 @@ import CreateOperation from './CreateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
-import SidetreeError from '../../../common/SidetreeError';
 import OperationType from '../../enums/OperationType';
+import SidetreeError from '../../../common/SidetreeError';
 
 /**
  * Class containing reusable Sidetree DID related operations.
