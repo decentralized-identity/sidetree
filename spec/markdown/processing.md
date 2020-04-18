@@ -6,7 +6,7 @@ Once an Anchor File, Map File, and associated Chunk Files have been assembled fo
 
 1. Generate a transaction for the underlying ledger
 2. Generate and include the following value, herein referred to as the [_Anchor String_](#anchor-string){id="anchor-string"}, within the transaction:
-    1. Convert the total number of operations in the Chunk File to a 4 byte little endian string, then `Base64URL` encode the result, herein referred to as the _Operation Count_.
+    1. Convert the total number of operations in the Chunk File to a 4 byte little endian string and encode it using the [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the _Operation Count_.
     2. Using the [`CID_ALGORITHM`](#cid-algorithm), generate a CID for the Anchor File, herein referred to as the _Anchor File CID_.
     3. Join the _Operation Count_ and _Anchor File CID_ with a `.` as follows:
         ```js
