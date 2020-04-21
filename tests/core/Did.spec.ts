@@ -2,7 +2,6 @@ import Did from '../../lib/core/versions/latest/Did';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 
 describe('DID', async () => {
   describe('create()', async () => {
@@ -39,11 +38,12 @@ describe('DID', async () => {
     it('should throw error if more than one query param is provided', async () => {
       // Create a long-form DID string.
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
       const didMethodName = 'sidetree';
       const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
       const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}&extra-param`;
+      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
+      const encodedDelta = createOperationData.createOperation.encodedDelta;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}&extra-param`;
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),
