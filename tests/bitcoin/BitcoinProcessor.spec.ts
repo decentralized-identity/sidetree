@@ -1325,7 +1325,7 @@ describe('BitcoinProcessor', () => {
         // tslint:disable-next-line: max-line-length
         { anchorString: 'anchor2', transactionTimeHash: 'timehash2', transactionTime: 150, transactionNumber: 250, transactionFeePaid: 350, normalizedTransactionFee: 450, writer: 'writer2' }
       ];
-      const mockNonSidetreeTransactions: BitcoinTransactionModel[] = [blockData.transactions[3]];
+      const mockNonSidetreeTransactions: BitcoinTransactionModel[] = [blockData.transactions[2]];
 
       const filterBlockSpy = spyOn(bitcoinProcessor, 'filterBlock' as any).and.returnValue(
           Promise.resolve([mockSidetreeTransactions, mockNonSidetreeTransactions])

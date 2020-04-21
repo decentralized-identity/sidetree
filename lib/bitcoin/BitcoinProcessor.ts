@@ -656,10 +656,9 @@ export default class BitcoinProcessor {
     // reseed source of psuedo-randomness to the blockhash
     this.transactionSampler.resetPsuedoRandomSeed(blockHash);
 
-    // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
-    // so we are going to ignore that transaction in our calculations.
-    for (let transactionIndex = 1; transactionIndex < nonSidetreeTransactions.length; transactionIndex++) {
-      const transaction = nonSidetreeTransactions[transactionIndex];
+    // Assume coinbase tx is not included in the non-sidetree transactions, so we iterate from 0
+    for (let i = 0; i < nonSidetreeTransactions.length; i++) {
+      const transaction = nonSidetreeTransactions[i];
 
       // Filter out transactions with unusual input count - such transaction require a large number of
       // rpc calls to compute transaction fee not worth the cost for an approximate measure.
