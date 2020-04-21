@@ -612,41 +612,64 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Given a Bitcoin block, filter down to and return all potential sidetree transactions, performing PoF calculation on the rest.
+   * Given a Bitcoin block, filter down to and return all potential sidetree transactions
    * @param blockHeight Block height to process
    * @param blockData Block data to process
-   * @returns an array of sidetree transactions
+   * @returns an array of sidetree TransactionModels and an array of non-sidetree BitcoinTransactionModels
    */
-  private async filterBlock (blockHeight: number, blockData: BitcoinBlockModel): Promise<Array<TransactionModel>> {
-
-    const blockHash = blockData.hash;
-
-    // reseed source of psuedo-randomness to the blockhash
-    this.transactionSampler.resetPsuedoRandomSeed(blockHash);
-
+  private async filterBlock (blockHeight: number, blockData: BitcoinBlockModel): Promise<[TransactionModel[], BitcoinTransactionModel[]]> {
     const transactions = blockData.transactions;
-    let sidetreeTransactions: Array<[number, SidetreeTransactionModel]> = [];
+    let tmpSidetreeTransactions: Array<[number, SidetreeTransactionModel]> = [];
+    let nonSidetreeTransactions: Array<BitcoinTransactionModel> = [];
 
     // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
-    // so we are going to ignore that transaction in our calculations.
+    // so we are going to ignore that transaction.
     for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
       const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
-
-      if (sidetreeData !== undefined) {
-        // Is a sidetree transaction. Add it to the working result set
-        sidetreeTransactions.push([transactionIndex, sidetreeData]);
-      } else if (transaction.inputs.length <= ProtocolParameters.maxInputCountForSampledTransaction) {
-        // Add the transaction to the sampler.  We filter out transactions with unusual
-        // input count - such transaction require a large number of rpc calls to compute transaction fee
-        // not worth the cost for an approximate measure. We also filter out sidetree transactions
-        this.transactionSampler.addElement(transaction.id);
+      if (sidetreeData === undefined) {
+        nonSidetreeTransactions.push(transaction);
+        continue;
       }
+      // Is a sidetree transaction. Add it to the working result set
+      tmpSidetreeTransactions.push([transactionIndex, sidetreeData]);
+    }
+
+    let sidetreeTransactions: Array<TransactionModel> = [];
+    for (let i = 0; i < tmpSidetreeTransactions.length; i++) {
+      const [transactionIndex, sidetreeTransaction] = tmpSidetreeTransactions[i];
+      const tx = await this.getTransactionModel(sidetreeTransaction, transactions[transactionIndex], transactionIndex, blockHeight);
+      sidetreeTransactions.push(tx);
+    }
+    return [sidetreeTransactions, nonSidetreeTransactions];
+  }
+
+  /**
+   * Perform PoF calculation on the given block's non-sidetree transactions
+   * @param blockHeight Block height to process
+   * @param blockHash Block hash to seed pseudo-randomness of the transaction sampler
+   * @param nonSidetreeTransactions An in-order list of the block's transactions, with sidetree transactions removed
+   */
+  private async processTransactionsForPofCalculation (blockHeight: number, blockHash: string, nonSidetreeTransactions: BitcoinTransactionModel[]) {
+
+    // reseed source of psuedo-randomness to the blockhash
+    this.transactionSampler.resetPsuedoRandomSeed(blockHash);
+
+    // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
+    // so we are going to ignore that transaction in our calculations.
+    for (let transactionIndex = 1; transactionIndex < nonSidetreeTransactions.length; transactionIndex++) {
+      const transaction = nonSidetreeTransactions[transactionIndex];
+
+      // Filter out transactions with unusual input count - such transaction require a large number of
+      // rpc calls to compute transaction fee not worth the cost for an approximate measure.
+      if (ProtocolParameters.maxInputCountForSampledTransaction <= transaction.inputs.length) {
+        continue;
+      }
+      this.transactionSampler.addElement(transaction.id);
     }
 
     if (this.isGroupBoundary(blockHeight)) {
-
       // Compute the transaction fees for sampled transactions of this group
       const sampledTransactionIds = this.transactionSampler.getSample();
       const sampledTransactionFees = [];
@@ -661,14 +684,6 @@ export default class BitcoinProcessor {
       // Reset the sampler for the next group
       this.transactionSampler.clear();
     }
-
-    let results: Array<TransactionModel> = [];
-    for (let i = 0; i < sidetreeTransactions.length; i++) {
-      const [transactionIndex, sidetreeTransaction] = sidetreeTransactions[i];
-      const tx = await this.getTransactionModel(sidetreeTransaction, transactions[transactionIndex], transactionIndex, blockHeight);
-      results.push(tx);
-    }
-    return results;
   }
 
   private async getTransactionModel (
@@ -707,8 +722,13 @@ export default class BitcoinProcessor {
       throw Error(`Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`);
     }
 
-    // Filter the block down to only sidetree transactions, then persist them to the transaction store
-    const sidetreeTransactions = await this.filterBlock(block, blockData);
+    // Filter the block into 2 lists of:
+    // - sidetree transactions to persist
+    // - non-sidetree transactions to perform the PoF calculation with
+    const [sidetreeTransactions, nonSidetreeTransactions] = await this.filterBlock(block, blockData);
+
+    await this.processTransactionsForPofCalculation(block, blockHash, nonSidetreeTransactions);
+
     for (let i = 0; i < sidetreeTransactions.length; i++) {
       const transaction = sidetreeTransactions[i];
 
