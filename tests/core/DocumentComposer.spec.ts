@@ -10,9 +10,9 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
-    it('should output the expected resolution result', async () => {
+    it('should output the expected resolution result given key(s) across all usage types.', async () => {
       const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All usages will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
@@ -49,7 +49,7 @@ describe('DocumentComposer', async () => {
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
         authentication: [
-          'did:method:suffix#anySigningKey', // reference because it is a general usage key
+          '#anySigningKey', // reference because it is a general usage key
           {
             id: '#authePbulicKey', // object here because it is an auth usage only key
             controller: '',

@@ -131,5 +131,11 @@ describe('DID', async () => {
       );
       done();
     });
+
+    it('should expect -<method-name>-initial-state URL param name to not contain network ID if method name given contains network ID.', async (done) => {
+      const initialState = (Did as any).getInitialStateFromDidString('did:sdietree:123?-sidetree-initial-state=xyz', 'sidetree:test');
+      expect(initialState).toEqual('xyz');
+      done();
+    });
   });
 });

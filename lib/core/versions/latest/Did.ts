@@ -90,13 +90,19 @@ export default class Did {
     return did;
   }
 
-  private static getInitialStateFromDidString (didString: string, methodName: string): string {
+  private static getInitialStateFromDidString (didString: string, methodNameWithNetworkId: string): string {
     let didStringUrl = undefined;
     try {
       didStringUrl = new URL(didString);
     } catch {
       throw new SidetreeError(ErrorCode.DidInvalidDidString);
     }
+
+    // TODO: #470 - Support/disambiguate "network ID" in method name.
+
+    // Stripping away the potential network ID portion. e.g. 'sidetree:test' -> 'sidetree'
+    const methodName = methodNameWithNetworkId.split(':')[0];
+
     let queryParamCounter = 0;
     let initialStateValue;
 
