@@ -1506,7 +1506,7 @@ describe('BitcoinProcessor', () => {
         writer: mockSidetreeData.writer
       };
 
-      const output = await bitcoinProcessor['getTransactionModel'](mockSidetreeData, mockTxn, 10, mockTxnBlock);
+      const output = await bitcoinProcessor['getTransactionModelIfExist'](mockTxn, 10, mockTxnBlock);
       expect(output).toBeDefined();
       expect(output).toEqual(mockOutputTxnModel);
       expect(getTxnFeeSpy).toHaveBeenCalled();

@@ -16,7 +16,6 @@ import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
-import SidetreeTransactionModel from './models/SidetreeTransactionModel';
 import SidetreeTransactionParser from './SidetreeTransactionParser';
 import SlidingWindowQuantileCalculator from './fee/SlidingWindowQuantileCalculator';
 import SpendingMonitor from './SpendingMonitor';
@@ -620,7 +619,7 @@ export default class BitcoinProcessor {
    */
   private async filterBlock (blockHeight: number, blockData: BitcoinBlockModel): Promise<[TransactionModel[], BitcoinTransactionModel[]]> {
     const transactions = blockData.transactions;
-    let tmpSidetreeTransactions: Array<[number, SidetreeTransactionModel]> = [];
+    let sidetreeTransactions: Array<TransactionModel> = [];
     let nonSidetreeTransactions: Array<BitcoinTransactionModel> = [];
 
     // First transaction in a block is always the coinbase (miner's) transaction and has no inputs
@@ -628,20 +627,12 @@ export default class BitcoinProcessor {
     for (let transactionIndex = 1; transactionIndex < transactions.length; transactionIndex++) {
       const transaction = transactions[transactionIndex];
 
-      const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
-      if (sidetreeData === undefined) {
+      const sidetreeTx = await this.getTransactionModelIfExist(transaction, transactionIndex, blockHeight);
+      if (sidetreeTx === undefined) {
         nonSidetreeTransactions.push(transaction);
         continue;
       }
-      // Is a sidetree transaction. Add it to the working result set
-      tmpSidetreeTransactions.push([transactionIndex, sidetreeData]);
-    }
-
-    let sidetreeTransactions: Array<TransactionModel> = [];
-    for (let i = 0; i < tmpSidetreeTransactions.length; i++) {
-      const [transactionIndex, sidetreeTransaction] = tmpSidetreeTransactions[i];
-      const tx = await this.getTransactionModel(sidetreeTransaction, transactions[transactionIndex], transactionIndex, blockHeight);
-      sidetreeTransactions.push(tx);
+      sidetreeTransactions.push(sidetreeTx);
     }
     return [sidetreeTransactions, nonSidetreeTransactions];
   }
@@ -686,24 +677,28 @@ export default class BitcoinProcessor {
     }
   }
 
-  private async getTransactionModel (
-    sidetreeData: SidetreeTransactionModel,
+  private async getTransactionModelIfExist (
     transaction: BitcoinTransactionModel,
     transactionIndex: number,
-    transactionBlock: number): Promise<TransactionModel> {
+    transactionBlock: number): Promise<TransactionModel | undefined> {
+    const sidetreeData = await this.sidetreeTransactionParser.parse(transaction, this.sidetreePrefix);
 
-    const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
-    const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
+    if (sidetreeData !== undefined) {
+      const transactionFeePaid = await this.bitcoinClient.getTransactionFeeInSatoshis(transaction.id);
+      const normalizedFeeModel = await this.getNormalizedFee(transactionBlock);
 
-    return {
-      transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
-      transactionTime: transactionBlock,
-      transactionTimeHash: transaction.blockHash,
-      anchorString: sidetreeData.data,
-      transactionFeePaid: transactionFeePaid,
-      normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
-      writer: sidetreeData.writer
-    };
+      return {
+        transactionNumber: TransactionNumber.construct(transactionBlock, transactionIndex),
+        transactionTime: transactionBlock,
+        transactionTimeHash: transaction.blockHash,
+        anchorString: sidetreeData.data,
+        transactionFeePaid: transactionFeePaid,
+        normalizedTransactionFee: normalizedFeeModel.normalizedTransactionFee,
+        writer: sidetreeData.writer
+      };
+    }
+
+    return undefined;
   }
 
   /**
