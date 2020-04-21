@@ -612,10 +612,11 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Given a Bitcoin block, filter down to and return all potential sidetree transactions
+   * Filter the given bitcoin block into sidetree and non-sidetree transactions
    * @param blockHeight Block height to process
    * @param blockData Block data to process
-   * @returns an array of sidetree TransactionModels and an array of non-sidetree BitcoinTransactionModels
+   * @returns an array of sidetree TransactionModels and an array of non-sidetree BitcoinTransactionModels (coinbase
+   * transaction omitted)
    */
   private async filterBlock (blockHeight: number, blockData: BitcoinBlockModel): Promise<[TransactionModel[], BitcoinTransactionModel[]]> {
     const transactions = blockData.transactions;
