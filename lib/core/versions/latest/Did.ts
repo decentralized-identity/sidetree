@@ -76,7 +76,7 @@ export default class Did {
       // So we compute it here using the hashing algorithm used by the short form.
       const uniqueSuffixBuffer = Encoder.decodeAsBuffer(did.uniqueSuffix);
       const hashAlgorithmCode = Multihash.getHashAlgorithmCode(uniqueSuffixBuffer);
-      const didUniqueSuffixDataBuffer = Encoder.decodeAsBuffer(createOperation.encodedSuffixData);
+      const didUniqueSuffixDataBuffer = Buffer.from(createOperation.encodedSuffixData);
       const didUniqueSuffixFromInitialState = Encoder.encode(Multihash.hash(didUniqueSuffixDataBuffer, hashAlgorithmCode));
 
       // If the computed unique suffix is not the same as the unique suffix in given short-form DID.
