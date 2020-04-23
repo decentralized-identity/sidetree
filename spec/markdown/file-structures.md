@@ -69,6 +69,7 @@ A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exc
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
           - Each entry object must contain a `suffix_data` property, and its value ****MUST**** be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
       3. The [Anchor File](#anchor-file) ****MUST NOT**** include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
+      4. In order to simplify the language, herein we will refer to the [DID Suffix](#did-suffix) produced by a [Create](#create) operation directly as its [DID Suffix](#did-suffix).
     - If there are any [Recovery](#recover) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `recover` property, and its value ****MUST**** be an array.
       2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Anchor File Recovery Entries_](#anchor-file-recovery-entry){id="anchor-file-recovery-entry"}, use the following process to compose and include entries:
