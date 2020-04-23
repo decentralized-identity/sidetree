@@ -97,7 +97,7 @@ describe('RequestHandler', () => {
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
     didUniqueSuffix = createOperation.didUniqueSuffix;
-    did = didMethodName + didUniqueSuffix;
+    did = `did:${didMethodName}:${didUniqueSuffix}`;
 
     // Test that the create request gets the correct response.
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);

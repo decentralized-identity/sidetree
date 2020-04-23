@@ -29,11 +29,12 @@ export default class Did {
    * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
    */
   private constructor (did: string, didMethodName: string) {
-    if (!did.startsWith(didMethodName)) {
+    this.didMethodName = didMethodName;
+    const didPrefix = `did:${didMethodName}:`;
+
+    if (!did.startsWith(didPrefix)) {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
-
-    this.didMethodName = didMethodName;
 
     const indexOfQuestionMarkChar = did.indexOf('?');
     // If there is no question mark, then DID can only be in short-form.
@@ -44,17 +45,17 @@ export default class Did {
     }
 
     if (this.isShortForm) {
-      this.uniqueSuffix = did.substring(didMethodName.length);
+      this.uniqueSuffix = did.substring(didPrefix.length);
     } else {
       // This is long-form.
-      this.uniqueSuffix = did.substring(didMethodName.length, indexOfQuestionMarkChar);
+      this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
     }
 
     if (this.uniqueSuffix.length === 0) {
       throw new SidetreeError(ErrorCode.DidNoUniqueSuffix);
     }
 
-    this.shortForm = didMethodName + this.uniqueSuffix;
+    this.shortForm = didPrefix + this.uniqueSuffix;
   }
 
   /**
@@ -63,7 +64,7 @@ export default class Did {
    */
   public static async create (didString: string, didMethodName: string): Promise<Did> {
     const methodNameParts = didMethodName.split(':');
-    if (methodNameParts.length < 2) {
+    if (methodNameParts.length > 2) {
       throw new SidetreeError(ErrorCode.DidInvalidMethodName);
     }
 
@@ -111,7 +112,7 @@ export default class Did {
       }
 
       // expect key to be -<method>-initial-state
-      const expectedKey = `-${methodNameParts[1]}-${Did.initialStateParameterSuffix}`;
+      const expectedKey = `-${methodNameParts[0]}-${Did.initialStateParameterSuffix}`;
       if (key !== expectedKey) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
       }
