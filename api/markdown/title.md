@@ -8,9 +8,9 @@ Sidetree REST API
 
 **Editors:**
 ~ [Troy Ronda](https://www.linkedin.com/in/troyronda/) (SecureKey)
+~ [Henry Tsai](https://www.linkedin.com/in/henry-tsai-6b884014/) (Microsoft)
 
 **Contributors:**
-~ [Henry Tsai](https://www.linkedin.com/in/henry-tsai-6b884014/) (Microsoft)
 ~ [Mudassir Ali](https://www.linkedin.com/in/mudassir-ali-4981654/) (Microsoft)
 ~ [Isaac Chen](https://www.linkedin.com/in/isaac-chen-921079127/) (Microsoft)
 ~ [Kyle Den Hartog](https://www.linkedin.com/in/kyledenhartog/) (Mattr)

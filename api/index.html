@@ -47,8 +47,8 @@
 <dl>
 <dt><strong>Editors:</strong></dt>
 <dd><a href="https://www.linkedin.com/in/troyronda/">Troy Ronda</a> (SecureKey)</dd>
-<dt><strong>Contributors:</strong></dt>
 <dd><a href="https://www.linkedin.com/in/henry-tsai-6b884014/">Henry Tsai</a> (Microsoft)</dd>
+<dt><strong>Contributors:</strong></dt>
 <dd><a href="https://www.linkedin.com/in/mudassir-ali-4981654/">Mudassir Ali</a> (Microsoft)</dd>
 <dd><a href="https://www.linkedin.com/in/isaac-chen-921079127/">Isaac Chen</a> (Microsoft)</dd>
 <dd><a href="https://www.linkedin.com/in/kyledenhartog/">Kyle Den Hartog</a> (Mattr)</dd>
@@ -66,7 +66,7 @@
 <p>Sidetree resolution requests to the REST API consist of a DID and MAY include DID parameters.
 As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY include the initial state DID parameter.</p>
 <p>The server responds with the Resolution Response Object composed of the DID Document and Method Metadata.</p>
-<div id="example-7" class="notice example"><a class="notice-link" href="#example-7">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-109" class="notice example"><a class="notice-link" href="#example-109">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"did_document"</span><span class="token operator">:</span> DID_DOCUMENT_OBJECT<span class="token punctuation">,</span>
     <span class="token property">"metadata"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
         <span class="token property">"published"</span><span class="token operator">:</span> boolean
@@ -100,7 +100,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 </ol>
 <h3 id="sidetree-operations"><a class="toc-anchor" href="#sidetree-operations">§</a> Sidetree Operations</h3>
 <p>Sidetree operation requests to the REST API consist of a type property indicating the operation to be performed along with operation-specific properties and data.</p>
-<div id="example-8" class="notice example"><a class="notice-link" href="#example-8">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-110" class="notice example"><a class="notice-link" href="#example-110">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> OPERATION_TYPE<span class="token punctuation">,</span>
     ...
 <span class="token punctuation">}</span>
@@ -115,7 +115,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>The server <strong><strong>MUST</strong></strong> respond with HTTP status 200 when successful. Otherwise, for failure, the server <strong><strong>MUST</strong></strong> respond with an appropriate HTTP Status Code (400, 401, 404, 500).</li>
 </ol>
 <h4 id="create"><a class="toc-anchor" href="#create">§</a> Create</h4>
-<div id="example-9" class="notice example"><a class="notice-link" href="#example-9">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-111" class="notice example"><a class="notice-link" href="#example-111">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"create"</span><span class="token punctuation">,</span>
     <span class="token property">"suffix_data"</span><span class="token operator">:</span> SUFFIX_DATA_OBJECT<span class="token punctuation">,</span>
     <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT
@@ -129,7 +129,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>The object <strong><strong>MUST</strong></strong> contain an <code>delta</code> property, and its value must be a <code>Base64URL</code> encoded <a href="#create-data-object"><em>Create Operation Data Object</em></a>.</li>
 </ol>
 <h4 id="update"><a class="toc-anchor" href="#update">§</a> Update</h4>
-<div id="example-10" class="notice example"><a class="notice-link" href="#example-10">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-112" class="notice example"><a class="notice-link" href="#example-112">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"update"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"update_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
@@ -148,7 +148,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 as defined in <a href="#map-file">Map File</a> for Update operations.</li>
 </ol>
 <h4 id="recover"><a class="toc-anchor" href="#recover">§</a> Recover</h4>
-<div id="example-11" class="notice example"><a class="notice-link" href="#example-11">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-113" class="notice example"><a class="notice-link" href="#example-113">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"recover"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
@@ -167,7 +167,7 @@ as defined in <a href="#map-file">Map File</a> for Update operations.</li>
 as defined in <a href="#anchor-file">Anchor File</a> for Recovery operations.</li>
 </ol>
 <h4 id="deactivate"><a class="toc-anchor" href="#deactivate">§</a> Deactivate</h4>
-<div id="example-12" class="notice example"><a class="notice-link" href="#example-12">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-114" class="notice example"><a class="notice-link" href="#example-114">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"deactivate"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
