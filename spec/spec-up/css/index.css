@@ -30,10 +30,6 @@ body:not([hashscroll]) *:target {
   animation: highlight 1.5s 0.25s ease;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   margin: 0;
   padding: 0;
@@ -52,6 +48,13 @@ h1 {
   font-size: 2em;
   font-weight: bold;
   line-height: 1.2em;
+}
+
+strong strong {
+  font-size: 0.9em;
+  color: #b30032;
+  font-weight: normal;
+  text-transform: uppercase;
 }
 
 main article > ol,

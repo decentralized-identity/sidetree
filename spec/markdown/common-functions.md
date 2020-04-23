@@ -13,5 +13,5 @@ All data hashed within the bounds of the protocol follow the same procedural ste
 Pseudo-code example using current protocol defaults:
 
 ```js
-let HashingOutput = Base64URL( Multihash(DATA, 'sha2-256') ) );
+let HashingOutput = Base64URL( Multihash(DATA, 'sha2-256') );
 ```

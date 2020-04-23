@@ -6,7 +6,7 @@ Each version of the protocol will define a set of protocol rules and parameters 
 |-----------------------------|-------------------------------------------------------------------------------|:-------------------|
 | `HASH_ALGORITHM` { #hash-algorithm }       | Algorithm for generating hashes of protocol-related values.    |             SHA256 |
 | `HASH_PROTOCOL` { #hash-protocol }       | Protocol for generating hash representations in Sidetree implementations, using the [`HASH_ALGORITHM`](#hash-algorithm) | [Multihash](#multihash) |
-| `DATA_ENCODING_SCHEME` { #data-encoding-scheme } | Encoding selected for various data (JSON, hashes, etc.) used within an implementation, the output of which MUST be in ASCII format. |    Base64URL |
+| `DATA_ENCODING_SCHEME` { #data-encoding-scheme } | Encoding selected for various data (JSON, hashes, etc.) used within an implementation, the output of which ****MUST**** be in ASCII format. |    Base64URL |
 | `KEY_ALGORITHM` { #key-algorithm }         | Asymmetric public key algorithm for signing DID operations. Must be a valid JWK `crv`.    |          secp256k1 |
 | `SIGNATURE_ALGORITHM` { #sig-algorithm }   | Asymmetric public key signature algorithm. Must be a valid JWS `alg`.                    |             ES256K |
 | `CAS_PROTOCOL` { #cas-protocol }       | The CAS network protocol used within an implementation.            |               IPFS |
