@@ -35,7 +35,7 @@ export default class Core {
   public constructor (config: Config, protocolVersions: ProtocolVersionModel[]) {
     // Component dependency construction & injection.
     this.versionManager = new VersionManager(config, protocolVersions); // `VersionManager` is first constructed component.
-    this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString);
+    this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.cas = new Cas(config.contentAddressableStoreServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
