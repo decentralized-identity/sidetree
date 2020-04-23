@@ -45,6 +45,23 @@ describe('DID', async () => {
       expect(did.createOperation).toEqual(createOperationData.createOperation);
     });
 
+    it('should create a testnet long-form DID succssefully.', async () => {
+      // Create a long-form DID string.
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
+      const didMethodName = 'sidetree:testnet';
+      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
+      const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
+
+      const did = await Did.create(longFormDid, didMethodName);
+      expect(did.isShortForm).toBeFalsy();
+      expect(did.didMethodName).toEqual(didMethodName);
+      expect(did.shortForm).toEqual(shortFormDid);
+      expect(did.uniqueSuffix).toEqual(didUniqueSuffix);
+      expect(did.createOperation).toEqual(createOperationData.createOperation);
+    });
+
     it('should throw error if more than one query param is provided', async () => {
       // Create a long-form DID string.
       const createOperationData = await OperationGenerator.generateCreateOperation();

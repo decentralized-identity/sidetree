@@ -192,9 +192,9 @@ describe('RequestHandler', () => {
     // Create a long-form DID string.
     const createOperationData = await OperationGenerator.generateCreateOperation();
     const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
-    const didMethodName = 'did:sidetree:';
+    const didMethodName = 'sidetree';
     const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-    const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
+    const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
     const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
 
     const response = await requestHandler.handleResolveRequest(longFormDid);
