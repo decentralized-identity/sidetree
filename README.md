@@ -25,11 +25,11 @@ See the [implementation document](docs/implementation.md) for the detailed descr
 
 1. Clone the repo.
 2. Create a topic branch for your spec contributions.
-3. Add the following entry to your local repo's `.git/info/exclude` file: `docs/spec/index.html`.
+3. Add the following entry to your local repo's `.git/info/exclude` file: `spec/index.html`.
 4. run `npm install`
 5. run `npm run spec:edit`
-6. Open the generated `index.html` rendering of the spec, located in the `docs/spec/` directory, in your browser. 
-7. Modify files in the `docs/spec/markdown/` directory to make changes, which will render realtime in the `index.html` file you have open in your browser.
+6. Open the generated `index.html` rendering of the spec, located in the `spec/` directory, in your browser.
+7. Modify files in the `spec/markdown/` directory to make changes, which will render realtime in the `index.html` file you have open in your browser.
 8. When you are happy with your changes, commit to your topic branch and open a Pull Request on GitHub and reviewers will be alerted to review for a potential merge.
 
 ## Docker
