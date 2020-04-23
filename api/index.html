@@ -1,0 +1,238 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+            <title>DIF Sidetree REST API</title>
+            <link href="../spec/spec-up/css/custom-elements.css" rel="stylesheet">
+            <link href="../spec/spec-up/css/prism.css" rel="stylesheet">
+            <link href="../spec/spec-up/css/chart.css" rel="stylesheet">
+            <link href="../spec/spec-up/css/font-awesome.css" rel="stylesheet">
+            <link href="../spec/spec-up/css/index.css" rel="stylesheet">
+            <script src="../spec/spec-up/js/custom-elements.js"></script>
+          </head>
+          <body features="source logo">
+            
+            <svg id="svg" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="github" viewBox="0 0 20 20">
+    <path d="M10 0.247c-5.522 0-10 4.477-10 10 0 4.418 2.865 8.167 6.839 9.489 0.5 0.093 0.683-0.217 0.683-0.481 0-0.238-0.009-1.026-0.014-1.862-2.782 0.605-3.369-1.18-3.369-1.18-0.455-1.156-1.11-1.463-1.11-1.463-0.907-0.621 0.069-0.608 0.069-0.608 1.004 0.071 1.533 1.031 1.533 1.031 0.892 1.529 2.339 1.087 2.91 0.831 0.090-0.646 0.349-1.087 0.635-1.337-2.221-0.253-4.556-1.11-4.556-4.942 0-1.092 0.391-1.984 1.030-2.684-0.104-0.252-0.446-1.269 0.097-2.646 0 0 0.84-0.269 2.751 1.025 0.798-0.222 1.653-0.333 2.503-0.337 0.85 0.004 1.706 0.115 2.505 0.337 1.909-1.294 2.747-1.025 2.747-1.025 0.544 1.378 0.202 2.395 0.098 2.646 0.641 0.7 1.029 1.592 1.029 2.684 0 3.841-2.339 4.687-4.566 4.934 0.359 0.31 0.678 0.919 0.678 1.852 0 1.338-0.012 2.415-0.012 2.744 0 0.266 0.18 0.578 0.687 0.48 3.971-1.324 6.833-5.071 6.833-9.488 0-5.523-4.477-10-10-10z"></path>
+  </symbol>
+  <symbol id="nested_list" viewBox="0 0 37 32">
+    <path d="M0 2.286c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM9.143 0h27.429v4.571h-27.429zM9.143 11.429c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM18.286 9.143h18.286v4.571h-18.286zM9.143 29.714c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM18.286 27.429h18.286v4.571h-18.286zM18.286 20.571c0-1.262 1.023-2.286 2.286-2.286s2.286 1.023 2.286 2.286c0 1.262-1.023 2.286-2.286 2.286s-2.286-1.023-2.286-2.286zM27.429 18.286h9.143v4.571h-9.143z"></path>
+  </symbol>
+</svg>
+
+            <main>
+
+              <header id="header" class="panel-header">
+                <span id="toc_toggle" panel-toggle="toc">
+                  <svg icon><use xlink:href="#nested_list"></use></svg>
+                </span>
+                <a id="logo" href="https://identity.foundation">
+                  <img src="https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg" />
+                </a>
+                <span issue-count animate panel-toggle="repo_issues">
+                  <svg icon><use xlink:href="#github"></use></svg>
+                </span>
+              </header>
+
+              <article id="content">
+                <h1 id="sidetree-rest-api"><a class="toc-anchor" href="#sidetree-rest-api">§</a> Sidetree REST API</h1>
+<p><strong>Specification Status:</strong> Editor’s Draft</p>
+<p><strong>Latest published version:</strong>
+<a href="https://identity.foundation/sidetree/api">identity.foundation/sidetree/api</a></p>
+<dl>
+<dt><strong>Editors:</strong></dt>
+<dd><a href="https://www.linkedin.com/in/troyronda/">Troy Ronda</a> (SecureKey)</dd>
+<dt><strong>Contributors:</strong></dt>
+<dd><a href="https://www.linkedin.com/in/henry-tsai-6b884014/">Henry Tsai</a> (Microsoft)</dd>
+<dd><a href="https://www.linkedin.com/in/mudassir-ali-4981654/">Mudassir Ali</a> (Microsoft)</dd>
+<dd><a href="https://www.linkedin.com/in/isaac-chen-921079127/">Isaac Chen</a> (Microsoft)</dd>
+<dd><a href="https://www.linkedin.com/in/kyledenhartog/">Kyle Den Hartog</a> (Mattr)</dd>
+<dd><a href="https://www.linkedin.com/in/dbuchner/">Daniel Buchner</a> (Microsoft)</dd>
+<dd><a href="https://www.linkedin.com/in/or13b/">Orie Steele</a> (Transmute)</dd>
+<dt><strong>Participate:</strong></dt>
+<dd><a href="https://github.com/decentralized-identity/sidetree">GitHub repo</a></dd>
+<dd><a href="https://github.com/decentralized-identity/sidetree/issues">File a bug</a></dd>
+<dd><a href="https://github.com/decentralized-identity/sidetree/commits/master">Commit history</a></dd>
+</dl>
+<hr>
+<h2 id="rest-api"><a class="toc-anchor" href="#rest-api">§</a> REST API</h2>
+<p>The following sections define the Sidetree resolution and operations endpoints. Please refer to the companion <a href="https://identity.foundation/sidetree/docs/swagger/">Sidetree REST API</a> specification for additional information, as well as REST API definitions for blockchain and CAS components.</p>
+<h3 id="sidetree-resolution"><a class="toc-anchor" href="#sidetree-resolution">§</a> Sidetree Resolution</h3>
+<p>Sidetree resolution requests to the REST API consist of a DID and MAY include DID parameters.
+As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY include the initial state DID parameter.</p>
+<p>The server responds with the Resolution Response Object composed of the DID Document and Method Metadata.</p>
+<div id="example-7" class="notice example"><a class="notice-link" href="#example-7">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"did_document"</span><span class="token operator">:</span> DID_DOCUMENT_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"metadata"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">"published"</span><span class="token operator">:</span> boolean
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+</div>
+<p>A resolution is requested as follows:</p>
+<ol>
+<li>The client <strong><strong>MUST</strong></strong> send a GET to the Sidetree resolution endpoint <code>/sidetree/{did-with-or-without-initial-state}</code> under the desired REST server path.</li>
+<li>If the DID does not exist and initial state was not provided:
+<ul>
+<li>The server <strong><strong>MUST</strong></strong> respond with HTTP Status Code 404.</li>
+</ul>
+</li>
+<li>If the DID does not exist and valid initial state was provided:
+<ul>
+<li>The server <strong><strong>MUST</strong></strong> respond with HTTP Status Code 200.</li>
+<li>The server <strong><strong>MUST</strong></strong> return the initial DID document that is constructed from the initial state.</li>
+<li>The server <strong><strong>MUST</strong></strong> include the resolution response object <code>metadata</code> composed of a <code>published</code> property with value <code>false</code>.</li>
+</ul>
+</li>
+<li>If the DID does exist:
+<ul>
+<li>The server <strong><strong>MUST</strong></strong> respond with HTTP Status Code 200.</li>
+<li>The server <strong><strong>MUST</strong></strong> return the latest DID document.</li>
+<li>The server <strong><strong>MUST</strong></strong> include the resolution response object <code>metadata</code> composed of a <code>published</code> property with value <code>true</code>.</li>
+</ul>
+</li>
+<li>Otherwise, for failure, the server <strong><strong>MUST</strong></strong> respond with an appropriate HTTP Status Code (400, 401, 404, 500).</li>
+</ol>
+<h3 id="sidetree-operations"><a class="toc-anchor" href="#sidetree-operations">§</a> Sidetree Operations</h3>
+<p>Sidetree operation requests to the REST API consist of a type property indicating the operation to be performed along with operation-specific properties and data.</p>
+<div id="example-8" class="notice example"><a class="notice-link" href="#example-8">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"type"</span><span class="token operator">:</span> OPERATION_TYPE<span class="token punctuation">,</span>
+    ...
+<span class="token punctuation">}</span>
+</code></pre>
+</div>
+<p>A valid Sidetree Operation Request is a JSON document composed as follows:</p>
+<ol>
+<li>The Operation Request <strong><strong>MUST</strong></strong> contain a <code>type</code> property, and its value <strong><strong>MUST</strong></strong> be a valid operation defined in
+<a href="#file-structures">File Structure</a>. The defined operations are <code>create</code>, <code>recover</code>, <code>deactivate</code>, <code>update</code>.</li>
+<li>Populate additional properties according to the appropriate subsection.</li>
+<li>The client <strong><strong>MUST</strong></strong> POST the Operation Request JSON document to the Sidetree operation endpoint <code>/sidetree/operations</code> under the desired REST server path.</li>
+<li>The server <strong><strong>MUST</strong></strong> respond with HTTP status 200 when successful. Otherwise, for failure, the server <strong><strong>MUST</strong></strong> respond with an appropriate HTTP Status Code (400, 401, 404, 500).</li>
+</ol>
+<h4 id="create"><a class="toc-anchor" href="#create">§</a> Create</h4>
+<div id="example-9" class="notice example"><a class="notice-link" href="#example-9">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"create"</span><span class="token punctuation">,</span>
+    <span class="token property">"suffix_data"</span><span class="token operator">:</span> SUFFIX_DATA_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT
+<span class="token punctuation">}</span>
+</code></pre>
+</div>
+<p>Use the following process to generate a Sidetree create operation JSON document for the REST API, composed as follows:</p>
+<ol>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>type</code> property, and its value <strong><strong>MUST</strong></strong> be <code>create</code>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>suffix_data</code> property, and its value must be a <code>Base64URL</code> encoded <em>Suffix Data Object</em>(#anchor-file-create-entry).</li>
+<li>The object <strong><strong>MUST</strong></strong> contain an <code>delta</code> property, and its value must be a <code>Base64URL</code> encoded <a href="#create-data-object"><em>Create Operation Data Object</em></a>.</li>
+</ol>
+<h4 id="update"><a class="toc-anchor" href="#update">§</a> Update</h4>
+<div id="example-10" class="notice example"><a class="notice-link" href="#example-10">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"update"</span><span class="token punctuation">,</span>
+    <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
+    <span class="token property">"update_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
+    <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"signed_data"</span><span class="token operator">:</span> JWS_SIGNED_VALUE
+<span class="token punctuation">}</span>
+</code></pre>
+</div>
+<p>Use the following process to generate a Sidetree update operation JSON document for the REST API, composed as follows:</p>
+<ol>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>type</code> property, and its value <strong><strong>MUST</strong></strong> be <code>update</code>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>did_suffix</code> property, and its value <strong><strong>MUST</strong></strong> be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>update_reveal_value</code> property, and its value <strong><strong>MUST</strong></strong> be the last update <a href="#commitment-value">COMMITMENT_VALUE</a>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain an <code>delta</code> property, and its value <strong><strong>MUST</strong></strong> be a <code>Base64URL</code> encoded <a href="#update-data-object"><em>Update Operation Delta Object</em></a>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>signed_data</code> property, and its value <strong><strong>MUST</strong></strong> be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object
+as defined in <a href="#map-file">Map File</a> for Update operations.</li>
+</ol>
+<h4 id="recover"><a class="toc-anchor" href="#recover">§</a> Recover</h4>
+<div id="example-11" class="notice example"><a class="notice-link" href="#example-11">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"recover"</span><span class="token punctuation">,</span>
+    <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
+    <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
+    <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"signed_data"</span><span class="token operator">:</span> JWS_SIGNED_VALUE
+<span class="token punctuation">}</span>
+</code></pre>
+</div>
+<p>Use the following process to generate a Sidetree recovery operation JSON document for the REST API, composed as follows:</p>
+<ol>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>type</code> property, and its value <strong><strong>MUST</strong></strong> be <code>recover</code>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>did_suffix</code> property, and its value <strong><strong>MUST</strong></strong> be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>recovery_reveal_value</code> property, and its value <strong><strong>MUST</strong></strong> be the last recovery <a href="#commitment-value">COMMITMENT_VALUE</a>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain an <code>delta</code> property, and its value <strong><strong>MUST</strong></strong> be a <code>Base64URL</code> encoded <a href="#recover-delta-object"><em>Recovery Operation Delta Object</em></a>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>signed_data</code> property, and its value <strong><strong>MUST</strong></strong> be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object
+as defined in <a href="#anchor-file">Anchor File</a> for Recovery operations.</li>
+</ol>
+<h4 id="deactivate"><a class="toc-anchor" href="#deactivate">§</a> Deactivate</h4>
+<div id="example-12" class="notice example"><a class="notice-link" href="#example-12">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"deactivate"</span><span class="token punctuation">,</span>
+    <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
+    <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
+    <span class="token property">"signed_data"</span><span class="token operator">:</span> JWS_SIGNED_VALUE
+<span class="token punctuation">}</span>
+</code></pre>
+</div>
+<p>Use the following process to generate a Sidetree deactivate operation JSON document for the REST API, composed as follows:</p>
+<ol>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>type</code> property, and its value <strong><strong>MUST</strong></strong> be <code>deactivate</code>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>did_suffix</code> property, and its value <strong><strong>MUST</strong></strong> be the <a href="#did-suffix">DID Suffix</a> of the DID the operation pertains to.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>recovery_reveal_value</code> property, and its value <strong><strong>MUST</strong></strong> be the last recovery <a href="#commitment-value">COMMITMENT_VALUE</a>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>signed_data</code> property, and its value <strong><strong>MUST</strong></strong> be a <a href="https://tools.ietf.org/html/rfc7515">IETF RFC 7515</a> compliant JWS object
+as defined in <a href="#anchor-file">Anchor File</a> for Deactivate operations.</li>
+</ol>
+
+              </article>    
+
+            </main>
+
+            <slide-panels id="slidepanels">
+              <slide-panel id="repo_issues" options="right">
+                <header class="panel-header">
+                  <span>
+                    <svg icon><use xlink:href="#github"></use></svg>
+                    <span issue-count></span>
+                  </span>
+                  <span class="repo-issue-toggle" panel-toggle="repo_issues">✕</span>
+                </header>
+                <ul id="repo_issue_list"></ul>
+              </slide-panel>
+
+              <slide-panel id="toc">
+                <header class="panel-header">
+                  <span>Table of Contents</span>
+                  <span panel-toggle="toc">✕</span>
+                </header>
+                <div id="toc_list">
+                  <ul class="toc">
+<li><a href="#rest-api">REST API</a>
+<ul>
+<li><a href="#sidetree-resolution">Sidetree Resolution</a></li>
+<li><a href="#sidetree-operations">Sidetree Operations</a>
+<ul>
+<li><a href="#create">Create</a></li>
+<li><a href="#update">Update</a></li>
+<li><a href="#recover">Recover</a></li>
+<li><a href="#deactivate">Deactivate</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+                </div>
+              </slide-panel>
+              
+            </slide-panels>
+
+          </body>
+          <script>window.specConfig = {"title":"DIF Sidetree REST API","logo":"https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg","logo_link":"https://identity.foundation","source":{"host":"github","account":"decentralized-identity","repo":"sidetree"},"spec_directory":"./api/","markdown_paths":["markdown/title.md","markdown/content.md"],"destination":"./api/","destinationResourcePrefix":"../spec/","rootResourcePrefix":"./spec/"}</script>
+          <script src="../spec/spec-up/js/markdown-it.js"></script>
+          <script src="../spec/spec-up/js/prism.js" data-manual></script>
+          <script src="../spec/spec-up/js/mermaid.js"></script>
+          <script src="../spec/spec-up/js/chart.js"></script>
+          <script src="../spec/spec-up/js/index.js"></script>
+        </html>
+      

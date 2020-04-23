@@ -97,7 +97,7 @@ describe('RequestHandler', () => {
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
     didUniqueSuffix = createOperation.didUniqueSuffix;
-    did = `did:${didMethodName}:${didUniqueSuffix}`;
+    did = didMethodName + didUniqueSuffix;
 
     // Test that the create request gets the correct response.
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -191,12 +191,11 @@ describe('RequestHandler', () => {
   it('should return a resolved DID Document given a valid long-form DID.', async () => {
     // Create a long-form DID string.
     const createOperationData = await OperationGenerator.generateCreateOperation();
-    const didMethodName = 'sidetree';
+    const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
+    const didMethodName = 'did:sidetree:';
     const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-    const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-    const encodedDelta = createOperationData.createOperation.encodedDelta;
-    const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-    const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
+    const shortFormDid = `${didMethodName}${didUniqueSuffix}`;
+    const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
 
     const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);

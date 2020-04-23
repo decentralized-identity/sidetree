@@ -62,11 +62,11 @@ export default class CreateOperation implements OperationModel {
   }
 
   /**
-   * Computes the DID unique suffix given the encoded suffix data string.
+   * Computes the cryptographic multihash of the given string.
    */
   private static computeDidUniqueSuffix (encodedSuffixData: string): string {
-    const encodedSuffixDataBuffer = Buffer.from(encodedSuffixData);
-    const multihash = Multihash.hash(encodedSuffixDataBuffer);
+    const dataBuffer = Encoder.decodeAsBuffer(encodedSuffixData);
+    const multihash = Multihash.hash(dataBuffer);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }

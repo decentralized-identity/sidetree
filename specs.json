@@ -22,15 +22,29 @@
         "markdown/common-functions.md",
         "markdown/topology.md",
         "markdown/file-structures.md",
-        "markdown/unique-suffix.md",
+        "markdown/did-uri.md",
         "markdown/operations.md",
         "markdown/patches.md",
         "markdown/processing.md",
         "markdown/pof.md",
         "markdown/resolution.md",
         "markdown/method-versioning.md",
-        "markdown/context.md",
-        "markdown/rest-api.md"
+        "markdown/context.md"
+      ]
+    },
+    {
+      "title": "DIF Sidetree REST API",
+      "logo": "https://rawcdn.githack.com/decentralized-identity/decentralized-identity.github.io/a3ca39717e440302d1fd99a796e7f00e1c42eb2d/images/logo-flat.svg",
+      "logo_link": "https://identity.foundation",
+      "source": {
+        "host": "github",
+        "account": "decentralized-identity",
+        "repo": "sidetree"
+      },
+      "spec_directory": "./api",
+      "markdown_paths": [
+        "markdown/title.md",
+        "markdown/content.md"
       ]
     }
   ]

@@ -1,6 +1,8 @@
 import * as IPFS from 'ipfs';
+import ErrorCode from '../ipfs/ErrorCode';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/enums/FetchResultCode';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Class that implements the IPFS Storage functionality.
@@ -8,60 +10,42 @@ import FetchResultCode from '../common/enums/FetchResultCode';
 export default class IpfsStorage {
 
   /**  IPFS node instance  */
-  private node: IPFS | undefined;
-  private repo: any;
-  private healthy: boolean;
-  private healthCheckInternalInSeconds: number;
+  private node: IPFS;
+
+  /** singleton holding the instance of ipfsStorage to use */
+  private static ipfsStorageSingleton: IpfsStorage | undefined;
 
   /**
-   * the constructor itself is not functional, the initialize function needs to be called to be healthy
-   * @param repo the repo to store ipfs data in
+   * Create and return the singleton instance of the ipfsStorage if doesn't already exist
    */
-  public constructor (repo?: any) {
-    this.repo = repo;
-    this.healthy = false; // need to initialize to be healthy
-    this.healthCheckInternalInSeconds = 60;
-  }
+  public static async createSingleton (repo?: any): Promise<IpfsStorage> {
+    if (IpfsStorage.ipfsStorageSingleton !== undefined) {
+      throw new SidetreeError(ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce,
+        'IpfsStorage is a singleton thus cannot be created twice. Please use the getSingleton method to get the instance');
+    }
 
-  private async getNode (): Promise<IPFS> {
     const localRepoName = 'sidetree-ipfs';
     const options = {
-      repo: this.repo !== undefined ? this.repo : localRepoName
+      repo: repo !== undefined ? repo : localRepoName
     };
     const node = await IPFS.create(options);
-    return node;
+    IpfsStorage.ipfsStorageSingleton = new IpfsStorage(node);
+    return IpfsStorage.ipfsStorageSingleton;
   }
 
   /**
-   * Start periodic health check and start up ipfs node
+   * Get the singleton instance of the ipfsStorage if exists.
    */
-  public initialize () {
-    setImmediate(async () => this.healthCheck());
+  public static getSingleton (): IpfsStorage {
+    if (IpfsStorage.ipfsStorageSingleton === undefined) {
+      throw new SidetreeError(ErrorCode.IpfsStorageInstanceGetHasToBeCalledAfterCreate,
+        'IpfsStorage is a singleton, Please use the createSingleton method before get');
+    }
+    return IpfsStorage.ipfsStorageSingleton;
   }
 
-  private async healthCheck () {
-    try {
-      if (!this.healthy) {
-        console.log('Unhealthy, restarting IPFS node...');
-        await this.restart();
-        this.healthy = true;
-      }
-    } catch (e) {
-      console.error(`unknown error thrown by healthCheck: ${e}`);
-    } finally {
-      setTimeout(async () => this.healthCheck(), this.healthCheckInternalInSeconds * 1000);
-    }
-  }
-
-  /**
-   * restarts the IPFS node
-   */
-  private async restart () {
-    if (this.node !== undefined) {
-      await this.node.stop();
-      console.log('old node stopped, starting a new one');
-    }
-    this.node = await this.getNode();
+  private constructor (node: IPFS) {
+    this.node = node;
   }
 
   /**
@@ -74,20 +58,14 @@ export default class IpfsStorage {
    *          The result `code` is set to `FetchResultCode.NotAFile` if the content being downloaded is not a file (e.g. a directory).
    */
   public async read (hash: string, maxSizeInBytes: number): Promise<FetchResult> {
-    try {
-      const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
+    const fetchResult = await this.fetchContent(hash, maxSizeInBytes);
 
-      // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
-      if (fetchResult.code === FetchResultCode.Success) {
-        await this.node!.pin.add(hash);
-      }
-      return fetchResult;
-    } catch {
-      this.healthy = false;
-      return {
-        code: FetchResultCode.CasNotReachable
-      };
+    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
+    if (fetchResult.code === FetchResultCode.Success) {
+      await this.node.pin.add(hash);
     }
+
+    return fetchResult;
   }
 
   /**
@@ -101,7 +79,7 @@ export default class IpfsStorage {
     let currentContentSize = 0;
     let iterator: AsyncIterator<Buffer>;
     try {
-      iterator = this.node!.cat(hash);
+      iterator = this.node.cat(hash);
     } catch (e) {
       // when an error is thrown, certain error message denote that the CID is not a file, anything else is unexpected error from ipfs
       console.debug(`Error thrown while downloading content from IPFS for CID ${hash}: ${JSON.stringify(e, Object.getOwnPropertyNames(e))}`);
@@ -148,24 +126,16 @@ export default class IpfsStorage {
    * @param content Sidetree content to write to IPFS storage.
    * @returns The multihash content identifier of the stored content.
    */
-  public async write (content: Buffer): Promise<string | undefined> {
-    try {
-      const file = await this.node!.add(content).next();
-      return file.value.cid.toString();
-    } catch (e) {
-      console.log(`Error thrown while writing: ${e}`);
-      this.healthy = false;
-      return undefined;
-    }
+  public async write (content: Buffer): Promise<string> {
+    const file = await this.node.add(content).next();
+    return file.value.cid.toString();
   }
 
   /**
    * Stops this IPFS store.
    */
   public async stop () {
-    if (this.node !== undefined) {
-      await this.node.stop();
-    }
+    await this.node.stop();
   }
 
   /**

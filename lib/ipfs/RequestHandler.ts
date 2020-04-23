@@ -1,9 +1,11 @@
 import base64url from 'base64url';
+import ErrorCode from '../ipfs/ErrorCode';
 import FetchResultCode from '../common/enums/FetchResultCode';
 import IpfsStorage from './IpfsStorage';
 import ResponseModel from '../common/models/ResponseModel';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
+import SidetreeError from '../common/SidetreeError';
 import Timeout from './Util/Timeout';
 
 const multihashes = require('multihashes');
@@ -26,8 +28,17 @@ export default class RequestHandler {
    */
   public static async create (fetchTimeoutInSeconds: number, repo?: any) {
     let ipfsStorage: IpfsStorage;
-    ipfsStorage = new IpfsStorage(repo);
-    ipfsStorage.initialize();
+    try {
+      ipfsStorage = await IpfsStorage.createSingleton(repo);
+    } catch (e) {
+      if (e instanceof SidetreeError && e.code === ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce) {
+        console.debug('IpfsStorage create was called twice, attempting to call get instead: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        ipfsStorage = IpfsStorage.getSingleton();
+      } else {
+        console.error('unexpected error, please investigate and fix: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
+        throw e;
+      }
+    }
     return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
   }
 
@@ -113,30 +124,27 @@ export default class RequestHandler {
   public async handleWriteRequest (content: Buffer): Promise<ResponseModel> {
     console.log(`Writing content of ${content.length} bytes...`);
 
+    let response: ResponseModel;
     let base64urlEncodedMultihash;
     try {
       const base58EncodedMultihashString = await this.ipfsStorage.write(content);
-      if (base58EncodedMultihashString === undefined) {
-        return {
-          status: ResponseStatus.ServerError,
-          body: 'ipfs write failed'
-        };
-      }
       const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
       base64urlEncodedMultihash = base64url.encode(multihashBuffer);
 
-      console.info(`Wrote content '${base64urlEncodedMultihash}'.`);
-      return {
+      response = {
         status: ResponseStatus.Succeeded,
         body: { hash: base64urlEncodedMultihash }
       };
     } catch (err) {
-      console.error(`Hit unexpected error writing '${base64urlEncodedMultihash}, investigate and fix: ${err}`);
-      return {
+      response = {
         status: ResponseStatus.ServerError,
         body: err.message
       };
+      console.error(`Error writing content: ${err}`);
     }
+
+    console.error(`Wrote content '${base64urlEncodedMultihash}'.`);
+    return response;
   }
 
   /**

@@ -48,7 +48,7 @@ export default class DocumentComposer {
           publicKeys.push(didDocumentPublicKey);
           if (usageSet.has(PublicKeyUsage.Auth)) {
             // add into authentication by reference if has auth and has general
-            authentication.push(id);
+            authentication.push(did + id);
           }
         } else if (usageSet.has(PublicKeyUsage.Auth)) {
           // add into authentication by object if has auth but no general

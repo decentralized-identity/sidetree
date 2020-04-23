@@ -2,7 +2,7 @@
 
 Per the [DID Core Spec](https://github.com/w3c/did-core) an `@context` MAY be used to represent a DID Document as Linked Data.
 
-If an `@context` is present, any properties not defined in DID Core, MUST be defined in this context, or in a DID Method specific one.
+If an `@context` is present, any properties not defined in DID Core, ****MUST**** be defined in this context, or in a DID Method specific one.
 
 For example: 
 
