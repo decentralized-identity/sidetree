@@ -19,7 +19,7 @@ paths:
     post:
       tags:
         - Sidetree
-      summary: Writes an Opertaion to Sidetree.
+      summary: Writes an Operation to Sidetree.
       operationId: writeSidetreeOperation
       parameters:
         - in: body
@@ -181,7 +181,7 @@ paths:
           example: "170"
         - in: query
           required: false
-          name: transaction-time-hash
+          name: transaction_time_hash
           schema:
             type: string
           description: MUST BE given if since parameter is specified. This is the hash associated with the time the transaction specified by the since parameter is anchored on blockchain. Multiple transactions can have the same transaction time and thus the same transaction time hash. The transaction time hash helps the blockchain layer detect block reorganizations (temporary forks); HTTP 400 Bad Request with invalid_transaction_number_or_time_hash as the code parameter value in a JSON body is returned on such events.
@@ -223,30 +223,30 @@ paths:
             type: array
             example: [
               {
-                "transactionNumber": 19,
-                "transactionTime": 545236,
-                "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
-                "anchorString": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg",
-                "transactionFeePaid": 5000,
-                "normalizedTransactionFee": 100,
+                "transaction_number": 19,
+                "transaction_time": 545236,
+                "transaction_time_hash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+                "anchor_string": "Qm28BKV9iiM1ZNzMsi3HbDRHDPK5U2DEhKpCYhKk83UPEg",
+                "transaction_fee_paid": 5000,
+                "normalized_transaction_fee": 100,
                 "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
               },
               {
-                "transactionNumber": 18,
-                "transactionTime": 545236,
-                "transactionTimeHash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
-                "anchorString": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb",
-                "transactionFeePaid": 30,
-                "normalizedTransactionFee": 10,
+                "transaction_number": 18,
+                "transaction_time": 545236,
+                "transaction_time_hash": "0000000000000000000054f9719ef6ca646e2503a9c5caac1c6ea95ffb4af587",
+                "anchor_string": "Qmb2wxUwvEpspKXU4QNxwYQLGS2gfsAuAE9LPcn5LprS1nb",
+                "transaction_fee_paid": 30,
+                "normalized_transaction_fee": 10,
                 "writer": "0af7eccefa3aaa37421782523b4a2034ed5a0ad0"
               },
               {
-                "transactionNumber": 16,
-                "transactionTime": 545200,
-                "transactionTimeHash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
-                "anchorString": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
-                "transactionFeePaid": 50000,
-                "normalizedTransactionFee": 150,
+                "transaction_number": 16,
+                "transaction_time": 545200,
+                "transaction_time_hash": "0000000000000000000f32c84291a3305ad9e5e162d8cc363420831ecd0e2800",
+                "anchor_string": "QmbBPdjWSdJoQGHbZDvPqHxWqqeKUdzBwMTMjJGeWyUkEzK",
+                "transaction_fee_paid": 50000,
+                "normalized_transaction_fee": 150,
                 "writer": "0af7eccefa3aaa87421782523b4a2034ed5a0ad0"
               }
             ]
@@ -445,7 +445,7 @@ paths:
           example: "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
         - in: query
           required: true
-          name: max-size
+          name: max_size
           schema:
             type: string
           description: If the content exceeds the specified maximum allowed size, HTTP 400 Bad Request with content_exceeds_maximum_allowed_size as the value for the code parameter in a JSON body is returned.
@@ -557,40 +557,40 @@ components:
     BlockchainTransaction:
       type: object
       properties:
-        transactionNumber:
+        transaction_number:
           type: number
           description: A monotonically increasing number (need NOT be by 1) that identifies a Sidtree transaction.
-        transactionTime:
+        transaction_time:
           type: number
           description: The logical blockchain time this transaction is anchored. Used for protocol version selection.
-        transactionTimeHash:
+        transaction_time_hash:
           type: string
           description: The hash associated with the transaction time.
-        anchorString: 
+        anchor_string:
           type: string
           description: The string written to the blockchain for this transaction.
-        transactionFeePaid:
+        transaction_fee_paid:
           type: string
           description: A number representing the fee paid for this transaction.
-        normalizedTransactionFee:
+        normalized_transaction_fee:
           type: string
           description: A number representing the normalized transaction fee used for proof-of-fee calculation.
         writer:
           type: string
           description: A string representing the writer of the transaction. Used in the value time lock calculations.
       example: {
-        "transactionNumber": 89,
-        "transactionTime": 545236,
-        "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
-        "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-        "transactionFeePaid": 40000,
-        "normalizedTransactionFee": 100,
+        "transaction_number": 89,
+        "transaction_time": 545236,
+        "transaction_time_hash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+        "anchor_string": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+        "transaction_fee_paid": 40000,
+        "normalized_transaction_fee": 100,
         "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
       }
     BlockchainTransactions:
       type: object
       properties:
-        moreTransactions:
+        more_transactions:
           type: bool
           description: True if there are more transactions beyond the returned batch. False otherwise.
           example: "false"
@@ -598,24 +598,24 @@ components:
           type: array
           description: The transactions array must always end with a complete block of data, but can start in the middle of a block if since query parameter is provided.
       example: {
-        "moreTransactions": false,
+        "more_transactions": false,
         "transactions": [
           {
-            "transactionNumber": 89,
-            "transactionTime": 545236,
-            "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
-            "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
-            "transactionFeePaid": 40000,
-            "normalizedTransactionFee": 100,
+            "transaction_number": 89,
+            "transaction_time": 545236,
+            "transaction_time_hash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+            "anchor_string": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
+            "transaction_fee_paid": 40000,
+            "normalized_transaction_fee": 100,
             "writer": "0af7eccefa3aaa37421914923b4a2034ed5a0ad0"
           },
           {
-            "transactionNumber": 100,
-            "transactionTime": 545236,
-            "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
-            "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
-            "transactionFeePaid": 600000,
-            "normalizedTransactionFee": 400,
+            "transaction_number": 100,
+            "transaction_time": 545236,
+            "transaction_time_hash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
+            "anchor_string": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
+            "transaction_fee_paid": 600000,
+            "normalized_transaction_fee": 400,
             "writer": "0af7eccefa3aaa37421782523b4a2034ed5a0ad0"
           }
         ]
@@ -624,52 +624,48 @@ components:
       type: object
       description: if with the given fee (derived from minimumFee) this node will exceed the spending limit as configured in the parameters.
       properties:
-        anchorString: 
+        anchor_string:
           type: string
           description: The string to be written to the blockchain for this transaction.
-        minimumFee: 
+        minimum_fee:
           type: string
           description: A number representing the minimum transaction fee to be paid to write this transaction to the blockchain. The actual fee is dynamically calculated and can be higher than this amount (but not lower).
       example: {
-        "minimumFee": 200000,
-        "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
+        "minimum_fee": 200000,
+        "anchor_string": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d"
       }
 
     BlockchainFeeResponse:
       type: object
       properties:
-        normalizedTransactionFee: 
+        normalized_transaction_fee:
           type: string
           description: A number representing the normalized transaction fee used for proof-of-fee calculation.
       example: {
-        "normalizedTransactionFee": 200000
+        "normalized_transaction_fee": 200000
       }
     BlockchainLock:
       type: object
       properties:
-        amountLocked: 
+        amount_locked:
           type: number
           description: A number representing the amount that was locked.
-        identifier: 
+        identifier:
           type: number
           description: The string representing the identifier of the lock. This is the same value which is passed in the request path.
-        lockTransactionTime: 
+        lock_transaction_time:
           type: number
           description: A number representing the transaction time at which the lock became active.
-        owner: 
+        owner:
           type: string
           description: A string reprsenting the owner of the lock.
-        unlockTransactionTime:
+        unlock_transaction_time:
           type: string
           description: A number representing the transaction time at which the lock became inactive.
       example: {
-        "amountLocked": 1235696,
+        "amount_locked": 1235696,
         "identifier": "gHasdfasodf23230o0jlk23323",
-        "lockTransactionTime": 167520,
+        "lock_transaction_time": 167520,
         "owner": "Hhdofkeio209aanoiyyoiknadfsedsed652",
-        "unlockTransactionTime": 167530
+        "unlock_transaction_time": 167530
       }
-    
-      
-    
-      
