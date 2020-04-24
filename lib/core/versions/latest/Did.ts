@@ -2,6 +2,7 @@ import CreateOperation from './CreateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
+import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
@@ -72,9 +73,8 @@ export default class Did {
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      const encodedCreateRequest = Did.getEncodedCreateRequestFromDidString(didString, methodNameParts);
-      const createRequestBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
-      const createOperation = await CreateOperation.parse(createRequestBuffer);
+      const initialState = Did.getInitialStateFromDidString(didString, didMethodName);
+      const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
       // becasue the hashing algorithm used maybe different from the short form DID given.
@@ -95,35 +95,72 @@ export default class Did {
     return did;
   }
 
-  private static getEncodedCreateRequestFromDidString (didString: string, methodNameParts: string[]): string {
+  private static getInitialStateFromDidString (didString: string, methodNameWithNetworkId: string): string {
     let didStringUrl = undefined;
     try {
       didStringUrl = new URL(didString);
     } catch {
       throw new SidetreeError(ErrorCode.DidInvalidDidString);
     }
-    let queryParamCounter = 0;
-    let encodedCreateRequest = '';
 
+    // TODO: #470 - Support/disambiguate "network ID" in method name.
+
+    // Stripping away the potential network ID portion. e.g. 'sidetree:test' -> 'sidetree'
+    const methodName = methodNameWithNetworkId.split(':')[0];
+
+    let queryParamCounter = 0;
+    let initialStateValue;
+
+    // Verify that `-<method-name>-initial-state` is the one and only parameter.
     didStringUrl.searchParams.forEach((value, key) => {
       queryParamCounter += 1;
       if (queryParamCounter > 1) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
       }
 
-      // expect key to be -<method>-initial-state
-      const expectedKey = `-${methodNameParts[0]}-${Did.initialStateParameterSuffix}`;
+      // expect key to be -<method-name>-initial-state
+      const expectedKey = `-${methodName}-${Did.initialStateParameterSuffix}`;
       if (key !== expectedKey) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
       }
 
-      encodedCreateRequest = value;
+      initialStateValue = value;
     });
 
-    if (encodedCreateRequest === '') {
+    if (initialStateValue === undefined) {
       throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
     }
 
-    return encodedCreateRequest;
+    return initialStateValue;
+  }
+
+  private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
+    // Initial state should be in the format: <suffix-data>.<delta>
+    const firstIndexOfDot = initialState.indexOf('.');
+    if (firstIndexOfDot === -1) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsNoDot);
+    }
+
+    const lastIndexOfDot = initialState.lastIndexOf('.');
+    if (lastIndexOfDot !== firstIndexOfDot) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsMoreThanOneDot);
+    }
+
+    if (firstIndexOfDot === (initialState.length - 1)) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
+    }
+
+    const initialStateParts = initialState.split('.');
+    const suffixData = initialStateParts[0];
+    const delta = initialStateParts[1];
+    const createOperationRequest = {
+      type: OperationType.Create,
+      suffix_data: suffixData,
+      delta
+    };
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const createOperation = await CreateOperation.parseObject(createOperationRequest, createOperationBuffer, false);
+
+    return createOperation;
   }
 }

@@ -5,16 +5,6 @@ import OperationGenerator from '../generators/OperationGenerator';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 
 describe('DID', async () => {
-
-  describe('getEncodedCreateRequestFromDidString()', async () => {
-    it('should throw if the given did string is not a valid url format', () => {
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (Did as any).getEncodedCreateRequestFromDidString('badURL', ['anyMethodName']),
-        ErrorCode.DidInvalidDidString
-      );
-    });
-  });
-
   describe('create()', async () => {
     it('should create a short-form DID succssefully.', async () => {
       const expectedDidMethodName = 'sidetree';
@@ -31,11 +21,12 @@ describe('DID', async () => {
     it('should create a long-form DID succssefully.', async () => {
       // Create a long-form DID string.
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
       const didMethodName = 'sidetree';
       const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
       const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
+      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
+      const encodedDelta = createOperationData.createOperation.encodedDelta;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
 
       const did = await Did.create(longFormDid, didMethodName);
       expect(did.isShortForm).toBeFalsy();
@@ -48,11 +39,12 @@ describe('DID', async () => {
     it('should create a testnet long-form DID succssefully.', async () => {
       // Create a long-form DID string.
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
-      const didMethodName = 'sidetree:testnet';
+      const didMethodName = 'sidetree:testnet'; // A method name with network ID.
       const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
       const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
+      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
+      const encodedDelta = createOperationData.createOperation.encodedDelta;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
 
       const did = await Did.create(longFormDid, didMethodName);
       expect(did.isShortForm).toBeFalsy();
@@ -100,10 +92,11 @@ describe('DID', async () => {
 
     it('should throw if encoded DID document in long-form DID given results in a mismatching short-form DID.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      const encodedCreateOperationRequest = Encoder.encode(createOperationData.createOperation.operationBuffer);
       const didMethodName = 'sidetree';
+      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
+      const encodedDelta = createOperationData.createOperation.encodedDelta;
       const mismatchingShortFormDid = `did:${didMethodName}:EiA_MismatchingDID_AAAAAAAAAAAAAAAAAAAAAAAAAAA`;
-      const longFormDid = `${mismatchingShortFormDid}?-sidetree-initial-state=${encodedCreateOperationRequest}`;
+      const longFormDid = `${mismatchingShortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),
@@ -123,6 +116,51 @@ describe('DID', async () => {
         async () => Did.create(longFormDid, didMethodName),
         ErrorCode.DidLongFormNoInitialStateFound
       );
+    });
+  });
+
+  describe('constructCreateOperationFromInitialState()', async () => {
+    it('should throw if the given initial state string does not have a dot.', async (done) => {
+      const initialState = 'abcdefg'; // Intentionally missing '.'
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => (Did as any).constructCreateOperationFromInitialState(initialState), ErrorCode.DidInitialStateValueContainsNoDot
+      );
+      done();
+    });
+
+    it('should throw if the given initial state string has more than one dot.', async (done) => {
+      const initialState = 'abc.123.'; // Intentionally having more than 1 '.'
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => (Did as any).constructCreateOperationFromInitialState(initialState), ErrorCode.DidInitialStateValueContainsMoreThanOneDot
+      );
+      done();
+    });
+
+    it('should throw if the given initial state string has more than one dot.', async (done) => {
+      const initialState = 'abc.'; // Intentionally not having two parts after splitting by '.'
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => (Did as any).constructCreateOperationFromInitialState(initialState), ErrorCode.DidInitialStateValueDoesNotContainTwoParts
+      );
+      done();
+    });
+  });
+
+  describe('getInitialStateFromDidString()', async () => {
+    it('should throw if the given did string is not a valid url format', async (done) => {
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => (Did as any).getInitialStateFromDidString('@#$%^:sdietree:123', 'sidetree'),
+        ErrorCode.DidInvalidDidString
+      );
+      done();
+    });
+
+    it('should expect -<method-name>-initial-state URL param name to not contain network ID if method name given contains network ID.', async (done) => {
+      const initialState = (Did as any).getInitialStateFromDidString('did:sdietree:123?-sidetree-initial-state=xyz', 'sidetree:test');
+      expect(initialState).toEqual('xyz');
+      done();
     });
   });
 });
