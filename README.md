@@ -3,7 +3,7 @@
 
 The Node.js implementation of a blockchain-agnostic Sidetree Node using TypeScript.
 
-[![Build Status](https://travis-ci.org/decentralized-identity/sidetree.svg?branch=master)](https://travis-ci.org/decentralized-identity/sidetree)
+[![Build Status](https://travis-ci.org/decentralized-identity/sidetree.svg?branch=master)](https://travis-ci.org/decentralized-identity/sidetree) ![CI](https://github.com/decentralized-identity/sidetree/workflows/CI/badge.svg) 
 
 See the [latest spec](https://identity.foundation/sidetree/docs/spec/) for full Sidetree protocol specification.
 
