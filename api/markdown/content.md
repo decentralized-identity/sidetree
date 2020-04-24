@@ -30,7 +30,7 @@ Sidetree defines `operationPublicKeys`, `recoveryKey` and `published` method met
 
 A resolution is requested as follows:
 
-1. The client ****MUST**** send a GET to the Sidetree resolution endpoint `/sidetree/{did-with-or-without-initial-state}` under the desired REST server path.
+1. The client ****MUST**** send a GET to the Sidetree resolution endpoint `/identifiers/{did-with-or-without-initial-state}` under the desired REST server path.
 2. If the DID does not exist and initial state was not provided:
    - The server ****MUST**** respond with HTTP Status Code 404.
 3. If the DID does not exist and valid initial state was provided:
@@ -61,7 +61,7 @@ A valid Sidetree Operation Request is a JSON document composed as follows:
 1. The Operation Request ****MUST**** contain a `type` property, and its value ****MUST**** be a valid operation defined in
 [File Structure](#file-structures). The defined operations are `create`, `recover`, `deactivate`, `update`.
 2. Populate additional properties according to the appropriate subsection.
-3. The client ****MUST**** POST the Operation Request JSON document to the Sidetree operation endpoint `/sidetree/operations` under the desired REST server path.
+3. The client ****MUST**** POST the Operation Request JSON document to the Sidetree operation endpoint `/operations` under the desired REST server path.
 4. The server ****MUST**** respond with HTTP status 200 when successful. Otherwise, for failure, the server ****MUST**** respond with an appropriate HTTP Status Code (400, 401, 404, 500).
    - In the case of a successful `create` operation, the server ****MUST**** return the DID Resolution Result for the DID as is detailed in [Sidetree Resolution](#sidetree-resolution).
 

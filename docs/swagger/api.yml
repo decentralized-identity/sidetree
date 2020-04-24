@@ -15,7 +15,7 @@ tags:
   - name: Content Addressed Storage
     description: APIs for interacting with the CAS system.
 paths:
-  /sidetree/operations:
+  /operations:
     post:
       tags:
         - Sidetree
@@ -36,7 +36,7 @@ paths:
           description: Not Found
         '500':
           description: Server Error
-  /sidetree/{did-with-or-without-initial-state}:
+  /identifiers/{did-with-or-without-initial-state}:
     get:
       tags:
         - Sidetree
