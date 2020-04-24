@@ -16,9 +16,63 @@ For example:
 }
 ```
 
+### recovery
+
+A verificationMethod used to support DID Document [Recover Operation](https://identity.foundation/sidetree/spec/#recover) verification.
+
+For Example: 
+
+```json
+{
+    "@context": [
+        "https://www.w3.org/ns/did/v1", 
+        "https://identity.foundation/sidetree/context-v1.jsonld"
+    ],
+    "recovery": [{
+      "id": "did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "publicKeyJwk": {
+        "crv": "secp256k1",
+        "kid": "JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw",
+        "kty": "EC",
+        "x": "dWCvM4fTdeM0KmloF57zxtBPXTOythHPMm1HCLrdd3A",
+        "y": "36uMVGM7hnw-N6GnjFcihWE3SkrhMLzzLCdPMXPEXlA"
+      }
+    }]
+}
+```
+
+### operation
+
+A verificationMethod used to support verification of DID Document Operations: [Create](https://identity.foundation/sidetree/spec/#create), [Update](https://identity.foundation/sidetree/spec/#update), [Deactivate](https://identity.foundation/sidetree/spec/#deactivate).
+
+For Example: 
+
+```json
+{
+    "@context": [
+        "https://www.w3.org/ns/did/v1", 
+        "https://identity.foundation/sidetree/context-v1.jsonld"
+    ],
+    "operation": [{
+      "id": "did:example:123#JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw",
+      "type": "EcdsaSecp256k1VerificationKey2019",
+      "publicKeyJwk": {
+        "crv": "secp256k1",
+        "kid": "JUvpllMEYUZ2joO59UNui_XYDqxVqiFLLAJ8klWuPBw",
+        "kty": "EC",
+        "x": "dWCvM4fTdeM0KmloF57zxtBPXTOythHPMm1HCLrdd3A",
+        "y": "36uMVGM7hnw-N6GnjFcihWE3SkrhMLzzLCdPMXPEXlA"
+      }
+    }]
+}
+```
+
 ### usage
 
 Deprecated. DO NOT USE.
+
+Was introduced to support key `ops` pre sidetree protocol spec v1.
 
 ### publicKeyJwk
 
