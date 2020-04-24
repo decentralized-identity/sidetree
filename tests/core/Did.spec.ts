@@ -138,7 +138,7 @@ describe('DID', async () => {
       done();
     });
 
-    it('should throw if the given initial state string has more than one dot.', async (done) => {
+    it('should throw if there are no two parts in intial state.', async (done) => {
       const initialState = 'abc.'; // Intentionally not having two parts after splitting by '.'
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
@@ -149,7 +149,7 @@ describe('DID', async () => {
   });
 
   describe('getInitialStateFromDidString()', async () => {
-    it('should throw if the given did string is not a valid url format', async (done) => {
+    it('should throw if the given DID string is not a valid url format', async (done) => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => (Did as any).getInitialStateFromDidString('@#$%^:sdietree:123', 'sidetree'),
         ErrorCode.DidInvalidDidString
