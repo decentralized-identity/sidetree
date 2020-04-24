@@ -69,13 +69,6 @@ describe('DID', async () => {
       );
     });
 
-    it('should throw if method name is not valid', async () => {
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        async () => Did.create('notValid:method:name:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg', 'notValid:method:name'),
-        ErrorCode.DidInvalidMethodName
-      );
-    });
-
     it('should throw if DID given does not match the expected DID method name.', async () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create('did:sidetree:EiAgE-q5cRcn4JHh8ETJGKqaJv1z2OgjmN3N-APx0aAvHg', 'sidetree2'),
@@ -139,11 +132,17 @@ describe('DID', async () => {
     });
 
     it('should throw if there are no two parts in intial state.', async (done) => {
-      const initialState = 'abc.'; // Intentionally not having two parts after splitting by '.'
+      const initialState1 = 'abc.'; // Intentionally not having two parts after splitting by '.'
+      const initialState2 = '.abc'; // Intentionally not having two parts after splitting by '.'
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        async () => (Did as any).constructCreateOperationFromInitialState(initialState), ErrorCode.DidInitialStateValueDoesNotContainTwoParts
+        async () => (Did as any).constructCreateOperationFromInitialState(initialState1), ErrorCode.DidInitialStateValueDoesNotContainTwoParts
       );
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => (Did as any).constructCreateOperationFromInitialState(initialState2), ErrorCode.DidInitialStateValueDoesNotContainTwoParts
+      );
+
       done();
     });
   });

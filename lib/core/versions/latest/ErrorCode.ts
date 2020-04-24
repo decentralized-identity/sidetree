@@ -42,7 +42,6 @@ export default {
   DidInitialStateValueContainsNoDot: 'did_initial_state_value_contains_no_dot',
   DidInitialStateValueDoesNotContainTwoParts: 'did_initial_state_value_does_not_contain_two_parts',
   DidInvalidDidString: 'did_invalid_did_string',
-  DidInvalidMethodName: 'did_invalid_method_name',
   DidLongFormNoInitialStateFound: 'did_long_form_no_initial_state_found',
   DidLongFormOnlyInitialStateParameterIsAllowed: 'did_long_form_only_initial_values_parameter_is_allowed',
   DidLongFormOnlyOneQueryParamAllowed: 'did_long_form_only_one_query_param_allowed',

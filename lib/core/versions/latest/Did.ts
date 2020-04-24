@@ -29,8 +29,7 @@ export default class Did {
    * @param did Short or long-form DID string.
    * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
    */
-  private constructor (did: string, didMethodName: string) {
-    this.didMethodName = didMethodName;
+  private constructor (did: string, public didMethodName: string) {
     const didPrefix = `did:${didMethodName}:`;
 
     if (!did.startsWith(didPrefix)) {
@@ -64,11 +63,6 @@ export default class Did {
    * @param didString Short or long-form DID string.
    */
   public static async create (didString: string, didMethodName: string): Promise<Did> {
-    const methodNameParts = didMethodName.split(':');
-    if (methodNameParts.length > 2) {
-      throw new SidetreeError(ErrorCode.DidInvalidMethodName);
-    }
-
     const did = new Did(didString, didMethodName);
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
@@ -146,7 +140,8 @@ export default class Did {
       throw new SidetreeError(ErrorCode.DidInitialStateValueContainsMoreThanOneDot);
     }
 
-    if (firstIndexOfDot === (initialState.length - 1)) {
+    if (firstIndexOfDot === (initialState.length - 1) ||
+        firstIndexOfDot === 0) {
       throw new SidetreeError(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
     }
 
