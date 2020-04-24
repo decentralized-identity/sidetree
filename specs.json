@@ -23,6 +23,7 @@
         "markdown/topology.md",
         "markdown/file-structures.md",
         "markdown/did-uri.md",
+        "markdown/json-web-signatures.md",
         "markdown/operations.md",
         "markdown/patches.md",
         "markdown/processing.md",
