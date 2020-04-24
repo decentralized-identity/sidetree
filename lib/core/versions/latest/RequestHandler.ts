@@ -95,7 +95,7 @@ export default class RequestHandler implements IRequestHandler {
             break;
           }
 
-          const did = this.didMethodName + operationModel.didUniqueSuffix;
+          const did = `did:${this.didMethodName}:${operationModel.didUniqueSuffix}`;
           const document = DocumentComposer.transformToExternalDocument(didState, did);
 
           response = {

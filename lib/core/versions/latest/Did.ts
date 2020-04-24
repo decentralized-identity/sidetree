@@ -2,6 +2,7 @@ import CreateOperation from './CreateOperation';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
+import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 /**
@@ -29,11 +30,12 @@ export default class Did {
    * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
    */
   private constructor (did: string, didMethodName: string) {
-    if (!did.startsWith(didMethodName)) {
+    this.didMethodName = didMethodName;
+    const didPrefix = `did:${didMethodName}:`;
+
+    if (!did.startsWith(didPrefix)) {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
-
-    this.didMethodName = didMethodName;
 
     const indexOfQuestionMarkChar = did.indexOf('?');
     // If there is no question mark, then DID can only be in short-form.
@@ -44,17 +46,17 @@ export default class Did {
     }
 
     if (this.isShortForm) {
-      this.uniqueSuffix = did.substring(didMethodName.length);
+      this.uniqueSuffix = did.substring(didPrefix.length);
     } else {
       // This is long-form.
-      this.uniqueSuffix = did.substring(didMethodName.length, indexOfQuestionMarkChar);
+      this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
     }
 
     if (this.uniqueSuffix.length === 0) {
       throw new SidetreeError(ErrorCode.DidNoUniqueSuffix);
     }
 
-    this.shortForm = didMethodName + this.uniqueSuffix;
+    this.shortForm = didPrefix + this.uniqueSuffix;
   }
 
   /**
@@ -62,25 +64,19 @@ export default class Did {
    * @param didString Short or long-form DID string.
    */
   public static async create (didString: string, didMethodName: string): Promise<Did> {
-    const methodNameParts = didMethodName.split(':');
-    if (methodNameParts.length < 2) {
-      throw new SidetreeError(ErrorCode.DidInvalidMethodName);
-    }
-
     const did = new Did(didString, didMethodName);
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      const encodedCreateRequest = Did.getEncodedCreateRequestFromDidString(didString, methodNameParts);
-      const createRequestBuffer = Encoder.decodeAsBuffer(encodedCreateRequest);
-      const createOperation = await CreateOperation.parse(createRequestBuffer);
+      const initialState = Did.getInitialStateFromDidString(didString, didMethodName);
+      const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
       // becasue the hashing algorithm used maybe different from the short form DID given.
       // So we compute it here using the hashing algorithm used by the short form.
       const uniqueSuffixBuffer = Encoder.decodeAsBuffer(did.uniqueSuffix);
       const hashAlgorithmCode = Multihash.getHashAlgorithmCode(uniqueSuffixBuffer);
-      const didUniqueSuffixDataBuffer = Encoder.decodeAsBuffer(createOperation.encodedSuffixData);
+      const didUniqueSuffixDataBuffer = Buffer.from(createOperation.encodedSuffixData);
       const didUniqueSuffixFromInitialState = Encoder.encode(Multihash.hash(didUniqueSuffixDataBuffer, hashAlgorithmCode));
 
       // If the computed unique suffix is not the same as the unique suffix in given short-form DID.
@@ -94,35 +90,73 @@ export default class Did {
     return did;
   }
 
-  private static getEncodedCreateRequestFromDidString (didString: string, methodNameParts: string[]): string {
+  private static getInitialStateFromDidString (didString: string, methodNameWithNetworkId: string): string {
     let didStringUrl = undefined;
     try {
       didStringUrl = new URL(didString);
     } catch {
       throw new SidetreeError(ErrorCode.DidInvalidDidString);
     }
-    let queryParamCounter = 0;
-    let encodedCreateRequest = '';
 
+    // TODO: #470 - Support/disambiguate "network ID" in method name.
+
+    // Stripping away the potential network ID portion. e.g. 'sidetree:test' -> 'sidetree'
+    const methodName = methodNameWithNetworkId.split(':')[0];
+
+    let queryParamCounter = 0;
+    let initialStateValue;
+
+    // Verify that `-<method-name>-initial-state` is the one and only parameter.
     didStringUrl.searchParams.forEach((value, key) => {
       queryParamCounter += 1;
       if (queryParamCounter > 1) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
       }
 
-      // expect key to be -<method>-initial-state
-      const expectedKey = `-${methodNameParts[1]}-${Did.initialStateParameterSuffix}`;
+      // expect key to be -<method-name>-initial-state
+      const expectedKey = `-${methodName}-${Did.initialStateParameterSuffix}`;
       if (key !== expectedKey) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyInitialStateParameterIsAllowed);
       }
 
-      encodedCreateRequest = value;
+      initialStateValue = value;
     });
 
-    if (encodedCreateRequest === '') {
+    if (initialStateValue === undefined) {
       throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
     }
 
-    return encodedCreateRequest;
+    return initialStateValue;
+  }
+
+  private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
+    // Initial state should be in the format: <suffix-data>.<delta>
+    const firstIndexOfDot = initialState.indexOf('.');
+    if (firstIndexOfDot === -1) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsNoDot);
+    }
+
+    const lastIndexOfDot = initialState.lastIndexOf('.');
+    if (lastIndexOfDot !== firstIndexOfDot) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueContainsMoreThanOneDot);
+    }
+
+    if (firstIndexOfDot === (initialState.length - 1) ||
+        firstIndexOfDot === 0) {
+      throw new SidetreeError(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
+    }
+
+    const initialStateParts = initialState.split('.');
+    const suffixData = initialStateParts[0];
+    const delta = initialStateParts[1];
+    const createOperationRequest = {
+      type: OperationType.Create,
+      suffix_data: suffixData,
+      delta
+    };
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const createOperation = await CreateOperation.parseObject(createOperationRequest, createOperationBuffer, false);
+
+    return createOperation;
   }
 }
