@@ -29,7 +29,8 @@ export default class Did {
    * @param did Short or long-form DID string.
    * @param didMethodName The expected DID method given in the DID string. The method throws SidetreeError if mismatch.
    */
-  private constructor (did: string, public didMethodName: string) {
+  private constructor (did: string, didMethodName: string) {
+    this.didMethodName = didMethodName;
     const didPrefix = `did:${didMethodName}:`;
 
     if (!did.startsWith(didPrefix)) {
