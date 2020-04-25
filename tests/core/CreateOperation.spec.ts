@@ -8,6 +8,19 @@ import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('CreateOperation', async () => {
+  describe('computeDidUniqueSuffix()', async () => {
+    it('should pass test vector.', async (done) => {
+      // tslint:disable-next-line:max-line-length
+      const suffixDataString = '{"delta_hash":"EiD0ERt_0QnYAoHw0KqhwYyMbMjT_vlvW3C8BuilAWT1Kw","recovery_key":{"kty":"EC","crv":"secp256k1","x":"FDmlOfldNAm9ThIQTj2-UkaCajsfrJOU0wJ7kl3QJHg","y":"bAGx86GZ41PUbzk_bvOKlrW0rXdmnXQrSop7HQoC12Y"},"recovery_commitment":"EiDrKHSo11DLU1uel6fFxH0B-0BLlyu_OinGPmLNvHyVoA"}';
+      const encodedSuffixDataString = Encoder.encode(suffixDataString);
+      const didUniqueSuffix = (CreateOperation as any).computeDidUniqueSuffix(encodedSuffixDataString);
+
+      const expectedDidUniqueSuffix = 'EiAd7Z1iVTK7P_I9QQyy-muHI2UGSvxjAIzqxW7odZX2-g';
+      expect(didUniqueSuffix).toEqual(expectedDidUniqueSuffix);
+      done();
+    });
+  });
+
   describe('parse()', async () => {
     it('should throw if create operation request has more than 3 properties.', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
