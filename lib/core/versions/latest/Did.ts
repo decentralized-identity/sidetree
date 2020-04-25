@@ -4,6 +4,7 @@ import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
+import { URL } from 'url';
 
 /**
  * Class containing reusable Sidetree DID related operations.
@@ -107,7 +108,7 @@ export default class Did {
     let initialStateValue;
 
     // Verify that `-<method-name>-initial-state` is the one and only parameter.
-    didStringUrl.searchParams.forEach((value, key) => {
+    for (const [key, value] of didStringUrl.searchParams) {
       queryParamCounter += 1;
       if (queryParamCounter > 1) {
         throw new SidetreeError(ErrorCode.DidLongFormOnlyOneQueryParamAllowed);
@@ -120,7 +121,7 @@ export default class Did {
       }
 
       initialStateValue = value;
-    });
+    }
 
     if (initialStateValue === undefined) {
       throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
