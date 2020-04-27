@@ -16,28 +16,20 @@ export default class RequestHandler {
    * Instance of IpfsStorage.
    */
   public ipfsStorage: IpfsStorage;
-
   private serviceInfo: ServiceInfo;
 
   /**
-   * create an instance of request handler
+   * Creates and return an instance of Sidetree IPFS request handler.
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
    * @param repo Optional IPFS datastore implementation.
    */
-  public static async create (fetchTimeoutInSeconds: number, repo?: any) {
-    let ipfsStorage: IpfsStorage;
-    ipfsStorage = new IpfsStorage(repo);
-    ipfsStorage.initialize();
-    return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
+  public static create (fetchTimeoutInSeconds: number, repo?: any): RequestHandler {
+    return new RequestHandler(fetchTimeoutInSeconds, repo);
   }
 
-  /**
-   * Constructs the Sidetree IPFS request handler.
-   * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
-   * @param repo Optional IPFS datastore implementation.
-   */
-  private constructor (private fetchTimeoutInSeconds: number, ipfsStorage: IpfsStorage) {
-    this.ipfsStorage = ipfsStorage;
+  private constructor (private fetchTimeoutInSeconds: number, repo?: any) {
+    this.ipfsStorage = new IpfsStorage(repo);
+    this.ipfsStorage.initialize();
     this.serviceInfo = new ServiceInfo('ipfs');
   }
 
