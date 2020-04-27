@@ -233,6 +233,7 @@ export default class DocumentComposer {
         }
       }
 
+      // Registered key types can be found at https://w3c-ccg.github.io/ld-cryptosuite-registry/
       const validTypes = new Set(['EcdsaSecp256k1VerificationKey2019', 'JwsVerificationKey2020']);
 
       if (publicKey.usage.includes(PublicKeyUsage.Ops)) {
@@ -251,7 +252,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
     }
 
-    if (publicKey.type !== 'Secp256k1VerificationKey2019') {
+    if (publicKey.type !== 'EcdsaSecp256k1VerificationKey2019') {
       throw new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
     }
 
