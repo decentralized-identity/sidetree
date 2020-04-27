@@ -663,7 +663,7 @@ export default class BitcoinClient {
   private static createBitcoinOutputModel (bitcoreOutput: Transaction.Output): BitcoinOutputModel {
     return {
       satoshis: bitcoreOutput.satoshis,
-      scriptAsmAsString: bitcoreOutput.script.toASM()
+      scriptAsmAsString: bitcoreOutput.script ? bitcoreOutput.script.toASM() : ''
     };
   }
 
