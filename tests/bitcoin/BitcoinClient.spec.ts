@@ -515,6 +515,20 @@ describe('BitcoinClient', async () => {
     });
   });
 
+  describe('createBitcoinOutputModel', () => {
+    it('should work if the output does not have any script', async (done) => {
+      const mockOutput = new Transaction.Output({
+        script: Script.empty(),
+        satoshis: 10
+      });
+
+      const actual = BitcoinClient['createBitcoinOutputModel'](mockOutput);
+      expect(actual.scriptAsmAsString).toEqual('');
+      expect(actual.satoshis).toEqual(mockOutput.satoshis);
+      done();
+    });
+  });
+
   describe('getUnspentOutputs', () => {
     it('should query for unspent output coins given an address', async (done) => {
       const coin = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1);
