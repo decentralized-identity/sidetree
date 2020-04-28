@@ -181,7 +181,7 @@ paths:
           example: "170"
         - in: query
           required: false
-          name: transaction_time_hash
+          name: transaction-time-hash
           schema:
             type: string
           description: MUST BE given if since parameter is specified. This is the hash associated with the time the transaction specified by the since parameter is anchored on blockchain. Multiple transactions can have the same transaction time and thus the same transaction time hash. The transaction time hash helps the blockchain layer detect block reorganizations (temporary forks); HTTP 400 Bad Request with invalid_transaction_number_or_time_hash as the code parameter value in a JSON body is returned on such events.
@@ -208,7 +208,7 @@ paths:
           description: Not Found
         '500':
           description: Server Error
-  /blockchain/transactions/firstValid:
+  /blockchain/transactions/first-valid:
     post:
       tags:
         - Blockchain
@@ -445,7 +445,7 @@ paths:
           example: "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf"
         - in: query
           required: true
-          name: max_size
+          name: max-size
           schema:
             type: string
           description: If the content exceeds the specified maximum allowed size, HTTP 400 Bad Request with content_exceeds_maximum_allowed_size as the value for the code parameter in a JSON body is returned.
