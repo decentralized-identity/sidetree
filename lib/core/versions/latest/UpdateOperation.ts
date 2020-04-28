@@ -89,22 +89,22 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.didUniqueSuffix !== 'string') {
+    if (typeof operationObject.did_suffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    if (typeof operationObject.updateRevealValue !== 'string') {
+    if (typeof operationObject.update_reveal_value !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.updateRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+    if ((operationObject.update_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
       throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
     }
 
-    const updateRevealValue = operationObject.updateRevealValue;
+    const updateRevealValue = operationObject.update_reveal_value;
 
     const expectKidInHeader = true;
-    const signedData = Jws.parseCompactJws(operationObject.signedData, expectKidInHeader);
+    const signedData = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
     let encodedDelta = undefined;
@@ -118,7 +118,7 @@ export default class UpdateOperation implements OperationModel {
       delta = await Operation.parseDelta(encodedDelta);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.didUniqueSuffix,
+    return new UpdateOperation(operationBuffer, operationObject.did_suffix,
       updateRevealValue, signedData, encodedDelta, delta);
   }
 }

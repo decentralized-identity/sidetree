@@ -332,10 +332,10 @@ export default class OperationGenerator {
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      didUniqueSuffix,
-      updateRevealValue,
+      did_suffix: didUniqueSuffix,
+      update_reveal_value: updateRevealValue,
       delta: encodedDeltaString,
-      signedData
+      signed_data: signedData
     };
 
     return updateOperationRequest;

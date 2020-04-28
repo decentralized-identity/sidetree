@@ -18,7 +18,7 @@ describe('UpdateOperation', async () => {
         signingPrivateKey
       );
 
-      (updateOperationRequest.didUniqueSuffix as any) = 123;
+      (updateOperationRequest.did_suffix as any) = 123;
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix));
@@ -54,7 +54,7 @@ describe('UpdateOperation', async () => {
         signingPrivateKey
       );
 
-      (updateOperationRequest.updateRevealValue as any) = 123; // Intentionally incorrect type.
+      (updateOperationRequest.update_reveal_value as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer))
