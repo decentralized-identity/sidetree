@@ -1,6 +1,6 @@
 {
   "@context": {
-    "sidetree": "https://identity.foundation/sidetree/docs/spec/#",
+    "sidetree": "https://identity.foundation/sidetree/spec/#",
     "usage": "sidetree:usage",
     "publicKeyHex": "sidetree:publicKeyHex",
     "publicKeyJwk": {
