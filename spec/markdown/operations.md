@@ -73,7 +73,7 @@ The following process must be used to update the state a Sidetree-based DID:
 
 ### Recover
 
-Use the following process to generate a Sidetree-based DID:
+Use the following process to recover a Sidetree-based DID:
 
 1. Retrieve the _Recovery Reveal Value_ that matches the previously anchored _Recovery Commitment_. This value will be used in constructing an [_Anchor File Recovery Entry_](#anchor-file-recovery-entry) for the DID being recovered.
 2. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Recovery operation, herein referred to as the _Recovery Reveal Value_.
