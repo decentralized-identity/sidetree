@@ -392,9 +392,9 @@ export default class OperationGenerator {
     const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
 
     const signedDataPayloadObject = {
-      deltaHash,
-      recoveryKey: newRecoveryPublicKey,
-      nextRecoveryCommitmentHash
+      delta_hash: deltaHash,
+      recovery_key: newRecoveryPublicKey,
+      recovery_commitment: nextRecoveryCommitmentHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 

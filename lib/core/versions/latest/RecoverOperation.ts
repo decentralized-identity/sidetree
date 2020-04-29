@@ -12,9 +12,9 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  deltaHash: string;
-  recoveryKey: JwkEs256k;
-  nextRecoveryCommitmentHash: string;
+  delta_hash: string;
+  recovery_key: JwkEs256k;
+  recovery_commitment: string;
 }
 
 /**
@@ -161,12 +161,12 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.recoveryKey);
+    Jwk.validateJwkEs256k(signedData.recovery_key);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
+    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.nextRecoveryCommitmentHash);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recovery_commitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return signedData;
