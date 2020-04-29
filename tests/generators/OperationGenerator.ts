@@ -325,10 +325,13 @@ export default class OperationGenerator {
       update_commitment: nextUpdateCommitmentHash
     };
     const deltaJsonString = JSON.stringify(delta);
+    const deltaHash = Encoder.encode(Multihash.hash(Buffer.from(deltaJsonString)));
     const encodedDeltaString = Encoder.encode(deltaJsonString);
 
-    const deltaHash = Multihash.hash(Buffer.from(deltaJsonString));
-    const signedData = await OperationGenerator.signUsingEs256k(deltaHash, signingPrivateKey, signingKeyId);
+    const signedDataPayloadObject = {
+      delta_hash: deltaHash
+    };
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey, signingKeyId);
 
     const updateOperationRequest = {
       type: OperationType.Update,

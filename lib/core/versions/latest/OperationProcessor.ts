@@ -127,7 +127,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the delta hash against the expected delta hash.
-    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.payload);
+    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.delta_hash);
     if (!isValidDelta) {
       return didState;
     }

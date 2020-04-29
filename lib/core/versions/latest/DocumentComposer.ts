@@ -108,11 +108,11 @@ export default class DocumentComposer {
    */
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
     // The current document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(document, operation.signedData.kid);
+    const publicKey = Document.getPublicKey(document, operation.signedDataJws.kid);
     DocumentComposer.validateOperationKey(publicKey);
 
     // Verify the signature.
-    if (!(await operation.signedData.verifySignature(publicKey!.jwk))) {
+    if (!(await operation.signedDataJws.verifySignature(publicKey!.jwk))) {
       throw new SidetreeError(ErrorCode.DocumentComposerInvalidSignature);
     }
 

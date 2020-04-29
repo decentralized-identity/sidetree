@@ -1,11 +1,17 @@
 import DeltaModel from './models/DeltaModel';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import Jws from './util/Jws';
+import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
+
+interface SignedDataModel {
+  delta_hash: string;
+}
 
 /**
  * A class that represents an update operation.
@@ -25,7 +31,10 @@ export default class UpdateOperation implements OperationModel {
   public readonly updateRevealValue: string;
 
   /** Signed data for the operation. */
-  public readonly signedData: Jws;
+  public readonly signedDataJws: Jws;
+
+  /** Decoded signed data payload. */
+  public readonly signedData: SignedDataModel;
 
   /** Patch data. */
   public readonly delta: DeltaModel | undefined;
@@ -40,13 +49,15 @@ export default class UpdateOperation implements OperationModel {
     operationBuffer: Buffer,
     didUniqueSuffix: string,
     updateRevealValue: string,
-    signedData: Jws,
+    signedDataJws: Jws,
+    signedData: SignedDataModel,
     encodedDelta: string | undefined,
     delta: DeltaModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
     this.updateRevealValue = updateRevealValue;
+    this.signedDataJws = signedDataJws;
     this.signedData = signedData;
     this.encodedDelta = encodedDelta;
     this.delta = delta;
@@ -105,6 +116,7 @@ export default class UpdateOperation implements OperationModel {
 
     const expectKidInHeader = true;
     const signedData = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
+    const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
     let encodedDelta = undefined;
@@ -118,7 +130,21 @@ export default class UpdateOperation implements OperationModel {
       delta = await Operation.parseDelta(encodedDelta);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix,
-      updateRevealValue, signedData, encodedDelta, delta);
+    return new UpdateOperation(operationBuffer, operationObject.did_suffix, updateRevealValue, signedData, signedDataModel, encodedDelta, delta);
+  }
+
+  private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {
+    const signedDataJsonString = Encoder.decodeAsString(signedDataEncodedString);
+    const signedData = await JsonAsync.parse(signedDataJsonString);
+
+    const properties = Object.keys(signedData);
+    if (properties.length !== 1) {
+      throw new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty);
+    }
+
+    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
+
+    return signedData;
   }
 }
