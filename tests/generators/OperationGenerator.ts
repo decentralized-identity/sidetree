@@ -413,22 +413,22 @@ export default class OperationGenerator {
   /**
    * Generates a deactivate operation request.
    */
-  public static async generateDeactivateOperationRequest (
+  public static async createDeactivateOperationRequest (
     didUniqueSuffix: string,
     recoveryRevealValue: string,
     recoveryPrivateKey: JwkEs256k) {
 
     const signedDataPayloadObject = {
-      didUniqueSuffix,
-      recoveryRevealValue
+      did_suffix: didUniqueSuffix,
+      recovery_reveal_value: recoveryRevealValue
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
-      didUniqueSuffix,
-      recoveryRevealValue,
-      signedData
+      did_suffix: didUniqueSuffix,
+      recovery_reveal_value: recoveryRevealValue,
+      signed_data: signedData
     };
 
     return operation;
@@ -552,7 +552,7 @@ export default class OperationGenerator {
     didUniqueSuffix: string,
     recoveryRevealValueEncodedSring: string,
     privateKey: JwkEs256k): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
+    const operation = await OperationGenerator.createDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
     return Buffer.from(JSON.stringify(operation));
   }
 

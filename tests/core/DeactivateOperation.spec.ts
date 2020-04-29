@@ -11,7 +11,7 @@ describe('DeactivateOperation', async () => {
     it('should throw if operation contains unknown property', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
-      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-recovery-reveal-value',
         recoveryPrivateKey
@@ -24,10 +24,10 @@ describe('DeactivateOperation', async () => {
       done();
     });
 
-    it('should throw if operation type is incorrect', async (done) => {
+    it('should throw if operation type is incorrect.', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
-      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-recovery-reveal-value',
         recoveryPrivateKey
@@ -43,13 +43,13 @@ describe('DeactivateOperation', async () => {
     it('should throw if didUniqueSuffix is not string.', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
-      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-recovery-reveal-value',
         recoveryPrivateKey
       );
 
-      (deactivateOperationRequest.didUniqueSuffix as any) = 123; // Intentionally incorrect type.
+      (deactivateOperationRequest.did_suffix as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
       await expectAsync(DeactivateOperation
@@ -60,13 +60,13 @@ describe('DeactivateOperation', async () => {
     it('should throw if recoveryRevealValue is not string.', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
-      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
         'unused-recovery-reveal-value',
         recoveryPrivateKey
       );
 
-      (deactivateOperationRequest.recoveryRevealValue as any) = 123; // Intentionally incorrect type.
+      (deactivateOperationRequest.recovery_reveal_value as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
       await expectAsync(DeactivateOperation.parse(operationBuffer))
@@ -77,7 +77,7 @@ describe('DeactivateOperation', async () => {
     it('should throw if recoveryRevealValue is too long.', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
 
-      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
         'super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal',
         recoveryPrivateKey
@@ -118,12 +118,12 @@ describe('DeactivateOperation', async () => {
       done();
     });
 
-    it('should throw if signed `recoveryRevealValue` is mismatching.', async (done) => {
+    it('should throw if signed `recovery_reveal_value` is mismatching.', async (done) => {
       const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
       const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
       const signedData = {
-        didUniqueSuffix,
-        recoveryRevealValue
+        did_suffix: didUniqueSuffix,
+        recovery_reveal_value: recoveryRevealValue
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedSignedData, didUniqueSuffix, 'mismatchingRecoveryRevealValue'))

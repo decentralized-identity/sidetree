@@ -33,6 +33,12 @@ describe('Multihash', async () => {
   });
 
   describe('isValidHash()', async () => {
+    it('should return false if content is undefined', async () => {
+      const [, anyCommitment] = OperationGenerator.generateCommitRevealPair();
+      const result = Multihash.isValidHash(undefined, anyCommitment);
+      expect(result).toBeFalsy();
+    });
+
     it('should return false if encountered an unexpected error.', async () => {
       const [revealValue, commitmentHash] = OperationGenerator.generateCommitRevealPair();
 
