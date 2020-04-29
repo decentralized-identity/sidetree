@@ -5,9 +5,7 @@ The Node.js implementation of a blockchain-agnostic Sidetree Node using TypeScri
 
 [![Build Status](https://travis-ci.org/decentralized-identity/sidetree.svg?branch=master)](https://travis-ci.org/decentralized-identity/sidetree) ![CI](https://github.com/decentralized-identity/sidetree/workflows/CI/badge.svg) 
 
-See the [latest spec](https://identity.foundation/sidetree/docs/spec/) for full Sidetree protocol specification.
-
-See the [protocol document](docs/protocol.md) for the full Sidetree protocol specification.
+See the [latest spec](https://identity.foundation/sidetree/spec/) for full Sidetree protocol specification.
 
 See the [implementation document](docs/implementation.md) for the detailed description of this implementation.
 
