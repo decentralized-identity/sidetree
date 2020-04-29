@@ -68,6 +68,12 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
         - **`assertion`**: the key ****MUST**** be included in the `assertionMethod` section of the resolved _DID Document_, as follows:
             - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `assertionMethod` section of the resolved _DID Document_. 
             - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `assertionMethod` section.
+        - **`delegation`**: the key ****MUST**** be included in the `capabilityDelegation` section of the resolved _DID Document_, as follows:
+            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `capabilityDelegation` section of the resolved _DID Document_. 
+            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityDelegation` section.
+        - **`invocation`**: the key ****MUST**** be included in the `capabilityInvocation` section of the resolved _DID Document_, as follows:
+            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `capabilityInvocation` section of the resolved _DID Document_. 
+            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityInvocation` section.
     
 
 #### `remove-public-keys`
