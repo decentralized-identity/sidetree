@@ -50,7 +50,7 @@ describe('RecoverOperation', async () => {
         unusedNextUpdateCommitmentHash
       );
 
-      (recoverOperationRequest.didUniqueSuffix as any) = 123; // Intentionally incorrect type.
+      (recoverOperationRequest.did_suffix as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
       await expectAsync(RecoverOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix));
@@ -74,7 +74,7 @@ describe('RecoverOperation', async () => {
         unusedNextUpdateCommitmentHash
       );
 
-      (recoverOperationRequest.recoveryRevealValue as any) = 123; // Intentionally incorrect type.
+      (recoverOperationRequest.recovery_reveal_value as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
       await expectAsync(RecoverOperation.parse(operationBuffer))

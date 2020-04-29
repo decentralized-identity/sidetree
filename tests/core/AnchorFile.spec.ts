@@ -138,7 +138,7 @@ describe('AnchorFile', async () => {
       delete createOperationRequest.type;
       delete createOperationRequest.delta;
 
-      const deactivateOperationRequest = await OperationGenerator.generateDeactivateOperationRequest(
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
         'anyRecoveryRevealValue',
         createOperationData.recoveryPrivateKey

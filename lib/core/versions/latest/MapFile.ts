@@ -81,9 +81,9 @@ export default class MapFile {
   public static async createBuffer (batchFileHash: string, updateOperationArray: UpdateOperation[]): Promise<Buffer> {
     const updateOperations = updateOperationArray.map(operation => {
       return {
-        didUniqueSuffix: operation.didUniqueSuffix,
-        updateRevealValue: operation.updateRevealValue,
-        signedData: operation.signedData.toCompactJws()
+        did_suffix: operation.didUniqueSuffix,
+        update_reveal_value: operation.updateRevealValue,
+        signed_data: operation.signedDataJws.toCompactJws()
       };
     });
 

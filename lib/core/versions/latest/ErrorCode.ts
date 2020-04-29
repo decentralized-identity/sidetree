@@ -137,6 +137,7 @@ export default {
   TransactionsNotInSameBlock: 'transactions_not_in_same_block',
   UpdateOperationMissingDidUniqueSuffix: 'update_operation_missing_did_unique_suffix',
   UpdateOperationMissingOrUnknownProperty: 'update_operation_missing_or_unknown_property',
+  UpdateOperationSignedDataHasMissingOrUnknownProperty: 'update_operation_signed_data_has_missing_or_unknown_property',
   UpdateOperationTypeIncorrect: 'update_operation_type_incorrect',
   UpdateOperationUpdateRevealValueMissingOrInvalidType: 'update_operation_update_reveal_value_missing_or_invalid_type',
   UpdateOperationUpdateRevealValueTooLong: 'update_operation_update_reveal_value_too_long',

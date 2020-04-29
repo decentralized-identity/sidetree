@@ -127,7 +127,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the delta hash against the expected delta hash.
-    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.payload);
+    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.delta_hash);
     if (!isValidDelta) {
       return didState;
     }
@@ -179,7 +179,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual delta hash against the expected delta hash.
-    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
+    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.delta_hash);
     if (!isMatchingDelta) {
       return didState;
     }
@@ -203,8 +203,8 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDidState = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
-      recoveryKey: operation.signedData.recoveryKey,
-      nextRecoveryCommitmentHash: operation.signedData.nextRecoveryCommitmentHash,
+      recoveryKey: operation.signedData.recovery_key,
+      nextRecoveryCommitmentHash: operation.signedData.recovery_commitment,
       nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
