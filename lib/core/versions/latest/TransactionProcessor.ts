@@ -223,12 +223,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
       const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
       for (let i = 0; i < operationCountExcludingDeactivates &&
-                      i < batchFile.patchSet.length; i++) {
+                      i < batchFile.deltas.length; i++) {
         const operation = operations[i];
         const operationJsonString = operation.operationBuffer.toString();
         const operationObject = await JsonAsync.parse(operationJsonString);
         operationObject.type = operation.type;
-        operationObject.delta = batchFile.patchSet[i];
+        operationObject.delta = batchFile.deltas[i];
 
         const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
         patchedOperationBuffers.push(patchedOperationBuffer);

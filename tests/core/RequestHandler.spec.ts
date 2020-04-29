@@ -138,7 +138,7 @@ describe('RequestHandler', () => {
     const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
-    expect(batchFile.patchSet.length).toEqual(1);
+    expect(batchFile.deltas.length).toEqual(1);
   });
 
   it('should return bad request if delta given in request is larger than protocol limit.', async () => {
