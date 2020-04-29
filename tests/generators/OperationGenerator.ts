@@ -401,9 +401,9 @@ export default class OperationGenerator {
     const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Recover,
-      didUniqueSuffix,
-      recoveryRevealValue,
-      signedData,
+      did_suffix: didUniqueSuffix,
+      recovery_reveal_value: recoveryRevealValue,
+      signed_data: signedData,
       delta: deltaEncodedString
     };
 
