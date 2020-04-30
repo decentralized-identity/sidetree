@@ -170,8 +170,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return undefined;
     }
 
+    let batchFileHash;
     try {
-      const batchFileHash = mapFile.model.batchFileHash;
+      batchFileHash = mapFile.model.chunks[0].chunk_file_uri;
       console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
 
       const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
@@ -188,7 +189,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching batch file ${mapFile.model.batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching batch file ${batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
