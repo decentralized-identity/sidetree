@@ -81,7 +81,7 @@ export default class AnchorFile {
 
     // `operations` validations.
 
-    const allowedOperationsProperties = new Set(['create', 'recoverOperations', 'deactivateOperations']);
+    const allowedOperationsProperties = new Set(['create', 'recover', 'deactivate']);
     const operations = anchorFileModel.operations;
     for (let property in operations) {
       if (!allowedOperationsProperties.has(property)) {
@@ -107,30 +107,30 @@ export default class AnchorFile {
       }
     }
 
-    // Validate `recoverOperations` if exists.
+    // Validate `recover` if exists.
     const recoverOperations: RecoverOperation[] = [];
-    if (operations.recoverOperations !== undefined) {
-      if (!Array.isArray(operations.recoverOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileRecoverOperationsNotArray);
+    if (operations.recover !== undefined) {
+      if (!Array.isArray(operations.recover)) {
+        throw new SidetreeError(ErrorCode.AnchorFileRecoverPropertyNotArray);
       }
 
       // Validate every recover operation.
-      for (const operation of operations.recoverOperations) {
+      for (const operation of operations.recover) {
         const recoverOperation = await RecoverOperation.parseOperationFromAnchorFile(operation);
         recoverOperations.push(recoverOperation);
         didUniqueSuffixes.push(recoverOperation.didUniqueSuffix);
       }
     }
 
-    // Validate `deactivateOperations` if exists.
+    // Validate `deactivate` if exists.
     const deactivateOperations: DeactivateOperation[] = [];
-    if (operations.deactivateOperations !== undefined) {
-      if (!Array.isArray(operations.deactivateOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileDeactivateOperationsNotArray);
+    if (operations.deactivate !== undefined) {
+      if (!Array.isArray(operations.deactivate)) {
+        throw new SidetreeError(ErrorCode.AnchorFileDeactivatePropertyNotArray);
       }
 
       // Validate every operation.
-      for (const operation of operations.deactivateOperations) {
+      for (const operation of operations.deactivate) {
         const deactivateOperation = await DeactivateOperation.parseOperationFromAnchorFile(operation);
         deactivateOperations.push(deactivateOperation);
         didUniqueSuffixes.push(deactivateOperation.didUniqueSuffix);
@@ -183,8 +183,8 @@ export default class AnchorFile {
       map_file_uri: mapFileHash,
       operations: {
         create: createOperations,
-        recoverOperations,
-        deactivateOperations
+        recover: recoverOperations,
+        deactivate: deactivateOperations
       }
     };
 

@@ -150,7 +150,7 @@ describe('AnchorFile', async () => {
         map_file_uri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           create: [createOperationRequest],
-          deactivateOperations: [deactivateOperationRequest]
+          deactivate: [deactivateOperationRequest]
         }
       };
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFile));
