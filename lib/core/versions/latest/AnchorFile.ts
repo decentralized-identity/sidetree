@@ -48,14 +48,14 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['mapFileHash', 'operations', 'writerLockId']);
+    const allowedProperties = new Set(['map_file_uri', 'operations', 'writer_lock_id']);
     for (let property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
       }
     }
 
-    if (!anchorFileModel.hasOwnProperty('mapFileHash')) {
+    if (!anchorFileModel.hasOwnProperty('map_file_uri')) {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
     }
 
@@ -63,24 +63,25 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
-    if (anchorFileModel.hasOwnProperty('writerLockId') &&
-        typeof anchorFileModel.writerLockId !== 'string') {
+    if (anchorFileModel.hasOwnProperty('writer_lock_id') &&
+        typeof anchorFileModel.writer_lock_id !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileWriterLockIPropertyNotString);
     }
 
     // Map file hash validations.
-    if (typeof anchorFileModel.mapFileHash !== 'string') {
+    const mapFileUri = anchorFileModel.map_file_uri;
+    if (typeof mapFileUri !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString);
     }
 
-    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFileModel.mapFileHash);
-    if (!Multihash.isComputedUsingHashAlgorithm(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${anchorFileModel.mapFileHash}' is unsupported.`);
+    const mapFileUriAsHashBuffer = Encoder.decodeAsBuffer(mapFileUri);
+    if (!Multihash.isComputedUsingHashAlgorithm(mapFileUriAsHashBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${mapFileUri}' is unsupported.`);
     }
 
     // `operations` validations.
 
-    const allowedOperationsProperties = new Set(['createOperations', 'recoverOperations', 'deactivateOperations']);
+    const allowedOperationsProperties = new Set(['create', 'recoverOperations', 'deactivateOperations']);
     const operations = anchorFileModel.operations;
     for (let property in operations) {
       if (!allowedOperationsProperties.has(property)) {
@@ -91,15 +92,15 @@ export default class AnchorFile {
     // Will be populated for later validity check.
     const didUniqueSuffixes: string[] = [];
 
-    // Validate `createOperations` if exists.
+    // Validate `create` if exists.
     const createOperations: CreateOperation[] = [];
-    if (operations.createOperations !== undefined) {
-      if (!Array.isArray(operations.createOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileCreateOperationsNotArray);
+    if (operations.create !== undefined) {
+      if (!Array.isArray(operations.create)) {
+        throw new SidetreeError(ErrorCode.AnchorFileCreatePropertyNotArray);
       }
 
-      // Validate every operation.
-      for (const operation of operations.createOperations) {
+      // Validate every create operation.
+      for (const operation of operations.create) {
         const createOperation = await CreateOperation.parseOperationFromAnchorFile(operation);
         createOperations.push(createOperation);
         didUniqueSuffixes.push(createOperation.didUniqueSuffix);
@@ -113,7 +114,7 @@ export default class AnchorFile {
         throw new SidetreeError(ErrorCode.AnchorFileRecoverOperationsNotArray);
       }
 
-      // Validate every operation.
+      // Validate every recover operation.
       for (const operation of operations.recoverOperations) {
         const recoverOperation = await RecoverOperation.parseOperationFromAnchorFile(operation);
         recoverOperations.push(recoverOperation);
@@ -178,10 +179,10 @@ export default class AnchorFile {
     });
 
     const anchorFileModel = {
-      writerLockId: writerLockId,
-      mapFileHash,
+      writer_lock_id: writerLockId,
+      map_file_uri: mapFileHash,
       operations: {
-        createOperations,
+        create: createOperations,
         recoverOperations,
         deactivateOperations
       }

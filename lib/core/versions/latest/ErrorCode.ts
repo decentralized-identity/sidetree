@@ -7,7 +7,7 @@ export default {
   AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
   AnchoredDataNumberOfOperationsNotFourBytes: 'anchored_data_number_of_operations_not_four_bytes',
   AnchoredDataNumberOfOperationsNotInteger: 'anchored_data_number_of_operations_not_integer',
-  AnchorFileCreateOperationsNotArray: 'anchor_file_create_operations_not_array',
+  AnchorFileCreatePropertyNotArray: 'anchor_file_create_property_not_array',
   AnchorFileDecompressionFailure: 'anchor_file_decompression_failed',
   AnchorFileHasUnknownProperty: 'anchor_file_has_unknown_property',
   AnchorFileMapFileHashMissing: 'anchor_file_map_file_hash_missing',

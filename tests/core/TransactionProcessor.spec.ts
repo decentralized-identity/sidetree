@@ -243,7 +243,7 @@ describe('TransactionProcessor', () => {
       const mockAnchorFile: AnchorFile = {
         createOperations: [],
         didUniqueSuffixes: ['abc', 'def'],
-        model: { writerLockId: 'lock', mapFileHash: 'map_hash', operations: {} },
+        model: { writer_lock_id: 'lock', map_file_uri: 'map_hash', operations: {} },
         recoverOperations: [],
         deactivateOperations: []
       };

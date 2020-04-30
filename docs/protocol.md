@@ -49,58 +49,6 @@ The following lists the parameters used by this version of the Sidetree protocol
 | Maximum operation size      | The maximum uncompressed operation size.                                       |      2 000 |
 | Maximum operation count     | The maximum number of operations per batch.                                    |     10 000 |
 
-## Sidetree Operations
-
-Sidetree protocol allows the following operations to be performed against a DID:
-
-1. Create
-1. Resolve
-1. Update
-1. Recover
-1. Deactivate
-
-A _DID Document_ is returned as the response to a _resolve_ request. A [_DID Document_](https://w3c-ccg.github.io/did-spec/#ex-2-minimal-self-managed-did-document
-) is a document containing information about a DID, such as the public keys of the DID owner and service endpoints used.
-
-## Sidetree DID Unique Suffix
-A Sidetree _DID unique suffix_ is the globally unique portion of a DID. 
-
-e.g. The DID unique suffix of `did:sidetree:abc` would be `abc`.
-
-The DID unique suffix is computed deterministically by hashing, then encoding the _suffix data_ supplied in a create operation request. The suffix data contains:
-
-1. Hash of the initial document.
-1. Recovery key.
-1. Hash of reveal value for recovery, aka commitment hash.
-
-As a result, a requester can deterministically compute the DID before the create operation is requested and anchored on the blockchain.
-
-See [DID Create API](#DID-Creation) section for detail on how to construct a create operation request.
-
-
-## Unpublished DID Resolution
-
-DIDs may include attached values that are used in resolution and other activities. The standard way to pass these values are through _DID Parameters_, as described in the [W3C DID spec](https://w3c.github.io/did-core/#generic-did-url-parameters).
-
-Many DID Methods feature a period of time (which may be indefinite) between the generation of an ID and the ID being anchored/propagated throughout the underlying trust system (i.e. blockchain, ledger). The community has recognized the need for a mechanism to support resolution and use of identifiers during this period. As such, the community will introduce a convention using method specific DID parameter `-<method-name>-initial-state` that any DID method can use to signify initial state variables during this period.
-
-Sidetree uses the `-<method-name>-initial-state` DID parameter to enable unpublished DID resolution. After generating a new Sidetree DID, in order to use this DID immediately, the user will attach the `-<method-name>-initial-state` DID Parameter to the DID, with the value being the encoded string of the create operation request.
-
-e.g. `did:sidetree:<did-unique-suffix>?-sidetree-initial-state=<encoded-create-operation-request>`.
-
-See [DID Create API](#DID-Creation) section for detail on how to construct a create operation request.
-
-This feature allows any entity to support all of the following usage patterns:
-
-- Resolving unpublished DIDs.
-- Authenticating with unpublished DIDs.
-- Signing and verifying credentials signed against unpublished DIDs.
-- Authenticating with either the DID or DID with `-<method-name>-initial-state` parameter, after it is published.
-- Signing and verifying credentials signed against either the DID or DID with `-<method-name>-initial-state` parameter, after it is published.
-
-### `published` Flag
-
-At such time an ID is published/anchored, a user can provide either the parametered or unparametered version of the ION DID URI to an external party, and it will be resolvable. There is no required change for any party that had been holding the parametered version of the URI - it will continue to resolve just as it had prior to being anchored. In addition, the community will introduce a generic, standard property: `published` in the [DID resolution spec](https://w3c-ccg.github.io/did-resolution/#output-resolvermetadata), that is added to the DID resolution response. The `published` property indicates whether a DID has been published/anchored in the underlying trust system a DID Method writes to. When an entity resolves any DID from any DID Method and finds that the DID has been published, the entity may drop the `-<method-name>-initial-state` DID parameter from their held references to the DID in question, if they so desire. However, dropping the `-<method-name>-initial-state` DID parameter after publication is purely an elective act - the ID will resolve correctly regardless.
 
 ## Anchor String Schema
 The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
