@@ -63,12 +63,22 @@
 <h2 id="rest-api"><a class="toc-anchor" href="#rest-api">§</a> REST API</h2>
 <p>The following sections define the Sidetree resolution and operations endpoints. Please refer to the companion <a href="https://identity.foundation/sidetree/docs/swagger/">Sidetree REST API</a> specification for additional information, as well as REST API definitions for blockchain and CAS components.</p>
 <h3 id="sidetree-resolution"><a class="toc-anchor" href="#sidetree-resolution">§</a> Sidetree Resolution</h3>
-<p>Sidetree resolution requests to the REST API consist of a DID and MAY include DID parameters.
+<p>Sidetree resolution requests to the REST API are based on the <a href="https://w3c-ccg.github.io/did-resolution/#bindings-https">DID Resolution HTTP(S) binding</a>.
+Resolution requests consist of a DID and MAY include DID parameters.
 As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY include the initial state DID parameter.</p>
-<p>The server responds with the Resolution Response Object composed of the DID Document and Method Metadata.</p>
-<div id="example-109" class="notice example"><a class="notice-link" href="#example-109">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
-    <span class="token property">"did_document"</span><span class="token operator">:</span> DID_DOCUMENT_OBJECT<span class="token punctuation">,</span>
-    <span class="token property">"metadata"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+<p>The server responds with the <a href="https://w3c-ccg.github.io/did-resolution/#did-resolution-result">DID Resolution Result</a> composed of the DID Document and Method Metadata.
+Sidetree defines <code>operationPublicKeys</code>, <code>recoveryKey</code> and <code>published</code> method metadata.</p>
+<ul>
+<li><code>published</code> is detailed in <a href="#published-property">Published Property</a>.</li>
+<li><code>operationPublicKeys</code> is an array of public key objects that include <code>ops</code> in the <code>usage</code> array. See <a href="#add-public-keys">patch action</a> for more details.</li>
+<li><code>recoveryKey</code> is the recovery public key object.</li>
+</ul>
+<div id="example-7" class="notice example"><a class="notice-link" href="#example-7">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+    <span class="token property">"@context"</span><span class="token operator">:</span> <span class="token string">"https://www.w3.org/ns/did-resolution/v1"</span><span class="token punctuation">,</span>
+    <span class="token property">"didDocument"</span><span class="token operator">:</span> DID_DOCUMENT_OBJECT<span class="token punctuation">,</span>
+    <span class="token property">"methodMetadata"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+        <span class="token property">"operationPublicKeys"</span><span class="token operator">:</span> <span class="token punctuation">[</span>OPERATION_PUBLIC_KEY_OBJECT<span class="token punctuation">,</span> ...<span class="token punctuation">]</span><span class="token punctuation">,</span>
+        <span class="token property">"recoveryKey"</span><span class="token operator">:</span> RECOVERY_PUBLIC_KEY_OBJECT<span class="token punctuation">,</span>
         <span class="token property">"published"</span><span class="token operator">:</span> boolean
     <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
@@ -76,7 +86,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 </div>
 <p>A resolution is requested as follows:</p>
 <ol>
-<li>The client <strong><strong>MUST</strong></strong> send a GET to the Sidetree resolution endpoint <code>/sidetree/{did-with-or-without-initial-state}</code> under the desired REST server path.</li>
+<li>The client <strong><strong>MUST</strong></strong> send a GET to the Sidetree resolution endpoint <code>/identifiers/{did-with-or-without-initial-state}</code> under the desired REST server path.</li>
 <li>If the DID does not exist and initial state was not provided:
 <ul>
 <li>The server <strong><strong>MUST</strong></strong> respond with HTTP Status Code 404.</li>
@@ -85,22 +95,22 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>If the DID does not exist and valid initial state was provided:
 <ul>
 <li>The server <strong><strong>MUST</strong></strong> respond with HTTP Status Code 200.</li>
-<li>The server <strong><strong>MUST</strong></strong> return the initial DID document that is constructed from the initial state.</li>
-<li>The server <strong><strong>MUST</strong></strong> include the resolution response object <code>metadata</code> composed of a <code>published</code> property with value <code>false</code>.</li>
+<li>The server <strong><strong>MUST</strong></strong> include the <code>didDocument</code> property, with its value set to the initial DID document that is constructed from the initial state.</li>
+<li>The server <strong><strong>MUST</strong></strong> include the resolution response object <code>methodMetadata</code> composed of a <code>published</code> property with value <code>false</code>.</li>
 </ul>
 </li>
 <li>If the DID does exist:
 <ul>
 <li>The server <strong><strong>MUST</strong></strong> respond with HTTP Status Code 200.</li>
-<li>The server <strong><strong>MUST</strong></strong> return the latest DID document.</li>
-<li>The server <strong><strong>MUST</strong></strong> include the resolution response object <code>metadata</code> composed of a <code>published</code> property with value <code>true</code>.</li>
+<li>The server <strong><strong>MUST</strong></strong> include the <code>didDocument</code> property, with its value set to the latest DID document.</li>
+<li>The server <strong><strong>MUST</strong></strong> include the resolution response object <code>methodMetadata</code> composed of a <code>published</code> property with value <code>true</code>.</li>
 </ul>
 </li>
 <li>Otherwise, for failure, the server <strong><strong>MUST</strong></strong> respond with an appropriate HTTP Status Code (400, 401, 404, 500).</li>
 </ol>
 <h3 id="sidetree-operations"><a class="toc-anchor" href="#sidetree-operations">§</a> Sidetree Operations</h3>
 <p>Sidetree operation requests to the REST API consist of a type property indicating the operation to be performed along with operation-specific properties and data.</p>
-<div id="example-110" class="notice example"><a class="notice-link" href="#example-110">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-8" class="notice example"><a class="notice-link" href="#example-8">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> OPERATION_TYPE<span class="token punctuation">,</span>
     ...
 <span class="token punctuation">}</span>
@@ -111,11 +121,15 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>The Operation Request <strong><strong>MUST</strong></strong> contain a <code>type</code> property, and its value <strong><strong>MUST</strong></strong> be a valid operation defined in
 <a href="#file-structures">File Structure</a>. The defined operations are <code>create</code>, <code>recover</code>, <code>deactivate</code>, <code>update</code>.</li>
 <li>Populate additional properties according to the appropriate subsection.</li>
-<li>The client <strong><strong>MUST</strong></strong> POST the Operation Request JSON document to the Sidetree operation endpoint <code>/sidetree/operations</code> under the desired REST server path.</li>
-<li>The server <strong><strong>MUST</strong></strong> respond with HTTP status 200 when successful. Otherwise, for failure, the server <strong><strong>MUST</strong></strong> respond with an appropriate HTTP Status Code (400, 401, 404, 500).</li>
+<li>The client <strong><strong>MUST</strong></strong> POST the Operation Request JSON document to the Sidetree operation endpoint <code>/operations</code> under the desired REST server path.</li>
+<li>The server <strong><strong>MUST</strong></strong> respond with HTTP status 200 when successful. Otherwise, for failure, the server <strong><strong>MUST</strong></strong> respond with an appropriate HTTP Status Code (400, 401, 404, 500).
+<ul>
+<li>In the case of a successful <code>create</code> operation, the server <strong><strong>MUST</strong></strong> return the DID Resolution Result for the DID as is detailed in <a href="#sidetree-resolution">Sidetree Resolution</a>.</li>
+</ul>
+</li>
 </ol>
 <h4 id="create"><a class="toc-anchor" href="#create">§</a> Create</h4>
-<div id="example-111" class="notice example"><a class="notice-link" href="#example-111">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-9" class="notice example"><a class="notice-link" href="#example-9">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"create"</span><span class="token punctuation">,</span>
     <span class="token property">"suffix_data"</span><span class="token operator">:</span> SUFFIX_DATA_OBJECT<span class="token punctuation">,</span>
     <span class="token property">"delta"</span><span class="token operator">:</span> DELTA_OBJECT
@@ -129,7 +143,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 <li>The object <strong><strong>MUST</strong></strong> contain an <code>delta</code> property, and its value must be a <code>Base64URL</code> encoded <a href="#create-data-object"><em>Create Operation Data Object</em></a>.</li>
 </ol>
 <h4 id="update"><a class="toc-anchor" href="#update">§</a> Update</h4>
-<div id="example-112" class="notice example"><a class="notice-link" href="#example-112">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-10" class="notice example"><a class="notice-link" href="#example-10">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"update"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"update_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
@@ -148,7 +162,7 @@ As detailed in <a href="#resolution">Resolution</a>, the resolution request MAY 
 as defined in <a href="#map-file">Map File</a> for Update operations.</li>
 </ol>
 <h4 id="recover"><a class="toc-anchor" href="#recover">§</a> Recover</h4>
-<div id="example-113" class="notice example"><a class="notice-link" href="#example-113">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-11" class="notice example"><a class="notice-link" href="#example-11">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"recover"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>
@@ -167,7 +181,7 @@ as defined in <a href="#map-file">Map File</a> for Update operations.</li>
 as defined in <a href="#anchor-file">Anchor File</a> for Recovery operations.</li>
 </ol>
 <h4 id="deactivate"><a class="toc-anchor" href="#deactivate">§</a> Deactivate</h4>
-<div id="example-114" class="notice example"><a class="notice-link" href="#example-114">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-12" class="notice example"><a class="notice-link" href="#example-12">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
     <span class="token property">"type"</span><span class="token operator">:</span> <span class="token string">"deactivate"</span><span class="token punctuation">,</span>
     <span class="token property">"did_suffix"</span><span class="token operator">:</span> DID_SUFFIX<span class="token punctuation">,</span>
     <span class="token property">"recovery_reveal_value"</span><span class="token operator">:</span> REVEAL_VALUE<span class="token punctuation">,</span>

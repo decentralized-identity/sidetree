@@ -23,7 +23,7 @@
             1. Internally flag the state of the DID as _Non-Updateable_.
             2. Skip all further Create operation processing steps and proceed to [post-Create operation processing](#post-create-operation-processing).
     2. Validate the [_Chunk File Delta Entry_](#chunk-file-delta-entry). If the [_Chunk File Delta Entry_](#chunk-file-delta-entry) is valid, proceed, if the Entry is invalid, let the state of the DID reflect an _Empty DID State_.
-    3. Generate a hash of the [_Chunk File Delta Entry_](#chunk-file-delta-entry) via the [Hashing Process](#hashing-process) and ensure the hash equals the value of the [_Create Operation Suffix Data Object_](#create-suffix-data-object) `delta_hash` property. If the values are exactly equal, proceed, if they are not:
+    3. Generate a hash of the decoded [_Chunk File Delta Entry_](#chunk-file-delta-entry) via the [Hashing Process](#hashing-process) and ensure the hash equals the value of the [_Create Operation Suffix Data Object_](#create-suffix-data-object) `delta_hash` property. If the values are exactly equal, proceed, if they are not:
         1. Internally flag the state of the DID as _Non-Updateable_.
         2. Skip all further Create operation processing steps and proceed to [post-Create operation processing](#post-create-operation-processing).
     4. Retain a reference to the `update_commitment` value of the [_Chunk File Delta Entry_](#chunk-file-delta-entry) for use in processing the next Update operation.
@@ -48,7 +48,7 @@
               1. Internally flag the state of the DID as _Non-Updateable_.
               2. Skip all further processing of the operation and proceed to the next entry.
       6. Validate the [_Chunk File Delta Entry_](#chunk-file-delta-entry). If the [_Chunk File Delta Entry_](#chunk-file-delta-entry) is valid, proceed, if the Entry is invalid, let the state of the DID reflect an _Empty DID State_.
-      7. Generate a hash of the [_Chunk File Delta Entry_](#chunk-file-delta-entry) via the [Hashing Process](#hashing-process) and ensure the hash equals the value of the [_Update Operation Signed Data Object_](#update-signed-data-object) `delta_hash` property. If the values are exactly equal, proceed, if they are not:
+      7. Generate a hash of the decoded [_Chunk File Delta Entry_](#chunk-file-delta-entry) via the [Hashing Process](#hashing-process) and ensure the hash equals the value of the [_Update Operation Signed Data Object_](#update-signed-data-object) `delta_hash` property. If the values are exactly equal, proceed, if they are not:
           1. Internally flag the state of the DID as _Non-Updateable_.
           2. Skip all further processing of the operation and proceed to the next entry.
       8. Retain a reference to the `update_commitment` value of the [_Chunk File Delta Entry_](#chunk-file-delta-entry) for use in processing the next Update operation.
@@ -72,7 +72,7 @@
               1. Internally flag the state of the DID as _Non-Updateable_.
               2. Skip all further processing of the operation and proceed to the next entry.
       6. Validate the [_Chunk File Delta Entry_](#chunk-file-delta-entry). If the [_Chunk File Delta Entry_](#chunk-file-delta-entry) is valid, proceed, if the Entry is invalid, let the state of the DID reflect an _Empty DID State_.
-      7. Generate a hash of the [_Chunk File Delta Entry_](#chunk-file-delta-entry) via the [Hashing Process](#hashing-process) and ensure the hash equals the value of the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object) `delta_hash` property. If the values are exactly equal, proceed, if they are not:
+      7. Generate a hash of the decoded [_Chunk File Delta Entry_](#chunk-file-delta-entry) via the [Hashing Process](#hashing-process) and ensure the hash equals the value of the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object) `delta_hash` property. If the values are exactly equal, proceed, if they are not:
           1. Internally flag the state of the DID as _Non-Updateable_.
           2. Skip all further processing of the operation and proceed to the next entry.
       8. Retain a reference to the `update_commitment` value of the [_Chunk File Delta Entry_](#chunk-file-delta-entry) for use in processing the next Update operation.
