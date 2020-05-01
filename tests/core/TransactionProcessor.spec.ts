@@ -243,7 +243,7 @@ describe('TransactionProcessor', () => {
       const mockAnchorFile: AnchorFile = {
         createOperations: [],
         didUniqueSuffixes: ['abc', 'def'],
-        model: { writerLockId: 'lock', mapFileHash: 'map_hash', operations: {} },
+        model: { writer_lock_id: 'lock', map_file_uri: 'map_hash', operations: {} },
         recoverOperations: [],
         deactivateOperations: []
       };
@@ -316,7 +316,7 @@ describe('TransactionProcessor', () => {
   });
 
   describe('downloadAndVerifyMapFile', () => {
-    it('should validate the map file when the map file does not declare the updateOperations property.', async (done) => {
+    it('should validate the map file when the map file does not declare the `operations` property.', async (done) => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const mapFileHash = OperationGenerator.generateRandomHash();
       const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperationData.createOperation], [], []);
@@ -333,7 +333,7 @@ describe('TransactionProcessor', () => {
 
       expect(fetchedMapFile).toBeDefined();
       expect(fetchedMapFile!.updateOperations.length).toEqual(0);
-      expect(fetchedMapFile!.model.batchFileHash).toEqual(batchFileHash);
+      expect(fetchedMapFile!.model.chunks[0].chunk_file_uri).toEqual(batchFileHash);
       done();
     });
 

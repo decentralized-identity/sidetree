@@ -105,6 +105,45 @@ describe('RecoverOperation', async () => {
     });
   });
 
+  describe('parseOperationFromAnchorFile()', async () => {
+    it('should parse the operation included in an anchor file without the `delta` property.', async (done) => {
+      const didUniqueSuffix = 'anyDidSuffix';
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [recoveryRevealValue] = OperationGenerator.generateCommitRevealPair();
+
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryPrivateKey, recoveryRevealValue });
+      const recoverOperationRequest = JSON.parse(recoverOperationData.operationBuffer.toString());
+
+      // Intentionally remove properties that wouldn't exist in an anchor file.
+      delete recoverOperationRequest.type;
+      delete recoverOperationRequest.delta;
+
+      const recoverOperation = await RecoverOperation.parseOperationFromAnchorFile(recoverOperationRequest);
+
+      expect(recoverOperation).toBeDefined();
+      expect(recoverOperation.delta).toBeUndefined();
+      expect(recoverOperation.didUniqueSuffix).toEqual(didUniqueSuffix);
+
+      done();
+    });
+  });
+
+  describe('parseObject()', async () => {
+    it('should throw if operation contains an additional unknown property.', async (done) => {
+      const recoverOperation = {
+        did_suffix: 'unusedSuffix',
+        recovery_reveal_value: 'unusedReveal',
+        signed_data: 'unusedSignedData',
+        extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
+      };
+
+      const anchorFileMode = true;
+      await expectAsync((RecoverOperation as any).parseObject(recoverOperation, Buffer.from('anyValue'), anchorFileMode))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty));
+      done();
+    });
+  });
+
   describe('parseSignedDataPayload()', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {

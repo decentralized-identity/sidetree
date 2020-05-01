@@ -90,8 +90,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
     }
 
     // Verify required lock if one was needed.
-    const valueTimeLock = anchorFile.model.writerLockId
-                          ? await this.blockchain.getValueTimeLock(anchorFile.model.writerLockId)
+    const valueTimeLock = anchorFile.model.writer_lock_id
+                          ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
                           : undefined;
 
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
@@ -116,9 +116,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
   private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFile | undefined> {
     try {
       const anchorFileModel = anchorFile.model;
-      console.info(`Downloading map file '${anchorFileModel.mapFileHash}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
+      console.info(`Downloading map file '${anchorFileModel.map_file_uri}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileHash, ProtocolParameters.maxMapFileSizeInBytes);
+      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.map_file_uri, ProtocolParameters.maxMapFileSizeInBytes);
       const mapFile = await MapFile.parse(fileBuffer);
 
       // Calulate the max paid update operation count.
@@ -147,7 +147,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching map file ${anchorFile.model.mapFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching map file ${anchorFile.model.map_file_uri}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
@@ -170,8 +170,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return undefined;
     }
 
+    let batchFileHash;
     try {
-      const batchFileHash = mapFile.model.batchFileHash;
+      batchFileHash = mapFile.model.chunks[0].chunk_file_uri;
       console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
 
       const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
@@ -188,7 +189,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching batch file ${mapFile.model.batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching batch file ${batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
@@ -223,12 +224,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
       const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
       for (let i = 0; i < operationCountExcludingDeactivates &&
-                      i < batchFile.patchSet.length; i++) {
+                      i < batchFile.deltas.length; i++) {
         const operation = operations[i];
         const operationJsonString = operation.operationBuffer.toString();
         const operationObject = await JsonAsync.parse(operationJsonString);
         operationObject.type = operation.type;
-        operationObject.delta = batchFile.patchSet[i];
+        operationObject.delta = batchFile.deltas[i];
 
         const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
         patchedOperationBuffers.push(patchedOperationBuffer);

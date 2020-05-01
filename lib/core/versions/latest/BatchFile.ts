@@ -4,9 +4,9 @@ import CreateOperation from './CreateOperation';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
+import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import timeSpan = require('time-span');
-import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
 
 /**
@@ -28,28 +28,30 @@ export default class BatchFile {
     console.info(`Parsed batch file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
-    const allowedProperties = new Set(['patchSet']);
+    const allowedProperties = new Set(['deltas']);
     for (let property in batchFileObject) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.BatchFileUnexpectedProperty, `Unexpected property ${property} in batch file.`);
       }
     }
 
-    // Make sure patchSet is an array.
-    if (!(batchFileObject.patchSet instanceof Array)) {
-      throw new SidetreeError(ErrorCode.BatchFilePatchSetPropertyNotArray, 'Invalid batch file, patchSet property is not an array.');
+    this.validateDeltasProperty(batchFileObject.deltas);
+
+    return batchFileObject;
+  }
+
+  private static validateDeltasProperty (deltas: any) {
+    // Make sure deltas is an array.
+    if (!(deltas instanceof Array)) {
+      throw new SidetreeError(ErrorCode.BatchFileDeltasPropertyNotArray, 'Invalid batch file, deltas property is not an array.');
     }
 
-    // Make sure all operations are strings.
-    batchFileObject.patchSet.forEach((operation: any) => {
-      if (typeof operation !== 'string') {
-        throw new SidetreeError(ErrorCode.BatchFilePatchSetNotArrayOfStrings, 'Invalid batch file, patchSet property is not an array of strings.');
+    // Validate every encoded delta string.
+    for (const encodedDelta of deltas) {
+      if (typeof encodedDelta !== 'string') {
+        throw new SidetreeError(ErrorCode.BatchFileDeltasNotArrayOfStrings, 'Invalid batch file, deltas property is not an array of strings.');
       }
-    });
 
-    const batchFileModel = batchFileObject as BatchFileModel;
-
-    for (const encodedDelta of batchFileModel.patchSet) {
       const deltaBuffer = Buffer.from(encodedDelta);
 
       // Verify size of each delta does not exceed the maximum allowed limit.
@@ -60,21 +62,19 @@ export default class BatchFile {
         );
       }
     }
-
-    return batchFileModel;
   }
 
   /**
    * Creates batch file buffer.
    */
   public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
-    const patchSet = [];
-    patchSet.push(...createOperations.map(operation => operation.encodedDelta!));
-    patchSet.push(...recoverOperations.map(operation => operation.encodedDelta!));
-    patchSet.push(...updateOperations.map(operation => operation.encodedDelta!));
+    const deltas = [];
+    deltas.push(...createOperations.map(operation => operation.encodedDelta!));
+    deltas.push(...recoverOperations.map(operation => operation.encodedDelta!));
+    deltas.push(...updateOperations.map(operation => operation.encodedDelta!));
 
     const batchFileModel = {
-      patchSet
+      deltas
     };
 
     const rawData = Buffer.from(JSON.stringify(batchFileModel));

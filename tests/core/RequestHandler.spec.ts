@@ -138,7 +138,7 @@ describe('RequestHandler', () => {
     const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
-    expect(batchFile.patchSet.length).toEqual(1);
+    expect(batchFile.deltas.length).toEqual(1);
   });
 
   it('should return bad request if delta given in request is larger than protocol limit.', async () => {
@@ -225,8 +225,8 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {
     const recoveryRevealValue = Encoder.encode(Buffer.from('unusedRecoveryRevealValue'));
-    const request = await OperationGenerator.generateDeactivateOperationBuffer(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
-    const response = await requestHandler.handleOperationRequest(request);
+    const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
+    const response = await requestHandler.handleOperationRequest(deactivateOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(200);

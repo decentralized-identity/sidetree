@@ -1,12 +1,22 @@
 /**
- * Defines Anchor File structure.
+ * Defines the external Anchor File structure.
  */
 export default interface AnchorFileModel {
-  writerLockId: string | undefined;
-  mapFileHash: string;
+  writer_lock_id: string | undefined;
+  map_file_uri: string;
   operations: {
-    createOperations?: any[],
-    recoverOperations?: any[],
-    deactivateOperations?: any[]
+    create?: {
+      suffix_data: string;
+    }[],
+    recover?: {
+      did_suffix: string;
+      recovery_reveal_value: string;
+      signed_data: string;
+    }[],
+    deactivate?: {
+      did_suffix: string;
+      recovery_reveal_value: string;
+      signed_data: string;
+    }[]
   };
 }

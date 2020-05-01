@@ -49,8 +49,8 @@ export default class Multihash {
   }
 
   /**
-   * Verifies that the given hash is a multihash computed with the latest supported hash algorithm.
-   * @throws `SidetreeError` if the given hash is not a multihash computed with the latest supported hash algorithm.
+   * Verifies that the given hash is a multihash computed using the latest supported hash algorithm known to this version of code.
+   * @throws `SidetreeError` if the given hash is not a multihash computed using the latest supported hash algorithm.
    */
   public static verifyHashComputedUsingLatestSupportedAlgorithm (hash: Buffer) {
     const latestSupportedHashAlgorithmCode = 18;
@@ -59,6 +59,16 @@ export default class Multihash {
     if (!isLatestSupportedHashFormat) {
       throw new SidetreeError(ErrorCode.MultihashNotLatestSupportedHashAlgorithm);
     }
+  }
+
+  /**
+   * Verifies that the given encoded hash is a multihash computed using the latest supported hash algorithm known to this version of code.
+   * @throws `SidetreeError` if the given hash is not a multihash computed using the latest supported hash algorithm.
+   */
+  public static verifyEncodedHashIsComputedUsingLastestAlgorithm (encodedHash: string) {
+    const hashBuffer = Encoder.decodeAsBuffer(encodedHash);
+
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(hashBuffer);
   }
 
   /**

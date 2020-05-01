@@ -48,14 +48,14 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['mapFileHash', 'operations', 'writerLockId']);
+    const allowedProperties = new Set(['map_file_uri', 'operations', 'writer_lock_id']);
     for (let property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
       }
     }
 
-    if (!anchorFileModel.hasOwnProperty('mapFileHash')) {
+    if (!anchorFileModel.hasOwnProperty('map_file_uri')) {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashMissing);
     }
 
@@ -63,24 +63,25 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
-    if (anchorFileModel.hasOwnProperty('writerLockId') &&
-        typeof anchorFileModel.writerLockId !== 'string') {
+    if (anchorFileModel.hasOwnProperty('writer_lock_id') &&
+        typeof anchorFileModel.writer_lock_id !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileWriterLockIPropertyNotString);
     }
 
     // Map file hash validations.
-    if (typeof anchorFileModel.mapFileHash !== 'string') {
+    const mapFileUri = anchorFileModel.map_file_uri;
+    if (typeof mapFileUri !== 'string') {
       throw new SidetreeError(ErrorCode.AnchorFileMapFileHashNotString);
     }
 
-    const didUniqueSuffixBuffer = Encoder.decodeAsBuffer(anchorFileModel.mapFileHash);
-    if (!Multihash.isComputedUsingHashAlgorithm(didUniqueSuffixBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
-      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${anchorFileModel.mapFileHash}' is unsupported.`);
+    const mapFileUriAsHashBuffer = Encoder.decodeAsBuffer(mapFileUri);
+    if (!Multihash.isComputedUsingHashAlgorithm(mapFileUriAsHashBuffer, ProtocolParameters.hashAlgorithmInMultihashCode)) {
+      throw new SidetreeError(ErrorCode.AnchorFileMapFileHashUnsupported, `Map file hash '${mapFileUri}' is unsupported.`);
     }
 
     // `operations` validations.
 
-    const allowedOperationsProperties = new Set(['createOperations', 'recoverOperations', 'deactivateOperations']);
+    const allowedOperationsProperties = new Set(['create', 'recover', 'deactivate']);
     const operations = anchorFileModel.operations;
     for (let property in operations) {
       if (!allowedOperationsProperties.has(property)) {
@@ -91,45 +92,45 @@ export default class AnchorFile {
     // Will be populated for later validity check.
     const didUniqueSuffixes: string[] = [];
 
-    // Validate `createOperations` if exists.
+    // Validate `create` if exists.
     const createOperations: CreateOperation[] = [];
-    if (operations.createOperations !== undefined) {
-      if (!Array.isArray(operations.createOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileCreateOperationsNotArray);
+    if (operations.create !== undefined) {
+      if (!Array.isArray(operations.create)) {
+        throw new SidetreeError(ErrorCode.AnchorFileCreatePropertyNotArray);
       }
 
-      // Validate every operation.
-      for (const operation of operations.createOperations) {
+      // Validate every create operation.
+      for (const operation of operations.create) {
         const createOperation = await CreateOperation.parseOperationFromAnchorFile(operation);
         createOperations.push(createOperation);
         didUniqueSuffixes.push(createOperation.didUniqueSuffix);
       }
     }
 
-    // Validate `recoverOperations` if exists.
+    // Validate `recover` if exists.
     const recoverOperations: RecoverOperation[] = [];
-    if (operations.recoverOperations !== undefined) {
-      if (!Array.isArray(operations.recoverOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileRecoverOperationsNotArray);
+    if (operations.recover !== undefined) {
+      if (!Array.isArray(operations.recover)) {
+        throw new SidetreeError(ErrorCode.AnchorFileRecoverPropertyNotArray);
       }
 
-      // Validate every operation.
-      for (const operation of operations.recoverOperations) {
+      // Validate every recover operation.
+      for (const operation of operations.recover) {
         const recoverOperation = await RecoverOperation.parseOperationFromAnchorFile(operation);
         recoverOperations.push(recoverOperation);
         didUniqueSuffixes.push(recoverOperation.didUniqueSuffix);
       }
     }
 
-    // Validate `deactivateOperations` if exists.
+    // Validate `deactivate` if exists.
     const deactivateOperations: DeactivateOperation[] = [];
-    if (operations.deactivateOperations !== undefined) {
-      if (!Array.isArray(operations.deactivateOperations)) {
-        throw new SidetreeError(ErrorCode.AnchorFileDeactivateOperationsNotArray);
+    if (operations.deactivate !== undefined) {
+      if (!Array.isArray(operations.deactivate)) {
+        throw new SidetreeError(ErrorCode.AnchorFileDeactivatePropertyNotArray);
       }
 
       // Validate every operation.
-      for (const operation of operations.deactivateOperations) {
+      for (const operation of operations.deactivate) {
         const deactivateOperation = await DeactivateOperation.parseOperationFromAnchorFile(operation);
         deactivateOperations.push(deactivateOperation);
         didUniqueSuffixes.push(deactivateOperation.didUniqueSuffix);
@@ -163,27 +164,27 @@ export default class AnchorFile {
 
     const recoverOperations = recoverOperationArray.map(operation => {
       return {
-        didUniqueSuffix: operation.didUniqueSuffix,
-        recoveryRevealValue: operation,
-        signedData: operation.signedDataJws.toCompactJws()
+        did_suffix: operation.didUniqueSuffix,
+        recovery_reveal_value: operation.recoveryRevealValue,
+        signed_data: operation.signedDataJws.toCompactJws()
       };
     });
 
     const deactivateOperations = deactivateOperationArray.map(operation => {
       return {
-        didUniqueSuffix: operation.didUniqueSuffix,
-        recoveryRevealValue: operation.recoveryRevealValue,
-        signedData: operation.signedDataJws.toCompactJws()
+        did_suffix: operation.didUniqueSuffix,
+        recovery_reveal_value: operation.recoveryRevealValue,
+        signed_data: operation.signedDataJws.toCompactJws()
       };
     });
 
     const anchorFileModel = {
-      writerLockId: writerLockId,
-      mapFileHash,
+      writer_lock_id: writerLockId,
+      map_file_uri: mapFileHash,
       operations: {
-        createOperations,
-        recoverOperations,
-        deactivateOperations
+        create: createOperations,
+        recover: recoverOperations,
+        deactivate: deactivateOperations
       }
     };
 
