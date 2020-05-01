@@ -103,7 +103,7 @@ Use the following process to generate a Sidetree update operation JSON document 
 2. The object MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 3. The object MUST contain a `update_reveal_value` property, and its value MUST be the last update [COMMITMENT_VALUE](#commitment-value).
 4. The object MUST contain an `delta` property, and its value MUST be a `Base64URL` encoded [_Update Operation Delta Object_](#update-data-object).
-5. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+5. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object
 as defined in [Map File](#map-file) for Update operations.
 
 #### Recover
@@ -126,7 +126,7 @@ Use the following process to generate a Sidetree recovery operation JSON documen
 2. The object MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 3. The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [COMMITMENT_VALUE](#commitment-value).
 4. The object MUST contain an `delta` property, and its value MUST be a `Base64URL` encoded [_Recovery Operation Delta Object_](#recover-delta-object).
-5. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+5. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object
 as defined in [Anchor File](#anchor-file) for Recovery operations.
 
 #### Deactivate
@@ -147,5 +147,5 @@ Use the following process to generate a Sidetree deactivate operation JSON docum
 1. The object MUST contain a `type` property, and its value MUST be `deactivate`.
 2. The object MUST contain a `did_suffix` property, and its value MUST be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
 3. The object MUST contain a `recovery_reveal_value` property, and its value MUST be the last recovery [COMMITMENT_VALUE](#commitment-value).
-4. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+4. The object MUST contain a `signed_data` property, and its value MUST be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object
 as defined in [Anchor File](#anchor-file) for Deactivate operations.
