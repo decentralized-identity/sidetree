@@ -13,6 +13,7 @@ import PublicKeyUsage from '../../lib/core/enums/PublicKeyUsage';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -546,14 +547,21 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a Deactivate Operation buffer.
+   * Generates a Deactivate Operation data.
    */
-  public static async generateDeactivateOperationBuffer (
+  public static async createDeactivateOperation (
     didUniqueSuffix: string,
     recoveryRevealValueEncodedSring: string,
-    privateKey: JwkEs256k): Promise<Buffer> {
-    const operation = await OperationGenerator.createDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
-    return Buffer.from(JSON.stringify(operation));
+    privateKey: JwkEs256k) {
+    const operationRequest = await OperationGenerator.createDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
+    const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
+    const deactivateOperation = await DeactivateOperation.parse(operationBuffer);
+
+    return {
+      operationRequest,
+      operationBuffer,
+      deactivateOperation
+    };
   }
 
   /**

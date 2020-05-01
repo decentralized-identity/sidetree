@@ -35,21 +35,23 @@ export default class BatchFile {
       }
     }
 
+    this.validateDeltasProperty(batchFileObject.deltas);
+
+    return batchFileObject;
+  }
+
+  private static validateDeltasProperty (deltas: any) {
     // Make sure deltas is an array.
-    if (!(batchFileObject.deltas instanceof Array)) {
+    if (!(deltas instanceof Array)) {
       throw new SidetreeError(ErrorCode.BatchFileDeltasPropertyNotArray, 'Invalid batch file, deltas property is not an array.');
     }
 
-    // Make sure all operations are strings.
-    batchFileObject.deltas.forEach((operation: any) => {
-      if (typeof operation !== 'string') {
+    // Validate every encoded delta string.
+    for (const encodedDelta of deltas) {
+      if (typeof encodedDelta !== 'string') {
         throw new SidetreeError(ErrorCode.BatchFileDeltasNotArrayOfStrings, 'Invalid batch file, deltas property is not an array of strings.');
       }
-    });
 
-    const batchFileModel = batchFileObject as BatchFileModel;
-
-    for (const encodedDelta of batchFileModel.deltas) {
       const deltaBuffer = Buffer.from(encodedDelta);
 
       // Verify size of each delta does not exceed the maximum allowed limit.
@@ -60,8 +62,6 @@ export default class BatchFile {
         );
       }
     }
-
-    return batchFileModel;
   }
 
   /**

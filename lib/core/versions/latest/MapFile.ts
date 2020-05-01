@@ -51,11 +51,7 @@ export default class MapFile {
     MapFile.validateChunksProperty(mapFileModel.chunks);
 
     const updateOperations = await MapFile.parseOperationsProperty(mapFileModel.operations);
-
     const didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
-    if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
-      throw new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid);
-    }
 
     const mapFile = new MapFile(mapFileModel, didUniqueSuffixes, updateOperations);
     return mapFile;
@@ -83,6 +79,12 @@ export default class MapFile {
     for (const operation of operations.update) {
       const updateOperation = await UpdateOperation.parseOperationFromMapFile(operation);
       updateOperations.push(updateOperation);
+    }
+
+    // Make sure no operation with same DID.
+    const didUniqueSuffixes = updateOperations.map(operation => operation.didUniqueSuffix);
+    if (ArrayMethods.hasDuplicates(didUniqueSuffixes)) {
+      throw new SidetreeError(ErrorCode.MapFileMultipleOperationsForTheSameDid);
     }
 
     return updateOperations;
