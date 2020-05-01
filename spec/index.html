@@ -280,7 +280,7 @@
 <img src="../docs/diagrams/file-topology.svg" style="display: block; margin: 0 auto; padding: 2em 0; width: 100%; max-width: 620px;" />
 <h3 id="anchor-file"><a class="toc-anchor" href="#anchor-file">§</a> Anchor File</h3>
 <p>Anchor Files contain <a href="#create">Create</a>, <a href="#recover">Recover</a>, and <a href="#deactivate">Deactivate</a> operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor Files are anchored to the target ledger system via embedding a CAS URI in the ledger’s transactional history.</p>
-<div id="example-97" class="notice example"><a class="notice-link" href="#example-97">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-19" class="notice example"><a class="notice-link" href="#example-19">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"map_file_uri"</span><span class="token operator">:</span> CAS_URI<span class="token punctuation">,</span>
   <span class="token property">"operations"</span><span class="token operator">:</span> <span class="token punctuation">{</span>
     <span class="token property">"create"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
@@ -342,6 +342,7 @@
 </ul>
 </li>
 <li>The <a href="#anchor-file">Anchor File</a> <strong><strong>MUST NOT</strong></strong> include multiple <a href="#create">Create</a> operations that produce the same <a href="#did-suffix">DID Suffix</a>.</li>
+<li>In order to simplify the language, herein we will refer to the <a href="#did-suffix">DID Suffix</a> produced by a <a href="#create">Create</a> operation directly as its <a href="#did-suffix">DID Suffix</a>.</li>
 </ol>
 </li>
 <li>If there are any <a href="#recover">Recovery</a> operations to be included in the Anchor File:
@@ -373,7 +374,7 @@
 </ol>
 <h3 id="map-file"><a class="toc-anchor" href="#map-file">§</a> Map File</h3>
 <p>The Map file in the Sidetree protocol contains Update operation proving data, as well as the CAS-linked Chunk file chunks.</p>
-<div id="example-98" class="notice example"><a class="notice-link" href="#example-98">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-20" class="notice example"><a class="notice-link" href="#example-20">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"chunks"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> <span class="token property">"chunk_file_uri"</span><span class="token operator">:</span> CHUNK_HASH <span class="token punctuation">}</span><span class="token punctuation">,</span>
     <span class="token punctuation">{</span>...<span class="token punctuation">}</span>
@@ -417,7 +418,7 @@
 <h3 id="chunk-files"><a class="toc-anchor" href="#chunk-files">§</a> Chunk Files</h3>
 <p>Chunk Files are JSON Documents, compressed via the <a href="#compression-algorithm">COMPRESSION_ALGORITHM</a> contain Sidetree Operation source data, which are composed of delta-based CRDT entries that modify the state of a Sidetree identifier’s DID Document.</p>
 <p>For this version of the protocol, there will only exist a single Chunk File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into multiple chunks, each with their own Chunk File.</p>
-<div id="create-operation-chunk-file-entry-15" class="notice example"><a class="notice-link" href="#create-operation-chunk-file-entry-15">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="create-operation-chunk-file-entry-2" class="notice example"><a class="notice-link" href="#create-operation-chunk-file-entry-2">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"deltas"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
        
     <span class="token punctuation">{</span> <span class="token comment">// JSON.stringify()-ed, and Base64URL encoded</span>
@@ -471,7 +472,7 @@
 <h2 id="did-operations"><a class="toc-anchor" href="#did-operations">§</a> DID Operations</h2>
 <p>Sidetree-based DIDs support a variety of DID operations, all of which require the DID owner to generate specific data values and cryptographic material. The sections below describe how to perform each type of operation, and how those operations are represented in the CAS-replicated files that are anchored to the underlying ledger system.</p>
 <p>While virtually all DID owners will engage User Agent applications on their local devices to perform these operations, most will not generate the anchoring transactions on the underlying ledger. Instead, most users will likely send the anchoring-related operation values they generate to external nodes for anchoring. This is relatively safe, because operations require signatures that an external node cannot forge. The only attack available to a rogue node operator is to not anchor the operations a DID owner sends them. However, the DID owner can detect this (via a scan of subsequent blocks) and send their operation to a different node or do it themselves, if they so desire.</p>
-<div id="note-46" class="notice note"><a class="notice-link" href="#note-46">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
+<div id="note-7" class="notice note"><a class="notice-link" href="#note-7">NOTE</a><p>This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.</p>
 </div>
 <h3 id="create"><a class="toc-anchor" href="#create">§</a> Create</h3>
 <p>Use the following process to generate a Sidetree-based DID:</p>
@@ -498,13 +499,13 @@
 <span class="token punctuation">}</span>
 </code></pre>
 <ul>
-<li>The object <strong><strong>MUST</strong></strong> contain a <code>delta_hash</code> property, and its value <strong><strong>MUST</strong></strong> be a hash of the <a href="#create-delta-object"><em>Create Operation Delta Object</em></a> (detailed above), generated via the <a href="#hashing-process">Hashing Process</a>.</li>
+<li>The object <strong><strong>MUST</strong></strong> contain a <code>delta_hash</code> property, and its value <strong><strong>MUST</strong></strong> be a hash of the decoded <a href="#create-delta-object"><em>Create Operation Delta Object</em></a> (detailed above), generated via the <a href="#hashing-process">Hashing Process</a>.</li>
 <li>The object <strong><strong>MUST</strong></strong> contain the <code>recovery_key</code> property, and its value <strong><strong>MUST</strong></strong> be an <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation of the <a href="#initial-recovery-key"><em>Initial Recovery Public Key</em></a> (detailed above).</li>
 <li>The object <strong><strong>MUST</strong></strong> contain an <code>recovery_commitment</code> property, and its value <strong><strong>MUST</strong></strong> be an <a href="#initial-recovery-commitment"><em>Initial Recovery Commitment</em></a> (detailed above).</li>
 </ul>
 </li>
 </ol>
-<div id="note-47" class="notice note"><a class="notice-link" href="#note-47">NOTE</a><p>Implementers MAY choose to canonicalize their <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Objects</em></a> prior applying the <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>. This does not affect the outcome or other components in the system that deal with this object.</p>
+<div id="note-8" class="notice note"><a class="notice-link" href="#note-8">NOTE</a><p>Implementers MAY choose to canonicalize their <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Objects</em></a> prior applying the <a href="#data-encoding-scheme"><code>DATA_ENCODING_SCHEME</code></a>. This does not affect the outcome or other components in the system that deal with this object.</p>
 </div>
 <h3 id="update"><a class="toc-anchor" href="#update">§</a> Update</h3>
 <p>The following process must be used to update the state a Sidetree-based DID:</p>
@@ -529,12 +530,12 @@
 <span class="token punctuation">}</span>
 </code></pre>
 <ul>
-<li>The JWS <code>payload</code> object <strong><strong>MUST</strong></strong> contain a <code>delta_hash</code> property, and its value <strong><strong>MUST</strong></strong> be a hash of the <a href="#update-delta-object"><em>Update Operation Delta Object</em></a>, generated via the <a href="#hashing-process">Hashing Process</a>.</li>
+<li>The JWS <code>payload</code> object <strong><strong>MUST</strong></strong> contain a <code>delta_hash</code> property, and its value <strong><strong>MUST</strong></strong> be a hash of the decoded <a href="#update-delta-object"><em>Update Operation Delta Object</em></a>, generated via the <a href="#hashing-process">Hashing Process</a>.</li>
 </ul>
 </li>
 </ol>
 <h3 id="recover"><a class="toc-anchor" href="#recover">§</a> Recover</h3>
-<p>Use the following process to generate a Sidetree-based DID:</p>
+<p>Use the following process to recover a Sidetree-based DID:</p>
 <ol>
 <li>Retrieve the <em>Recovery Reveal Value</em> that matches the previously anchored <em>Recovery Commitment</em>. This value will be used in constructing an <a href="#anchor-file-recovery-entry"><em>Anchor File Recovery Entry</em></a> for the DID being recovered.</li>
 <li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Recovery operation, herein referred to as the <em>Recovery Reveal Value</em>.</li>
@@ -542,7 +543,7 @@
 <li>Generate and retain a <a href="#commitment-value"><code>COMMITMENT_VALUE</code></a> for use in the next Update operation, herein referred to as the <em>Update Reveal Value</em>.</li>
 <li>Generate an <em>Update Commitment</em> hash using the <a href="#hashing-process">Hashing Process</a> to generate a hash of the <em>Update Reveal Value</em>, and retain the resulting hash value for inclusion in an <a href="#anchor-file">Anchor File</a>.</li>
 <li>Optionally, the recovering entity MAY generate a new key pair, via the <a href="#key-algorithm"><code>KEY_ALGORITHM</code></a>, for inclusion in the <a href="#anchor-file">Anchor File</a> (to support key rolling, etc.). The private key <strong><strong>MUST</strong></strong> be securely stored for use in subsequent <a href="#recover">Recovery</a> operations.</li>
-<li>Generate a <code>Base64URL</code> encoded representation of the following object, herein referred to as the <a href="#recover-delta-object" id="recover-delta-object"><em>Recovery Operation Delta Object</em></a>, composed as follows:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<li>Generate an encoded representation of the following object using the implementation’s [<code>DATA_ENCODING_SCHEME</code>], herein referred to as the <a href="#recover-delta-object" id="recover-delta-object"><em>Recovery Operation Delta Object</em></a>, composed as follows:<pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span> PATCH_<span class="token number">1</span><span class="token punctuation">,</span> PATCH_<span class="token number">2</span><span class="token punctuation">,</span> ... <span class="token punctuation">]</span><span class="token punctuation">,</span>
   <span class="token property">"update_commitment"</span><span class="token operator">:</span> HASH_OF_UPDATE_COMMITMENT_VALUE
 <span class="token punctuation">}</span>
@@ -563,7 +564,7 @@
 <span class="token punctuation">}</span>
 </code></pre>
 <ul>
-<li>The JWS <code>payload</code> object <strong><strong>MUST</strong></strong> contain a <code>delta_hash</code> property, and its value <strong><strong>MUST</strong></strong> be a hash of the <a href="#recover-delta-object"><em>Recovery Operation Delta Object</em></a>, generated via the <a href="#hashing-process">Hashing Process</a>.</li>
+<li>The JWS <code>payload</code> object <strong><strong>MUST</strong></strong> contain a <code>delta_hash</code> property, and its value <strong><strong>MUST</strong></strong> be a hash of the decoded <a href="#recover-delta-object"><em>Recovery Operation Delta Object</em></a>, generated via the <a href="#hashing-process">Hashing Process</a>.</li>
 <li>The JWS <code>payload</code> object <strong><strong>MUST</strong></strong> contain a <code>recovery_commitment</code> property, and its value <strong><strong>MUST</strong></strong> be the next <a href="#recovery-commitment"><em>Recovery Commitment</em></a>, as described above.</li>
 <li>The JWS <code>payload</code> object MAY include a <code>recovery_key</code> property, and if included, its value <strong><strong>MUST</strong></strong> be an <a href="https://tools.ietf.org/html/rfc7517">IETF RFC 7517</a> compliant JWK representation of a public key, as described above.</li>
 </ul>
@@ -615,7 +616,7 @@
 <h3 id="standard-patch-actions"><a class="toc-anchor" href="#standard-patch-actions">§</a> Standard Patch Actions</h3>
 <p>The following set of standard <em>Patch Actions</em> are specified to help align on a common set of <em>Patch Actions</em> that provide a predictable usage patter across Sidetree-based DID Method implementations.</p>
 <h4 id="add-public-keys"><a class="toc-anchor" href="#add-public-keys">§</a> <code>add-public-keys</code></h4>
-<div id="example-99" class="notice example"><a class="notice-link" href="#example-99">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-21" class="notice example"><a class="notice-link" href="#example-21">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"public_keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -670,7 +671,7 @@
 </li>
 </ol>
 <h4 id="remove-public-keys"><a class="toc-anchor" href="#remove-public-keys">§</a> <code>remove-public-keys</code></h4>
-<div id="example-100" class="notice example"><a class="notice-link" href="#example-100">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-22" class="notice example"><a class="notice-link" href="#example-22">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-public-keys"</span><span class="token punctuation">,</span>
   <span class="token property">"public_keys"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"key1"</span><span class="token punctuation">,</span> <span class="token string">"key2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -682,7 +683,7 @@
 <li>The object <strong><strong>MUST</strong></strong> include a <code>public_keys</code> property, and its value <strong><strong>MUST</strong></strong> be an array of key IDs that correspond with keys presently associated with the DID that are to be removed. If the value is not of the correct type or includes a string value that is not associated with a key in the document, the entire <em>Patch Action</em> <strong><strong>MUST</strong></strong> be discarded, without any of it being used to modify the DID’s state.</li>
 </ol>
 <h4 id="add-service-endpoints"><a class="toc-anchor" href="#add-service-endpoints">§</a> <code>add-service-endpoints</code></h4>
-<div id="example-101" class="notice example"><a class="notice-link" href="#example-101">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-23" class="notice example"><a class="notice-link" href="#example-23">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"add-service-endpoints"</span><span class="token punctuation">,</span>
   <span class="token property">"service_endpoints"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -712,7 +713,7 @@
 </li>
 </ol>
 <h4 id="remove-service-endpoints"><a class="toc-anchor" href="#remove-service-endpoints">§</a> <code>remove-service-endpoints</code></h4>
-<div id="example-102" class="notice example"><a class="notice-link" href="#example-102">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="example-24" class="notice example"><a class="notice-link" href="#example-24">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"remove-service-endpoints"</span><span class="token punctuation">,</span>
   <span class="token property">"ids"</span><span class="token operator">:</span> <span class="token punctuation">[</span><span class="token string">"sds1"</span><span class="token punctuation">,</span> <span class="token string">"sds2"</span><span class="token punctuation">]</span>
 <span class="token punctuation">}</span>
@@ -729,7 +730,7 @@
 <li>The object <strong><strong>MUST</strong></strong> include an <code>action</code> property, and its value <strong><strong>MUST</strong></strong> be <code>ietf-json-patch</code>.</li>
 <li>The object <strong><strong>MUST</strong></strong> include a <code>patches</code> property, and its value <strong><strong>MUST</strong></strong> be an array of <a href="https://tools.ietf.org/html/rfc6902">IETF JSON Patch</a> operation objects.</li>
 </ol>
-<div id="1-15" class="notice example"><a class="notice-link" href="#1-15">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="1-2" class="notice example"><a class="notice-link" href="#1-2">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"ietf-json-patch"</span><span class="token punctuation">,</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span> <span class="token property">"op"</span><span class="token operator">:</span> <span class="token string">"add"</span><span class="token punctuation">,</span> ... <span class="token punctuation">}</span><span class="token punctuation">,</span>
@@ -741,7 +742,7 @@
 <span class="token punctuation">}</span>
 </code></pre>
 </div>
-<div id="2-15" class="notice example"><a class="notice-link" href="#2-15">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
+<div id="2-2" class="notice example"><a class="notice-link" href="#2-2">EXAMPLE</a><pre class="language-json"><code class="language-json"><span class="token punctuation">{</span>
   <span class="token property">"action"</span><span class="token operator">:</span> <span class="token string">"ietf-json-patch"</span><span class="token punctuation">,</span>
   <span class="token property">"patches"</span><span class="token operator">:</span> <span class="token punctuation">[</span>
     <span class="token punctuation">{</span>
@@ -759,9 +760,9 @@
 <span class="token punctuation">}</span>
 </code></pre>
 </div>
-<div id="warning-31" class="notice warning"><a class="notice-link" href="#warning-31">WARNING</a><p>Use of <code>ietf-json-patch</code> may result in unrecoverable states, similar to “Deactivated”.</p>
+<div id="warning-5" class="notice warning"><a class="notice-link" href="#warning-5">WARNING</a><p>Use of <code>ietf-json-patch</code> may result in unrecoverable states, similar to “Deactivated”.</p>
 </div>
-<div id="warning-32" class="notice warning"><a class="notice-link" href="#warning-32">WARNING</a><p>Use of <code>ietf-json-patch</code> may harm an implmentation’s ability to perform validation on operations at ingestion time, which could impact performance negatively.</p>
+<div id="warning-6" class="notice warning"><a class="notice-link" href="#warning-6">WARNING</a><p>Use of <code>ietf-json-patch</code> may harm an implmentation’s ability to perform validation on operations at ingestion time, which could impact performance negatively.</p>
 </div>
 <h2 id="transaction-operation-processing"><a class="toc-anchor" href="#transaction-operation-processing">§</a> Transaction &amp; Operation Processing</h2>
 <h3 id="transaction-anchoring"><a class="toc-anchor" href="#transaction-anchoring">§</a> Transaction Anchoring</h3>
@@ -837,7 +838,7 @@
 </ol>
 </li>
 </ol>
-<div id="todo-31" class="notice todo"><a class="notice-link" href="#todo-31">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
+<div id="todo-5" class="notice todo"><a class="notice-link" href="#todo-5">TODO</a><p>Confirm how we handle ops where there was not a previous op found.</p>
 </div>
 <h3 id="map-file-processing"><a class="toc-anchor" href="#map-file-processing">§</a> Map File Processing</h3>
 <p>The follow sequence of rules and processing steps must be followed to correctly process a Map File:</p>
@@ -869,9 +870,9 @@
 </ol>
 </li>
 </ol>
-<div id="note-48" class="notice note"><a class="notice-link" href="#note-48">NOTE</a><p>The assembly and processing of Chunk Files will change in a future update to the protocol, to accommodate the introduction of multiple chunk files. The current protocol version is designed around one Chunk File, but the scaffolding is present to move to multiple Chunk Files as development progresses.</p>
+<div id="note-9" class="notice note"><a class="notice-link" href="#note-9">NOTE</a><p>The assembly and processing of Chunk Files will change in a future update to the protocol, to accommodate the introduction of multiple chunk files. The current protocol version is designed around one Chunk File, but the scaffolding is present to move to multiple Chunk Files as development progresses.</p>
 </div>
-<div id="todo-32" class="notice todo"><a class="notice-link" href="#todo-32">TODO</a><p>Add the ordering rules for ensuring the order matches the order expected from the Anchor/Map files</p>
+<div id="todo-6" class="notice todo"><a class="notice-link" href="#todo-6">TODO</a><p>Add the ordering rules for ensuring the order matches the order expected from the Anchor/Map files</p>
 </div>
 <h2 id="proof-of-fee"><a class="toc-anchor" href="#proof-of-fee">§</a> Proof of Fee</h2>
 <p>Sidetree implementations MAY choose to impose a per-op fee that is used to gate the transaction on the target chain is required to include a deterministic, protocol-specified fee, based on the number of DID operations they seek to include via the on-chain transaction. The deterministic protocol rules for the default configuration are still under discussion, but the following are roughly represent the direction under discussion:</p>
@@ -929,7 +930,7 @@
 </ol>
 </li>
 <li>Validate the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a>. If the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> is valid, proceed, if the Entry is invalid, let the state of the DID reflect an <em>Empty DID State</em>.</li>
-<li>Generate a hash of the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> via the <a href="#hashing-process">Hashing Process</a> and ensure the hash equals the value of the <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a> <code>delta_hash</code> property. If the values are exactly equal, proceed, if they are not:
+<li>Generate a hash of the decoded <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> via the <a href="#hashing-process">Hashing Process</a> and ensure the hash equals the value of the <a href="#create-suffix-data-object"><em>Create Operation Suffix Data Object</em></a> <code>delta_hash</code> property. If the values are exactly equal, proceed, if they are not:
 <ol>
 <li>Internally flag the state of the DID as <em>Non-Updateable</em>.</li>
 <li>Skip all further Create operation processing steps and proceed to <a href="#post-create-operation-processing">post-Create operation processing</a>.</li>
@@ -974,7 +975,7 @@
 </ol>
 </li>
 <li>Validate the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a>. If the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> is valid, proceed, if the Entry is invalid, let the state of the DID reflect an <em>Empty DID State</em>.</li>
-<li>Generate a hash of the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> via the <a href="#hashing-process">Hashing Process</a> and ensure the hash equals the value of the <a href="#update-signed-data-object"><em>Update Operation Signed Data Object</em></a> <code>delta_hash</code> property. If the values are exactly equal, proceed, if they are not:
+<li>Generate a hash of the decoded <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> via the <a href="#hashing-process">Hashing Process</a> and ensure the hash equals the value of the <a href="#update-signed-data-object"><em>Update Operation Signed Data Object</em></a> <code>delta_hash</code> property. If the values are exactly equal, proceed, if they are not:
 <ol>
 <li>Internally flag the state of the DID as <em>Non-Updateable</em>.</li>
 <li>Skip all further processing of the operation and proceed to the next entry.</li>
@@ -1014,7 +1015,7 @@
 </ol>
 </li>
 <li>Validate the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a>. If the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> is valid, proceed, if the Entry is invalid, let the state of the DID reflect an <em>Empty DID State</em>.</li>
-<li>Generate a hash of the <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> via the <a href="#hashing-process">Hashing Process</a> and ensure the hash equals the value of the <a href="#recovery-signed-data-object"><em>Recovery Operation Signed Data Object</em></a> <code>delta_hash</code> property. If the values are exactly equal, proceed, if they are not:
+<li>Generate a hash of the decoded <a href="#chunk-file-delta-entry"><em>Chunk File Delta Entry</em></a> via the <a href="#hashing-process">Hashing Process</a> and ensure the hash equals the value of the <a href="#recovery-signed-data-object"><em>Recovery Operation Signed Data Object</em></a> <code>delta_hash</code> property. If the values are exactly equal, proceed, if they are not:
 <ol>
 <li>Internally flag the state of the DID as <em>Non-Updateable</em>.</li>
 <li>Skip all further processing of the operation and proceed to the next entry.</li>
