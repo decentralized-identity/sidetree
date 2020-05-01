@@ -161,7 +161,7 @@ describe('Observer', async () => {
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
-    // Generating batch file data.
+    // Generating chunk file data.
     const mockbChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
     const mockChunkFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,

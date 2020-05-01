@@ -108,7 +108,7 @@ export default class Observer {
         let qualifiedTransactions = await this.throughputLimiter.getQualifiedTransactions(transactions);
         qualifiedTransactions = qualifiedTransactions.sort((a, b) => { return a.transactionNumber - b.transactionNumber; });
 
-        // Queue parallel downloading and processing of batch files.
+        // Queue parallel downloading and processing of chunk files.
         for (const transaction of qualifiedTransactions) {
           const awaitingTransaction = {
             transaction: transaction,

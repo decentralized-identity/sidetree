@@ -131,14 +131,14 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
-    // Verfiy that CAS was invoked to store the batch file.
+    // Verfiy that CAS was invoked to store the chunk file.
     const maxChunkFileSize = 20000000;
     const expectedBatchBuffer = await ChunkFile.createBuffer([createOperationData.createOperation], [], []);
     const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
     const fetchResult = await cas.read(expectedChunkFileHash, maxChunkFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
-    const batchFile = JSON.parse(decompressedData.toString());
-    expect(batchFile.deltas.length).toEqual(1);
+    const chunkFile = JSON.parse(decompressedData.toString());
+    expect(chunkFile.deltas.length).toEqual(1);
   });
 
   it('should return bad request if delta given in request is larger than protocol limit.', async () => {

@@ -15,41 +15,41 @@ import UpdateOperation from './UpdateOperation';
  */
 export default class ChunkFile {
   /**
-   * Parses and validates the given batch file buffer and all the operations within it.
+   * Parses and validates the given chunk file buffer and all the operations within it.
    * @throws SidetreeError if failed parsing or validation.
    */
   public static async parse (
-    batchFileBuffer: Buffer
+    ChunkFileBuffer: Buffer
   ): Promise<ChunkFileModel> {
 
     let endTimer = timeSpan();
-    const decompressedChunkFileBuffer = await Compressor.decompress(batchFileBuffer);
-    const batchFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
-    console.info(`Parsed batch file in ${endTimer.rounded()} ms.`);
+    const decompressedChunkFileBuffer = await Compressor.decompress(ChunkFileBuffer);
+    const ChunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
+    console.info(`Parsed chunk file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['deltas']);
-    for (let property in batchFileObject) {
+    for (let property in ChunkFileObject) {
       if (!allowedProperties.has(property)) {
-        throw new SidetreeError(ErrorCode.ChunkFileUnexpectedProperty, `Unexpected property ${property} in batch file.`);
+        throw new SidetreeError(ErrorCode.ChunkFileUnexpectedProperty, `Unexpected property ${property} in chunk file.`);
       }
     }
 
-    this.validateDeltasProperty(batchFileObject.deltas);
+    this.validateDeltasProperty(ChunkFileObject.deltas);
 
-    return batchFileObject;
+    return ChunkFileObject;
   }
 
   private static validateDeltasProperty (deltas: any) {
     // Make sure deltas is an array.
     if (!(deltas instanceof Array)) {
-      throw new SidetreeError(ErrorCode.ChunkFileDeltasPropertyNotArray, 'Invalid batch file, deltas property is not an array.');
+      throw new SidetreeError(ErrorCode.ChunkFileDeltasPropertyNotArray, 'Invalid chunk file, deltas property is not an array.');
     }
 
     // Validate every encoded delta string.
     for (const encodedDelta of deltas) {
       if (typeof encodedDelta !== 'string') {
-        throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfStrings, 'Invalid batch file, deltas property is not an array of strings.');
+        throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfStrings, 'Invalid chunk file, deltas property is not an array of strings.');
       }
 
       const deltaBuffer = Buffer.from(encodedDelta);
@@ -65,7 +65,7 @@ export default class ChunkFile {
   }
 
   /**
-   * Creates batch file buffer.
+   * Creates chunk file buffer.
    */
   public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
     const deltas = [];
@@ -73,11 +73,11 @@ export default class ChunkFile {
     deltas.push(...recoverOperations.map(operation => operation.encodedDelta!));
     deltas.push(...updateOperations.map(operation => operation.encodedDelta!));
 
-    const batchFileModel = {
+    const ChunkFileModel = {
       deltas
     };
 
-    const rawData = Buffer.from(JSON.stringify(batchFileModel));
+    const rawData = Buffer.from(JSON.stringify(ChunkFileModel));
     const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
     return compressedRawData;
