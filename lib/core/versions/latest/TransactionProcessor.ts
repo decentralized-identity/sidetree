@@ -2,8 +2,8 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFile from './AnchorFile';
 import ArrayMethods from './util/ArrayMethods';
-import BatchFile from './BatchFile';
-import BatchFileModel from './models/BatchFileModel';
+import ChunkFile from './ChunkFile';
+import ChunkFileModel from './models/ChunkFileModel';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
@@ -39,7 +39,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
       // Download and verify batch file.
-      const batchFileModel = await this.downloadAndVerifyBatchFile(mapFile);
+      const batchFileModel = await this.downloadAndVerifyChunkFile(mapFile);
 
       // Compose into operations from all the files downloaded.
       const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, batchFileModel);
@@ -159,12 +159,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
    * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
    * It is a design choice to hide the complexity of batch file downloading and construction within this method,
    * instead of throwing errors and letting the caller handle them.
-   * @returns `BatchFileModel` if downloaded file is valid; `undefined` otherwise.
+   * @returns `ChunkFileModel` if downloaded file is valid; `undefined` otherwise.
    * @throws SidetreeErrors that are retryable.
    */
-  private async downloadAndVerifyBatchFile (
+  private async downloadAndVerifyChunkFile (
     mapFile: MapFile | undefined
-  ): Promise<BatchFileModel | undefined> {
+  ): Promise<ChunkFileModel | undefined> {
     // Can't download batch file if map file is not given.
     if (mapFile === undefined) {
       return undefined;
@@ -173,10 +173,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
     let batchFileHash;
     try {
       batchFileHash = mapFile.model.chunks[0].chunk_file_uri;
-      console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
+      console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
-      const batchFileModel = await BatchFile.parse(fileBuffer);
+      const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
+      const batchFileModel = await ChunkFile.parse(fileBuffer);
 
       return batchFileModel;
     } catch (error) {
@@ -199,7 +199,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     transaction: TransactionModel,
     anchorFile: AnchorFile,
     mapFile: MapFile | undefined,
-    batchFile: BatchFileModel | undefined
+    batchFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
     let createOperations = anchorFile.createOperations;

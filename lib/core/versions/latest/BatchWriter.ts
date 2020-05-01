@@ -1,7 +1,7 @@
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
-import BatchFile from './BatchFile';
+import ChunkFile from './ChunkFile';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import FeeManager from './FeeManager';
@@ -51,7 +51,7 @@ export default class BatchWriter implements IBatchWriter {
 
     // Create the batch file buffer from the operation models.
     // NOTE: deactivate operations don't have delta.
-    const batchFileBuffer = await BatchFile.createBuffer(createOperations, recoverOperations, updateOperations);
+    const batchFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
     // Write the batch file to content addressable store.
     const batchFileHash = await this.cas.write(batchFileBuffer);

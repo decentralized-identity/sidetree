@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
+import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
@@ -132,10 +132,10 @@ describe('RequestHandler', () => {
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
     // Verfiy that CAS was invoked to store the batch file.
-    const maxBatchFileSize = 20000000;
-    const expectedBatchBuffer = await BatchFile.createBuffer([createOperationData.createOperation], [], []);
-    const expectedBatchFileHash = MockCas.getAddress(expectedBatchBuffer);
-    const fetchResult = await cas.read(expectedBatchFileHash, maxBatchFileSize);
+    const maxChunkFileSize = 20000000;
+    const expectedBatchBuffer = await ChunkFile.createBuffer([createOperationData.createOperation], [], []);
+    const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
+    const fetchResult = await cas.read(expectedChunkFileHash, maxChunkFileSize);
     const decompressedData = await Compressor.decompress(fetchResult.content!);
     const batchFile = JSON.parse(decompressedData.toString());
     expect(batchFile.deltas.length).toEqual(1);
