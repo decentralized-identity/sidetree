@@ -1,9 +1,5 @@
 ﻿# Sidetree Protocol Specification
 
-## Overview
-
-Using blockchains for anchoring and tracking unique, non-transferable, digital entities is a useful primitive, but the current strategies for doing so suffer from severely limited transactional performance constraints. Sidetree is a layer-2 protocol for anchoring and tracking _[DID Documents](https://w3c-ccg.github.io/did-spec/)_ across a blockchain. The central design idea involves batching multiple document operations into a single blockchain transaction. This allows Sidetree to inherit the immutability and verifiability guarantees of blockchain without being limited by its transaction rate.
-
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
 ## Format and Encoding
