@@ -59,7 +59,7 @@ The following process must be used to update the state a Sidetree-based DID:
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
     - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be a new _Update Commitment_, the value of which will be revealed for the next Update operation.
-3. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Update Operation Signed Data Object_](#update-signed-data-object){ id="update-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against a currently active operation key, and contains the following payload values:
+3. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Update Operation Signed Data Object_](#update-signed-data-object){ id="update-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against a currently active operation key, and contains the following payload values:
     ```json
     {
       "protected": {...},
@@ -90,7 +90,7 @@ Use the following process to recover a Sidetree-based DID:
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
     - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be the _Update Commitment_, as described above.
-8. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object){ id="recovery-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against the currently active recovery key, and contains the following `payload` values:
+8. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object){ id="recovery-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against the currently active recovery key, and contains the following `payload` values:
     ```json
     {
       "protected": {...},
@@ -111,7 +111,7 @@ Use the following process to recover a Sidetree-based DID:
 The following process must be used to deactivate a Sidetree-based DID:
 
 1. Retrieve the _Recovery Reveal Value_ that matches the previously anchored _Recovery Commitment_.
-2. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object){ id="deactivate-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
+2. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object){ id="deactivate-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against the currently active recovery key, and contains the following payload values:
     ```json
     { // Base64URL encoded, compact JWS
       "protected": {...},
