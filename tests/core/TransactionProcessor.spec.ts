@@ -323,8 +323,8 @@ describe('TransactionProcessor', () => {
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
-      const ChunkFileHash = OperationGenerator.generateRandomHash();
-      const mockMapFileBuffer = await MapFile.createBuffer(ChunkFileHash, []);
+      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(chunkFileHash, []);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
@@ -333,7 +333,7 @@ describe('TransactionProcessor', () => {
 
       expect(fetchedMapFile).toBeDefined();
       expect(fetchedMapFile!.updateOperations.length).toEqual(0);
-      expect(fetchedMapFile!.model.chunks[0].chunk_file_uri).toEqual(ChunkFileHash);
+      expect(fetchedMapFile!.model.chunks[0].chunk_file_uri).toEqual(chunkFileHash);
       done();
     });
 
@@ -345,8 +345,8 @@ describe('TransactionProcessor', () => {
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
-      const ChunkFileHash = OperationGenerator.generateRandomHash();
-      const mockMapFileBuffer = await MapFile.createBuffer(ChunkFileHash, [updateOperationRequestData.updateOperation]);
+      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(chunkFileHash, [updateOperationRequestData.updateOperation]);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
@@ -365,8 +365,8 @@ describe('TransactionProcessor', () => {
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest(createOperationData.createOperation.didUniqueSuffix);
-      const ChunkFileHash = OperationGenerator.generateRandomHash();
-      const mockMapFileBuffer = await MapFile.createBuffer(ChunkFileHash, [updateOperationRequestData.updateOperation]);
+      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(chunkFileHash, [updateOperationRequestData.updateOperation]);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
 
       const totalPaidOperationCount = 10;
@@ -508,16 +508,16 @@ describe('TransactionProcessor', () => {
       // Create map file model with 1 update operation.
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
       const updateOperation = updateOperationRequestData.updateOperation;
-      const ChunkFileHash = OperationGenerator.generateRandomHash();
-      const mapFileBuffer = await MapFile.createBuffer(ChunkFileHash, [updateOperation]);
+      const chunkFileHash = OperationGenerator.generateRandomHash();
+      const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, [updateOperation]);
       const mapFileModel = await MapFile.parse(mapFileBuffer);
 
       // Create chunk file model with delta for the 2 operations created above.
-      const ChunkFileBuffer = await ChunkFile.createBuffer([createOperation], [], [updateOperation]);
-      const ChunkFileModel = await ChunkFile.parse(ChunkFileBuffer);
+      const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [], [updateOperation]);
+      const chunkFileModel = await ChunkFile.parse(chunkFileBuffer);
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
-      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, ChunkFileModel);
+      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, chunkFileModel);
 
       expect(anchoredOperationModels.length).toEqual(2);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);

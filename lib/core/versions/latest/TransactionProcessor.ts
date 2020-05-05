@@ -39,10 +39,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
       // Download and verify chunk file.
-      const ChunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
+      const chunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
 
       // Compose into operations from all the files downloaded.
-      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, ChunkFileModel);
+      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, chunkFileModel);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
@@ -170,15 +170,15 @@ export default class TransactionProcessor implements ITransactionProcessor {
       return undefined;
     }
 
-    let ChunkFileHash;
+    let chunkFileHash;
     try {
-      ChunkFileHash = mapFile.model.chunks[0].chunk_file_uri;
-      console.info(`Downloading chunk file '${ChunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
+      chunkFileHash = mapFile.model.chunks[0].chunk_file_uri;
+      console.info(`Downloading chunk file '${chunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(ChunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
-      const ChunkFileModel = await ChunkFile.parse(fileBuffer);
+      const fileBuffer = await this.downloadFileFromCas(chunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
+      const chunkFileModel = await ChunkFile.parse(fileBuffer);
 
-      return ChunkFileModel;
+      return chunkFileModel;
     } catch (error) {
       if (error instanceof SidetreeError) {
         // If error is related to CAS network issues, we will surface them so retry can happen.
@@ -189,7 +189,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching chunk file ${ChunkFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching chunk file ${chunkFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
@@ -199,7 +199,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     transaction: TransactionModel,
     anchorFile: AnchorFile,
     mapFile: MapFile | undefined,
-    ChunkFile: ChunkFileModel | undefined
+    chunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
     let createOperations = anchorFile.createOperations;
@@ -217,19 +217,19 @@ export default class TransactionProcessor implements ITransactionProcessor {
     // If chunk file is found/given, we need to add `type` and `delta` from chunk file to each operation.
     // NOTE: there is no delta for deactivate operations.
     const patchedOperationBuffers: Buffer[] = [];
-    if (ChunkFile !== undefined) {
+    if (chunkFile !== undefined) {
 
       // TODO: https://github.com/decentralized-identity/sidetree/issues/442
       // Use actual operation request object instead of buffer.
 
       const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
       for (let i = 0; i < operationCountExcludingDeactivates &&
-                      i < ChunkFile.deltas.length; i++) {
+                      i < chunkFile.deltas.length; i++) {
         const operation = operations[i];
         const operationJsonString = operation.operationBuffer.toString();
         const operationObject = await JsonAsync.parse(operationJsonString);
         operationObject.type = operation.type;
-        operationObject.delta = ChunkFile.deltas[i];
+        operationObject.delta = chunkFile.deltas[i];
 
         const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
         patchedOperationBuffers.push(patchedOperationBuffer);

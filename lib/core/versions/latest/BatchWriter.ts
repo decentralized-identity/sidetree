@@ -51,14 +51,14 @@ export default class BatchWriter implements IBatchWriter {
 
     // Create the chunk file buffer from the operation models.
     // NOTE: deactivate operations don't have delta.
-    const ChunkFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
+    const chunkFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
     // Write the chunk file to content addressable store.
-    const ChunkFileHash = await this.cas.write(ChunkFileBuffer);
-    console.info(`Wrote chunk file ${ChunkFileHash} to content addressable store.`);
+    const chunkFileHash = await this.cas.write(chunkFileBuffer);
+    console.info(`Wrote chunk file ${chunkFileHash} to content addressable store.`);
 
     // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(ChunkFileHash, updateOperations);
+    const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, updateOperations);
     const mapFileHash = await this.cas.write(mapFileBuffer);
     console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 
