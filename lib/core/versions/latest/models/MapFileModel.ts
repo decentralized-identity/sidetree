@@ -1,7 +1,16 @@
 /**
- * Defines Map File structure.
+ * Defines the external Map File structure.
  */
 export default interface MapFileModel {
-  batchFileHash: string;
-  updateOperations?: any[];
+  chunks: {
+    chunk_file_uri: string
+  }[];
+
+  operations?: {
+    update: {
+      did_suffix: string,
+      update_reveal_value: string,
+      signed_data: string
+    }[]
+  };
 }

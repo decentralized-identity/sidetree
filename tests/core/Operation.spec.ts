@@ -5,6 +5,19 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('Operation', async () => {
+  describe('parse()', async () => {
+    it('should throw if operation of unknown type is given.', async (done) => {
+      const operationOfUnknownType = {
+        type: 'unknown',
+        anyProperty: 'anyContent'
+      };
+      const operationBuffer = Buffer.from(JSON.stringify(operationOfUnknownType));
+
+      await expectAsync(Operation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.OperationTypeUnknownOrMissing));
+      done();
+    });
+  });
+
   describe('parseDelta()', async () => {
     it('should throw if delta is not string', async () => {
       await expectAsync(Operation.parseDelta(123)).toBeRejectedWith(new SidetreeError(ErrorCode.DeltaMissingOrNotString));

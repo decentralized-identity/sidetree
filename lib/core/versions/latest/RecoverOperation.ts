@@ -12,9 +12,9 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  deltaHash: string;
-  recoveryKey: JwkEs256k;
-  nextRecoveryCommitmentHash: string;
+  delta_hash: string;
+  recovery_key: JwkEs256k;
+  recovery_commitment: string;
 }
 
 /**
@@ -105,22 +105,22 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.didUniqueSuffix !== 'string') {
+    if (typeof operationObject.did_suffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    if (typeof operationObject.recoveryRevealValue !== 'string') {
+    if (typeof operationObject.recovery_reveal_value !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+    if ((operationObject.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
       throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong);
     }
 
-    const recoveryRevealValue = operationObject.recoveryRevealValue;
+    const recoveryRevealValue = operationObject.recovery_reveal_value;
 
     const expectKidInHeader = false;
-    const signedDataJws = Jws.parseCompactJws(operationObject.signedData, expectKidInHeader);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
@@ -143,7 +143,7 @@ export default class RecoverOperation implements OperationModel {
 
     return new RecoverOperation(
       operationBuffer,
-      operationObject.didUniqueSuffix,
+      operationObject.did_suffix,
       recoveryRevealValue,
       signedDataJws,
       signedData,
@@ -161,12 +161,12 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.recoveryKey);
+    Jwk.validateJwkEs256k(signedData.recovery_key);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
+    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.nextRecoveryCommitmentHash);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recovery_commitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return signedData;

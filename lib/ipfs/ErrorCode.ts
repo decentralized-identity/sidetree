@@ -1,4 +1,0 @@
-export default {
-  IpfsStorageInstanceCanOnlyBeCreatedOnce: 'ipfs_storage_instance_can_only_be_created_once',
-  IpfsStorageInstanceGetHasToBeCalledAfterCreate: 'ipfs_storage_instance_get_has_to_be_called_after_create'
-};

@@ -12,7 +12,7 @@ describe('RequestHandler', async () => {
   beforeAll(async (done) => {
     maxFileSize = 20000000; // 20MB
     fetchTimeoutInSeconds = 1;
-    requestHandler = await RequestHandler.create(fetchTimeoutInSeconds);
+    requestHandler = RequestHandler.create(fetchTimeoutInSeconds);
     done();
   });
 

@@ -1,3 +1,4 @@
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -18,7 +19,7 @@ describe('UpdateOperation', async () => {
         signingPrivateKey
       );
 
-      (updateOperationRequest.didUniqueSuffix as any) = 123;
+      (updateOperationRequest.did_suffix as any) = 123;
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix));
@@ -54,7 +55,7 @@ describe('UpdateOperation', async () => {
         signingPrivateKey
       );
 
-      (updateOperationRequest.updateRevealValue as any) = 123; // Intentionally incorrect type.
+      (updateOperationRequest.update_reveal_value as any) = 123; // Intentionally incorrect type.
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer))
@@ -75,6 +76,35 @@ describe('UpdateOperation', async () => {
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong));
+    });
+  });
+
+  describe('parseObject()', async () => {
+    it('should throw if operation contains an additional unknown property.', async (done) => {
+      const updateOperation = {
+        did_suffix: 'unusedSuffix',
+        update_reveal_value: 'unusedReveal',
+        signed_data: 'unusedSignedData',
+        extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
+      };
+
+      const mapFileMode = true;
+      await expectAsync((UpdateOperation as any).parseObject(updateOperation, Buffer.from('anyValue'), mapFileMode))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty));
+      done();
+    });
+  });
+
+  describe('parseSignedDataPayload()', async () => {
+    it('should throw if signedData contains an additional unknown property.', async (done) => {
+      const signedData = {
+        delta_hash: 'anyUnusedHash',
+        extraProperty: 'An unknown extra property'
+      };
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty));
+      done();
     });
   });
 });

@@ -13,6 +13,7 @@ import PublicKeyUsage from '../../lib/core/enums/PublicKeyUsage';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -88,7 +89,7 @@ export default class OperationGenerator {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
-      type: 'Secp256k1VerificationKey2019',
+      type: 'EcdsaSecp256k1VerificationKey2019',
       jwk: publicKey,
       usage: usage || Object.values(PublicKeyUsage)
     };
@@ -325,17 +326,20 @@ export default class OperationGenerator {
       update_commitment: nextUpdateCommitmentHash
     };
     const deltaJsonString = JSON.stringify(delta);
+    const deltaHash = Encoder.encode(Multihash.hash(Buffer.from(deltaJsonString)));
     const encodedDeltaString = Encoder.encode(deltaJsonString);
 
-    const deltaHash = Multihash.hash(Buffer.from(deltaJsonString));
-    const signedData = await OperationGenerator.signUsingEs256k(deltaHash, signingPrivateKey, signingKeyId);
+    const signedDataPayloadObject = {
+      delta_hash: deltaHash
+    };
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey, signingKeyId);
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      didUniqueSuffix,
-      updateRevealValue,
+      did_suffix: didUniqueSuffix,
+      update_reveal_value: updateRevealValue,
       delta: encodedDeltaString,
-      signedData
+      signed_data: signedData
     };
 
     return updateOperationRequest;
@@ -389,18 +393,18 @@ export default class OperationGenerator {
     const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
 
     const signedDataPayloadObject = {
-      deltaHash,
-      recoveryKey: newRecoveryPublicKey,
-      nextRecoveryCommitmentHash
+      delta_hash: deltaHash,
+      recovery_key: newRecoveryPublicKey,
+      recovery_commitment: nextRecoveryCommitmentHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Recover,
-      didUniqueSuffix,
-      recoveryRevealValue,
-      signedData,
+      did_suffix: didUniqueSuffix,
+      recovery_reveal_value: recoveryRevealValue,
+      signed_data: signedData,
       delta: deltaEncodedString
     };
 
@@ -410,22 +414,22 @@ export default class OperationGenerator {
   /**
    * Generates a deactivate operation request.
    */
-  public static async generateDeactivateOperationRequest (
+  public static async createDeactivateOperationRequest (
     didUniqueSuffix: string,
     recoveryRevealValue: string,
     recoveryPrivateKey: JwkEs256k) {
 
     const signedDataPayloadObject = {
-      didUniqueSuffix,
-      recoveryRevealValue
+      did_suffix: didUniqueSuffix,
+      recovery_reveal_value: recoveryRevealValue
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
-      didUniqueSuffix,
-      recoveryRevealValue,
-      signedData
+      did_suffix: didUniqueSuffix,
+      recovery_reveal_value: recoveryRevealValue,
+      signed_data: signedData
     };
 
     return operation;
@@ -543,14 +547,21 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a Deactivate Operation buffer.
+   * Generates a Deactivate Operation data.
    */
-  public static async generateDeactivateOperationBuffer (
+  public static async createDeactivateOperation (
     didUniqueSuffix: string,
     recoveryRevealValueEncodedSring: string,
-    privateKey: JwkEs256k): Promise<Buffer> {
-    const operation = await OperationGenerator.generateDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
-    return Buffer.from(JSON.stringify(operation));
+    privateKey: JwkEs256k) {
+    const operationRequest = await OperationGenerator.createDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
+    const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
+    const deactivateOperation = await DeactivateOperation.parse(operationBuffer);
+
+    return {
+      operationRequest,
+      operationBuffer,
+      deactivateOperation
+    };
   }
 
   /**

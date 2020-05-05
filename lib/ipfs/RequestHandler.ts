@@ -1,11 +1,9 @@
 import base64url from 'base64url';
-import ErrorCode from '../ipfs/ErrorCode';
 import FetchResultCode from '../common/enums/FetchResultCode';
 import IpfsStorage from './IpfsStorage';
 import ResponseModel from '../common/models/ResponseModel';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
-import SidetreeError from '../common/SidetreeError';
 import Timeout from './Util/Timeout';
 
 const multihashes = require('multihashes');
@@ -18,37 +16,20 @@ export default class RequestHandler {
    * Instance of IpfsStorage.
    */
   public ipfsStorage: IpfsStorage;
-
   private serviceInfo: ServiceInfo;
 
   /**
-   * create an instance of request handler
+   * Creates and return an instance of Sidetree IPFS request handler.
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
    * @param repo Optional IPFS datastore implementation.
    */
-  public static async create (fetchTimeoutInSeconds: number, repo?: any) {
-    let ipfsStorage: IpfsStorage;
-    try {
-      ipfsStorage = await IpfsStorage.createSingleton(repo);
-    } catch (e) {
-      if (e instanceof SidetreeError && e.code === ErrorCode.IpfsStorageInstanceCanOnlyBeCreatedOnce) {
-        console.debug('IpfsStorage create was called twice, attempting to call get instead: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
-        ipfsStorage = IpfsStorage.getSingleton();
-      } else {
-        console.error('unexpected error, please investigate and fix: ', JSON.stringify(e, Object.getOwnPropertyNames(e)));
-        throw e;
-      }
-    }
-    return new RequestHandler(fetchTimeoutInSeconds, ipfsStorage);
+  public static create (fetchTimeoutInSeconds: number, repo?: any): RequestHandler {
+    return new RequestHandler(fetchTimeoutInSeconds, repo);
   }
 
-  /**
-   * Constructs the Sidetree IPFS request handler.
-   * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
-   * @param repo Optional IPFS datastore implementation.
-   */
-  private constructor (private fetchTimeoutInSeconds: number, ipfsStorage: IpfsStorage) {
-    this.ipfsStorage = ipfsStorage;
+  private constructor (private fetchTimeoutInSeconds: number, repo?: any) {
+    this.ipfsStorage = new IpfsStorage(repo);
+    this.ipfsStorage.initialize();
     this.serviceInfo = new ServiceInfo('ipfs');
   }
 
@@ -124,27 +105,30 @@ export default class RequestHandler {
   public async handleWriteRequest (content: Buffer): Promise<ResponseModel> {
     console.log(`Writing content of ${content.length} bytes...`);
 
-    let response: ResponseModel;
     let base64urlEncodedMultihash;
     try {
       const base58EncodedMultihashString = await this.ipfsStorage.write(content);
+      if (base58EncodedMultihashString === undefined) {
+        return {
+          status: ResponseStatus.ServerError,
+          body: 'ipfs write failed'
+        };
+      }
       const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
       base64urlEncodedMultihash = base64url.encode(multihashBuffer);
 
-      response = {
+      console.info(`Wrote content '${base64urlEncodedMultihash}'.`);
+      return {
         status: ResponseStatus.Succeeded,
         body: { hash: base64urlEncodedMultihash }
       };
     } catch (err) {
-      response = {
+      console.error(`Hit unexpected error writing '${base64urlEncodedMultihash}, investigate and fix: ${err}`);
+      return {
         status: ResponseStatus.ServerError,
         body: err.message
       };
-      console.error(`Error writing content: ${err}`);
     }
-
-    console.error(`Wrote content '${base64urlEncodedMultihash}'.`);
-    return response;
   }
 
   /**

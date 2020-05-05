@@ -10,9 +10,9 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
-    it('should output the expected resolution result', async () => {
+    it('should output the expected resolution result given key(s) across all usage types.', async () => {
       const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All usages will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
@@ -33,7 +33,7 @@ describe('DocumentComposer', async () => {
         operationPublicKeys: [{
           id: '#anySigningKey', // ops usage keys go here
           controller: '',
-          type: 'Secp256k1VerificationKey2019',
+          type: 'EcdsaSecp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
         recoveryKey: { kty: 'EC', crv: 'secp256k1', x: anyRecoveryPublicKey.x, y: anyRecoveryPublicKey.y }
@@ -45,15 +45,15 @@ describe('DocumentComposer', async () => {
         publicKey: [{
           id: '#anySigningKey',
           controller: '',
-          type: 'Secp256k1VerificationKey2019',
+          type: 'EcdsaSecp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
         authentication: [
-          'did:method:suffix#anySigningKey', // reference because it is a general usage key
+          '#anySigningKey', // reference because it is a general usage key
           {
             id: '#authePbulicKey', // object here because it is an auth usage only key
             controller: '',
-            type: 'Secp256k1VerificationKey2019',
+            type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {
               kty: 'EC', crv: 'secp256k1', x: authPublicKey.jwk.x, y: authPublicKey.jwk.y
             }
@@ -94,7 +94,7 @@ describe('DocumentComposer', async () => {
       expect(() => {
         DocumentComposer['validateOperationKey']({
           id: 'someId',
-          type: 'Secp256k1VerificationKey2019',
+          type: 'EcdsaSecp256k1VerificationKey2019',
           jwk: {},
           usage: []
         });
@@ -630,7 +630,7 @@ function generatePatchesForPublicKeys () {
       publicKeys: [
         {
           id: 'keyX',
-          type: 'Secp256k1VerificationKey2019',
+          type: 'EcdsaSecp256k1VerificationKey2019',
           jwk: {
             kty: 'EC',
             crv: 'secp256k1',

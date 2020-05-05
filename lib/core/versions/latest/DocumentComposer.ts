@@ -48,7 +48,7 @@ export default class DocumentComposer {
           publicKeys.push(didDocumentPublicKey);
           if (usageSet.has(PublicKeyUsage.Auth)) {
             // add into authentication by reference if has auth and has general
-            authentication.push(did + id);
+            authentication.push(id);
           }
         } else if (usageSet.has(PublicKeyUsage.Auth)) {
           // add into authentication by object if has auth but no general
@@ -108,11 +108,11 @@ export default class DocumentComposer {
    */
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
     // The current document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(document, operation.signedData.kid);
+    const publicKey = Document.getPublicKey(document, operation.signedDataJws.kid);
     DocumentComposer.validateOperationKey(publicKey);
 
     // Verify the signature.
-    if (!(await operation.signedData.verifySignature(publicKey!.jwk))) {
+    if (!(await operation.signedDataJws.verifySignature(publicKey!.jwk))) {
       throw new SidetreeError(ErrorCode.DocumentComposerInvalidSignature);
     }
 
@@ -233,6 +233,7 @@ export default class DocumentComposer {
         }
       }
 
+      // Registered key types can be found at https://w3c-ccg.github.io/ld-cryptosuite-registry/
       const validTypes = new Set(['EcdsaSecp256k1VerificationKey2019', 'JwsVerificationKey2020']);
 
       if (publicKey.usage.includes(PublicKeyUsage.Ops)) {
@@ -251,7 +252,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
     }
 
-    if (publicKey.type !== 'Secp256k1VerificationKey2019') {
+    if (publicKey.type !== 'EcdsaSecp256k1VerificationKey2019') {
       throw new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
     }
 

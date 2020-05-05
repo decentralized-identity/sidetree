@@ -8,8 +8,8 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  didUniqueSuffix: string;
-  recoveryRevealValue: string;
+  did_suffix: string;
+  recovery_reveal_value: string;
 }
 
 /**
@@ -90,24 +90,24 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.didUniqueSuffix !== 'string') {
+    if (typeof operationObject.did_suffix !== 'string') {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    if (typeof operationObject.recoveryRevealValue !== 'string') {
+    if (typeof operationObject.recovery_reveal_value !== 'string') {
       throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
-    if ((operationObject.recoveryRevealValue as string).length > Operation.maxEncodedRevealValueLength) {
+    if ((operationObject.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
       throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong);
     }
 
-    const recoveryRevealValue = operationObject.recoveryRevealValue;
+    const recoveryRevealValue = operationObject.recovery_reveal_value;
 
     const expectKidInHeader = false;
-    const signedDataJws = Jws.parseCompactJws(operationObject.signedData, expectKidInHeader);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
     const signedData = await DeactivateOperation.parseSignedDataPayload(
-      signedDataJws.payload, operationObject.didUniqueSuffix, recoveryRevealValue);
+      signedDataJws.payload, operationObject.did_suffix, recoveryRevealValue);
 
     // If not in anchor file mode, we need to validate `type` property.
     if (!anchorFileMode) {
@@ -118,7 +118,7 @@ export default class DeactivateOperation implements OperationModel {
 
     return new DeactivateOperation(
       operationBuffer,
-      operationObject.didUniqueSuffix,
+      operationObject.did_suffix,
       recoveryRevealValue,
       signedDataJws,
       signedData
@@ -136,11 +136,11 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty);
     }
 
-    if (signedData.didUniqueSuffix !== expectedDidUniqueSuffix) {
+    if (signedData.did_suffix !== expectedDidUniqueSuffix) {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch);
     }
 
-    if (signedData.recoveryRevealValue !== expectedRecoveryRevealValue) {
+    if (signedData.recovery_reveal_value !== expectedRecoveryRevealValue) {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedRecoveryRevealValueMismatch);
     }
 
