@@ -14,14 +14,14 @@ describe('ChunkFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const ChunkFileModel = {
+      const chunkFileModel = {
         deltas: [
           createOperation.encodedDelta
         ],
         unexpectedProperty: 'any value'
       };
 
-      const rawData = Buffer.from(JSON.stringify(ChunkFileModel));
+      const rawData = Buffer.from(JSON.stringify(chunkFileModel));
       const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
@@ -45,9 +45,9 @@ describe('ChunkFile', async () => {
       });
       const recoverOperation = recoverOperationData.recoverOperation;
 
-      const ChunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], []);
+      const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], []);
 
-      const decompressedChunkFileModel = await ChunkFile.parse(ChunkFileBuffer);
+      const decompressedChunkFileModel = await ChunkFile.parse(chunkFileBuffer);
 
       expect(decompressedChunkFileModel.deltas.length).toEqual(2);
       expect(decompressedChunkFileModel.deltas[0]).toEqual(createOperation.encodedDelta!);

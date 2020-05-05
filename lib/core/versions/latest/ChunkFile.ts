@@ -19,25 +19,25 @@ export default class ChunkFile {
    * @throws SidetreeError if failed parsing or validation.
    */
   public static async parse (
-    ChunkFileBuffer: Buffer
+    chunkFileBuffer: Buffer
   ): Promise<ChunkFileModel> {
 
     let endTimer = timeSpan();
-    const decompressedChunkFileBuffer = await Compressor.decompress(ChunkFileBuffer);
-    const ChunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
+    const decompressedChunkFileBuffer = await Compressor.decompress(chunkFileBuffer);
+    const chunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
     console.info(`Parsed chunk file in ${endTimer.rounded()} ms.`);
 
     // Ensure only properties specified by Sidetree protocol are given.
     const allowedProperties = new Set(['deltas']);
-    for (let property in ChunkFileObject) {
+    for (let property in chunkFileObject) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.ChunkFileUnexpectedProperty, `Unexpected property ${property} in chunk file.`);
       }
     }
 
-    this.validateDeltasProperty(ChunkFileObject.deltas);
+    this.validateDeltasProperty(chunkFileObject.deltas);
 
-    return ChunkFileObject;
+    return chunkFileObject;
   }
 
   private static validateDeltasProperty (deltas: any) {
@@ -73,11 +73,11 @@ export default class ChunkFile {
     deltas.push(...recoverOperations.map(operation => operation.encodedDelta!));
     deltas.push(...updateOperations.map(operation => operation.encodedDelta!));
 
-    const ChunkFileModel = {
+    const chunkFileModel = {
       deltas
     };
 
-    const rawData = Buffer.from(JSON.stringify(ChunkFileModel));
+    const rawData = Buffer.from(JSON.stringify(chunkFileModel));
     const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
     return compressedRawData;
