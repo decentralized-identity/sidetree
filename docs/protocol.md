@@ -1,33 +1,6 @@
 ﻿# Sidetree Protocol Specification
 
-This specification document describes the Sidetree protocol, which can be applied to any decentralized ledger system (e.g. Bitcoin) to create a 'Layer 2' PKI network. Identifiers and PKI metadata in the protocol are expressed via the emerging [_Decentralized Identifiers_](https://w3c-ccg.github.io/did-spec/) standard, and implementations of the protocol can be codified as their own distinct DID Methods. Briefly, a _DID Method_ is a deterministic mechanism for creating unique identifiers and managing metadata (_DID Documents_) associated with these identifiers, without the need for a centralized authority, denoted by unique prefixes that distinguish one DID Method's identifiers from another (`did:foo`, `did:bar`, etc.).
-
-## Overview
-
-Using blockchains for anchoring and tracking unique, non-transferable, digital entities is a useful primitive, but the current strategies for doing so suffer from severely limited transactional performance constraints. Sidetree is a layer-2 protocol for anchoring and tracking _[DID Documents](https://w3c-ccg.github.io/did-spec/)_ across a blockchain. The central design idea involves batching multiple document operations into a single blockchain transaction. This allows Sidetree to inherit the immutability and verifiability guarantees of blockchain without being limited by its transaction rate.
-
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
-
-Architecturally, a Sidetree network is a network consisting of multiple logical servers (_Sidetree nodes_) executing Sidetree protocol rules, overlaying a blockchain network as illustrated by the above figure. Each _Sidetree node_ provides service endpoints to perform _operations_ (e.g. Create, Resolve, Update, Recover, and Deactivate) against _DID Documents_. The blockchain consensus mechanism helps serialize Sidetree operations published by different nodes and provide a consistent view of the state of all _DID Documents_ to all Sidetree nodes, without requiring its own consensus layer. The Sidetree protocol batches multiple operations in a single file (_batch file_) and stores the _batch files_ in a _distributed content-addressable storage (DCAS or CAS)_. A reference to the operation batch is then anchored on the blockchain. The actual data of all batched operations are stored as one . Anyone can run a CAS node without running a Sidetree node to provide redundancy of Sidetree _batch files_.
-
-
-## Terminology
-
-| Term                  | Description                                                                    |
-|-----------------------|--------------------------------------------------------------------------------|
-| Anchor file           | The file containing metadata of a batch of Sidetree operations, of which the hash is written to the blockchain as a Sidetree transaction. |
-| Batch file            | The file containing the deltas from all the batch operations.                  |
-| CAS                   | Same as DCAS.                                                                  |
-| DCAS                  | Distributed content-addressable storage.                                       |
-| DID Document          | A document containing metadata of a DID, see [DID specification](https://w3c-ccg.github.io/did-spec/). |
-| DID unique suffix     | The unique portion of a DID. e.g. The unique suffix of 'did:sidetree:abc' would be 'abc'. |
-| Operation             | A change to a document of a DID.                                               |
-| Operation request     | A JWS formatted request sent to a Sidetree node to perform an _operation_.     |
-| Recovery key          | A key that is used to perform recovery or deactivate operation.                |
-| Sidetree node         | A logical server executing Sidetree protocol rules.                            |
-| Suffix data           | Data required to deterministically generate a DID .                            |
-| Transaction           | A blockchain transaction representing a batch of Sidetree operations.          |
-
 
 ## Format and Encoding
 * JSON is used as the data encapsulation format.
@@ -44,7 +17,7 @@ The following lists the parameters used by this version of the Sidetree protocol
 |-----------------------------|--------------------------------------------------------------------------------| ---------: |
 | Hash algorithm              | The hash algorithm for computation such as for DID generation.                 |     SHA256 |
 | Maximum anchor file size    | The maximum compressed anchor file size.                                       |       1 MB |
-| Maximum batch file size     | The maximum compressed batch file size.                                        |      20 MB |
+| Maximum chunk file size     | The maximum compressed chunk file size.                                        |      20 MB |
 | Maximum encoded hash length | The maximum accepted string length of an encoded hash.                         |        100 |
 | Maximum operation size      | The maximum uncompressed operation size.                                       |      2 000 |
 | Maximum operation count     | The maximum number of operations per batch.                                    |     10 000 |
@@ -58,13 +31,13 @@ The anchor string is the data that is stored on the blockchain. The data is stor
 
 WHERE
 
- encoded_number_of_operations: The total number of operations included in the batch file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
+ encoded_number_of_operations: The total number of operations included in the chunk file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
 
- hash_of_batch_file: The hash of the batch file
+ hash_of_anchor_file: The hash of the anchor file
 ```
 
 ### Example
-The following anchor string encodes 10000 operations and the hash of the batch file.
+The following anchor string encodes 10000 operations and the hash of the chunk file.
 
 ```
 ECcAAA.QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
@@ -602,7 +575,7 @@ Example:
 ## Merkle Root Hash Inclusion (Currently not used, may support in the future)
 Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
 
-The main protocol does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire batch file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.
+The main protocol does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire chunk file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.
 
 Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2: a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees; then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
 
@@ -675,10 +648,10 @@ Where the first entry in ```receipt``` is the sibling of the operation hash in t
 
 
 ## FAQs
-* Why introduce the concept of an _anchor file_? Why not just anchor the _batch file hash_ directly on blockchain?
+* Why introduce the concept of an _anchor file_? Why not just anchor the _chunk file hash_ directly on blockchain?
 
   It would be ideal to be able to fetch metadata about the batched operations efficiently,
-  without needing to download the entire batch file.
+  without needing to download the entire chunk file.
   This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree protocol.
 
 * Why assign a _transaction number_ to invalid transactions?

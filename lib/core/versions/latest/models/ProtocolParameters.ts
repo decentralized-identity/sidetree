@@ -8,8 +8,8 @@ export default interface ProtocolParameters {
   maxAnchorFileSizeInBytes: number;
   /** Maximum allowed size of map file stored in Content Addressable Storage. */
   maxMapFileSizeInBytes: number;
-  /** Maximum allowed size of batch file stored in Content Addressable Storage. */
-  maxBatchFileSizeInBytes: number;
+  /** Maximum allowed size of chunk file stored in Content Addressable Storage. */
+  maxChunkFileSizeInBytes: number;
   /** Maximum size of the `delta` property in bytes. */
   maxDeltaSizeInBytes: number;
   /** Max number of operations observed per transaction time */

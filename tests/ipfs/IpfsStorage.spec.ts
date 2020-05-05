@@ -197,7 +197,7 @@ describe('IpfsStorage', () => {
       ipfsStorage['healthCheckInternalInSeconds'] = 0;
       ipfsStorage['healthy'] = false;
       await ipfsStorage['healthCheck']();
-      expect(restartSpy).toHaveBeenCalledTimes(1);
+      expect(restartSpy).toHaveBeenCalled();
       expect(ipfsStorage['healthy']).toEqual(false);
     });
   });

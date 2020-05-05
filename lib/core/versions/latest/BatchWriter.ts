@@ -1,7 +1,7 @@
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
-import BatchFile from './BatchFile';
+import ChunkFile from './ChunkFile';
 import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import FeeManager from './FeeManager';
@@ -49,16 +49,16 @@ export default class BatchWriter implements IBatchWriter {
     const updateOperations = operationModels.filter(operation => operation.type === OperationType.Update) as UpdateOperation[];
     const deactivateOperations = operationModels.filter(operation => operation.type === OperationType.Deactivate) as DeactivateOperation[];
 
-    // Create the batch file buffer from the operation models.
+    // Create the chunk file buffer from the operation models.
     // NOTE: deactivate operations don't have delta.
-    const batchFileBuffer = await BatchFile.createBuffer(createOperations, recoverOperations, updateOperations);
+    const ChunkFileBuffer = await ChunkFile.createBuffer(createOperations, recoverOperations, updateOperations);
 
-    // Write the batch file to content addressable store.
-    const batchFileHash = await this.cas.write(batchFileBuffer);
-    console.info(`Wrote batch file ${batchFileHash} to content addressable store.`);
+    // Write the chunk file to content addressable store.
+    const ChunkFileHash = await this.cas.write(ChunkFileBuffer);
+    console.info(`Wrote chunk file ${ChunkFileHash} to content addressable store.`);
 
     // Write the map file to content addressable store.
-    const mapFileBuffer = await MapFile.createBuffer(batchFileHash, updateOperations);
+    const mapFileBuffer = await MapFile.createBuffer(ChunkFileHash, updateOperations);
     const mapFileHash = await this.cas.write(mapFileBuffer);
     console.info(`Wrote map file ${mapFileHash} to content addressable store.`);
 

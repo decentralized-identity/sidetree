@@ -1,9 +1,9 @@
 import * as retry from 'async-retry';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Blockchain from '../../lib/core/Blockchain';
 import Cas from '../../lib/core/Cas';
+import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import DownloadManager from '../../lib/core/DownloadManager';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/common/SharedErrorCode';
@@ -161,16 +161,16 @@ describe('Observer', async () => {
     const operation2Data = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 2 });
     const createOperations = [operation1Data.createOperation, operation2Data.createOperation];
 
-    // Generating batch file data.
-    const mockbBatchFileBuffer = await BatchFile.createBuffer(createOperations, [], []);
-    const mockBatchFileFetchResult: FetchResult = {
+    // Generating chunk file data.
+    const mockbChunkFileBuffer = await ChunkFile.createBuffer(createOperations, [], []);
+    const mockChunkFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
-      content: mockbBatchFileBuffer
+      content: mockbChunkFileBuffer
     };
-    const mockBatchFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockBatchFileHash')));
+    const mockChunkFilehash = Encoder.encode(Multihash.hash(Buffer.from('MockChunkFileHash')));
 
     // Generating map file data.
-    const mockMapFileBuffer = await MapFile.createBuffer(mockBatchFilehash, []);
+    const mockMapFileBuffer = await MapFile.createBuffer(mockChunkFilehash, []);
     const mockMapFileHash = Encoder.encode(Multihash.hash(Buffer.from('MockMapFileHash')));
     const mockMapFileFetchResult: FetchResult = {
       code: FetchResultCode.Success,
@@ -191,8 +191,8 @@ describe('Observer', async () => {
         return mockAnchoreFileFetchResult;
       } else if (hash === mockMapFileHash) {
         return mockMapFileFetchResult;
-      } else if (hash === mockBatchFilehash) {
-        return mockBatchFileFetchResult;
+      } else if (hash === mockChunkFilehash) {
+        return mockChunkFileFetchResult;
       } else {
         throw new Error('Test failed, unexpected hash given');
       }

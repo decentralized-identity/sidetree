@@ -2,8 +2,8 @@ import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchoredOperationModel from '../../models/AnchoredOperationModel';
 import AnchorFile from './AnchorFile';
 import ArrayMethods from './util/ArrayMethods';
-import BatchFile from './BatchFile';
-import BatchFileModel from './models/BatchFileModel';
+import ChunkFile from './ChunkFile';
+import ChunkFileModel from './models/ChunkFileModel';
 import DownloadManager from '../../DownloadManager';
 import ErrorCode from './ErrorCode';
 import FeeManager from './FeeManager';
@@ -38,11 +38,11 @@ export default class TransactionProcessor implements ITransactionProcessor {
       // Download and verify map file.
       const mapFile = await this.downloadAndVerifyMapFile(anchorFile, anchoredData.numberOfOperations);
 
-      // Download and verify batch file.
-      const batchFileModel = await this.downloadAndVerifyBatchFile(mapFile);
+      // Download and verify chunk file.
+      const ChunkFileModel = await this.downloadAndVerifyChunkFile(mapFile);
 
       // Compose into operations from all the files downloaded.
-      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, batchFileModel);
+      const operations = await this.composeAnchoredOperationModels(transaction, anchorFile, mapFile, ChunkFileModel);
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
@@ -106,7 +106,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
   /**
    * NOTE: In order to be forward-compatable with data-pruning feature,
-   * we must continue to process the operations declared in the anchor file even if the map/batch file is invalid.
+   * we must continue to process the operations declared in the anchor file even if the map/chunk file is invalid.
    * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
    * It is a design choice to hide the complexity of map file downloading and construction within this method,
    * instead of throwing errors and letting the caller handle them.
@@ -155,30 +155,30 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
   /**
    * NOTE: In order to be forward-compatable with data-pruning feature,
-   * we must continue to process the operations declared in the anchor file even if the map/batch file is invalid.
+   * we must continue to process the operations declared in the anchor file even if the map/chunk file is invalid.
    * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
-   * It is a design choice to hide the complexity of batch file downloading and construction within this method,
+   * It is a design choice to hide the complexity of chunk file downloading and construction within this method,
    * instead of throwing errors and letting the caller handle them.
-   * @returns `BatchFileModel` if downloaded file is valid; `undefined` otherwise.
+   * @returns `ChunkFileModel` if downloaded file is valid; `undefined` otherwise.
    * @throws SidetreeErrors that are retryable.
    */
-  private async downloadAndVerifyBatchFile (
+  private async downloadAndVerifyChunkFile (
     mapFile: MapFile | undefined
-  ): Promise<BatchFileModel | undefined> {
-    // Can't download batch file if map file is not given.
+  ): Promise<ChunkFileModel | undefined> {
+    // Can't download chunk file if map file is not given.
     if (mapFile === undefined) {
       return undefined;
     }
 
-    let batchFileHash;
+    let ChunkFileHash;
     try {
-      batchFileHash = mapFile.model.chunks[0].chunk_file_uri;
-      console.info(`Downloading batch file '${batchFileHash}', max size limit ${ProtocolParameters.maxBatchFileSizeInBytes}...`);
+      ChunkFileHash = mapFile.model.chunks[0].chunk_file_uri;
+      console.info(`Downloading chunk file '${ChunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(batchFileHash, ProtocolParameters.maxBatchFileSizeInBytes);
-      const batchFileModel = await BatchFile.parse(fileBuffer);
+      const fileBuffer = await this.downloadFileFromCas(ChunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
+      const ChunkFileModel = await ChunkFile.parse(fileBuffer);
 
-      return batchFileModel;
+      return ChunkFileModel;
     } catch (error) {
       if (error instanceof SidetreeError) {
         // If error is related to CAS network issues, we will surface them so retry can happen.
@@ -189,7 +189,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching batch file ${batchFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching chunk file ${ChunkFileHash}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
@@ -199,7 +199,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     transaction: TransactionModel,
     anchorFile: AnchorFile,
     mapFile: MapFile | undefined,
-    batchFile: BatchFileModel | undefined
+    ChunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
     let createOperations = anchorFile.createOperations;
@@ -214,22 +214,22 @@ export default class TransactionProcessor implements ITransactionProcessor {
     operations.push(...updateOperations);
     operations.push(...deactivateOperations);
 
-    // If batch file is found/given, we need to add `type` and `delta` from batch file to each operation.
+    // If chunk file is found/given, we need to add `type` and `delta` from chunk file to each operation.
     // NOTE: there is no delta for deactivate operations.
     const patchedOperationBuffers: Buffer[] = [];
-    if (batchFile !== undefined) {
+    if (ChunkFile !== undefined) {
 
       // TODO: https://github.com/decentralized-identity/sidetree/issues/442
       // Use actual operation request object instead of buffer.
 
       const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
       for (let i = 0; i < operationCountExcludingDeactivates &&
-                      i < batchFile.deltas.length; i++) {
+                      i < ChunkFile.deltas.length; i++) {
         const operation = operations[i];
         const operationJsonString = operation.operationBuffer.toString();
         const operationObject = await JsonAsync.parse(operationJsonString);
         operationObject.type = operation.type;
-        operationObject.delta = batchFile.deltas[i];
+        operationObject.delta = ChunkFile.deltas[i];
 
         const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
         patchedOperationBuffers.push(patchedOperationBuffer);

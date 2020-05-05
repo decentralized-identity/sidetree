@@ -33,7 +33,7 @@ describe('MapFile', async () => {
     it('should throw if has an unknown property.', async () => {
       const mapFile = {
         unknownProperty: 'Unknown property',
-        batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
+        ChunkFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA'
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);
@@ -41,9 +41,9 @@ describe('MapFile', async () => {
       await expectAsync(MapFile.parse(fileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.MapFileHasUnknownProperty));
     });
 
-    it('should throw if missing batch file hash.', async () => {
+    it('should throw if missing chunk file hash.', async () => {
       const mapFile = {
-        // batchFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what the expected property should be.
+        // ChunkFileHash: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA', // Intentionally kept to show what the expected property should be.
       };
       const fileBuffer = Buffer.from(JSON.stringify(mapFile));
       const fileCompressed = await Compressor.compress(fileBuffer);

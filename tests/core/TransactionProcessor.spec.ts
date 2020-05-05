@@ -1,7 +1,7 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
 import Cas from '../../lib/core/Cas';
+import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
@@ -323,8 +323,8 @@ describe('TransactionProcessor', () => {
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
-      const batchFileHash = OperationGenerator.generateRandomHash();
-      const mockMapFileBuffer = await MapFile.createBuffer(batchFileHash, []);
+      const ChunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(ChunkFileHash, []);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
@@ -333,7 +333,7 @@ describe('TransactionProcessor', () => {
 
       expect(fetchedMapFile).toBeDefined();
       expect(fetchedMapFile!.updateOperations.length).toEqual(0);
-      expect(fetchedMapFile!.model.chunks[0].chunk_file_uri).toEqual(batchFileHash);
+      expect(fetchedMapFile!.model.chunks[0].chunk_file_uri).toEqual(ChunkFileHash);
       done();
     });
 
@@ -345,8 +345,8 @@ describe('TransactionProcessor', () => {
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
-      const batchFileHash = OperationGenerator.generateRandomHash();
-      const mockMapFileBuffer = await MapFile.createBuffer(batchFileHash, [updateOperationRequestData.updateOperation]);
+      const ChunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(ChunkFileHash, [updateOperationRequestData.updateOperation]);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
@@ -365,8 +365,8 @@ describe('TransactionProcessor', () => {
 
       // Setting up a mock map file that has 1 update in it to be downloaded.
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest(createOperationData.createOperation.didUniqueSuffix);
-      const batchFileHash = OperationGenerator.generateRandomHash();
-      const mockMapFileBuffer = await MapFile.createBuffer(batchFileHash, [updateOperationRequestData.updateOperation]);
+      const ChunkFileHash = OperationGenerator.generateRandomHash();
+      const mockMapFileBuffer = await MapFile.createBuffer(ChunkFileHash, [updateOperationRequestData.updateOperation]);
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.returnValue(Promise.resolve(mockMapFileBuffer));
 
       const totalPaidOperationCount = 10;
@@ -429,12 +429,12 @@ describe('TransactionProcessor', () => {
     });
   });
 
-  describe('downloadAndVerifyBatchFile', () => {
+  describe('downloadAndVerifyChunkFile', () => {
     it('should return undefined if no map file is given.', async (done) => {
       const mapFileModel = undefined;
-      const fetchedBatchFileModel = await transactionProcessor['downloadAndVerifyBatchFile'](mapFileModel);
+      const fetchedChunkFileModel = await transactionProcessor['downloadAndVerifyChunkFile'](mapFileModel);
 
-      expect(fetchedBatchFileModel).toBeUndefined();
+      expect(fetchedChunkFileModel).toBeUndefined();
       done();
     });
 
@@ -446,7 +446,7 @@ describe('TransactionProcessor', () => {
       // Mocking an unexpected error thrown.
       spyOn(transactionProcessor as any, 'downloadFileFromCas').and.throwError('Any unexpected error.');
 
-      const fetchedMapFile = await transactionProcessor['downloadAndVerifyBatchFile'](mapFileModel);
+      const fetchedMapFile = await transactionProcessor['downloadAndVerifyChunkFile'](mapFileModel);
 
       expect(fetchedMapFile).toBeUndefined();
       done();
@@ -462,7 +462,7 @@ describe('TransactionProcessor', () => {
         () => { throw new SidetreeError(ErrorCode.CasNotReachable); }
       );
 
-      await expectAsync(transactionProcessor['downloadAndVerifyBatchFile'](mapFileModel))
+      await expectAsync(transactionProcessor['downloadAndVerifyChunkFile'](mapFileModel))
         .toBeRejectedWith(new SidetreeError(ErrorCode.CasNotReachable));
 
       done();
@@ -478,7 +478,7 @@ describe('TransactionProcessor', () => {
         () => { throw new SidetreeError(ErrorCode.CasFileTooLarge); }
       );
 
-      const fetchedMapFile = await transactionProcessor['downloadAndVerifyBatchFile'](mapFileModel);
+      const fetchedMapFile = await transactionProcessor['downloadAndVerifyChunkFile'](mapFileModel);
 
       expect(fetchedMapFile).toBeUndefined();
       done();
@@ -486,7 +486,7 @@ describe('TransactionProcessor', () => {
   });
 
   describe('composeAnchoredOperationModels', () => {
-    it('should compose operations successfully given valid anchor, map, and batch files.', async (done) => {
+    it('should compose operations successfully given valid anchor, map, and chunk files.', async (done) => {
       // Create `TransactionModel`.
       const transactionModel: TransactionModel = {
         anchorString: 'anything',
@@ -508,16 +508,16 @@ describe('TransactionProcessor', () => {
       // Create map file model with 1 update operation.
       const updateOperationRequestData = await OperationGenerator.generateUpdateOperationRequest();
       const updateOperation = updateOperationRequestData.updateOperation;
-      const batchFileHash = OperationGenerator.generateRandomHash();
-      const mapFileBuffer = await MapFile.createBuffer(batchFileHash, [updateOperation]);
+      const ChunkFileHash = OperationGenerator.generateRandomHash();
+      const mapFileBuffer = await MapFile.createBuffer(ChunkFileHash, [updateOperation]);
       const mapFileModel = await MapFile.parse(mapFileBuffer);
 
-      // Create batch file model with delta for the 2 operations created above.
-      const batchFileBuffer = await BatchFile.createBuffer([createOperation], [], [updateOperation]);
-      const batchFileModel = await BatchFile.parse(batchFileBuffer);
+      // Create chunk file model with delta for the 2 operations created above.
+      const ChunkFileBuffer = await ChunkFile.createBuffer([createOperation], [], [updateOperation]);
+      const ChunkFileModel = await ChunkFile.parse(ChunkFileBuffer);
 
       // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
-      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, batchFileModel);
+      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, ChunkFileModel);
 
       expect(anchoredOperationModels.length).toEqual(2);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);
@@ -527,7 +527,7 @@ describe('TransactionProcessor', () => {
       done();
     });
 
-    it('should compose operations successfully given valid anchor file, but no map and batch files.', async (done) => {
+    it('should compose operations successfully given valid anchor file, but no map and chunk files.', async (done) => {
       // Create `TransactionModel`.
       const transactionModel: TransactionModel = {
         anchorString: 'anything',

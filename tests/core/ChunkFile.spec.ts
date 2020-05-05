@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import BatchFile from '../../lib/core/versions/latest/BatchFile';
+import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
@@ -7,26 +7,26 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import OperationGenerator from '../generators/OperationGenerator';
 
-describe('BatchFile', async () => {
+describe('ChunkFile', async () => {
   describe('parse()', async () => {
 
     it('should throw exception if there is an unknown property.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const batchFileModel = {
+      const ChunkFileModel = {
         deltas: [
           createOperation.encodedDelta
         ],
         unexpectedProperty: 'any value'
       };
 
-      const rawData = Buffer.from(JSON.stringify(batchFileModel));
+      const rawData = Buffer.from(JSON.stringify(ChunkFileModel));
       const compressedRawData = await Compressor.compress(Buffer.from(rawData));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => BatchFile.parse(compressedRawData),
-        ErrorCode.BatchFileUnexpectedProperty
+        () => ChunkFile.parse(compressedRawData),
+        ErrorCode.ChunkFileUnexpectedProperty
       );
     });
   });
@@ -45,13 +45,13 @@ describe('BatchFile', async () => {
       });
       const recoverOperation = recoverOperationData.recoverOperation;
 
-      const batchFileBuffer = await BatchFile.createBuffer([createOperation], [recoverOperation], []);
+      const ChunkFileBuffer = await ChunkFile.createBuffer([createOperation], [recoverOperation], []);
 
-      const decompressedBatchFileModel = await BatchFile.parse(batchFileBuffer);
+      const decompressedChunkFileModel = await ChunkFile.parse(ChunkFileBuffer);
 
-      expect(decompressedBatchFileModel.deltas.length).toEqual(2);
-      expect(decompressedBatchFileModel.deltas[0]).toEqual(createOperation.encodedDelta!);
-      expect(decompressedBatchFileModel.deltas[1]).toEqual(recoverOperation.encodedDelta!);
+      expect(decompressedChunkFileModel.deltas.length).toEqual(2);
+      expect(decompressedChunkFileModel.deltas[0]).toEqual(createOperation.encodedDelta!);
+      expect(decompressedChunkFileModel.deltas[1]).toEqual(recoverOperation.encodedDelta!);
 
     });
   });
@@ -62,7 +62,7 @@ describe('BatchFile', async () => {
       const deltas = 'Incorrect type.';
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (BatchFile as any).validateDeltasProperty(deltas), ErrorCode.BatchFileDeltasPropertyNotArray
+        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.ChunkFileDeltasPropertyNotArray
       );
     });
 
@@ -72,7 +72,7 @@ describe('BatchFile', async () => {
       ];
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (BatchFile as any).validateDeltasProperty(deltas), ErrorCode.BatchFileDeltasNotArrayOfStrings
+        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.ChunkFileDeltasNotArrayOfStrings
       );
     });
 
@@ -83,7 +83,7 @@ describe('BatchFile', async () => {
       ];
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (BatchFile as any).validateDeltasProperty(deltas), ErrorCode.BatchFileDeltaSizeExceedsLimit
+        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.ChunkFileDeltaSizeExceedsLimit
       );
     });
   });
