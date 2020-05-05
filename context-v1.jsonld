@@ -6,6 +6,16 @@
     "publicKeyJwk": {
       "@id": "sidetree:publicKeyJwk",
       "@type": "@json"
+    },
+    "recovery": {
+      "@id": "sidetree:recovery",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "operation": {
+      "@id": "sidetree:operation",
+      "@type": "@id",
+      "@container": "@set"
     }
   }
 }

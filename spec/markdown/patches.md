@@ -184,7 +184,7 @@ The `ietf-json-patch` Patch Action describes a mechanism for modifying a DID's s
 :::
 
 ::: warning
-Use of `ietf-json-patch` may result in unrecoverable states, similar to "Deactivated".
+Without careful validation, use of `ietf-json-patch` may result in unrecoverable states, similar to "Deactivated".
 :::
 
 ::: warning

@@ -11,6 +11,14 @@ While virtually all DID owners will engage User Agent applications on their loca
   This specification does not define an API for sending public DID operation values to third-party Sidetree nodes for external anchoring, as that is an elective activity has no bearing on the technical workings of the protocol, its capabilities, or its security guarantees.
 :::
 
+Sidetree Methods MAY choose to expose protocol operation keys in the DID Document.
+
+Sidetree Methods MAY rely on the DID Document data model when verifying protocol operations.
+
+::: warning
+  Operations other than Create contain a compact JWS. Dereferencing of key material used to verify the JWS is a DID Method specific concern. Some methods may rely of the DID Document data model, others may rely on an internal data model. Some methods may rely on `kid` of the form `did:example:123#fingerprint`, others may not include a `kid` in the JWS, or its value may be arbitrary. Support for specific `alg` fields is also DID Method specific. Implementers are cautioned to choose support for specific `alg` values carefully.
+:::
+
 ### Create
 
 Use the following process to generate a Sidetree-based DID:
