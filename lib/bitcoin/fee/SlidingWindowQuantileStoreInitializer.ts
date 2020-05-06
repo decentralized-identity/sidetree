@@ -16,6 +16,7 @@ export default class SlidingWindowQuantileStoreInitializer {
     private windowSizeInGroup: number,
     private sampleSizePerGroup: number,
     private initialQuantileValue: number,
+    private initialQuantileValueNormalized: number,
     private mongoDbStore: ISlidingWindowQuantileStore) {
   }
 
@@ -33,11 +34,12 @@ export default class SlidingWindowQuantileStoreInitializer {
     // The quantile value below is what we have decided to be the value for the initial
     // static value.
     const quantile = 25000;
-    const normalizedQuantile = valueApproximator.getNormalizedValue(quantile);
+    const quantileNormalized = valueApproximator.getNormalizedValue(quantile);
 
     const dataInitializer = SlidingWindowQuantileStoreInitializer.createInstance(
       genesisBlockNumber,
-      normalizedQuantile,
+      quantile,
+      quantileNormalized,
       mongoDbStore);
 
     await dataInitializer.addDataIfNecessary();
@@ -49,11 +51,13 @@ export default class SlidingWindowQuantileStoreInitializer {
    *
    * @param genesisBlockNumber The genesis block
    * @param initialQuantileValue Initial quantile value to use.
+   * @param initialQuantileValueNormalized The normalized initial quantile value.
    * @param mongoDbStore The quantile db store.
    */
   private static createInstance (
     genesisBlockNumber: number,
     initialQuantileValue: number,
+    initialQuantileValueNormalized: number,
     mongoDbStore: ISlidingWindowQuantileStore) {
 
     return new SlidingWindowQuantileStoreInitializer(
@@ -62,6 +66,7 @@ export default class SlidingWindowQuantileStoreInitializer {
         ProtocolParameters.windowSizeInGroups,
         ProtocolParameters.sampleSizePerGroup,
         initialQuantileValue,
+        initialQuantileValueNormalized,
         mongoDbStore);
   }
 
@@ -93,7 +98,7 @@ export default class SlidingWindowQuantileStoreInitializer {
 
     // Mock that all of the transactions sampled have the same value for quantile.
     const frequencyVector = new Array<number>(this.sampleSizePerGroup);
-    frequencyVector.fill(this.initialQuantileValue);
+    frequencyVector.fill(this.initialQuantileValueNormalized);
 
     // Get the value to be actually saved in the DB.
     const encodedFrequencyVector = RunLengthTransformer.encode(frequencyVector);

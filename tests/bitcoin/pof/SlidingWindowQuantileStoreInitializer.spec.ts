@@ -10,7 +10,7 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
 
   beforeEach(() => {
     const slidingWindowQuantileStore = new MockSlidingWindowQuantileStore();
-    quantileStoreInitializer = (SlidingWindowQuantileStoreInitializer as any).createInstance(12345, 25000, slidingWindowQuantileStore);
+    quantileStoreInitializer = (SlidingWindowQuantileStoreInitializer as any).createInstance(12345, 25000, 31, slidingWindowQuantileStore);
   });
 
   describe('initializeDatabaseIfEmpty', () => {
@@ -24,8 +24,9 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
 
       await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(genesisBlockInput, approximatorInput, quantileStoreInput);
 
-      const expectedQuantile = approximatorInput.getNormalizedValue(25000);
-      expect(createSpy).toHaveBeenCalledWith(genesisBlockInput, expectedQuantile, quantileStoreInput);
+      const expectedQuantile = 25000;
+      const expectedNormalizedQuantile = approximatorInput.getNormalizedValue(expectedQuantile);
+      expect(createSpy).toHaveBeenCalledWith(genesisBlockInput, expectedQuantile, expectedNormalizedQuantile, quantileStoreInput);
       expect(addSpy).toHaveBeenCalled();
       done();
     });
@@ -35,12 +36,20 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
     it('should create the instance with the correct parameters', () => {
       const genesisBlockInput = 98765;
       const initialQuantileValueInput = 76543;
+      const initialQuantileValueNormalizedInput = 876354;
       const quantileStoreInput = new MockSlidingWindowQuantileStore();
 
-      const actual = SlidingWindowQuantileStoreInitializer['createInstance'](genesisBlockInput, initialQuantileValueInput, quantileStoreInput);
+      const actual =
+        SlidingWindowQuantileStoreInitializer['createInstance'](
+          genesisBlockInput,
+          initialQuantileValueInput,
+          initialQuantileValueNormalizedInput,
+          quantileStoreInput);
+
       expect(actual['genesisBlockNumber']).toEqual(genesisBlockInput);
       expect(actual['groupSizeInBlocks']).toEqual(ProtocolParameters.groupSizeInBlocks);
       expect(actual['initialQuantileValue']).toEqual(initialQuantileValueInput);
+      expect(actual['initialQuantileValueNormalized']).toEqual(initialQuantileValueNormalizedInput);
       expect(actual['sampleSizePerGroup']).toEqual(ProtocolParameters.sampleSizePerGroup);
       expect(actual['mongoDbStore']).toEqual(quantileStoreInput);
       expect(actual['windowSizeInGroup']).toEqual(ProtocolParameters.windowSizeInGroups);
@@ -78,7 +87,7 @@ describe('SlidingWindowQuantileStoreInitializer', () => {
       const endGroupInput = 150;
 
       const frequencyVector = new Array<number>(ProtocolParameters.sampleSizePerGroup);
-      frequencyVector.fill(quantileStoreInitializer['initialQuantileValue']);
+      frequencyVector.fill(quantileStoreInitializer['initialQuantileValueNormalized']);
 
       const expectedFrequencyVector = RunLengthTransformer.encode(frequencyVector);
 
