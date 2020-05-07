@@ -20,9 +20,13 @@ Once an Anchor File, Map File, and associated Chunk Files have been assembled fo
 
 To ensure other nodes of the implementation can retrieve the [operation files](#file-structures) required to ingest the included operations and update the states of the DIDs it contains, the implementer must ensure that the files associated with a given set of operations being anchored are available to peers seeking to request and replicate them across the CAS storage layer. Use the following procedure for propagating transaction-anchored CAS files:
 
-1. If the underlying ledger is subject to a period of inclusion delay (e.g. block time), implementers ****SHOULD**** wait until they receive minimal confirmation of inclusion before exposing/propagating the [operation files](#file-structures) across the CAS network.
+1. If the underlying ledger is subject to an anchoring inclusion delay (e.g. the interval between blocks in a blockchain), implementers ****SHOULD**** wait until they receive a confirmation of inclusion (whatever that means for the target ledger) before exposing/propagating the [operation files](#file-structures) across the CAS network. (more about the reason for this in the note below)
 2. After confirmation is received, implementers ****SHOULD**** use the most effective means of proactive propagation the [`CAS_PROTOCOL`](#cas-protocol) supports.
 3. A Sidetree-based implementation node that anchors operations should not assume other nodes on the CAS network will indefinitely retain and propagate the [files](#file-structures) for a given set of operations they anchor. A node ****SHOULD**** retain and propagate any files related to the operations it anchors.
+
+:::note CAS propagation delay
+Most ledgers feature some delay between the broadcast of a transaction and the recorded inclusion of the transaction in the ledger's history. Because operation data included in the CAS files contains revealed commitment values for operations, propagating those files before confirmation of transaction inclusion exposes revealed commitment values to external entities who may download them prior to inclusion in the ledger. This means an attacker who learns of the revealed commitment value can craft invalid transactions that could be included before the legitimate operation the user is attempting to anchor. While this has no affect on proof-of-control security for a DID, an observing node would have to check the signatures of fraudulent transactions before the legitimate transaction is found, which could result in slower resolution processing for the target DID.
+:::
 
 ### Transaction Processing
 
