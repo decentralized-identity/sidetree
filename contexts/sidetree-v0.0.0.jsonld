@@ -1,8 +1,9 @@
 {
   "@context": {
+    "@version": 1.1,
+    "did-core-registries": "https://w3c.github.io/did-core-registries/#",
     "sidetree": "https://identity.foundation/sidetree/spec/#",
-    "usage": "sidetree:usage",
-    "publicKeyHex": "sidetree:publicKeyHex",
+    "publicKeyHex": "did-core-registries:publicKeyHex",
     "publicKeyJwk": {
       "@id": "sidetree:publicKeyJwk",
       "@type": "@json"
@@ -16,6 +17,7 @@
       "@id": "sidetree:operation",
       "@type": "@id",
       "@container": "@set"
-    }
+    },
+    "usage": "sidetree:usage"
   }
 }
