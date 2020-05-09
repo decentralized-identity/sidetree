@@ -1,6 +1,7 @@
 
 {
-  "resource_path": "./spec",
+  "public_root": "./www",
+  "resource_path": "./www",
   "specs": [
     {
       "title": "DIF Sidetree Protocol",
@@ -11,26 +12,27 @@
         "account": "decentralized-identity",
         "repo": "sidetree"
       },
-      "spec_directory": "./spec",
+      "output_path": "./www/spec",
+      "spec_directory": "./docs/spec",
       "markdown_paths": [
-        "markdown/title.md",
-        "markdown/abstract.md",
-        "markdown/intro.md",
-        "markdown/terminology.md",
-        "markdown/versioning.md",
-        "markdown/parameters.md",
-        "markdown/common-functions.md",
-        "markdown/topology.md",
-        "markdown/file-structures.md",
-        "markdown/did-uri.md",
-        "markdown/json-web-signatures.md",
-        "markdown/operations.md",
-        "markdown/patches.md",
-        "markdown/processing.md",
-        "markdown/pof.md",
-        "markdown/resolution.md",
-        "markdown/method-versioning.md",
-        "markdown/context.md"
+        "title.md",
+        "abstract.md",
+        "intro.md",
+        "terminology.md",
+        "versioning.md",
+        "parameters.md",
+        "common-functions.md",
+        "topology.md",
+        "file-structures.md",
+        "did-uri.md",
+        "json-web-signatures.md",
+        "operations.md",
+        "patches.md",
+        "processing.md",
+        "pof.md",
+        "resolution.md",
+        "method-versioning.md",
+        "context.md"
       ]
     },
     {
@@ -42,10 +44,11 @@
         "account": "decentralized-identity",
         "repo": "sidetree"
       },
-      "spec_directory": "./api",
+      "output_path": "./www/api",
+      "spec_directory": "./docs/api",
       "markdown_paths": [
-        "markdown/title.md",
-        "markdown/content.md"
+        "title.md",
+        "content.md"
       ]
     }
   ]
