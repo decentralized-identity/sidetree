@@ -1,7 +1,8 @@
 dist/
 node_modules/
-api/index.html
-spec/index.html
+www/api/index.html
+www/spec/index.html
+www/spec-up/
 nunitresults.xml
 
 # Istanbul code coverage folders
