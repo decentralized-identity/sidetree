@@ -1,3 +1,4 @@
+import * as chalk from 'chalk';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
@@ -288,7 +289,7 @@ export default class BitcoinProcessor {
     }
 
     const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
-    console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
+    console.info(chalk.hex('#75b0eb')(`Successfully submitted transaction [hash: ${chalk.green(transactionHash)}]`));
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
