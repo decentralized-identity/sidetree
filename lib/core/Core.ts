@@ -41,8 +41,8 @@ export default class Core {
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
-    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString);
-    this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString);
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.observer = new Observer(
       this.versionManager,
       this.blockchain,
