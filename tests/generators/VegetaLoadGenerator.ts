@@ -32,12 +32,15 @@ export default class VegetaLoadGenerator {
 
       const signingKeyId = 'signingKey';
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      fs.writeFileSync(absoluteFolderPath + `/keys/signingPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/signingPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
 
       const [recover1RevealValue, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, recovery2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [update1RevealValue, update1CommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, update2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
+
+      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(

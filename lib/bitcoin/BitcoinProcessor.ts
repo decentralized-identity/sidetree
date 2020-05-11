@@ -5,6 +5,7 @@ import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
+import LogColor from '../common/LogColor';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
@@ -288,7 +289,7 @@ export default class BitcoinProcessor {
     }
 
     const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
-    console.info(`Successfully submitted transaction [hash: ${transactionHash}]`);
+    console.info(LogColor.lightBlue(`Successfully submitted transaction [hash: ${LogColor.green(transactionHash)}]`));
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 
