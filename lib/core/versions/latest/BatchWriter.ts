@@ -36,7 +36,7 @@ export default class BatchWriter implements IBatchWriter {
     // Get the batch of operations to be anchored on the blockchain.
     const queuedOperations = await this.operationQueue.peek(numberOfOpsAllowed);
     const numberOfOperations = queuedOperations.length;
-    
+
     // Do nothing if there is nothing to batch together.
     if (queuedOperations.length === 0) {
       console.info(`No queued operations to batch.`);
@@ -44,7 +44,7 @@ export default class BatchWriter implements IBatchWriter {
     }
 
     console.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
-    
+
     const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
     const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
     const recoverOperations = operationModels.filter(operation => operation.type === OperationType.Recover) as RecoverOperation[];
