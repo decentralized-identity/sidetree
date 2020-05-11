@@ -6,5 +6,6 @@
   "batchingIntervalInSeconds": 10,
   "observingIntervalInSeconds": 10,
   "maxConcurrentDownloads": 20,
-  "mongoDbConnectionString": "mongodb://localhost:27017/"
+  "mongoDbConnectionString": "mongodb://localhost:27017/",
+  "databaseName": "testMongodbName"
 }

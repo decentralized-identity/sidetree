@@ -71,7 +71,7 @@ export default class VersionManager implements IVersionManager {
 
       /* tslint:disable-next-line */
       const MongoDbOperationQueue = await this.loadDefaultExportsForVersion(version, 'MongoDbOperationQueue');
-      const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString);
+      const operationQueue = new MongoDbOperationQueue(this.config.mongoDbConnectionString, this.config.databaseName);
       await operationQueue.initialize();
 
       /* tslint:disable-next-line */

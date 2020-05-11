@@ -30,6 +30,8 @@ describe('Core', async () => {
       const databaseIncludedConfig = Object.assign({}, testConfig, { databaseName });
       const core = new Core(databaseIncludedConfig, testVersionConfig);
       expect(core['operationStore']['databaseName']).toEqual(databaseName);
+      expect(core['transactionStore']['databaseName']).toEqual(databaseName);
+      expect(core['unresolvableTransactionStore']['databaseName']).toEqual(databaseName);
     });
   });
 
