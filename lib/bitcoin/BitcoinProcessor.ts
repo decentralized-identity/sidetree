@@ -1,4 +1,3 @@
-import * as chalk from 'chalk';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
@@ -6,6 +5,7 @@ import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
+import LogColor from '../common/LogColor';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
@@ -289,7 +289,7 @@ export default class BitcoinProcessor {
     }
 
     const transactionHash = await this.bitcoinClient.broadcastSidetreeTransaction(sidetreeTransaction);
-    console.info(chalk.hex('#75b0eb')(`Successfully submitted transaction [hash: ${chalk.green(transactionHash)}]`));
+    console.info(LogColor.lightBlue(`Successfully submitted transaction [hash: ${LogColor.green(transactionHash)}]`));
     this.spendingMonitor.addTransactionDataBeingWritten(anchorString);
   }
 

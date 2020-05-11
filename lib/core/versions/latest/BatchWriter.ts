@@ -1,4 +1,3 @@
-import * as chalk from 'chalk';
 import AnchoredData from './models/AnchoredData';
 import AnchoredDataSerializer from './AnchoredDataSerializer';
 import AnchorFile from './AnchorFile';
@@ -10,6 +9,7 @@ import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
+import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
@@ -18,6 +18,7 @@ import RecoverOperation from './RecoverOperation';
 import UpdateOperation from './UpdateOperation';
 import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from './ValueTimeLockVerifier';
+
 /**
  * Implementation of the `IBatchWriter`.
  */
@@ -42,7 +43,7 @@ export default class BatchWriter implements IBatchWriter {
       return;
     }
 
-    console.info(chalk.hex('#75b0eb')(`Batch size = ${chalk.green(numberOfOperations)}`));
+    console.info(LogColor.lightBlue(`Batch size = ${LogColor.green(numberOfOperations)}`));
     
     const operationModels = await Promise.all(queuedOperations.map(async (queuedOperation) => Operation.parse(queuedOperation.operationBuffer)));
     const createOperations = operationModels.filter(operation => operation.type === OperationType.Create) as CreateOperation[];
@@ -56,18 +57,18 @@ export default class BatchWriter implements IBatchWriter {
 
     // Write the chunk file to content addressable store.
     const chunkFileHash = await this.cas.write(chunkFileBuffer);
-    console.info(chalk.hex('#75b0eb')(`Wrote chunk file ${chalk.green(chunkFileHash)} to content addressable store.`));
+    console.info(LogColor.lightBlue(`Wrote chunk file ${LogColor.green(chunkFileHash)} to content addressable store.`));
 
     // Write the map file to content addressable store.
     const mapFileBuffer = await MapFile.createBuffer(chunkFileHash, updateOperations);
     const mapFileHash = await this.cas.write(mapFileBuffer);
-    console.info(chalk.hex('#75b0eb')(`Wrote map file ${chalk.green(mapFileHash)} to content addressable store.`));
+    console.info(LogColor.lightBlue(`Wrote map file ${LogColor.green(mapFileHash)} to content addressable store.`));
 
     // Write the anchor file to content addressable store.
     const writerLock = currentLock ? currentLock.identifier : undefined;
     const anchorFileBuffer = await AnchorFile.createBuffer(writerLock, mapFileHash, createOperations, recoverOperations, deactivateOperations);
     const anchorFileHash = await this.cas.write(anchorFileBuffer);
-    console.info(chalk.hex('#75b0eb')(`Wrote anchor file ${chalk.green(anchorFileHash)} to content addressable store.`));
+    console.info(LogColor.lightBlue(`Wrote anchor file ${LogColor.green(anchorFileHash)} to content addressable store.`));
 
     // Anchor the data to the blockchain
     const dataToBeAnchored: AnchoredData = {
@@ -77,7 +78,7 @@ export default class BatchWriter implements IBatchWriter {
 
     const stringToWriteToBlockchain = AnchoredDataSerializer.serialize(dataToBeAnchored);
     const fee = FeeManager.computeMinimumTransactionFee(normalizedFee, numberOfOperations);
-    console.info(chalk.hex('#75b0eb')(`Writing data to blockchain: ${chalk.green(stringToWriteToBlockchain)} with minimum fee of: ${chalk.green(fee)}`));
+    console.info(LogColor.lightBlue(`Writing data to blockchain: ${LogColor.green(stringToWriteToBlockchain)} with minimum fee of: ${LogColor.green(fee)}`));
 
     await this.blockchain.write(stringToWriteToBlockchain, fee);
 
