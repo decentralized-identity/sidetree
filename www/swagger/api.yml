@@ -372,7 +372,7 @@ paths:
                         type: string
                         const: "normalized_fee_cannot_be_computed"
                         description: Error while computing the normalized fee.
-  /blockchain/writerlock:
+  /blockchain/writer-lock:
     get:
       tags:
         - Blockchain
