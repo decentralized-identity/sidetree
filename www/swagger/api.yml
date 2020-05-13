@@ -372,58 +372,58 @@ paths:
                         type: string
                         const: "normalized_fee_cannot_be_computed"
                         description: Error while computing the normalized fee.
-    /blockchain/writerlock:
-      get:
-        tags:
-          - Blockchain
-        operationId: getWriterLock
-        responses:
-          '200':
-            description: Success
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/BlockchainLock'
-          '400':
-            description: Bad Request
-          '401':
-            description: Unauthorized
-          '404':
-            oneof:
-              - type: object
-                properties:
-                  code: 
-                    type: string
-                    const: "value_time_lock_not_found"
-                    description:  Lock not found.
-              - type: object
-                properties:
-                  code: 
-                    type: string
-                    const: "value_time_lock_in_pending_state"
-                    description:  If there is a lock but is not confirmed on the blockchain yet.
-          '500':
-            description: Server Error
-    /blockchain/version:
-      get:
-        tags:
-          - Blockchain
-        operationId: getVersion
-        responses:
-          '200':
-            description: Success
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Version'
-          '400':
-            description: Bad Request
-          '401':
-            description: Unauthorized
-          '404':
-            description: Not Found
-          '500':
-            description: Server Error
+  /blockchain/writerlock:
+    get:
+      tags:
+        - Blockchain
+      operationId: getWriterLock
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockchainLock'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          oneof:
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "value_time_lock_not_found"
+                  description:  Lock not found.
+            - type: object
+              properties:
+                code: 
+                  type: string
+                  const: "value_time_lock_in_pending_state"
+                  description:  If there is a lock but is not confirmed on the blockchain yet.
+        '500':
+          description: Server Error
+  /blockchain/version:
+    get:
+      tags:
+        - Blockchain
+      operationId: getVersion
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+        '500':
+          description: Server Error
 
   /cas/version:
       get:
