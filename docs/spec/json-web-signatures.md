@@ -25,7 +25,7 @@ If `kid` is a DID URL, the verification key MAY be resolved as follows:
 
 1. Resolve the `kid` value using a resolver.
 2. iterate the `operations` and `recovery` verificationMethods, until a verificationMethod with `id` equal to `kid` is found.
-3. A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) is only valid when signed by a key listed in `recovery`. Other operations are only valid when signed with keys listed in `operations`. If the key is not present in the expected collection, verification fails, and the operation is considered invalid. If the key is present in the expected collection proceed.
+3. A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) or a [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) are only valid when signed by a key listed in `recovery`. Other operations are only valid when signed with keys listed in `operations`. If the key is not present in the expected collection, verification fails, and the operation is considered invalid. If the key is present in the expected collection proceed.
 3. Convert the discovered verificationMethod to JWK if necessary.
 4. Perform [JWS Verification](https://tools.ietf.org/html/rfc7515#section-5.2) using the JWK.
 5. The operation is considered valid if key material was present in the correct collection and the signature is valid.
