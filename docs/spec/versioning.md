@@ -4,11 +4,19 @@ The rules and parameters of the Sidetree protocol MAY change in the future, resu
 
 Versions of the specification can be found on the Decentralized Identity Foundation's website at the following version-based paths:
 
+**Latest Draft**
+
 ```html
-https://identity.foundation/sidetree/docs/v<major>.<minor>.<patch>/
+https://identity.foundation/sidetree/spec/
 ```
 
-Versions of the Sidetree reference implementation are provided as npm modules and [GitHub releases](https://github.com/decentralized-identity/sidetree/releases):
+**Specific Versions**
+
+```html
+https://identity.foundation/sidetree/spec/v<major>.<minor>.<patch>/
+```
+
+Versions of the Sidetree reference implementation are also provided as npm modules and [GitHub releases](https://github.com/decentralized-identity/sidetree/releases):
 
 
 ```json

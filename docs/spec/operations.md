@@ -50,7 +50,11 @@ Use the following process to generate a Sidetree-based DID:
     - The object ****MUST**** contain an `recovery_commitment` property, and its value ****MUST**** be an [_Initial Recovery Commitment_](#initial-recovery-commitment) (detailed above).
 
 ::: note
-Implementers MAY choose to canonicalize their [_Create Operation Suffix Data Objects_](#create-suffix-data-object) prior applying the [`DATA_ENCODING_SCHEME`](#data-encoding-scheme). This does not affect the outcome or other components in the system that deal with this object.
+Implementations ****MAY**** choose to define additional properties for inclusion in the [_Create Operation Suffix Data Object_](#create-suffix-data-object), but the presence of any properties beyond the standard properties or implementation-defined properties ****ARE NOT**** permitted.
+:::
+
+::: note
+Implementers ****MAY**** choose to canonicalize their [_Create Operation Suffix Data Objects_](#create-suffix-data-object) prior applying the [`DATA_ENCODING_SCHEME`](#data-encoding-scheme). This does not affect the outcome or other components in the system that deal with this object.
 :::
 
 ### Update
