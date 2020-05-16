@@ -19,62 +19,150 @@ export default class Resolver {
   /**
    * Resolve the given DID unique suffix to its latest DID state.
    * @param didUniqueSuffix The unique suffix of the DID to resolve. e.g. if 'did:sidetree:abc123' is the DID, the unique suffix would be 'abc123'
-   * @returns Final DID state of the DID. Undefined if the unique suffix of the DID is not found.
+   * @returns Final DID state of the DID. Undefined if the unique suffix of the DID is not found or state is not constructable.
    */
   public async resolve (didUniqueSuffix: string): Promise<DidState | undefined> {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
     const operations = await this.operationStore.get(didUniqueSuffix);
-    const createAndRecoverAndDeactivateOperations = operations.filter(
-      op => op.type === OperationType.Create ||
-      op.type === OperationType.Recover ||
-      op.type === OperationType.Deactivate);
 
-    // Apply "full" operations first.
+    // Construct a hash(reveal_value) -> operation map for operations that are NOT creates.
+    const createOperations = [];
+    const hashToOperationsMap = new Map<string, AnchoredOperationModel[]>();
+    for (const operation of operations) {
+      if (operation.type === OperationType.Create) {
+        createOperations.push(operation);
+        continue;
+      }
+
+      // Else this operation is NOT a create.
+      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
+      const revealValue = operationProcessor.getRevealValue(operation);
+      const hashOfRevealValue = computeHashOfRevealValue(revealValue);
+
+      if (hashToOperationsMap.has(hashOfRevealValue)) {
+        hashToOperationsMap.get(hashOfRevealValue)!.push(operation);
+      } else {
+        hashToOperationsMap.set(hashOfRevealValue, [operation]);
+      }
+    }
+
+    // Iterate through all duplicates of creates until we can construct a DID state (some creates maybe incomplete. eg. without `delta`).
     let didState: DidState | undefined;
-    didState = await this.applyOperations(createAndRecoverAndDeactivateOperations, didState);
+    for (const createOperation of createOperations) {
+      didState = await this.applyOperation(createOperation, didState);
 
-    // If no valid full operation is found at all, the DID is not anchored.
+      // Exit loop as soon as we can construct an initial state.
+      if (didState !== undefined) {
+        break;
+      }
+    }
+
+    // If can't construct an initial DID state.
     if (didState === undefined) {
       return undefined;
     }
 
-    // If last operation is a deactivate. No need to continue further.
-    if (didState.nextRecoveryCommitmentHash === undefined) {
-      return didState;
+    // Apply the next recovery/deactivate until opertaion matching the next recovery commitment cannot be found.
+    while (hashToOperationsMap.has(didState.nextRecoveryCommitmentHash!)) {
+      let operationsWithCorrectRevealValue: AnchoredOperationModel[] = hashToOperationsMap.get(didState.nextRecoveryCommitmentHash!)!;
+
+      // Take only recoveries and deactivates.
+      operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.filter((operation) => operation.type === OperationType.Recover || 
+                                                                                                operation.type === OperationType.Deactivate);
+      // Sort using blockchain time.
+      operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
+
+      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState!);
+
+      // We are done if we can't find a valid recover/deactivate operation to apply.
+      if (newDidState === undefined) {
+        break;
+      }
+
+      // We reach here if we have successfully computed a new DID state.
+      didState = newDidState!;
+
+      // If applied operation is a deactivate. No need to continue further.
+      if (didState.nextRecoveryCommitmentHash === undefined) {
+        return didState;
+      }
     }
 
-    // Get only update operations that came after the last full operation.
-    const lastOperationTransactionNumber = didState.lastOperationTransactionNumber;
-    const updateOperations = operations.filter(op => op.type === OperationType.Update);
-    const updateOperationsToBeApplied = updateOperations.filter(op => op.transactionNumber > lastOperationTransactionNumber);
+    // Apply the next recovery/deactivate until opertaion matching the next recovery commitment cannot be found.
+    while (hashToOperationsMap.has(didState.nextUpdateCommitmentHash!)) {
+      let operationsWithCorrectRevealValue: AnchoredOperationModel[] = hashToOperationsMap.get(didState.nextUpdateCommitmentHash!)!;
 
-    // Apply "update/delta" operations.
-    didState = await this.applyOperations(updateOperationsToBeApplied, didState);
+      // Take only updates.
+      operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.filter((operation) => operation.type === OperationType.Update);
+
+      // Sort using blockchain time.
+      operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
+
+      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState!);
+
+      // We are done if we can't find a valid update operation to apply.
+      if (newDidState === undefined) {
+        break;
+      }
+
+      // We reach here if we have successfully computed a new DID state.
+      didState = newDidState!;
+
+      // If applied operation is a deactivate. No need to continue further.
+      if (didState.nextRecoveryCommitmentHash === undefined) {
+        return didState;
+      }
+    }
 
     return didState;
   }
 
   /**
-   * Applies the given operations to the given DID document.
-   * @param operations The list of operations to be applied in sequence.
-   * @param didState The DID state to apply the operations on top of.
+   * Applies the given operation to the given DID state.
+   * @param operation The operation to be applied.
+   * @param didState The DID state to apply the operation on top of.
    */
-  private async applyOperations (
-    operations: AnchoredOperationModel[],
+  private async applyOperation (
+    operation: AnchoredOperationModel,
     didState: DidState | undefined
     ): Promise<DidState | undefined> {
     let appliedDidState = didState;
-    for (const operation of operations) {
-      // NOTE: MUST NOT throw error, else a bad operation can be used to denial resolution for any DID.
-      try {
-        const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-        appliedDidState = await operationProcessor.apply(operation, appliedDidState);
-      } catch (error) {
-        console.log(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${error}`);
-      }
+
+    // NOTE: MUST NOT throw error, else a bad operation can be used to denial resolution for a DID.
+    try {
+      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
+      appliedDidState = await operationProcessor.apply(operation, appliedDidState);
+    } catch (error) {
+      console.log(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${error}`);
     }
 
     return appliedDidState;
+  }
+
+  /**
+   * @returns The new DID State if a valid operation is applied, `undefined` otherwise.
+   */
+  private async applyFirstValidOperation (operations: AnchoredOperationModel[], originalDidState: DidState): Promise<DidState | undefined> {
+    let newDidState = originalDidState;
+
+    // Stop as soon as an operation is applied successfully.
+    for (const operation of operations) {
+      newDidState = (await this.applyOperation(operation, newDidState))!;
+
+      // If operation matching the recovery commitment is applied.
+      if (newDidState!.lastOperationTransactionNumber !== originalDidState.lastOperationTransactionNumber) {
+        return newDidState;
+      }
+    }
+
+    // Else we reach the end of operations without being able to apply any of them.
+    return undefined;
+  }
+  
+  private computeHashOfRevealValue (encodedRevealValue: string): string {
+    // Currently assumes SHA256.
+    // TODO: Issue #999 Introduce multihash leading bytes to the secret reveal value, so that it gives hint as to what hash algorithm must be used.
+
   }
 }
