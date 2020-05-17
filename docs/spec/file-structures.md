@@ -27,10 +27,10 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
     "recover": [
       {
         "did_suffix": SUFFIX_STRING,
-        "recovery_reveal_value": REVEAL_VALUE,
         "signed_data": { // Base64URL encoded, compact JWS
             "protected": {...},
             "payload": {
+                "recovery_reveal_value": REVEAL_VALUE,
                 "recovery_commitment": COMMITMENT_HASH,
                 "delta_hash": DELTA_HASH,
                 "recovery_key": JWK_OBJECT
@@ -43,7 +43,6 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
     "deactivate": [
       {
         "did_suffix": SUFFIX_STRING,
-        "recovery_reveal_value": REVEAL_VALUE,
         "signed_data": { // Base64URL encoded, compact JWS
             "protected": {...},
             "payload": {
@@ -74,13 +73,11 @@ A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exc
       1. The `operations` object ****MUST**** include a `recover` property, and its value ****MUST**** be an array.
       2. For each [Recovery](#recover) operation to be included in the `recover` array, herein referred to as [_Anchor File Recovery Entries_](#anchor-file-recovery-entry){id="anchor-file-recovery-entry"}, use the following process to compose and include entries:
           - The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Anchor File](#anchor-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
-          - The object ****MUST**** contain a `recovery_reveal_value` property, and its value ****MUST**** be the last recovery [`COMMITMENT_VALUE`](#commitment-value).
           - The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [_Recovery Operation Signed Data Object_](#recovery-signed-data-object).
     - If there are any [Deactivate](#deactivate) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `deactivate` property, and its value ****MUST**** be an array.
       2. For each [Deactivate](#deactivate) operation to be included in the `deactivate` array, use the following process to compose and include entries:
           - The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to. An [Anchor File](#anchor-file) ****MUST NOT**** contain more than one operation of any type with the same [DID Suffix](#did-suffix).
-          - The object ****MUST**** contain a `recovery_reveal_value` property, and its value ****MUST**** be the last recovery [`COMMITMENT_VALUE`](#commitment-value).
           - The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [_Deactivate Operation Signed Data Object_](#deactivate-signed-data-object).
 
 ### Map File
@@ -97,10 +94,10 @@ The Map file in the Sidetree protocol contains Update operation proving data, as
     "update": [
       {
         "did_suffix": DID_SUFFIX,
-        "update_reveal_value": REVEAL_VALUE,
         "signed_data": { // Base64URL encoded, compact JWS
             "protected": {...},
             "payload": {
+              "update_reveal_value": REVEAL_VALUE,
               "delta_hash": DELTA_HASH
             },
             "signature": SIGNATURE_STRING
@@ -121,7 +118,6 @@ A valid [Map File](#map-file) is a JSON document that ****MUST NOT**** exceed th
   1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
   2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry){id="map-file-update-entry"}, use the following process to compose and include entries:
         - The object ****MUST**** contain an `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-        - The object ****MUST**** contain a `update_reveal_value` property, and its value ****MUST**** be the last update [`COMMITMENT_VALUE`](#commitment-value).
         - The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be an [_Update Operation Signed Data Object_](#update-signed-data-object).
 
 ### Chunk Files

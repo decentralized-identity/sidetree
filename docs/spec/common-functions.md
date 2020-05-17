@@ -15,3 +15,9 @@ Pseudo-code example using current protocol defaults:
 ```js
 let HashingOutput = Base64URL( Multihash(DATA, 'sha2-256') );
 ```
+
+### Commitment Value Generation
+
+All commitment values created for the commit/reveal function of Sidetree operations ****MUST**** be sufficiently random values (e.g. a 32 byte cryptographically secure string) and ****MUST**** be unique across operations, without reuse in the operational lineage of a DID.
+
+Commitment values ****SHOULD**** be deterministically regenerable using the keys bound to a given DID. This eliminates the addition of another sensitive value User Agent applications would need to track, secure, and store, which subsequently reduces the possibility of loss.

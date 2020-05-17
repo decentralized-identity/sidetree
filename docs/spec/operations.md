@@ -25,9 +25,9 @@ Use the following process to generate a Sidetree-based DID:
 
 1. Generate a key pair via the [`KEY_ALGORITHM`](#key-algorithm). The public key ****MUST**** be retained for use as the [_Initial Recovery Public Key_](#initial-recovery-key){id="initial-recovery-key"} portion of the [DID Suffix](#did-suffix), while the the private key ****MUST**** be securely stored for use in subsequent [Recovery](#recovery) operations.
 2. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Recovery operation, herein referred to as [_Initial Recovery Commitment_](#initial-recovery-commitment){id="initial-recovery-commitment"}.
-3. Generate a _Recovery Commitment_ hash using the [Hashing Process](#hashing-process) to generate a hash of the [`COMMITMENT_VALUE`](#commitment-value), and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
-4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Update operation, herein referred to as _Update Reveal Value_.
-5. Generate an _Update Commitment_ hash by using the [Hashing Process](#hashing-process) to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
+3. Generate a _Recovery Commitment_ using the [Hashing Process](#hashing-process), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, to generate a hash of the [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
+4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, for use in the next Update operation, herein referred to as _Update Reveal Value_.
+5. Generate an _Update Commitment_ using the [Hashing Process](#hashing-process) to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
 6. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
     ```json
     {
@@ -76,11 +76,13 @@ The following process must be used to update the state a Sidetree-based DID:
     {
       "protected": {...},
       "payload": {
-          "delta_hash": DELTA_HASH
+        "update_reveal_value": REVEAL_VALUE,
+        "delta_hash": DELTA_HASH
       },
       "signature": SIGNATURE_STRING
     }
     ```
+    - The JWS `payload` object ****MUST**** contain a `update_reveal_value` property, and its value ****MUST**** be the last update [`COMMITMENT_VALUE`](#commitment-value).
     - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Update Operation Delta Object_](#update-delta-object), generated via the [Hashing Process](#hashing-process).
 
 ### Recover
@@ -90,8 +92,8 @@ Use the following process to recover a Sidetree-based DID:
 1. Retrieve the _Recovery Reveal Value_ that matches the previously anchored _Recovery Commitment_. This value will be used in constructing an [_Anchor File Recovery Entry_](#anchor-file-recovery-entry) for the DID being recovered.
 2. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Recovery operation, herein referred to as the _Recovery Reveal Value_.
 3. Generate a [_Recovery Commitment_](#recovery-commitment){id="recovery-commitment"} hash using the [Hashing Process](#hashing-process) to generate a hash of the [`COMMITMENT_VALUE`](#commitment-value), and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file).
-4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value) for use in the next Update operation, herein referred to as the _Update Reveal Value_.
-5. Generate an _Update Commitment_ hash using the [Hashing Process](#hashing-process) to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file).
+4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, for use in the next Update operation, herein referred to as the _Update Reveal Value_.
+5. Generate an _Update Commitment_ using the [Hashing Process](#hashing-process), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file).
 6. Optionally, the recovering entity MAY generate a new key pair, via the [`KEY_ALGORITHM`](#key-algorithm), for inclusion in the [Anchor File](#anchor-file) (to support key rolling, etc.). The private key ****MUST**** be securely stored for use in subsequent [Recovery](#recover) operations.
 7. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`], herein referred to as the [_Recovery Operation Delta Object_](#recover-delta-object){ id="recover-delta-object" }, composed as follows:
     ```json
@@ -107,14 +109,16 @@ Use the following process to recover a Sidetree-based DID:
     {
       "protected": {...},
       "payload": {
-          "recovery_commitment": COMMITMENT_HASH,
-          "delta_hash": DELTA_HASH,
-          "recovery_key": JWK_OBJECT
+        "recovery_reveal_value": REVEAL_VALUE,
+        "recovery_commitment": COMMITMENT_HASH,
+        "delta_hash": DELTA_HASH,
+        "recovery_key": JWK_OBJECT
       },
       "signature": SIGNATURE_STRING
     }
     ```
     - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [Hashing Process](#hashing-process).
+    - The JWS `payload` object  ****MUST**** contain a `recovery_reveal_value` property, and its value ****MUST**** be the last recovery [`COMMITMENT_VALUE`](#commitment-value).
     - The JWS `payload` object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be the next [_Recovery Commitment_](#recovery-commitment), as described above.
     - The JWS `payload` object MAY include a `recovery_key` property, and if included, its value ****MUST**** be an [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation of a public key, as described above.
 
