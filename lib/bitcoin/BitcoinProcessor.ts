@@ -451,6 +451,10 @@ export default class BitcoinProcessor {
 
     // If there's nothing saved in the DB then let's start from the genesis block
     if (!lastSavedTransaction) {
+      // Put the system DBs in the correct state. We are going to ignore the return value
+      // from the following call as we already know the starting block is the
+      // genesis block.
+      await this.trimDatabasesToFeeSamplingGroupBoundary(this.genesisBlockNumber);
       return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 

@@ -874,7 +874,7 @@ describe('BitcoinProcessor', () => {
       getStartingBlockForInitializationSpy.and.callThrough();
     });
 
-    it('should return the block after the genesis block if no transactions are saved in the DB', async (done) => {
+    it('should return the genesis block if no transactions are saved in the DB', async (done) => {
 
       const mockBlock: IBlockInfo = {
         hash: 'some_hash',
@@ -889,9 +889,11 @@ describe('BitcoinProcessor', () => {
       });
 
       transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve());
+      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToFeeSamplingGroupBoundary');
 
       const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
       expect(startingBlock).toEqual(mockBlock);
+      expect(revertDbsSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber']);
       done();
     });
 
