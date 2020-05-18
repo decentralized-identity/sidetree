@@ -129,7 +129,7 @@ describe('OperationProcessor', async () => {
     operationProcessor = new OperationProcessor();
     versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
-    resolver = new Resolver(versionManager, operationStore);
+    resolver = new Resolver(versionManager, operationStore, versionManager.allSupportedHashAlgorithms);
 
     // Generate a unique key-pair used for each test.
     signingKeyId = 'signingKey';
@@ -253,7 +253,7 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
-      resolver = new Resolver(versionManager, operationStore);
+      resolver = new Resolver(versionManager, operationStore, versionManager.allSupportedHashAlgorithms);
       const permutedOps = permutation.map(i => ops[i]);
       await operationStore.put(permutedOps);
       const didState = await resolver.resolve(didUniqueSuffix);

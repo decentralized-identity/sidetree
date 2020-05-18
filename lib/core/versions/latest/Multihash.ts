@@ -34,6 +34,16 @@ export default class Multihash {
   }
 
   /**
+   * Hashes the content using the hashing algorithm specified then codes the multihash buffer.
+   * @param hashAlgorithmInMultihashCode The hashing algorithm to use.
+   */
+  public static hashThenEncode (content: Buffer, hashAlgorithmInMultihashCode: number): string {
+    const multihashBuffer = Multihash.hash(content, hashAlgorithmInMultihashCode);
+    const multihashEncodedString = Encoder.encode(multihashBuffer);
+    return multihashEncodedString;
+  }
+
+  /**
    * Given a multihash, returns the code of the hash algorithm used.
    * @throws `SidetreeError` if hash algorithm used for the given multihash is unsupported.
    */

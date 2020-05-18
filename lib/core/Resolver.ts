@@ -2,19 +2,17 @@ import AnchoredOperationModel from './models/AnchoredOperationModel';
 import DidState from './models/DidState';
 import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
+import Multihash from './versions/latest/Multihash';
 import OperationType from './enums/OperationType';
 
 /**
- * Implementation of OperationProcessor. Uses a OperationStore
- * that might, e.g., use a backend database for persistence.
- * All 'processing' is deferred to resolve time, with process()
- * simply storing the operation in the store.
- *
- * NOTE: Resolver needs to be versioned because it depends on `VersionManager` being constructed to fetch the versioned operation processor.
+ * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch the versioned operation processor.
+ * 
+ * @param allSupportedHashAlgorithms All the supported hash algorithms in multihash code.
  */
 export default class Resolver {
 
-  public constructor (private versionManager: IVersionManager, private operationStore: IOperationStore) { }
+  public constructor (private versionManager: IVersionManager, private operationStore: IOperationStore, private allSupportedHashAlgorithms: number[]) { }
 
   /**
    * Resolve the given DID unique suffix to its latest DID state.
@@ -25,27 +23,11 @@ export default class Resolver {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
     const operations = await this.operationStore.get(didUniqueSuffix);
+    const createOperations = operations.filter(operation => operation.type === OperationType.Create);
+    const nonCreateOperations = operations.filter(operation => operation.type !== OperationType.Create);
 
     // Construct a hash(reveal_value) -> operation map for operations that are NOT creates.
-    const createOperations = [];
-    const hashToOperationsMap = new Map<string, AnchoredOperationModel[]>();
-    for (const operation of operations) {
-      if (operation.type === OperationType.Create) {
-        createOperations.push(operation);
-        continue;
-      }
-
-      // Else this operation is NOT a create.
-      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-      const revealValue = operationProcessor.getRevealValue(operation);
-      const hashOfRevealValue = computeHashOfRevealValue(revealValue);
-
-      if (hashToOperationsMap.has(hashOfRevealValue)) {
-        hashToOperationsMap.get(hashOfRevealValue)!.push(operation);
-      } else {
-        hashToOperationsMap.set(hashOfRevealValue, [operation]);
-      }
-    }
+    const hashToOperationsMap = await this.constructCommitToOperationLookupMap(nonCreateOperations, this.allSupportedHashAlgorithms);
 
     // Iterate through all duplicates of creates until we can construct a DID state (some creates maybe incomplete. eg. without `delta`).
     let didState: DidState | undefined;
@@ -159,10 +141,34 @@ export default class Resolver {
     // Else we reach the end of operations without being able to apply any of them.
     return undefined;
   }
-  
-  private computeHashOfRevealValue (encodedRevealValue: string): string {
-    // Currently assumes SHA256.
-    // TODO: Issue #999 Introduce multihash leading bytes to the secret reveal value, so that it gives hint as to what hash algorithm must be used.
 
+  /**
+   * Constructs a single commit value -> operation lookup map by looping through each supported hash algorithm,
+   * hashing each operations as key, then adding the result to a map.
+   */
+  private async constructCommitToOperationLookupMap (nonCreateOperations: AnchoredOperationModel[], allSupportedHashAlgorithms: number[])
+    : Promise<Map<string, AnchoredOperationModel[]>>
+  {
+    const hashToOperationMap = new Map<string, AnchoredOperationModel[]>();
+
+    // Loop through each supported algorithm and hash each operation.
+    for (const hashAlgorithm of allSupportedHashAlgorithms) {
+
+      // Construct a hash(reveal_value) -> operation map for operations that are NOT creates.
+      for (const operation of nonCreateOperations) {
+
+        const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
+        const revealValueBuffer = await operationProcessor.getRevealValue(operation);
+        const hashOfRevealValue = Multihash.hashThenEncode(revealValueBuffer, hashAlgorithm);
+
+        if (hashToOperationMap.has(hashOfRevealValue)) {
+          hashToOperationMap.get(hashOfRevealValue)!.push(operation);
+        } else {
+          hashToOperationMap.set(hashOfRevealValue, [operation]);
+        }
+      }
+    }
+
+    return hashToOperationMap;
   }
 }

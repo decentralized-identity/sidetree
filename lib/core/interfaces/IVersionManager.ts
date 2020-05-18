@@ -9,6 +9,8 @@ import ITransactionSelector from './ITransactionSelector';
  */
 export default interface IVersionManager {
 
+  allSupportedHashAlgorithms: number[];
+
   /**
    * Gets the batchwriter for the given blockchain time.
    * @param blockchainTime The blockchain time for which the batchwriter is needed.

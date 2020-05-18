@@ -18,4 +18,10 @@ export default interface IOperationProcessor {
     operation: AnchoredOperationModel,
     didState: DidState | undefined
   ): Promise<DidState | undefined>;
+
+
+  /**
+   * Gets the reveal value of a non-create operation.
+   */
+  getRevealValue (operation: AnchoredOperationModel): Promise<Buffer>;
 }

@@ -23,7 +23,7 @@ describe('Resolver', () => {
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
 
     operationStore = new MockOperationStore();
-    resolver = new Resolver(versionManager, operationStore);
+    resolver = new Resolver(versionManager, operationStore, versionManager.allSupportedHashAlgorithms);
   });
 
   describe('Recovery operation', () => {
