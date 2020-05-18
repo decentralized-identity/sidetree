@@ -16,6 +16,9 @@
       "@container": "@set"
     },
     "usage": "sidetree:usage",
-    "JsonWebKey2020": "ldssk:JsonWebKey2020"
+    "JsonWebKey2020": {
+      "@id":"ldssk:JsonWebKey2020",
+      "@type": "@json"
+    }
   }
 }
