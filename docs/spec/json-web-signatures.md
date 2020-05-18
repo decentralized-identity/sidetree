@@ -19,25 +19,50 @@ Here is an example of a decoded JWS header:
 }
 ```
 
+::: warning
+  It is recommended that `kid` be a DID URL. If it is not, method implementers might need to rely on additional context to uniquely identify the associated verificationMethod. 
+:::
+
 ### Verifying
 
-If `kid` is a DID URL, the verification key MAY be resolved as follows:
+Regardless of which proof purpose a verificationMethod is associated with, the process of verifying a JWS linked to a DID is the same.
 
-1. Resolve the `kid` value using a resolver.
-2. iterate the `operations` and `recovery` verificationMethods, until a verificationMethod with `id` equal to `kid` is found.
-3. A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) is only valid when signed by a key listed in `recovery`. Other operations are only valid when signed with keys listed in `operations`. If the key is not present in the expected collection, verification fails, and the operation is considered invalid. If the key is present in the expected collection proceed.
-3. Convert the discovered verificationMethod to JWK if necessary.
-4. Perform [JWS Verification](https://tools.ietf.org/html/rfc7515#section-5.2) using the JWK.
-5. The operation is considered valid if key material was present in the correct collection and the signature is valid.
+The JWS header is parsed and a `kid` is extracted.
 
-
-If `kid` is not a DID URL, the verification key MAY be resolved as follows:
-
-1. Iterate an internal representation of keys registered for use with the DID until a jwk with `kid` equal to `kid` is found.
-2. Ensure that the `usage` property of the internal key represenation is `recovery` if the operation is a recovery operation or `ops` if the operation is not Recovery or Update.
+1. Iterate the verificationMethods, until a verificationMethod with `id` equal to `kid` is found.
+2. Convert the discovered verificationMethod to JWK if necessary.
 3. Perform [JWS Verification](https://tools.ietf.org/html/rfc7515#section-5.2) using the JWK.
-4. The operation is considered valid if key material was present with the correct usage and the signature is valid.
+4. The operation is considered valid if key material was present in the correct collection and the signature is valid.
+
+
+#### Operation Verification
+
+Sidetree operations are considerd valid when the JWS can be verified, and where the key used is associated with the correct proof purpose.
+
+`operations`, `recovery` are proof purposes for verifying sidetree operations which sidetree DID Methods MUST support. A sidetree operation MUST be signed by a key associated with exactly one of these proof purposes.
+
+An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by a key associated with the `operations` proof purpose. 
+
+A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by a key associated with the `recovery` proof purpose. 
+
+A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by a key associated with the `recovery` proof purpose. 
+
+If a verificationMethod with `id` matching the JWS `kid` is not present in the expected collection, the sidetree operation is considered not valid.
 
 ::: warning
-  Operations may be valid, and yet still rejected in the resolution process.
+  Operations may be verified, and yet still rejected in the resolution process.
+:::
+
+DID Core also defines proof purposes which sidetree DID Methods MAY support.
+
+`assertionMethod` for use with Verifiable Credentials.
+`authentication` for use with Verifiable Presentations, and general authentication flows.
+`capabilityInvocation` and `capabilityDelegation` for use with Object Capabilities used by Secure Data Stores / Encrypted Data vaults. 
+
+::: warning
+  verificationMethod objects can be embedded, or referenced by `id`.
+:::
+
+::: warning
+  It is not recommended to reuse verificationMethod's for multiple proof purposes.
 :::
