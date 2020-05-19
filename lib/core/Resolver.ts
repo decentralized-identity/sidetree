@@ -6,7 +6,7 @@ import Multihash from './versions/latest/Multihash';
 import OperationType from './enums/OperationType';
 
 /**
- * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch the versioned operation processor.
+ * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch versioned operation processors.
  *
  * @param allSupportedHashAlgorithms All the supported hash algorithms in multihash code.
  */
@@ -17,7 +17,7 @@ export default class Resolver {
   /**
    * Resolve the given DID unique suffix to its latest DID state.
    * @param didUniqueSuffix The unique suffix of the DID to resolve. e.g. if 'did:sidetree:abc123' is the DID, the unique suffix would be 'abc123'
-   * @returns Final DID state of the DID. Undefined if the unique suffix of the DID is not found or state is not constructable.
+   * @returns Final DID state of the DID. Undefined if the unique suffix of the DID is not found or the DID state is not constructable.
    */
   public async resolve (didUniqueSuffix: string): Promise<DidState | undefined> {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
@@ -33,7 +33,7 @@ export default class Resolver {
       return undefined;
     }
 
-    // Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
+    // Apply recovery/deactivate operations until an operation matching the next recovery commitment cannot be found.
     const recoverAndDeactivateOperations = operationsByType.recoverOperations.concat(operationsByType.deactivateOperations);
     const recoveryCommitValueToOperationMap = await this.constructCommitValueToOperationLookupMap(recoverAndDeactivateOperations);
     didState = await this.applyRecoverAndDeactivateOperations(didState, recoveryCommitValueToOperationMap);
@@ -43,7 +43,7 @@ export default class Resolver {
       return didState;
     }
 
-    // Apply update operations until an opertaion matching the next update commitment cannot be found.
+    // Apply update operations until an operation matching the next update commitment cannot be found.
     const updateCommitValueToOperationMap = await this.constructCommitValueToOperationLookupMap(operationsByType.updateOperations);
     didState = await this.applyUpdateOperations(didState, updateCommitValueToOperationMap);
 
@@ -100,7 +100,7 @@ export default class Resolver {
   }
 
   /**
-   * Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
+   * Apply recovery/deactivate operations until an operation matching the next recovery commitment cannot be found.
    */
   private async applyRecoverAndDeactivateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
     : Promise<DidState> {
@@ -132,7 +132,7 @@ export default class Resolver {
   }
 
   /**
-   * Apply update operations until an opertaion matching the next update commitment cannot be found.
+   * Apply update operations until an operation matching the next update commitment cannot be found.
    */
   private async applyUpdateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
     : Promise<DidState> {
@@ -211,8 +211,6 @@ export default class Resolver {
 
     // Loop through each supported algorithm and hash each operation.
     for (const hashAlgorithm of this.allSupportedHashAlgorithms) {
-
-      // Construct a hash(reveal_value) -> operation map for operations that are NOT creates.
       for (const operation of nonCreateOperations) {
 
         const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);

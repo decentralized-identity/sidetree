@@ -72,13 +72,16 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
     let encodedRevealValue;
-    if (operation.type === OperationType.Recover) {
-      encodedRevealValue = (operation as RecoverOperation).recoveryRevealValue;
-    } if (operation.type === OperationType.Update) {
-      encodedRevealValue = (operation as UpdateOperation).updateRevealValue;
-    } else {
-      // This is a deactivate.
-      encodedRevealValue = (operation as DeactivateOperation).recoveryRevealValue;
+    switch (operation.type) {
+      case OperationType.Recover:
+        encodedRevealValue = (operation as RecoverOperation).recoveryRevealValue;
+        break;
+      case OperationType.Update:
+        encodedRevealValue = (operation as UpdateOperation).updateRevealValue;
+        break;
+      default: // This is a deactivate.
+        encodedRevealValue = (operation as DeactivateOperation).recoveryRevealValue;
+        break;
     }
 
     const revealValueBuffer = Encoder.decodeAsBuffer(encodedRevealValue);

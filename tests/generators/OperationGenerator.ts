@@ -68,7 +68,7 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a reveal value and commitment hash as encoded strings for use in opertaions.
+   * Generates a reveal value and commitment hash as encoded strings for use in operations.
    * @returns [revealValueEncodedString, commitmentValueHashEncodedString]
    */
   public static generateCommitRevealPair (): [string, string] {

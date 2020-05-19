@@ -267,8 +267,6 @@ describe('Resolver', () => {
       const updatesWithSameReveal = updateCommitValueToOperationMap.get(nextUpdateCommitment);
       expect(updatesWithSameReveal).toBeDefined();
       expect(updatesWithSameReveal!.length).toEqual(3);
-      // const updateCommitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
-      // updateCommitValueToOperationMap.set(nextUpdateCommitment, [updateOperation3, updateOperation1, updateOperation2]);
 
       const newDidState: DidState = await (resolver as any).applyUpdateOperations(initialDidState, updateCommitValueToOperationMap);
 
