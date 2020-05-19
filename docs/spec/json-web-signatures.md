@@ -32,14 +32,12 @@ The JWS header is parsed and a `kid` is extracted.
 1. Iterate the verificationMethods, until a verificationMethod with `id` equal to `kid` is found.
 2. Convert the discovered verificationMethod to JWK if necessary.
 3. Perform [JWS Verification](https://tools.ietf.org/html/rfc7515#section-5.2) using the JWK.
-4. The operation is considered valid if key material was present in the correct collection and the signature is valid.
-
 
 #### Operation Verification
 
 Sidetree operations are considerd valid when the JWS can be verified, and where the key used is associated with the correct proof purpose.
 
-`operations`, `recovery` are proof purposes for verifying sidetree operations which sidetree DID Methods MUST support. A sidetree operation MUST be signed by a key associated with exactly one of these proof purposes.
+`operations`, `recovery` are proof purposes for verifying sidetree operations which sidetree DID Methods MUST support, but which MAY NOT be exposed externally via the DID Document or Resolver Method Meta Data.
 
 An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by a key associated with the `operations` proof purpose. 
 
