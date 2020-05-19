@@ -68,7 +68,7 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a reveal value and commitment hash as encoded strings for use in opertaions.
+   * Generates a reveal value and commitment hash as encoded strings for use in operations.
    * @returns [revealValueEncodedString, commitmentValueHashEncodedString]
    */
   public static generateCommitRevealPair (): [string, string] {
@@ -164,7 +164,7 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates a recover operation payload.
+   * Generates a recover operation.
    */
   public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
     const signingKeyId = 'newSigningKey';
@@ -200,6 +200,36 @@ export default class OperationGenerator {
       signingPrivateKey,
       nextRecoveryRevealValueEncodedString,
       nextUpdateRevealValueEncodedString
+    };
+  }
+
+  /**
+   * Generates an update operation that adds a new key.
+   */
+  public static async generateUpdateOperation (didUniqueSuffix: string, updateRevealValue: string, updatePrivateKeyId: string, updatePrivateKey: JwkEs256k) {
+    const additionalKeyId = `additional-key`;
+    const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
+    const [nextUpdateRevealValue, nextUpdateCommitValue] = OperationGenerator.generateCommitRevealPair();
+
+    const operationJson = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
+      didUniqueSuffix,
+      updateRevealValue,
+      additionalPublicKey,
+      nextUpdateCommitValue,
+      updatePrivateKeyId,
+      updatePrivateKey
+    );
+
+    const operationBuffer = Buffer.from(JSON.stringify(operationJson));
+    const updateOperation = await UpdateOperation.parse(operationBuffer);
+
+    return {
+      updateOperation,
+      operationBuffer,
+      additionalKeyId,
+      additionalPublicKey,
+      additionalPrivateKey,
+      nextUpdateRevealValue
     };
   }
 

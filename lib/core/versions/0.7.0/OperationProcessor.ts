@@ -3,9 +3,11 @@ import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import DocumentComposer from './DocumentComposer';
 import DidState from '../../models/DidState';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import Multihash from './Multihash';
+import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
@@ -60,6 +62,30 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     return appliedDidState;
+  }
+
+  public async getRevealValue (anchoredOperationModel: AnchoredOperationModel): Promise<Buffer> {
+    if (anchoredOperationModel.type === OperationType.Create) {
+      throw new SidetreeError(ErrorCode.OperationProcessorCreateOperationDoesNotHaveRevealValue);
+    }
+
+    const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
+
+    let encodedRevealValue;
+    switch (operation.type) {
+      case OperationType.Recover:
+        encodedRevealValue = (operation as RecoverOperation).recoveryRevealValue;
+        break;
+      case OperationType.Update:
+        encodedRevealValue = (operation as UpdateOperation).updateRevealValue;
+        break;
+      default: // This is a deactivate.
+        encodedRevealValue = (operation as DeactivateOperation).recoveryRevealValue;
+        break;
+    }
+
+    const revealValueBuffer = Encoder.decodeAsBuffer(encodedRevealValue);
+    return revealValueBuffer;
   }
 
   /**

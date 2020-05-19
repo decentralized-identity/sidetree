@@ -116,6 +116,7 @@ export default {
   OperationCreatePayloadMissingOrUnknownProperty: 'operation_create_payload_missing_or_unknown_property',
   OperationDocumentPatchesMissing: 'operation_document_patches_missing',
   OperationPayloadMissingOrIncorrectType: 'operation_payload_missing_or_incorrect_type',
+  OperationProcessorCreateOperationDoesNotHaveRevealValue: 'operation_processor_create_operation_does_not_have_reveal_value',
   OperationProcessorUnknownOperationType: 'operation_processor_unknown_operation_type',
   OperationTypeUnknownOrMissing: 'operation_type_unknown_or_missing',
   QueueingMultipleOperationsPerDidNotAllowed: 'queueing_multiple_operations_per_did_not_allowed',

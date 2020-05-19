@@ -129,7 +129,7 @@ describe('OperationProcessor', async () => {
     operationProcessor = new OperationProcessor();
     versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
-    resolver = new Resolver(versionManager, operationStore);
+    resolver = new Resolver(versionManager, operationStore, versionManager.allSupportedHashAlgorithms);
 
     // Generate a unique key-pair used for each test.
     signingKeyId = 'signingKey';
@@ -253,7 +253,7 @@ describe('OperationProcessor', async () => {
     for (let i = 0 ; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
-      resolver = new Resolver(versionManager, operationStore);
+      resolver = new Resolver(versionManager, operationStore, versionManager.allSupportedHashAlgorithms);
       const permutedOps = permutation.map(i => ops[i]);
       await operationStore.put(permutedOps);
       const didState = await resolver.resolve(didUniqueSuffix);
@@ -625,6 +625,15 @@ describe('OperationProcessor', async () => {
         // The count of public keys should remain 1, not 2.
         expect(newDidState!.document.publicKeys.length).toEqual(1);
       });
+    });
+  });
+
+  describe('getRevealValue()', () => {
+    it('should throw if a create operation is given.', async () => {
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
+
+      await expectAsync(operationProcessor.getRevealValue(createOperationData.anchoredOperationModel))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.OperationProcessorCreateOperationDoesNotHaveRevealValue));
     });
   });
 });
