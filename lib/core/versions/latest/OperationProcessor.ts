@@ -65,7 +65,7 @@ export default class OperationProcessor implements IOperationProcessor {
     if (anchoredOperationModel.type === OperationType.Create) {
       throw new SidetreeError(ErrorCode.OperationProcessorCreateOperationDoesNotHaveRevealValue);
     }
-  
+
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
     let encodedRevealValue;

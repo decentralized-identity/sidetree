@@ -9,6 +9,7 @@ import ITransactionSelector from './ITransactionSelector';
  */
 export default interface IVersionManager {
 
+  /** All the supported hash algorithms. */
   allSupportedHashAlgorithms: number[];
 
   /**

@@ -110,7 +110,7 @@ export default class VersionManager implements IVersionManager {
     }
 
     // Get and cache supported hash algorithms.
-    const hashAlgorithmsWithDuplicates = Array.from(this.versionMetadataModels.values(), value => value.hashAlgorithmInMultihashCode);	
+    const hashAlgorithmsWithDuplicates = Array.from(this.versionMetadataModels.values(), value => value.hashAlgorithmInMultihashCode);
     this.allSupportedHashAlgorithms = Array.from(new Set(hashAlgorithmsWithDuplicates)); // This line removes duplicates.
   }
 

@@ -19,7 +19,6 @@ export default interface IOperationProcessor {
     didState: DidState | undefined
   ): Promise<DidState | undefined>;
 
-
   /**
    * Gets the reveal value of a non-create operation.
    */

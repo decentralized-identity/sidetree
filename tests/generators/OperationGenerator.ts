@@ -211,7 +211,6 @@ export default class OperationGenerator {
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
     const [nextUpdateRevealValue, nextUpdateCommitValue] = OperationGenerator.generateCommitRevealPair();
 
-
     const operationJson = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
       updateRevealValue,
@@ -233,7 +232,6 @@ export default class OperationGenerator {
       nextUpdateRevealValue
     };
   }
-  
 
   /**
    * Creates a named anchored operation model from `OperationModel`.

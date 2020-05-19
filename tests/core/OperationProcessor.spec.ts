@@ -630,7 +630,7 @@ describe('OperationProcessor', async () => {
 
   describe('getRevealValue()', () => {
     it('should throw if a create operation is given.', async () => {
-      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
 
       await expectAsync(operationProcessor.getRevealValue(createOperationData.anchoredOperationModel))
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationProcessorCreateOperationDoesNotHaveRevealValue));

@@ -7,7 +7,7 @@ import OperationType from './enums/OperationType';
 
 /**
  * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch the versioned operation processor.
- * 
+ *
  * @param allSupportedHashAlgorithms All the supported hash algorithms in multihash code.
  */
 export default class Resolver {
@@ -24,15 +24,15 @@ export default class Resolver {
 
     const operations = await this.operationStore.get(didUniqueSuffix);
     const operationsByType = Resolver.categorizeOperationsByType(operations);
-    
+
     // Find and apply a valid create operation.
     let didState = await this.applyCreateOperation(operationsByType.createOperations);
-    
+
     // If can't construct an initial DID state.
     if (didState === undefined) {
       return undefined;
     }
-    
+
     // Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
     const recoverAndDeactivateOperations = operationsByType.recoverOperations.concat(operationsByType.deactivateOperations);
     const recoveryCommitValueToOperationMap = await this.constructCommitValueToOperationLookupMap(recoverAndDeactivateOperations);
@@ -63,11 +63,11 @@ export default class Resolver {
 
     for (const operation of operations) {
       if (operation.type === OperationType.Create) {
-        createOperations.push(operation)
+        createOperations.push(operation);
       } else if (operation.type === OperationType.Recover) {
-        recoverOperations.push(operation)
+        recoverOperations.push(operation);
       } else if (operation.type === OperationType.Update) {
-        updateOperations.push(operation)
+        updateOperations.push(operation);
       } else {
         // This is a deactivate operation.
         deactivateOperations.push(operation);
@@ -78,7 +78,7 @@ export default class Resolver {
       recoverOperations,
       updateOperations,
       deactivateOperations
-    }
+    };
   }
 
   /**
@@ -103,8 +103,7 @@ export default class Resolver {
    * Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
    */
   private async applyRecoverAndDeactivateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
-    : Promise<DidState>
-  {
+    : Promise<DidState> {
     let didState = startingDidState;
 
     while (commitValueToOperationMap.has(didState.nextRecoveryCommitmentHash!)) {
@@ -113,7 +112,7 @@ export default class Resolver {
       // Sort using blockchain time.
       operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
 
-      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState!);
+      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState);
 
       // We are done if we can't find a valid recover/deactivate operation to apply.
       if (newDidState === undefined) {
@@ -121,7 +120,7 @@ export default class Resolver {
       }
 
       // We reach here if we have successfully computed a new DID state.
-      didState = newDidState!;
+      didState = newDidState;
 
       // If the previous applied operation is a deactivate. No need to continue further.
       if (didState.nextRecoveryCommitmentHash === undefined) {
@@ -136,8 +135,7 @@ export default class Resolver {
    * Apply update operations until an opertaion matching the next update commitment cannot be found.
    */
   private async applyUpdateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
-    : Promise<DidState>
-  {
+    : Promise<DidState> {
     let didState = startingDidState;
 
     while (commitValueToOperationMap.has(didState.nextUpdateCommitmentHash!)) {
@@ -146,7 +144,7 @@ export default class Resolver {
       // Sort using blockchain time.
       operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
 
-      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState!);
+      const newDidState: DidState | undefined = await this.applyFirstValidOperation(operationsWithCorrectRevealValue, didState);
 
       // We are done if we can't find a valid update operation to apply.
       if (newDidState === undefined) {
@@ -154,7 +152,7 @@ export default class Resolver {
       }
 
       // We reach here if we have successfully computed a new DID state.
-      didState = newDidState!;
+      didState = newDidState;
     }
 
     return didState;
@@ -194,7 +192,7 @@ export default class Resolver {
       newDidState = (await this.applyOperation(operation, newDidState))!;
 
       // If operation matching the recovery commitment is applied.
-      if (newDidState!.lastOperationTransactionNumber !== originalDidState.lastOperationTransactionNumber) {
+      if (newDidState.lastOperationTransactionNumber !== originalDidState.lastOperationTransactionNumber) {
         return newDidState;
       }
     }
@@ -208,8 +206,7 @@ export default class Resolver {
    * hashing each operations as key, then adding the result to a map.
    */
   private async constructCommitValueToOperationLookupMap (nonCreateOperations: AnchoredOperationModel[])
-    : Promise<Map<string, AnchoredOperationModel[]>>
-  {
+    : Promise<Map<string, AnchoredOperationModel[]>> {
     const commitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
 
     // Loop through each supported algorithm and hash each operation.

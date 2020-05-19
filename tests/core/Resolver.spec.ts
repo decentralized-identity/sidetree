@@ -195,7 +195,7 @@ describe('Resolver', () => {
   describe('applyRecoverAndDeactivateOperations()', () => {
     it('should apply earliest recover operations if multiple operations are valid with same reveal.', async (done) => {
       // Setting up initial DID state for the test.
-      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
       const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
 
       // Generate 3 anchored recover operations with the same reveal value but different anchored time.
@@ -233,7 +233,7 @@ describe('Resolver', () => {
   describe('applyUpdateOperations()', () => {
     it('should apply earliest update operations if multiple operations are valid with same reveal.', async (done) => {
       // Setting up initial DID state for the test.
-      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
       const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
 
       // Generate 3 anchored update operations with the same reveal value but different anchored time.
@@ -284,7 +284,7 @@ describe('Resolver', () => {
     it('should not throw error even if an error is thrown internally.', async (done) => {
       spyOn(operationProcessor, 'apply').and.throwError('any error');
 
-      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
       const initialDidState = await (resolver as any).applyOperation(createOperationData.anchoredOperationModel, undefined);
 
       // Expecting undefined to be returned instead of error being thrown.

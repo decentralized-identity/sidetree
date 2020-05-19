@@ -1,8 +1,8 @@
-import ProtocolParameters from './ProtocolParameters';	
+import ProtocolParameters from './ProtocolParameters';
 
-/**	
+/**
  * Implementation of the VersionMetadataModel.
- */	
-export default {	
-  hashAlgorithmInMultihashCode: ProtocolParameters.hashAlgorithmInMultihashCode	
+ */
+export default {
+  hashAlgorithmInMultihashCode: ProtocolParameters.hashAlgorithmInMultihashCode
 };
