@@ -4,6 +4,7 @@ import IOperationStore from './interfaces/IOperationStore';
 import IVersionManager from './interfaces/IVersionManager';
 import Multihash from './versions/latest/Multihash';
 import OperationType from './enums/OperationType';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch versioned operation processors.
@@ -175,7 +176,7 @@ export default class Resolver {
       const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
       appliedDidState = await operationProcessor.apply(operation, appliedDidState);
     } catch (error) {
-      console.log(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${error}`);
+      console.log(`Skipped bad operation for DID ${operation.didUniqueSuffix} at time ${operation.transactionTime}. Error: ${SidetreeError.stringify(error)}`);
     }
 
     return appliedDidState;
