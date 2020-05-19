@@ -23,14 +23,39 @@ export default class Resolver {
     console.info(`Resolving DID unique suffix '${didUniqueSuffix}'...`);
 
     const operations = await this.operationStore.get(didUniqueSuffix);
-    const createOperations = operations.filter(operation => operation.type === OperationType.Create);
-    const nonCreateOperations = operations.filter(operation => operation.type !== OperationType.Create);
+    const operationsByType = Resolver.categorizeOperationsByType(operations);
+    
+    // Find and apply a valid create operation.
+    let didState = await this.applyCreateOperation(operationsByType.createOperations);
+    
+    // If can't construct an initial DID state.
+    if (didState === undefined) {
+      return undefined;
+    }
+    
+    // Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
+    const recoverAndDeactivateOperations = operationsByType.recoverOperations.concat(operationsByType.deactivateOperations);
+    const recoveryCommitValueToOperationMap = await this.constructCommitToOperationLookupMap(recoverAndDeactivateOperations, this.allSupportedHashAlgorithms);
+    didState = await this.applyRecoverAndDeactivateOperations(didState, recoveryCommitValueToOperationMap);
 
-    // Construct a hash(reveal_value) -> operation map for operations that are NOT creates.
-    const hashToOperationsMap = await this.constructCommitToOperationLookupMap(nonCreateOperations, this.allSupportedHashAlgorithms);
+    // If the previous applied operation is a deactivate. No need to continue further.
+    if (didState.nextRecoveryCommitmentHash === undefined) {
+      return didState;
+    }
 
-    // Iterate through all duplicates of creates until we can construct a DID state (some creates maybe incomplete. eg. without `delta`).
-    let didState: DidState | undefined;
+    // Apply update operations until an opertaion matching the next update commitment cannot be found.
+    const updateCommitValueToOperationMap = await this.constructCommitToOperationLookupMap(operationsByType.updateOperations, this.allSupportedHashAlgorithms);
+    didState = await this.applyUpdateOperations(didState, updateCommitValueToOperationMap);
+
+    return didState;
+  }
+
+  /**
+   * Iterate through all duplicates of creates until we can construct an initial DID state (some creates maybe incomplete. eg. without `delta`).
+   */
+  private async applyCreateOperation (createOperations: AnchoredOperationModel[]): Promise<DidState | undefined> {
+    let didState;
+
     for (const createOperation of createOperations) {
       didState = await this.applyOperation(createOperation, didState);
 
@@ -40,18 +65,51 @@ export default class Resolver {
       }
     }
 
-    // If can't construct an initial DID state.
-    if (didState === undefined) {
-      return undefined;
+    return didState;
+  }
+
+  private static categorizeOperationsByType (operations: AnchoredOperationModel[]): {
+    createOperations: AnchoredOperationModel[],
+    recoverOperations: AnchoredOperationModel[],
+    updateOperations: AnchoredOperationModel[],
+    deactivateOperations: AnchoredOperationModel[]
+  } {
+    const createOperations = [];
+    const recoverOperations = [];
+    const updateOperations = [];
+    const deactivateOperations = [];
+
+    for (const operation of operations) {
+      if (operation.type === OperationType.Create) {
+        createOperations.push(operation)
+      } else if (operation.type === OperationType.Recover) {
+        recoverOperations.push(operation)
+      } else if (operation.type === OperationType.Update) {
+        updateOperations.push(operation)
+      } else {
+        // This is a deactivate operation.
+        deactivateOperations.push(operation);
+      }
     }
+    return {
+      createOperations,
+      recoverOperations,
+      updateOperations,
+      deactivateOperations
+    }
+  }
 
-    // Apply the next recovery/deactivate until opertaion matching the next recovery commitment cannot be found.
-    while (hashToOperationsMap.has(didState.nextRecoveryCommitmentHash!)) {
-      let operationsWithCorrectRevealValue: AnchoredOperationModel[] = hashToOperationsMap.get(didState.nextRecoveryCommitmentHash!)!;
+  /**
+   * Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
+   */
+  private async applyRecoverAndDeactivateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
+    : Promise<DidState>
+  {
+    let didState = startingDidState;
 
-      // Take only recoveries and deactivates.
-      operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.filter((operation) => operation.type === OperationType.Recover || 
-                                                                                                operation.type === OperationType.Deactivate);
+    while (commitValueToOperationMap.has(didState.nextRecoveryCommitmentHash!)) {
+      let operationsWithCorrectRevealValue: AnchoredOperationModel[] = commitValueToOperationMap.get(didState.nextRecoveryCommitmentHash!)!;
+
       // Sort using blockchain time.
       operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
 
@@ -65,18 +123,25 @@ export default class Resolver {
       // We reach here if we have successfully computed a new DID state.
       didState = newDidState!;
 
-      // If applied operation is a deactivate. No need to continue further.
+      // If the previous applied operation is a deactivate. No need to continue further.
       if (didState.nextRecoveryCommitmentHash === undefined) {
         return didState;
       }
     }
 
-    // Apply the next recovery/deactivate until opertaion matching the next recovery commitment cannot be found.
-    while (hashToOperationsMap.has(didState.nextUpdateCommitmentHash!)) {
-      let operationsWithCorrectRevealValue: AnchoredOperationModel[] = hashToOperationsMap.get(didState.nextUpdateCommitmentHash!)!;
+    return didState;
+  }
 
-      // Take only updates.
-      operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.filter((operation) => operation.type === OperationType.Update);
+  /**
+   * Apply update operations until an opertaion matching the next update commitment cannot be found.
+   */
+  private async applyUpdateOperations (startingDidState: DidState, commitValueToOperationMap: Map<string, AnchoredOperationModel[]>)
+    : Promise<DidState>
+  {
+    let didState = startingDidState;
+
+    while (commitValueToOperationMap.has(didState.nextUpdateCommitmentHash!)) {
+      let operationsWithCorrectRevealValue: AnchoredOperationModel[] = commitValueToOperationMap.get(didState.nextUpdateCommitmentHash!)!;
 
       // Sort using blockchain time.
       operationsWithCorrectRevealValue = operationsWithCorrectRevealValue.sort((a, b) => a.transactionNumber - b.transactionNumber);
@@ -90,11 +155,6 @@ export default class Resolver {
 
       // We reach here if we have successfully computed a new DID state.
       didState = newDidState!;
-
-      // If applied operation is a deactivate. No need to continue further.
-      if (didState.nextRecoveryCommitmentHash === undefined) {
-        return didState;
-      }
     }
 
     return didState;
