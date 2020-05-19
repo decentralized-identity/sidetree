@@ -2,6 +2,7 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Document from '../../lib/core/versions/latest/Document';
 import DidState from '../../lib/core/models/DidState';
+import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import MockOperationStore from '../mocks/MockOperationStore';
@@ -14,11 +15,12 @@ import Resolver from '../../lib/core/Resolver';
 
 describe('Resolver', () => {
   let resolver: Resolver;
+  let operationProcessor: IOperationProcessor;
   let operationStore: IOperationStore;
 
   beforeEach(async () => {
     // Make sure the mock version manager always returns the same operation processor in the test.
-    const operationProcessor = new OperationProcessor();
+    operationProcessor = new OperationProcessor();
     const versionManager = new MockVersionManager();
     spyOn(versionManager, 'getOperationProcessor').and.returnValue(operationProcessor);
 
@@ -186,6 +188,108 @@ describe('Resolver', () => {
       expect(document.serviceEndpoints.length).toEqual(1);
       expect(document.serviceEndpoints[0].serviceEndpoint).toBeDefined();
       expect(document.serviceEndpoints[0].id).toEqual('newDummyHubUri2');
+    });
+
+  });
+
+  describe('applyRecoverAndDeactivateOperations()', () => {
+    it('should apply earliest recover operations if multiple operations are valid with same reveal.', async (done) => {
+      // Setting up initial DID state for the test.
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+
+      // Generate 3 anchored recover operations with the same reveal value but different anchored time.
+      const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
+        didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+        recoveryRevealValue: createOperationData.nextRecoveryRevealValueEncodedString,
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey });
+      const recoveryOperation2Data = await OperationGenerator.generateRecoverOperation({
+        didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+        recoveryRevealValue: createOperationData.nextRecoveryRevealValueEncodedString,
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey });
+      const recoveryOperation3Data = await OperationGenerator.generateRecoverOperation({
+        didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
+        recoveryRevealValue: createOperationData.nextRecoveryRevealValueEncodedString,
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey });
+      const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
+      const recoveryOperation2 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation2Data.recoverOperation, 3, 3, 3);
+      const recoveryOperation3 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation3Data.recoverOperation, 4, 4, 4);
+
+      // Intentionally insert earliest valid recover operation in between the other two operations to test sorting.
+      const recoveryCommitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
+      const nextRecoveryCommitment = createOperationData.createOperation.suffixData.recoveryCommitment;
+      recoveryCommitValueToOperationMap.set(nextRecoveryCommitment, [recoveryOperation3, recoveryOperation1, recoveryOperation2]);
+
+      const newDidState: DidState = await (resolver as any).applyRecoverAndDeactivateOperations(initialDidState, recoveryCommitValueToOperationMap);
+
+      // Expecting the new state to contain info of the first recovery operation.
+      expect(newDidState.lastOperationTransactionNumber).toEqual(2);
+      expect(newDidState.nextRecoveryCommitmentHash).toEqual(recoveryOperation1Data.recoverOperation.signedData.recovery_commitment);
+
+      done();
+    });
+  });
+
+  describe('applyUpdateOperations()', () => {
+    it('should apply earliest update operations if multiple operations are valid with same reveal.', async (done) => {
+      // Setting up initial DID state for the test.
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const initialDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
+
+      // Generate 3 anchored update operations with the same reveal value but different anchored time.
+      const updateOperation1Data = await OperationGenerator.generateUpdateOperation(
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.nextUpdateRevealValueEncodedString,
+        createOperationData.signingKeyId,
+        createOperationData.signingPrivateKey
+      );
+      const updateOperation2Data = await OperationGenerator.generateUpdateOperation(
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.nextUpdateRevealValueEncodedString,
+        createOperationData.signingKeyId,
+        createOperationData.signingPrivateKey
+      );
+      const updateOperation3Data = await OperationGenerator.generateUpdateOperation(
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.nextUpdateRevealValueEncodedString,
+        createOperationData.signingKeyId,
+        createOperationData.signingPrivateKey
+      );
+      const updateOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation1Data.updateOperation, 2, 2, 2);
+      const updateOperation2 = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation2Data.updateOperation, 3, 3, 3);
+      const updateOperation3 = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation3Data.updateOperation, 4, 4, 4);
+
+      // Intentionally insert earliest valid recover operation in between the other two operations to test sorting.
+      // Intentionally using the resolver's map construction method to test operations with the same reveal value are placed in the same array.
+      const updateCommitValueToOperationMap: Map<string, AnchoredOperationModel[]>
+        = await (resolver as any).constructCommitValueToOperationLookupMap([updateOperation3, updateOperation1, updateOperation2]);
+      const nextUpdateCommitment = createOperationData.createOperation.delta!.updateCommitment;
+      const updatesWithSameReveal = updateCommitValueToOperationMap.get(nextUpdateCommitment);
+      expect(updatesWithSameReveal).toBeDefined();
+      expect(updatesWithSameReveal!.length).toEqual(3);
+      // const updateCommitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
+      // updateCommitValueToOperationMap.set(nextUpdateCommitment, [updateOperation3, updateOperation1, updateOperation2]);
+
+      const newDidState: DidState = await (resolver as any).applyUpdateOperations(initialDidState, updateCommitValueToOperationMap);
+
+      // Expecting the new state to contain info of the first recovery operation.
+      expect(newDidState.lastOperationTransactionNumber).toEqual(2);
+      expect(newDidState.nextUpdateCommitmentHash).toEqual(updateOperation1Data.updateOperation.delta!.updateCommitment);
+
+      done();
+    });
+  });
+
+  describe('applyOperation()', () => {
+    it('should not throw error even if an error is thrown internally.', async (done) => {
+      spyOn(operationProcessor, 'apply').and.throwError('any error');
+
+      const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({transactionTime: 1, transactionNumber: 1, operationIndex: 1});
+      const initialDidState = await (resolver as any).applyOperation(createOperationData.anchoredOperationModel, undefined);
+
+      // Expecting undefined to be returned instead of error being thrown.
+      expect(initialDidState).toBeUndefined();
+      done();
     });
   });
 });

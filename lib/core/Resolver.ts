@@ -35,7 +35,7 @@ export default class Resolver {
     
     // Apply recovery/deactivate operations until an opertaion matching the next recovery commitment cannot be found.
     const recoverAndDeactivateOperations = operationsByType.recoverOperations.concat(operationsByType.deactivateOperations);
-    const recoveryCommitValueToOperationMap = await this.constructCommitToOperationLookupMap(recoverAndDeactivateOperations, this.allSupportedHashAlgorithms);
+    const recoveryCommitValueToOperationMap = await this.constructCommitValueToOperationLookupMap(recoverAndDeactivateOperations);
     didState = await this.applyRecoverAndDeactivateOperations(didState, recoveryCommitValueToOperationMap);
 
     // If the previous applied operation is a deactivate. No need to continue further.
@@ -44,26 +44,8 @@ export default class Resolver {
     }
 
     // Apply update operations until an opertaion matching the next update commitment cannot be found.
-    const updateCommitValueToOperationMap = await this.constructCommitToOperationLookupMap(operationsByType.updateOperations, this.allSupportedHashAlgorithms);
+    const updateCommitValueToOperationMap = await this.constructCommitValueToOperationLookupMap(operationsByType.updateOperations);
     didState = await this.applyUpdateOperations(didState, updateCommitValueToOperationMap);
-
-    return didState;
-  }
-
-  /**
-   * Iterate through all duplicates of creates until we can construct an initial DID state (some creates maybe incomplete. eg. without `delta`).
-   */
-  private async applyCreateOperation (createOperations: AnchoredOperationModel[]): Promise<DidState | undefined> {
-    let didState;
-
-    for (const createOperation of createOperations) {
-      didState = await this.applyOperation(createOperation, didState);
-
-      // Exit loop as soon as we can construct an initial state.
-      if (didState !== undefined) {
-        break;
-      }
-    }
 
     return didState;
   }
@@ -97,6 +79,24 @@ export default class Resolver {
       updateOperations,
       deactivateOperations
     }
+  }
+
+  /**
+   * Iterate through all duplicates of creates until we can construct an initial DID state (some creates maybe incomplete. eg. without `delta`).
+   */
+  private async applyCreateOperation (createOperations: AnchoredOperationModel[]): Promise<DidState | undefined> {
+    let didState;
+
+    for (const createOperation of createOperations) {
+      didState = await this.applyOperation(createOperation, undefined);
+
+      // Exit loop as soon as we can construct an initial state.
+      if (didState !== undefined) {
+        break;
+      }
+    }
+
+    return didState;
   }
 
   /**
@@ -164,6 +164,7 @@ export default class Resolver {
    * Applies the given operation to the given DID state.
    * @param operation The operation to be applied.
    * @param didState The DID state to apply the operation on top of.
+   * @returns The resultant `DidState`. The given DID state is return if the given operation cannot be applied.
    */
   private async applyOperation (
     operation: AnchoredOperationModel,
@@ -206,13 +207,13 @@ export default class Resolver {
    * Constructs a single commit value -> operation lookup map by looping through each supported hash algorithm,
    * hashing each operations as key, then adding the result to a map.
    */
-  private async constructCommitToOperationLookupMap (nonCreateOperations: AnchoredOperationModel[], allSupportedHashAlgorithms: number[])
+  private async constructCommitValueToOperationLookupMap (nonCreateOperations: AnchoredOperationModel[])
     : Promise<Map<string, AnchoredOperationModel[]>>
   {
-    const hashToOperationMap = new Map<string, AnchoredOperationModel[]>();
+    const commitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
 
     // Loop through each supported algorithm and hash each operation.
-    for (const hashAlgorithm of allSupportedHashAlgorithms) {
+    for (const hashAlgorithm of this.allSupportedHashAlgorithms) {
 
       // Construct a hash(reveal_value) -> operation map for operations that are NOT creates.
       for (const operation of nonCreateOperations) {
@@ -221,14 +222,14 @@ export default class Resolver {
         const revealValueBuffer = await operationProcessor.getRevealValue(operation);
         const hashOfRevealValue = Multihash.hashThenEncode(revealValueBuffer, hashAlgorithm);
 
-        if (hashToOperationMap.has(hashOfRevealValue)) {
-          hashToOperationMap.get(hashOfRevealValue)!.push(operation);
+        if (commitValueToOperationMap.has(hashOfRevealValue)) {
+          commitValueToOperationMap.get(hashOfRevealValue)!.push(operation);
         } else {
-          hashToOperationMap.set(hashOfRevealValue, [operation]);
+          commitValueToOperationMap.set(hashOfRevealValue, [operation]);
         }
       }
     }
 
-    return hashToOperationMap;
+    return commitValueToOperationMap;
   }
 }
