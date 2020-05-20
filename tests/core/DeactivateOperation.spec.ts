@@ -66,7 +66,13 @@ describe('DeactivateOperation', async () => {
         recoveryPrivateKey
       );
 
-      (deactivateOperationRequest.recovery_reveal_value as any) = 123; // Intentionally incorrect type.
+      const signedDataPayloadObject = {
+        did_suffix: 'unused-DID-unique-suffix',
+        recovery_reveal_value: 123
+      };
+      const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
+
+      deactivateOperationRequest.signed_data = signedData; // Intentionally incorrect type for reveal value.
 
       const operationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
       await expectAsync(DeactivateOperation.parse(operationBuffer))
@@ -115,19 +121,6 @@ describe('DeactivateOperation', async () => {
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedSignedData, 'mismatchingDidUniqueSuffix', recoveryRevealValue))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch));
-      done();
-    });
-
-    it('should throw if signed `recovery_reveal_value` is mismatching.', async (done) => {
-      const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
-      const recoveryRevealValue = 'anyUnusedRecoveryRevealValue';
-      const signedData = {
-        did_suffix: didUniqueSuffix,
-        recovery_reveal_value: recoveryRevealValue
-      };
-      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedSignedData, didUniqueSuffix, 'mismatchingRecoveryRevealValue'))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedRecoveryRevealValueMismatch));
       done();
     });
   });

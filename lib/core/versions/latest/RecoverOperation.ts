@@ -15,6 +15,7 @@ interface SignedDataModel {
   delta_hash: string;
   recovery_key: JwkEs256k;
   recovery_commitment: string;
+  recovery_reveal_value: string;
 }
 
 /**
@@ -30,9 +31,6 @@ export default class RecoverOperation implements OperationModel {
 
   /** The type of operation. */
   public readonly type: OperationType;
-
-  /** Encoded reveal value for the operation. */
-  public readonly recoveryRevealValue: string;
 
   /** Signed data. */
   public readonly signedDataJws: Jws;
@@ -52,7 +50,6 @@ export default class RecoverOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    recoveryRevealValue: string,
     signedDataJws: Jws,
     signedData: SignedDataModel,
     encodedDelta: string | undefined,
@@ -61,7 +58,6 @@ export default class RecoverOperation implements OperationModel {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Recover;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.recoveryRevealValue = recoveryRevealValue;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
     this.encodedDelta = encodedDelta;
@@ -95,9 +91,9 @@ export default class RecoverOperation implements OperationModel {
    * @param anchorFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<RecoverOperation> {
-    let expectedPropertyCount = 5;
+    let expectedPropertyCount = 4;
     if (anchorFileMode) {
-      expectedPropertyCount = 3;
+      expectedPropertyCount = 2;
     }
 
     const properties = Object.keys(operationObject);
@@ -108,16 +104,6 @@ export default class RecoverOperation implements OperationModel {
     if (typeof operationObject.did_suffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
-
-    if (typeof operationObject.recovery_reveal_value !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType);
-    }
-
-    if ((operationObject.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
-      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong);
-    }
-
-    const recoveryRevealValue = operationObject.recovery_reveal_value;
 
     const expectKidInHeader = false;
     const signedDataJws = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
@@ -144,7 +130,6 @@ export default class RecoverOperation implements OperationModel {
     return new RecoverOperation(
       operationBuffer,
       operationObject.did_suffix,
-      recoveryRevealValue,
       signedDataJws,
       signedData,
       encodedDelta,
@@ -157,8 +142,16 @@ export default class RecoverOperation implements OperationModel {
     const signedData = await JsonAsync.parse(signedDataJsonString);
 
     const properties = Object.keys(signedData);
-    if (properties.length !== 3) {
+    if (properties.length !== 4) {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
+    }
+
+    if (typeof signedData.recovery_reveal_value !== 'string') {
+      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType);
+    }
+
+    if ((signedData.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong);
     }
 
     Jwk.validateJwkEs256k(signedData.recovery_key);

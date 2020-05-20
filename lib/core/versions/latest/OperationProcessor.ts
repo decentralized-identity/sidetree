@@ -71,13 +71,13 @@ export default class OperationProcessor implements IOperationProcessor {
     let encodedRevealValue;
     switch (operation.type) {
       case OperationType.Recover:
-        encodedRevealValue = (operation as RecoverOperation).recoveryRevealValue;
+        encodedRevealValue = (operation as RecoverOperation).signedData.recovery_reveal_value;
         break;
       case OperationType.Update:
-        encodedRevealValue = (operation as UpdateOperation).updateRevealValue;
+        encodedRevealValue = (operation as UpdateOperation).signedData.update_reveal_value;
         break;
       default: // This is a deactivate.
-        encodedRevealValue = (operation as DeactivateOperation).recoveryRevealValue;
+        encodedRevealValue = (operation as DeactivateOperation).signedData.recovery_reveal_value;
         break;
     }
 
@@ -144,7 +144,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await UpdateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the actual reveal value hash against the expected commitment hash.
-    const isValidCommitReveal = Multihash.isValidHash(operation.updateRevealValue, didState.nextUpdateCommitmentHash!);
+    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.update_reveal_value, didState.nextUpdateCommitmentHash!);
     if (!isValidCommitReveal) {
       return didState;
     }
@@ -190,7 +190,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the reveal value hash.
-    const isValidCommitReveal = Multihash.isValidHash(operation.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);
+    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.recovery_reveal_value, didState.nextRecoveryCommitmentHash!);
     if (!isValidCommitReveal) {
       return didState;
     }
@@ -246,7 +246,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await DeactivateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the reveal value hash.
-    const isValidCommitmentReveal = Multihash.isValidHash(operation.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);
+    const isValidCommitmentReveal = Multihash.isValidHash(operation.signedData.recovery_reveal_value, didState.nextRecoveryCommitmentHash!);
     if (!isValidCommitmentReveal) {
       return didState;
     }

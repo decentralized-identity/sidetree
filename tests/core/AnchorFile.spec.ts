@@ -263,13 +263,11 @@ describe('AnchorFile', async () => {
       // Verify recover operation.
       const recoveryOperationInAnchorFile = anchoreFileModel.operations.recover![0];
       expect(recoveryOperationInAnchorFile.did_suffix).toEqual(recoverOperation.didUniqueSuffix);
-      expect(recoveryOperationInAnchorFile.recovery_reveal_value).toEqual(recoverOperation.recoveryRevealValue);
       expect(recoveryOperationInAnchorFile.signed_data).toEqual(recoverOperation.signedDataJws.toCompactJws());
 
       // Verify deactivate operation.
       const deactivateOperationInAnchorFile = anchoreFileModel.operations.deactivate![0];
       expect(deactivateOperationInAnchorFile.did_suffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(deactivateOperationInAnchorFile.recovery_reveal_value).toEqual(deactivateOperation.recoveryRevealValue);
       expect(deactivateOperationInAnchorFile.signed_data).toEqual(deactivateOperation.signedDataJws.toCompactJws());
     });
   });

@@ -74,7 +74,15 @@ describe('RecoverOperation', async () => {
         unusedNextUpdateCommitmentHash
       );
 
-      (recoverOperationRequest.recovery_reveal_value as any) = 123; // Intentionally incorrect type.
+      const signedDataPayloadObject = {
+        delta_hash: 'deltaHash',
+        recovery_reveal_value: 123,
+        recovery_key: newRecoveryPublicKey,
+        recovery_commitment: unusedNextRecoveryCommitmentHash
+      };
+      const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
+
+      recoverOperationRequest.signed_data = signedData; // Intentionally incorrect type for reveal value.
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
       await expectAsync(RecoverOperation.parse(operationBuffer))
@@ -150,7 +158,8 @@ describe('RecoverOperation', async () => {
         delta_hash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        extraProperty: 'An unknown extra property'
+        extraProperty: 'An unknown extra property',
+        recovery_reveal_value: 'some value'
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))

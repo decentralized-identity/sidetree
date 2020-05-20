@@ -9,7 +9,6 @@ export default interface MapFileModel {
   operations?: {
     update: {
       did_suffix: string,
-      update_reveal_value: string,
       signed_data: string
     }[]
   };

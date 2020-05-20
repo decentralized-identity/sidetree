@@ -10,12 +10,10 @@ export default interface AnchorFileModel {
     }[],
     recover?: {
       did_suffix: string;
-      recovery_reveal_value: string;
       signed_data: string;
     }[],
     deactivate?: {
       did_suffix: string;
-      recovery_reveal_value: string;
       signed_data: string;
     }[]
   };

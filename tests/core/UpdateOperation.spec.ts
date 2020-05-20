@@ -55,7 +55,13 @@ describe('UpdateOperation', async () => {
         signingPrivateKey
       );
 
-      (updateOperationRequest.update_reveal_value as any) = 123; // Intentionally incorrect type.
+      const signedDataPayloadObject = {
+        update_reveal_value: 123,
+        delta_hash: 'deltaHash'
+      };
+      const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey, signingPublicKey.id);
+
+      updateOperationRequest.signed_data = signedData; // Intentionally incorrect type for reveal value.
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer))
@@ -83,7 +89,6 @@ describe('UpdateOperation', async () => {
     it('should throw if operation contains an additional unknown property.', async (done) => {
       const updateOperation = {
         did_suffix: 'unusedSuffix',
-        update_reveal_value: 'unusedReveal',
         signed_data: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
@@ -99,7 +104,8 @@ describe('UpdateOperation', async () => {
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {
         delta_hash: 'anyUnusedHash',
-        extraProperty: 'An unknown extra property'
+        extraProperty: 'An unknown extra property',
+        update_reveal_value: 'some reveal value'
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))

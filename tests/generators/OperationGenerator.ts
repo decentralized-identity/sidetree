@@ -360,6 +360,7 @@ export default class OperationGenerator {
     const encodedDeltaString = Encoder.encode(deltaJsonString);
 
     const signedDataPayloadObject = {
+      update_reveal_value: updateRevealValue,
       delta_hash: deltaHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey, signingKeyId);
@@ -367,7 +368,6 @@ export default class OperationGenerator {
     const updateOperationRequest = {
       type: OperationType.Update,
       did_suffix: didUniqueSuffix,
-      update_reveal_value: updateRevealValue,
       delta: encodedDeltaString,
       signed_data: signedData
     };
@@ -424,6 +424,7 @@ export default class OperationGenerator {
 
     const signedDataPayloadObject = {
       delta_hash: deltaHash,
+      recovery_reveal_value: recoveryRevealValue,
       recovery_key: newRecoveryPublicKey,
       recovery_commitment: nextRecoveryCommitmentHash
     };
@@ -433,7 +434,6 @@ export default class OperationGenerator {
     const operation = {
       type: OperationType.Recover,
       did_suffix: didUniqueSuffix,
-      recovery_reveal_value: recoveryRevealValue,
       signed_data: signedData,
       delta: deltaEncodedString
     };
@@ -458,7 +458,6 @@ export default class OperationGenerator {
     const operation = {
       type: OperationType.Deactivate,
       did_suffix: didUniqueSuffix,
-      recovery_reveal_value: recoveryRevealValue,
       signed_data: signedData
     };
 
