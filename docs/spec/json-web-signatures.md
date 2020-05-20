@@ -35,11 +35,11 @@ The JWS header is parsed and a `kid` is extracted.
 
 #### Operation Verification
 
-Sidetree operations are considerd valid when the JWS can be verified, and where the key used is associated with the correct proof purpose.
+Sidetree operations are considered valid when the JWS can be verified, and where the verificationMethod used is associated with the correct proof purpose.
 
-`operations`, `recovery` are proof purposes for verifying sidetree operations which sidetree DID Methods MUST support, but which MAY NOT be exposed externally via the DID Document or Resolver Method Meta Data.
+`operation`, `recovery` are proof purposes for verifying sidetree operations which sidetree DID Methods MUST support, and which MAY be exposed externally via the DID Document or Resolver Method Meta Data.
 
-An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by a key associated with the `operations` proof purpose. 
+An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by a key associated with the `operation` proof purpose. 
 
 A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by a key associated with the `recovery` proof purpose. 
 
@@ -62,5 +62,5 @@ DID Core also defines proof purposes which sidetree DID Methods MAY support.
 :::
 
 ::: warning
-  It is not recommended to reuse verificationMethod's for multiple proof purposes.
+  It is not recommended to reuse verificationMethods for multiple proof purposes.
 :::
