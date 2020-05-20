@@ -86,8 +86,6 @@ export default class SlidingWindowQuantileCalculator {
 
   /** Initialize self from state stored in mongo store */
   public async initialize (): Promise<void> {
-    await this.mongoStore.initialize();
-
     // This special call to initialize the quantile db if it is empty.
     await SlidingWindowQuantileStoreInitializer.initializeDatabaseIfEmpty(this.genesisBlockNumber, this.valueApproximator, this.mongoStore);
 

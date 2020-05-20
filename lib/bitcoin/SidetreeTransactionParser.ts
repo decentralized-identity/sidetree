@@ -10,20 +10,19 @@ import SidetreeTransactionModel from './models/SidetreeTransactionModel';
  */
 export default class SidetreeTransactionParser {
 
-  public constructor (private bitcoinClient: BitcoinClient) {
+  public constructor (private bitcoinClient: BitcoinClient, private sidetreePrefix: string) {
   }
 
   /**
    * Parses the given transaction and returns the sidetree transaction object.
    *
    * @param bitcoinTransaction The transaction to parse.
-   * @param sidetreePrefix The prefix of the sidetree transactions.
    *
    * @returns The data model if the specified transaction is a valid sidetree transaction; undefined otherwise.
    */
-  public async parse (bitcoinTransaction: BitcoinTransactionModel, sidetreePrefix: string): Promise<SidetreeTransactionModel | undefined> {
+  public async parse (bitcoinTransaction: BitcoinTransactionModel): Promise<SidetreeTransactionModel | undefined> {
 
-    const sidetreeData = this.getValidSidetreeDataFromOutputs(bitcoinTransaction.outputs, sidetreePrefix);
+    const sidetreeData = this.getValidSidetreeDataFromOutputs(bitcoinTransaction.outputs, this.sidetreePrefix);
 
     if (!sidetreeData) {
       return undefined;
