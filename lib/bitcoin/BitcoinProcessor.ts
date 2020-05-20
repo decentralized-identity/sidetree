@@ -6,6 +6,7 @@ import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
+import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import NormalizedFeeCalculator from './fee/NormalizedFeeCalculator';
 import ProtocolParameters from './ProtocolParameters';
@@ -84,6 +85,8 @@ export default class BitcoinProcessor {
 
   private sidetreeTransactionParser: SidetreeTransactionParser;
 
+  private mongoQuantileStore: MongoDbSlidingWindowQuantileStore;
+
   private normalizedFeeCalculator: NormalizedFeeCalculator;
 
   /** at least 10 blocks per page unless reaching the last block */
@@ -114,9 +117,9 @@ export default class BitcoinProcessor {
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.sidetreePrefix);
 
+    this.mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
+
     this.normalizedFeeCalculator = new NormalizedFeeCalculator(
-      config.mongoDbConnectionString,
-      config.databaseName,
       this.genesisBlockNumber,
       ProtocolParameters.windowSizeInGroups,
       ProtocolParameters.quantileMeasure,
@@ -125,6 +128,7 @@ export default class BitcoinProcessor {
       ProtocolParameters.groupSizeInBlocks,
       ProtocolParameters.historicalOffsetInBlocks,
       ProtocolParameters.maxInputCountForSampledTransaction,
+      this.mongoQuantileStore,
       this.bitcoinClient,
       this.sidetreeTransactionParser
     );
@@ -157,6 +161,7 @@ export default class BitcoinProcessor {
   public async initialize () {
     await this.transactionStore.initialize();
     await this.bitcoinClient.initialize();
+    await this.mongoQuantileStore.initialize();
     await this.normalizedFeeCalculator.initialize();
     await this.mongoDbLockTransactionStore.initialize();
     await this.lockMonitor.initialize();
