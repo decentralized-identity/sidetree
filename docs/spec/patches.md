@@ -147,6 +147,10 @@ The `ietf-json-patch` Patch Action describes a mechanism for modifying a DID's s
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `ietf-json-patch`.
 2. The object ****MUST**** include a `patches` property, and its value ****MUST**** be an array of [IETF JSON Patch](https://tools.ietf.org/html/rfc6902) operation objects.
 
+If `ietf-json-patch` is used to add or remove from a proof purpose collection, such as `operations`, `recovery` or `assertionMethod`, per the DID Core spec, each collection element MUST have a unique `id` property, or be a unique string identifier.
+
+See [Operation Verification](https://identity.foundation/sidetree/spec/#operation-verification) for more details on how operations are verified.
+
 ::: example 1
 ```json
 {
