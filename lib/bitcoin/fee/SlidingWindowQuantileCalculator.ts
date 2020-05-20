@@ -1,7 +1,9 @@
-import RunLengthTransformer from './RunLengthTransformer';
-import ValueApproximator from './ValueApproximator';
+import ErrorCode from '../ErrorCode';
 import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileStore';
+import RunLengthTransformer from './RunLengthTransformer';
+import SidetreeError from '../../common/SidetreeError';
 import SlidingWindowQuantileStoreInitializer from './SlidingWindowQuantileStoreInitializer';
+import ValueApproximator from './ValueApproximator';
 
 /**
  * Frequency vector is an array of numbers representing frequencies of
@@ -80,7 +82,7 @@ export default class SlidingWindowQuantileCalculator {
     this.maxQuantileDeviationPercentageValue = maxQuantileDeviationPercentage / 100;
 
     if (this.quantileMeasure < 0 || this.quantileMeasure > 1) {
-      throw Error(`Invalid quantile measure ${quantileMeasure}`);
+      throw new SidetreeError(ErrorCode.QuantileCalculatorInvalidQuantileMeasure, `Value must be between 0 and 1: ${quantileMeasure}`);
     }
   }
 
@@ -124,8 +126,10 @@ export default class SlidingWindowQuantileCalculator {
     // Our historical quantiles storage logic relies on groupIds being
     // consecutive numbers: explicitly check this fact.
     if (this.prevgroupId) {
-      if (this.prevgroupId + 1 !== groupId) {
-        throw Error(`Quantile calculator groupIds not sequential`);
+      const expectedGroupId = this.prevgroupId + 1;
+
+      if (expectedGroupId !== groupId) {
+        throw new SidetreeError(ErrorCode.QuantileCalculatorGroupIdsNotSequential, `Expected group id: ${expectedGroupId}. Input group id: ${groupId}`);
       }
     }
 

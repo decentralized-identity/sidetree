@@ -407,7 +407,9 @@ export default class BitcoinProcessor {
     const startBlockHeight = startBlock.height;
 
     if (startBlockHeight < this.genesisBlockNumber) {
-      throw new Error('Cannot process Transactions before genesis');
+      throw new SidetreeError(
+        ErrorCode.BitcoinProcessorCannotProcessBlocksBeforeGenesis,
+        `Input block: ${startBlock}. Genesis block: ${this.genesisBlockNumber}`);
     }
 
     const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
@@ -600,10 +602,12 @@ export default class BitcoinProcessor {
 
     // This check detects fork by ensuring the fetched block points to the expected previous block.
     if (blockData.previousHash !== previousBlockHash) {
-      throw Error(`Previous hash from blockchain: ${blockData.previousHash} is different from the expected value: ${previousBlockHash}`);
+      throw new SidetreeError(
+        ErrorCode.BitcoinProcessInvalidPreviousBlockHash,
+        `Previous hash from blockchain: ${blockData.previousHash}. Expected value: ${previousBlockHash}`);
     }
 
-    await this.normalizedFeeCalculator.processBlockForPofCalculation(block, blockData);
+    await this.normalizedFeeCalculator.processBlock(blockData);
 
     const transactions = blockData.transactions;
 
