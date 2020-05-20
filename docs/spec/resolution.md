@@ -95,7 +95,9 @@
             2. Apply the patch as directed by the [Patch Action](#standard-patch-actions) type specified by the `action` property. If any part of the patch fails or produces an error, reverse all modifications to the DID's state and exit [update operation processing](#update-operation-processing) and advance to [compiled state processing](#compiled-state-processing).
 
 6. [Compiled state processing](#compiled-state-processing){id="compiled-state-processing"}: After the DID's operations have been evaluated in the compilation steps above, the implementation ****MUST**** use the DID's compiled state to generate a valid DID Document in accordance with the [W3C Decentralized Identifiers](https://w3c.github.io/did-core/) specification.
-7. Once a valid DID Document state has been generated, proceed to the [DID Resolver Output](#did-resolver-output) process, if you intend to output the resolved DID Document in accordance with the [Decentralized Identifier Resolution](#https://w3c-ccg.github.io/did-resolution/) specification.
+7. If the DID Document is being rendered in the JSON-LD representation variant, the implementer ****SHOULD**** add an `@base` entry to the document's `@context`, and set the `@base` value to the `id` of the resolved DID. This ensures relative path values in the output DID Document are correctly projected into id-related strings by JSON-LD parsers.
+8. Once a valid DID Document state has been generated, proceed to the [DID Resolver Output](#did-resolver-output) process, if you intend to output the resolved DID Document in accordance with the [Decentralized Identifier Resolution](#https://w3c-ccg.github.io/did-resolution/) specification.
+
 
 ### DID Resolver Output
 
