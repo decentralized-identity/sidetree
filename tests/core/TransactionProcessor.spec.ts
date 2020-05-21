@@ -254,6 +254,7 @@ describe('TransactionProcessor', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
+        normalizedFee: 200,
         owner: 'owner'
       };
       spyOn(transactionProcessor['blockchain'], 'getValueTimeLock').and.returnValue(Promise.resolve(mockValueTimeLock));
@@ -282,7 +283,6 @@ describe('TransactionProcessor', () => {
         .toHaveBeenCalledWith(
           mockValueTimeLock,
           paidOperationCount,
-          mockTransaction.normalizedTransactionFee,
           mockTransaction.transactionTime,
           mockTransaction.writer);
       done();

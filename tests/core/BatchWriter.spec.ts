@@ -18,7 +18,7 @@ describe('BatchWriter', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch - 1;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
-      const actual = batchWriter['getNumberOfOperationsToWrite'](undefined, 1);
+      const actual = batchWriter['getNumberOfOperationsToWrite'](undefined);
       expect(actual).toEqual(mockOpsByLock);
     });
 
@@ -26,7 +26,7 @@ describe('BatchWriter', () => {
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch + 123;
       spyOn(ValueTimeLockVerifier, 'calculateMaxNumberOfOperationsAllowed').and.returnValue(mockOpsByLock);
 
-      const actual = batchWriter['getNumberOfOperationsToWrite'](undefined, 1);
+      const actual = batchWriter['getNumberOfOperationsToWrite'](undefined);
       expect(actual).toEqual(ProtocolParameters.maxOperationsPerBatch);
     });
 
