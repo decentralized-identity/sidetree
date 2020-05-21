@@ -15,7 +15,7 @@ export default class ValueTimeLockVerifier {
    * @param valueTimeLock The lock object if exists
    * @param normalizedFee The normalized fee for the current block
    */
-  public static calculateMaxNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined, normalizedFee: number) {
+  public static calculateMaxNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined) {
 
     if (valueTimeLock === undefined) {
       return ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock;
@@ -25,7 +25,7 @@ export default class ValueTimeLockVerifier {
     //  requiredLockAmount = normalizedfee * normalizedFeeMultipier * numberOfOps * valueTimeLockMultiplier
     //
     // We are going to find the numberOfOps given the requiredLockAmount
-    const feePerOperation = normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
+    const feePerOperation = valueTimeLock.normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     const numberOfOpsAllowed = valueTimeLock.amountLocked / (feePerOperation * ProtocolParameters.valueTimeLockAmountMultiplier);
 
     // Make sure that we are returning an integer; rounding down to make sure that we are not going above
@@ -49,7 +49,6 @@ export default class ValueTimeLockVerifier {
   public static verifyLockAmountAndThrowOnError (
     valueTimeLock: ValueTimeLockModel | undefined,
     numberOfOperations: number,
-    normalizedFee: number,
     sidetreeTransactionTime: number,
     sidetreeTransactionWriter: string): void {
 
@@ -76,7 +75,7 @@ export default class ValueTimeLockVerifier {
       }
     }
 
-    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOperationsAllowed(valueTimeLock, normalizedFee);
+    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOperationsAllowed(valueTimeLock);
 
     if (numberOfOperations > maxNumberOfOpsAllowed) {
       throw new SidetreeError(

@@ -9,6 +9,7 @@ export default {
   LockMonitorNotEnoughBalanceForRelock: 'lock_monitor_not_enough_balance_for_relock',
   LockMonitorTransactionFeesAmountIsNotWholeNumber: 'lock_monitor_transaction_fees_amount_is_not_whole_number',
   LockResolverDurationIsInvalid: 'lock_resolver_duration_is_invalid',
+  LockResolverNormalizedFeeCannotBeCalculated: 'lock_resolver_normalized_fee_cannot_be_calculated',
   LockResolverRedeemScriptIsInvalid: 'lock_resolver_redeem_script_is_invalid',
   LockResolverRedeemScriptIsNotLock: 'lock_resolver_redeem_script_is_not_lock',
   LockResolverTransactionIsNotPayingToScript: 'lock_resolver_transaction_is_not_paying_to_script',
