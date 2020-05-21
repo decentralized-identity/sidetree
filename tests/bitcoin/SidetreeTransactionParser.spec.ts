@@ -17,7 +17,7 @@ describe('SidetreeTransactionParser', () => {
   let sidetreeTxnParser: SidetreeTransactionParser;
 
   beforeEach(() => {
-    sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient);
+    sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient, sidetreeTransactionPrefix);
   });
 
   function createValidDataOutput (data: string): BitcoinOutputModel {
@@ -42,7 +42,7 @@ describe('SidetreeTransactionParser', () => {
 
       spyOn(sidetreeTxnParser as any, 'getValidSidetreeDataFromOutputs').and.returnValue(undefined);
 
-      const actual = await sidetreeTxnParser.parse(mockTxn, sidetreeTransactionPrefix);
+      const actual = await sidetreeTxnParser.parse(mockTxn);
       expect(actual).not.toBeDefined();
       done();
     });
@@ -59,7 +59,7 @@ describe('SidetreeTransactionParser', () => {
       spyOn(sidetreeTxnParser as any, 'getValidSidetreeDataFromOutputs').and.returnValue('some data');
       spyOn(sidetreeTxnParser as any, 'getValidWriterFromInputs').and.returnValue(undefined);
 
-      const actual = await sidetreeTxnParser.parse(mockTxn, sidetreeTransactionPrefix);
+      const actual = await sidetreeTxnParser.parse(mockTxn);
       expect(actual).not.toBeDefined();
       done();
     });
@@ -79,7 +79,7 @@ describe('SidetreeTransactionParser', () => {
       spyOn(sidetreeTxnParser as any, 'getValidSidetreeDataFromOutputs').and.returnValue(sidetreeData);
       spyOn(sidetreeTxnParser as any, 'getValidWriterFromInputs').and.returnValue(writer);
 
-      const actual = await sidetreeTxnParser.parse(mockTxn, sidetreeTransactionPrefix);
+      const actual = await sidetreeTxnParser.parse(mockTxn);
       expect(actual).toBeDefined();
       expect(actual!.data).toEqual(sidetreeData);
       expect(actual!.writer).toEqual(writer);
