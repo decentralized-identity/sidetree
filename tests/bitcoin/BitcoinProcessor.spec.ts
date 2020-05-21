@@ -6,6 +6,7 @@ import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -813,30 +814,14 @@ describe('BitcoinProcessor', () => {
       // tslint:disable-next-line: max-line-length
       const tipSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight' as any).and.returnValue(Promise.resolve(testConfig.genesisBlockNumber + 1));
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
-      try {
-        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString(), previousHash: randomString() });
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain('before genesis');
-        expect(tipSpy).not.toHaveBeenCalled();
-        expect(processMock).not.toHaveBeenCalled();
-      } finally {
-        done();
-      }
-    });
 
-    it('should throw if asked to process while the miners block height is below genesis', async (done) => {
-      // tslint:disable-next-line: max-line-length
-      const processMock = spyOn(bitcoinProcessor, 'processBlock' as any);
-      try {
-        await bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 1, hash: randomString(), previousHash: randomString() });
-        fail('should have thrown');
-      } catch (error) {
-        expect(error.message).toContain('before genesis');
-        expect(processMock).not.toHaveBeenCalled();
-      } finally {
-        done();
-      }
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => bitcoinProcessor['processTransactions']({ height: testConfig.genesisBlockNumber - 10, hash: randomString(), previousHash: randomString() }),
+        ErrorCode.BitcoinProcessorCannotProcessBlocksBeforeGenesis);
+
+      expect(tipSpy).not.toHaveBeenCalled();
+      expect(processMock).not.toHaveBeenCalled();
+      done();
     });
 
     it('should recall previous hashes when calling processBlock', async (done) => {
@@ -1166,7 +1151,7 @@ describe('BitcoinProcessor', () => {
       spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getFirstTransactionOfGroup').and.returnValue(123);
 
       const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] - 10;
-      spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.returnValue(mockFirstBlockInGroup);
+      spyOn(TransactionNumber, 'getBlockNumber').and.returnValue(mockFirstBlockInGroup);
 
       spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'trimDatabasesToGroupBoundary').and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
@@ -1257,7 +1242,7 @@ describe('BitcoinProcessor', () => {
         ]
       };
 
-      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      const pofCalcSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'processBlock').and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
 
@@ -1313,7 +1298,7 @@ describe('BitcoinProcessor', () => {
         ]
       };
 
-      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      const pofCalcSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'processBlock').and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
       spyOn(bitcoinProcessor as any,'getSidetreeTransactionModelIfExist').and.returnValue(undefined);
@@ -1340,7 +1325,7 @@ describe('BitcoinProcessor', () => {
         ]
       };
 
-      const pofCalcSpy = spyOn(bitcoinProcessor, 'processBlockForPofCalculation' as any).and.returnValue(Promise.resolve());
+      const pofCalcSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'processBlock').and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock').and.returnValue(Promise.resolve(blockData));
 
