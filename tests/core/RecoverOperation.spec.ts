@@ -28,7 +28,7 @@ describe('RecoverOperation', async () => {
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
       const result = await RecoverOperation.parse(operationBuffer);
-      expect(typeof result).toBeDefined();
+      expect(result).toBeDefined();
       done();
     });
 
