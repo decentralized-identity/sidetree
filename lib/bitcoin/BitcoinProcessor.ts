@@ -121,13 +121,6 @@ export default class BitcoinProcessor {
 
     this.normalizedFeeCalculator = new NormalizedFeeCalculator(
       this.genesisBlockNumber,
-      ProtocolParameters.windowSizeInGroups,
-      ProtocolParameters.quantileMeasure,
-      ProtocolParameters.maxQuantileDeviationPercentage,
-      ProtocolParameters.sampleSizePerGroup,
-      ProtocolParameters.groupSizeInBlocks,
-      ProtocolParameters.historicalOffsetInBlocks,
-      ProtocolParameters.maxInputCountForSampledTransaction,
       this.mongoQuantileStore,
       this.bitcoinClient,
       this.sidetreeTransactionParser

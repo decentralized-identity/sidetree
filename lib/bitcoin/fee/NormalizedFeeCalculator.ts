@@ -1,6 +1,7 @@
 import BitcoinBlockModel from '../models/BitcoinBlockModel';
 import BitcoinClient from '../BitcoinClient';
 import ISlidingWindowQuantileStore from '../interfaces/ISlidingWindowQuantileStore';
+import ProtocolParameters from '../ProtocolParameters';
 import ReservoirSampler from './ReservoirSampler';
 import SidetreeTransactionParser from '../SidetreeTransactionParser';
 import SlidingWindowQuantileCalculator from './SlidingWindowQuantileCalculator';
@@ -18,26 +19,19 @@ export default class NormalizedFeeCalculator {
 
   public constructor (
     genesisBlockNumber: number,
-    windowSizeInGroups: number,
-    quantileMeasure: number,
-    maxQuantileDeviationPercentage: number,
-    sampleSizePerGroup: number,
-    private groupSizeInBlocks: number,
-    private historicalOffsetInBlocks: number,
-    private maxInputCountForSampledTransaction: number,
     private mongoQuantileStore: ISlidingWindowQuantileStore,
     private bitcoinClient: BitcoinClient,
     private sidetreeTransactionParser: SidetreeTransactionParser) {
 
     this.quantileCalculator = new SlidingWindowQuantileCalculator(
       BitcoinClient.convertBtcToSatoshis(1),
-      windowSizeInGroups,
-      quantileMeasure,
-      maxQuantileDeviationPercentage,
+      ProtocolParameters.windowSizeInGroups,
+      ProtocolParameters.quantileMeasure,
+      ProtocolParameters.maxQuantileDeviationPercentage,
       genesisBlockNumber,
       this.mongoQuantileStore);
 
-    this.transactionSampler = new ReservoirSampler(sampleSizePerGroup);
+    this.transactionSampler = new ReservoirSampler(ProtocolParameters.sampleSizePerGroup);
   }
 
   /**
@@ -54,7 +48,7 @@ export default class NormalizedFeeCalculator {
    */
   public getNormalizedFee (block: number): number | undefined {
 
-    const blockAfterHistoryOffset = Math.max(block - this.historicalOffsetInBlocks, 0);
+    const blockAfterHistoryOffset = Math.max(block - ProtocolParameters.historicalOffsetInBlocks, 0);
     const groupId = this.getGroupIdFromBlock(blockAfterHistoryOffset);
     return this.quantileCalculator.getQuantile(groupId);
   }
@@ -125,7 +119,7 @@ export default class NormalizedFeeCalculator {
       const inputsCount = transaction.inputs.length;
 
       if (!isSidetreeTransaction &&
-          inputsCount <= this.maxInputCountForSampledTransaction) {
+          inputsCount <= ProtocolParameters.maxInputCountForSampledTransaction) {
         this.transactionSampler.addElement(transaction.id);
       }
     }
@@ -156,14 +150,14 @@ export default class NormalizedFeeCalculator {
    */
   private getFirstBlockInGroup (block: number): number {
     const groupId = this.getGroupIdFromBlock(block);
-    return groupId * this.groupSizeInBlocks;
+    return groupId * ProtocolParameters.groupSizeInBlocks;
   }
 
   private isGroupBoundary (block: number): boolean {
-    return (block + 1) % this.groupSizeInBlocks === 0;
+    return (block + 1) % ProtocolParameters.groupSizeInBlocks === 0;
   }
 
   private getGroupIdFromBlock (block: number): number {
-    return Math.floor(block / this.groupSizeInBlocks);
+    return Math.floor(block / ProtocolParameters.groupSizeInBlocks);
   }
 }

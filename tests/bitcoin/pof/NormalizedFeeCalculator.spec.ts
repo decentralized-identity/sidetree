@@ -1,8 +1,9 @@
-import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
-import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
-import SidetreeTransactionParser from '../../../lib/bitcoin/SidetreeTransactionParser';
 import BitcoinDataGenerator from '../BitcoinDataGenerator';
+import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
+import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
+import ProtocolParameters from '../../../lib/bitcoin/ProtocolParameters';
+import SidetreeTransactionParser from '../../../lib/bitcoin/SidetreeTransactionParser';
 import TransactionNumber from '../../../lib/bitcoin/TransactionNumber';
 
 function randomString (length: number = 16): string {
@@ -22,7 +23,7 @@ describe('NormalizedFeeCalculaor', () => {
     const sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient, 'sidetree');
     const mongoQuantileStore = new MockSlidingWindowQuantileStore();
 
-    normalizedFeeCalculator = new NormalizedFeeCalculator(12345, 100, 0.25, 1, 50, 10, 20, 500, mongoQuantileStore, bitcoinClient, sidetreeTxnParser);
+    normalizedFeeCalculator = new NormalizedFeeCalculator(12345, mongoQuantileStore, bitcoinClient, sidetreeTxnParser);
   });
 
   describe('initialize', () => {
@@ -148,25 +149,25 @@ describe('NormalizedFeeCalculaor', () => {
       spyOn(normalizedFeeCalculator as any, 'getGroupIdFromBlock').and.returnValue(50);
 
       const actualRoundDown = normalizedFeeCalculator['getFirstBlockInGroup'](84);
-      expect(actualRoundDown).toEqual(50 * normalizedFeeCalculator['groupSizeInBlocks']);
+      expect(actualRoundDown).toEqual(50 * ProtocolParameters.groupSizeInBlocks);
     });
   });
 
   describe('isGroupBoundary', () => {
     it('should return true if is the boundary block', () => {
-      const input = normalizedFeeCalculator['groupSizeInBlocks'] * 3 - 1;
+      const input = ProtocolParameters.groupSizeInBlocks * 3 - 1;
       const actual = normalizedFeeCalculator['isGroupBoundary'](input);
       expect(actual).toBeTruthy();
     });
 
     it('should return false if is not the boundary block', () => {
-      const input = normalizedFeeCalculator['groupSizeInBlocks'] * 3;
+      const input = ProtocolParameters.groupSizeInBlocks * 3;
       const actual = normalizedFeeCalculator['isGroupBoundary'](input);
       expect(actual).toBeFalsy();
     });
 
     it('should return false if is not the boundary block (2)', () => {
-      const input = normalizedFeeCalculator['groupSizeInBlocks'] * 3 - 2;
+      const input = ProtocolParameters.groupSizeInBlocks * 3 - 2;
       const actual = normalizedFeeCalculator['isGroupBoundary'](input);
       expect(actual).toBeFalsy();
     });
@@ -177,7 +178,7 @@ describe('NormalizedFeeCalculaor', () => {
       const input = 12345;
       const actual = normalizedFeeCalculator['getGroupIdFromBlock'](input);
 
-      const expected = Math.floor(input / normalizedFeeCalculator['groupSizeInBlocks']);
+      const expected = Math.floor(input / ProtocolParameters.groupSizeInBlocks);
       expect(actual).toEqual(expected);
     });
   });
