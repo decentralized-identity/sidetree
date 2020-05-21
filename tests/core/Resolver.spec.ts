@@ -224,7 +224,7 @@ describe('Resolver', () => {
 
       // Expecting the new state to contain info of the first recovery operation.
       expect(newDidState.lastOperationTransactionNumber).toEqual(2);
-      expect(newDidState.nextRecoveryCommitmentHash).toEqual(recoveryOperation1Data.recoverOperation.signedData.recovery_commitment);
+      expect(newDidState.nextRecoveryCommitmentHash).toEqual(recoveryOperation1Data.recoverOperation.signedData.recoveryCommitment);
 
       done();
     });

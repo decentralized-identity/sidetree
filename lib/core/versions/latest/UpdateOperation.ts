@@ -10,8 +10,8 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  delta_hash: string;
-  update_reveal_value: string;
+  deltaHash: string;
+  updateRevealValue: string;
 }
 
 /**
@@ -139,6 +139,9 @@ export default class UpdateOperation implements OperationModel {
     const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    return signedData;
+    return {
+      deltaHash: signedData.delta_hash,
+      updateRevealValue: signedData.update_reveal_value
+    };
   }
 }

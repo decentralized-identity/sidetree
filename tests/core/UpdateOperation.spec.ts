@@ -7,6 +7,23 @@ import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 describe('UpdateOperation', async () => {
   describe('parse()', async () => {
+    it('parse as expected', async () => {
+      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
+      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
+        'unused-DID-unique-suffix',
+        'unused-update-reveal-value',
+        unusedNextUpdateCommitmentHash,
+        [],
+        signingPublicKey.id,
+        signingPrivateKey
+      );
+
+      const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
+      const result = await UpdateOperation.parse(operationBuffer);
+      expect(result).toBeDefined();
+    });
+
     it('should throw if didUniqueSuffix is not string.', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -42,47 +59,6 @@ describe('UpdateOperation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect));
     });
-
-    it('should throw if updateRevealValue is not string.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
-        'unused-DID-unique-suffix',
-        'unused-update-reveal-value',
-        unusedNextUpdateCommitmentHash,
-        'opaque-unused-document-patch',
-        signingPublicKey.id,
-        signingPrivateKey
-      );
-
-      const signedDataPayloadObject = {
-        update_reveal_value: 123,
-        delta_hash: 'deltaHash'
-      };
-      const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey, signingPublicKey.id);
-
-      updateOperationRequest.signed_data = signedData; // Intentionally incorrect type for reveal value.
-
-      const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-      await expectAsync(UpdateOperation.parse(operationBuffer))
-              .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
-    });
-
-    it('should throw if recoveryRevealValue is too long.', async () => {
-      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-      const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
-        'unused-DID-unique-suffix',
-        'super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal',
-        unusedNextUpdateCommitmentHash,
-        'opaque-unused-document-patch',
-        signingPublicKey.id,
-        signingPrivateKey
-      );
-
-      const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
-      await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong));
-    });
   });
 
   describe('parseObject()', async () => {
@@ -101,6 +77,14 @@ describe('UpdateOperation', async () => {
   });
 
   describe('parseSignedDataPayload()', async () => {
+    it('should throw if signedData is missing expected properties.', async (done) => {
+      const signedData = {};
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty));
+      done();
+    });
+
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {
         delta_hash: 'anyUnusedHash',
@@ -110,6 +94,29 @@ describe('UpdateOperation', async () => {
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty));
+      done();
+    });
+
+    it('should throw if reveal value is not a string', async (done) => {
+      const signedData = {
+        delta_hash: 'anyUnusedHash',
+        update_reveal_value: 123
+      };
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
+      done();
+    });
+
+    it('should throw if reveal value is too long', async (done) => {
+      const signedData = {
+        delta_hash: 'anyUnusedHash',
+        // tslint:disable-next-line
+        update_reveal_value: 'so looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong'
+      };
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong));
       done();
     });
   });

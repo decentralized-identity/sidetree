@@ -8,8 +8,8 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  did_suffix: string;
-  recovery_reveal_value: string;
+  didSuffix: string;
+  recoveryRevealValue: string;
 }
 
 /**
@@ -132,6 +132,9 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong);
     }
 
-    return signedData;
+    return {
+      didSuffix: signedData.did_suffix,
+      recoveryRevealValue: signedData.recovery_reveal_value
+    };
   }
 }

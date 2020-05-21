@@ -71,13 +71,13 @@ export default class OperationProcessor implements IOperationProcessor {
     let encodedRevealValue;
     switch (operation.type) {
       case OperationType.Recover:
-        encodedRevealValue = (operation as RecoverOperation).signedData.recovery_reveal_value;
+        encodedRevealValue = (operation as RecoverOperation).signedData.recoveryRevealValue;
         break;
       case OperationType.Update:
-        encodedRevealValue = (operation as UpdateOperation).signedData.update_reveal_value;
+        encodedRevealValue = (operation as UpdateOperation).signedData.updateRevealValue;
         break;
       default: // This is a deactivate.
-        encodedRevealValue = (operation as DeactivateOperation).signedData.recovery_reveal_value;
+        encodedRevealValue = (operation as DeactivateOperation).signedData.recoveryRevealValue;
         break;
     }
 
@@ -144,13 +144,13 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await UpdateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the actual reveal value hash against the expected commitment hash.
-    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.update_reveal_value, didState.nextUpdateCommitmentHash!);
+    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.updateRevealValue, didState.nextUpdateCommitmentHash!);
     if (!isValidCommitReveal) {
       return didState;
     }
 
     // Verify the delta hash against the expected delta hash.
-    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.delta_hash);
+    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
     if (!isValidDelta) {
       return didState;
     }
@@ -190,7 +190,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the reveal value hash.
-    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.recovery_reveal_value, didState.nextRecoveryCommitmentHash!);
+    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);
     if (!isValidCommitReveal) {
       return didState;
     }
@@ -202,7 +202,7 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the actual delta hash against the expected delta hash.
-    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.delta_hash);
+    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return didState;
     }
@@ -226,8 +226,8 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDidState = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
-      recoveryKey: operation.signedData.recovery_key,
-      nextRecoveryCommitmentHash: operation.signedData.recovery_commitment,
+      recoveryKey: operation.signedData.recoveryKey,
+      nextRecoveryCommitmentHash: operation.signedData.recoveryCommitment,
       nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
@@ -246,7 +246,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await DeactivateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the reveal value hash.
-    const isValidCommitmentReveal = Multihash.isValidHash(operation.signedData.recovery_reveal_value, didState.nextRecoveryCommitmentHash!);
+    const isValidCommitmentReveal = Multihash.isValidHash(operation.signedData.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);
     if (!isValidCommitmentReveal) {
       return didState;
     }
