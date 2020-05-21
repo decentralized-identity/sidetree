@@ -55,6 +55,8 @@ describe('BitcoinProcessor', () => {
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
   let bitcoinClientInitializeSpy: jasmine.Spy;
+  let normalizedFeeCalculatorInitializeSpy: jasmine.Spy;
+  let mongoQuantileStoreInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForInitializationSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
@@ -74,6 +76,12 @@ describe('BitcoinProcessor', () => {
 
     getStartingBlockForInitializationSpy = spyOn(bitcoinProcessor as any, 'getStartingBlockForInitialization');
     getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve(undefined));
+
+    normalizedFeeCalculatorInitializeSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'initialize');
+    normalizedFeeCalculatorInitializeSpy.and.returnValue(Promise.resolve());
+
+    mongoQuantileStoreInitializeSpy = spyOn(bitcoinProcessor['mongoQuantileStore'], 'initialize');
+    mongoQuantileStoreInitializeSpy.and.returnValue(Promise.resolve());
 
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
@@ -153,6 +161,8 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).not.toHaveBeenCalled();
       expect(lockMonitorSpy).not.toHaveBeenCalled();
+      expect(mongoQuantileStoreInitializeSpy).not.toHaveBeenCalled();
+      expect(normalizedFeeCalculatorInitializeSpy).not.toHaveBeenCalled();
 
       await bitcoinProcessor.initialize();
 
@@ -160,6 +170,8 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
       expect(lockMonitorSpy).toHaveBeenCalled();
+      expect(normalizedFeeCalculatorInitializeSpy).toHaveBeenCalled();
+      expect(mongoQuantileStoreInitializeSpy).toHaveBeenCalledBefore(normalizedFeeCalculatorInitializeSpy);
       done();
     });
 
