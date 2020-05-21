@@ -8,8 +8,8 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  did_suffix: string;
-  recovery_reveal_value: string;
+  didSuffix: string;
+  recoveryRevealValue: string;
 }
 
 /**
@@ -26,9 +26,6 @@ export default class DeactivateOperation implements OperationModel {
   /** The type of operation. */
   public readonly type: OperationType;
 
-  /** Encoded reveal value for the operation. */
-  public readonly recoveryRevealValue: string;
-
   /** Signed data. */
   public readonly signedDataJws: Jws;
 
@@ -41,14 +38,12 @@ export default class DeactivateOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    recoveryRevealValue: string,
     signedDataJws: Jws,
     signedData: SignedDataModel
   ) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Deactivate;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.recoveryRevealValue = recoveryRevealValue;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
   }
@@ -80,9 +75,9 @@ export default class DeactivateOperation implements OperationModel {
    * @param anchorFileMode If set to true, then `type` is expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<DeactivateOperation> {
-    let expectedPropertyCount = 4;
+    let expectedPropertyCount = 3;
     if (anchorFileMode) {
-      expectedPropertyCount = 3;
+      expectedPropertyCount = 2;
     }
 
     const properties = Object.keys(operationObject);
@@ -94,20 +89,10 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    if (typeof operationObject.recovery_reveal_value !== 'string') {
-      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueMissingOrInvalidType);
-    }
-
-    if ((operationObject.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
-      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong);
-    }
-
-    const recoveryRevealValue = operationObject.recovery_reveal_value;
-
     const expectKidInHeader = false;
     const signedDataJws = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
     const signedData = await DeactivateOperation.parseSignedDataPayload(
-      signedDataJws.payload, operationObject.did_suffix, recoveryRevealValue);
+      signedDataJws.payload, operationObject.did_suffix);
 
     // If not in anchor file mode, we need to validate `type` property.
     if (!anchorFileMode) {
@@ -119,14 +104,13 @@ export default class DeactivateOperation implements OperationModel {
     return new DeactivateOperation(
       operationBuffer,
       operationObject.did_suffix,
-      recoveryRevealValue,
       signedDataJws,
       signedData
     );
   }
 
   private static async parseSignedDataPayload (
-    deltaEncodedString: string, expectedDidUniqueSuffix: string, expectedRecoveryRevealValue: string): Promise<SignedDataModel> {
+    deltaEncodedString: string, expectedDidUniqueSuffix: string): Promise<SignedDataModel> {
 
     const signedDataJsonString = Encoder.decodeAsString(deltaEncodedString);
     const signedData = await JsonAsync.parse(signedDataJsonString);
@@ -140,10 +124,17 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch);
     }
 
-    if (signedData.recovery_reveal_value !== expectedRecoveryRevealValue) {
-      throw new SidetreeError(ErrorCode.DeactivateOperationSignedRecoveryRevealValueMismatch);
+    if (typeof signedData.recovery_reveal_value !== 'string') {
+      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueMissingOrInvalidType);
     }
 
-    return signedData;
+    if ((signedData.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong);
+    }
+
+    return {
+      didSuffix: signedData.did_suffix,
+      recoveryRevealValue: signedData.recovery_reveal_value
+    };
   }
 }

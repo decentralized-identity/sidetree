@@ -9,6 +9,29 @@ import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('RecoverOperation', async () => {
   describe('parse()', async () => {
+    it('parse as expected', async (done) => {
+      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+      const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
+      const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+
+      const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
+        'unused-DID-unique-suffix',
+        'unused-recovery-reveal-value',
+        recoveryPrivateKey,
+        newRecoveryPublicKey,
+        newSigningPublicKey,
+        unusedNextRecoveryCommitmentHash,
+        unusedNextUpdateCommitmentHash
+      );
+
+      const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
+      const result = await RecoverOperation.parse(operationBuffer);
+      expect(result).toBeDefined();
+      done();
+    });
+
     it('should throw if operation type is incorrect', async (done) => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
@@ -57,52 +80,6 @@ describe('RecoverOperation', async () => {
       done();
     });
 
-    it('should throw if recoveryRevealValue is not string.', async (done) => {
-      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
-      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-
-      const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
-        recoveryPrivateKey,
-        newRecoveryPublicKey,
-        newSigningPublicKey,
-        unusedNextRecoveryCommitmentHash,
-        unusedNextUpdateCommitmentHash
-      );
-
-      (recoverOperationRequest.recovery_reveal_value as any) = 123; // Intentionally incorrect type.
-
-      const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
-      await expectAsync(RecoverOperation.parse(operationBuffer))
-              .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType));
-      done();
-    });
-
-    it('should throw if recoveryRevealValue is too long.', async (done) => {
-      const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
-      const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-      const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-
-      const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        'unused-DID-unique-suffix',
-        'super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-valueeeee',
-        recoveryPrivateKey,
-        newRecoveryPublicKey,
-        newSigningPublicKey,
-        unusedNextRecoveryCommitmentHash,
-        unusedNextUpdateCommitmentHash
-      );
-
-      const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
-      await expectAsync(RecoverOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong));
-      done();
-    });
   });
 
   describe('parseOperationFromAnchorFile()', async () => {
@@ -150,11 +127,48 @@ describe('RecoverOperation', async () => {
         delta_hash: 'anyUnusedHash',
         recoveryKey: 'anyUnusedRecoveryKey',
         nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        extraProperty: 'An unknown extra property'
+        extraProperty: 'An unknown extra property',
+        recovery_reveal_value: 'some value'
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty));
+      done();
+    });
+
+    it('should throw if signedData missing property.', async (done) => {
+      const signedData = {
+      };
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty));
+      done();
+    });
+
+    it('should throw if recoveryRevealValue is too long.', async (done) => {
+      const signedData = {
+        delta_hash: 'anyUnusedHash',
+        recoveryKey: 'anyUnusedRecoveryKey',
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        // tslint:disable-next-line:max-line-length
+        recovery_reveal_value: 'super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-valueeeee'
+      };
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong));
+      done();
+    });
+
+    it('should throw if recoveryRevealValue is not string.', async (done) => {
+      const signedData = {
+        delta_hash: 'anyUnusedHash',
+        recoveryKey: 'anyUnusedRecoveryKey',
+        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        recovery_reveal_value: ['this is an array, not a string']
+      };
+      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
+      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType));
       done();
     });
   });

@@ -10,7 +10,8 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  delta_hash: string;
+  deltaHash: string;
+  updateRevealValue: string;
 }
 
 /**
@@ -26,9 +27,6 @@ export default class UpdateOperation implements OperationModel {
 
   /** The type of operation. */
   public readonly type: OperationType;
-
-  /** Encoded reveal value for the operation. */
-  public readonly updateRevealValue: string;
 
   /** Signed data for the operation. */
   public readonly signedDataJws: Jws;
@@ -48,7 +46,6 @@ export default class UpdateOperation implements OperationModel {
   private constructor (
     operationBuffer: Buffer,
     didUniqueSuffix: string,
-    updateRevealValue: string,
     signedDataJws: Jws,
     signedData: SignedDataModel,
     encodedDelta: string | undefined,
@@ -56,7 +53,6 @@ export default class UpdateOperation implements OperationModel {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
-    this.updateRevealValue = updateRevealValue;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
     this.encodedDelta = encodedDelta;
@@ -90,9 +86,9 @@ export default class UpdateOperation implements OperationModel {
    * @param mapFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, mapFileMode: boolean): Promise<UpdateOperation> {
-    let expectedPropertyCount = 5;
+    let expectedPropertyCount = 4;
     if (mapFileMode) {
-      expectedPropertyCount = 3;
+      expectedPropertyCount = 2;
     }
 
     const properties = Object.keys(operationObject);
@@ -103,16 +99,6 @@ export default class UpdateOperation implements OperationModel {
     if (typeof operationObject.did_suffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
-
-    if (typeof operationObject.update_reveal_value !== 'string') {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
-    }
-
-    if ((operationObject.update_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
-      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
-    }
-
-    const updateRevealValue = operationObject.update_reveal_value;
 
     const expectKidInHeader = true;
     const signedData = Jws.parseCompactJws(operationObject.signed_data, expectKidInHeader);
@@ -130,7 +116,7 @@ export default class UpdateOperation implements OperationModel {
       delta = await Operation.parseDelta(encodedDelta);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix, updateRevealValue, signedData, signedDataModel, encodedDelta, delta);
+    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, encodedDelta, delta);
   }
 
   private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {
@@ -138,13 +124,24 @@ export default class UpdateOperation implements OperationModel {
     const signedData = await JsonAsync.parse(signedDataJsonString);
 
     const properties = Object.keys(signedData);
-    if (properties.length !== 1) {
+    if (properties.length !== 2) {
       throw new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty);
+    }
+
+    if (typeof signedData.update_reveal_value !== 'string') {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType);
+    }
+
+    if ((signedData.update_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
+      throw new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong);
     }
 
     const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
-    return signedData;
+    return {
+      deltaHash: signedData.delta_hash,
+      updateRevealValue: signedData.update_reveal_value
+    };
   }
 }

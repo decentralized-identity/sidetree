@@ -133,7 +133,6 @@ export default {
   DeactivateOperationRecoveryRevealValueTooLong: 'deactivate_operation_recovery_reveal_value_too_long',
   DeactivateOperationSignedDataMissingOrUnknownProperty: 'deactivate_operation_signed_data_missing_or_unknown_property',
   DeactivateOperationSignedDidUniqueSuffixMismatch: 'deactivate_operation_signed_did_unique_suffix_mismatch',
-  DeactivateOperationSignedRecoveryRevealValueMismatch: 'deactivate_operation_signed_recovery_reveal_value_mismatch',
   DeactivateOperationTypeIncorrect: 'deactivate_operation_type_incorrect',
   TransactionFeePaidInvalid: 'transaction_fee_paid_is_invalid',
   TransactionFeePaidLessThanNormalizedFee: 'transaction_fee_paid_less_than_normalized_fee',

@@ -549,9 +549,7 @@ export default class BitcoinProcessor {
     // Make sure that we remove the transaction data BEFORE we remove the normalized data. This is
     // because that if the service stops at any moment after this, the initialize code looks at
     // the transaction store and can revert the quantile db accordingly.
-
     // Remove all the txns which are in that first block (and greater)
-    console.debug(`Removing transactions since and including ${firstBlockInGroup} (transaction id: ${firstTxnOfGroup})`);
     await this.transactionStore.removeTransactionsLaterThan(firstTxnOfGroup - 1);
 
     // Remove all the data from the normalized fee data DBs
