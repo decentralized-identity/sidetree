@@ -16,7 +16,6 @@ import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
-import { Transaction } from 'bitcore-lib';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -54,7 +53,6 @@ describe('BitcoinProcessor', () => {
 
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
-  let quantileCalculatorInitializeSpy: jasmine.Spy;
   let bitcoinClientInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForInitializationSpy: jasmine.Spy;
@@ -66,7 +64,6 @@ describe('BitcoinProcessor', () => {
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
-    quantileCalculatorInitializeSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'initialize');
     bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
     mongoLockTxnStoreSpy = spyOn(bitcoinProcessor['mongoDbLockTransactionStore'], 'initialize');
     lockMonitorSpy = spyOn(bitcoinProcessor['lockMonitor'], 'initialize');
@@ -144,7 +141,6 @@ describe('BitcoinProcessor', () => {
   describe('initialize', () => {
 
     beforeEach(async () => {
-      quantileCalculatorInitializeSpy.and.returnValue(Promise.resolve(undefined));
       bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
       getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
       mongoLockTxnStoreSpy.and.returnValue(Promise.resolve());
@@ -153,7 +149,6 @@ describe('BitcoinProcessor', () => {
 
     it('should initialize the internal objects', async (done) => {
       expect(transactionStoreInitializeSpy).not.toHaveBeenCalled();
-      expect(quantileCalculatorInitializeSpy).not.toHaveBeenCalled();
       expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).not.toHaveBeenCalled();
       expect(lockMonitorSpy).not.toHaveBeenCalled();
@@ -161,7 +156,6 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor.initialize();
 
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
-      expect(quantileCalculatorInitializeSpy).toHaveBeenCalledWith();
       expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
       expect(lockMonitorSpy).toHaveBeenCalled();
@@ -637,7 +631,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should throw if the the quantile calculator does not return a value.', async () => {
-      spyOn(bitcoinProcessor['quantileCalculator'], 'getQuantile').and.returnValue(undefined);
+      spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(undefined);
 
       try {
         await bitcoinProcessor.getNormalizedFee(validBlockHeight);
@@ -649,7 +643,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should return the value from the quantile calculator.', async () => {
-      spyOn(bitcoinProcessor['quantileCalculator'], 'getQuantile').and.returnValue(509);
+      spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(509);
 
       const response = await bitcoinProcessor.getNormalizedFee(validBlockHeight);
       expect(response).toBeDefined();
@@ -1109,7 +1103,6 @@ describe('BitcoinProcessor', () => {
           transactions = [];
           return Promise.resolve();
         });
-      spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
 
       const mockGetBlockReturn: IBlockInfo = {
         height: randomNumber(),
@@ -1134,21 +1127,19 @@ describe('BitcoinProcessor', () => {
 
   describe('trimDatabasesToFeeSamplingGroupBoundary', () => {
     it('should revert the DBs to the correct values.', async () => {
+      const mockFirstTxnOfGroup = 123456;
+      const getFirstTxnOfGroupSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getFirstTransactionOfGroup').and.returnValue(mockFirstTxnOfGroup);
+
       const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] + 100;
-      const firstBlockInGroupSpy = spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.returnValue(mockFirstBlockInGroup);
+      spyOn(TransactionNumber, 'getBlockNumber').and.returnValue(mockFirstBlockInGroup);
 
-      const txnConstructSpy = spyOn(TransactionNumber, 'construct');
-
-      const revertQuantileState = spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
+      const revertQuantileState = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'trimDatabasesToGroupBoundary').and.returnValue(Promise.resolve());
       const removeTransactions = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan').and.callFake(() => {
         // Make sure that that this call is made BEFORE the quantile-store call.
         expect(revertQuantileState.calls.count()).toEqual(0);
 
         return Promise.resolve();
       });
-
-      const mockGroupIdFromBlock = 400;
-      spyOn(bitcoinProcessor, 'getGroupIdFromBlock' as any).and.returnValue(mockGroupIdFromBlock);
 
       const mockBlockInfo: IBlockInfo = {
         height: randomNumber(),
@@ -1166,17 +1157,18 @@ describe('BitcoinProcessor', () => {
       const actual = await bitcoinProcessor['trimDatabasesToFeeSamplingGroupBoundary'](inputBlock);
 
       expect(actual).toEqual(mockBlockInfo);
-      expect(firstBlockInGroupSpy).toHaveBeenCalledWith(inputBlock);
-      expect(txnConstructSpy).toHaveBeenCalledWith(mockFirstBlockInGroup, 0);
+      expect(getFirstTxnOfGroupSpy).toHaveBeenCalledWith(inputBlock);
       expect(removeTransactions).toHaveBeenCalled();
-      expect(revertQuantileState).toHaveBeenCalledWith(mockGroupIdFromBlock);
+      expect(revertQuantileState).toHaveBeenCalledWith(inputBlock);
     });
 
     it('should return the genesis block if the first block in group goes below the genesis block.', async () => {
+      spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getFirstTransactionOfGroup').and.returnValue(123);
+
       const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] - 10;
       spyOn(bitcoinProcessor, 'getFirstBlockInGroup' as any).and.returnValue(mockFirstBlockInGroup);
 
-      spyOn(bitcoinProcessor['quantileCalculator'], 'removeGroupsGreaterThanOrEqual').and.returnValue(Promise.resolve());
+      spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'trimDatabasesToGroupBoundary').and.returnValue(Promise.resolve());
       spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
 
       const mockBlockInfo: IBlockInfo = {
@@ -1194,19 +1186,6 @@ describe('BitcoinProcessor', () => {
       const actual = await bitcoinProcessor['trimDatabasesToFeeSamplingGroupBoundary'](500);
 
       expect(actual).toEqual(mockBlockInfo);
-    });
-  });
-
-  describe('getFirstBlockInGroup', () => {
-    it('should round the value correctly', async () => {
-      // The expected values are dependent upon the protocol-parameters.json so if those values
-      // are changed, these expected value may as well
-
-      const actualRoundDown = bitcoinProcessor['getFirstBlockInGroup'](84);
-      expect(actualRoundDown).toEqual(0);
-
-      const actualRoundUp = bitcoinProcessor['getFirstBlockInGroup'](124);
-      expect(actualRoundUp).toEqual(100);
     });
   });
 
@@ -1264,49 +1243,6 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('processBlock', () => {
-
-    // creates a response object for Bitcoin
-    async function generateBlock (blockHeight: number, data?: () => string | string[] | undefined): Promise<BitcoinBlockModel> {
-      const tx: Transaction[] = [];
-      const count = randomNumber(100) + 10;
-      for (let i = 0; i < count; i++) {
-        const transaction = BitcoinDataGenerator.generateBitcoinTransaction(BitcoinClient.generatePrivateKey('testnet'), 1);
-        // data generation
-        if (data) {
-          const hasData = data();
-
-          // if the data returned is an array then add each value one by one.
-          // otherwise add the single value
-          if (hasData instanceof Array) {
-            hasData.forEach(element => {
-              transaction.addData(Buffer.from(element));
-            });
-          } else if (hasData) {
-            transaction.addData(Buffer.from(hasData));
-          }
-        }
-
-        tx.push(transaction);
-      }
-
-      const blockHash = randomString();
-
-      return {
-        hash: blockHash,
-        height: blockHeight,
-        previousHash: randomString(),
-        transactions: tx.map((txn) => {
-          return {
-            id: txn.id,
-            blockHash: blockHash,
-            confirmations: randomNumber(),
-            inputs: txn.inputs.map((input) => { return BitcoinClient['createBitcoinInputModel'](input); }),
-            outputs: txn.outputs.map((output) => { return BitcoinClient['createBitcoinOutputModel'](output); })
-          };
-        })
-      };
-    }
-
     it('should review all transactions in a block and add valid sidetree txns to the transactionStore', async (done) => {
       const block = randomNumber();
       const blockHash = randomString();
@@ -1425,7 +1361,7 @@ describe('BitcoinProcessor', () => {
 
     it('should throw if the previousBlockHash does not match the bitcoin block retrieved', async (done) => {
       const block = randomNumber();
-      const blockData = await generateBlock(block, () => { return undefined; });
+      const blockData = BitcoinDataGenerator.generateBlock(block, () => { return undefined; });
       const blockHash = randomString();
       spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockHash' as any).and.returnValue(blockHash);
       const rpcMock = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlock');
@@ -1440,74 +1376,6 @@ describe('BitcoinProcessor', () => {
         done();
       }
     });
-
-    describe('processBlockForPofCalculation', async () => {
-      it('should only add the non-sidetree transactions to the sampler.', async (done) => {
-        const block = randomNumber();
-        const blockData = await generateBlock(block, () => {
-          return randomString();
-        });
-
-        let numOfNonSidetreeTransactions = 0;
-        spyOn(bitcoinProcessor['sidetreeTransactionParser'], 'parse').and.callFake(() => {
-
-          if (Math.random() > 0.2) {
-            return Promise.resolve({ data: randomString(), writer: randomString() });
-          }
-
-          numOfNonSidetreeTransactions++;
-          return Promise.resolve(undefined);
-        });
-
-        const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
-        const txnSamplerAddSpy = spyOn(bitcoinProcessor['transactionSampler'], 'addElement').and.returnValue(undefined);
-
-        await bitcoinProcessor['processBlockForPofCalculation'](block, blockData);
-        expect(txnSamplerAddSpy.calls.count()).toEqual(numOfNonSidetreeTransactions);
-        expect(txnSamplerResetSpy).toHaveBeenCalled();
-        done();
-      });
-
-      it('should add values to the quantile calculator only if we have reached the target group count', async (done) => {
-        const block = randomNumber();
-        const blockData = await generateBlock(block, () => {
-          if (Math.random() > 0.2) {
-            const id = randomString();
-            return testConfig.sidetreeTransactionPrefix + id;
-          }
-
-          return randomString();
-        });
-
-        const txnSamplerClearSpy = spyOn(bitcoinProcessor['transactionSampler'], 'clear');
-        const txnSamplerResetSpy = spyOn(bitcoinProcessor['transactionSampler'], 'resetPsuedoRandomSeed');
-
-        const mockedSampleTxns = [ 'abc', '123', '23k', '35d', '4', 'tr', 'afe', '12d', '3rf' ];
-        spyOn(bitcoinProcessor['transactionSampler'], 'getSample').and.returnValue(mockedSampleTxns);
-        spyOn(bitcoinProcessor['transactionSampler'], 'addElement').and.returnValue(undefined);
-        spyOn(bitcoinProcessor, 'isGroupBoundary' as any).and.returnValue(true);
-
-        let mockedTransactionFees = new Array<number>();
-        spyOn(bitcoinProcessor['bitcoinClient'], 'getTransactionFeeInSatoshis' as any).and.callFake((_id: any) => {
-          const fee = randomNumber();
-          mockedTransactionFees.push(fee);
-          return fee;
-        });
-
-        const expectedGroupId = bitcoinProcessor['getGroupIdFromBlock'](block);
-        const quantileCalculatorAddSpy = spyOn(bitcoinProcessor['quantileCalculator'], 'add').and.callFake(async (groupId, fees) => {
-          expect(groupId).toEqual(expectedGroupId);
-          expect(fees).toEqual(mockedTransactionFees);
-        });
-
-        await bitcoinProcessor['processBlockForPofCalculation'](block, blockData);
-        expect(quantileCalculatorAddSpy).toHaveBeenCalled();
-        expect(txnSamplerClearSpy).toHaveBeenCalled();
-        expect(txnSamplerResetSpy).toHaveBeenCalled();
-        done();
-      });
-    });
-
   });
 
   describe('getSidetreeTransactionModelIfExist', async () => {

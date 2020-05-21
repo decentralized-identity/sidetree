@@ -309,7 +309,7 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const quantileValue = await this.normalizedFeeCalculator.getNormalizedFee(block);
+    const quantileValue = this.normalizedFeeCalculator.getNormalizedFee(block);
 
     if (quantileValue) {
       return { normalizedTransactionFee: quantileValue };
@@ -540,34 +540,28 @@ export default class BitcoinProcessor {
 
     console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${lastValidBlockNumber}`);
 
-    // For the quantile DB, we need to remove the full group (corresponding to the given
-    // lastValidBlockNumber). This is because currently there is no way to add/remove individual block's
-    // data to the quantile DB ... it only expects to work with the full groups. Which means that we
-    // need to remove all the transactions which belong to that group (and later ones).
-    //
-    // So what we need to do is:
-    // <code>
-    //   firstBlockInGroup = findFirstBlockInGroup(validBlockGroup);
-    //
-    //   deleteAllTransactionsGreaterThanOrEqualTo(firstBlockInGroup);
-    //   deleteAllGroupsGreaterThanOrEqualTo(validBlockGroup);
-    // </code>
-    const firstBlockInGroup = this.normalizedFeeCalculator.getFirstBlockInGroup(lastValidBlockNumber);
+    // Basically, we need to remove all the transactions/normazlied-fee-data from the system later than the
+    // specified lastValidBlockNumber input.
+
+    // Get the first block and transaction from the group which are supposed to be deleted
+    const firstTxnOfGroup = this.normalizedFeeCalculator.getFirstTransactionOfGroup(lastValidBlockNumber);
+    const firstBlockInGroup = TransactionNumber.getBlockNumber(firstTxnOfGroup);
 
     // NOTE:
     // *****
-    // Make sure that we remove the transaction data BEFORE we remove the quantile data. This is
+    // Make sure that we remove the transaction data BEFORE we remove the normalized data. This is
     // because that if the service stops at any moment after this, the initialize code looks at
     // the transaction store and can revert the quantile db accordingly.
-    const firstTxnOfFirstBlockInGroup = TransactionNumber.construct(firstBlockInGroup, 0);
 
-    console.debug(`Removing transactions since ${firstBlockInGroup} (transaction id: ${firstTxnOfFirstBlockInGroup})`);
-    await this.transactionStore.removeTransactionsLaterThan(firstTxnOfFirstBlockInGroup - 1);
+    // Remove all the txns which are in that first block (and greater)
+    console.debug(`Removing transactions since ${firstBlockInGroup} (transaction id: ${firstTxnOfGroup})`);
+    await this.transactionStore.removeTransactionsLaterThan(firstTxnOfGroup - 1);
 
-    await this.normalizedFeeCalculator.trimDatabasesToFeeSamplingGroupBoundary(lastValidBlockNumber);
+    // Remove all the data from the normalized fee data DBs
+    await this.normalizedFeeCalculator.trimDatabasesToGroupBoundary(lastValidBlockNumber);
 
-    // The first block in the group is the new starting point so the previous one is the
-    // last 'valid' block. Return it but ensure that we are not going below the genesis block
+    // The first block in the group has been deleted from the system so now the previous block
+    // is the 'valid' block now. Return it but ensure that we are not going below the genesis block
     const blockNumberToReturn = Math.max(firstBlockInGroup - 1, this.genesisBlockNumber);
 
     return this.bitcoinClient.getBlockInfoFromHeight(blockNumberToReturn);
