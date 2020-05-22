@@ -455,7 +455,7 @@ export default class BitcoinProcessor {
     // (and saved in the db) has been forked. Check for the fork.
     const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
 
-    let lastValidBlock;
+    let lastValidBlock: IBlockInfo | undefined;
 
     if (lastSavedBlockIsValid) {
       // There was no fork ... let's put the system DBs in the correct state.
@@ -469,7 +469,6 @@ export default class BitcoinProcessor {
     // If there is a valid processed block, we will start processing the block following it, else start processing from the genesis block.
     const startingBlockHeight = lastValidBlock ? lastValidBlock.height + 1 : this.genesisBlockNumber;
 
-    // Our starting block is the one after the last-valid-block
     return this.bitcoinClient.getBlockInfoFromHeight(startingBlockHeight);
   }
 
