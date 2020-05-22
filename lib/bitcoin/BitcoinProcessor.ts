@@ -130,7 +130,8 @@ export default class BitcoinProcessor {
       new LockResolver(
         this.bitcoinClient,
         ProtocolParameters.minimumValueTimeLockDurationInBlocks,
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks);
+        ProtocolParameters.maximumValueTimeLockDurationInBlocks,
+        this.normalizedFeeCalculator);
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
@@ -157,7 +158,6 @@ export default class BitcoinProcessor {
     await this.mongoQuantileStore.initialize();
     await this.normalizedFeeCalculator.initialize();
     await this.mongoDbLockTransactionStore.initialize();
-    await this.lockMonitor.initialize();
 
     console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForInitialization();
@@ -165,6 +165,10 @@ export default class BitcoinProcessor {
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
     await this.processTransactions(startingBlock);
 
+    // NOTE: important to this initialization after we have processed all the blocks
+    // this is because that the lock monitor needs the normalized fee calculator to
+    // have all the data.
+    await this.lockMonitor.initialize();
     void this.periodicPoll();
   }
 
@@ -545,9 +549,7 @@ export default class BitcoinProcessor {
     // Make sure that we remove the transaction data BEFORE we remove the normalized data. This is
     // because that if the service stops at any moment after this, the initialize code looks at
     // the transaction store and can revert the quantile db accordingly.
-
     // Remove all the txns which are in that first block (and greater)
-    console.debug(`Removing transactions since and including ${firstBlockInGroup} (transaction id: ${firstTxnOfGroup})`);
     await this.transactionStore.removeTransactionsLaterThan(firstTxnOfGroup - 1);
 
     // Remove all the data from the normalized fee data DBs

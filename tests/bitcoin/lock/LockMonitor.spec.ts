@@ -7,10 +7,13 @@ import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
+import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
+import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
 import SidetreeError from '../../../lib/common/SidetreeError';
+import SidetreeTransactionParser from '../../../lib/bitcoin/SidetreeTransactionParser';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
@@ -27,7 +30,12 @@ describe('LockMonitor', () => {
 
   const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
-  const lockResolver = new LockResolver(bitcoinClient, 500, 600);
+
+  const mongoQuantileStore = new MockSlidingWindowQuantileStore();
+  const sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient, 'sidetree');
+  const normalizedFeeCalculator = new NormalizedFeeCalculator(10, mongoQuantileStore, bitcoinClient, sidetreeTxnParser);
+
+  const lockResolver = new LockResolver(bitcoinClient, 500, 600, normalizedFeeCalculator);
 
   let lockMonitor: LockMonitor;
 
@@ -145,6 +153,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 12323,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -162,6 +171,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 12323,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -244,6 +254,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 12323,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -281,6 +292,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 12323,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -318,6 +330,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 12323,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -355,6 +368,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 12323,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -450,6 +464,7 @@ describe('LockMonitor', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 1234,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
       const resolveLockSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
@@ -634,6 +649,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: mockUnlockTxnTime,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -666,6 +682,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: mockUnlockTxnTime,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -698,6 +715,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: mockUnlockTxnTime,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -730,6 +748,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: mockUnlockTxnTime,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -765,6 +784,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: mockUnlockTxnTime,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -809,6 +829,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: 12345,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -838,6 +859,7 @@ describe('LockMonitor', () => {
         identifier: 'some identifier',
         owner: 'owner',
         unlockTransactionTime: 12345,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -883,6 +905,7 @@ describe('LockMonitor', () => {
         amountLocked: 1234,
         identifier: 'abc',
         unlockTransactionTime: 1234,
+        normalizedFee: 100,
         owner: 'some - owner',
         lockTransactionTime: 1220
       };
@@ -924,6 +947,7 @@ describe('LockMonitor', () => {
         identifier: 'abc',
         owner: 'wallet address',
         unlockTransactionTime: 1234,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -972,6 +996,7 @@ describe('LockMonitor', () => {
         identifier: 'abc',
         owner: 'wallet address',
         unlockTransactionTime: 1234,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 

@@ -4,6 +4,7 @@ import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
+import NormalizedFeeCalculator from '../fee/NormalizedFeeCalculator';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 import { Script } from 'bitcore-lib';
@@ -23,7 +24,11 @@ interface LockScriptVerifyResult {
  */
 export default class LockResolver {
 
-  constructor (private bitcoinClient: BitcoinClient, private minimumLockDurationInBlocks: number, private maximumLockDurationInBlocks: number) {
+  constructor (
+    private bitcoinClient: BitcoinClient,
+    private minimumLockDurationInBlocks: number,
+    private maximumLockDurationInBlocks: number,
+    private normalizedFeeCalculator: NormalizedFeeCalculator) {
   }
 
   /**
@@ -85,11 +90,19 @@ export default class LockResolver {
                               `Lock start block: ${lockStartBlock}. Unlock block: ${scriptVerifyResult.unlockAtBlock}`);
     }
 
+    const normalizedFee = this.normalizedFeeCalculator.getNormalizedFee(lockStartBlock);
+
+    if (!normalizedFee) {
+      throw new SidetreeError(ErrorCode.LockResolverNormalizedFeeCannotBeCalculated,
+                              `Normalized fee cannot be calculated for the block: ${lockStartBlock}`);
+    }
+
     return {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
       lockTransactionTime: lockStartBlock,
       unlockTransactionTime: scriptVerifyResult.unlockAtBlock!,
+      normalizedFee: normalizedFee,
       owner: scriptVerifyResult.publicKeyHash!
     };
   }

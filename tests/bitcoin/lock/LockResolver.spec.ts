@@ -6,6 +6,9 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
+import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
+import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
+import SidetreeTransactionParser from '../../../lib/bitcoin/SidetreeTransactionParser';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
 import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
@@ -44,7 +47,12 @@ describe('LockResolver', () => {
 
   beforeEach(() => {
     let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
-    lockResolver = new LockResolver(bitcoinClient, 200, 250);
+
+    const mongoQuantileStore = new MockSlidingWindowQuantileStore();
+    const sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient, 'sidetree');
+    const normalizedFeeCalculator = new NormalizedFeeCalculator(10, mongoQuantileStore, bitcoinClient, sidetreeTxnParser);
+
+    lockResolver = new LockResolver(bitcoinClient, 200, 250, normalizedFeeCalculator);
   });
 
   describe('resolveSerializedLockIdentifierAndThrowOnError', () => {
@@ -64,6 +72,7 @@ describe('LockResolver', () => {
         identifier: 'identifier',
         owner: 'owner',
         unlockTransactionTime: 1900,
+        normalizedFee: 100,
         lockTransactionTime: mockLockStartBlock
       };
       const resolveSpy = spyOn(lockResolver, 'resolveLockIdentifierAndThrowOnError').and.returnValue(Promise.resolve(mockValueTimeLock));
@@ -109,15 +118,19 @@ describe('LockResolver', () => {
       spyOn(LockIdentifierSerializer, 'serialize').and.returnValue(mockSerializedLockIdentifier);
 
       const mockLockStartBlock = 12345;
-      spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(12345));
+      spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(mockLockStartBlock));
 
       const lockDurationSpy = spyOn(lockResolver as any, 'isLockDurationValid').and.returnValue(true);
+
+      const mockNormalizedFee = 87654;
+      const normalizedFeeSpy = spyOn(lockResolver['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(mockNormalizedFee);
 
       const expectedOutput: ValueTimeLockModel = {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
         lockTransactionTime: mockLockStartBlock,
         unlockTransactionTime: lockBlockInput,
+        normalizedFee: mockNormalizedFee,
         owner: validPublicKeyHashOutString
       };
 
@@ -129,6 +142,7 @@ describe('LockResolver', () => {
       expect(checkLockScriptSpy).toHaveBeenCalled();
       expect(payToScriptSpy).toHaveBeenCalledWith(mockTransaction.outputs[0], validScript);
       expect(lockDurationSpy).toHaveBeenCalledWith(mockLockStartBlock, mockLockScriptVerifyResult.unlockAtBlock);
+      expect(normalizedFeeSpy).toHaveBeenCalledWith(mockLockStartBlock);
     });
 
     it('should throw if redeem script is not a lock script.', async () => {
@@ -211,6 +225,39 @@ describe('LockResolver', () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
         ErrorCode.LockResolverDurationIsInvalid
+      );
+    });
+
+    it('should throw if the normalized fee is undefined.', async () => {
+
+      const mockLockIdentifier: LockIdentifierModel = {
+        transactionId: 'some transactoin id',
+        redeemScriptAsHex: 'validScript to - Hex'
+      };
+
+      const mockTransaction: BitcoinTransactionModel = {
+        id: 'some transaction id',
+        blockHash: 'block hash',
+        confirmations: 5,
+        inputs: [],
+        outputs: [
+          { satoshis: 10000, scriptAsmAsString: 'mock script asm' }
+        ]
+      };
+
+      const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, 123);
+
+      spyOn(lockResolver as any, 'getTransaction').and.returnValue(Promise.resolve(mockTransaction));
+      spyOn(LockResolver as any, 'createScript').and.returnValue(Script.empty());
+      spyOn(LockResolver as any, 'isRedeemScriptALockScript').and.returnValue(mockLockScriptVerifyResult);
+      spyOn(LockResolver as any, 'isOutputPayingToTargetScript').and.returnValue(true);
+      spyOn(lockResolver as any, 'calculateLockStartingBlock').and.returnValue(Promise.resolve(1234));
+      spyOn(lockResolver as any, 'isLockDurationValid').and.returnValue(true);
+      spyOn(lockResolver['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(undefined);
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => lockResolver.resolveLockIdentifierAndThrowOnError(mockLockIdentifier),
+        ErrorCode.LockResolverNormalizedFeeCannotBeCalculated
       );
     });
   });

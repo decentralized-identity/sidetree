@@ -169,6 +169,7 @@ describe('BitcoinProcessor', () => {
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
       expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
+      expect(processTransactionsSpy).toHaveBeenCalledBefore(lockMonitorSpy);
       expect(lockMonitorSpy).toHaveBeenCalled();
       expect(normalizedFeeCalculatorInitializeSpy).toHaveBeenCalled();
       expect(mongoQuantileStoreInitializeSpy).toHaveBeenCalledBefore(normalizedFeeCalculatorInitializeSpy);
@@ -1470,6 +1471,7 @@ describe('BitcoinProcessor', () => {
         identifier: 'lock identifier',
         owner: 'owner',
         unlockTransactionTime: 1233,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 
@@ -1512,6 +1514,7 @@ describe('BitcoinProcessor', () => {
         identifier: 'lock identifier',
         owner: 'owner',
         unlockTransactionTime: 1233,
+        normalizedFee: 100,
         lockTransactionTime: 1220
       };
 

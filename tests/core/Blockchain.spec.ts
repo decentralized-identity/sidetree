@@ -350,6 +350,7 @@ describe('Blockchain', async () => {
         amountLocked: 12134,
         identifier: 'identifier',
         lockTransactionTime: 11223,
+        normalizedFee: 100,
         owner: 'some owner',
         unlockTransactionTime: 98734
       };
@@ -415,6 +416,7 @@ describe('Blockchain', async () => {
         amountLocked: 12134,
         identifier: 'identifier',
         lockTransactionTime: 11223,
+        normalizedFee: 100,
         owner: 'some owner',
         unlockTransactionTime: 98734
       };

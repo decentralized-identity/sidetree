@@ -13,15 +13,15 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 1240,
+        normalizedFee: 3,
         owner: 'owner'
       };
 
-      const normalizedFeeInput = 3;
-      const feePerOp = normalizedFeeInput * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
+      const feePerOp = valueTimeLockInput.normalizedFee * ProtocolParameters.normalizedFeeToPerOperationFeeMultiplier;
       const numOfOps = valueTimeLockInput.amountLocked / (feePerOp * ProtocolParameters.valueTimeLockAmountMultiplier);
       const expectedNumOfOps = Math.floor(numOfOps);
 
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, normalizedFeeInput);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput);
       expect(actual).toEqual(expectedNumOfOps);
     });
 
@@ -31,15 +31,16 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 1240,
+        normalizedFee: 100,
         owner: 'owner'
       };
 
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, 100);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput);
       expect(actual).toEqual(ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
     });
 
     it('should return number of free ops if the value lock is undefined.', () => {
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(undefined, 2);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(undefined);
 
       expect(actual).toEqual(ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
     });
@@ -51,7 +52,7 @@ describe('ValueTimeLockVerifier', () => {
 
       const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock;
 
-      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, numberOfOpsInput, 123, 12, 'txn writer');
+      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, numberOfOpsInput, 12, 'txn writer');
       expect(calcMaxOpsSpy).not.toHaveBeenCalled();
     });
 
@@ -61,13 +62,14 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 1235,
+        normalizedFee: 123,
         owner: 'lock-owner'
       };
 
       const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock + 100;
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, numberOfOpsInput, 123, 12, 'txn writer'),
+        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, numberOfOpsInput, 12, 'txn writer'),
         ErrorCode.ValueTimeLockVerifierTransactionWriterLockOwnerMismatch);
     });
 
@@ -77,6 +79,7 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
+        normalizedFee: 200,
         owner: 'owner'
       };
 
@@ -87,7 +90,6 @@ describe('ValueTimeLockVerifier', () => {
           ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
             valueTimeLockinput,
             numberOfOpsInput,
-            200,
             valueTimeLockinput.lockTransactionTime - 1,
             valueTimeLockinput.owner),
         ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange);
@@ -99,6 +101,7 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
+        normalizedFee: 200,
         owner: 'owner'
       };
 
@@ -109,7 +112,6 @@ describe('ValueTimeLockVerifier', () => {
           ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
             valueTimeLockinput,
             numberOfOpsInput,
-            200,
             valueTimeLockinput.unlockTransactionTime,
             valueTimeLockinput.owner),
         ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange);
@@ -124,6 +126,7 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
+        normalizedFee: 200,
         owner: 'owner'
       };
 
@@ -132,7 +135,6 @@ describe('ValueTimeLockVerifier', () => {
           ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
             valueTimeLockinput,
             mockMaxNumOfOps + 1,
-            200,
             valueTimeLockinput.lockTransactionTime + 1,
             valueTimeLockinput.owner),
         ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations);
@@ -147,13 +149,13 @@ describe('ValueTimeLockVerifier', () => {
         identifier: 'identifier',
         lockTransactionTime: 1234,
         unlockTransactionTime: 7890,
+        normalizedFee: 200,
         owner: 'owner'
       };
 
       ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
         valueTimeLockinput,
         mockMaxNumOfOps,
-        200,
         valueTimeLockinput.lockTransactionTime + 1,
         valueTimeLockinput.owner);
 
