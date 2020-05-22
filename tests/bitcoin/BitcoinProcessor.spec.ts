@@ -969,7 +969,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should use genesis block as the starting block if no valid block is left after reverting.', async (done) => {
-      
+
       const mockLastSavedTransaction: TransactionModel = {
         anchorString: 'unused',
         transactionTimeHash: 'unused',
@@ -1065,10 +1065,11 @@ describe('BitcoinProcessor', () => {
       revertDatabaseSpy.and.returnValue(Promise.resolve(undefined));
 
       // Simulate that current height in bitcoin core is ahead than the desired starting block.
-      const getCurrentBlockHeightSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
+      const getCurrentBlockHeightSpy
+        = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
 
       await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
-      
+
       expect(verifyBlockSpy).toHaveBeenCalled();
       expect(revertDatabaseSpy).toHaveBeenCalled();
       expect(getCurrentBlockHeightSpy).toHaveBeenCalled();
@@ -1107,7 +1108,7 @@ describe('BitcoinProcessor', () => {
       let transactions = createTransactions(10);
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
-      
+
       // Mock to simulate no valid transaction found.
       const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.returnValue(Promise.resolve(undefined));
 

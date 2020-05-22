@@ -486,7 +486,7 @@ export default class BitcoinProcessor {
 
     // If there is a valid processed block, we will start processing the block following it, else start processing from the genesis block.
     const startingBlockHeight = this.lastProcessedBlock ? this.lastProcessedBlock.height + 1 : this.genesisBlockNumber;
-    
+
     // The new starting block-height may not be actually written on the blockchain yet
     // so here we make sure that we don't return an 'invalid' starting block.
     const currentHeight = await this.bitcoinClient.getCurrentBlockHeight();
@@ -547,7 +547,7 @@ export default class BitcoinProcessor {
 
     // Remove all the data from the normalized fee data DBs
     await this.normalizedFeeCalculator.trimDatabasesToGroupBoundary(blockNumber);
-    
+
     // If we have deleted all data, there is no last known valid block in the system to return.
     if (firstBlockInGroup <= this.genesisBlockNumber) {
       return undefined;
