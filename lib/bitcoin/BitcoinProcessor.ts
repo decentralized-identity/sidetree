@@ -456,7 +456,6 @@ export default class BitcoinProcessor {
     const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
 
     let lastValidBlock: IBlockInfo | undefined;
-
     if (lastSavedBlockIsValid) {
       // There was no fork ... let's put the system DBs in the correct state.
       lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
@@ -474,17 +473,20 @@ export default class BitcoinProcessor {
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
 
-    const lastProcessedBlockValid = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
+    const lastProcessedBlockIsValid = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
 
     // If the last processed block is not valid then that means that we need to
     // revert the DB back to a known valid block.
-    if (!lastProcessedBlockValid) {
-      // The revert logic will return the last correct processed block
-      this.lastProcessedBlock = await this.revertDatabases();
+    let lastValidBlock: IBlockInfo | undefined;
+    if (lastProcessedBlockIsValid) {
+      lastValidBlock = this.lastProcessedBlock;
+    } else {
+      // The revert logic will return the last valid block.
+      lastValidBlock = await this.revertDatabases();
     }
 
     // If there is a valid processed block, we will start processing the block following it, else start processing from the genesis block.
-    const startingBlockHeight = this.lastProcessedBlock ? this.lastProcessedBlock.height + 1 : this.genesisBlockNumber;
+    const startingBlockHeight = lastValidBlock ? lastValidBlock.height + 1 : this.genesisBlockNumber;
 
     // The new starting block-height may not be actually written on the blockchain yet
     // so here we make sure that we don't return an 'invalid' starting block.
