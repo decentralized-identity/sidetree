@@ -164,7 +164,7 @@ POST / HTTP/1.1
 #### `suffix_data` property schema
 ```json
 {
-  "delta_hash": "Hash of the delta property.",
+  "delta_hash": "Hash of the decoded but still JSON stringified 'delta' property",
   "recovery_key": "A SECP256K1 public key expressed in compressed JWK format.",
   "recovery_commitment": "Commitment hash for the next recovery."
 }
