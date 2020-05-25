@@ -18,7 +18,6 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
       {
         "suffix_data": { // Base64URL encoded
           "delta_hash": DELTA_HASH,
-          "recovery_key": JWK_OBJECT,
           "recovery_commitment": COMMITMENT_HASH
         }
       },
@@ -28,14 +27,13 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
       {
         "did_suffix": SUFFIX_STRING,
         "signed_data": { // Base64URL encoded, compact JWS
-            "protected": {...},
-            "payload": {
-                "recovery_reveal_value": REVEAL_VALUE,
-                "recovery_commitment": COMMITMENT_HASH,
-                "delta_hash": DELTA_HASH,
-                "recovery_key": JWK_OBJECT
-            },
-            "signature": SIGNATURE_STRING
+          "protected": {...},
+          "payload": {
+            "recovery_commitment": COMMITMENT_HASH,
+            "recovery_key": JWK_OBJECT,
+            "delta_hash": DELTA_HASH
+          },
+          "signature": SIGNATURE_STRING
         }
       },
       {...}
@@ -47,7 +45,7 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
             "protected": {...},
             "payload": {
               "did_suffix": SUFFIX_STRING,
-              "recovery_reveal_value": REVEAL_VALUE
+              "recovery_key": JWK_OBJECT
             },
             "signature": SIGNATURE_STRING
         }
@@ -66,7 +64,7 @@ A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exc
     - If there are any [Create](#create) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `create` property, and its value ****MUST**** be an array.
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
-          - Each entry object must contain a `suffix_data` property, and its value ****MUST**** be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
+          - Each object must contain a `suffix_data` property, and its value ****MUST**** be a [_Create Operation Suffix Data Object_](#create-suffix-data-object).
       3. The [Anchor File](#anchor-file) ****MUST NOT**** include multiple [Create](#create) operations that produce the same [DID Suffix](#did-suffix).
       4. In order to simplify the language, herein we will refer to the [DID Suffix](#did-suffix) produced by a [Create](#create) operation directly as its [DID Suffix](#did-suffix).
     - If there are any [Recovery](#recover) operations to be included in the Anchor File:
@@ -115,10 +113,10 @@ A valid [Map File](#map-file) is a JSON document that ****MUST NOT**** exceed th
 1. The [Anchor File](#anchor-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
     1. The _Chunk Entry_ object ****MUST**** contain a `chunk_file_uri` property, and its value ****MUST**** be a URI representing the corresponding CAS file entry, generated via the [`CID_ALGORITHM`](#cid-algorithm).
 2. If there are any [Update](#update) operations to be included in the Map File, the [Map File](#map-file) ****MUST**** include an `operations` property, and its value ****MUST**** be an object composed as follows:
-  1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
-  2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry){id="map-file-update-entry"}, use the following process to compose and include entries:
-        - The object ****MUST**** contain an `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-        - The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be an [_Update Operation Signed Data Object_](#update-signed-data-object).
+    1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
+    2. For each [Update](#update) operation to be included in the `update` array, herein referred to as [Map File Update Entries](#map-file-update-entry){id="map-file-update-entry"}, use the following process to compose and include entries:
+          - The object ****MUST**** contain an `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+          - The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be an [_Update Operation Signed Data Object_](#update-signed-data-object).
 
 ### Chunk Files
 
