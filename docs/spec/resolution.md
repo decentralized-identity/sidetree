@@ -113,3 +113,21 @@ If the compiled DID ****was not**** determined to be _Unresolvable_, as defined 
 #### Unresolvable DIDs
 
 ...
+
+### Late Publishing
+
+Sidetree is an eventually strongly consistent, conflict-free resolution system based on cryptographically signed, delta-based DID operations, which derives its deterministic order of operations from the position of operation entries in a decentralized ledger's immutable linear chronology. Unlike the native tokens of a strongly immutable blockchain (e.g. Bitcoin), DIDs represent unique identifiers that are generally intended to be _non-transferrable_. As such, the Sidetree protocol provides no technical mechanism for exchanging ownership of DIDs with 'double-spend' assurance, the way one might do with a fungible cryptocurrency token.
+
+For Sidetree, _non-transferrability_ manifests in a distinct way: a DID owner is ultimately in control of their past, present, and future state changes, and can expose state change operations as they choose across the lineage of their DID's operational history. DID owners can create forks within _their own_ DID state history, and nothing forces them to expose DID state operations they anchor. A DID operation anchored in the past, at Time X, can be exposed to sometime in the future, at Time Y. This means Sidetree nodes could become aware of past operations that create a change in the lineage of a DID - this is known as _Late Publishing_ of a DID operation. However, due to the _non-transferrability_ of DIDs, this condition is isolated to each DID's own state lineage, and resolved by Sidetree's deterministic ruleset, which guarantees only one fork of a DID's state history can ever be valid. To better understand this, consider the following diagram that illustrates a DID owner, Alice, creating forks by creating and anchoring operations in the past that she does not expose to the network:
+
+```mermaid
+graph TB
+    0 --> 1
+    1 --> 2a
+    1 --> 2b
+    2b --> 3
+```
+
+As you can see above, Alice has created a fork by anchoring the divergent operations `2a` and `2b`. Let us assume Alice refrains from publishing the [CAS files](#file-structures) that other Sidetree nodes would detect to locate and replicate the date for operation `2a`, and further, assume Alice continues creating more operation history stemming from operation `2b`. Whenever Alice exposes the DID operation data for `2a`, other Sidetree nodes will need to decide which operation between `2a` and `2b` is the 'right' operation. The Sidetree protocol includes a strict rule that resolves this conflict, and any variation of it: the earliest operation in [Ledger Time](#ledger-time) always wins. If operation `2a` precedes operation `2b` in [Ledger Time](#ledger-time), whenever she decides to publish operation `2a`, all other Sidetree nodes would process the operation and immediately deem operation `2a` to be the valid, correct operational fork. This remains true even if Alice continues building operational history stemming from operation `2b` any amount of time into the future.
+
+With this example of _late publishing_ in mind, the most important aspect to remember is that DID owners decide what the PKI state of their DIDs should be, and remain in control of that state independent of the shape of their DID operational history. The net takeaway is that regardless of how a DID owner decides to update the state of their DID, the decision over what that state is remains entirely their choice.
