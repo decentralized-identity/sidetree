@@ -58,8 +58,18 @@ describe('RequestHandler', () => {
     spyOn(blockchain, 'getFee').and.returnValue(Promise.resolve(100));
     spyOn(blockchain, 'getWriterValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
+    let versionMetadataMapper: any = {};
+    let versionMetadata: any;
+    versionMetadata = {
+      normalizedFeeToPerOperationFeeMultiplier: 0.01
+    };
+    versionMetadataMapper = {
+      getVersionMetadataByTransactionTime: () => {
+        return versionMetadata;
+      }
+    };
     cas = new MockCas();
-    const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
+    const batchWriter = new BatchWriter(operationQueue, blockchain, cas, versionMetadataMapper);
     const operationProcessor = new OperationProcessor();
 
     versionManager = new MockVersionManager();

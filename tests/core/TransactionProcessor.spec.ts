@@ -26,6 +26,16 @@ describe('TransactionProcessor', () => {
   let downloadManager: DownloadManager;
   let blockchain: IBlockchain;
   let transactionProcessor: TransactionProcessor;
+  let versionMetadataMapper: any = {};
+  let versionMetadata: any;
+  versionMetadata = {
+    normalizedFeeToPerOperationFeeMultiplier: 0.01
+  };
+  versionMetadataMapper = {
+    getVersionMetadataByTransactionTime: () => {
+      return versionMetadata;
+    }
+  };
 
   beforeEach(() => {
     casClient = new Cas(config.contentAddressableStoreServiceUri);
@@ -33,7 +43,7 @@ describe('TransactionProcessor', () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
     blockchain = new MockBlockchain();
-    transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
+    transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataMapper);
   });
 
   describe('prcoessTransaction', () => {
@@ -284,7 +294,8 @@ describe('TransactionProcessor', () => {
           mockValueTimeLock,
           paidOperationCount,
           mockTransaction.transactionTime,
-          mockTransaction.writer);
+          mockTransaction.writer,
+          versionMetadataMapper);
       done();
     });
 

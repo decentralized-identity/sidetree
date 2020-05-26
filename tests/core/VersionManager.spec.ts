@@ -51,6 +51,32 @@ describe('VersionManager', async () => {
       // No exception thrown == initialize was successful
     });
 
+    it('should throw if version metadata is the wrong type.', async () => {
+
+      const protocolVersionConfig: ProtocolVersionModel[] = [
+        { startingBlockchainTime: 1000, version: 'test-version-1' }
+      ];
+
+      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
+        if (className === 'VersionMetadata') {
+          const fakeClass = class {}; // a fake class that does nothing
+          return fakeClass;
+        } else {
+          return (await import(`./versions/${version}/${className}`)).default;
+        }
+      });
+
+      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+
+      try {
+        await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+        fail('expect to throw but did not');
+      } catch (e) {
+        expect(e.code).toEqual('version_manager_version_metadata_incorrect_type');
+      }
+    });
+
     it('should throw if the versions folder is missing.', async () => {
       const protocolVersionConfig: ProtocolVersionModel[] = [
         { startingBlockchainTime: 1000, version: 'invalid_version' }

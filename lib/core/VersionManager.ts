@@ -1,3 +1,4 @@
+import AbstractVersionMetadata from './AbstractVersionMetadata';
 import Config from './models/Config';
 import CoreErrorCode from './ErrorCode';
 import DownloadManager from './DownloadManager';
@@ -11,9 +12,9 @@ import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionSelector from './interfaces/ITransactionSelector';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
+import IVersionMetadataMapper from './interfaces/IVersionMetadataMapper';
 import Resolver from './Resolver';
 import SidetreeError from '../common/SidetreeError';
-import VersionMetadataModel from './models/VersionMetadataModel';
 
 /**
  * Defines a protocol version and its starting blockchain time.
@@ -27,7 +28,7 @@ export interface ProtocolVersionModel {
 /**
  * The class that handles the loading of different versions of protocol codebase.
  */
-export default class VersionManager implements IVersionManager {
+export default class VersionManager implements IVersionManager, IVersionMetadataMapper {
   public allSupportedHashAlgorithms: number[] = [];
 
   // Reverse sorted protocol versions. ie. latest version first.
@@ -38,7 +39,7 @@ export default class VersionManager implements IVersionManager {
   private requestHandlers: Map<string, IRequestHandler>;
   private transactionProcessors: Map<string, ITransactionProcessor>;
   private transactionSelectors: Map<string, ITransactionSelector>;
-  private versionMetadataModels: Map<string, VersionMetadataModel>;
+  private versionMetadatas: Map<string, AbstractVersionMetadata>;
 
   public constructor (
     private config: Config,
@@ -53,7 +54,13 @@ export default class VersionManager implements IVersionManager {
     this.requestHandlers = new Map();
     this.transactionProcessors = new Map();
     this.transactionSelectors = new Map();
-    this.versionMetadataModels = new Map();
+    this.versionMetadatas = new Map();
+  }
+  public getVersionMetadataByTransactionTime (blockchainTime: number): AbstractVersionMetadata {
+    const versionString = this.getVersionString(blockchainTime);
+    const versionMetadata = this.versionMetadatas.get(versionString);
+    // this is always be defined because if blockchain time is found, version will be defined
+    return versionMetadata!;
   }
 
   /**
@@ -105,12 +112,17 @@ export default class VersionManager implements IVersionManager {
       this.requestHandlers.set(version, requestHandler);
 
       /* tslint:disable-next-line */
-      const versionMetadata = await this.loadDefaultExportsForVersion(version, 'VersionMetadata');
-      this.versionMetadataModels.set(version, versionMetadata);
+      const VersionMetadata = await this.loadDefaultExportsForVersion(version, 'VersionMetadata');
+      const versionMetadata = new VersionMetadata();
+      if (!(versionMetadata instanceof AbstractVersionMetadata)) {
+        throw new SidetreeError(CoreErrorCode.VersionManagerVersionMetadataIncorrectType,
+          `make sure VersionMetaData is properly implemented for version ${version}`);
+      }
+      this.versionMetadatas.set(version, versionMetadata);
     }
 
     // Get and cache supported hash algorithms.
-    const hashAlgorithmsWithDuplicates = Array.from(this.versionMetadataModels.values(), value => value.hashAlgorithmInMultihashCode);
+    const hashAlgorithmsWithDuplicates = Array.from(this.versionMetadatas.values(), value => value.hashAlgorithmInMultihashCode);
     this.allSupportedHashAlgorithms = Array.from(new Set(hashAlgorithmsWithDuplicates)); // This line removes duplicates.
   }
 
@@ -188,6 +200,7 @@ export default class VersionManager implements IVersionManager {
 
   /**
    * Gets the corresponding protocol version string given the blockchain time.
+   * TODO: make this binary search as we get more versions
    */
   private getVersionString (blockchainTime: number): string {
     // Iterate through each version to find the right version.

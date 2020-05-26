@@ -11,6 +11,7 @@ import FetchResultCode from '../../../common/enums/FetchResultCode';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
+import IVersionMetadataMapper from '../../interfaces/IVersionMetadataMapper';
 import JsonAsync from './util/JsonAsync';
 import MapFile from './MapFile';
 import ProtocolParameters from './ProtocolParameters';
@@ -22,7 +23,12 @@ import ValueTimeLockVerifier from './ValueTimeLockVerifier';
  * Implementation of the `ITransactionProcessor`.
  */
 export default class TransactionProcessor implements ITransactionProcessor {
-  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore, private blockchain: IBlockchain) { }
+  public constructor (
+    private downloadManager: DownloadManager,
+    private operationStore: IOperationStore,
+    private blockchain: IBlockchain,
+    private metadataMapper: IVersionMetadataMapper) {
+  }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     try {
@@ -93,12 +99,12 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const valueTimeLock = anchorFile.model.writer_lock_id
                           ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
                           : undefined;
-
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
       valueTimeLock,
       paidOperationCount,
       transaction.transactionTime,
-      transaction.writer);
+      transaction.writer,
+      this.metadataMapper);
 
     return anchorFile;
   }

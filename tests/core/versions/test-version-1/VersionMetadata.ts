@@ -1,8 +1,16 @@
+import AbstractVersionMetadata from '../../../../lib/core/AbstractVersionMetadata';
 const protocolParameters = require('./protocol-parameters.json');
 
 /**
- * Implementation of the VersionMetadataModel.
+ * Implementation of the VersionMetadata.
  */
-export default {
-  hashAlgorithmInMultihashCode: protocolParameters.hashAlgorithmInMultihashCode
+export default class VersionMetadata extends AbstractVersionMetadata {
+  public hashAlgorithmInMultihashCode: number;
+  public normalizedFeeToPerOperationFeeMultiplier: number;
+
+  public constructor () {
+    super();
+    this.normalizedFeeToPerOperationFeeMultiplier = protocolParameters.normalizedFeeToPerOperationFeeMultiplier;
+    this.hashAlgorithmInMultihashCode = protocolParameters.hashAlgorithmInMultihashCode;
+  }
 };

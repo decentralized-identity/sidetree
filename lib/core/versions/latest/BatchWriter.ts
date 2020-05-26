@@ -9,6 +9,7 @@ import ICas from '../../interfaces/ICas';
 import IBatchWriter from '../../interfaces/IBatchWriter';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationQueue from './interfaces/IOperationQueue';
+import IVersionMetadataMapper from '../../interfaces/IVersionMetadataMapper';
 import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import Operation from './Operation';
@@ -26,7 +27,8 @@ export default class BatchWriter implements IBatchWriter {
   public constructor (
     private operationQueue: IOperationQueue,
     private blockchain: IBlockchain,
-    private cas: ICas) { }
+    private cas: ICas,
+    private versionMetadataMapper: IVersionMetadataMapper) { }
 
   public async write () {
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
@@ -88,7 +90,7 @@ export default class BatchWriter implements IBatchWriter {
 
   private getNumberOfOperationsToWrite (valueTimeLock: ValueTimeLockModel | undefined): number {
     const maxNumberOfOpsAllowedByProtocol = ProtocolParameters.maxOperationsPerBatch;
-    const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock);
+    const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock, this.versionMetadataMapper);
 
     if (maxNumberOfOpsAllowedByLock > maxNumberOfOpsAllowedByProtocol) {
       // tslint:disable-next-line: max-line-length
