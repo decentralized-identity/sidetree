@@ -9,7 +9,8 @@ describe('BatchWriter', () => {
   let batchWriter: BatchWriter;
 
   beforeAll(() => {
-    batchWriter = new BatchWriter(new MockOperationQueue(), new MockBlockchain(), new MockCas());
+    const mockVersionMetadataMapper: any = {};
+    batchWriter = new BatchWriter(new MockOperationQueue(), new MockBlockchain(), new MockCas(), mockVersionMetadataMapper);
   });
 
   describe('getNumberOfOperationsToWrite', () => {
