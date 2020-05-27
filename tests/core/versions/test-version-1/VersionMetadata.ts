@@ -13,4 +13,4 @@ export default class VersionMetadata extends AbstractVersionMetadata {
     this.normalizedFeeToPerOperationFeeMultiplier = protocolParameters.normalizedFeeToPerOperationFeeMultiplier;
     this.hashAlgorithmInMultihashCode = protocolParameters.hashAlgorithmInMultihashCode;
   }
-};
+}
