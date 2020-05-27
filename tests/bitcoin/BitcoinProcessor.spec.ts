@@ -65,7 +65,6 @@ describe('BitcoinProcessor', () => {
   let lockMonitorSpy: jasmine.Spy;
   let trimDatabasesToLastFeeSamplingGroupBoundarySpy: jasmine.Spy;
 
-
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
@@ -152,7 +151,7 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('initialize', () => {  
+  describe('initialize', () => {
     beforeEach(async () => {
       bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
@@ -185,7 +184,7 @@ describe('BitcoinProcessor', () => {
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () =>  bitcoinProcessor.initialize(),
+        () => bitcoinProcessor.initialize(),
         ErrorCode.BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate
       );
 
@@ -1026,9 +1025,9 @@ describe('BitcoinProcessor', () => {
         writer: 'unused'
       };
       transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(mockLastSaveTransaction));
-      
+
       const trimDatabasesToFeeSamplingGroupBoundarySpy = spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any);
-      
+
       await (bitcoinProcessor as any).trimDatabasesToLastFeeSamplingGroupBoundary();
       expect(trimDatabasesToFeeSamplingGroupBoundarySpy).toHaveBeenCalledWith(mockLastSaveTransaction.transactionTime);
       done();
@@ -1039,7 +1038,7 @@ describe('BitcoinProcessor', () => {
       transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
 
       const trimDatabasesToFeeSamplingGroupBoundarySpy = spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any);
-      
+
       await (bitcoinProcessor as any).trimDatabasesToLastFeeSamplingGroupBoundary();
       expect(trimDatabasesToFeeSamplingGroupBoundarySpy).toHaveBeenCalledWith(bitcoinProcessor.genesisBlockNumber);
       done();
