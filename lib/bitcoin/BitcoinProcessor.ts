@@ -159,12 +159,24 @@ export default class BitcoinProcessor {
     await this.normalizedFeeCalculator.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
-    // NOTE:
     // We always need to start the processing from the first block of a fee sampling group
     // so that in-memory state for fee sampling will be repoppulated yielding correct fee calculation,
     // so we trim the databases to make sure this condition is met.
-    // We also initialize the `lastProcessedBlock` so that processing loop can begin.
+    // NOTE: We also initialize the `lastProcessedBlock`, this is an opional step currently,
+    // but will be required if Issue #692 is implemented.
     this.lastProcessedBlock = await this.trimDatabasesToLastFeeSamplingGroupBoundary();
+
+    console.debug('Synchronizing blocks for sidetree transactions...');
+    const startingBlock = await this.getStartingBlockForPeriodicPoll();
+
+    // Throw if bitcoin client is not synced up to the bitcoin service's known height.
+    // NOTE: Implementation for issue #692 can simplify this method and remove this check.
+    if (startingBlock === undefined) {
+      throw new SidetreeError(ErrorCode.BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate);
+    }
+
+    console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
+    await this.processTransactions(startingBlock);
 
     // NOTE: important to this initialization after we have processed all the blocks
     // this is because that the lock monitor needs the normalized fee calculator to
@@ -460,6 +472,7 @@ export default class BitcoinProcessor {
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
     // If last processed block is undefined, start processing from genesis block.
     if (this.lastProcessedBlock === undefined) {
+      await this.trimDatabasesToLastFeeSamplingGroupBoundary();
       return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 
