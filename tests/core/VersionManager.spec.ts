@@ -47,6 +47,8 @@ describe('VersionManager', async () => {
 
       const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+      expect(versionMgr['batchWriters'].get('test-version-1') as any ['versionMetadataMapper']).toBeDefined();
+      expect(versionMgr['transactionProcessors'].get('test-version-1') as any ['versionMetadataMapper']).toBeDefined();
 
       // No exception thrown == initialize was successful
     });
