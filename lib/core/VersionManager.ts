@@ -56,12 +56,6 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     this.transactionSelectors = new Map();
     this.versionMetadatas = new Map();
   }
-  public getVersionMetadataByTransactionTime (blockchainTime: number): AbstractVersionMetadata {
-    const versionString = this.getVersionString(blockchainTime);
-    const versionMetadata = this.versionMetadatas.get(versionString);
-    // this is always be defined because if blockchain time is found, version will be defined
-    return versionMetadata!;
-  }
 
   /**
    * Loads all the versions of the protocol codebase.
@@ -196,6 +190,13 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     }
 
     return transactionSelector;
+  }
+
+  public getVersionMetadataByTransactionTime (blockchainTime: number): AbstractVersionMetadata {
+    const versionString = this.getVersionString(blockchainTime);
+    const versionMetadata = this.versionMetadatas.get(versionString);
+    // this is always be defined because if blockchain time is found, version will be defined
+    return versionMetadata!;
   }
 
   /**

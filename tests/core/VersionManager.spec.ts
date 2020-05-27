@@ -88,6 +88,26 @@ describe('VersionManager', async () => {
     });
   });
 
+  describe('getVersionMetadataByTransactionTime', () => {
+    it('should return the expected versionMetadata', async () => {
+      const protocolVersionConfig: ProtocolVersionModel[] = [
+        { startingBlockchainTime: 1000, version: 'test-version-1' }
+      ];
+
+      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
+        return (await import(`./versions/${version}/${className}`)).default;
+      });
+
+      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+
+      const result = versionMgr.getVersionMetadataByTransactionTime(1001);
+      expect(result.hashAlgorithmInMultihashCode).toEqual(18);
+      expect(result.normalizedFeeToPerOperationFeeMultiplier).toEqual(0.01);
+    });
+  });
+
   describe('get* functions.', async () => {
 
     it('should return the correct version-ed objects for valid version.', async () => {
