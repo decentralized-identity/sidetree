@@ -82,7 +82,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
 
       /* tslint:disable-next-line */
       const TransactionProcessor = await this.loadDefaultExportsForVersion(version, 'TransactionProcessor');
-      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
+      const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, this);
       this.transactionProcessors.set(version, transactionProcessor);
 
       /* tslint:disable-next-line */
@@ -92,7 +92,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
 
       /* tslint:disable-next-line */
       const BatchWriter = await this.loadDefaultExportsForVersion(version, 'BatchWriter');
-      const batchWriter = new BatchWriter(operationQueue, blockchain, cas);
+      const batchWriter = new BatchWriter(operationQueue, blockchain, cas, this);
       this.batchWriters.set(version, batchWriter);
 
       /* tslint:disable-next-line */
