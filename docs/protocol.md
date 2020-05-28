@@ -1,4 +1,4 @@
-﻿# Sidetree Protocol Specification
+﻿# DEPRECATED HISTORICAL DOCUMENT - DO NOT USE
 
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
