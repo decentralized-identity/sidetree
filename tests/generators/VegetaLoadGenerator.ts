@@ -35,8 +35,6 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/keys/signingPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/signingPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
 
-      const [recover1RevealValue, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-      const [, recovery2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [update1RevealValue, update1CommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, update2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
@@ -46,7 +44,6 @@ export default class VegetaLoadGenerator {
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryCommitmentHash,
         update1CommitmentHash,
         services
       );
@@ -75,7 +72,7 @@ export default class VegetaLoadGenerator {
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        didUniqueSuffix, recover1RevealValue, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, recovery2CommitmentHash, update2CommitmentHash
+        didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, update2CommitmentHash
       );
 
       // Save the recover operation request on disk.

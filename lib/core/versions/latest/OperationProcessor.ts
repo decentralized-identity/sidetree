@@ -12,6 +12,7 @@ import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 /**
  * Implementation of IOperationProcessor.
@@ -68,20 +69,22 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
-    let encodedRevealValue;
+    let revealValueBuffer;
     switch (operation.type) {
       case OperationType.Recover:
-        encodedRevealValue = (operation as RecoverOperation).signedData.recoveryRevealValue;
+        const recoverOperation = (operation as RecoverOperation);
+        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
         break;
       case OperationType.Update:
-        encodedRevealValue = (operation as UpdateOperation).signedData.updateRevealValue;
+        const encodedRevealValue = (operation as UpdateOperation).signedData.updateRevealValue;
+        revealValueBuffer = Encoder.decodeAsBuffer(encodedRevealValue);
         break;
       default: // This is a deactivate.
-        encodedRevealValue = (operation as DeactivateOperation).signedData.recoveryRevealValue;
+        const deactivateOperation = (operation as DeactivateOperation);
+        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
         break;
     }
 
-    const revealValueBuffer = Encoder.decodeAsBuffer(encodedRevealValue);
     return revealValueBuffer;
   }
 
@@ -124,7 +127,6 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDidState = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
-      recoveryKey: operation.suffixData.recoveryKey,
       nextRecoveryCommitmentHash: operation.suffixData.recoveryCommitment,
       nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
@@ -168,7 +170,6 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     const newDidState = {
-      recoveryKey: didState.recoveryKey,
       nextRecoveryCommitmentHash: didState.nextRecoveryCommitmentHash,
       // New values below.
       document: resultingDocument,
@@ -189,14 +190,14 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Verify the reveal value hash.
-    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);
-    if (!isValidCommitReveal) {
+    // Verify the recovery key hash.
+    const isValidRecoveryKey = Multihash.canonicalizeAndVerify(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
+    if (!isValidRecoveryKey) {
       return didState;
     }
 
     // Verify the signature.
-    const signatureIsValid = await operation.signedDataJws.verifySignature(didState.recoveryKey!);
+    const signatureIsValid = await operation.signedDataJws.verifySignature(operation.signedData.recoveryKey);
     if (!signatureIsValid) {
       return didState;
     }
@@ -245,14 +246,14 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await DeactivateOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Verify the reveal value hash.
-    const isValidCommitmentReveal = Multihash.isValidHash(operation.signedData.recoveryRevealValue, didState.nextRecoveryCommitmentHash!);
-    if (!isValidCommitmentReveal) {
+    // Verify the recovery key hash.
+    const isValidRecoveryKey = Multihash.canonicalizeAndVerify(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
+    if (!isValidRecoveryKey) {
       return didState;
     }
 
     // Verify the signature.
-    const signatureIsValid = await operation.signedDataJws.verifySignature(didState.recoveryKey!);
+    const signatureIsValid = await operation.signedDataJws.verifySignature(operation.signedData.recoveryKey);
     if (!signatureIsValid) {
       return didState;
     }
