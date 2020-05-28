@@ -102,12 +102,12 @@ The `remove-public-keys` _Patch Action_ describes the removal of cryptographic k
     {
       "id": "sds1",
       "type": "SecureDataStore",
-      "uri": "http://hub.my-personal-server.com"
+      "endpoint": "http://hub.my-personal-server.com"
     },
     {
       "id": "sds2",
       "type": "SecureDataStore",
-      "uri": "http://some-cloud.com/hub"
+      "endpoint": "http://some-cloud.com/hub"
     }
   ]
 }
@@ -121,7 +121,7 @@ The `add-service-endpoints` _Patch Action_ describes the addition of [Service En
 3. Each service being added ****MUST**** be represented by an entry in the `service_endpoints` array, and each entry must be an object composed as follows:
     1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with a length of no more than twenty (20) ASCII encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
     2. The object ****MUST**** include a `type` property, and its value ****MUST**** be a string with a length of no more than thirty (30) ASCII encoded characters. If the value is not a string or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-    3. The object ****MUST**** include a `uri` property, and its value ****MUST**** be a valid URI string (including a scheme segment: i.e. http://, git://) with a length of no more than one hundred (100) ASCII encoded characters. If the value is not a valid URI or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+    3. The object ****MUST**** include a `endpoint` property, and its value ****MUST**** be a valid URI string (including a scheme segment: i.e. http://, git://) with a length of no more than one hundred (100) ASCII encoded characters. If the value is not a valid URI or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
 
 
 #### `remove-service-endpoints`
