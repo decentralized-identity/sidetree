@@ -156,7 +156,7 @@ export default class RecoverOperation implements OperationModel {
     return {
       deltaHash: signedData.delta_hash,
       recoveryKey: signedData.recovery_key,
-      recoveryCommitment: signedData.recovery_commitment,
+      recoveryCommitment: signedData.recovery_commitment
     };
   }
 }

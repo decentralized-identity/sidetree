@@ -91,7 +91,8 @@ export default class DocumentComposer {
       didDocument: didDocument,
       methodMetadata: {
         operationKeys,
-        recoveryCommitment: didState.nextRecoveryCommitmentHash
+        recoveryCommitment: didState.nextRecoveryCommitmentHash,
+        updateCommitment: didState.nextUpdateCommitmentHash
       }
     };
 

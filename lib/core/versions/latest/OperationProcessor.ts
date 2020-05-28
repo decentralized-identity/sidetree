@@ -6,13 +6,13 @@ import DidState from '../../models/DidState';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 /**
  * Implementation of IOperationProcessor.

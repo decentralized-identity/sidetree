@@ -33,7 +33,8 @@ describe('DocumentComposer', async () => {
           type: 'EcdsaSecp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
-        recoveryCommitment: anyCommitmentHash
+        recoveryCommitment: anyCommitmentHash,
+        updateCommitment: anyCommitmentHash
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
