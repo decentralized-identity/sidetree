@@ -86,13 +86,11 @@ describe('RequestHandler', () => {
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-    const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryCommitmentHash,
       nextUpdateCommitmentHash,
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
@@ -160,12 +158,10 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
-    const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryCommitmentHash,
       nextUpdateCommitmentHash
     );
 
@@ -224,8 +220,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {
-    const recoveryRevealValue = Encoder.encode(Buffer.from('unusedRecoveryRevealValue'));
-    const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
+    const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(deactivateOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -248,8 +243,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
-    const recoveryRevealValue = 'EiD_UnusedRecoveryRevealValue_AAAAAAAAAAAA';
-    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey });
+    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryPrivateKey });
     const response = await requestHandler.handleOperationRequest(recoveryOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -268,7 +262,6 @@ describe('RequestHandler', () => {
 
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
@@ -278,8 +271,7 @@ describe('RequestHandler', () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash,
-        recoveryKey: anyRecoveryPublicKey
+        nextUpdateCommitmentHash: anyCommitmentHash
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 

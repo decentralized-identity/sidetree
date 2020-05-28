@@ -26,12 +26,10 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
-      const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryCommitmentHash,
         firstUpdateCommitmentHash,
         services
       );
@@ -46,12 +44,10 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
-      const [, recoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        recoveryCommitmentHash,
         firstUpdateCommitmentHash,
         services
       );
@@ -80,29 +76,6 @@ describe('CreateOperation', async () => {
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty));
-    });
-
-    it('should throw if suffix data is missing recovery key.', async () => {
-      // Intentionally missing `recoveryKey`.
-      const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        unknownProperty: 'An unknown property'
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.JwkEs256kUndefined));
-    });
-
-    it('should throw if suffix data has recovery key with unknown property.', async () => {
-      const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_key: { knownProperty: 123 },
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
-      };
-      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
-      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.JwkEs256kHasUnknownProperty));
     });
   });
 });

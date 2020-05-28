@@ -29,7 +29,7 @@ export default class DocumentComposer {
     // Only populate `authentication` if auth usage exists.
     const authentication: any[] = [];
     const publicKeys: any[] = [];
-    const operationPublicKeys: any[] = [];
+    const operationKeys: any[] = [];
     if (Array.isArray(document.publicKeys)) {
       for (let publicKey of document.publicKeys) {
         const id = '#' + publicKey.id;
@@ -42,7 +42,7 @@ export default class DocumentComposer {
         const usageSet: Set<string> = new Set(publicKey.usage);
 
         if (usageSet.has(PublicKeyUsage.Ops)) {
-          operationPublicKeys.push(didDocumentPublicKey);
+          operationKeys.push(didDocumentPublicKey);
         }
         if (usageSet.has(PublicKeyUsage.General)) {
           publicKeys.push(didDocumentPublicKey);
@@ -90,13 +90,11 @@ export default class DocumentComposer {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
       didDocument: didDocument,
       methodMetadata: {
-        operationPublicKeys: operationPublicKeys
+        operationKeys,
+        recoveryCommitment: didState.nextRecoveryCommitmentHash,
+        updateCommitment: didState.nextUpdateCommitmentHash
       }
     };
-
-    if (didState.recoveryKey) {
-      didResolutionResult.methodMetadata.recoveryKey = didState.recoveryKey;
-    }
 
     return didResolutionResult;
   }

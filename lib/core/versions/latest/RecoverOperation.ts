@@ -15,7 +15,6 @@ interface SignedDataModel {
   deltaHash: string;
   recoveryKey: JwkEs256k;
   recoveryCommitment: string;
-  recoveryRevealValue: string;
 }
 
 /**
@@ -142,16 +141,8 @@ export default class RecoverOperation implements OperationModel {
     const signedData = await JsonAsync.parse(signedDataJsonString);
 
     const properties = Object.keys(signedData);
-    if (properties.length !== 4) {
+    if (properties.length !== 3) {
       throw new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty);
-    }
-
-    if (typeof signedData.recovery_reveal_value !== 'string') {
-      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType);
-    }
-
-    if ((signedData.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
-      throw new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong);
     }
 
     Jwk.validateJwkEs256k(signedData.recovery_key);
@@ -165,8 +156,7 @@ export default class RecoverOperation implements OperationModel {
     return {
       deltaHash: signedData.delta_hash,
       recoveryKey: signedData.recovery_key,
-      recoveryCommitment: signedData.recovery_commitment,
-      recoveryRevealValue: signedData.recovery_reveal_value
+      recoveryCommitment: signedData.recovery_commitment
     };
   }
 }

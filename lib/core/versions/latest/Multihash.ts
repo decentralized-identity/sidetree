@@ -1,8 +1,10 @@
 import * as crypto from 'crypto';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
+
 const multihashes = require('multihashes');
 
 /**
@@ -31,6 +33,16 @@ export default class Multihash {
     const multihash = multihashes.encode(hash, hashAlgorithmName);
 
     return multihash;
+  }
+
+  /**
+   * Canonicalize the given content, then multihashes the result using the lastest supported hash algorithm, then encodes the multihash.
+   * Mainly used for testing purposes.
+   */
+  public static canonicalizeThenHashThenEncode (content: object) {
+    const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
+    const multihashEncodedString = Multihash.hashThenEncode(contentBuffer, ProtocolParameters.hashAlgorithmInMultihashCode);
+    return multihashEncodedString;
   }
 
   /**
@@ -103,10 +115,41 @@ export default class Multihash {
 
     try {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
+      return Multihash.verify(contentBuffer, encodedMultihash);
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  /**
+   * Canonicalizes the given content object, then verifies the multihash against the canonicalized string as a UTF8 buffer.
+   */
+  public static canonicalizeAndVerify (content: object | undefined, encodedMultihash: string): boolean {
+    if (content === undefined) {
+      return false;
+    }
+
+    try {
+      const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
+
+      return Multihash.verify(contentBuffer, encodedMultihash);
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  /**
+   * Verifies the multihash against the content `Buffer`.
+   */
+  private static verify (content: Buffer, encodedMultihash: string): boolean {
+
+    try {
       const multihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
 
       const hashAlgorithmCode = Multihash.getHashAlgorithmCode(multihashBuffer);
-      const actualHashBuffer = Multihash.hash(contentBuffer, hashAlgorithmCode);
+      const actualHashBuffer = Multihash.hash(content, hashAlgorithmCode);
 
       if (Buffer.compare(actualHashBuffer, multihashBuffer) !== 0) {
         return false;

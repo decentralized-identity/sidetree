@@ -34,14 +34,12 @@ describe('Resolver', () => {
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
-      const [firstRecoveryRevealValue, firstRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       // Create the initial create operation and insert it to the operation store.
       const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        firstRecoveryCommitmentHash,
         firstUpdateCommitmentHash,
         serviceEndpoints
       );
@@ -113,14 +111,11 @@ describe('Resolver', () => {
 
       // Create the recover operation and insert it to the operation store.
       const [update1RevealValueAfterRecovery, update1CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
-      const [, recoveryCommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
       const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix,
-        firstRecoveryRevealValue,
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        recoveryCommitmentHashAfterRecovery,
         update1CommitmentHashAfterRecovery,
         newServiceEndpoints
       );
@@ -201,15 +196,12 @@ describe('Resolver', () => {
       // Generate 3 anchored recover operations with the same reveal value but different anchored time.
       const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryRevealValue: createOperationData.nextRecoveryRevealValueEncodedString,
         recoveryPrivateKey: createOperationData.recoveryPrivateKey });
       const recoveryOperation2Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryRevealValue: createOperationData.nextRecoveryRevealValueEncodedString,
         recoveryPrivateKey: createOperationData.recoveryPrivateKey });
       const recoveryOperation3Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryRevealValue: createOperationData.nextRecoveryRevealValueEncodedString,
         recoveryPrivateKey: createOperationData.recoveryPrivateKey });
       const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
       const recoveryOperation2 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation2Data.recoverOperation, 3, 3, 3);

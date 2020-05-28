@@ -1,5 +1,5 @@
 /**
- * Model for representing a SECP256K1 public key in a JWK format.
+ * Model for representing a SECP256K1 key in a JWK format.
  */
 export default interface JwkEs256k {
   kty: string;
