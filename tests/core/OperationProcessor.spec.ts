@@ -12,6 +12,7 @@ import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -398,6 +399,7 @@ describe('OperationProcessor', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
+      nextRecoveryCommitmentHash = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
 
       // Create the initial create operation.
@@ -547,7 +549,7 @@ describe('OperationProcessor', async () => {
     });
 
     describe('applyRecoverOperation()', () => {
-      it('should not apply if signature does not pass verification.', async () => {
+      it('should not apply if recovery key hash is invalid.', async () => {
         const operationData = await OperationGenerator.generateRecoverOperation({
           didUniqueSuffix,
           recoveryPrivateKey: signingPrivateKey // Intentionally an incorrect recovery key.
@@ -561,24 +563,9 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
       });
 
-      it('should not apply if recovery key hash is invalid.', async () => {
-        // Generate a recover operation payload.
-        const operationData = await OperationGenerator.generateRecoverOperation(
-          { didUniqueSuffix, recoveryPrivateKey }
-        );
-        const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(operationData.recoverOperation, 2, 2, 2);
-
-        const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-
-        // Verify that the recovery key is still the same as prior to the application of the recover operation.
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
-      });
-
       it('should still apply successfully with resultant document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-        const [, anyNewRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const [, anyNewUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
@@ -594,15 +581,16 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.document).toEqual({ });
 
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(anyNewRecoveryCommitmentHash);
+        const expectedNewRecoveryCommitment = Multihash.canonicalizeThenHashThenEncode(anyNewRecoveryPublicKey);
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(expectedNewRecoveryCommitment);
       });
     });
 
     describe('applyDeactivateOperation()', () => {
       it('should not apply if calculated recovery key hash is invalid.', async () => {
         // Creating and signing a deactivate operation using an invalid/incorrect recovery key.
-        const [anyIncorrectRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-        const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, anyIncorrectRecoveryPublicKey);
+        const [, anyIncorrectRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+        const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, anyIncorrectRecoveryPrivateKey);
         const deactivateOperation = await DeactivateOperation.parse(deactivateOperationData.operationBuffer);
         const anchoredDeactivateOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperation, 2, 2, 2);
 

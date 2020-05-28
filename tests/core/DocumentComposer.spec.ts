@@ -27,12 +27,13 @@ describe('DocumentComposer', async () => {
 
       expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
       expect(result.methodMetadata).toEqual({
-        operationPublicKeys: [{
+        operationKeys: [{
           id: '#anySigningKey', // ops usage keys go here
           controller: '',
           type: 'EcdsaSecp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
-        }]
+        }],
+        recoveryCommitment: anyCommitmentHash
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
