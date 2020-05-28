@@ -1,5 +1,7 @@
 ﻿# DEPRECATED HISTORICAL DOCUMENT - DO NOT USE
 
+OFFICIAL SIDETREE SPECIFICATION HERE: https://identity.foundation/sidetree/spec/
+
 ![Sidetree System Overview](./diagrams/overview-diagram.png)
 
 ## Format and Encoding
