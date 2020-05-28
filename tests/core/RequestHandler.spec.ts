@@ -271,7 +271,7 @@ describe('RequestHandler', () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash,
+        nextUpdateCommitmentHash: anyCommitmentHash
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 

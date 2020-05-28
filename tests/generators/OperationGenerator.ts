@@ -432,7 +432,7 @@ export default class OperationGenerator {
 
     const signedDataPayloadObject = {
       did_suffix: didUniqueSuffix,
-      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
+      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
