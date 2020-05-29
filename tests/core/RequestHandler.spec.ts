@@ -88,7 +88,7 @@ describe('RequestHandler', () => {
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
     const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,

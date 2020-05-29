@@ -33,7 +33,7 @@ describe('Resolver', () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
+      const serviceEndpoints = OperationGenerator.generateServiceEndpointsForDocument(['dummyHubUri1']);
       const [firstRecoveryRevealValue, firstRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
@@ -109,7 +109,7 @@ describe('Resolver', () => {
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair('newSigningKey');
-      const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
+      const newServiceEndpoints = OperationGenerator.generateServiceEndpointsForDocument(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
       const [update1RevealValueAfterRecovery, update1CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();

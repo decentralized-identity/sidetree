@@ -40,7 +40,7 @@ export default class VegetaLoadGenerator {
       const [update1RevealValue, update1CommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, update2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(

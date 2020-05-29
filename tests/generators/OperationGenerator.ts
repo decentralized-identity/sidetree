@@ -132,7 +132,7 @@ export default class OperationGenerator {
     const signingKeyId = 'signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const service = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const service = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -170,7 +170,7 @@ export default class OperationGenerator {
     const signingKeyId = 'newSigningKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -314,7 +314,7 @@ export default class OperationGenerator {
     const patches = [
       {
         action: 'add-public-keys',
-        publicKeys: [
+        public_keys: [
           anyNewSigningKey
         ]
       }
@@ -501,7 +501,7 @@ export default class OperationGenerator {
     const patches = [
       {
         action: 'add-public-keys',
-        publicKeys: [
+        public_keys: [
           newPublicKey
         ]
       }
@@ -535,7 +535,7 @@ export default class OperationGenerator {
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
         action: 'add-service-endpoints',
-        serviceEndpoints: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
+        service_endpoints: OperationGenerator.generateServiceEndpointsForPatch([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);
@@ -544,7 +544,7 @@ export default class OperationGenerator {
     if (idsOfServiceEndpointToRemove.length > 0) {
       const patch = {
         action: 'remove-service-endpoints',
-        serviceEndpointIds: idsOfServiceEndpointToRemove
+        ids: idsOfServiceEndpointToRemove
       };
 
       patches.push(patch);
@@ -597,7 +597,7 @@ export default class OperationGenerator {
    * Generates an array of service endpoints with specified ids
    * @param ids the id field in serviceEndpoint.
    */
-  public static generateServiceEndpoints (ids: string[]): any[] {
+  public static generateServiceEndpointsForDocument (ids: string[]): any[] {
     const serviceEndpoints = [];
     for (const id of ids) {
       serviceEndpoints.push(
@@ -605,6 +605,24 @@ export default class OperationGenerator {
           'id': id,
           'type': 'someType',
           'serviceEndpoint': 'https://www.url.com'
+        }
+      );
+    }
+    return serviceEndpoints;
+  }
+
+  /**
+   * Generates an array of service endpoints with specified ids
+   * @param ids the id field in endpoint.
+   */
+  public static generateServiceEndpointsForPatch (ids: string[]): any[] {
+    const serviceEndpoints = [];
+    for (const id of ids) {
+      serviceEndpoints.push(
+        {
+          'id': id,
+          'type': 'someType',
+          'endpoint': 'https://www.url.com'
         }
       );
     }

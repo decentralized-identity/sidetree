@@ -146,54 +146,59 @@ export default class DocumentComposer {
     // Verify 'serviceEndpoints' property if it exists.
     if (document.hasOwnProperty('serviceEndpoints')) {
       // Verify each serviceEndpoint entry in serviceEndpoints.
-      DocumentComposer.validateServiceEndpoints(document.serviceEndpoints);
+      DocumentComposer.parseServiceEndpoints(document.serviceEndpoints);
     }
   }
 
   /**
-   * Validates the schema of the given update document patch.
+   * Parses and validates the schema of the given update document patch.
    * @throws SidetreeError if given document patch fails validation.
    */
-  public static validateDocumentPatches (patches: any) {
+  public static parseDocumentPatches (patches: any): any {
     if (!Array.isArray(patches)) {
       throw new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchesNotArray);
     }
 
+    const parsedPatches = [];
+
     for (let patch of patches) {
-      DocumentComposer.validatePatch(patch);
+      const parsedPatch = DocumentComposer.parsePatch(patch);
+      parsedPatches.push(parsedPatch);
     }
+
+    return parsedPatches;
   }
 
-  private static validatePatch (patch: any) {
+  private static parsePatch (patch: any) {
     const action = patch.action;
     switch (action) {
       case 'replace':
         DocumentComposer.validateDocument(patch.document);
-        break;
+        return patch;
       case 'add-public-keys':
-        DocumentComposer.validateAddPublicKeysPatch(patch);
-        break;
+        return DocumentComposer.parseAddPublicKeysPatch(patch);
       case 'remove-public-keys':
-        DocumentComposer.validateRemovePublicKeysPatch(patch);
-        break;
+        return DocumentComposer.parseRemovePublicKeysPatch(patch);
       case 'add-service-endpoints':
-        DocumentComposer.validateAddServiceEndpointsPatch(patch);
-        break;
+        return DocumentComposer.parseAddServiceEndpointsPatch(patch);
       case 'remove-service-endpoints':
-        DocumentComposer.validateRemoveServiceEndpointsPatch(patch);
-        break;
+        return DocumentComposer.parseRemoveServiceEndpointsPatch(patch);
       default:
         throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownAction);
     }
   }
 
-  private static validateAddPublicKeysPatch (patch: any) {
+  private static parseAddPublicKeysPatch (patch: any): any {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    DocumentComposer.validatePublicKeys(patch.publicKeys);
+    DocumentComposer.validatePublicKeys(patch.public_keys);
+    return {
+      action: patch.action,
+      publicKeys: patch.public_keys
+    };
   }
 
   private static validatePublicKeys (publicKeys: any) {
@@ -263,61 +268,83 @@ export default class DocumentComposer {
     Jwk.validateJwkEs256k(publicKey.jwk);
   }
 
-  private static validateRemovePublicKeysPatch (patch: any) {
+  private static parseRemovePublicKeysPatch (patch: any): any {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    if (!Array.isArray(patch.publicKeys)) {
+    if (!Array.isArray(patch.public_keys)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
     }
 
-    for (let publicKeyId of patch.publicKeys) {
+    for (let publicKeyId of patch.public_keys) {
       if (typeof publicKeyId !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
       }
     }
+
+    return {
+      action: patch.action,
+      publicKeys: patch.public_keys
+    };
   }
 
   /**
    * validate update patch for removing service endpoints
    */
-  private static validateRemoveServiceEndpointsPatch (patch: any) {
+  private static parseRemoveServiceEndpointsPatch (patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    if (!Array.isArray(patch.serviceEndpointIds)) {
+    if (!Array.isArray(patch.ids)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointIdsNotArray);
     }
 
-    for (const id of patch.serviceEndpointIds) {
+    for (const id of patch.ids) {
       DocumentComposer.validateId(id);
     }
+
+    return {
+      action: patch.action,
+      ids: patch.ids
+    };
   }
 
   /**
    * Validates update patch for adding service endpoints.
    */
-  private static validateAddServiceEndpointsPatch (patch: any) {
+  private static parseAddServiceEndpointsPatch (patch: any) {
     const patchProperties = Object.keys(patch);
     if (patchProperties.length !== 2) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    if (!Array.isArray(patch.serviceEndpoints)) {
+    if (!Array.isArray(patch.service_endpoints)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
     }
 
-    DocumentComposer.validateServiceEndpoints(patch.serviceEndpoints);
+    const parsedServicesEndpoints = DocumentComposer.parseServiceEndpoints(patch.service_endpoints, true);
+
+    return {
+      action: patch.action,
+      serviceEndpoints: parsedServicesEndpoints
+    };
   }
 
-  private static validateServiceEndpoints (serviceEndpoints: any) {
+  /**
+   * Validates and parses services endpoints
+   * @param serviceEndpoints the service endpoints to validate and parse
+   * @param fromPatch whether the service endpoints are from a patch
+   */
+  private static parseServiceEndpoints (serviceEndpoints: any, fromPatch: boolean = false) {
     if (!Array.isArray(serviceEndpoints)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
     }
+
+    const parsedServiceEndpoints = [];
 
     for (let serviceEndpoint of serviceEndpoints) {
       const serviceEndpointProperties = Object.keys(serviceEndpoint);
@@ -333,21 +360,34 @@ export default class DocumentComposer {
       if (serviceEndpoint.type.length > 30) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);
       }
-      if (typeof serviceEndpoint.serviceEndpoint !== 'string') {
+      if ((!fromPatch && typeof serviceEndpoint.serviceEndpoint !== 'string') || (fromPatch && typeof serviceEndpoint.endpoint !== 'string')) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotString);
       }
-      if (serviceEndpoint.serviceEndpoint.length > 100) {
+      if ((!fromPatch &&serviceEndpoint.serviceEndpoint.length > 100) || (fromPatch && serviceEndpoint.endpoint.length > 100)) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointTooLong);
       }
 
       try {
         // just want to validate url, no need to assign to variable, it will throw if not valid
-        // tslint:disable-next-line
-        new URL(serviceEndpoint.serviceEndpoint);
+        if (fromPatch) {
+          // tslint:disable-next-line
+          new URL(serviceEndpoint.endpoint);
+          parsedServiceEndpoints.push({
+            id: serviceEndpoint.id,
+            type: serviceEndpoint.type,
+            serviceEndpoint: serviceEndpoint.endpoint
+          });
+        } else {
+          // tslint:disable-next-line
+          new URL(serviceEndpoint.serviceEndpoint);
+          parsedServiceEndpoints.push(serviceEndpoint);
+        }
       } catch {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
       }
     }
+
+    return parsedServiceEndpoints;
   }
 
   private static validateId (id: any) {
@@ -466,8 +506,8 @@ export default class DocumentComposer {
       return document;
     }
 
-    const idToRemove = new Set(patch.serviceEndpointIds);
-    document.serviceEndpoints = document.serviceEndpoints.filter(serviceEndpoint => !idToRemove.has(serviceEndpoint.id));
+    const idsToRemove = new Set(patch.ids);
+    document.serviceEndpoints = document.serviceEndpoints.filter(serviceEndpoint => !idsToRemove.has(serviceEndpoint.id));
 
     return document;
   }

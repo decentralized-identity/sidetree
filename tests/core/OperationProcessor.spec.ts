@@ -37,11 +37,11 @@ async function createUpdateSequence (
     const patches = [
       {
         action: 'remove-service-endpoints',
-        serviceEndpointIds: ['serviceEndpointId' + (i - 1)]
+        ids: ['serviceEndpointId' + (i - 1)]
       },
       {
         action: 'add-service-endpoints',
-        serviceEndpoints: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
+        service_endpoints: OperationGenerator.generateServiceEndpointsForPatch(['serviceEndpointId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -135,7 +135,7 @@ describe('OperationProcessor', async () => {
     signingKeyId = 'signingKey';
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
+    const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId0']);
 
     let recoveryCommitmentHash;
     let firstUpdateCommitmentHash;
@@ -188,7 +188,7 @@ describe('OperationProcessor', async () => {
     const patches = [
       {
         action: 'remove-public-keys',
-        publicKeys: [signingKeyId]
+        public_keys: [signingKeyId]
       }
     ];
     const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA';
@@ -402,7 +402,7 @@ describe('OperationProcessor', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
+      const serviceEndpoints = OperationGenerator.generateServiceEndpointsForDocument(['dummyHubUri']);
 
       // Create the initial create operation.
       let nextUpdateCommitmentHash;
