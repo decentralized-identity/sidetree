@@ -10,11 +10,11 @@ OFFICIAL SIDETREE SPECIFICATION HERE: https://identity.foundation/sidetree/spec/
 
 ## DDoS Attack & Mitigation
 
-Given the protocol was designed to enable operations to be performed at large volumes with cheap unit costs, DDoS is a real threat to the system.
+Given that Sidetree is designed to enable operations to be performed at large volumes with cheap unit costs, DDoS is a real threat to the system.
 
-Without any mitigation strategy, malicious but protocol adherent nodes can create and broadcast operation batches that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the protocol.
+Without any mitigation strategy, malicious but specification adherent nodes can create and broadcast operation batches that are not intended for any other purpose than to force other observing nodes to process their operations in accordance with the specification.
 
-Sidetree protocol defines the following mechanisms to enable scaling, while preventing DDoS attacks:
+Sidetree specification defines the following mechanisms to enable scaling, while preventing DDoS attacks:
 
 #### Rate limiting
    
@@ -36,7 +36,7 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
 
 #### Proof of Fee
 
-   Each Sidetree transaction on the target chain is required to include a deterministic, protocol-specified fee, based on the number of DID operations they seek to include via the on-chain transaction. The deterministic protocol rules for the default configuration are still under discussion, but the following are roughly represent the direction under discussion:
+   Each Sidetree transaction on the target chain is required to include a deterministic fee, based on the number of DID operations they seek to include via the on-chain transaction. The deterministic rules for the default configuration are still under discussion, but the following are roughly represent the direction under discussion:
 
    1. Simple inclusion of a transaction in a block will enable the transaction writer to include a baseline of N operations
    2. Any number of operations that exceed N will be subject to proof that a fee was paid that meets or exceeds a required amount, determined as follows:
@@ -66,75 +66,11 @@ A Sidetree client manages the private keys and performs document operations on b
 1. The client MUST keep the operation payload once it is submitted to a Sidetree node until it is generally available and observed. If the submitted operation is not observed, the same operation payload MUST be resubmitted. Submitting a different operation payload would put the DID in risk of a _late publish_ attack which can lead to an unrecoverable DID if the original operation payload contains a recovery key rotation and the recovery key is lost.
 
 
-## Sidetree REST API
-A _Sidetree node_ exposes a set of REST API that enables the creation of new DIDs and their initial document state, subsequent document updates, and DID resolutions.
-
-
-### Response HTTP status codes
-
-| HTTP status code | Description                              |
-| ---------------- | ---------------------------------------- |
-| 200              | Everything went well.                    |
-| 401              | Unauthenticated or unauthorized request. |
-| 400              | Bad client request.                      |
-| 500              | Server error.                            |
-
-### Fetch the current service versions (optional).
-Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.
-
-Returns the service _names_ and _versions_ of the core and the dependent blockchain and CAS services.
-
-> NOTE: This API does **NOT** return the protocol version. This just represents the version of the current service(s) itself.
-
-#### Request path
-```
-GET /version
-```
-
-#### Request headers
-None.
-
-#### Request example
-```
-GET /version
-```
-
-#### Response body schema
-```json
-[
-  {
-    "name": "A string representing the name of the service",
-    "version": "A string representing the version of currently running service."
-  },
-  ...
-]
-```
-
-#### Response example
-```http
-HTTP/1.1 200 OK
-
-[
-  {
-  "name":"core",
-  "version":"0.4.1"
-  },
-  {
-    "name":"bitcoin",
-    "version":"0.4.1"
-  },
-  {
-    "name":"ipfs",
-    "version":"0.4.1"
-  }
-]
-```
-
 
 ## Merkle Root Hash Inclusion (Currently not implemented, may support in the future)
 Sidetree _anchor file_ also includes the root hash of a Merkle tree constructed using the hashes of batched operations.
 
-The main protocol does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire chunk file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.
+The Sidetree specification does *not* rely on the root hash to operate and the usefulness of the Merkle root is still being discussed, but since this hash is small, stored off-chain, and cheap to compute and store, we do. There is an opportunity for an API or service to return a concise receipt (proof) for a given operation such that this operation can be cryptographically proven to be part of a batch without the need of the entire chunk file. Note this receipt cannot be provided in the response of the operation request because Merkle tree construction happens asynchronously when the final batch is formed.
 
 Specifically, Sidetree uses an unbalanced Merkle tree construction to handle the (most common) case where the number of operations in a batch is not mathematically a power of 2: a series of uniquely sized balanced Merkle trees is formed where operations with lower index in the list of operations form larger trees; then the smallest balanced subtree is merged with the next-sized balanced subtree recursively to form the final Merkle tree.
 
@@ -211,7 +147,7 @@ Where the first entry in ```receipt``` is the sibling of the operation hash in t
 
   It would be ideal to be able to fetch metadata about the batched operations efficiently,
   without needing to download the entire chunk file.
-  This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree protocol.
+  This design is needed for the implementation of "light nodes", it also opens up possibilities of other applications of the Sidetree specification.
 
 * Why assign a _transaction number_ to invalid transactions?
 
