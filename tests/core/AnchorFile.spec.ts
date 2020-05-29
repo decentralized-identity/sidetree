@@ -18,11 +18,11 @@ describe('AnchorFile', async () => {
       // Recover operation.
       const [, anyRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const recoverOperationData = await OperationGenerator.generateRecoverOperation(
-        { didUniqueSuffix: 'anyDid1', recoveryRevealValue: 'anyValue', recoveryPrivateKey: anyRecoveryPrivateKey });
+        { didUniqueSuffix: 'anyDid1', recoveryPrivateKey: anyRecoveryPrivateKey });
       const recoverOperation = recoverOperationData.recoverOperation;
 
       // Deactivate operation.
-      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', 'anyValue', anyRecoveryPrivateKey);
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
@@ -216,7 +216,6 @@ describe('AnchorFile', async () => {
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         createOperationData.createOperation.didUniqueSuffix, // Intentionally using the same DID unique suffix.
-        'anyRecoveryRevealValue',
         createOperationData.recoveryPrivateKey
       );
 
@@ -248,11 +247,11 @@ describe('AnchorFile', async () => {
       // Recover operation.
       const [, anyRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const recoverOperationData = await OperationGenerator.generateRecoverOperation(
-        { didUniqueSuffix: 'anyDid1', recoveryRevealValue: 'anyValue', recoveryPrivateKey: anyRecoveryPrivateKey });
+        { didUniqueSuffix: 'anyDid1', recoveryPrivateKey: anyRecoveryPrivateKey });
       const recoverOperation = recoverOperationData.recoverOperation;
 
       // Deactivate operation.
-      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', 'anyValue', anyRecoveryPrivateKey);
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
       const anchoreFileModel = await AnchorFile.createModel(undefined, mapFileUri, [createOperation], [recoverOperation], [deactivateOperation]);

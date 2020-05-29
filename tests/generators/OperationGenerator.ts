@@ -29,13 +29,11 @@ interface GeneratedAnchoredCreateOperationData {
   signingKeyId: string;
   signingPublicKey: PublicKeyModel;
   signingPrivateKey: JwkEs256k;
-  nextRecoveryRevealValueEncodedString: string;
   nextUpdateRevealValueEncodedString: string;
 }
 
 interface RecoverOperationGenerationInput {
   didUniqueSuffix: string;
-  recoveryRevealValue: string;
   recoveryPrivateKey: JwkEs256k;
 }
 
@@ -47,7 +45,6 @@ interface GeneratedRecoverOperationData {
   signingKeyId: string;
   signingPublicKey: PublicKeyModel;
   signingPrivateKey: JwkEs256k;
-  nextRecoveryRevealValueEncodedString: string;
   nextUpdateRevealValueEncodedString: string;
 }
 
@@ -120,7 +117,6 @@ export default class OperationGenerator {
       signingKeyId: createOperationData.signingKeyId,
       signingPublicKey: createOperationData.signingPublicKey,
       signingPrivateKey: createOperationData.signingPrivateKey,
-      nextRecoveryRevealValueEncodedString: createOperationData.nextRecoveryRevealValueEncodedString,
       nextUpdateRevealValueEncodedString: createOperationData.nextUpdateRevealValueEncodedString
     };
   }
@@ -135,13 +131,11 @@ export default class OperationGenerator {
     const service = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
-    const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryCommitmentHash,
       nextUpdateCommitmentHash,
       service
     );
@@ -158,7 +152,6 @@ export default class OperationGenerator {
       signingKeyId,
       signingPublicKey,
       signingPrivateKey,
-      nextRecoveryRevealValueEncodedString,
       nextUpdateRevealValueEncodedString
     };
   }
@@ -167,22 +160,19 @@ export default class OperationGenerator {
    * Generates a recover operation.
    */
   public static async generateRecoverOperation (input: RecoverOperationGenerationInput): Promise<GeneratedRecoverOperationData> {
-    const signingKeyId = 'newSigningKey';
-    const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
-    const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
+    const newSigningKeyId = 'newSigningKey';
+    const [newRecoveryPublicKey, newRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+    const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair(newSigningKeyId);
     const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
-    const [nextRecoveryRevealValueEncodedString, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     const operationJson = await OperationGenerator.generateRecoverOperationRequest(
       input.didUniqueSuffix,
-      input.recoveryRevealValue,
       input.recoveryPrivateKey,
-      recoveryPublicKey,
-      signingPublicKey,
-      nextRecoveryCommitmentHash,
+      newRecoveryPublicKey,
+      newSigningPublicKey,
       nextUpdateCommitmentHash,
       services
     );
@@ -193,12 +183,11 @@ export default class OperationGenerator {
     return {
       recoverOperation,
       operationBuffer,
-      recoveryPublicKey,
-      recoveryPrivateKey,
-      signingKeyId,
-      signingPublicKey,
-      signingPrivateKey,
-      nextRecoveryRevealValueEncodedString,
+      recoveryPublicKey: newRecoveryPublicKey,
+      recoveryPrivateKey: newRecoveryPrivateKey,
+      signingKeyId: newSigningKeyId,
+      signingPublicKey: newSigningPublicKey,
+      signingPrivateKey: newSigningPrivateKey,
       nextUpdateRevealValueEncodedString
     };
   }
@@ -261,7 +250,6 @@ export default class OperationGenerator {
   public static async generateCreateOperationRequest (
     recoveryPublicKey: JwkEs256k,
     signingPublicKey: PublicKeyModel,
-    nextRecoveryCommitment: string,
     nextUpdateCommitment: string,
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
@@ -284,8 +272,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       delta_hash: deltaHash,
-      recovery_key: recoveryPublicKey,
-      recovery_commitment: nextRecoveryCommitment
+      recovery_commitment: Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey)
     };
 
     const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
@@ -380,11 +367,9 @@ export default class OperationGenerator {
    */
   public static async generateRecoverOperationRequest (
     didUniqueSuffix: string,
-    recoveryRevealValue: string,
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     newSigningPublicKey: PublicKeyModel,
-    nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
@@ -392,7 +377,7 @@ export default class OperationGenerator {
       serviceEndpoints: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
-      didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey, newRecoveryPublicKey, nextRecoveryCommitmentHash, nextUpdateCommitmentHash, document
+      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, nextUpdateCommitmentHash, document
     );
     return recoverOperation;
   }
@@ -402,10 +387,8 @@ export default class OperationGenerator {
    */
   public static async createRecoverOperationRequest (
     didUniqueSuffix: string,
-    recoveryRevealValue: string,
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
-    nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
     document: any) {
 
@@ -424,9 +407,8 @@ export default class OperationGenerator {
 
     const signedDataPayloadObject = {
       delta_hash: deltaHash,
-      recovery_reveal_value: recoveryRevealValue,
-      recovery_key: newRecoveryPublicKey,
-      recovery_commitment: nextRecoveryCommitmentHash
+      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
+      recovery_commitment: Multihash.canonicalizeThenHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
@@ -446,12 +428,11 @@ export default class OperationGenerator {
    */
   public static async createDeactivateOperationRequest (
     didUniqueSuffix: string,
-    recoveryRevealValue: string,
     recoveryPrivateKey: JwkEs256k) {
 
     const signedDataPayloadObject = {
       did_suffix: didUniqueSuffix,
-      recovery_reveal_value: recoveryRevealValue
+      recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
@@ -472,14 +453,12 @@ export default class OperationGenerator {
   public static async generateCreateOperationBuffer (
     recoveryPublicKey: JwkEs256k,
     signingPublicKey: PublicKeyModel,
-    nextRecoveryCommitmentHash: string,
     nextUpdateCommitmentHash: string,
     serviceEndpoints?: ServiceEndpointModel[]
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryCommitmentHash,
       nextUpdateCommitmentHash,
       serviceEndpoints
     );
@@ -580,9 +559,8 @@ export default class OperationGenerator {
    */
   public static async createDeactivateOperation (
     didUniqueSuffix: string,
-    recoveryRevealValueEncodedSring: string,
-    privateKey: JwkEs256k) {
-    const operationRequest = await OperationGenerator.createDeactivateOperationRequest(didUniqueSuffix, recoveryRevealValueEncodedSring, privateKey);
+    recoveryPrivateKey: JwkEs256k) {
+    const operationRequest = await OperationGenerator.createDeactivateOperationRequest(didUniqueSuffix, recoveryPrivateKey);
     const operationBuffer = Buffer.from(JSON.stringify(operationRequest));
     const deactivateOperation = await DeactivateOperation.parse(operationBuffer);
 

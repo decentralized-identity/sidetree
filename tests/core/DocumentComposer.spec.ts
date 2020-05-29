@@ -3,7 +3,6 @@ import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
@@ -11,7 +10,6 @@ describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all usage types.', async () => {
-      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All usages will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -22,21 +20,21 @@ describe('DocumentComposer', async () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash,
-        recoveryKey: anyRecoveryPublicKey
+        nextUpdateCommitmentHash: anyCommitmentHash
       };
 
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
 
       expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
       expect(result.methodMetadata).toEqual({
-        operationPublicKeys: [{
+        operationKeys: [{
           id: '#anySigningKey', // ops usage keys go here
           controller: '',
           type: 'EcdsaSecp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
-        recoveryKey: { kty: 'EC', crv: 'secp256k1', x: anyRecoveryPublicKey.x, y: anyRecoveryPublicKey.y }
+        recoveryCommitment: anyCommitmentHash,
+        updateCommitment: anyCommitmentHash
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
@@ -63,7 +61,6 @@ describe('DocumentComposer', async () => {
     });
 
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
-      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -74,8 +71,7 @@ describe('DocumentComposer', async () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: undefined,
-        nextUpdateCommitmentHash: anyCommitmentHash,
-        recoveryKey: anyRecoveryPublicKey
+        nextUpdateCommitmentHash: anyCommitmentHash
       };
 
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
