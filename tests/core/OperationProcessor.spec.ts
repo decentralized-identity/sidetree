@@ -458,7 +458,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
       });
 
-      it('should not apply the create operation if there a DID document is already found.', async () => {
+      it('should not apply the create operation if a DID document is already found.', async () => {
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
 
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);

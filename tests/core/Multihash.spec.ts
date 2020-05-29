@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 const multihashes = require('multihashes');
 
 describe('Multihash', async () => {
