@@ -24,4 +24,7 @@ Sidetree
 ~ [File a bug](https://github.com/decentralized-identity/sidetree/issues)
 ~ [Commit history](https://github.com/decentralized-identity/sidetree/commits/master)
 
+**Sidetree REST API specification:**
+  [identity.foundation/sidetree/api](https://identity.foundation/sidetree/api)
+
 ------------------------------------
