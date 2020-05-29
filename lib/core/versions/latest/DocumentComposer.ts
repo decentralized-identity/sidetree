@@ -152,7 +152,7 @@ export default class DocumentComposer {
    * Parses and validates the schema of the given update document patch.
    * @throws SidetreeError if given document patch fails validation.
    */
-  public static validateDocumentPatches (patches: any): any {
+  public static validateDocumentPatches (patches: any) {
     if (!Array.isArray(patches)) {
       throw new SidetreeError(ErrorCode.DocumentComposerUpdateOperationDocumentPatchesNotArray);
     }
