@@ -4,7 +4,7 @@ This document focuses on the Node.js implementation of the Sidetree protocol.
 
 ## Overview
 
-![Architecture diagram](./diagrams/architecture.png)
+![Architecture diagram](/www/diagrams/architecture.png)
 
 ## Node Types
 
@@ -58,7 +58,7 @@ Protocol versioning configuration file example:
 ]
 ```
 
-![Versioning diagram](./diagrams/versioning.png)
+![Versioning diagram](/www/diagrams/versioning.png)
 
 ### Orchestration Layer
 There are a number of top-level components (classes) that orchestrate the execution of multiple versions of protocol simultaneously at runtime. These components are intended to be independent from version specific changes. Since code in this orchestration layer need to be compatible with all protocol versions, the orchestration layer should be kept as thin as possible.
@@ -115,7 +115,7 @@ None.
 
 #### Request example
 ```
-Get /time
+GET /time
 ```
 
 #### Response body schema
@@ -152,7 +152,7 @@ None.
 
 #### Request example
 ```
-Get /time/0000000000000000001bfd6c48a6c3e81902cac688e12c2d87ca3aca50e03fb5
+GET /time/0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051
 ```
 
 #### Response body schema
@@ -204,7 +204,7 @@ None.
 
 #### Request example
 ```
-GET /transactions?since=170&transaction-time-hash=00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253
+GET /transactions?since=89&transaction-time-hash=0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051
 ```
 
 #### Response body schema
@@ -237,7 +237,7 @@ HTTP/1.1 200 OK
     {
       "transactionNumber": 89,
       "transactionTime": 545236,
-      "transactionTimeHash": "0000000000000000002352597f8ec45c56ad19994808e982f5868c5ff6cfef2e",
+      "transactionTimeHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051",
       "anchorString": "QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf",
       "transactionFeePaid": 40000,
       "normalizedTransactionFee": 100,
@@ -246,7 +246,7 @@ HTTP/1.1 200 OK
     {
       "transactionNumber": 100,
       "transactionTime": 545236,
-      "transactionTimeHash": "00000000000000000000100158f474719e5a319933856f7f464fcc65a3cb2253",
+      "transactionTimeHash": "0000000000000000002443210198839565f8d40a6b897beac8669cf7ba629051",
       "anchorString": "QmbJGU4wNti6vNMGMosXaHbeMHGu9PkAUZtVBb2s2Vyq5d",
       "transactionFeePaid": 600000,
       "normalizedTransactionFee": 400,
