@@ -1,5 +1,4 @@
 import CreateOperation from './CreateOperation';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
@@ -72,16 +71,14 @@ export default class Did {
       const initialState = Did.getInitialStateFromDidString(didString, didMethodName);
       const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
-      // NOTE: we cannot use the unique suffix computed by the current version of the `CreateOperation.parse()`
-      // becasue the hashing algorithm used maybe different from the short form DID given.
-      // So we compute it here using the hashing algorithm used by the short form.
-      const uniqueSuffixBuffer = Encoder.decodeAsBuffer(did.uniqueSuffix);
-      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(uniqueSuffixBuffer);
-      const didUniqueSuffixDataBuffer = Buffer.from(createOperation.encodedSuffixData);
-      const didUniqueSuffixFromInitialState = Encoder.encode(Multihash.hash(didUniqueSuffixDataBuffer, hashAlgorithmCode));
+      // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
+      // becasue a given long-form DID may have been created long ago,
+      // thus this version of `CreateOperation.parse()` maybe using a different hashing algorithm than that of the unique DID suffix (short-form).
+      // So we compute the suffix data hash again using the hashing algorithm used by the given unique DID suffix (short-form).
+      const suffixDataHashMatchesUniqueSuffix = Multihash.isValidHash(createOperation.encodedSuffixData, did.uniqueSuffix);
 
-      // If the computed unique suffix is not the same as the unique suffix in given short-form DID.
-      if (didUniqueSuffixFromInitialState !== did.uniqueSuffix) {
+      // If the computed suffix data hash is not the same as the unique suffix given in the DID string, the DID is not valid.
+      if (!suffixDataHashMatchesUniqueSuffix) {
         throw new SidetreeError(ErrorCode.DidUniqueSuffixFromInitialStateMismatch);
       }
 

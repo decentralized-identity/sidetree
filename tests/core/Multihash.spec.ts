@@ -1,8 +1,10 @@
 import * as crypto from 'crypto';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 const multihashes = require('multihashes');
 
 describe('Multihash', async () => {
@@ -42,7 +44,7 @@ describe('Multihash', async () => {
     it('should return false if encountered an unexpected error.', async () => {
       const [revealValue, commitmentHash] = OperationGenerator.generateCommitRevealPair();
 
-      const multihashHashSpy = spyOn(Multihash, 'hash').and.throwError('Simulated error message.');
+      const multihashHashSpy = spyOn(Multihash as any, 'verify').and.throwError('Simulated error message.');
       const result = Multihash.isValidHash(revealValue, commitmentHash);
 
       expect(multihashHashSpy).toHaveBeenCalled();
@@ -57,6 +59,34 @@ describe('Multihash', async () => {
         () => Multihash.hash(Buffer.from('any content'), unsupportedHashAlgorithm),
         ErrorCode.MultihashUnsupportedHashAlgorithm
       );
+    });
+  });
+
+  describe('canonicalizeAndVerify()', async () => {
+    it('should return false if `undefined` is given as content.', async () => {
+      const validHash = Multihash.canonicalizeAndVerify(undefined, 'unusedMultihashValue');
+
+      expect(validHash).toBeFalsy();
+    });
+
+    it('should return false if unexpected error is caught.', async () => {
+      // Simulate an error thrown.
+      spyOn(JsonCanonicalizer, 'canonicalizeAsBuffer').and.throwError('any error');
+
+      const validHash = Multihash.canonicalizeAndVerify({ unused: 'unused' }, 'unusedMultihashValue');
+
+      expect(validHash).toBeFalsy();
+    });
+  });
+
+  describe('verify()', async () => {
+    it('should return false if unexpected error is caught.', async () => {
+      // Simulate an error thrown.
+      spyOn(Encoder, 'decodeAsBuffer').and.throwError('any error');
+
+      const validHash = (Multihash as any).verify(Buffer.from('anyValue'), 'unusedMultihashValue');
+
+      expect(validHash).toBeFalsy();
     });
   });
 });
