@@ -165,7 +165,7 @@ The `remove-service-endpoints` _Patch Action_ describes the removal of cryptogra
 ```
 :::
 
-The `replace` _Patch Action_ acts as a total state reset that replaces a DID's current PKI metadata state with the state provide. The `replace` _Patch Action_ enables the declaration of public keys and service endpoints using the same schema formats as the `add-public-keys` and `add-service-endpoints` _Patch Actions_. To construct a `replace` patch, compose an object as follows:
+The `replace` _Patch Action_ acts as a total state reset that replaces a DID's current PKI metadata state with the state provided. The `replace` _Patch Action_ enables the declaration of public keys and service endpoints using the same schema formats as the `add-public-keys` and `add-service-endpoints` _Patch Actions_. To construct a `replace` patch, compose an object as follows:
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `replace`.
 2. The object ****MAY**** include a `public_keys` property, and if present, its value ****MUST**** be an array of public key entries that follow the same schema and requirements as the public key entries from the [`add-public-keys`](#add-public-keys) _Patch Action_
