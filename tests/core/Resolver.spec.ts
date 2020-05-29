@@ -33,7 +33,7 @@ describe('Resolver', () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      const serviceEndpoints = OperationGenerator.generateServiceEndpointsForDocument(['dummyHubUri1']);
+      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
       const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       // Create the initial create operation and insert it to the operation store.
@@ -101,13 +101,13 @@ describe('Resolver', () => {
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      expect(didState.document.publicKeys.length).toEqual(2);
-      expect(didState.document.serviceEndpoints.length).toEqual(2);
+      expect(didState.document.public_keys.length).toEqual(2);
+      expect(didState.document.service_endpoints.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair('newSigningKey');
-      const newServiceEndpoints = OperationGenerator.generateServiceEndpointsForDocument(['newDummyHubUri1']);
+      const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
       const [update1RevealValueAfterRecovery, update1CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
@@ -172,17 +172,17 @@ describe('Resolver', () => {
 
       const document = didState.document;
       expect(document).toBeDefined();
-      expect(document.publicKeys.length).toEqual(2);
+      expect(document.public_keys.length).toEqual(2);
       const actualNewSigningPublicKey1 = Document.getPublicKey(document, 'newSigningKey');
       const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
       expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
       expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
-      expect(document.serviceEndpoints).toBeDefined();
-      expect(document.serviceEndpoints.length).toEqual(1);
-      expect(document.serviceEndpoints[0].serviceEndpoint).toBeDefined();
-      expect(document.serviceEndpoints[0].id).toEqual('newDummyHubUri2');
+      expect(document.service_endpoints).toBeDefined();
+      expect(document.service_endpoints.length).toEqual(1);
+      expect(document.service_endpoints[0].endpoint).toBeDefined();
+      expect(document.service_endpoints[0].id).toEqual('newDummyHubUri2');
     });
 
   });

@@ -42,7 +42,7 @@ async function createUpdateSequence (
       },
       {
         action: 'add-service-endpoints',
-        service_endpoints: OperationGenerator.generateServiceEndpointsForPatch(['serviceEndpointId' + i])
+        service_endpoints: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -107,7 +107,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.serviceEndpoints![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
+  expect(document!.service_endpoints![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {
@@ -135,7 +135,7 @@ describe('OperationProcessor', async () => {
     signingKeyId = 'signingKey';
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId0']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId0']);
 
     let firstUpdateCommitmentHash;
     [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -400,7 +400,7 @@ describe('OperationProcessor', async () => {
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       nextRecoveryCommitmentHash = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
-      const serviceEndpoints = OperationGenerator.generateServiceEndpointsForDocument(['dummyHubUri']);
+      const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
 
       // Create the initial create operation.
       [nextUpdateRevealValue, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -486,7 +486,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState!.document.public_keys.length).toEqual(1);
       });
 
       it('should not apply update operation if signature is invalid.', async () => {
@@ -515,7 +515,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public signing keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState!.document.public_keys.length).toEqual(1);
       });
 
       it('should not apply update operation if specified public key is not found.', async () => {
@@ -544,7 +544,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState!.document.public_keys.length).toEqual(1);
       });
     });
 
@@ -599,7 +599,7 @@ describe('OperationProcessor', async () => {
         // Expecting resulting DID state to still be the same as prior to attempting to apply the invalid deactivate operation.
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.document.publicKeys.length).toEqual(1);
+        expect(newDidState!.document.public_keys.length).toEqual(1);
         expect(newDidState!.nextUpdateCommitmentHash).toEqual(nextUpdateCommitmentHash);
       });
     });

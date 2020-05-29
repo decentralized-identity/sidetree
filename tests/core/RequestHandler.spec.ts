@@ -87,7 +87,7 @@ describe('RequestHandler', () => {
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,

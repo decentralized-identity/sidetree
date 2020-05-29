@@ -1,6 +1,8 @@
 import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
+import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -13,7 +15,6 @@ import PublicKeyUsage from '../../lib/core/enums/PublicKeyUsage';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -128,7 +129,7 @@ export default class OperationGenerator {
     const signingKeyId = 'signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-    const service = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
+    const service = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -163,7 +164,7 @@ export default class OperationGenerator {
     const newSigningKeyId = 'newSigningKey';
     const [newRecoveryPublicKey, newRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair(newSigningKeyId);
-    const services = OperationGenerator.generateServiceEndpointsForDocument(['serviceEndpointId123']);
+    const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
     const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
@@ -252,9 +253,9 @@ export default class OperationGenerator {
     signingPublicKey: PublicKeyModel,
     nextUpdateCommitment: string,
     serviceEndpoints?: ServiceEndpointModel[]) {
-    const document = {
-      publicKeys: [signingPublicKey],
-      serviceEndpoints: serviceEndpoints
+    const document: DocumentModel = {
+      public_keys: [signingPublicKey],
+      service_endpoints: serviceEndpoints
     };
 
     const patches = [{
@@ -373,8 +374,8 @@ export default class OperationGenerator {
     nextUpdateCommitmentHash: string,
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document = {
-      publicKeys: [newSigningPublicKey],
-      serviceEndpoints: serviceEndpoints
+      public_keys: [newSigningPublicKey],
+      service_endpoints: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
       didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, nextUpdateCommitmentHash, document
@@ -514,7 +515,7 @@ export default class OperationGenerator {
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
         action: 'add-service-endpoints',
-        service_endpoints: OperationGenerator.generateServiceEndpointsForPatch([idOfServiceEndpointToAdd])
+        service_endpoints: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);
@@ -573,27 +574,9 @@ export default class OperationGenerator {
 
   /**
    * Generates an array of service endpoints with specified ids
-   * @param ids the id field in serviceEndpoint.
-   */
-  public static generateServiceEndpointsForDocument (ids: string[]): any[] {
-    const serviceEndpoints = [];
-    for (const id of ids) {
-      serviceEndpoints.push(
-        {
-          'id': id,
-          'type': 'someType',
-          'serviceEndpoint': 'https://www.url.com'
-        }
-      );
-    }
-    return serviceEndpoints;
-  }
-
-  /**
-   * Generates an array of service endpoints with specified ids
    * @param ids the id field in endpoint.
    */
-  public static generateServiceEndpointsForPatch (ids: string[]): any[] {
+  public static generateServiceEndpoints (ids: string[]): any[] {
     const serviceEndpoints = [];
     for (const id of ids) {
       serviceEndpoints.push(

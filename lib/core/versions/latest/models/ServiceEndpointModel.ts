@@ -5,5 +5,5 @@
 export default interface DidServiceEndpointModel {
   id: string;
   type: string;
-  serviceEndpoint: string;
+  endpoint: string;
 }
