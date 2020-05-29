@@ -136,20 +136,20 @@ export default class DocumentComposer {
       }
     }
 
-    // Verify 'publicKeys' property if it exists.
+    // Verify 'public_keys' property if it exists.
     if (document.hasOwnProperty('public_keys')) {
       DocumentComposer.validatePublicKeys(document.public_keys);
     }
 
-    // Verify 'serviceEndpoints' property if it exists.
+    // Verify 'service_endpoints' property if it exists.
     if (document.hasOwnProperty('service_endpoints')) {
-      // Verify each serviceEndpoint entry in serviceEndpoints.
+      // Verify each endpoint entry in service_endpoints.
       DocumentComposer.validateServiceEndpoints(document.service_endpoints);
     }
   }
 
   /**
-   * Parses and validates the schema of the given update document patch.
+   * Validates the schema of the given update document patch.
    * @throws SidetreeError if given document patch fails validation.
    */
   public static validateDocumentPatches (patches: any) {
@@ -323,7 +323,7 @@ export default class DocumentComposer {
 
     for (let serviceEndpoint of serviceEndpoints) {
       const serviceEndpointProperties = Object.keys(serviceEndpoint);
-      if (serviceEndpointProperties.length !== 3) { // type, id, and serviceEndpoint
+      if (serviceEndpointProperties.length !== 3) { // type, id, and endpoint
         throw new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
       }
 

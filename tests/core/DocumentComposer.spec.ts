@@ -131,7 +131,7 @@ describe('DocumentComposer', async () => {
   });
 
   describe('removeServiceEndpoints', () => {
-    it('should remove the expected elements from serviceEndpoints', () => {
+    it('should remove the expected elements from service_endpoints', () => {
       const document: DocumentModel = {
         public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
         service_endpoints: [
@@ -252,7 +252,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if serviceEndpoint has unknown property', () => {
+    it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if service endpoint has unknown property', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
@@ -266,7 +266,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if serviceEndpoint is missing', () => {
+    it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if endpoint is missing', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
@@ -304,7 +304,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotString if serviceEndpoint is not a string', () => {
+    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotString if endpoint is not a string', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
@@ -317,7 +317,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if serviceEndpoint is too long', () => {
+    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if endpoint is too long', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
@@ -330,7 +330,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl if serviceEndpoint is not valid url', () => {
+    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl if endpoint is not valid url', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
@@ -385,7 +385,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
+    it('should throw error if `public_keys` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0] as any).public_keys = 'incorrectType';
 
@@ -393,7 +393,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if an entry in `publicKeys` in an add-public-keys patch contains additional unknown property.', async () => {
+    it('should throw error if an entry in `public_keys` in an add-public-keys patch contains additional unknown property.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].public_keys![0] as any).unknownProperty = 'unknownProperty';
 
@@ -445,7 +445,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
+    it('should throw error if `public_keys` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[1] as any).public_keys = 'incorrectType';
 
@@ -461,7 +461,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `serviceEndpoints` in an add-service-endpoints patch is not an array.', async () => {
+    it('should throw error if `service_endpoints` in an add-service-endpoints patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[2] as any).service_endpoints = 'incorrectType';
 
@@ -552,7 +552,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKeys usage is not an array.', async () => {
+    it('should throw if document public_keys usage is not an array.', async () => {
       const document = {
         public_keys: [
           {
@@ -568,7 +568,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKeys is bigger than expected length.', async () => {
+    it('should throw if document public_keys is bigger than expected length.', async () => {
       const document = {
         public_keys: [
           {
@@ -584,7 +584,7 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKeys contains invalid usage', async () => {
+    it('should throw if document public_keys contains invalid usage', async () => {
       const document = {
         public_keys: [
           {
