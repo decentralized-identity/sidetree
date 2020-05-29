@@ -2,51 +2,10 @@
 
 OFFICIAL SIDETREE SPECIFICATION HERE: https://identity.foundation/sidetree/spec/
 
-![Sidetree System Overview](./diagrams/overview-diagram.png)
-
-## Format and Encoding
-* JSON is used as the data encapsulation format.
-* Base64URL encoding is used whenever encoding is needed for binary data or cryptographic consistency.
-* [_Multihash_](https://multiformats.io/multihash/) is used to represent hashes.
-
-
-## Sidetree Protocol Versioning & Parameters
-Sidetree protocol and parameters are expected to evolve overtime. Each version of the protocol will define its protocol rules and parameters, and the logical _blockchain time_ in which the new rules and parameters will take effect. All subsequent transactions will adhere to the same rules and parameters until a newer protocol version is defined.
-
-The following lists the parameters used by this version of the Sidetree protocol:
-
-| Protocol Parameter          | Description                                                                    | Value      |
-|-----------------------------|--------------------------------------------------------------------------------| ---------: |
-| Hash algorithm              | The hash algorithm for computation such as for DID generation.                 |     SHA256 |
-| Maximum anchor file size    | The maximum compressed anchor file size.                                       |       1 MB |
-| Maximum chunk file size     | The maximum compressed chunk file size.                                        |      20 MB |
-| Maximum encoded hash length | The maximum accepted string length of an encoded hash.                         |        100 |
-| Maximum operation size      | The maximum uncompressed operation size.                                       |      2 000 |
-| Maximum operation count     | The maximum number of operations per batch.                                    |     10 000 |
-
-
-## Anchor String Schema
-The anchor string is the data that is stored on the blockchain. The data is stored in the following format:
-
-```
-[encoded_number_of_operations].[hash_of_anchor_file]
-
-WHERE
-
- encoded_number_of_operations: The total number of operations included in the chunk file converted to 4 bytes (in little endian format) and then encoded as Base64 URL string
-
- hash_of_anchor_file: The hash of the anchor file
-```
-
-### Example
-The following anchor string encodes 10000 operations and the hash of the chunk file.
-
-```
-ECcAAA.QmWd5PH6vyRH5kMdzZRPBnf952dbR4av3Bd7B2wBqMaAcf
-```
+![Sidetree System Overview](../www/diagrams/overview-diagram.png)
 
 ## Operation chaining of a DID
-![DID Operation Chaining](./diagrams/operationChaining.png)
+![DID Operation Chaining](../www/diagrams/operationChaining.png)
 
 
 ## DDoS Attack & Mitigation
@@ -99,12 +58,6 @@ Sidetree protocol defines the following mechanisms to enable scaling, while prev
   The DID owner must reproduce and reveal the correct commitment value in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new commitment value(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
 
   See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify reveal values and commitment hashes in each operation.
-
-
-## DID Deactivate and Recovery
-Sidetree protocol requires the specification by the DID owner of dedicated cryptographic keys, called _recovery keys_, for deleting or recovering a DID. At least one recovery key is required to be specified in every _Create_ and _Recover_ operation. Recovery keys can only be changed by another recover operation. Once a DID is deactivated, it cannot be recovered.
-
-The most basic recover operation, most often used to regain control after loss or theft of a controlling device/key, is one coded as a specific recovery activity and invokes a designated recovery key to sign the operation. The operation is processes by observing nodes as an override that supercedes all other key types present in the current document state.
 
 
 ## Sidetree Client Guidelines
