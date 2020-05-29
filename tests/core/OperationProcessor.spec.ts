@@ -457,15 +457,6 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
       });
-
-      it('should not apply the create operation if a DID document is already found.', async () => {
-        const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
-
-        const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
-        expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
-        expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
-      });
     });
 
     describe('applyUpdateOperation()', () => {
