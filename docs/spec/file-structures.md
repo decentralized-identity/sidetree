@@ -26,7 +26,7 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
     "recover": [
       {
         "did_suffix": SUFFIX_STRING,
-        "signed_data": { // Base64URL encoded, compact JWS
+        "signed_data": { // JSON serialized JWS per rfc7515#section-3.2
           "protected": {...},
           "payload": {
             "recovery_commitment": COMMITMENT_HASH,
@@ -41,7 +41,7 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
     "deactivate": [
       {
         "did_suffix": SUFFIX_STRING,
-        "signed_data": { // Base64URL encoded, compact JWS
+        "signed_data": { // JSON serialized JWS per rfc7515#section-3.2
             "protected": {...},
             "payload": {
               "did_suffix": SUFFIX_STRING,
@@ -92,7 +92,7 @@ The Map file in the Sidetree protocol contains Update operation proving data, as
     "update": [
       {
         "did_suffix": DID_SUFFIX,
-        "signed_data": { // Base64URL encoded, compact JWS
+        "signed_data": { // JSON serialized JWS per rfc7515#section-3.2
             "protected": {...},
             "payload": {
               "update_reveal_value": REVEAL_VALUE,
