@@ -13,6 +13,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import JsonAsync from '../../lib/core/versions/latest/util/JsonAsync';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockBlockchain from '../mocks/MockBlockchain';
@@ -20,6 +21,7 @@ import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
+import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -28,6 +30,7 @@ import Resolver from '../../lib/core/Resolver';
 import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import util = require('util');
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -257,6 +260,66 @@ describe('RequestHandler', () => {
       const response = await requestHandler.handleResolveRequest('unused');
 
       expect(response.status).toEqual(ResponseStatus.ServerError);
+    });
+  });
+
+  describe('handleOperationRequest()', async () => {
+    it('should return `BadRequest` if unknown error is thrown during generic operation parsing stage.', async () => {
+      spyOn(JsonAsync, 'parse').and.throwError('Non-Sidetree error.');
+
+      const response = await requestHandler.handleOperationRequest(Buffer.from('unused'));
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+    });
+
+    it('should return `BadRequest` if operation of an unknown type is given.', async () => {
+      // Simulate an unknown operation type.
+      const mockCreateOperation = (await OperationGenerator.generateCreateOperation()).createOperation;
+      (mockCreateOperation as any).type = 'unknownType';
+      spyOn(JsonAsync, 'parse').and.returnValue(Promise.resolve('unused'));
+      spyOn(Operation, 'parse').and.returnValue(Promise.resolve(mockCreateOperation));
+
+      const response = await requestHandler.handleOperationRequest(Buffer.from('unused'));
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+      expect(response.body.code).toEqual(ErrorCode.RequestHandlerUnknownOperationType);
+    });
+
+    it('should return `BadRequest` if Sidetree error is thrown during operation processing stage.', async () => {
+      // Simulate a Sidetree error thrown when processing operation.
+      const mockErrorCode = 'anyCode';
+      spyOn(requestHandler as any, 'applyCreateOperation').and.callFake(() => { throw new SidetreeError(mockErrorCode); });
+
+      const operationBuffer = (await OperationGenerator.generateCreateOperation()).createOperation.operationBuffer;
+      const response = await requestHandler.handleOperationRequest(operationBuffer);
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+      expect(response.body.code).toEqual(mockErrorCode);
+    });
+
+    it('should return `ServerError` if non-Sidetree error is thrown during operation processing stage.', async () => {
+      // Simulate a non-Sidetree error thrown when processing operation.
+      spyOn(requestHandler as any, 'applyCreateOperation').and.throwError('any error');
+
+      const operationBuffer = (await OperationGenerator.generateCreateOperation()).createOperation.operationBuffer;
+      const response = await requestHandler.handleOperationRequest(operationBuffer);
+
+      expect(response.status).toEqual(ResponseStatus.ServerError);
+    });
+  });
+
+  describe('handleCreateRequest()', async () => {
+    it('should return `BadRequest` if unable to generate initial DID state from the given create operation model.', async (done) => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+
+      // Simulate undefined being returned by `applyCreateOperation()`.
+      spyOn(requestHandler as any, 'applyCreateOperation').and.returnValue(Promise.resolve(undefined));
+
+      const response = await (requestHandler as any).handleCreateRequest(createOperation);
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+      done();
     });
   });
 

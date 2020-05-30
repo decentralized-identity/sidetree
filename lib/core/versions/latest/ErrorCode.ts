@@ -123,6 +123,7 @@ export default {
   RecoverOperationSignedDataMissingOrUnknownProperty: 'recover_operation_signed_data_missing_or_unknown_property',
   RecoverOperationTypeIncorrect: 'recover_operation_type_incorrect',
   RequestHandlerDeltaExceedsMaximumSize: 'request_handler_patch_data_exceeds_maximum_size',
+  RequestHandlerUnknownOperationType: 'request_handler_unknown_operation_type',
   DeactivateOperationMissingOrInvalidDidUniqueSuffix: 'deactivate_operation_missing_or_invalid_did_unique_suffix',
   DeactivateOperationMissingOrUnknownProperty: 'deactivate_operation_missing_or_unknown_property',
   DeactivateOperationSignedDataMissingOrUnknownProperty: 'deactivate_operation_signed_data_missing_or_unknown_property',

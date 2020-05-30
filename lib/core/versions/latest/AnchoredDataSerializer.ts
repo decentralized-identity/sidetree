@@ -9,6 +9,7 @@ import SidetreeError from '../../../common/SidetreeError';
  */
 export default class AnchoredDataSerializer {
 
+  /** Delimiter between logical parts in anchor string. */
   public static readonly delimiter = '.';
 
   /**
