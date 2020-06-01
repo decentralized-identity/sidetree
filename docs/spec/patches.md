@@ -169,7 +169,7 @@ The `replace` _Patch Action_ acts as a total state reset that replaces a DID's c
 
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `replace`.
 2. The object ****MAY**** include a `public_keys` property, and if present, its value ****MUST**** be an array of public key entries that follow the same schema and requirements as the public key entries from the [`add-public-keys`](#add-public-keys) _Patch Action_
-3. The object ****MAY**** include a `service_endpoint` property, and if present, its value ****MUST**** be an array of service endpoint entries that follow the same schema and requirements as the service endpoint entries from the [`add-service-endpoint`](#add-service-endpoint) _Patch Action_.
+3. The object ****MAY**** include a `service_endpoints` property, and if present, its value ****MUST**** be an array of service endpoint entries that follow the same schema and requirements as the service endpoint entries from the [`add-service-endpoints`](#add-service-endpoints) _Patch Action_.
 
 #### `ietf-json-patch`
 
