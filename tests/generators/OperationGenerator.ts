@@ -22,17 +22,6 @@ interface AnchoredCreateOperationGenerationInput {
   operationIndex: number;
 }
 
-interface GeneratedAnchoredCreateOperationData {
-  createOperation: CreateOperation;
-  anchoredOperationModel: AnchoredOperationModel;
-  recoveryPublicKey: JwkEs256k;
-  recoveryPrivateKey: JwkEs256k;
-  signingKeyId: string;
-  signingPublicKey: PublicKeyModel;
-  signingPrivateKey: JwkEs256k;
-  nextUpdateRevealValueEncodedString: string;
-}
-
 interface RecoverOperationGenerationInput {
   didUniqueSuffix: string;
   recoveryPrivateKey: JwkEs256k;
@@ -98,7 +87,7 @@ export default class OperationGenerator {
   /**
    * Generates an anchored create operation.
    */
-  public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput): Promise<GeneratedAnchoredCreateOperationData> {
+  public static async generateAnchoredCreateOperation (input: AnchoredCreateOperationGenerationInput) {
     const createOperationData = await OperationGenerator.generateCreateOperation();
 
     const anchoredOperationModel = {
@@ -112,6 +101,7 @@ export default class OperationGenerator {
 
     return {
       createOperation: createOperationData.createOperation,
+      operationRequest: createOperationData.operationRequest,
       anchoredOperationModel,
       recoveryPublicKey: createOperationData.recoveryPublicKey,
       recoveryPrivateKey: createOperationData.recoveryPrivateKey,

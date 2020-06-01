@@ -61,14 +61,14 @@ Protocol versioning configuration file example:
 ![Versioning diagram](/www/diagrams/versioning.png)
 
 ### Orchestration Layer
-There are a number of top-level components (classes) that orchestrate the execution of multiple versions of protocol simultaneously at runtime. These components are intended to be independent from version specific changes. Since code in this orchestration layer need to be compatible with all protocol versions, the orchestration layer should be kept as thin as possible.
+There are a number of top-level components (classes) that orchestrate the execution of multiple versions of protocol simultaneously at runtime. These components are intended to be independent from version specific changes. Since code in this orchestration layer need to be compatible with all Sidetree versions, the orchestration layer should be kept as thin as possible.
 
-- Version Manager - This component handles construction and fetching of implementations of protocol versions as needed.
+- Version Manager - This component handles construction and fetching of implementations of Sidetree versions as needed.
 - Batch Scheduler - This component schedules the writing of new operation batches.
 - Observer - This component observes the incoming Sidetree transactions and processes them.
 - Resolver - This component resolves a DID resolution request.
 
-The orchestration layer cannot depend on any code that is protocol version specific, this means its dependencies must either be external or be part of the orchestration layer itself, such dependencies include:
+The orchestration layer cannot depend on any code that is Sidetree version specific, this means its dependencies must either be external or be part of the orchestration layer itself, such dependencies include:
 - Blockchain Client
 - CAS (Content Addressable Storage) Client
 - MongoDB Transaction Store
@@ -82,10 +82,8 @@ The orchestration layer requires implementation of following interfaces per prot
 - `IRequestHandler` - Handles REST API requests.
 
 
-## Blockchain REST API
-The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
-### Response HTTP status codes
+### REST API HTTP Response status codes
 
 | HTTP status code | Description                              |
 | ---------------- | ---------------------------------------- |
@@ -96,6 +94,66 @@ The blockchain REST API interface aims to abstract the underlying blockchain awa
 | 500              | Server error.                            |
 
 
+
+## Core Serivce REST API
+The Core Service REST API impliments the [Sidetree REST API](https://identity.foundation/sidetree/api/), in addition it also exposes the following version API.
+
+### Fetch the current service versions.
+Fetches the current version of the core and the dependent services. The service implementation defines the versioning scheme and its interpretation.
+
+Returns the service _names_ and _versions_ of the core and the dependent blockchain and CAS services.
+
+> NOTE: This API does **NOT** return the protocol version. This just represents the version of the current service(s) itself.
+
+#### Request path
+```
+GET /version
+```
+
+#### Request headers
+None.
+
+#### Request example
+```
+GET /version
+```
+
+#### Response body schema
+```json
+[
+  {
+    "name": "A string representing the name of the service",
+    "version": "A string representing the version of currently running service."
+  },
+  ...
+]
+```
+
+#### Response example
+```http
+HTTP/1.1 200 OK
+
+[
+  {
+  "name":"core",
+  "version":"0.4.1"
+  },
+  {
+    "name":"bitcoin",
+    "version":"0.4.1"
+  },
+  {
+    "name":"ipfs",
+    "version":"0.4.1"
+  }
+]
+```
+
+
+
+
+## Blockchain REST API
+The blockchain REST API interface aims to abstract the underlying blockchain away from the main protocol logic. This allows the underlying blockchain to be replaced without affecting the core protocol logic. The interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same blockchain.
 
 ### Get latest blockchain time
 Gets the latest logical blockchain time. This API allows the Observer and Batch Writer to determine protocol version to be used.
@@ -645,17 +703,6 @@ HTTP/1.1 200 OK
 The CAS (content addressable storage) REST API interface aims to abstract the underlying Sidetree storage away from the main protocol logic. This allows the CAS to be updated or even replaced if needed without affecting the core protocol logic. Conversely, the interface also allows the protocol logic to be implemented in an entirely different language while interfacing with the same CAS.
 
 All hashes used in the API are encoded multihash as specified by the Sidetree protocol.
-
-### Response HTTP status codes
-
-| HTTP status code | Description                              |
-| ---------------- | ---------------------------------------- |
-| 200              | Everything went well.                    |
-| 400              | Bad client request.                      |
-| 401              | Unauthenticated or unauthorized request. |
-| 404              | Resource not found.                      |
-| 500              | Server error.                            |
-
 
 ### Read content
 Read the content of a given address and return it in the response body as octet-stream.

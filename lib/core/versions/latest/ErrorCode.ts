@@ -4,9 +4,7 @@
 export default {
   AnchoredDataIncorrectFormat: 'anchored_data_incorrect_format',
   AnchoredDataNumberOfOperationsGreaterThanMax: 'anchored_data_number_of_operations_greater_than_max',
-  AnchoredDataNumberOfOperationsLessThanZero: 'anchored_data_number_of_operations_less_than_zero',
-  AnchoredDataNumberOfOperationsNotFourBytes: 'anchored_data_number_of_operations_not_four_bytes',
-  AnchoredDataNumberOfOperationsNotInteger: 'anchored_data_number_of_operations_not_integer',
+  AnchoredDataNumberOfOperationsNotPositiveInteger: 'anchored_data_number_of_operations_not_positive_integer',
   AnchorFileCreatePropertyNotArray: 'anchor_file_create_property_not_array',
   AnchorFileDecompressionFailure: 'anchor_file_decompression_failed',
   AnchorFileHasUnknownProperty: 'anchor_file_has_unknown_property',
@@ -125,6 +123,7 @@ export default {
   RecoverOperationSignedDataMissingOrUnknownProperty: 'recover_operation_signed_data_missing_or_unknown_property',
   RecoverOperationTypeIncorrect: 'recover_operation_type_incorrect',
   RequestHandlerDeltaExceedsMaximumSize: 'request_handler_patch_data_exceeds_maximum_size',
+  RequestHandlerUnknownOperationType: 'request_handler_unknown_operation_type',
   DeactivateOperationMissingOrInvalidDidUniqueSuffix: 'deactivate_operation_missing_or_invalid_did_unique_suffix',
   DeactivateOperationMissingOrUnknownProperty: 'deactivate_operation_missing_or_unknown_property',
   DeactivateOperationSignedDataMissingOrUnknownProperty: 'deactivate_operation_signed_data_missing_or_unknown_property',
