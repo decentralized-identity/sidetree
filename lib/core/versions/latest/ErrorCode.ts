@@ -63,7 +63,7 @@ export default {
   DocumentComposerPublicKeyNotOperationKey: 'document_composer_public_key_not_operation_key',
   DocumentComposerPublicKeyMissingOrUnknownProperty: 'document_composer_public_key_missing_or_unknown_property',
   DocumentComposerPublicKeysNotArray: 'document_composer_public_keys_not_array',
-  DocumentComposerPublicKeyTypeMissingOrUnknown: 'document_composer_patch_public_key_type_missing_or_unknown',
+  DocumentComposerPublicKeyTypeMissingOrIncorrectType: 'document_composer_public_key_type_missing_or_incorrect_type',
   DocumentComposerPublicKeyUsageMissingOrUnknown: 'document_composer_public_key_usage_missing_or_unknown',
   DocumentComposerPublicKeyUsageExceedsMaxLength: 'document_composer_public_key_exceeds_max_length',
   DocumentComposerPublicKeyInvalidUsage: 'document_composer_public_key_invalid_usage',
