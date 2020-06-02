@@ -5,13 +5,13 @@ import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockV
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
 describe('ValueTimeLockVerifier', () => {
-  let versionMetadataMapper: any = {};
-  let versionMetadata: any;
-  versionMetadata = {
-    normalizedFeeToPerOperationFeeMultiplier: 0.50
+  let versionMetadataFetcher: any = {};
+  const versionMetadata = {
+    normalizedFeeToPerOperationFeeMultiplier: 0.50,
+    valueTimeLockAmountMultiplier: 100
   };
-  versionMetadataMapper = {
-    getVersionMetadataByTransactionTime: () => {
+  versionMetadataFetcher = {
+    getVersionMetadata: () => {
       return versionMetadata;
     }
   };
@@ -28,10 +28,10 @@ describe('ValueTimeLockVerifier', () => {
       };
 
       const feePerOp = valueTimeLockInput.normalizedFee * versionMetadata.normalizedFeeToPerOperationFeeMultiplier;
-      const numOfOps = valueTimeLockInput.amountLocked / (feePerOp * ProtocolParameters.valueTimeLockAmountMultiplier);
+      const numOfOps = valueTimeLockInput.amountLocked / (feePerOp * versionMetadata.valueTimeLockAmountMultiplier);
       const expectedNumOfOps = Math.floor(numOfOps);
 
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, versionMetadataMapper);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, versionMetadataFetcher);
       expect(actual).toEqual(expectedNumOfOps);
     });
 
@@ -45,12 +45,12 @@ describe('ValueTimeLockVerifier', () => {
         owner: 'owner'
       };
 
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, versionMetadataMapper);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLockInput, versionMetadataFetcher);
       expect(actual).toEqual(ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
     });
 
     it('should return number of free ops if the value lock is undefined.', () => {
-      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(undefined, versionMetadataMapper);
+      const actual = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(undefined, versionMetadataFetcher);
 
       expect(actual).toEqual(ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock);
     });
@@ -62,7 +62,7 @@ describe('ValueTimeLockVerifier', () => {
 
       const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock;
 
-      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, numberOfOpsInput, 12, 'txn writer', versionMetadataMapper);
+      ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(undefined, numberOfOpsInput, 12, 'txn writer', versionMetadataFetcher);
       expect(calcMaxOpsSpy).not.toHaveBeenCalled();
     });
 
@@ -79,7 +79,7 @@ describe('ValueTimeLockVerifier', () => {
       const numberOfOpsInput = ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock + 100;
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, numberOfOpsInput, 12, 'txn writer', versionMetadataMapper),
+        () => ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(valueTimeLockInput, numberOfOpsInput, 12, 'txn writer', versionMetadataFetcher),
         ErrorCode.ValueTimeLockVerifierTransactionWriterLockOwnerMismatch);
     });
 
@@ -102,7 +102,7 @@ describe('ValueTimeLockVerifier', () => {
             numberOfOpsInput,
             valueTimeLockinput.lockTransactionTime - 1,
             valueTimeLockinput.owner,
-            versionMetadataMapper),
+            versionMetadataFetcher),
         ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange);
     });
 
@@ -125,7 +125,7 @@ describe('ValueTimeLockVerifier', () => {
             numberOfOpsInput,
             valueTimeLockinput.unlockTransactionTime,
             valueTimeLockinput.owner,
-            versionMetadataMapper),
+            versionMetadataFetcher),
         ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange);
     });
 
@@ -149,7 +149,7 @@ describe('ValueTimeLockVerifier', () => {
             mockMaxNumOfOps + 1,
             valueTimeLockinput.lockTransactionTime + 1,
             valueTimeLockinput.owner,
-            versionMetadataMapper),
+            versionMetadataFetcher),
         ErrorCode.ValueTimeLockVerifierInvalidNumberOfOperations);
     });
 
@@ -171,7 +171,7 @@ describe('ValueTimeLockVerifier', () => {
         mockMaxNumOfOps,
         valueTimeLockinput.lockTransactionTime + 1,
         valueTimeLockinput.owner,
-        versionMetadataMapper);
+        versionMetadataFetcher);
 
       // no exception === no unexpected errors.
     });

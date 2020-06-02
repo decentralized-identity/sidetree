@@ -1,5 +1,5 @@
 import ErrorCode from './ErrorCode';
-import IVersionMetadataMapper from '../../interfaces/IVersionMetadataMapper';
+import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import ValueTimeLockModel from '../../../common/models/ValueTimeLockModel';
@@ -14,23 +14,24 @@ export default class ValueTimeLockVerifier {
    * there is no lock then it returns the number of operations which do not require a lock.
    *
    * @param valueTimeLock The lock object if exists
-   * @param versionMetadataMapper The mapper from transaction time to version metadata
+   * @param versionMetadataFetcher The mapper from transaction time to version metadata
    */
-  public static calculateMaxNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined, versionMetadataMapper: IVersionMetadataMapper) {
+  public static calculateMaxNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined, versionMetadataFetcher: IVersionMetadataFetcher) {
 
     if (valueTimeLock === undefined) {
       return ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock;
     }
 
-    const versionMetadata = versionMetadataMapper.getVersionMetadataByTransactionTime(valueTimeLock.lockTransactionTime);
+    const versionMetadata = versionMetadataFetcher.getVersionMetadata(valueTimeLock.lockTransactionTime);
     const normalizedFeeToPerOperationFeeMultiplier = versionMetadata.normalizedFeeToPerOperationFeeMultiplier;
+    const valueTimeLockAmountMultiplier = versionMetadata.valueTimeLockAmountMultiplier;
 
     // Using the following formula:
     //  requiredLockAmount = normalizedfee * normalizedFeeMultipier * numberOfOps * valueTimeLockMultiplier
     //
     // We are going to find the numberOfOps given the requiredLockAmount
     const feePerOperation = valueTimeLock.normalizedFee * normalizedFeeToPerOperationFeeMultiplier;
-    const numberOfOpsAllowed = valueTimeLock.amountLocked / (feePerOperation * ProtocolParameters.valueTimeLockAmountMultiplier);
+    const numberOfOpsAllowed = valueTimeLock.amountLocked / (feePerOperation * valueTimeLockAmountMultiplier);
 
     // Make sure that we are returning an integer; rounding down to make sure that we are not going above
     // the max limit.
@@ -48,14 +49,14 @@ export default class ValueTimeLockVerifier {
    * @param numberOfOperations The target number of operations.
    * @param sidetreeTransactionTime The transaction time where the operations were written.
    * @param sidetreeTransactionWriter The writer of the transaction.
-   * @param versionMetadataMapper The mapper from transaction time to version metadata
+   * @param versionMetadataFetcher The mapper from transaction time to version metadata
    */
   public static verifyLockAmountAndThrowOnError (
     valueTimeLock: ValueTimeLockModel | undefined,
     numberOfOperations: number,
     sidetreeTransactionTime: number,
     sidetreeTransactionWriter: string,
-    versionMetadataMapper: IVersionMetadataMapper): void {
+    versionMetadataFetcher: IVersionMetadataFetcher): void {
 
     // If the number of written operations were under the free limit then there's nothing to check
     if (numberOfOperations <= ProtocolParameters.maxNumberOfOperationsForNoValueTimeLock) {
@@ -80,7 +81,7 @@ export default class ValueTimeLockVerifier {
       }
     }
 
-    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOperationsAllowed(valueTimeLock, versionMetadataMapper);
+    const maxNumberOfOpsAllowed = this.calculateMaxNumberOfOperationsAllowed(valueTimeLock, versionMetadataFetcher);
 
     if (numberOfOperations > maxNumberOfOpsAllowed) {
       throw new SidetreeError(

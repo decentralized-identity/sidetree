@@ -1,6 +1,7 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import Config from '../../lib/core/models/Config';
 import DownloadManager from '../../lib/core/DownloadManager';
+import ErrorCode from '../../lib/core/ErrorCode';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
@@ -47,8 +48,8 @@ describe('VersionManager', async () => {
 
       const resolver = new Resolver(versionMgr, operationStore);
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
-      expect(versionMgr['batchWriters'].get('test-version-1') as any ['versionMetadataMapper']).toBeDefined();
-      expect(versionMgr['transactionProcessors'].get('test-version-1') as any ['versionMetadataMapper']).toBeDefined();
+      expect(versionMgr['batchWriters'].get('test-version-1') as any ['versionMetadataFetcher']).toBeDefined();
+      expect(versionMgr['transactionProcessors'].get('test-version-1') as any ['versionMetadataFetcher']).toBeDefined();
 
       // No exception thrown == initialize was successful
     });
@@ -75,7 +76,7 @@ describe('VersionManager', async () => {
         await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
         fail('expect to throw but did not');
       } catch (e) {
-        expect(e.code).toEqual('version_manager_version_metadata_incorrect_type');
+        expect(e.code).toEqual(ErrorCode.VersionManagerVersionMetadataIncorrectType);
       }
     });
 
@@ -90,7 +91,7 @@ describe('VersionManager', async () => {
     });
   });
 
-  describe('getVersionMetadataByTransactionTime', () => {
+  describe('getVersionMetadata', () => {
     it('should return the expected versionMetadata', async () => {
       const protocolVersionConfig: ProtocolVersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
@@ -104,7 +105,7 @@ describe('VersionManager', async () => {
       const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
-      const result = versionMgr.getVersionMetadataByTransactionTime(1001);
+      const result = versionMgr.getVersionMetadata(1001);
       expect(result.hashAlgorithmInMultihashCode).toEqual(18);
       expect(result.normalizedFeeToPerOperationFeeMultiplier).toEqual(0.01);
     });

@@ -2,7 +2,7 @@ import DownloadManager from '../../../../lib/core/DownloadManager';
 import IBlockchain from '../../../../lib/core/interfaces/IBlockchain';
 import IOperationStore from '../../../../lib/core/interfaces/IOperationStore';
 import ITransactionProcessor from '../../../../lib/core/interfaces/ITransactionProcessor';
-import IVersionMetadataMapper from '../../../../lib/core/interfaces/IVersionMetadataMapper'
+import IVersionMetadataFetcher from '../../../../lib/core/interfaces/IVersionMetadataFetcher';
 import TransactionModel from '../../../../lib/common/models/TransactionModel';
 
 /**
@@ -10,9 +10,12 @@ import TransactionModel from '../../../../lib/common/models/TransactionModel';
  */
 export default class TransactionProcessor implements ITransactionProcessor {
 
-  public constructor (private downloadManager: DownloadManager, private operationStore: IOperationStore,
-    private blockchain: IBlockchain, private versionMetadataMapper: IVersionMetadataMapper) {
-    console.debug(this.downloadManager, this.operationStore, this.blockchain, this.versionMetadataMapper);
+  public constructor (
+    private downloadManager: DownloadManager,
+    private operationStore: IOperationStore,
+    private blockchain: IBlockchain,
+    private versionMetadataFetcher: IVersionMetadataFetcher) {
+    console.debug(this.downloadManager, this.operationStore, this.blockchain, this.versionMetadataFetcher);
   }
 
   async processTransaction (transaction: TransactionModel): Promise<boolean> {
