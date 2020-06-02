@@ -420,6 +420,16 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
+    it('should throw error if `type` of a public key is not a string.', async () => {
+      const patches = generatePatchesForPublicKeys();
+
+      // Simulate that a `type` is in incorrect type.
+      (patches[0].public_keys![0] as any).type = 123;
+
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
+      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
+    });
+
     it('should throw error if the type of a operation public key in an add-public-keys patch is not secp.', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[0].public_keys![0] as any).type = 'notSecp';

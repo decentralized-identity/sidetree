@@ -207,6 +207,10 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
+      if (typeof publicKey.type !== 'string') {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
+      }
+
       DocumentComposer.validateId(publicKey.id);
 
       // 'id' must be unique
