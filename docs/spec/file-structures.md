@@ -13,6 +13,7 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 ```json
 {
   "map_file_uri": CAS_URI,
+  "writer_lock_id": OPTIONAL_LOCKING_VALUE,
   "operations": {
     "create": [
       {
@@ -60,7 +61,8 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size), and composed as follows:
 
 1. The [Anchor File](#anchor-file) ****MUST**** contain a [`map_file_uri`](#map-file-property){id="map-file-property"} property if the batch of transactions being anchored contains any Create, Recovery, or Update operations, and its value ****MUST**** be a _CAS URI_ for the related Map File. If the batch of transactions being anchored is only comprised of Deactivate operations, the [`map_file_uri`](#map-file-property) property ****MUST NOT**** be present.
-2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the [Anchor File](#anchor-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
+2. The [Anchor File](#anchor-file) ****MAY**** contain a [`writer_lock_id`](#writer-lock-property){id="writer-lock-property"} if the implementation chooses to implement a value locking scheme for economically based network protection, and its value ****MUST**** be defined by the implementation to reflect whatever values the are required to facilitate the necessary ledger and operation-level evaluations.
+3. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the [Anchor File](#anchor-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
     - If there are any [Create](#create) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `create` property, and its value ****MUST**** be an array.
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
