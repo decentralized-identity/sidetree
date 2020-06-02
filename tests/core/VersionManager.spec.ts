@@ -45,7 +45,7 @@ describe('VersionManager', async () => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
 
-      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      const resolver = new Resolver(versionMgr, operationStore);
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
       // No exception thrown == initialize was successful
@@ -57,7 +57,7 @@ describe('VersionManager', async () => {
       ];
 
       const versionMgr = new VersionManager(config, protocolVersionConfig);
-      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      const resolver = new Resolver(versionMgr, operationStore);
       await expectAsync(versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore)).toBeRejected();
     });
   });
@@ -74,7 +74,7 @@ describe('VersionManager', async () => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
 
-      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      const resolver = new Resolver(versionMgr, operationStore);
 
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
@@ -122,7 +122,7 @@ describe('VersionManager', async () => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
 
-      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      const resolver = new Resolver(versionMgr, operationStore);
 
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
