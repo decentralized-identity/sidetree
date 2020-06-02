@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as url from 'url';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from './OperationGenerator';
@@ -80,10 +81,13 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(`${absoluteFolderPath}/requests/recovery${i}.json`, recoverOperationBuffer);
     }
 
+    // Operations URL.
+    const operationsUrl = url.resolve(endpointUrl, 'operations'); // e.g. http://localhost:3000/operations
+
     // Generate Create API calls in a targets file.
     let createTargetsFileString = '';
     for (let i = 0; i < uniqueDidCount; i++) {
-      createTargetsFileString += `POST ${endpointUrl}\n`;
+      createTargetsFileString += `POST ${operationsUrl}\n`;
       createTargetsFileString += `@${absoluteFolderPath}/requests/create${i}.json\n\n`;
     }
     fs.writeFileSync(absoluteFolderPath + '/createTargets.txt', createTargetsFileString);
@@ -91,7 +95,7 @@ export default class VegetaLoadGenerator {
     // Add Updtae API calls in a targets file.
     let updateTargetsFileString = '';
     for (let i = 0; i < uniqueDidCount; i++) {
-      updateTargetsFileString += `POST ${endpointUrl}\n`;
+      updateTargetsFileString += `POST ${operationsUrl}\n`;
       updateTargetsFileString += `@${absoluteFolderPath}/requests/update${i}.json\n\n`;
     }
     fs.writeFileSync(absoluteFolderPath + '/updateTargets.txt', updateTargetsFileString);
@@ -99,7 +103,7 @@ export default class VegetaLoadGenerator {
     // Add Recovery API calls in a targets file.
     let recoveryTargetsFileString = '';
     for (let i = 0; i < uniqueDidCount; i++) {
-      recoveryTargetsFileString += `POST ${endpointUrl}\n`;
+      recoveryTargetsFileString += `POST ${operationsUrl}\n`;
       recoveryTargetsFileString += `@${absoluteFolderPath}/requests/recovery${i}.json\n\n`;
     }
     fs.writeFileSync(absoluteFolderPath + '/recoveryTargets.txt', recoveryTargetsFileString);

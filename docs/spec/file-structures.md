@@ -13,6 +13,7 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 ```json
 {
   "map_file_uri": CAS_URI,
+  "writer_lock_id": OPTIONAL_LOCKING_VALUE,
   "operations": {
     "create": [
       {
@@ -60,7 +61,8 @@ Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#d
 A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size), and composed as follows:
 
 1. The [Anchor File](#anchor-file) ****MUST**** contain a [`map_file_uri`](#map-file-property){id="map-file-property"} property if the batch of transactions being anchored contains any Create, Recovery, or Update operations, and its value ****MUST**** be a _CAS URI_ for the related Map File. If the batch of transactions being anchored is only comprised of Deactivate operations, the [`map_file_uri`](#map-file-property) property ****MUST NOT**** be present.
-2. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the [Anchor File](#anchor-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
+2. The [Anchor File](#anchor-file) ****MAY**** contain a [`writer_lock_id`](#writer-lock-property){id="writer-lock-property"} if the implementation chooses to implement a value locking scheme for economically based network protection, and its value ****MUST**** be defined by the implementation to reflect whatever values the are required to facilitate the necessary ledger and operation-level evaluations.
+3. If the set of operations to be anchored contain any [Create](#create), [Recover](#recovery), or [Deactivate](#deactivate) operations, the [Anchor File](#anchor-file) ****MUST**** contain an `operations` property, and its value ****MUST**** be an object composed as follows:
     - If there are any [Create](#create) operations to be included in the Anchor File:
       1. The `operations` object ****MUST**** include a `create` property, and its value ****MUST**** be an array.
       2. For each [Create](#create) operation to be included in the `create` array, herein referred to as [_Anchor File Create Entries_](#anchor-file-create-entry){id="anchor-file-create-entry"}, use the following process to compose and include a JSON object for each entry:
@@ -110,7 +112,7 @@ The Map file in the Sidetree protocol contains Update operation proving data, as
 
 A valid [Map File](#map-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size), and composed as follows:
 
-1. The [Anchor File](#anchor-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
+1. The [Map File](#map-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
     1. The _Chunk Entry_ object ****MUST**** contain a `chunk_file_uri` property, and its value ****MUST**** be a URI representing the corresponding CAS file entry, generated via the [`CID_ALGORITHM`](#cid-algorithm).
 2. If there are any [Update](#update) operations to be included in the Map File, the [Map File](#map-file) ****MUST**** include an `operations` property, and its value ****MUST**** be an object composed as follows:
     1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.

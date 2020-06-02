@@ -60,7 +60,10 @@ export default class AnchoredDataSerializer {
     const isPositiveInteger = /^[1-9]\d*$/.test(input);
 
     if (!isPositiveInteger) {
-      throw new SidetreeError(ErrorCode.AnchoredDataNumberOfOperationsNotPositiveInteger, `Number of operations '${input}' is not an integer.`);
+      throw new SidetreeError(
+        ErrorCode.AnchoredDataNumberOfOperationsNotPositiveInteger,
+        `Number of operations '${input}' is not a positive integer without leading zeros.`
+      );
     }
 
     return Number(input);
