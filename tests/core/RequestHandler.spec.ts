@@ -13,6 +13,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
+import JsonAsync from '../../lib/core/versions/latest/util/JsonAsync';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MockBlockchain from '../mocks/MockBlockchain';
@@ -20,6 +21,7 @@ import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
+import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
 import OperationType from '../../lib/core/enums/OperationType';
@@ -28,6 +30,7 @@ import Resolver from '../../lib/core/Resolver';
 import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import util = require('util');
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -96,13 +99,11 @@ describe('RequestHandler', () => {
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-    const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryCommitmentHash,
       nextUpdateCommitmentHash,
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
@@ -170,12 +171,10 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
-    const [, nextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextRecoveryCommitmentHash,
       nextUpdateCommitmentHash
     );
 
@@ -234,8 +233,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {
-    const recoveryRevealValue = Encoder.encode(Buffer.from('unusedRecoveryRevealValue'));
-    const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey);
+    const deactivateOperationData = await OperationGenerator.createDeactivateOperation(didUniqueSuffix, recoveryPrivateKey);
     const response = await requestHandler.handleOperationRequest(deactivateOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -258,8 +256,7 @@ describe('RequestHandler', () => {
   });
 
   it('should respond with HTTP 200 when a recover operation request is successful.', async () => {
-    const recoveryRevealValue = 'EiD_UnusedRecoveryRevealValue_AAAAAAAAAAAA';
-    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryRevealValue, recoveryPrivateKey });
+    const recoveryOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryPrivateKey });
     const response = await requestHandler.handleOperationRequest(recoveryOperationData.operationBuffer);
     const httpStatus = Response.toHttpStatus(response.status);
 
@@ -276,9 +273,68 @@ describe('RequestHandler', () => {
     });
   });
 
+  describe('handleOperationRequest()', async () => {
+    it('should return `BadRequest` if unknown error is thrown during generic operation parsing stage.', async () => {
+      spyOn(JsonAsync, 'parse').and.throwError('Non-Sidetree error.');
+
+      const response = await requestHandler.handleOperationRequest(Buffer.from('unused'));
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+    });
+
+    it('should return `BadRequest` if operation of an unknown type is given.', async () => {
+      // Simulate an unknown operation type.
+      const mockCreateOperation = (await OperationGenerator.generateCreateOperation()).createOperation;
+      (mockCreateOperation as any).type = 'unknownType';
+      spyOn(JsonAsync, 'parse').and.returnValue(Promise.resolve('unused'));
+      spyOn(Operation, 'parse').and.returnValue(Promise.resolve(mockCreateOperation));
+
+      const response = await requestHandler.handleOperationRequest(Buffer.from('unused'));
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+      expect(response.body.code).toEqual(ErrorCode.RequestHandlerUnknownOperationType);
+    });
+
+    it('should return `BadRequest` if Sidetree error is thrown during operation processing stage.', async () => {
+      // Simulate a Sidetree error thrown when processing operation.
+      const mockErrorCode = 'anyCode';
+      spyOn(requestHandler as any, 'applyCreateOperation').and.callFake(() => { throw new SidetreeError(mockErrorCode); });
+
+      const operationBuffer = (await OperationGenerator.generateCreateOperation()).createOperation.operationBuffer;
+      const response = await requestHandler.handleOperationRequest(operationBuffer);
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+      expect(response.body.code).toEqual(mockErrorCode);
+    });
+
+    it('should return `ServerError` if non-Sidetree error is thrown during operation processing stage.', async () => {
+      // Simulate a non-Sidetree error thrown when processing operation.
+      spyOn(requestHandler as any, 'applyCreateOperation').and.throwError('any error');
+
+      const operationBuffer = (await OperationGenerator.generateCreateOperation()).createOperation.operationBuffer;
+      const response = await requestHandler.handleOperationRequest(operationBuffer);
+
+      expect(response.status).toEqual(ResponseStatus.ServerError);
+    });
+  });
+
+  describe('handleCreateRequest()', async () => {
+    it('should return `BadRequest` if unable to generate initial DID state from the given create operation model.', async (done) => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+
+      // Simulate undefined being returned by `applyCreateOperation()`.
+      spyOn(requestHandler as any, 'applyCreateOperation').and.returnValue(Promise.resolve(undefined));
+
+      const response = await (requestHandler as any).handleCreateRequest(createOperation);
+
+      expect(response.status).toEqual(ResponseStatus.BadRequest);
+      done();
+    });
+  });
+
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
-      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
@@ -288,8 +344,7 @@ describe('RequestHandler', () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash,
-        recoveryKey: anyRecoveryPublicKey
+        nextUpdateCommitmentHash: anyCommitmentHash
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 

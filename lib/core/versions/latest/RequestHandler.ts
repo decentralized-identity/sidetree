@@ -84,24 +84,7 @@ export default class RequestHandler implements IRequestHandler {
       let response: ResponseModel;
       switch (operationModel.type) {
         case OperationType.Create:
-
-          const didState = await this.applyCreateOperation(operationModel);
-
-          if (didState === undefined) {
-            response = {
-              status: ResponseStatus.BadRequest,
-              body: 'Invalid create operation.'
-            };
-            break;
-          }
-
-          const did = `did:${this.didMethodName}:${operationModel.didUniqueSuffix}`;
-          const document = DocumentComposer.transformToExternalDocument(didState, did);
-
-          response = {
-            status: ResponseStatus.Succeeded,
-            body: document
-          };
+          response = await this.handleCreateRequest(operationModel);
           break;
         // these cases do nothing because we do not know the latest document state unless we resolve.
         case OperationType.Update:
@@ -112,9 +95,10 @@ export default class RequestHandler implements IRequestHandler {
           };
           break;
         default:
+          // Should be an impossible condition, but we defensively check and handle.
           response = {
-            status: ResponseStatus.ServerError,
-            body: { error: 'Not implemented' }
+            status: ResponseStatus.BadRequest,
+            body: { code: ErrorCode.RequestHandlerUnknownOperationType, message: `Unsupported operation type '${operationModel.type}'.` }
           };
       }
 
@@ -127,9 +111,9 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
-        console.info(`Unexpected error: ${error.code} ${error.message}`);
+        console.info(`Sidetree error: ${error.code} ${error.message}`);
         return {
-          status: ResponseStatus.ServerError,
+          status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
         };
       }
@@ -139,6 +123,26 @@ export default class RequestHandler implements IRequestHandler {
         status: ResponseStatus.ServerError
       };
     }
+  }
+
+  private async handleCreateRequest (operationModel: OperationModel): Promise<ResponseModel> {
+    const didState = await this.applyCreateOperation(operationModel);
+
+    // Should be an impossible condition, but we defensively check and handle.
+    if (didState === undefined) {
+      return {
+        status: ResponseStatus.BadRequest,
+        body: 'Invalid create operation.'
+      };
+    }
+
+    const did = `did:${this.didMethodName}:${operationModel.didUniqueSuffix}`;
+    const document = DocumentComposer.transformToExternalDocument(didState, did);
+
+    return {
+      status: ResponseStatus.Succeeded,
+      body: document
+    };
   }
 
   /**

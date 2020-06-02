@@ -13,16 +13,13 @@ describe('RecoverOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        unusedNextRecoveryCommitmentHash,
         unusedNextUpdateCommitmentHash
       );
 
@@ -36,16 +33,13 @@ describe('RecoverOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        unusedNextRecoveryCommitmentHash,
         unusedNextUpdateCommitmentHash
       );
 
@@ -60,16 +54,13 @@ describe('RecoverOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextRecoveryCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        unusedNextRecoveryCommitmentHash,
         unusedNextUpdateCommitmentHash
       );
 
@@ -86,9 +77,8 @@ describe('RecoverOperation', async () => {
     it('should parse the operation included in an anchor file without the `delta` property.', async (done) => {
       const didUniqueSuffix = 'anyDidSuffix';
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
-      const [recoveryRevealValue] = OperationGenerator.generateCommitRevealPair();
 
-      const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryPrivateKey, recoveryRevealValue });
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation({ didUniqueSuffix, recoveryPrivateKey });
       const recoverOperationRequest = JSON.parse(recoverOperationData.operationBuffer.toString());
 
       // Intentionally remove properties that wouldn't exist in an anchor file.
@@ -142,33 +132,6 @@ describe('RecoverOperation', async () => {
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationSignedDataMissingOrUnknownProperty));
-      done();
-    });
-
-    it('should throw if recoveryRevealValue is too long.', async (done) => {
-      const signedData = {
-        delta_hash: 'anyUnusedHash',
-        recoveryKey: 'anyUnusedRecoveryKey',
-        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        // tslint:disable-next-line:max-line-length
-        recovery_reveal_value: 'super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-value-super-long-reveal-valueeeee'
-      };
-      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueTooLong));
-      done();
-    });
-
-    it('should throw if recoveryRevealValue is not string.', async (done) => {
-      const signedData = {
-        delta_hash: 'anyUnusedHash',
-        recoveryKey: 'anyUnusedRecoveryKey',
-        nextRecoveryCommitmentHash: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
-        recovery_reveal_value: ['this is an array, not a string']
-      };
-      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((RecoverOperation as any).parseSignedDataPayload(encodedSignedData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.RecoverOperationRecoveryRevealValueMissingOrInvalidType));
       done();
     });
   });

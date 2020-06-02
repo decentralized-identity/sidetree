@@ -60,4 +60,17 @@ export default class Jwk {
       throw new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeY);
     }
   }
+
+  /**
+   * Gets the public key given the private ES256K key.
+   * Mainly used for testing purposes.
+   */
+  public static getEs256kPublicKey (privateKey: JwkEs256k): JwkEs256k {
+    const keyCopy = Object.assign({}, privateKey);
+
+    // Delete the private key portion.
+    delete keyCopy.d;
+
+    return keyCopy;
+  }
 }

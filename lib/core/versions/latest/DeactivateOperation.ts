@@ -1,15 +1,16 @@
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import Jwk from './util/Jwk';
+import JwkEs256k from '../../models/JwkEs256k';
 import Jws from './util/Jws';
-import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
   didSuffix: string;
-  recoveryRevealValue: string;
+  recoveryKey: JwkEs256k;
 }
 
 /**
@@ -124,17 +125,11 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch);
     }
 
-    if (typeof signedData.recovery_reveal_value !== 'string') {
-      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueMissingOrInvalidType);
-    }
-
-    if ((signedData.recovery_reveal_value as string).length > Operation.maxEncodedRevealValueLength) {
-      throw new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong);
-    }
+    Jwk.validateJwkEs256k(signedData.recovery_key);
 
     return {
       didSuffix: signedData.did_suffix,
-      recoveryRevealValue: signedData.recovery_reveal_value
+      recoveryKey: signedData.recovery_key
     };
   }
 }

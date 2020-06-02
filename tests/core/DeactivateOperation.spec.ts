@@ -13,7 +13,6 @@ describe('DeactivateOperation', async () => {
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey
       );
 
@@ -28,7 +27,6 @@ describe('DeactivateOperation', async () => {
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey
       );
 
@@ -44,7 +42,6 @@ describe('DeactivateOperation', async () => {
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey
       );
 
@@ -60,7 +57,6 @@ describe('DeactivateOperation', async () => {
 
       const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-recovery-reveal-value',
         recoveryPrivateKey
       );
 
@@ -94,33 +90,6 @@ describe('DeactivateOperation', async () => {
       const encodedDelta = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedDelta, didUniqueSuffix))
         .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty));
-      done();
-    });
-
-    it('should throw if recoveryRevealValue is too long.', async (done) => {
-      const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
-      // tslint:disable-next-line
-      const recoveryRevealValue = 'super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal-super-long-reveal';
-      const signedData = {
-        did_suffix: didUniqueSuffix,
-        recovery_reveal_value: recoveryRevealValue
-      };
-      const encodedDelta = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedDelta, didUniqueSuffix))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueTooLong));
-      done();
-    });
-
-    it('should throw if recoveryRevealValue is not a string.', async (done) => {
-      const didUniqueSuffix = 'anyUnusedDidUniqueSuffix';
-      const recoveryRevealValue = ['this is an array not a string'];
-      const signedData = {
-        did_suffix: didUniqueSuffix,
-        recovery_reveal_value: recoveryRevealValue
-      };
-      const encodedDelta = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((DeactivateOperation as any).parseSignedDataPayload(encodedDelta, didUniqueSuffix, recoveryRevealValue))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.DeactivateOperationRecoveryRevealValueMissingOrInvalidType));
       done();
     });
 

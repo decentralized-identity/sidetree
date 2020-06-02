@@ -2,8 +2,6 @@ import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
-import Jwk from './util/Jwk';
-import JwkEs256k from '../../models/JwkEs256k';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
@@ -12,7 +10,6 @@ import SidetreeError from '../../../common/SidetreeError';
 
 interface SuffixDataModel {
   deltaHash: string;
-  recoveryKey: JwkEs256k;
   recoveryCommitment: string;
 }
 
@@ -65,8 +62,8 @@ export default class CreateOperation implements OperationModel {
    * Computes the DID unique suffix given the encoded suffix data string.
    */
   private static computeDidUniqueSuffix (encodedSuffixData: string): string {
-    const encodedSuffixDataBuffer = Buffer.from(encodedSuffixData);
-    const multihash = Multihash.hash(encodedSuffixDataBuffer);
+    const suffixDataBuffer = Encoder.decodeAsBuffer(encodedSuffixData);
+    const multihash = Multihash.hash(suffixDataBuffer);
     const encodedMultihash = Encoder.encode(multihash);
     return encodedMultihash;
   }
@@ -143,11 +140,9 @@ export default class CreateOperation implements OperationModel {
     const suffixData = await JsonAsync.parse(suffixDataJsonString);
 
     const properties = Object.keys(suffixData);
-    if (properties.length !== 3) {
+    if (properties.length !== 2) {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
-
-    Jwk.validateJwkEs256k(suffixData.recovery_key);
 
     const deltaHash = Encoder.decodeAsBuffer(suffixData.delta_hash);
     const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recovery_commitment);
@@ -157,7 +152,6 @@ export default class CreateOperation implements OperationModel {
 
     return {
       deltaHash: suffixData.delta_hash,
-      recoveryKey: suffixData.recovery_key,
       recoveryCommitment: suffixData.recovery_commitment
     };
   }

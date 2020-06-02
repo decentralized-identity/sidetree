@@ -64,7 +64,7 @@ export default class Encoder {
    */
   public static isBase64UrlString (input: string): boolean {
     // NOTE:
-    // '/<expression>/ denotes regex.
+    // /<expression>/ denotes regex.
     // ^ denotes beginning of string.
     // $ denotes end of string.
     // + denotes one or more characters.

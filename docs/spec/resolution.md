@@ -108,7 +108,7 @@ If the compiled DID ****was not**** determined to be _Unresolvable_, as defined 
 2. Set the `didDocument` property of the _Resolution Result_ object to the resolved DID Document generated via the [Operation Compilation](#operation-compilation) process.
 3. The _Resolution Result_ object ****MUST**** include a `methodMetadata` property, and its value ****MUST**** be an object.
 4. The _Resolution Result_ `methodMetadata` object ****MUST**** include a `published` property with a boolean value. If the compiled DID state is flagged as _Unpublished_ and/or _Unresolvable_ (per the [Operation Compilation](#operation-compilation) process), the `published` property ****MUST**** be set to `false`, otherwise, set the value to `true`.
-5. If the compiled DID state is flagged as _Non-Updatable_ (per the [Operation Compilation](#operation-compilation) process), the _Resolution Result_ `methodMetadata` object ****MUST**** include a `non-updatable` property with a boolean value, and its value ****MUST**** be set to `true`.
+5. If any operation-capable keys are currently associated with the DID, the _Resolution Result_ `methodMetadata` object ****MUST**** include an `operationKeys` property, and its value ****MUST**** be an array of the [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representations for the operation-capable public keys.
 
 #### Unresolvable DIDs
 

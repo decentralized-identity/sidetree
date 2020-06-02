@@ -12,8 +12,8 @@ export default class Document {
    * @param keyId The ID of the public-key.
    */
   public static getPublicKey (document: DocumentModel, keyId: string): PublicKeyModel | undefined {
-    for (let i = 0; i < document.publicKeys.length; i++) {
-      const publicKey = document.publicKeys[i];
+    for (let i = 0; i < document.public_keys.length; i++) {
+      const publicKey = document.public_keys[i];
 
       if (publicKey.id === keyId) {
         return publicKey;
