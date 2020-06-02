@@ -70,7 +70,7 @@ describe('RequestHandler', () => {
     spyOn(versionManager, 'getBatchWriter').and.returnValue(batchWriter);
 
     operationStore = new MockOperationStore();
-    resolver = new Resolver(versionManager, operationStore, versionManager.allSupportedHashAlgorithms);
+    resolver = new Resolver(versionManager, operationStore);
     batchScheduler = new BatchScheduler(versionManager, blockchain, config.batchingIntervalInSeconds);
     requestHandler = new RequestHandler(
       resolver,

@@ -8,12 +8,10 @@ import SidetreeError from '../common/SidetreeError';
 
 /**
  * NOTE: Resolver cannot be versioned because it needs to be aware of `VersionManager` to fetch versioned operation processors.
- *
- * @param allSupportedHashAlgorithms All the supported hash algorithms in multihash code.
  */
 export default class Resolver {
 
-  public constructor (private versionManager: IVersionManager, private operationStore: IOperationStore, private allSupportedHashAlgorithms: number[]) { }
+  public constructor (private versionManager: IVersionManager, private operationStore: IOperationStore) { }
 
   /**
    * Resolve the given DID unique suffix to its latest DID state.
@@ -211,7 +209,8 @@ export default class Resolver {
     const commitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
 
     // Loop through each supported algorithm and hash each operation.
-    for (const hashAlgorithm of this.allSupportedHashAlgorithms) {
+    const allSupportedHashAlgorithms = this.versionManager.allSupportedHashAlgorithms;
+    for (const hashAlgorithm of allSupportedHashAlgorithms) {
       for (const operation of nonCreateOperations) {
 
         const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
