@@ -70,7 +70,7 @@ describe('VersionManager', async () => {
         }
       });
 
-      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      const resolver = new Resolver(versionMgr, operationStore);
 
       try {
         await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
@@ -102,7 +102,7 @@ describe('VersionManager', async () => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
 
-      const resolver = new Resolver(versionMgr, operationStore, versionMgr.allSupportedHashAlgorithms);
+      const resolver = new Resolver(versionMgr, operationStore);
       await versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
 
       const result = versionMgr.getVersionMetadata(1001);
