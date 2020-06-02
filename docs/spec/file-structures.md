@@ -112,7 +112,7 @@ The Map file in the Sidetree protocol contains Update operation proving data, as
 
 A valid [Map File](#map-file) is a JSON document that ****MUST NOT**** exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size), and composed as follows:
 
-1. The [Anchor File](#anchor-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
+1. The [Map File](#map-file) ****MUST**** contain a `chunks` property, and its value ****MUST**** be an array of _Chunk Entries_ for the related delta data for a given chunk of operations in the batch. Future versions of the protocol will specify a process for separating the operations in a batch into multiple _Chunk Entries_, but for this version of the protocol there ****MUST**** be only one _Chunk Entry_ present in the array. _Chunk Entry_ objects are composed as follows:
     1. The _Chunk Entry_ object ****MUST**** contain a `chunk_file_uri` property, and its value ****MUST**** be a URI representing the corresponding CAS file entry, generated via the [`CID_ALGORITHM`](#cid-algorithm).
 2. If there are any [Update](#update) operations to be included in the Map File, the [Map File](#map-file) ****MUST**** include an `operations` property, and its value ****MUST**** be an object composed as follows:
     1. The `operations` object ****MUST**** include an `update` property, and its value ****MUST**** be an array.
