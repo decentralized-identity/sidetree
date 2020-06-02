@@ -11,7 +11,7 @@ import FetchResultCode from '../../../common/enums/FetchResultCode';
 import IBlockchain from '../../interfaces/IBlockchain';
 import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
-import IVersionMetadataMapper from '../../interfaces/IVersionMetadataMapper';
+import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import JsonAsync from './util/JsonAsync';
 import MapFile from './MapFile';
 import ProtocolParameters from './ProtocolParameters';
@@ -27,7 +27,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     private downloadManager: DownloadManager,
     private operationStore: IOperationStore,
     private blockchain: IBlockchain,
-    private metadataMapper: IVersionMetadataMapper) {
+    private versionMetadataFetcher: IVersionMetadataFetcher) {
   }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
@@ -104,7 +104,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       paidOperationCount,
       transaction.transactionTime,
       transaction.writer,
-      this.metadataMapper);
+      this.versionMetadataFetcher);
 
     return anchorFile;
   }

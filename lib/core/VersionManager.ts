@@ -1,4 +1,4 @@
-import AbstractVersionMetadata from './AbstractVersionMetadata';
+import AbstractVersionMetadata from './abstracts/AbstractVersionMetadata';
 import Config from './models/Config';
 import CoreErrorCode from './ErrorCode';
 import DownloadManager from './DownloadManager';
@@ -12,7 +12,7 @@ import ITransactionProcessor from './interfaces/ITransactionProcessor';
 import ITransactionSelector from './interfaces/ITransactionSelector';
 import ITransactionStore from './interfaces/ITransactionStore';
 import IVersionManager from './interfaces/IVersionManager';
-import IVersionMetadataMapper from './interfaces/IVersionMetadataMapper';
+import IVersionMetadataFetcher from './interfaces/IVersionMetadataFetcher';
 import Resolver from './Resolver';
 import SidetreeError from '../common/SidetreeError';
 
@@ -28,7 +28,7 @@ export interface ProtocolVersionModel {
 /**
  * The class that handles the loading of different versions of protocol codebase.
  */
-export default class VersionManager implements IVersionManager, IVersionMetadataMapper {
+export default class VersionManager implements IVersionManager, IVersionMetadataFetcher {
   public allSupportedHashAlgorithms: number[] = [];
 
   // Reverse sorted protocol versions. ie. latest version first.
@@ -192,7 +192,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     return transactionSelector;
   }
 
-  public getVersionMetadataByTransactionTime (blockchainTime: number): AbstractVersionMetadata {
+  public getVersionMetadata (blockchainTime: number): AbstractVersionMetadata {
     const versionString = this.getVersionString(blockchainTime);
     const versionMetadata = this.versionMetadatas.get(versionString);
     // this is always be defined because if blockchain time is found, version will be defined
@@ -201,7 +201,6 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
 
   /**
    * Gets the corresponding protocol version string given the blockchain time.
-   * TODO: make this binary search as we get more versions
    */
   private getVersionString (blockchainTime: number): string {
     // Iterate through each version to find the right version.

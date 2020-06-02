@@ -4,5 +4,6 @@
   "maxChunkFileSizeInBytes": 20000000,
   "maxDeltaSizeInBytes": 2000,
   "maxOperationsPerBatch": 10000,
-  "normalizedFeeToPerOperationFeeMultiplier": 0.01
+  "normalizedFeeToPerOperationFeeMultiplier": 0.01,
+  "valueTimeLockAmountMultiplier": 100
 }

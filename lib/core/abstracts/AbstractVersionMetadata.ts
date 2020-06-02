@@ -4,6 +4,8 @@
 export default abstract class AbstractVersionMetadata {
   /** Hash algorithm in Multihash code in DEC (not in HEX). */
   public abstract hashAlgorithmInMultihashCode: number;
-  /** multiplier on the per op fee */
+  /** Multiplier on the per op fee */
   public abstract normalizedFeeToPerOperationFeeMultiplier: number;
+  /** Value time lock amount multiplier */
+  public abstract valueTimeLockAmountMultiplier: number;
 }

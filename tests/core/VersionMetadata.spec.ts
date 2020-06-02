@@ -6,5 +6,6 @@ describe('VersionMetadata', () => {
     // NOTE: 18 = 0x12 = Multihash SHA2-256 code.
     expect(versionMetadata.hashAlgorithmInMultihashCode).toEqual(18);
     expect(versionMetadata.normalizedFeeToPerOperationFeeMultiplier).toEqual(0.01);
+    expect(versionMetadata.valueTimeLockAmountMultiplier).toEqual(600);
   });
 });
