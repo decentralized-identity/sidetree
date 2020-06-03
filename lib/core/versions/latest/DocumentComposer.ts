@@ -207,6 +207,10 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
+      if (typeof publicKey.jwk !== 'object' || Array.isArray(publicKey.jwk)) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
+      }
+
       if (typeof publicKey.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
       }

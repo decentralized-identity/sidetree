@@ -412,18 +412,20 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if the a secp256k1 public key in an add-public-keys patch is not specified in `jwk` property.', async () => {
       const patches = generatePatchesForPublicKeys();
+
+      // Simulate that `jwk` is missing.
       delete (patches[0].public_keys![0] as any).jwk;
 
       (patches[0].public_keys![0] as any).publicKeyPem = 'DummyPemString';
 
-      const expectedError = new SidetreeError(ErrorCode.JwkEs256kUndefined);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
     it('should throw error if `type` of a public key is not a string.', async () => {
       const patches = generatePatchesForPublicKeys();
 
-      // Simulate that a `type` is in incorrect type.
+      // Simulate that a `type` has an incorrect type.
       (patches[0].public_keys![0] as any).type = 123;
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
@@ -521,13 +523,13 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            publicKeyHex: 'anything',
+            jwk: { a: 'unused a'},
             usage: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
             type: 'EcdsaSecp256k1VerificationKey2019',
-            publicKeyPem: 'anything',
+            jwk: { b: 'unused b'},
             usage: ['general']
           }
         ]
