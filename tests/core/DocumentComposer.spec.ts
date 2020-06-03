@@ -523,13 +523,13 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: { a: 'unused a'},
+            jwk: { a: 'unused a' },
             usage: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: { b: 'unused b'},
+            jwk: { b: 'unused b' },
             usage: ['general']
           }
         ]
