@@ -9,10 +9,10 @@ Resolution requests consist of a DID and MAY include DID parameters.
 As detailed in [Resolution](#resolution), the resolution request MAY include the initial state DID parameter.
 
 The server responds with the [DID Resolution Result](https://w3c-ccg.github.io/did-resolution/#did-resolution-result) composed of the DID Document and Method Metadata.
-Sidetree defines `operationPublicKeys`, `recoveryKey` and `published` method metadata.
+Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` method metadata.
    - `published` is detailed in [Published Property](#published-property).
-   - `operationPublicKeys` is an array of public key objects that include `ops` in the `usage` array. See [patch action](#add-public-keys) for more details. 
-   - `recoveryKey` is the recovery public key object.
+   - `updateCommitment` is the commitement for the next update operation as defined in [commitment value generation](https://identity.foundation/sidetree/spec/#commitment-value-generation).
+   - `recoveryCommitment` is the commitement for the next recover or deactivate operation as defined in [commitment value generation](https://identity.foundation/sidetree/spec/#commitment-value-generation).
 
 ::: example
 ```json
@@ -20,9 +20,9 @@ Sidetree defines `operationPublicKeys`, `recoveryKey` and `published` method met
     "@context": "https://www.w3.org/ns/did-resolution/v1",
     "didDocument": DID_DOCUMENT_OBJECT,
     "methodMetadata": {
-        "operationPublicKeys": [OPERATION_PUBLIC_KEY_OBJECT, ...],
-        "recoveryKey": RECOVERY_PUBLIC_KEY_OBJECT,
-        "published": boolean
+        "published": boolean,
+        "updateCommitment": UPDATE_COMMITMENT,
+        "recoveryCommitment": RECOVERY_COMMITMENT
     }
 }
 ```
@@ -90,7 +90,6 @@ Use the following process to generate a Sidetree create operation JSON document 
 {
     "type": "update",
     "did_suffix": DID_SUFFIX,
-    "update_reveal_value": REVEAL_VALUE,
     "delta": DELTA_OBJECT,
     "signed_data": JWS_SIGNED_VALUE
 }
@@ -100,11 +99,10 @@ Use the following process to generate a Sidetree create operation JSON document 
 Use the following process to generate a Sidetree update operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `update`.
-2. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-3. The object ****MUST**** contain a `update_reveal_value` property, and its value ****MUST**** be the last update [COMMITMENT_VALUE](#commitment-value).
-4. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Update Operation Delta Object_](#update-data-object).
-5. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Map File](#map-file) for Update operations.
+1. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Update Operation Delta Object_](#update-data-object).
+1. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+as defined in [Map File](https://identity.foundation/sidetree/spec/#map-file) for Update operations.
 
 #### Recover
 
@@ -113,7 +111,6 @@ as defined in [Map File](#map-file) for Update operations.
 {
     "type": "recover",
     "did_suffix": DID_SUFFIX,
-    "recovery_reveal_value": REVEAL_VALUE,
     "delta": DELTA_OBJECT,
     "signed_data": JWS_SIGNED_VALUE
 }
@@ -123,11 +120,10 @@ as defined in [Map File](#map-file) for Update operations.
 Use the following process to generate a Sidetree recovery operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `recover`.
-2. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-3. The object ****MUST**** contain a `recovery_reveal_value` property, and its value ****MUST**** be the last recovery [COMMITMENT_VALUE](#commitment-value).
-4. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Recovery Operation Delta Object_](#recover-delta-object).
-5. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Anchor File](#anchor-file) for Recovery operations.
+1. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+1. The object ****MUST**** contain an `delta` property, and its value ****MUST**** be a `Base64URL` encoded [_Recovery Operation Delta Object_](#recover-delta-object).
+1. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+as defined in [Anchor File](https://identity.foundation/sidetree/spec/#anchor-file) for Recovery operations.
 
 #### Deactivate
 
@@ -136,7 +132,6 @@ as defined in [Anchor File](#anchor-file) for Recovery operations.
 {
     "type": "deactivate",
     "did_suffix": DID_SUFFIX,
-    "recovery_reveal_value": REVEAL_VALUE,
     "signed_data": JWS_SIGNED_VALUE
 }
 ```
@@ -145,7 +140,6 @@ as defined in [Anchor File](#anchor-file) for Recovery operations.
 Use the following process to generate a Sidetree deactivate operation JSON document for the REST API, composed as follows:
 
 1. The object ****MUST**** contain a `type` property, and its value ****MUST**** be `deactivate`.
-2. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
-3. The object ****MUST**** contain a `recovery_reveal_value` property, and its value ****MUST**** be the last recovery [COMMITMENT_VALUE](#commitment-value).
-4. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
-as defined in [Anchor File](#anchor-file) for Deactivate operations.
+1. The object ****MUST**** contain a `did_suffix` property, and its value ****MUST**** be the [DID Suffix](#did-suffix) of the DID the operation pertains to.
+1. The object ****MUST**** contain a `signed_data` property, and its value ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant JWS object
+as defined in [Anchor File](https://identity.foundation/sidetree/spec/#anchor-file) for Deactivate operations.
