@@ -21,7 +21,6 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-// import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 
 async function createUpdateSequence (
   didUniqueSuffix: string,

@@ -2,8 +2,8 @@ import * as fs from 'fs';
 import * as url from 'url';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
-import OperationGenerator from './OperationGenerator';
 import Multihash from '../../lib/core/versions/latest/Multihash';
+import OperationGenerator from './OperationGenerator';
 
 /**
  * Class for generating files used for load testing using Vegeta.

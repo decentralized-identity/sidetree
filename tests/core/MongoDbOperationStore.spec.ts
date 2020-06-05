@@ -5,8 +5,8 @@ import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
-import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
+import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 const databaseName = 'sidetree-test';
 const operationCollectionName = 'operations-test';
