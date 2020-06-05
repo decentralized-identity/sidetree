@@ -8,13 +8,19 @@
 | Chunk File  | JSON Document containing all verbose operation data for the corresponding set of DIDs specified in the related Map File.                   |
 | CAS { #cas }    | Content-addressable storage protocol/network (e.g. IPFS)                       |
 | CAS URI { #cas-uri }               | The unique content-bound identifier used to locate a resource via the [CAS](#cas) protocol/network (e.g. IPFS)                       |
+| Commit Value { #commit-value }         | A chosen value that is used with a [commitment scheme](#commitment-scheme)                                 |
+| Commitment { #commitment }           | The output of a [commitment scheme](#commitment-scheme)                                              |
+| Commitment Scheme { #commitment-scheme }     | A cryptographic primative that allows one to commit to a chosen value, known as the [commit value](#commit-value) resulting in the generation of a [commitment](#commitment). A [commitment](#commitment) can then be shared without revealing the [commit value](#commit-value) forming a `proof of commitment` where the posessor of the [commit value](#commit-value) can then later reveal the [commit value](#commit-value) proving the original commitment.
 | DID Document          | JSON Document containing public key references, service endpoints, and other PKI metadata that corresponds to a given DID (as defined in the [W3C DID Specification](https://w3c.github.io/did-core/)). |
 | DID Suffix { #did-suffix }  | The unique identifier string within a DID URI. e.g. The unique suffix of `did:sidetree:123` would be `123`. |
 | DID Suffix Data       | Data required to deterministically generate a DID.                             |
 | Multihash  { #multihash }            | Protocol for differentiating outputs from common cryptographic hash functions, addressing size + encoding considerations: https://multiformats.io/multihash/ |
 | DID Operation         | Set of delta-based modifications that change the state of a DID Document when applied.                                               |
 | Operation Request     | JWS formatted request sent to a _Sidetree Node_ to include a _DID Operation_ in a batch of operations.     |
-| Recovery Key          | Public/private key pair used to perform a Recovery or Deactivate operation. Must be encoded as JWK.          |
+| Operation Commit Value { #operation-commit-value } | The [commit value](#commit-value) used with the [operation commitment scheme](#operation-commitment-scheme) to produce an [operation commitment](#operation-commitment) |
+| Operation Commitment { #operation-commitment } | The resulting [commitment](#commitment) obtained by applying the [operation commitment scheme](#operation-commitment-scheme) |
+| Recovery Key Pair { #recovery-key-pair }    | Public/private key pair used to perform a Recovery or Deactivate operation.          |
+| Recovery Commitment { #recovery-commitment }   | The resulting [commitment](#commitment) obtained by applying the [recovery commitment scheme](#recovery-commitment-scheme) to the public key of a [recovery key pair](#recovery-key-pair)          |
 | Sidetree Node         | Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.                            |
 | Transaction           | Ledger transaction that anchors a set of Sidetree operations, via a CAS URI for an associated Anchor File.          |
 | Anchor String  | The string anchored to the ledger, composed of the CAS URI to the [Anchor File](#anchor-file), prefixed with the declared operation count .                                               |

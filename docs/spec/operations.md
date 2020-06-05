@@ -23,28 +23,28 @@ Sidetree Methods MAY rely on the DID Document data model when verifying protocol
 
 Use the following process to generate a Sidetree-based DID:
 
-1. Generate a recovery key pair via the [`KEY_ALGORITHM`](#key-algorithm), retaining the [_Initial Recovery Public Key_](#initial-recovery-key){id="initial-recovery-key"} for use in generating the _Recovery Commitment_, and the private key for use in the next [Recovery](#recover) operation.
-2. Create a _Recovery Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the [_Initial Recovery Public Key_](#initial-recovery-key), and retain the hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
-3. Generate an update key pair via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Update Public Key_ for use in generating the _Update Commitment_, and the private key for use in the next [Update](#update) operation.
-4. Create an _Update Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the _Next Update Public Key_, and retain the hash value for inclusion in the [_Create Operation Delta Object_](#create-delta-object)(as described below).
-5. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`]#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
+1. Generate a [recovery key pair](#recovery-key-pair) using the defined [`KEY_ALGORITHM`](#key-algorithm), where the public key of this pair is used for generating the [recovery commitment](#recovery-commitment), and the private key for use in the next [recovery](#recovery) operation.
+2. Generate a [recovery commitment](#recovery-commitment) using the defined [recovery commitment scheme](#recovery-commitment-scheme) and public key of the generated [recovery key pair](#recovery-key-pair).
+3. Generate an [operation commit value](#operation-commit-value), let the result be known as the _Update Operation Commit Value_.
+4. Generate an [operation commitment](#operation-commitment) using the _Update Operation Commit Value_ as the [operation commit value](#operation-commit-value), let the result be known as the _Update Operation Commitment_.
+5. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
-      "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
+      "update_commitment": Update Operation Commitment
     }
     ```
-    - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
-    - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be the _Update Commitment_, as described above.
+    - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be a JSON array of [DID State Patches](#did-state-patches).
+    - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be the _Update Operation Commitment_, as described above.
 6. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Suffix Data Object_](#create-suffix-data-object){ id="create-suffix-data-object" }:
     ```json
     {
       "delta_hash": DELTA_HASH,
-      "recovery_commitment": COMMITMENT_HASH
+      "recovery_commitment": Recovery Commitment
     }
     ```
     - The object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [Hashing Process](#hashing-process).
-    - The object ****MUST**** contain an `recovery_commitment` property, and its value ****MUST**** be an [_Initial Recovery Commitment_](#initial-recovery-commitment) (detailed above).
+    - The object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be a [recovery commitment](#recovery-commitment) (detailed above).
 
 ::: note
 Implementations ****MAY**** choose to define additional properties for inclusion in the [_Create Operation Suffix Data Object_](#create-suffix-data-object), but the presence of any properties beyond the standard properties or implementation-defined properties ****ARE NOT**** permitted.
@@ -63,7 +63,7 @@ The following process must be used to update the state a Sidetree-based DID:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
-      "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
+      "update_commitment": Update Operation Commitment
     }
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
@@ -97,7 +97,7 @@ Use the following process to recover a Sidetree-based DID:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
-      "update_commitment": HASH_OF_UPDATE_COMMITMENT_VALUE
+      "update_commitment": Update Operation Commitment
     }
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
@@ -107,7 +107,7 @@ Use the following process to recover a Sidetree-based DID:
     {
       "protected": {...},
       "payload": {
-        "recovery_commitment": COMMITMENT_HASH,
+        "recovery_commitment": Recovery Commitment,
         "recovery_key": JWK_OBJECT,
         "delta_hash": DELTA_HASH
       },

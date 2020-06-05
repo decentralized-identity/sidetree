@@ -12,8 +12,8 @@ Each version of the protocol will define a set of protocol rules and parameters 
 | `CAS_PROTOCOL` { #cas-protocol }       | The CAS network protocol used within an implementation.            |               IPFS |
 | `CAS_URI_ALGORITHM` { #cas-uri-algorithm }       | Algorithm for generating unique content-bound identifiers for the implementation-selected CAS protocol                      |           IPFS CID |
 | `COMPRESSION_ALGORITHM` { #compression-algorithm } | File compression algorithm                             |                ZIP |
-| `COMMITMENT_HASH` { #commitment-hash } | Cryptographically random hash of a value to be revealed in the next operation. |      32 bytes |
 | `REVEAL_VALUE` { #reveal-value } | Cryptographically random value to be revealed in the next operation. |  100 bytes |
+| `OPERATION_COMMIT_VALUE_LENGTH` { #operation-commit-value-length } | The length of the [operation commit value](#operation-commit-value). |      32 bytes |
 | `GENESIS_TIME` { #genesis-time }                 | The point in the target ledger's transaction history at which Sidetree implementation is first activated (e.g. block number in a blockchain).    |             630000 |
 | `MAX_ANCHOR_FILE_SIZE` { #max-anchor-file-size } | Maximum compressed [Anchor File](#anchor-file) size.                     |               1 MB |
 | `MAX_MAP_FILE_SIZE` { #max-map-file-size }       | Maximum compressed map file size.                        |               1 MB |
