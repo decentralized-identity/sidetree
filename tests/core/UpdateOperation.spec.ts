@@ -4,16 +4,16 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 
 describe('UpdateOperation', async () => {
   describe('parse()', async () => {
     it('parse as expected', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
-        unusedNextUpdateCommitmentHash,
+        Multihash.canonicalizeThenHashThenEncode({}),
         [],
         signingPrivateKey
       );
@@ -25,11 +25,10 @@ describe('UpdateOperation', async () => {
 
     it('should throw if didUniqueSuffix is not string.', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
-        unusedNextUpdateCommitmentHash,
+        'unusedNextUpdateCommitmentHash',
         'opaque-unused-document-patch',
         signingPrivateKey
       );
@@ -42,11 +41,10 @@ describe('UpdateOperation', async () => {
 
     it('should throw if operation type is incorrect', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
-        unusedNextUpdateCommitmentHash,
+        'unusedNextUpdateCommitmentHash',
         'opaque-unused-document-patch',
         signingPrivateKey
       );

@@ -34,7 +34,8 @@ interface GeneratedRecoverOperationData {
   recoveryPrivateKey: JwkEs256k;
   signingPublicKey: PublicKeyModel;
   signingPrivateKey: JwkEs256k;
-  nextUpdateRevealValueEncodedString: string;
+  updateKey: PublicKeyModel;
+  updatePrivateKey: JwkEs256k;
 }
 
 /**
@@ -51,19 +52,6 @@ export default class OperationGenerator {
     const randomHash = Encoder.encode(Multihash.hash(randomBuffer));
 
     return randomHash;
-  }
-
-  /**
-   * Generates a reveal value and commitment hash as encoded strings for use in operations.
-   * @returns [revealValueEncodedString, commitmentValueHashEncodedString]
-   */
-  public static generateCommitRevealPair (): [string, string] {
-    const revealValueBuffer = crypto.randomBytes(32);
-    const revealValueEncodedString = Encoder.encode(revealValueBuffer);
-    const commitmentHash = Multihash.hash(revealValueBuffer, 18); // 18 = SHA256;
-    const commitmentHashEncodedString = Encoder.encode(commitmentHash);
-
-    return [revealValueEncodedString, commitmentHashEncodedString];
   }
 
   /**
@@ -148,18 +136,19 @@ export default class OperationGenerator {
     const newSigningKeyId = 'newSigningKey';
     const [newRecoveryPublicKey, newRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [newSigningPublicKey, newSigningPrivateKey] = await OperationGenerator.generateKeyPair(newSigningKeyId);
+    const [publicKeyToBeInDocument] = await OperationGenerator.generateKeyPair('newKey');
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     // Generate the next update and recover operation commitment hash reveal value pair.
-    const [nextUpdateRevealValueEncodedString, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [updateKey, updatePrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
 
     const operationJson = await OperationGenerator.generateRecoverOperationRequest(
       input.didUniqueSuffix,
       input.recoveryPrivateKey,
       newRecoveryPublicKey,
       newSigningPublicKey,
-      nextUpdateCommitmentHash,
-      services
+      services,
+      [publicKeyToBeInDocument]
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationJson));
@@ -172,7 +161,8 @@ export default class OperationGenerator {
       recoveryPrivateKey: newRecoveryPrivateKey,
       signingPublicKey: newSigningPublicKey,
       signingPrivateKey: newSigningPrivateKey,
-      nextUpdateRevealValueEncodedString
+      updateKey,
+      updatePrivateKey
     };
   }
 
@@ -348,14 +338,14 @@ export default class OperationGenerator {
     recoveryPrivateKey: JwkEs256k,
     newRecoveryPublicKey: JwkEs256k,
     newSigningPublicKey: PublicKeyModel,
-    nextUpdateCommitmentHash: string,
-    serviceEndpoints?: ServiceEndpointModel[]) {
+    serviceEndpoints?: ServiceEndpointModel[],
+    publicKeys?: PublicKeyModel[]) {
     const document = {
-      public_keys: [newSigningPublicKey],
+      public_keys: publicKeys,
       service_endpoints: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
-      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, nextUpdateCommitmentHash, document
+      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenHashThenEncode(newSigningPublicKey.jwk), document
     );
     return recoverOperation;
   }

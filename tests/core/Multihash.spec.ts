@@ -4,7 +4,6 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-import OperationGenerator from '../generators/OperationGenerator';
 const multihashes = require('multihashes');
 
 describe('Multihash', async () => {
@@ -36,16 +35,13 @@ describe('Multihash', async () => {
 
   describe('isValidHash()', async () => {
     it('should return false if content is undefined', async () => {
-      const [, anyCommitment] = OperationGenerator.generateCommitRevealPair();
-      const result = Multihash.isValidHash(undefined, anyCommitment);
+      const result = Multihash.isValidHash(undefined, 'anyCommitment');
       expect(result).toBeFalsy();
     });
 
     it('should return false if encountered an unexpected error.', async () => {
-      const [revealValue, commitmentHash] = OperationGenerator.generateCommitRevealPair();
-
       const multihashHashSpy = spyOn(Multihash as any, 'verify').and.throwError('Simulated error message.');
-      const result = Multihash.isValidHash(revealValue, commitmentHash);
+      const result = Multihash.isValidHash('revealValue', 'commitmentHash');
 
       expect(multihashHashSpy).toHaveBeenCalled();
       expect(result).toBeFalsy();

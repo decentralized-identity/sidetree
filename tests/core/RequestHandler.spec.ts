@@ -31,6 +31,7 @@ import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import util = require('util');
 import SidetreeError from '../../lib/common/SidetreeError';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -228,11 +229,10 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
     const [, anySigningPrivateKey] = await Jwk.generateEs256kKeyPair();
-    const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, additionalKey, anyNextUpdateCommitmentHash, anySigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, additionalKey, Multihash.canonicalizeThenHashThenEncode({}), anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -323,15 +323,14 @@ describe('RequestHandler', () => {
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
-      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey]
       };
       const mockedResolverReturnedDidState: DidState = {
         document,
         lastOperationTransactionNumber: 123,
-        nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 

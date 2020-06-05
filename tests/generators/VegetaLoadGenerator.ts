@@ -70,7 +70,7 @@ export default class VegetaLoadGenerator {
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, newUpdateCommitmentHash
+        didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey
       );
 
       // Save the recover operation request on disk.

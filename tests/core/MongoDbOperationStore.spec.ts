@@ -1,12 +1,12 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
-import Multihash from '../../lib/core/versions/latest/Multihash';
-import JwkEs256k from '../../lib/core/models/JwkEs256k';
 
 const databaseName = 'sidetree-test';
 const operationCollectionName = 'operations-test';
@@ -41,7 +41,7 @@ async function createOperationChain (
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
       currentPublicKey.jwk,
-      newPublicKey,
+      newPublicKey, // we add the same key as the secret public key value for convenience, this should not be by user
       Multihash.canonicalizeThenHashThenEncode(newPublicKey.jwk),
       currentPrivateKey
     );
@@ -114,13 +114,12 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const [, anyUnusedCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     // Generate an update operation.
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
       createOperationData.signingPublicKey.jwk,
-      anyUnusedCommitmentHash,
+      Multihash.canonicalizeThenHashThenEncode({}),
       'someID',
       [],
       createOperationData.signingPrivateKey
@@ -140,13 +139,12 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const [, anyUnusedCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     // Generate an update operation.
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
       createOperationData.signingPublicKey.jwk,
-      anyUnusedCommitmentHash,
+      Multihash.canonicalizeThenHashThenEncode({}),
       'someId',
       [],
       createOperationData.signingPrivateKey

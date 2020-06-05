@@ -26,13 +26,12 @@ import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 async function createUpdateSequence (
   didUniqueSuffix: string,
   createOp: AnchoredOperationModel,
-  firstUpdateKey: JwkEs256k,
   numberOfUpdates: number,
   privateKey: any): Promise<AnchoredOperationModel[]> {
 
   const ops = new Array(createOp);
 
-  let currentUpdateKey = firstUpdateKey;
+  let currentUpdateKey = Jwk.getEs256kPublicKey(privateKey);
   let currentPrivateKey = privateKey;
   for (let i = 0; i < numberOfUpdates; ++i) {
     const [nextUpdateKey, nextPrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
@@ -216,7 +215,7 @@ describe('OperationProcessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
     await operationStore.put(ops);
 
     const didState = await resolver.resolve(didUniqueSuffix);
@@ -226,7 +225,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
@@ -238,7 +237,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
@@ -257,7 +256,7 @@ describe('OperationProcessor', async () => {
 
   it('should process deactivate operation correctly.', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
     await operationStore.put(ops);
 
     const didState = await resolver.resolve(didUniqueSuffix);
@@ -304,7 +303,7 @@ describe('OperationProcessor', async () => {
 
   it('should ignore updates to DID that is not created', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     // elide i = 0, the create operation
     for (let i = 1 ; i < ops.length ; ++i) {
@@ -318,11 +317,10 @@ describe('OperationProcessor', async () => {
   it('should ignore update operation with the incorrect updateKey', async () => {
     await operationStore.put([createOp]);
 
-    const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const [invalidKey] = await OperationGenerator.generateKeyPair('invalidKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, invalidKey.jwk, anyPublicKey, anyNextUpdateCommitmentHash, signingPrivateKey
+      didUniqueSuffix, invalidKey.jwk, anyPublicKey, Multihash.canonicalizeThenHashThenEncode({}), signingPrivateKey
     );
 
     // Generate operation with an invalid key
@@ -343,10 +341,9 @@ describe('OperationProcessor', async () => {
     await operationStore.put([createOp]);
 
     const [, anyIncorrectSigningPrivateKey] = await OperationGenerator.generateKeyPair('key1');
-    const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, anyPublicKey, anyNextUpdateCommitmentHash, anyIncorrectSigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, anyPublicKey, Multihash.canonicalizeThenHashThenEncode({}), anyIncorrectSigningPrivateKey
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -364,7 +361,7 @@ describe('OperationProcessor', async () => {
 
   it('should resolve as undefined if all operation of a DID is rolled back.', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
     await operationStore.put(ops);
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -557,12 +554,11 @@ describe('OperationProcessor', async () => {
       it('should still apply successfully with resultant document being { } if new document is in some unexpected format.', async () => {
         const document = 'unexpected document format';
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-        const [, anyNewUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
           recoveryPrivateKey,
           anyNewRecoveryPublicKey,
-          anyNewUpdateCommitmentHash,
+          'anyNewUpdateCommitmentHash',
           document
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));

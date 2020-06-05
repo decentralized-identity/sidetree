@@ -12,23 +12,22 @@ describe('DocumentComposer', async () => {
     it('should output the expected resolution result given key(s) across all usage types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All usages will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
-      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
       };
       const didState: DidState = {
         document,
         lastOperationTransactionNumber: 123,
-        nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
 
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
 
       expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
       expect(result.methodMetadata).toEqual({
-        recoveryCommitment: anyCommitmentHash,
-        updateCommitment: anyCommitmentHash
+        recoveryCommitment: 'anyCommitmentHash',
+        updateCommitment: 'anyCommitmentHash'
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
@@ -57,7 +56,6 @@ describe('DocumentComposer', async () => {
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
-      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey, authPublicKey]
       };
@@ -65,7 +63,7 @@ describe('DocumentComposer', async () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: undefined,
-        nextUpdateCommitmentHash: anyCommitmentHash
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
 
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');

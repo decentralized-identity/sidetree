@@ -13,14 +13,12 @@ describe('RecoverOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
         recoveryPrivateKey,
         newRecoveryPublicKey,
-        newSigningPublicKey,
-        unusedNextUpdateCommitmentHash
+        newSigningPublicKey
       );
 
       const operationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
@@ -33,14 +31,12 @@ describe('RecoverOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
         recoveryPrivateKey,
         newRecoveryPublicKey,
-        newSigningPublicKey,
-        unusedNextUpdateCommitmentHash
+        newSigningPublicKey
       );
 
       recoverOperationRequest.type = OperationType.Create; // Intentionally incorrect type.
@@ -54,14 +50,12 @@ describe('RecoverOperation', async () => {
       const [, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('singingKey');
-      const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
         'unused-DID-unique-suffix',
         recoveryPrivateKey,
         newRecoveryPublicKey,
-        newSigningPublicKey,
-        unusedNextUpdateCommitmentHash
+        newSigningPublicKey
       );
 
       (recoverOperationRequest.did_suffix as any) = 123; // Intentionally incorrect type.

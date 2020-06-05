@@ -112,8 +112,8 @@ describe('Resolver', () => {
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        Multihash.canonicalizeThenHashThenEncode(newSigningPublicKey.jwk),
-        newServiceEndpoints
+        newServiceEndpoints,
+        [newSigningPublicKey]
       );
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
       const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
@@ -166,11 +166,11 @@ describe('Resolver', () => {
 
       const document = didState.document;
       expect(document).toBeDefined();
-      expect(document.public_keys.length).toEqual(2);
       const actualNewSigningPublicKey1 = Document.getPublicKey(document, 'newSigningKey');
       const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
+      expect(document.public_keys.length).toEqual(2);
       expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
       expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
       expect(document.service_endpoints).toBeDefined();
