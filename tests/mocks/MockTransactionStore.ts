@@ -1,6 +1,6 @@
 import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
 import IUnresolvableTransactionStore from '../../lib/core/interfaces/IUnresolvableTransactionStore';
-import SortedArray from '../../lib/core/versions/latest/util/SortedArray';
+import SortedArray from '../core/util/SortedArray';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 
 interface IUnresolvableTransactionInternal {
