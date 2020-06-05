@@ -279,7 +279,8 @@ export default class OperationGenerator {
     if (didUniqueSuffix === undefined) {
       didUniqueSuffix = OperationGenerator.generateRandomHash();
     }
-    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
+    const [nextUpdateKey] = await OperationGenerator.generateKeyPair('nextUpdateKey');
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk);
     const anyNewSigningPublicKeyId = 'anyNewKey';
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair(anyNewSigningPublicKeyId);
     const patches = [

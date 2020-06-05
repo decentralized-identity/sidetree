@@ -35,9 +35,10 @@ async function createUpdateSequence (
 
   let currentUpdateKey = firstUpdateKey;
   let currentPrivateKey = privateKey;
+  let currentKeyId = publicKeyId;
   for (let i = 0; i < numberOfUpdates; ++i) {
-    const [nextUpdateKey, nextPrivateKey] = await Jwk.generateEs256kKeyPair();
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(nextUpdateKey);
+    const [nextUpdateKey, nextPrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk);
     const patches = [
       {
         action: 'remove-service-endpoints',
@@ -53,13 +54,14 @@ async function createUpdateSequence (
       currentUpdateKey,
       nextUpdateCommitmentHash,
       patches,
-      publicKeyId,
+      currentKeyId,
       currentPrivateKey
     );
 
     // Now that the update payload is created, update the update reveal for the next operation generation to use.
-    currentUpdateKey = nextUpdateKey;
+    currentUpdateKey = nextUpdateKey.jwk;
     currentPrivateKey = nextPrivateKey;
+    currentKeyId = nextUpdateKey.id;
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
 
