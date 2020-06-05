@@ -92,7 +92,6 @@ export default {
   JwsFailedSignatureValidation: 'jws_failed_signature_validation',
   JwsPayloadNotBase64UrlString: 'jws_payload_not_base64url_string',
   JwsProtectedHeaderMissingOrIncorrectAlg: 'jws_protected_header_missing_or_incorrect_alg',
-  JwsProtectedHeaderMissingOrIncorrectKid: 'jws_protected_header_missing_or_incorrect_kid',
   JwsProtectedHeaderMissingOrUnknownProperty: 'jws_protected_header_missing_or_unknown_property',
   JwsSignatureNotBase64UrlString: 'jws_signature_not_base64url_string',
   MapFileChunkHasMissingOrUnknownProperty: 'map_file_chunk_has_missing_or_unknown_property',

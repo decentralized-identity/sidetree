@@ -32,7 +32,6 @@ interface GeneratedRecoverOperationData {
   recoverOperation: RecoverOperation;
   recoveryPublicKey: JwkEs256k;
   recoveryPrivateKey: JwkEs256k;
-  signingKeyId: string;
   signingPublicKey: PublicKeyModel;
   signingPrivateKey: JwkEs256k;
   nextUpdateRevealValueEncodedString: string;
@@ -105,7 +104,6 @@ export default class OperationGenerator {
       anchoredOperationModel,
       recoveryPublicKey: createOperationData.recoveryPublicKey,
       recoveryPrivateKey: createOperationData.recoveryPrivateKey,
-      signingKeyId: createOperationData.signingKeyId,
       signingPublicKey: createOperationData.signingPublicKey,
       signingPrivateKey: createOperationData.signingPrivateKey,
       nextUpdateRevealValueEncodedString: createOperationData.nextUpdateRevealValueEncodedString
@@ -137,7 +135,6 @@ export default class OperationGenerator {
       operationRequest,
       recoveryPublicKey,
       recoveryPrivateKey,
-      signingKeyId,
       signingPublicKey,
       signingPrivateKey,
       nextUpdateRevealValueEncodedString
@@ -173,7 +170,6 @@ export default class OperationGenerator {
       operationBuffer,
       recoveryPublicKey: newRecoveryPublicKey,
       recoveryPrivateKey: newRecoveryPrivateKey,
-      signingKeyId: newSigningKeyId,
       signingPublicKey: newSigningPublicKey,
       signingPrivateKey: newSigningPrivateKey,
       nextUpdateRevealValueEncodedString
@@ -183,7 +179,7 @@ export default class OperationGenerator {
   /**
    * Generates an update operation that adds a new key.
    */
-  public static async generateUpdateOperation (didUniqueSuffix: string, updateKey: JwkEs256k, updatePrivateKeyId: string, updatePrivateKey: JwkEs256k) {
+  public static async generateUpdateOperation (didUniqueSuffix: string, updateKey: JwkEs256k, updatePrivateKey: JwkEs256k) {
     const additionalKeyId = `additional-key`;
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
 
@@ -192,7 +188,6 @@ export default class OperationGenerator {
       updateKey,
       additionalPublicKey,
       Multihash.canonicalizeThenHashThenEncode(additionalPublicKey),
-      updatePrivateKeyId,
       updatePrivateKey
     );
 
@@ -298,7 +293,6 @@ export default class OperationGenerator {
       signingPublicKey.jwk,
       nextUpdateCommitmentHash,
       patches,
-      signingKeyId,
       signingPrivateKey
     );
 
@@ -320,7 +314,6 @@ export default class OperationGenerator {
     updateKey: JwkEs256k,
     nextUpdateCommitmentHash: string,
     patches: any,
-    signingKeyId: string,
     signingPrivateKey: JwkEs256k
   ) {
     const delta = {
@@ -335,7 +328,7 @@ export default class OperationGenerator {
       update_key: updateKey,
       delta_hash: deltaHash
     };
-    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey, signingKeyId);
+    const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, signingPrivateKey);
 
     const updateOperationRequest = {
       type: OperationType.Update,
@@ -457,7 +450,6 @@ export default class OperationGenerator {
     updateKey: JwkEs256k,
     newPublicKey: PublicKeyModel,
     nextUpdateCommitmentHash: string,
-    signingKeyId: string,
     signingPrivateKey: JwkEs256k) {
 
     const patches = [
@@ -474,7 +466,6 @@ export default class OperationGenerator {
       updateKey,
       nextUpdateCommitmentHash,
       patches,
-      signingKeyId,
       signingPrivateKey
     );
 
@@ -490,7 +481,6 @@ export default class OperationGenerator {
     nextUpdateCommitmentHash: string,
     idOfServiceEndpointToAdd: string | undefined,
     idsOfServiceEndpointToRemove: string[],
-    signingKeyId: string,
     signingPrivateKey: JwkEs256k) {
     const patches = [];
 
@@ -517,7 +507,6 @@ export default class OperationGenerator {
       updateKey,
       nextUpdateCommitmentHash,
       patches,
-      signingKeyId,
       signingPrivateKey
     );
 
@@ -527,9 +516,8 @@ export default class OperationGenerator {
   /**
    * Signs the given payload as a ES256K compact JWS.
    */
-  public static async signUsingEs256k (payload: any, privateKey: JwkEs256k, signingKeyId?: string): Promise<string> {
+  public static async signUsingEs256k (payload: any, privateKey: JwkEs256k): Promise<string> {
     const protectedHeader = {
-      kid: signingKeyId,
       alg: 'ES256K'
     };
 

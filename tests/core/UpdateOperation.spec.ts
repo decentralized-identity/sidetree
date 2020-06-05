@@ -15,7 +15,6 @@ describe('UpdateOperation', async () => {
         signingPublicKey.jwk,
         unusedNextUpdateCommitmentHash,
         [],
-        signingPublicKey.id,
         signingPrivateKey
       );
 
@@ -32,7 +31,6 @@ describe('UpdateOperation', async () => {
         signingPublicKey.jwk,
         unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
-        signingPublicKey.id,
         signingPrivateKey
       );
 
@@ -50,7 +48,6 @@ describe('UpdateOperation', async () => {
         signingPublicKey.jwk,
         unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
-        signingPublicKey.id,
         signingPrivateKey
       );
 

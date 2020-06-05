@@ -43,7 +43,6 @@ async function createOperationChain (
       currentPublicKey.jwk,
       newPublicKey,
       Multihash.canonicalizeThenHashThenEncode(newPublicKey.jwk),
-      currentPublicKey.id,
       currentPrivateKey
     );
     currentPublicKey = newPublicKey;
@@ -124,7 +123,6 @@ describe('MongoDbOperationStore', async () => {
       anyUnusedCommitmentHash,
       'someID',
       [],
-      createOperationData.signingKeyId,
       createOperationData.signingPrivateKey
     );
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
@@ -151,7 +149,6 @@ describe('MongoDbOperationStore', async () => {
       anyUnusedCommitmentHash,
       'someId',
       [],
-      createOperationData.signingKeyId,
       createOperationData.signingPrivateKey
     );
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));

@@ -28,14 +28,12 @@ async function createUpdateSequence (
   createOp: AnchoredOperationModel,
   firstUpdateKey: JwkEs256k,
   numberOfUpdates: number,
-  publicKeyId: string,
   privateKey: any): Promise<AnchoredOperationModel[]> {
 
   const ops = new Array(createOp);
 
   let currentUpdateKey = firstUpdateKey;
   let currentPrivateKey = privateKey;
-  let currentKeyId = publicKeyId;
   for (let i = 0; i < numberOfUpdates; ++i) {
     const [nextUpdateKey, nextPrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
     const nextUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk);
@@ -54,14 +52,12 @@ async function createUpdateSequence (
       currentUpdateKey,
       nextUpdateCommitmentHash,
       patches,
-      currentKeyId,
       currentPrivateKey
     );
 
     // Now that the update payload is created, update the update reveal for the next operation generation to use.
     currentUpdateKey = nextUpdateKey.jwk;
     currentPrivateKey = nextPrivateKey;
-    currentKeyId = nextUpdateKey.id;
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
 
@@ -195,7 +191,6 @@ describe('OperationProcessor', async () => {
       signingPublicKey.jwk,
       nextUpdateCommitmentHash,
       patches,
-      signingPublicKey.id,
       signingPrivateKey
     );
 
@@ -221,7 +216,7 @@ describe('OperationProcessor', async () => {
 
   it('should process updates correctly', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
     await operationStore.put(ops);
 
     const didState = await resolver.resolve(didUniqueSuffix);
@@ -231,7 +226,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in reverse order', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
 
     for (let i = numberOfUpdates ; i >= 0 ; --i) {
       await operationStore.put([ops[i]]);
@@ -243,7 +238,7 @@ describe('OperationProcessor', async () => {
 
   it('should correctly process updates in every (5! = 120) order', async () => {
     const numberOfUpdates = 4;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
 
     const numberOfOps = ops.length;
     let numberOfPermutations = getFactorial(numberOfOps);
@@ -262,7 +257,7 @@ describe('OperationProcessor', async () => {
 
   it('should process deactivate operation correctly.', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
     await operationStore.put(ops);
 
     const didState = await resolver.resolve(didUniqueSuffix);
@@ -309,7 +304,7 @@ describe('OperationProcessor', async () => {
 
   it('should ignore updates to DID that is not created', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
 
     // elide i = 0, the create operation
     for (let i = 1 ; i < ops.length ; ++i) {
@@ -327,7 +322,7 @@ describe('OperationProcessor', async () => {
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const [invalidKey] = await OperationGenerator.generateKeyPair('invalidKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, invalidKey.jwk, anyPublicKey, anyNextUpdateCommitmentHash, 'nonExistentKey', signingPrivateKey
+      didUniqueSuffix, invalidKey.jwk, anyPublicKey, anyNextUpdateCommitmentHash, signingPrivateKey
     );
 
     // Generate operation with an invalid key
@@ -351,7 +346,7 @@ describe('OperationProcessor', async () => {
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, anyPublicKey, anyNextUpdateCommitmentHash, signingKeyId, anyIncorrectSigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, anyPublicKey, anyNextUpdateCommitmentHash, anyIncorrectSigningPrivateKey
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -369,7 +364,7 @@ describe('OperationProcessor', async () => {
 
   it('should resolve as undefined if all operation of a DID is rolled back.', async () => {
     const numberOfUpdates = 10;
-    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPublicKey.id, signingPrivateKey);
+    const ops = await createUpdateSequence(didUniqueSuffix, createOp, signingPublicKey.jwk, numberOfUpdates, signingPrivateKey);
     await operationStore.put(ops);
     const didState = await resolver.resolve(didUniqueSuffix);
     expect(didState).toBeDefined();
@@ -466,7 +461,6 @@ describe('OperationProcessor', async () => {
           (await Jwk.generateEs256kKeyPair())[0], // this is a random bad key
           additionalKey,
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          signingPublicKey.id,
           signingPrivateKey
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -495,7 +489,6 @@ describe('OperationProcessor', async () => {
           signingPublicKey.jwk,
           additionalKey,
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          signingPublicKey.id,
           recoveryPrivateKey // NOTE: Using recovery private key to generate an invalid signautre.
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -525,7 +518,6 @@ describe('OperationProcessor', async () => {
           invalidUpdateKey.jwk,
           additionalKey,
           'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          'non-existent-signing-key',
           signingPrivateKey
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));

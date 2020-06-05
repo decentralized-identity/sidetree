@@ -63,7 +63,6 @@ describe('Resolver', () => {
         signingPublicKey.jwk,
         additionalKey,
         Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk),
-        signingPublicKey.id,
         signingPrivateKey
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
@@ -84,7 +83,6 @@ describe('Resolver', () => {
         Multihash.canonicalizeThenHashThenEncode({}),
         'dummyUri2',
         [],
-        nextUpdateKey.id,
         nextUpdatePrivateKey
       );
       const updateOperation2BufferPriorRecovery = Buffer.from(JSON.stringify(updatePayload2PriorRecovery));
@@ -130,7 +128,6 @@ describe('Resolver', () => {
         newSigningPublicKey.jwk,
         newKey2ForUpdate1AfterRecovery,
         Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk),
-        newSigningPublicKey.id,
         newSigningPrivateKey
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
@@ -151,7 +148,6 @@ describe('Resolver', () => {
         Multihash.canonicalizeThenHashThenEncode({}),
         'newDummyHubUri2',
         ['newDummyHubUri1'],
-        nextUpdateKey.id,
         nextUpdatePrivateKey
       );
       const updateOperation2BufferAfterRecovery = Buffer.from(JSON.stringify(updatePayload2AfterRecovery));
@@ -230,19 +226,16 @@ describe('Resolver', () => {
       const updateOperation1Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
         createOperationData.signingPublicKey.jwk,
-        createOperationData.signingKeyId,
         createOperationData.signingPrivateKey
       );
       const updateOperation2Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
         createOperationData.signingPublicKey.jwk,
-        createOperationData.signingKeyId,
         createOperationData.signingPrivateKey
       );
       const updateOperation3Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
         createOperationData.signingPublicKey.jwk,
-        createOperationData.signingKeyId,
         createOperationData.signingPrivateKey
       );
       const updateOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation1Data.updateOperation, 2, 2, 2);

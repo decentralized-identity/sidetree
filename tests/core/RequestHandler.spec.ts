@@ -232,7 +232,7 @@ describe('RequestHandler', () => {
     const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, additionalKey, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, additionalKey, anyNextUpdateCommitmentHash, anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));

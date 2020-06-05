@@ -59,7 +59,6 @@ export default class VegetaLoadGenerator {
         signingPublicKey.jwk,
         additionalKey,
         newUpdateCommitmentHash,
-        signingKeyId,
         signingPrivateKey
       );
 
