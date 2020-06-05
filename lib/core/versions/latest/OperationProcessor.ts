@@ -3,7 +3,6 @@ import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import DocumentComposer from './DocumentComposer';
 import DidState from '../../models/DidState';
-import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
@@ -76,8 +75,8 @@ export default class OperationProcessor implements IOperationProcessor {
         revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
         break;
       case OperationType.Update:
-        const encodedRevealValue = (operation as UpdateOperation).signedData.updateRevealValue;
-        revealValueBuffer = Encoder.decodeAsBuffer(encodedRevealValue);
+        const updateOperation = (operation as UpdateOperation);
+        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
         break;
       default: // This is a deactivate.
         const deactivateOperation = (operation as DeactivateOperation);
@@ -145,9 +144,15 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await UpdateOperation.parse(anchoredOperationModel.operationBuffer);
 
-    // Verify the actual reveal value hash against the expected commitment hash.
-    const isValidCommitReveal = Multihash.isValidHash(operation.signedData.updateRevealValue, didState.nextUpdateCommitmentHash!);
-    if (!isValidCommitReveal) {
+    // Verify the update key hash.
+    const isValidUpdateKey = Multihash.canonicalizeAndVerify(operation.signedData.updateKey, didState.nextUpdateCommitmentHash!);
+    if (!isValidUpdateKey) {
+      return didState;
+    }
+
+    // Verify the signature.
+    const signatureIsValid = await operation.signedDataJws.verifySignature(operation.signedData.updateKey);
+    if (!signatureIsValid) {
       return didState;
     }
 

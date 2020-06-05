@@ -89,12 +89,10 @@ describe('RequestHandler', () => {
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextUpdateCommitmentHash,
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
     didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -161,11 +159,9 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
-    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
-      signingPublicKey,
-      nextUpdateCommitmentHash
+      signingPublicKey
     );
 
     // Submit the create request twice.
@@ -234,8 +230,9 @@ describe('RequestHandler', () => {
     const [, anySigningPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+    const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateRevealValue', additionalKey, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, additionalKey, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));

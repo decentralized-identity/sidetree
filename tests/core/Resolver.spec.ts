@@ -12,6 +12,7 @@ import OperationProcessor from '../../lib/core/versions/latest/OperationProcesso
 import OperationType from '../../lib/core/enums/OperationType';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 
 describe('Resolver', () => {
   let resolver: Resolver;
@@ -34,13 +35,11 @@ describe('Resolver', () => {
       const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri1']);
-      const [firstUpdateRevealValue, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
       // Create the initial create operation and insert it to the operation store.
       const operationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        firstUpdateCommitmentHash,
         serviceEndpoints
       );
       const createOperation = await CreateOperation.parse(operationBuffer);
@@ -57,13 +56,12 @@ describe('Resolver', () => {
       await operationStore.put([anchoredOperationModel]);
 
       // Create an update operation and insert it to the operation store.
-      const [update2RevealValuePriorToRecovery, update2CommitmentHashPriorToRecovery] = OperationGenerator.generateCommitRevealPair();
-      const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+      const [additionalKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(`new-key1`);
       const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        firstUpdateRevealValue,
+        signingPublicKey.jwk,
         additionalKey,
-        update2CommitmentHashPriorToRecovery,
+        Multihash.canonicalizeThenHashThenEncode(additionalKey.jwk),
         signingPublicKey.id,
         signingPrivateKey
       );
@@ -81,12 +79,12 @@ describe('Resolver', () => {
       // Create another update operation and insert it to the operation store.
       const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
-        update2RevealValuePriorToRecovery,
-        'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
+        additionalKey.jwk,
+        Multihash.canonicalizeThenHashThenEncode({}),
         'dummyUri2',
         [],
-        signingPublicKey.id,
-        signingPrivateKey
+        additionalKey.id,
+        additionalPrivateKey
       );
       const updateOperation2BufferPriorRecovery = Buffer.from(JSON.stringify(updatePayload2PriorRecovery));
       const anchoredUpdateOperation2PriorRecovery: AnchoredOperationModel = {
@@ -110,13 +108,12 @@ describe('Resolver', () => {
       const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newDummyHubUri1']);
 
       // Create the recover operation and insert it to the operation store.
-      const [update1RevealValueAfterRecovery, update1CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
       const recoverOperationJson = await OperationGenerator.generateRecoverOperationRequest(
         didUniqueSuffix,
         recoveryPrivateKey,
         newRecoveryPublicKey,
         newSigningPublicKey,
-        update1CommitmentHashAfterRecovery,
+        Multihash.canonicalizeThenHashThenEncode(newSigningPublicKey.jwk),
         newServiceEndpoints
       );
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationJson));
@@ -125,13 +122,12 @@ describe('Resolver', () => {
       await operationStore.put([anchoredRecoverOperation]);
 
       // Create an update operation after the recover operation.
-      const [update2RevealValueAfterRecovery, update2CommitmentHashAfterRecovery] = OperationGenerator.generateCommitRevealPair();
-      const [newKey2ForUpdate1AfterRecovery] = await OperationGenerator.generateKeyPair(`newKey2Updte1PostRec`);
+      const [newKey2ForUpdate1AfterRecovery, newPrivateKey2AfterRecovery] = await OperationGenerator.generateKeyPair(`newKey2Updte1PostRec`);
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        update1RevealValueAfterRecovery,
+        newSigningPublicKey.jwk,
         newKey2ForUpdate1AfterRecovery,
-        update2CommitmentHashAfterRecovery,
+        Multihash.canonicalizeThenHashThenEncode(newKey2ForUpdate1AfterRecovery.jwk),
         newSigningPublicKey.id,
         newSigningPrivateKey
       );
@@ -149,12 +145,12 @@ describe('Resolver', () => {
       // Create another update and insert it to the operation store.
       const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
-        update2RevealValueAfterRecovery,
-        'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
+        newKey2ForUpdate1AfterRecovery.jwk,
+        Multihash.canonicalizeThenHashThenEncode({}),
         'newDummyHubUri2',
         ['newDummyHubUri1'],
-        newSigningPublicKey.id,
-        newSigningPrivateKey
+        newKey2ForUpdate1AfterRecovery.id,
+        newPrivateKey2AfterRecovery
       );
       const updateOperation2BufferAfterRecovery = Buffer.from(JSON.stringify(updatePayload2AfterRecovery));
       const anchoredUpdateOperation2AfterRecovery: AnchoredOperationModel = {
@@ -231,19 +227,19 @@ describe('Resolver', () => {
       // Generate 3 anchored update operations with the same reveal value but different anchored time.
       const updateOperation1Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
-        createOperationData.nextUpdateRevealValueEncodedString,
+        createOperationData.signingPublicKey.jwk,
         createOperationData.signingKeyId,
         createOperationData.signingPrivateKey
       );
       const updateOperation2Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
-        createOperationData.nextUpdateRevealValueEncodedString,
+        createOperationData.signingPublicKey.jwk,
         createOperationData.signingKeyId,
         createOperationData.signingPrivateKey
       );
       const updateOperation3Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
-        createOperationData.nextUpdateRevealValueEncodedString,
+        createOperationData.signingPublicKey.jwk,
         createOperationData.signingKeyId,
         createOperationData.signingPrivateKey
       );

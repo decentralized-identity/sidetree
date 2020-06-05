@@ -3,6 +3,7 @@ import * as url from 'url';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import OperationGenerator from './OperationGenerator';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 
 /**
  * Class for generating files used for load testing using Vegeta.
@@ -35,17 +36,12 @@ export default class VegetaLoadGenerator {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
       fs.writeFileSync(absoluteFolderPath + `/keys/signingPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
       fs.writeFileSync(absoluteFolderPath + `/keys/signingPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
-
-      const [update1RevealValue, update1CommitmentHash] = OperationGenerator.generateCommitRevealPair();
-      const [, update2CommitmentHash] = OperationGenerator.generateCommitRevealPair();
-
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
       // Generate the Create request body and save it on disk.
       const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
         recoveryPublicKey,
         signingPublicKey,
-        update1CommitmentHash,
         services
       );
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
@@ -53,14 +49,16 @@ export default class VegetaLoadGenerator {
       // Compute the DID unique suffix from the generated Create payload.
       const createOperation = await CreateOperation.parse(createOperationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
+      const [newPublicKey] = await Jwk.generateEs256kKeyPair();
+      const newUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(newPublicKey);
 
       // Generate an update operation
       const [additionalKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        update1RevealValue,
+        signingPublicKey.jwk,
         additionalKey,
-        update2CommitmentHash,
+        newUpdateCommitmentHash,
         signingKeyId,
         signingPrivateKey
       );
@@ -73,7 +71,7 @@ export default class VegetaLoadGenerator {
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, update2CommitmentHash
+        didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey, newUpdateCommitmentHash
       );
 
       // Save the recover operation request on disk.

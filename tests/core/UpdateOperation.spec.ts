@@ -12,7 +12,7 @@ describe('UpdateOperation', async () => {
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-reveal-value',
+        signingPublicKey.jwk,
         unusedNextUpdateCommitmentHash,
         [],
         signingPublicKey.id,
@@ -29,7 +29,7 @@ describe('UpdateOperation', async () => {
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-reveal-value',
+        signingPublicKey.jwk,
         unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
         signingPublicKey.id,
@@ -47,7 +47,7 @@ describe('UpdateOperation', async () => {
       const [, unusedNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        'unused-update-reveal-value',
+        signingPublicKey.jwk,
         unusedNextUpdateCommitmentHash,
         'opaque-unused-document-patch',
         signingPublicKey.id,
@@ -89,34 +89,11 @@ describe('UpdateOperation', async () => {
       const signedData = {
         delta_hash: 'anyUnusedHash',
         extraProperty: 'An unknown extra property',
-        update_reveal_value: 'some reveal value'
+        update_key: {}
       };
       const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
       await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty));
-      done();
-    });
-
-    it('should throw if reveal value is not a string', async (done) => {
-      const signedData = {
-        delta_hash: 'anyUnusedHash',
-        update_reveal_value: 123
-      };
-      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueMissingOrInvalidType));
-      done();
-    });
-
-    it('should throw if reveal value is too long', async (done) => {
-      const signedData = {
-        delta_hash: 'anyUnusedHash',
-        // tslint:disable-next-line
-        update_reveal_value: 'so looooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong'
-      };
-      const encodedSignedData = Encoder.encode(JSON.stringify(signedData));
-      await expectAsync((UpdateOperation as any).parseSignedDataPayload(encodedSignedData))
-        .toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationUpdateRevealValueTooLong));
       done();
     });
   });

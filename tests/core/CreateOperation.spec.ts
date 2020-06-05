@@ -25,11 +25,9 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
-      const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        firstUpdateCommitmentHash,
         services
       );
 
@@ -43,11 +41,9 @@ describe('CreateOperation', async () => {
       const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
-      const [, firstUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
         signingPublicKey,
-        firstUpdateCommitmentHash,
         services
       );
 
