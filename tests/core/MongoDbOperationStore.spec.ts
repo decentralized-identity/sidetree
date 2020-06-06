@@ -41,9 +41,9 @@ async function createOperationChain (
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
       currentPublicKey.jwk,
+      currentPrivateKey,
       newPublicKey, // we add the same key as the secret public key value for convenience, this should not be by user
-      Multihash.canonicalizeThenHashThenEncode(newPublicKey.jwk),
-      currentPrivateKey
+      Multihash.canonicalizeThenHashThenEncode(newPublicKey.jwk)
     );
     currentPublicKey = newPublicKey;
     currentPrivateKey = newPrivateKey;
@@ -119,10 +119,10 @@ describe('MongoDbOperationStore', async () => {
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
       createOperationData.signingPublicKey.jwk,
+      createOperationData.signingPrivateKey,
       Multihash.canonicalizeThenHashThenEncode({}),
       'someID',
-      [],
-      createOperationData.signingPrivateKey
+      []
     );
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
     const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
@@ -144,10 +144,10 @@ describe('MongoDbOperationStore', async () => {
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
       createOperationData.signingPublicKey.jwk,
+      createOperationData.signingPrivateKey,
       Multihash.canonicalizeThenHashThenEncode({}),
       'someId',
-      [],
-      createOperationData.signingPrivateKey
+      []
     );
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
     const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(

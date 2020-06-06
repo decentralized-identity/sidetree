@@ -57,9 +57,9 @@ export default class VegetaLoadGenerator {
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         signingPublicKey.jwk,
+        signingPrivateKey,
         additionalKey,
-        newUpdateCommitmentHash,
-        signingPrivateKey
+        newUpdateCommitmentHash
       );
 
       // Save the update operation request on disk.

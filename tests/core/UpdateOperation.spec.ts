@@ -13,9 +13,9 @@ describe('UpdateOperation', async () => {
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
+        signingPrivateKey,
         Multihash.canonicalizeThenHashThenEncode({}),
-        [],
-        signingPrivateKey
+        []
       );
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -28,9 +28,9 @@ describe('UpdateOperation', async () => {
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
+        signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
-        'opaque-unused-document-patch',
-        signingPrivateKey
+        'opaque-unused-document-patch'
       );
 
       (updateOperationRequest.did_suffix as any) = 123;
@@ -44,9 +44,9 @@ describe('UpdateOperation', async () => {
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
+        signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
-        'opaque-unused-document-patch',
-        signingPrivateKey
+        'opaque-unused-document-patch'
       );
 
       updateOperationRequest.type = OperationType.Deactivate;

@@ -21,7 +21,6 @@ import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockVersionManager from '../mocks/MockVersionManager';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationProcessor from '../../lib/core/versions/latest/OperationProcessor';
@@ -33,7 +32,6 @@ import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 const util = require('util');
-
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -234,7 +232,7 @@ describe('RequestHandler', () => {
     const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, additionalKey, Multihash.canonicalizeThenHashThenEncode({}), anySigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, anySigningPrivateKey, additionalKey, OperationGenerator.generateRandomHash()
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));

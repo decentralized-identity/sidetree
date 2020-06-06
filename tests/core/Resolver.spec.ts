@@ -61,9 +61,9 @@ describe('Resolver', () => {
       const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         signingPublicKey.jwk,
+        signingPrivateKey,
         additionalKey,
-        Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk),
-        signingPrivateKey
+        Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk)
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
       const anchoredUpdateOperation1PriorRecovery: AnchoredOperationModel = {
@@ -80,10 +80,10 @@ describe('Resolver', () => {
       const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
         nextUpdateKey.jwk,
+        nextUpdatePrivateKey,
         Multihash.canonicalizeThenHashThenEncode({}),
         'dummyUri2',
-        [],
-        nextUpdatePrivateKey
+        []
       );
       const updateOperation2BufferPriorRecovery = Buffer.from(JSON.stringify(updatePayload2PriorRecovery));
       const anchoredUpdateOperation2PriorRecovery: AnchoredOperationModel = {
@@ -126,9 +126,9 @@ describe('Resolver', () => {
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
         newSigningPublicKey.jwk,
+        newSigningPrivateKey,
         newKey2ForUpdate1AfterRecovery,
-        Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk),
-        newSigningPrivateKey
+        Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk)
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
       const anchoredUpdateOperation1AfterRecovery: AnchoredOperationModel = {
@@ -145,10 +145,10 @@ describe('Resolver', () => {
       const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
         nextUpdateKey.jwk,
+        nextUpdatePrivateKey,
         Multihash.canonicalizeThenHashThenEncode({}),
         'newDummyHubUri2',
-        ['newDummyHubUri1'],
-        nextUpdatePrivateKey
+        ['newDummyHubUri1']
       );
       const updateOperation2BufferAfterRecovery = Buffer.from(JSON.stringify(updatePayload2AfterRecovery));
       const anchoredUpdateOperation2AfterRecovery: AnchoredOperationModel = {

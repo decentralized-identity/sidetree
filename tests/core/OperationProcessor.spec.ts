@@ -48,9 +48,9 @@ async function createUpdateSequence (
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       currentUpdateKey,
+      currentPrivateKey,
       nextUpdateCommitmentHash,
-      patches,
-      currentPrivateKey
+      patches
     );
 
     // Now that the update payload is created, update the update reveal for the next operation generation to use.
@@ -187,9 +187,9 @@ describe('OperationProcessor', async () => {
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
       signingPublicKey.jwk,
+      signingPrivateKey,
       nextUpdateCommitmentHash,
-      patches,
-      signingPrivateKey
+      patches
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -319,7 +319,7 @@ describe('OperationProcessor', async () => {
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const [invalidKey] = await OperationGenerator.generateKeyPair('invalidKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, invalidKey.jwk, anyPublicKey, Multihash.canonicalizeThenHashThenEncode({}), signingPrivateKey
+      didUniqueSuffix, invalidKey.jwk, signingPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
     );
 
     // Generate operation with an invalid key
@@ -342,7 +342,7 @@ describe('OperationProcessor', async () => {
     const [, anyIncorrectSigningPrivateKey] = await OperationGenerator.generateKeyPair('key1');
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, anyPublicKey, Multihash.canonicalizeThenHashThenEncode({}), anyIncorrectSigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, anyIncorrectSigningPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -455,9 +455,9 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           (await Jwk.generateEs256kKeyPair())[0], // this is a random bad key
+          signingPrivateKey,
           additionalKey,
-          'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          signingPrivateKey
+          OperationGenerator.generateRandomHash()
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
         const anchoredUpdateOperationModel: AnchoredOperationModel = {
@@ -483,9 +483,9 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           signingPublicKey.jwk,
+          recoveryPrivateKey, // NOTE: Using recovery private key to generate an invalid signautre.
           additionalKey,
-          'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          recoveryPrivateKey // NOTE: Using recovery private key to generate an invalid signautre.
+          OperationGenerator.generateRandomHash()
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
         const anchoredUpdateOperationModel: AnchoredOperationModel = {
@@ -512,9 +512,9 @@ describe('OperationProcessor', async () => {
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
           invalidUpdateKey.jwk,
+          signingPrivateKey,
           additionalKey,
-          'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA',
-          signingPrivateKey
+          OperationGenerator.generateRandomHash()
         );
         const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
         const anchoredUpdateOperationModel: AnchoredOperationModel = {
