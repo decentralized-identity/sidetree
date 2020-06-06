@@ -109,7 +109,8 @@ export default class OperationGenerator {
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
-      signingPublicKey,
+      signingPublicKey.jwk,
+      [signingPublicKey],
       service
     );
 
@@ -221,10 +222,11 @@ export default class OperationGenerator {
    */
   public static async generateCreateOperationRequest (
     recoveryPublicKey: JwkEs256k,
-    signingPublicKey: PublicKeyModel,
+    updatePublicKey: JwkEs256k,
+    publicKeys: PublicKeyModel[],
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document: DocumentModel = {
-      public_keys: [signingPublicKey],
+      public_keys: publicKeys,
       service_endpoints: serviceEndpoints
     };
 
@@ -234,7 +236,7 @@ export default class OperationGenerator {
     }];
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenHashThenEncode(signingPublicKey.jwk),
+      update_commitment: Multihash.canonicalizeThenHashThenEncode(updatePublicKey),
       patches
     };
 
@@ -425,7 +427,8 @@ export default class OperationGenerator {
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
-      signingPublicKey,
+      signingPublicKey.jwk,
+      [signingPublicKey],
       serviceEndpoints
     );
 

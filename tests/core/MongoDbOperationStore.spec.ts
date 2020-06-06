@@ -120,7 +120,7 @@ describe('MongoDbOperationStore', async () => {
       didUniqueSuffix,
       createOperationData.signingPublicKey.jwk,
       createOperationData.signingPrivateKey,
-      Multihash.canonicalizeThenHashThenEncode({}),
+      OperationGenerator.generateRandomHash(),
       'someID',
       []
     );
@@ -145,7 +145,7 @@ describe('MongoDbOperationStore', async () => {
       didUniqueSuffix,
       createOperationData.signingPublicKey.jwk,
       createOperationData.signingPrivateKey,
-      Multihash.canonicalizeThenHashThenEncode({}),
+      OperationGenerator.generateRandomHash(),
       'someId',
       []
     );

@@ -1,6 +1,5 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
@@ -14,7 +13,7 @@ describe('UpdateOperation', async () => {
         'unused-DID-unique-suffix',
         signingPublicKey.jwk,
         signingPrivateKey,
-        Multihash.canonicalizeThenHashThenEncode({}),
+        OperationGenerator.generateRandomHash(),
         []
       );
 

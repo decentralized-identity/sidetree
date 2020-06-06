@@ -81,7 +81,7 @@ describe('Resolver', () => {
         didUniqueSuffix,
         nextUpdateKey.jwk,
         nextUpdatePrivateKey,
-        Multihash.canonicalizeThenHashThenEncode({}),
+        OperationGenerator.generateRandomHash(),
         'dummyUri2',
         []
       );
@@ -146,7 +146,7 @@ describe('Resolver', () => {
         didUniqueSuffix,
         nextUpdateKey.jwk,
         nextUpdatePrivateKey,
-        Multihash.canonicalizeThenHashThenEncode({}),
+        OperationGenerator.generateRandomHash(),
         'newDummyHubUri2',
         ['newDummyHubUri1']
       );
