@@ -1,10 +1,7 @@
-import Document from './Document';
 import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import Jwk from './util/Jwk';
-import PublicKeyModel from './models/PublicKeyModel';
 import PublicKeyUsage from '../../enums/PublicKeyUsage';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -29,7 +26,6 @@ export default class DocumentComposer {
     // Only populate `authentication` if auth usage exists.
     const authentication: any[] = [];
     const publicKeys: any[] = [];
-    const operationKeys: any[] = [];
     if (Array.isArray(document.public_keys)) {
       for (let publicKey of document.public_keys) {
         const id = '#' + publicKey.id;
@@ -41,9 +37,6 @@ export default class DocumentComposer {
         };
         const usageSet: Set<string> = new Set(publicKey.usage);
 
-        if (usageSet.has(PublicKeyUsage.Ops)) {
-          operationKeys.push(didDocumentPublicKey);
-        }
         if (usageSet.has(PublicKeyUsage.General)) {
           publicKeys.push(didDocumentPublicKey);
           if (usageSet.has(PublicKeyUsage.Auth)) {
@@ -90,7 +83,6 @@ export default class DocumentComposer {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
       didDocument: didDocument,
       methodMetadata: {
-        operationKeys,
         recoveryCommitment: didState.nextRecoveryCommitmentHash,
         updateCommitment: didState.nextUpdateCommitmentHash
       }
@@ -105,16 +97,6 @@ export default class DocumentComposer {
    * @throws SidetreeError if invalid operation is given.
    */
   public static async applyUpdateOperation (operation: UpdateOperation, document: any): Promise<any> {
-    // The current document must contain the public key mentioned in the operation ...
-    const publicKey = Document.getPublicKey(document, operation.signedDataJws.kid);
-    DocumentComposer.validateOperationKey(publicKey);
-
-    // Verify the signature.
-    if (!(await operation.signedDataJws.verifySignature(publicKey!.jwk))) {
-      throw new SidetreeError(ErrorCode.DocumentComposerInvalidSignature);
-    }
-
-    // The operation passes all checks, apply the patches.
     const resultantDocument = DocumentComposer.applyPatches(document, operation.delta!.patches);
 
     return resultantDocument;
@@ -238,30 +220,7 @@ export default class DocumentComposer {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidUsage);
         }
       }
-
-      if (publicKey.usage.includes(PublicKeyUsage.Ops)) {
-        DocumentComposer.validateOperationKey(publicKey);
-      }
     }
-  }
-
-  /**
-   * Ensures the given key is an operation key allowed to perform document modification.
-   */
-  private static validateOperationKey (publicKey: PublicKeyModel | undefined) {
-    if (!publicKey) {
-      throw new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
-    }
-
-    if (publicKey.type !== 'EcdsaSecp256k1VerificationKey2019') {
-      throw new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
-    }
-
-    if (!publicKey.usage.includes(PublicKeyUsage.Ops)) {
-      throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
-    }
-
-    Jwk.validateJwkEs256k(publicKey.jwk);
   }
 
   private static validateRemovePublicKeysPatch (patch: any) {

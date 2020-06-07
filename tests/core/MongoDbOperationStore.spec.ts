@@ -3,7 +3,9 @@ import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import MongoDb from '../common/MongoDb';
 import MongoDbOperationStore from '../../lib/core/MongoDbOperationStore';
+import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
+import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
 
 const databaseName = 'sidetree-test';
@@ -21,36 +23,35 @@ async function createOperationStore (mongoDbConnectionString: string): Promise<I
  */
 async function createOperationChain (
   createOperation: AnchoredOperationModel,
-  firstUpdateRevealValueEncodedString: string,
   chainLength: number,
-  signingKeyId: string,
+  signingKey: PublicKeyModel,
   signingPrivateKey: JwkEs256k,
   transactionNumber?: number):
   Promise<AnchoredOperationModel[]> {
   const didUniqueSuffix = createOperation.didUniqueSuffix;
   const chain = new Array<AnchoredOperationModel>(createOperation);
-  let updateRevealValueEncodedString = firstUpdateRevealValueEncodedString;
 
+  let currentPublicKey = signingKey;
+  let currentPrivateKey = signingPrivateKey;
   for (let i = 1; i < chainLength ; i++) {
     const transactionNumberToUse = transactionNumber ? transactionNumber : i;
     const transactionTimeToUse = transactionNumberToUse;
 
-    const [nextUpdateRevealValue, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
-    const [newPublicKey] = await OperationGenerator.generateKeyPair(`key${i}`);
+    const [newPublicKey, newPrivateKey] = await OperationGenerator.generateKeyPair(`key${i}`);
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
-      updateRevealValueEncodedString,
-      newPublicKey,
-      nextUpdateCommitmentHash,
-      signingKeyId,
-      signingPrivateKey
+      currentPublicKey.jwk,
+      currentPrivateKey,
+      newPublicKey, // we add the same key as the secret public key value for convenience, this should not be by user
+      Multihash.canonicalizeThenHashThenEncode(newPublicKey.jwk)
     );
+    currentPublicKey = newPublicKey;
+    currentPrivateKey = newPrivateKey;
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
     const anchoredOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
       operationModel, transactionTimeToUse, transactionNumberToUse, i
     );
     chain.push(anchoredOperation);
-    updateRevealValueEncodedString = nextUpdateRevealValue;
   }
   return chain;
 }
@@ -113,17 +114,15 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const [, anyUnusedCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     // Generate an update operation.
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
-      'anyUnusedUpdateRevealValue',
-      anyUnusedCommitmentHash,
+      createOperationData.signingPublicKey.jwk,
+      createOperationData.signingPrivateKey,
+      OperationGenerator.generateRandomHash(),
       'someID',
-      [],
-      createOperationData.signingKeyId,
-      createOperationData.signingPrivateKey
+      []
     );
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
     const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
@@ -140,17 +139,15 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const [, anyUnusedCommitmentHash] = OperationGenerator.generateCommitRevealPair();
 
     // Generate an update operation.
     const operationRequest = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
       didUniqueSuffix,
-      'anyUnusedUpdateRevealValue',
-      anyUnusedCommitmentHash,
+      createOperationData.signingPublicKey.jwk,
+      createOperationData.signingPrivateKey,
+      OperationGenerator.generateRandomHash(),
       'someId',
-      [],
-      createOperationData.signingKeyId,
-      createOperationData.signingPrivateKey
+      []
     );
     const operationModel = await UpdateOperation.parse(Buffer.from(JSON.stringify(operationRequest)));
     const anchoredUpdateOperation: AnchoredOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(
@@ -169,12 +166,11 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-    const signingKeyId = createOperationData.signingKeyId;
+    const signingPublicKey = createOperationData.signingPublicKey;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
     await operationStore.put(operationChain);
 
     const returnedOperations = await operationStore.get(didUniqueSuffix);
@@ -186,12 +182,11 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-    const signingKeyId = createOperationData.signingKeyId;
+    const signingPublicKey = createOperationData.signingPublicKey;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
 
     // construct an operation chain with duplicated operations
     const batchWithDuplicates = operationChain.concat(operationChain);
@@ -206,12 +201,11 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-    const signingKeyId = createOperationData.signingKeyId;
+    const signingPublicKey = createOperationData.signingPublicKey;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
 
     await operationStore.put(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
@@ -227,12 +221,11 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-    const signingKeyId = createOperationData.signingKeyId;
+    const signingPublicKey = createOperationData.signingPublicKey;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
     await operationStore.put(operationChain);
     const returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
@@ -249,12 +242,11 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-    const signingKeyId = createOperationData.signingKeyId;
+    const signingPublicKey = createOperationData.signingPublicKey;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
     await operationStore.put(operationChain);
     let returnedOperations = await operationStore.get(didUniqueSuffix);
     checkEqualArray(operationChain, returnedOperations);
@@ -272,12 +264,11 @@ describe('MongoDbOperationStore', async () => {
     const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
     const anchoredOperationModel = createOperationData.anchoredOperationModel;
     const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-    const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-    const signingKeyId = createOperationData.signingKeyId;
+    const signingPublicKey = createOperationData.signingPublicKey;
     const signingPrivateKey = createOperationData.signingPrivateKey;
 
     const chainSize = 10;
-    const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+    const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
 
     // Insert operations in reverse transaction time order
     for (let i = chainSize - 1 ; i >= 0 ; i--) {
@@ -295,12 +286,11 @@ describe('MongoDbOperationStore', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
       const anchoredOperationModel = createOperationData.anchoredOperationModel;
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-      const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-      const signingKeyId = createOperationData.signingKeyId;
+      const signingPublicKey = createOperationData.signingPublicKey;
       const signingPrivateKey = createOperationData.signingPrivateKey;
 
       const chainSize = 10;
-      const operationChain = await createOperationChain(anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey);
+      const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
       await operationStore.put(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);
@@ -320,14 +310,13 @@ describe('MongoDbOperationStore', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 0, transactionNumber: 0, operationIndex: 0 });
       const anchoredOperationModel = createOperationData.anchoredOperationModel;
       const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-      const nextUpdateRevealValueEncodedString = createOperationData.nextUpdateRevealValueEncodedString;
-      const signingKeyId = createOperationData.signingKeyId;
+      const signingPublicKey = createOperationData.signingPublicKey;
       const signingPrivateKey = createOperationData.signingPrivateKey;
 
       const chainSize = 10;
       const txnNumber = 1;
       const operationChain = await createOperationChain(
-        anchoredOperationModel, nextUpdateRevealValueEncodedString, chainSize, signingKeyId, signingPrivateKey, txnNumber);
+        anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey, txnNumber);
       await operationStore.put(operationChain);
       const returnedOperations = await operationStore.get(didUniqueSuffix);
       checkEqualArray(operationChain, returnedOperations);

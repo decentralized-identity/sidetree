@@ -29,8 +29,9 @@ import RequestHandler from '../../lib/core/versions/latest/RequestHandler';
 import Resolver from '../../lib/core/Resolver';
 import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
-import util = require('util');
 import SidetreeError from '../../lib/common/SidetreeError';
+
+const util = require('util');
 
 describe('RequestHandler', () => {
   // Surpress console logging during dtesting so we get a compact test summary in console.
@@ -89,12 +90,10 @@ describe('RequestHandler', () => {
     // Generate a unique key-pair used for each test.
     [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('key2');
-    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
       signingPublicKey,
-      nextUpdateCommitmentHash,
       services);
     const createOperation = await CreateOperation.parse(createOperationBuffer);
     didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -161,11 +160,9 @@ describe('RequestHandler', () => {
     // Create the initial create operation.
     const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
-    const [, nextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
       recoveryPublicKey,
-      signingPublicKey,
-      nextUpdateCommitmentHash
+      signingPublicKey
     );
 
     // Submit the create request twice.
@@ -232,10 +229,10 @@ describe('RequestHandler', () => {
 
   it('should respond with HTTP 200 when an update operation request is successful.', async () => {
     const [, anySigningPrivateKey] = await Jwk.generateEs256kKeyPair();
-    const [, anyNextUpdateCommitmentHash] = OperationGenerator.generateCommitRevealPair();
     const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
+    const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, 'anyUpdateRevealValue', additionalKey, anyNextUpdateCommitmentHash, 'anyKeyId', anySigningPrivateKey
+      didUniqueSuffix, signingPublicKey.jwk, anySigningPrivateKey, additionalKey, OperationGenerator.generateRandomHash()
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -326,15 +323,14 @@ describe('RequestHandler', () => {
   describe('resolveLongFormDid()', async () => {
     it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
-      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey]
       };
       const mockedResolverReturnedDidState: DidState = {
         document,
         lastOperationTransactionNumber: 123,
-        nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 

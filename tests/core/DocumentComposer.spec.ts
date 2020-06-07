@@ -12,29 +12,22 @@ describe('DocumentComposer', async () => {
     it('should output the expected resolution result given key(s) across all usage types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All usages will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
-      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
       };
       const didState: DidState = {
         document,
         lastOperationTransactionNumber: 123,
-        nextRecoveryCommitmentHash: anyCommitmentHash,
-        nextUpdateCommitmentHash: anyCommitmentHash
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
 
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
 
       expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
       expect(result.methodMetadata).toEqual({
-        operationKeys: [{
-          id: '#anySigningKey', // ops usage keys go here
-          controller: '',
-          type: 'EcdsaSecp256k1VerificationKey2019',
-          publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
-        }],
-        recoveryCommitment: anyCommitmentHash,
-        updateCommitment: anyCommitmentHash
+        recoveryCommitment: 'anyCommitmentHash',
+        updateCommitment: 'anyCommitmentHash'
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
@@ -63,7 +56,6 @@ describe('DocumentComposer', async () => {
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
-      const [, anyCommitmentHash] = OperationGenerator.generateCommitRevealPair();
       const document = {
         publicKeys: [anySigningPublicKey, authPublicKey]
       };
@@ -71,7 +63,7 @@ describe('DocumentComposer', async () => {
         document,
         lastOperationTransactionNumber: 123,
         nextRecoveryCommitmentHash: undefined,
-        nextUpdateCommitmentHash: anyCommitmentHash
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
 
       const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
@@ -79,41 +71,10 @@ describe('DocumentComposer', async () => {
     });
   });
 
-  describe('validateOperationKey', () => {
-    it('should throw if undefined is passed in', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerKeyNotFound);
-      expect(() => { DocumentComposer['validateOperationKey'](undefined); }).toThrow(expectedError);
-    });
-
-    it('should throw if usage does not contain ops', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyNotOperationKey);
-      expect(() => {
-        DocumentComposer['validateOperationKey']({
-          id: 'someId',
-          type: 'EcdsaSecp256k1VerificationKey2019',
-          jwk: {},
-          usage: []
-        });
-      }).toThrow(expectedError);
-    });
-
-    it('should throw if type is not Secp256k1VerificationKey2019', () => {
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
-      expect(() => {
-        DocumentComposer['validateOperationKey']({
-          id: 'someId',
-          type: 'invalidType',
-          jwk: {},
-          usage: []
-        });
-      }).toThrow(expectedError);
-    });
-  });
-
   describe('addServiceEndpoints', () => {
     it('should add expected service endpoints to document', () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }]
+        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['general'] }]
       };
 
       const patch = {
@@ -133,7 +94,7 @@ describe('DocumentComposer', async () => {
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from service_endpoints', () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
+        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['general'] }],
         service_endpoints: [
           { id: '1', type: 't', endpoint: 'se' },
           { id: '2', type: 't', endpoint: 'se' },
@@ -150,7 +111,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
+        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['general'] }],
         service_endpoints: [
           { id: '2', type: 't', endpoint: 'se' },
           { id: '4', type: 't', endpoint: 'se' }
@@ -162,7 +123,7 @@ describe('DocumentComposer', async () => {
 
     it('should leave document unchanged if it does not have service endpoint property', () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }]
+        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['general'] }]
       };
 
       const patch = {
@@ -432,14 +393,6 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if the type of a operation public key in an add-public-keys patch is not secp.', async () => {
-      const patches = generatePatchesForPublicKeys();
-      (patches[0].public_keys![0] as any).type = 'notSecp';
-
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerOperationKeyTypeNotEs256k);
-      expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
-    });
-
     it('should throw error if a remove-public-keys patch contains additional unknown property..', async () => {
       const patches = generatePatchesForPublicKeys();
       (patches[1] as any).unknownProperty = 'unknownProperty';
@@ -484,7 +437,7 @@ describe('DocumentComposer', async () => {
   describe('applyPatches()', async () => {
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['ops'] }],
+        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', usage: ['general'] }],
         service_endpoints: []
       };
       const patches = [
@@ -578,7 +531,7 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: {},
-            usage: ['ops', 'ops', 'ops', 'ops']
+            usage: ['general', 'general', 'general', 'general']
           }
         ]
       };
@@ -594,7 +547,7 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: {},
-            usage: ['ops', 'somethingInvalid']
+            usage: ['general', 'somethingInvalid']
           }
         ]
       };
@@ -636,7 +589,7 @@ function generatePatchesForPublicKeys () {
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
             y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
           },
-          usage: ['ops']
+          usage: ['general']
         }
       ]
     },
