@@ -23,11 +23,11 @@ Sidetree Methods MAY rely on the DID Document data model when verifying protocol
 
 Use the following process to generate a Sidetree-based DID:
 
-1. Generate a recovery key pair via the [`KEY_ALGORITHM`](#key-algorithm), retaining the [_Initial Recovery Public Key_](#initial-recovery-key){id="initial-recovery-key"} for use in generating the _Recovery Commitment_, and the private key for use in the next [Recovery](#recovery) operation.
+1. Generate a recovery key pair via the [`KEY_ALGORITHM`](#key-algorithm), retaining the [_Initial Recovery Public Key_](#initial-recovery-key){id="initial-recovery-key"} for use in generating the _Recovery Commitment_, and the private key for use in the next [Recovery](#recover) operation.
 2. Create a _Recovery Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the [_Initial Recovery Public Key_](#initial-recovery-key), and retain the hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
-3. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, for use in the next Update operation, herein referred to as _Update Reveal Value_.
-4. Create an _Update Commitment_ using the [Hashing Process](#hashing-process) to generate a hash of the _Update Reveal Value_, in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file) (if publication of the DID is desired).
-5. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
+3. Generate an update key pair via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Update Public Key_ for use in generating the _Update Commitment_, and the private key for use in the next [Update](#update) operation.
+4. Create an _Update Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the _Next Update Public Key_, and retain the hash value for inclusion in the [_Create Operation Delta Object_](#create-delta-object)(as described below).
+5. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`]#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
@@ -73,13 +73,13 @@ The following process must be used to update the state a Sidetree-based DID:
     {
       "protected": {...},
       "payload": {
-        "update_reveal_value": REVEAL_VALUE,
+        "update_key": JWK_OBJECT,
         "delta_hash": DELTA_HASH
       },
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** contain a `update_reveal_value` property, and its value ****MUST**** be the last update [`COMMITMENT_VALUE`](#commitment-value).
+    - The JWS `payload` object ****MUST**** include a `update_key` property, and its value ****MUST**** be the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation matching the previous _Update Commitment_.
     - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Update Operation Delta Object_](#update-delta-object), generated via the [Hashing Process](#hashing-process).
 
 ### Recover
@@ -87,11 +87,13 @@ The following process must be used to update the state a Sidetree-based DID:
 Use the following process to recover a Sidetree-based DID:
 
 1. Retrieve the _Recovery Key_ that matches the previously anchored _Recovery Commitment_. This value will be used in constructing an [_Anchor File Recovery Entry_](#anchor-file-recovery-entry) for the DID being recovered.
-2. Generate a new recovery key pair, which ****MUST NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Recovery Public Key_ for use in generating the next _Recovery Commitment_, and the private key for use in the next [Recovery](#recovery) operation.
+2. Generate a new recovery key pair, which ****MUST NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Recovery Public Key_ for use in generating the next _Recovery Commitment_, and the private key for use in the next [Recovery](#recover) operation.
 3. Create a _Recovery Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the _Next Recovery Public Key_, and retain the hash value for inclusion in an [Anchor File](#anchor-file).
-4. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, for use in the next Update operation, herein referred to as the _Update Reveal Value_.
-5. Generate an _Update Commitment_ using the [Hashing Process](#hashing-process), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file).
-7. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`], herein referred to as the [_Recovery Operation Delta Object_](#recover-delta-object){ id="recover-delta-object" }, composed as follows:
+4. Generate a new update key pair, which ****SHOULD NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Update Public Key_ for use in generating the next _Update Commitment_, and the private key for use in the next [Update](#update) operation.
+5. Create an _Update Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the _Next Update Public Key_, and retain the hash value for inclusion in the [_Recovery Operation Delta Object_](#recover-delta-object)(as described below).
+6. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, for use in the next Update operation, herein referred to as the _Update Reveal Value_.
+7. Generate an _Update Commitment_ using the [Hashing Process](#hashing-process), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file).
+8. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`], herein referred to as the [_Recovery Operation Delta Object_](#recover-delta-object){ id="recover-delta-object" }, composed as follows:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
@@ -100,7 +102,7 @@ Use the following process to recover a Sidetree-based DID:
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be an array of [DID State Patches](#did-state-patches).
     - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be the _Update Commitment_, as described above.
-8. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object){ id="recovery-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against the currently active recovery key, and contains the following `payload` values:
+9. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Recovery Operation Signed Data Object_](#recovery-signed-data-object){ id="recovery-signed-data-object" }. The object ****MUST**** be a [IETF RFC 7515](https://tools.ietf.org/html/rfc7515) compliant compact JWS object with a signature that validates against the currently active recovery key, and contains the following `payload` values:
     ```json
     {
       "protected": {...},
@@ -112,9 +114,9 @@ Use the following process to recover a Sidetree-based DID:
       "signature": SIGNATURE_STRING
     }
     ```
-    - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [Hashing Process](#hashing-process).
     - The JWS `payload` object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be the next [_Recovery Commitment_](#recovery-commitment), as described above.
     - The JWS `payload` object ****MUST**** include a `recovery_key` property, and its value ****MUST**** be the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation matching the previous _Recovery Commitment_.
+    - The JWS `payload` object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Recovery Operation Delta Object_](#recover-delta-object), generated via the [Hashing Process](#hashing-process).
 
 ### Deactivate
 

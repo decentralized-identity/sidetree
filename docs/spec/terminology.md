@@ -2,10 +2,12 @@
 
 | Term                  | Description                                                                    |
 |-----------------------|--------------------------------------------------------------------------------|
-| [Anchor File](#anchor-file)  | JSON Document containing proving and index data for Create, Recovery, and Deactivate operations, and a CAS URI for the associated Map File. This file is anchored to the target ledger. |
-| [Map File](#map-file)  | JSON Document containing Update operation proving and index data, as well as CAS URI for Chunk File chunks.                   |
-| [Chunk File](#chunk-files)  | JSON Document containing all verbose operation data for the corresponding set of DIDs specified in the related Map File.                   |
-| CAS                   | Content-addressable storage protocol/network (e.g. IPFS)                       |
+| Ledger { #ledger }  | A decentralized linear sequencing oracle (e.g. Bitcoin) that can be used to anchor the PKI state transformations of Decentralized Identifiers (DIDs) in a shared record that can be deterministically replayed by observers to derive the current PKI state of DIDs. |
+| Anchor File  | JSON Document containing proving and index data for Create, Recovery, and Deactivate operations, and a CAS URI for the associated Map File. This file is anchored to the target ledger. |
+| Map File  | JSON Document containing Update operation proving and index data, as well as CAS URI for Chunk File chunks.                   |
+| Chunk File  | JSON Document containing all verbose operation data for the corresponding set of DIDs specified in the related Map File.                   |
+| CAS { #cas }    | Content-addressable storage protocol/network (e.g. IPFS)                       |
+| CAS URI { #cas-uri }               | The unique content-bound identifier used to locate a resource via the [CAS](#cas) protocol/network (e.g. IPFS)                       |
 | DID Document          | JSON Document containing public key references, service endpoints, and other PKI metadata that corresponds to a given DID (as defined in the [W3C DID Specification](https://w3c.github.io/did-core/)). |
 | DID Suffix { #did-suffix }  | The unique identifier string within a DID URI. e.g. The unique suffix of `did:sidetree:123` would be `123`. |
 | DID Suffix Data       | Data required to deterministically generate a DID.                             |

@@ -18,8 +18,6 @@ let HashingOutput = Base64URL( Multihash(DATA, 'sha2-256') );
 
 ### Commitment Value Generation
 
-Recovery commitment values ****MUST**** be the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the public key that is newly generated each new recovery commitment. Implementers and wallets ****MUST NOT**** reuse keypairs across recovery invocations.
+The values used as the revealed secrets for Sidetree's commit/reveal mechanism ****MUST**** be the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representations of cryptographic public keys. Implementers and wallets ****SHOULD NOT**** reuse keypairs across recovery invocations, and ****MUST NOT**** reuse commitment values (hashes of the JWK reveal values) across the entire lifetime of a DID.
 
-All other non-Recovery commitment values created for the commit/reveal function of Sidetree operations ****MUST**** be sufficiently random values (e.g. a randomly generated number) and ****MUST**** be unique across operations, without reuse in the operational lineage of a DID.
-
-Commitment values ****SHOULD**** be deterministically regenerable using the keys bound to a given DID. This eliminates the addition of another sensitive value User Agent applications would need to track, secure, and store, which subsequently reduces the possibility of loss.
+The secret JWK values published during the reveal phase of Sidetree's commit/reveal mechanism ****SHOULD**** be deterministically regenerable, to minimize the number of sensitive values User Agent wallet applications need to track, secure, and store. The most common way to allow for a regenerable JWK value is to use a key derivation scheme, wherein the JWK value that was committed in the commitment phase is able to be regenerated at a later time (e.g. hardened BIP32 HD key generation).
