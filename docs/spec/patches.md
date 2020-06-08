@@ -59,20 +59,20 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
     4. The object ****MUST**** include a `purpose` property, and its value ****MUST**** be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
         - **`general`**: the key ****MUST**** be included in the `public_keys` section of the resolved _DID Document_.
         - **`auth`**: the key ****MUST**** be included in the `authentication` section of the resolved _DID Document_, as follows:
-            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `authentication` section of the resolved _DID Document_. 
-            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section.
+            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `authentication` section of the resolved _DID Document_. 
+            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section.
         - **`agreement`**: the key ****MUST**** be included in the `keyAgreement` section of the resolved _DID Document_, as follows:
-            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `keyAgreement` section of the resolved _DID Document_. 
-            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `keyAgreement` section.
+            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `keyAgreement` section of the resolved _DID Document_. 
+            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `keyAgreement` section.
         - **`assertion`**: the key ****MUST**** be included in the `assertionMethod` section of the resolved _DID Document_, as follows:
-            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `assertionMethod` section of the resolved _DID Document_. 
-            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `assertionMethod` section.
+            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `assertionMethod` section of the resolved _DID Document_. 
+            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `assertionMethod` section.
         - **`delegation`**: the key ****MUST**** be included in the `capabilityDelegation` section of the resolved _DID Document_, as follows:
-            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `capabilityDelegation` section of the resolved _DID Document_. 
-            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityDelegation` section.
+            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `capabilityDelegation` section of the resolved _DID Document_. 
+            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityDelegation` section.
         - **`invocation`**: the key ****MUST**** be included in the `capabilityInvocation` section of the resolved _DID Document_, as follows:
-            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `capabilityInvocation` section of the resolved _DID Document_. 
-            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityInvocation` section.
+            - If the `general` purpose value IS NOT present in the `purpose` array, the key descriptor object ****MUST**** be included directly in the `capabilityInvocation` section of the resolved _DID Document_. 
+            - If the `general` purpose value IS present in the `purpose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityInvocation` section.
     
 
 #### `remove-public-keys`
@@ -148,7 +148,7 @@ The `remove-service-endpoints` _Patch Action_ describes the removal of cryptogra
   "public_keys": [
     {
       "id": "key2",
-      "prupose": ["auth"],
+      "purpose": ["auth"],
       "type": "EcdsaSecp256k1VerificationKey2019",
       "jwk": {...}
     }
