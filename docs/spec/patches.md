@@ -37,7 +37,7 @@ The following set of standard _Patch Actions_ are specified to help align on a c
   "public_keys": [
     {
       "id": "key1",
-      "usage": ["auth"],
+      "purpose": ["auth"],
       "type": "EcdsaSecp256k1VerificationKey2019",
       "jwk": {...}
     }
@@ -56,23 +56,23 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
         - `EcdsaSecp256k1VerificationKey2019`
         - `JwsVerificationKey2020`
     3. The object ****MUST**** include a `jwk` property, and its value ****MUST**** be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. If the value is not a compliant JWK representation, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
-    4. The object ****MUST**** include a `usage` property, and its value ****MUST**** be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+    4. The object ****MUST**** include a `purpose` property, and its value ****MUST**** be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
         - **`general`**: the key ****MUST**** be included in the `public_keys` section of the resolved _DID Document_.
         - **`auth`**: the key ****MUST**** be included in the `authentication` section of the resolved _DID Document_, as follows:
-            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `authentication` section of the resolved _DID Document_. 
-            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section.
+            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `authentication` section of the resolved _DID Document_. 
+            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `authentication` section.
         - **`agreement`**: the key ****MUST**** be included in the `keyAgreement` section of the resolved _DID Document_, as follows:
-            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `keyAgreement` section of the resolved _DID Document_. 
-            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `keyAgreement` section.
+            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `keyAgreement` section of the resolved _DID Document_. 
+            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `keyAgreement` section.
         - **`assertion`**: the key ****MUST**** be included in the `assertionMethod` section of the resolved _DID Document_, as follows:
-            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `assertionMethod` section of the resolved _DID Document_. 
-            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `assertionMethod` section.
+            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `assertionMethod` section of the resolved _DID Document_. 
+            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `assertionMethod` section.
         - **`delegation`**: the key ****MUST**** be included in the `capabilityDelegation` section of the resolved _DID Document_, as follows:
-            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `capabilityDelegation` section of the resolved _DID Document_. 
-            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityDelegation` section.
+            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `capabilityDelegation` section of the resolved _DID Document_. 
+            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityDelegation` section.
         - **`invocation`**: the key ****MUST**** be included in the `capabilityInvocation` section of the resolved _DID Document_, as follows:
-            - If the `general` usage value IS NOT present in the `usage` array, the key descriptor object ****MUST**** be included directly in the `capabilityInvocation` section of the resolved _DID Document_. 
-            - If the `general` usage value IS present in the `usage` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityInvocation` section.
+            - If the `general` prupose value IS NOT present in the `prupose` array, the key descriptor object ****MUST**** be included directly in the `capabilityInvocation` section of the resolved _DID Document_. 
+            - If the `general` prupose value IS present in the `prupose` array, the key descriptor object ****MUST**** be directly included in the `public_keys` section of the resolved _DID Document_, and ****MUST**** be included by [relative DID URL reference](https://w3c.github.io/did-core/#relative-did-urls) in the `capabilityInvocation` section.
     
 
 #### `remove-public-keys`
@@ -148,7 +148,7 @@ The `remove-service-endpoints` _Patch Action_ describes the removal of cryptogra
   "public_keys": [
     {
       "id": "key2",
-      "usage": ["auth"],
+      "prupose": ["auth"],
       "type": "EcdsaSecp256k1VerificationKey2019",
       "jwk": {...}
     }
