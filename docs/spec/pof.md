@@ -1,13 +1,17 @@
 ## Proof of Fee
 
-Sidetree implementations MAY choose to impose a per-op fee that is used to gate the transaction on the target chain is required to include a deterministic, protocol-specified fee, based on the number of DID operations they seek to include via the on-chain transaction. The deterministic protocol rules for the default configuration are still under discussion, but the following are roughly represent the direction under discussion:
+Sidetree implementers ****MAY**** choose to implement this section of protective mechanisms, which are designed to strengthen a Sidetree network against low-cost spurious operations. These mechanisms are primarily designed for open, permissionless implementations utilizing public blockchains that feature native crypto-economic systems.
 
-1. Simple inclusion of a transaction in a block will enable the transaction writer to include a baseline of N operations
-2. Any number of operations that exceed N will be subject to proof that a fee was paid that meets or exceeds a required amount, determined as follows:
-  1. Let the block range R include the last block the node believes to be the latest confirmed and the 9 blocks that precede it.
-  2. Compute an array of median fees M, wherein the result of each computation is the median of all transactions fees in each block, less any Sidetree-bearing transactions.
-  3. Let the target fee F be the average of all the values contained in M.
-  4. Let the per operation cost C be F divided by the baseline amount N.
-3. To test the batch for adherence to the Proof of Fee requirement, divide the number of operations in the batch by the fee paid in the host transaction, and ensure that the resulting per operation amount exceeds the required per operation cost C.
+### Base Fee Variable
+
+All of the mechanisms described in this section are based on the same underlying numeric value, known as the _Base Fee Variable_, that is calculated by processing a collection of native variables from the target ledger with a set of deterministic functions. The _Base Fee Variable_ is used in two primary ways: 1) to set a minimum required native transaction fee that must be paid relative to the number of DID operations a writer seeks to anchor with the transaction, and 2) the fee basis that is used to deterministically set a economic locking amount based on the size of operational batches a writer wants to access.
+
+To calculate the _Base Fee Variable_, every node ****MUST**** run the following pseudorandom transaction selection routine across the transaction history of the target ledger, which will produce the same selected set of transactions across all nodes:
+
+### Per-Operation Fee
+
+...
 
 ### Value Locking
+
+...
