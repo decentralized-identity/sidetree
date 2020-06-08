@@ -1,9 +1,11 @@
+import PublicKeyPurpose from "../PublicKeyPurpose";
+
 /**
- * Interface representing a public key inside the 'publicKey' array property of a DID Document.
+ * Data model representing a public key in the 'publicKey' array in patches.
  */
 export default interface PublicKeyModel {
   id: string;
   type: string;
   jwk: any;
-  usage: string[];
+  purpose: PublicKeyPurpose[];
 }

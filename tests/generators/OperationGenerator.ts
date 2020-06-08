@@ -11,7 +11,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
-import PublicKeyUsage from '../../lib/core/enums/PublicKeyUsage';
+import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
@@ -55,17 +55,17 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates SECP256K1 key pair to be used in an operation. If usage not supplied, all usages will be included
+   * Generates SECP256K1 key pair to be used in an operation. If purpose not supplied, all purposes will be included
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string, usage?: string[]): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, purpose?: string[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
       type: 'EcdsaSecp256k1VerificationKey2019',
       jwk: publicKey,
-      usage: usage || Object.values(PublicKeyUsage)
+      purpose: purpose || Object.values(PublicKeyPurpose)
     };
 
     return [publicKeyModel, privateKey];
