@@ -2,7 +2,7 @@ import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import PublicKeyPurpose from '../../enums/PublicKeyPurpose';
+import PublicKeyPurpose from './PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
