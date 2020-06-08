@@ -2,7 +2,7 @@ import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import PublicKeyUsage from '../../enums/PublicKeyUsage';
+import PublicKeyPurpose from '../../enums/PublicKeyPurpose';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -22,8 +22,8 @@ export default class DocumentComposer {
 
     const document = didState.document as DocumentModel;
 
-    // Only populate `publicKey` if general usage exists.
-    // Only populate `authentication` if auth usage exists.
+    // Only populate `publicKey` if general purpose exists.
+    // Only populate `authentication` if auth purpose exists.
     const authentication: any[] = [];
     const publicKeys: any[] = [];
     if (Array.isArray(document.public_keys)) {
@@ -35,15 +35,15 @@ export default class DocumentComposer {
           type: publicKey.type,
           publicKeyJwk: publicKey.jwk
         };
-        const usageSet: Set<string> = new Set(publicKey.usage);
+        const purposeSet: Set<string> = new Set(publicKey.purpose);
 
-        if (usageSet.has(PublicKeyUsage.General)) {
+        if (purposeSet.has(PublicKeyPurpose.General)) {
           publicKeys.push(didDocumentPublicKey);
-          if (usageSet.has(PublicKeyUsage.Auth)) {
+          if (purposeSet.has(PublicKeyPurpose.Auth)) {
             // add into authentication by reference if has auth and has general
             authentication.push(id);
           }
-        } else if (usageSet.has(PublicKeyUsage.Auth)) {
+        } else if (purposeSet.has(PublicKeyPurpose.Auth)) {
           // add into authentication by object if has auth but no general
           authentication.push(didDocumentPublicKey);
         }
@@ -184,7 +184,7 @@ export default class DocumentComposer {
     const publicKeyIdSet: Set<string> = new Set();
     for (let publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      // the expected fields are id, usage, type and jwk
+      // the expected fields are id, purpose, type and jwk
       if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
@@ -205,19 +205,19 @@ export default class DocumentComposer {
       }
       publicKeyIdSet.add(publicKey.id);
 
-      if (!Array.isArray(publicKey.usage) || publicKey.usage.length === 0) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageMissingOrUnknown);
+      if (!Array.isArray(publicKey.purpose) || publicKey.purpose.length === 0) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      if (publicKey.usage.length > 3) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyUsageExceedsMaxLength);
+      if (publicKey.purpose.length > 3) {
+        throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
       }
 
-      const validUsages = new Set(Object.values(PublicKeyUsage));
-      // usage must be one of the valid ones in PublicKeyUsage
-      for (const usage of publicKey.usage) {
-        if (!validUsages.has(usage)) {
-          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidUsage);
+      const validPurposes = new Set(Object.values(PublicKeyPurpose));
+      // Purpose must be one of the valid ones in KeyPurpose
+      for (const purpose of publicKey.purpose) {
+        if (!validPurposes.has(purpose)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
         }
       }
     }
