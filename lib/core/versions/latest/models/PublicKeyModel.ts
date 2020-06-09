@@ -1,4 +1,4 @@
-import PublicKeyPurpose from "../PublicKeyPurpose";
+import PublicKeyPurpose from '../PublicKeyPurpose';
 
 /**
  * Data model representing a public key in the 'publicKey' array in patches.

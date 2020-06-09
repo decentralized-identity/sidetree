@@ -12,14 +12,15 @@ export default class Document {
    * @param keyId The ID of the public-key.
    */
   public static getPublicKey (document: DocumentModel, keyId: string): PublicKeyModel | undefined {
-    for (let i = 0; i < document.public_keys.length; i++) {
-      const publicKey = document.public_keys[i];
+    if (Array.isArray(document.public_keys)) {
+      for (let i = 0; i < document.public_keys.length; i++) {
+        const publicKey = document.public_keys[i];
 
-      if (publicKey.id === keyId) {
-        return publicKey;
+        if (publicKey.id === keyId) {
+          return publicKey;
+        }
       }
     }
-
     return undefined;
   }
 }

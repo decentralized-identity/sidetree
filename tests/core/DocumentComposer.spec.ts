@@ -436,6 +436,26 @@ describe('DocumentComposer', async () => {
   });
 
   describe('applyPatches()', async () => {
+    it('should add a key even if no keys exist yet.', async () => {
+      const document: DocumentModel = {
+      };
+      const patches = [
+        {
+          action: 'add-public-keys',
+          public_keys: [
+            { id: 'aNonRepeatingId', type: 'someType' }
+          ]
+        }
+      ];
+
+      const resultantDocument = DocumentComposer.applyPatches(document, patches);
+
+      expect(resultantDocument.public_keys).toEqual([
+        { id: 'aNonRepeatingId', type: 'someType' }
+      ]);
+
+    });
+
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
         public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
