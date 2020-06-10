@@ -58,7 +58,7 @@ describe('BatchWriter', () => {
         normalizedFee: 3,
         owner: 'unusedOwner',
         unlockTransactionTime: 4
-      }
+      };
       spyOn(blockchain, 'getWriterValueTimeLock').and.returnValue(Promise.resolve(valueLock));
 
       const mockOpsByLock = ProtocolParameters.maxOperationsPerBatch;
@@ -66,10 +66,10 @@ describe('BatchWriter', () => {
 
       // Simulate any operation in queue.
       const createOperationData = await OperationGenerator.generateCreateOperation();
-      operationQueue.enqueue(createOperationData.createOperation.didUniqueSuffix, createOperationData.createOperation.operationBuffer);
+      await operationQueue.enqueue(createOperationData.createOperation.didUniqueSuffix, createOperationData.createOperation.operationBuffer);
 
       const anchorFileCreateBufferSpy = spyOn(AnchorFile, 'createBuffer');
-      anchorFileCreateBufferSpy.and.callFake( async (lockId) => {
+      anchorFileCreateBufferSpy.and.callFake(async (lockId) => {
         // This is the check for the test.
         expect(lockId).toEqual(valueLock.identifier);
         return Buffer.from('anyAnchorFileBuffer');
