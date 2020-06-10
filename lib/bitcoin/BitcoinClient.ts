@@ -133,10 +133,13 @@ export default class BitcoinClient {
   public async createSidetreeTransaction (transactionData: string, minimumFeeInSatoshis: number): Promise<BitcoinSidetreeTransactionModel> {
     const transaction = await this.createTransaction(transactionData, minimumFeeInSatoshis);
 
+    const signedTransaction = await this.bitcoinWallet.signTransaction(transaction);
+    const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
+
     return {
-      transactionId: transaction.id,
+      transactionId: signedTransaction.id,
       transactionFee: transaction.getFee(),
-      serializedTransactionObject: transaction.serialize()
+      serializedTransactionObject: serializedTransaction
     };
   }
 
@@ -154,11 +157,14 @@ export default class BitcoinClient {
 
     const [freezeTransaction, redeemScriptAsHex] = await this.createFreezeTransaction(unspentCoins, lockUntilBlock, lockAmountInSatoshis);
 
+    const signedTransaction = await this.bitcoinWallet.signTransaction(freezeTransaction);
+    const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
+
     return {
-      transactionId: freezeTransaction.id,
+      transactionId: signedTransaction.id,
       transactionFee: freezeTransaction.getFee(),
       redeemScriptAsHex: redeemScriptAsHex,
-      serializedTransactionObject: freezeTransaction.serialize()
+      serializedTransactionObject: serializedTransaction
     };
   }
 
@@ -179,10 +185,14 @@ export default class BitcoinClient {
     const [freezeTransaction, redeemScriptAsHex] =
       await this.createSpendToFreezeTransaction(existingLockTransaction, existingLockUntilBlock, newLockUntilBlock);
 
-    const serializedTransaction = BitcoinClient.serializeSpendTransaction(freezeTransaction);
+    // Now sign the transaction
+    const previousFreezeScript = BitcoinClient.createFreezeScript(existingLockUntilBlock, this.bitcoinWallet.getAddress());
+    const signedTransaction = await this.bitcoinWallet.signSpendFromFreezeTransaction(freezeTransaction, previousFreezeScript);
+
+    const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
 
     return {
-      transactionId: freezeTransaction.id,
+      transactionId: signedTransaction.id,
       transactionFee: freezeTransaction.getFee(),
       redeemScriptAsHex: redeemScriptAsHex,
       serializedTransactionObject: serializedTransaction
@@ -201,10 +211,14 @@ export default class BitcoinClient {
 
     const releaseLockTransaction = await this.createSpendToWalletTransaction(existingLockTransaction, existingLockUntilBlock);
 
-    const serializedTransaction = BitcoinClient.serializeSpendTransaction(releaseLockTransaction);
+    // Now sign the transaction
+    const previousFreezeScript = BitcoinClient.createFreezeScript(existingLockUntilBlock, this.bitcoinWallet.getAddress());
+    const signedTransaction = await this.bitcoinWallet.signSpendFromFreezeTransaction(releaseLockTransaction, previousFreezeScript);
+
+    const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
 
     return {
-      transactionId: releaseLockTransaction.id,
+      transactionId: signedTransaction.id,
       transactionFee: releaseLockTransaction.getFee(),
       redeemScriptAsHex: '',
       serializedTransactionObject: serializedTransaction
@@ -484,7 +498,6 @@ export default class BitcoinClient {
     feeToPay = Math.ceil(feeToPay);
 
     transaction.fee(feeToPay);
-    await this.bitcoinWallet.signTransaction(transaction);
 
     return transaction;
   }
@@ -529,7 +542,6 @@ export default class BitcoinClient {
     const transactionFee = await this.calculateTransactionFee(freezeTransaction);
 
     freezeTransaction.fee(transactionFee);
-    await this.bitcoinWallet.signTransaction(freezeTransaction);
 
     return [freezeTransaction, freezeScript.toHex()];
   }
@@ -604,10 +616,6 @@ export default class BitcoinClient {
     spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - transactionFee)
                     .fee(transactionFee);
 
-    // Now sign the transaction
-    const previousFreezeScript = BitcoinClient.createFreezeScript(previousFreezeUntilBlock, this.bitcoinWallet.getAddress());
-    await this.bitcoinWallet.signSpendFromFreezeTransaction(spendTransaction, previousFreezeScript);
-
     return spendTransaction;
   }
 
@@ -644,12 +652,11 @@ export default class BitcoinClient {
     return redeemScript;
   }
 
-  private static serializeSpendTransaction (spendTransaction: Transaction): string {
-    // bitcore-lib does not support creating the spendFromFreeze transactions natively so we have to manually modify the
-    // inputs to add signatures/scripts etc. This means that when we try to serialize, the bitcore-lib throws
-    // as it is unable to verify the signatures. So for serialization, we will pass in special options to
-    // disable those checks.
-    return (spendTransaction as any).serialize({ disableIsFullySigned: true });
+  private static serializeSignedTransaction (signedTransaction: Transaction): string {
+    // The signed transaction is returned by the IBitcoinWallet implementation and could be created via serialized hex
+    // input. In that case, the bitcore-lib Transaction does not distinguish the inputs and serialization fails with an
+    // "unsigned-inputs" failure. So for serialization, we will pass in special options to disable those checks.
+    return (signedTransaction as any).serialize({ disableIsFullySigned: true });
   }
 
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
