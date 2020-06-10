@@ -64,14 +64,14 @@ export default class MockBlockchain implements IBlockchain {
   }
 
   public async getFee (transactionTime: number): Promise<number> {
-    throw Error('Not implemented. Inputs: ' + transactionTime);
+    throw Error('getFee() not implemented. Inputs: ' + transactionTime);
   }
 
   public async getValueTimeLock (_lockIdentifer: string): Promise<ValueTimeLockModel | undefined> {
-    throw Error('Not implemented.');
+    throw Error('getValueTimeLock() Not implemented.');
   }
 
   public async getWriterValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
-    throw Error('Not implemented.');
+    throw Error('getWriterValueTimeLock() not implemented.');
   }
 }
