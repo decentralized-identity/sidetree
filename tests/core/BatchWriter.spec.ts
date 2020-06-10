@@ -22,7 +22,8 @@ describe('BatchWriter', () => {
     blockchain = new MockBlockchain();
     cas = new MockCas();
     operationQueue = new MockOperationQueue();
-    batchWriter = new BatchWriter(operationQueue, blockchain, cas);
+    const mockVersionMetadataFetcher: any = {};
+    batchWriter = new BatchWriter(operationQueue, blockchain, cas, mockVersionMetadataFetcher);
   });
 
   describe('write()', () => {
