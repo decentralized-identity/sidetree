@@ -3,14 +3,14 @@ import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
 import ICas from '../../lib/core/interfaces/ICas';
-import IOperationQueue from '../../lib/core/versions/0.8.0/interfaces/IOperationQueue';
+import IOperationQueue from '../../lib/core/versions/latest/interfaces/IOperationQueue';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockCas from '../mocks/MockCas';
 import MockOperationQueue from '../mocks/MockOperationQueue';
+import OperationGenerator from '../generators/OperationGenerator';
 import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
-import OperationGenerator from '../generators/OperationGenerator';
 
 describe('BatchWriter', () => {
   let blockchain: IBlockchain;
