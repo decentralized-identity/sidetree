@@ -31,7 +31,7 @@ export default class BatchWriter implements IBatchWriter {
   public async write () {
     const normalizedFee = await this.blockchain.getFee(this.blockchain.approximateTime.time);
     const currentLock = await this.blockchain.getWriterValueTimeLock();
-    const numberOfOpsAllowed = this.getNumberOfOperationsToWrite(currentLock);
+    const numberOfOpsAllowed = this.getNumberOfOperationsAllowed(currentLock);
 
     // Get the batch of operations to be anchored on the blockchain.
     const queuedOperations = await this.operationQueue.peek(numberOfOpsAllowed);
@@ -65,8 +65,8 @@ export default class BatchWriter implements IBatchWriter {
     console.info(LogColor.lightBlue(`Wrote map file ${LogColor.green(mapFileHash)} to content addressable store.`));
 
     // Write the anchor file to content addressable store.
-    const writerLock = currentLock ? currentLock.identifier : undefined;
-    const anchorFileBuffer = await AnchorFile.createBuffer(writerLock, mapFileHash, createOperations, recoverOperations, deactivateOperations);
+    const writerLockId = currentLock ? currentLock.identifier : undefined;
+    const anchorFileBuffer = await AnchorFile.createBuffer(writerLockId, mapFileHash, createOperations, recoverOperations, deactivateOperations);
     const anchorFileHash = await this.cas.write(anchorFileBuffer);
     console.info(LogColor.lightBlue(`Wrote anchor file ${LogColor.green(anchorFileHash)} to content addressable store.`));
 
@@ -86,7 +86,7 @@ export default class BatchWriter implements IBatchWriter {
     await this.operationQueue.dequeue(queuedOperations.length);
   }
 
-  private getNumberOfOperationsToWrite (valueTimeLock: ValueTimeLockModel | undefined): number {
+  private getNumberOfOperationsAllowed (valueTimeLock: ValueTimeLockModel | undefined): number {
     const maxNumberOfOpsAllowedByProtocol = ProtocolParameters.maxOperationsPerBatch;
     const maxNumberOfOpsAllowedByLock = ValueTimeLockVerifier.calculateMaxNumberOfOperationsAllowed(valueTimeLock);
 
