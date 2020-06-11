@@ -363,7 +363,7 @@ export default class DocumentComposer {
    * Adds public keys to document.
    */
   private static addPublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = new Map(document.public_keys.map(publicKey => [publicKey.id, publicKey]));
+    const publicKeyMap = new Map((document.public_keys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public keys and add them if they don't exist already.
     for (let publicKey of patch.public_keys) {
@@ -381,7 +381,7 @@ export default class DocumentComposer {
    * Removes public keys from document.
    */
   private static removePublicKeys (document: DocumentModel, patch: any): DocumentModel {
-    const publicKeyMap = new Map(document.public_keys.map(publicKey => [publicKey.id, publicKey]));
+    const publicKeyMap = new Map((document.public_keys || []).map(publicKey => [publicKey.id, publicKey]));
 
     // Loop through all given public key IDs and delete them from the existing public key only if it is not a recovery key.
     for (let publicKey of patch.public_keys) {
