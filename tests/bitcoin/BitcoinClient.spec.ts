@@ -901,7 +901,7 @@ describe('BitcoinClient', async () => {
 
       const actual = BitcoinClient['serializeSignedTransaction'](mockTxn);
       expect(actual).toEqual(mockSerializedTxn);
-      expect(serializeSpy).toHaveBeenCalledWith({ disableIsFullySigned: true });
+      expect(serializeSpy).toHaveBeenCalledWith({ disableAll: true });
     });
   });
 

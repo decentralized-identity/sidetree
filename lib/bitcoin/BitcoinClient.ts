@@ -656,7 +656,7 @@ export default class BitcoinClient {
     // The signed transaction is returned by the IBitcoinWallet implementation and could be created via serialized hex
     // input. In that case, the bitcore-lib Transaction does not distinguish the inputs and serialization fails with an
     // "unsigned-inputs" failure. So for serialization, we will pass in special options to disable those checks.
-    return (signedTransaction as any).serialize({ disableIsFullySigned: true });
+    return (signedTransaction as any).serialize({ disableAll: true });
   }
 
   private static createBitcoinInputModel (bitcoreInput: Transaction.Input): BitcoinInputModel {
