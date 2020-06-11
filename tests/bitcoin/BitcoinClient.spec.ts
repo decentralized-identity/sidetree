@@ -728,18 +728,16 @@ describe('BitcoinClient', async () => {
 
   describe('calculateTransactionFee', () => {
     it('should calculate the fee correctly', async () => {
-      const estimatedFee = 1000;
+      const estimatedFee = 1528;
       spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKb').and.returnValue(estimatedFee);
 
       const mockTransaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10000);
 
-      const txnEstimatedSize = (mockTransaction.inputs.length * 150) + (mockTransaction.outputs.length * 50);
-      const expectedFee = (txnEstimatedSize / 1000) * estimatedFee;
-      const expectedFeeWithPercentage = expectedFee + (expectedFee * .4);
+      const expectedFee = 107;
 
       const actualFee = await bitcoinClient['calculateTransactionFee'](mockTransaction);
 
-      expect(expectedFeeWithPercentage).toEqual(actualFee);
+      expect(expectedFee).toEqual(actualFee);
     });
   });
 

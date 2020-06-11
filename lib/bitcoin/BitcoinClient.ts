@@ -519,7 +519,10 @@ export default class BitcoinClient {
     const estimatedFee = estimatedSizeInKb * estimatedFeeInKb;
 
     // Add a percentage to the fee (trying to be on the higher end of the estimate)
-    return estimatedFee + (estimatedFee * .4);
+    const estimatedFeeWithPercentage = estimatedFee + (estimatedFee * .4);
+
+    // Make sure that there are no decimals in the fee as it is not supported
+    return Math.ceil(estimatedFeeWithPercentage);
   }
 
   private async createFreezeTransaction (
