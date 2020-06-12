@@ -58,11 +58,12 @@ describe('BitcoinProcessor', () => {
   let normalizedFeeCalculatorInitializeSpy: jasmine.Spy;
   let mongoQuantileStoreInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
-  let getStartingBlockForInitializationSpy: jasmine.Spy;
+  let getStartingBlockForPeriodicPollSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
   let periodicPollSpy: jasmine.Spy;
   let mongoLockTxnStoreSpy: jasmine.Spy;
   let lockMonitorSpy: jasmine.Spy;
+  let trimDatabasesToLastFeeSamplingGroupBoundarySpy: jasmine.Spy;
 
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig);
@@ -74,8 +75,8 @@ describe('BitcoinProcessor', () => {
     transactionStoreLatestTransactionSpy = spyOn(bitcoinProcessor['transactionStore'], 'getLastTransaction');
     transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
 
-    getStartingBlockForInitializationSpy = spyOn(bitcoinProcessor as any, 'getStartingBlockForInitialization');
-    getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve(undefined));
+    getStartingBlockForPeriodicPollSpy = spyOn(bitcoinProcessor as any, 'getStartingBlockForPeriodicPoll');
+    getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
 
     normalizedFeeCalculatorInitializeSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'initialize');
     normalizedFeeCalculatorInitializeSpy.and.returnValue(Promise.resolve());
@@ -85,7 +86,10 @@ describe('BitcoinProcessor', () => {
 
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
+
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
+    trimDatabasesToLastFeeSamplingGroupBoundarySpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToLastFeeSamplingGroupBoundary');
+
   });
 
   function createTransactions (count?: number, height?: number, incrementalHeight = false): TransactionModel[] {
@@ -148,12 +152,12 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('initialize', () => {
-
     beforeEach(async () => {
       bitcoinClientInitializeSpy.and.returnValue(Promise.resolve());
-      getStartingBlockForInitializationSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
+      getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve({ height: 123, hash: 'hash' }));
       mongoLockTxnStoreSpy.and.returnValue(Promise.resolve());
       lockMonitorSpy.and.returnValue(Promise.resolve());
+      trimDatabasesToLastFeeSamplingGroupBoundarySpy.and.returnValue(Promise.resolve('unused'));
     });
 
     it('should initialize the internal objects', async (done) => {
@@ -176,11 +180,22 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
+    it('should throw error if unable to find a starting block.', async (done) => {
+      getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => bitcoinProcessor.initialize(),
+        ErrorCode.BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate
+      );
+
+      done();
+    });
+
     it('should process all the blocks since its last known', async (done) => {
       const fromNumber = randomNumber();
       const fromHash = randomString();
 
-      getStartingBlockForInitializationSpy.and.returnValue(
+      getStartingBlockForPeriodicPollSpy.and.returnValue(
         Promise.resolve({
           height: fromNumber,
           hash: fromHash
@@ -195,10 +210,10 @@ describe('BitcoinProcessor', () => {
           height: 12345
         });
       });
-      expect(getStartingBlockForInitializationSpy).not.toHaveBeenCalled();
+      expect(getStartingBlockForPeriodicPollSpy).not.toHaveBeenCalled();
       expect(processTransactionsSpy).not.toHaveBeenCalled();
       await bitcoinProcessor.initialize();
-      expect(getStartingBlockForInitializationSpy).toHaveBeenCalled();
+      expect(getStartingBlockForPeriodicPollSpy).toHaveBeenCalled();
       expect(processTransactionsSpy).toHaveBeenCalled();
       done();
     });
@@ -684,7 +699,7 @@ describe('BitcoinProcessor', () => {
         });
       });
 
-      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve(lastBlock));
+      getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(lastBlock));
       /* tslint:disable-next-line */
       await bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
@@ -699,7 +714,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should not call process transaction if the starting block is undefined', async (done) => {
-      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve(undefined));
+      getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
 
       await bitcoinProcessor['periodicPoll']();
       // need to wait for the process call
@@ -715,7 +730,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should not throw if the processing throws', async (done) => {
-      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.throwError('Test error');
+      getStartingBlockForPeriodicPollSpy.and.throwError('Test error');
 
       try {
         await bitcoinProcessor['periodicPoll']();
@@ -740,7 +755,7 @@ describe('BitcoinProcessor', () => {
         height: randomNumber()
       }));
 
-      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(bitcoinProcessor['lastProcessedBlock']);
+      getStartingBlockForPeriodicPollSpy.and.returnValue(bitcoinProcessor['lastProcessedBlock']);
 
       /* tslint:disable-next-line */
       bitcoinProcessor['periodicPoll']();
@@ -755,7 +770,7 @@ describe('BitcoinProcessor', () => {
 
     it('should clear the prevoius timeout if set', async (done) => {
 
-      spyOn(bitcoinProcessor as any,'getStartingBlockForPeriodicPoll').and.returnValue(Promise.resolve());
+      getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve());
       const clearTimeoutSpy = spyOn(global, 'clearTimeout').and.returnValue();
 
       bitcoinProcessor['pollTimeoutId'] = 1234;
@@ -860,122 +875,18 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('getStartingBlockForInitialization', () => {
-
-    beforeEach(() => {
-      getStartingBlockForInitializationSpy.and.callThrough();
-    });
-
-    it('should return the genesis block if no transactions are saved in the DB', async (done) => {
-
-      const mockBlock: IBlockInfo = {
-        hash: 'some_hash',
-        height: randomNumber(),
-        previousHash: 'some previous hash'
-      };
-
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((inputBlockNumber) => {
-        expect(inputBlockNumber).toEqual(bitcoinProcessor['genesisBlockNumber']);
-
-        return Promise.resolve(mockBlock);
-      });
-
-      transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve());
-      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToFeeSamplingGroupBoundary');
-
-      const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
-      expect(startingBlock).toEqual(mockBlock);
-      expect(revertDbsSpy).toHaveBeenCalledWith(bitcoinProcessor['genesisBlockNumber']);
-      done();
-    });
-
-    it('should revert the DBs to the last saved transaction block in the transaction store.', async (done) => {
-      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToFeeSamplingGroupBoundary');
-      const verifySpy = spyOn(bitcoinProcessor as any, 'verifyBlock');
-      const revertChainSpy = spyOn(bitcoinProcessor as any, 'revertDatabases');
-
-      const mockTxnModel: TransactionModel = {
-        anchorString: 'anchor1',
-        transactionTimeHash: 'timehash1',
-        transactionTime: 100,
-        transactionNumber: 200,
-        transactionFeePaid: 300,
-        normalizedTransactionFee: 400,
-        writer: 'writer'
-      };
-
-      const mockBlock: IBlockInfo = {
-        hash: 'some_hash',
-        height: randomNumber(),
-        previousHash: 'some previous hash'
-      };
-
-      transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(mockTxnModel));
-      revertDbsSpy.and.returnValue(Promise.resolve(mockBlock));
-      verifySpy.and.returnValue(Promise.resolve(true));
-
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((inputBlockNumber) => {
-        expect(inputBlockNumber).toEqual(mockBlock.height + 1);
-
-        return Promise.resolve(mockBlock);
-      });
-
-      const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
-      expect(startingBlock).toEqual(mockBlock);
-      expect(revertDbsSpy).toHaveBeenCalledWith(mockTxnModel.transactionTime);
-      expect(verifySpy).toHaveBeenCalledWith(mockTxnModel.transactionTime, mockTxnModel.transactionTimeHash);
-      expect(revertChainSpy).not.toHaveBeenCalled();
-      done();
-    });
-
-    it('should revert the blockchain if the last saved transaction is invalid.', async (done) => {
-      const revertDbsSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToFeeSamplingGroupBoundary');
-      const verifySpy = spyOn(bitcoinProcessor as any, 'verifyBlock');
-      const revertChainSpy = spyOn(bitcoinProcessor as any, 'revertDatabases');
-
-      const mockTxnModel: TransactionModel = {
-        anchorString: 'anchor1',
-        transactionTimeHash: 'timehash1',
-        transactionTime: 100,
-        transactionNumber: 200,
-        transactionFeePaid: 300,
-        normalizedTransactionFee: 400,
-        writer: 'writer'
-      };
-
-      const mockBlock: IBlockInfo = {
-        hash: 'some_hash',
-        height: randomNumber(),
-        previousHash: 'some previous hash'
-      };
-
-      transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(mockTxnModel));
-      verifySpy.and.returnValue(Promise.resolve(false));
-      revertChainSpy.and.returnValue(Promise.resolve(mockBlock));
-
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((inputBlockNumber) => {
-        expect(inputBlockNumber).toEqual(mockBlock.height + 1);
-
-        return Promise.resolve(mockBlock);
-      });
-
-      const startingBlock = await bitcoinProcessor['getStartingBlockForInitialization']();
-
-      expect(startingBlock).toEqual(mockBlock);
-      expect(revertDbsSpy).not.toHaveBeenCalled();
-      expect(verifySpy).toHaveBeenCalledWith(mockTxnModel.transactionTime, mockTxnModel.transactionTimeHash);
-      expect(revertChainSpy).toHaveBeenCalled();
-      done();
-    });
-  });
-
   describe('getStartingBlockForPeriodicPoll', () => {
     let actualLastProcessedBlock: IBlockInfo;
+    let getBlockInfoFromHeightSpy: jasmine.Spy;
 
     beforeEach(() => {
+      // Revert the spy call in parent beforeEach();
+      getStartingBlockForPeriodicPollSpy.and.callThrough();
+
       bitcoinProcessor['lastProcessedBlock'] = { height: randomNumber(), hash: randomString(), previousHash: randomString() };
       actualLastProcessedBlock = bitcoinProcessor['lastProcessedBlock'];
-      spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight').and.callFake((height: number) => {
+      getBlockInfoFromHeightSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'getBlockInfoFromHeight');
+      getBlockInfoFromHeightSpy.and.callFake((height: number) => {
         return Promise.resolve({
           height,
           hash: randomString(),
@@ -1016,13 +927,47 @@ describe('BitcoinProcessor', () => {
       expect(actual!.height).toEqual(mockHeightAfterRevert + 1);
       expect(revertBlockchainSpy).toHaveBeenCalled();
     });
+
+    it('should use genesis block as the starting block if no last processed block is found.', async (done) => {
+      // Simulate no last processed block is found.
+      bitcoinProcessor['lastProcessedBlock'] = undefined;
+
+      await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
+
+      expect(trimDatabasesToLastFeeSamplingGroupBoundarySpy).toHaveBeenCalled();
+
+      // We don't care about the mocked return value, we only care that `getBlockInfoFromHeightSpy()` is invoked with the genesis block height.
+      expect(getBlockInfoFromHeightSpy).toHaveBeenCalledWith(bitcoinProcessor.genesisBlockNumber);
+      done();
+    });
+
+    it('should use genesis block as the starting block if no valid block is left after reverting.', async (done) => {
+      const verifyBlockSpy = spyOn(bitcoinProcessor as any, 'verifyBlock');
+      verifyBlockSpy.and.returnValue(Promise.resolve(false));
+
+      // Simulate no valid block left after reverting.
+      const revertDatabaseSpy = spyOn(bitcoinProcessor as any, 'revertDatabases');
+      revertDatabaseSpy.and.returnValue(Promise.resolve(undefined));
+
+      // Simulate that current height in bitcoin core is ahead than the desired starting block.
+      const getCurrentBlockHeightSpy
+        = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
+
+      await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
+
+      expect(verifyBlockSpy).toHaveBeenCalled();
+      expect(revertDatabaseSpy).toHaveBeenCalled();
+      expect(getCurrentBlockHeightSpy).toHaveBeenCalled();
+
+      // We don't care about the mocked return value, we only care that `getBlockInfoFromHeightSpy()` is invoked with the genesis block height.
+      expect(getBlockInfoFromHeightSpy).toHaveBeenCalledWith(bitcoinProcessor.genesisBlockNumber);
+      done();
+    });
   });
 
   describe('revertDatabases', () => {
     it('should exponentially revert transactions', async (done) => {
       const transactions = createTransactions(10).sort((a, b) => b.transactionNumber - a.transactionNumber);
-      const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
-        'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
       const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: TransactionModel[]) => {
@@ -1037,88 +982,65 @@ describe('BitcoinProcessor', () => {
       };
       spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any).and.returnValue(Promise.resolve(mockRevertReturn));
 
-      const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any);
-
       const actual = await bitcoinProcessor['revertDatabases']();
       expect(actual).toEqual(mockRevertReturn);
-      expect(transactionCount).toHaveBeenCalled();
       expect(exponentialTransactions).toHaveBeenCalled();
       expect(firstValid).toHaveBeenCalled();
-      expect(getBlockSpy).not.toHaveBeenCalled();
       done();
     });
 
-    it('should continue to revert if the first exponential revert failed', async (done) => {
-      const transactions = createTransactions(10).sort((a, b) => b.transactionNumber - a.transactionNumber);
-      const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
-        'getTransactionsCount').and.returnValue(Promise.resolve(transactions.length));
-      const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
-        'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
-      let validHasBeenCalledOnce = false;
-      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.callFake((actualTransactions: TransactionModel[]) => {
-        expect(actualTransactions).toEqual(transactions);
-        if (validHasBeenCalledOnce) {
-          return Promise.resolve(transactions[0]);
-        } else {
-          validHasBeenCalledOnce = true;
-          return Promise.resolve(undefined);
-        }
-      });
-      const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
-        'removeTransactionsLaterThan').and.returnValue(Promise.resolve());
-
-      const mockRevertReturn: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-      spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any).and.returnValue(Promise.resolve(mockRevertReturn));
-
-      const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any);
-
-      const actual = await bitcoinProcessor['revertDatabases']();
-      expect(actual).toEqual(mockRevertReturn);
-      expect(transactionCount).toHaveBeenCalledTimes(2);
-      expect(exponentialTransactions).toHaveBeenCalledTimes(2);
-      expect(firstValid).toHaveBeenCalledTimes(2);
-      expect(removeTransactions).toHaveBeenCalledTimes(1);
-      expect(getBlockSpy).not.toHaveBeenCalled();
-      done();
-    });
-
-    it('should stop reverting if it has ran out of transactions', async (done) => {
+    it('should return `undefined` as the last valid block if all data have been reverted.', async (done) => {
       let transactions = createTransactions(10);
-      const transactionCount = spyOn(bitcoinProcessor['transactionStore'],
-        'getTransactionsCount').and.callFake(() => {
-          return Promise.resolve(transactions.length);
-        });
       const exponentialTransactions = spyOn(bitcoinProcessor['transactionStore'],
         'getExponentiallySpacedTransactions').and.returnValue(Promise.resolve(transactions));
-      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.returnValue(Promise.resolve(undefined));
-      const removeTransactions = spyOn(bitcoinProcessor['transactionStore'],
-        'removeTransactionsLaterThan').and.callFake((transactionNumber: number) => {
-          expect(transactionNumber).toEqual(transactions[0].transactionNumber);
-          transactions = [];
-          return Promise.resolve();
-        });
 
-      const mockGetBlockReturn: IBlockInfo = {
-        height: randomNumber(),
-        hash: randomString(),
-        previousHash: randomString()
-      };
-      const getBlockSpy = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight' as any).and.returnValue(Promise.resolve(mockGetBlockReturn));
+      // Mock to simulate no valid transaction found.
+      const firstValid = spyOn(bitcoinProcessor, 'firstValidTransaction').and.returnValue(Promise.resolve(undefined));
 
       const revertDbsSpy = spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any);
 
       const actual = await bitcoinProcessor['revertDatabases']();
-      expect(actual).toEqual(mockGetBlockReturn);
-      expect(transactionCount).toHaveBeenCalled();
+      expect(actual).toBeUndefined();
       expect(exponentialTransactions).toHaveBeenCalled();
       expect(firstValid).toHaveBeenCalled();
-      expect(removeTransactions).toHaveBeenCalled();
-      expect(getBlockSpy).toHaveBeenCalledWith(testConfig.genesisBlockNumber);
-      expect(revertDbsSpy).not.toHaveBeenCalled();
+      expect(revertDbsSpy).toHaveBeenCalled();
+      done();
+    });
+  });
+
+  describe('trimDatabasesToLastFeeSamplingGroupBoundary', () => {
+    beforeEach(() => {
+      trimDatabasesToLastFeeSamplingGroupBoundarySpy.and.callThrough();
+    });
+
+    it('should trim based on the blockchain time of last saved transaction.', async (done) => {
+      // Simulate a saved transaction found.
+      const mockLastSaveTransaction: TransactionModel = {
+        anchorString: 'unused',
+        transactionTimeHash: 'unused',
+        transactionTime: 100,
+        transactionNumber: 200,
+        transactionFeePaid: 300,
+        normalizedTransactionFee: 400,
+        writer: 'unused'
+      };
+      transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(mockLastSaveTransaction));
+
+      const trimDatabasesToFeeSamplingGroupBoundarySpy = spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any);
+
+      await (bitcoinProcessor as any).trimDatabasesToLastFeeSamplingGroupBoundary();
+      expect(trimDatabasesToFeeSamplingGroupBoundarySpy).toHaveBeenCalledWith(mockLastSaveTransaction.transactionTime);
+      done();
+    });
+
+    it('should trim based on genesis block if cannot find a saved transaction.', async (done) => {
+      // Simulate that a saved transaction cannot be found.
+      transactionStoreLatestTransactionSpy.and.returnValue(Promise.resolve(undefined));
+
+      const trimDatabasesToFeeSamplingGroupBoundarySpy = spyOn(bitcoinProcessor,'trimDatabasesToFeeSamplingGroupBoundary' as any);
+
+      await (bitcoinProcessor as any).trimDatabasesToLastFeeSamplingGroupBoundary();
+      expect(trimDatabasesToFeeSamplingGroupBoundarySpy).toHaveBeenCalledWith(bitcoinProcessor.genesisBlockNumber);
       done();
     });
   });
@@ -1160,7 +1082,7 @@ describe('BitcoinProcessor', () => {
       expect(revertQuantileState).toHaveBeenCalledWith(inputBlock);
     });
 
-    it('should return the genesis block if the first block in group goes below the genesis block.', async () => {
+    it('should return `undefined` if the first block in group goes below the genesis block.', async () => {
       spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getFirstTransactionOfGroup').and.returnValue(123);
 
       const mockFirstBlockInGroup = bitcoinProcessor['genesisBlockNumber'] - 10;
@@ -1183,7 +1105,7 @@ describe('BitcoinProcessor', () => {
 
       const actual = await bitcoinProcessor['trimDatabasesToFeeSamplingGroupBoundary'](500);
 
-      expect(actual).toEqual(mockBlockInfo);
+      expect(actual).toBeUndefined();
     });
   });
 

@@ -159,8 +159,21 @@ export default class BitcoinProcessor {
     await this.normalizedFeeCalculator.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
+    // We always need to start the processing from the first block of a fee sampling group
+    // so that in-memory state for fee sampling will be repoppulated yielding correct fee calculation,
+    // so we trim the databases to make sure this condition is met.
+    // NOTE: We also initialize the `lastProcessedBlock`, this is an opional step currently,
+    // but will be required if Issue #692 is implemented.
+    this.lastProcessedBlock = await this.trimDatabasesToLastFeeSamplingGroupBoundary();
+
     console.debug('Synchronizing blocks for sidetree transactions...');
-    const startingBlock = await this.getStartingBlockForInitialization();
+    const startingBlock = await this.getStartingBlockForPeriodicPoll();
+
+    // Throw if bitcoin client is not synced up to the bitcoin service's known height.
+    // NOTE: Implementation for issue #692 can simplify this method and remove this check.
+    if (startingBlock === undefined) {
+      throw new SidetreeError(ErrorCode.BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate);
+    }
 
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
     await this.processTransactions(startingBlock);
@@ -170,6 +183,27 @@ export default class BitcoinProcessor {
     // have all the data.
     await this.lockMonitor.initialize();
     void this.periodicPoll();
+  }
+
+  /**
+   * NOTE: Should be used ONLY during service initialization.
+   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
+   */
+  private async trimDatabasesToLastFeeSamplingGroupBoundary (): Promise<IBlockInfo | undefined> {
+    // Look in the transaction store to figure out the last block that we need to start from.
+    const lastSavedTransaction = await this.transactionStore.getLastTransaction();
+
+    // If there is no transaction saved in the DBs, we still need to perform trimming
+    // because there could be stale fee calculater data lingering, so we trim using the genesis block.
+    let lastValidBlock;
+    if (lastSavedTransaction === undefined) {
+      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(this.genesisBlockNumber);
+    } else {
+      // Else we trim DBs using the block number of the last saved transaction.
+      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
+    }
+
+    return lastValidBlock;
   }
 
   /**
@@ -435,59 +469,31 @@ export default class BitcoinProcessor {
     return this.lastProcessedBlock!;
   }
 
-  private async getStartingBlockForInitialization (): Promise<IBlockInfo> {
-
-    // Look in the transaction store to figure out the last block that we need to
-    // start from.
-    const lastSavedTransaction = (await this.transactionStore.getLastTransaction());
-
-    // If there's nothing saved in the DB then let's start from the genesis block
-    if (!lastSavedTransaction) {
-      // Put the system DBs in the correct state. We are going to ignore the return value
-      // from the following call as we already know the starting block is the
-      // genesis block.
-      await this.trimDatabasesToFeeSamplingGroupBoundary(this.genesisBlockNumber);
+  private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
+    // If last processed block is undefined, start processing from genesis block.
+    if (this.lastProcessedBlock === undefined) {
+      await this.trimDatabasesToLastFeeSamplingGroupBoundary();
       return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 
-    // If we are here then it means that there is a potential starting point in the DB.
-    // Since we are initializing, it is quite possible that the last block that we processed
-    // (and saved in the db) has been forked. Check for the fork.
-    const lastSavedBlockIsValid = await this.verifyBlock(lastSavedTransaction.transactionTime, lastSavedTransaction.transactionTimeHash);
+    const lastProcessedBlockIsValid = await this.verifyBlock(this.lastProcessedBlock.height, this.lastProcessedBlock.hash);
 
-    let lastValidBlock: IBlockInfo;
-
-    if (lastSavedBlockIsValid) {
-      // There was no fork ... let's put the system DBs in the correct state.
-      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
+    // If the last processed block is not valid then that means that we need to
+    // revert the DB back to a known valid block.
+    let lastValidBlock: IBlockInfo | undefined;
+    if (lastProcessedBlockIsValid) {
+      lastValidBlock = this.lastProcessedBlock;
     } else {
-      // There was a fork so we need to revert. The revert function peforms all the correct
-      // operations and puts the system in the correct state and returns the last valid block.
+      // The revert logic will return the last valid block.
       lastValidBlock = await this.revertDatabases();
     }
 
-    // Our starting block is the one after the last-valid-block
-    return this.bitcoinClient.getBlockInfoFromHeight(lastValidBlock.height + 1);
-  }
-
-  private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
-
-    const lastProcessedBlockVerified = await this.verifyBlock(this.lastProcessedBlock!.height, this.lastProcessedBlock!.hash);
-
-    // If the last processed block is not verified then that means that we need to
-    // revert the blockchain to the correct block
-    if (!lastProcessedBlockVerified) {
-      // The revert logic will return the last correct processed block
-      this.lastProcessedBlock = await this.revertDatabases();
-    }
-
-    // Now that we have the correct last processed block, the new starting block needs
-    // to be the one after that one.
-    const startingBlockHeight = this.lastProcessedBlock!.height + 1;
-    const currentHeight = await this.bitcoinClient.getCurrentBlockHeight();
+    // If there is a valid processed block, we will start processing the block following it, else start processing from the genesis block.
+    const startingBlockHeight = lastValidBlock ? lastValidBlock.height + 1 : this.genesisBlockNumber;
 
     // The new starting block-height may not be actually written on the blockchain yet
     // so here we make sure that we don't return an 'invalid' starting block.
+    const currentHeight = await this.bitcoinClient.getCurrentBlockHeight();
     if (startingBlockHeight > currentHeight) {
       return undefined;
     }
@@ -497,51 +503,42 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Begins to revert databases until consistent with blockchain, returns last good height
-   * @returns last valid block height before the fork
+   * Begins to revert databases until consistent with blockchain.
+   * @returns A known valid block before the fork. `undefined` if no known valid block can be found.
    */
-  private async revertDatabases (): Promise<IBlockInfo> {
+  private async revertDatabases (): Promise<IBlockInfo | undefined> {
     console.info('Reverting transactions');
 
-    // Keep reverting transactions until a valid transaction is found.
-    while (await this.transactionStore.getTransactionsCount() > 0) {
-      const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
+    const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
+    const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
-      const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
+    // No known valid transaction found.
+    if (lastKnownValidTransaction === undefined) {
+      await this.trimDatabasesToFeeSamplingGroupBoundary(this.genesisBlockNumber);
+      console.warn('Reverted all known transactions.');
 
-      if (lastKnownValidTransaction) {
-        // We have a valid transaction, so revert the DBs to that valid one and return.
-        return this.trimDatabasesToFeeSamplingGroupBoundary(lastKnownValidTransaction.transactionTime);
-      }
-
-      // We did not find a valid transaction - revert as much as the lowest height in the exponentially spaced
-      // transactions and repeat the process with a new reduced list of transactions.
-      const lowestHeight = exponentiallySpacedTransactions[exponentiallySpacedTransactions.length - 1].transactionTime;
-      const revertToTransactionNumber = TransactionNumber.construct(lowestHeight, 0);
-
-      console.debug(`Removing transactions since ${TransactionNumber.getBlockNumber(revertToTransactionNumber)}`);
-      await this.transactionStore.removeTransactionsLaterThan(revertToTransactionNumber);
+      return undefined;
     }
 
-    // there are no transactions stored.
-    console.info('Reverted all known transactions.');
-    return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
+    // Else we have a valid transaction, so revert the DBs based using that last knwon valid transaction.
+    const lastValidBlockAfterDatabaseTrimming = this.trimDatabasesToFeeSamplingGroupBoundary(lastKnownValidTransaction.transactionTime);
+    return lastValidBlockAfterDatabaseTrimming;
   }
 
   /**
-   * Trims entries from the system DBs to the closest full fee sampling group boundary.
-   * @param lastValidBlockNumber The last known valid block number.
-   * @returns The last block of the fee sampling group.
+   * Trims entries from the system DBs to the closest previous full fee sampling group boundary of the given a block number.
+   * @param blockNumber The block number to perform DB trimming on.
+   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
    */
-  private async trimDatabasesToFeeSamplingGroupBoundary (lastValidBlockNumber: number): Promise<IBlockInfo> {
+  private async trimDatabasesToFeeSamplingGroupBoundary (blockNumber: number): Promise<IBlockInfo | undefined> {
 
-    console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${lastValidBlockNumber}`);
+    console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${blockNumber}`);
 
     // Basically, we need to remove all the transactions/normazlied-fee-data from the system later than the
-    // specified lastValidBlockNumber input.
+    // specified `blockNumber` input.
 
     // Get the first block and transaction from the group which are supposed to be deleted
-    const firstTxnOfGroup = this.normalizedFeeCalculator.getFirstTransactionOfGroup(lastValidBlockNumber);
+    const firstTxnOfGroup = this.normalizedFeeCalculator.getFirstTransactionOfGroup(blockNumber);
     const firstBlockInGroup = TransactionNumber.getBlockNumber(firstTxnOfGroup);
 
     // NOTE:
@@ -553,13 +550,16 @@ export default class BitcoinProcessor {
     await this.transactionStore.removeTransactionsLaterThan(firstTxnOfGroup - 1);
 
     // Remove all the data from the normalized fee data DBs
-    await this.normalizedFeeCalculator.trimDatabasesToGroupBoundary(lastValidBlockNumber);
+    await this.normalizedFeeCalculator.trimDatabasesToGroupBoundary(blockNumber);
 
-    // The first block in the group has been deleted from the system so now the previous block
-    // is the 'valid' block now. Return it but ensure that we are not going below the genesis block
-    const blockNumberToReturn = Math.max(firstBlockInGroup - 1, this.genesisBlockNumber);
+    // If we have deleted all data, there is no last known valid block in the system to return.
+    if (firstBlockInGroup <= this.genesisBlockNumber) {
+      return undefined;
+    }
 
-    return this.bitcoinClient.getBlockInfoFromHeight(blockNumberToReturn);
+    // Else the last valid block becomes the block just before `firstBlockInGroup`.
+    const lastValidBlockAfterTrimming = firstBlockInGroup - 1;
+    return this.bitcoinClient.getBlockInfoFromHeight(lastValidBlockAfterTrimming);
   }
 
   /**

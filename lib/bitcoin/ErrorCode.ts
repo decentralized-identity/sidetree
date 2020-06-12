@@ -1,5 +1,6 @@
 export default {
   BitcoinWalletIncorrectImportString: 'bitcoin_wallet_incorrect_import_string',
+  BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate: 'bitcion_processor_bitcoin_client_current_height_not_up_to_date',
   BitcoinProcessorCannotProcessBlocksBeforeGenesis: 'bitcoin_processor_cannot_process_blocks_before_genesis',
   BitcoinProcessInvalidPreviousBlockHash: 'bitcoin_processor_invalid_previous_block_hash',
   LockIdentifierIncorrectFormat: 'lock_identifier_incorrect_format',
