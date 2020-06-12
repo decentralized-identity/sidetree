@@ -49,11 +49,12 @@ describe('Observer', async () => {
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
     blockchain = new MockBlockchain();
+    const versionMetadataFetcher = {} as any;
 
     // Mock the blockchain to return an empty lock
     spyOn(blockchain, 'getValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
-    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain);
+    const transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
     const transactionSelector = new TransactionSelector(transactionStore);
     versionManager = new MockVersionManager();
 

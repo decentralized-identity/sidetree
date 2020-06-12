@@ -15,5 +15,6 @@ export default {
   VersionManagerRequestHandlerNotFound: 'version_manager_request_handler_not_found',
   VersionManagerTransactionProcessorNotFound: 'version_manager_transaction_processor_not_found',
   VersionManagerTransactionSelectorNotFound: 'version_manager_transaction_selector_not_found',
-  VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found'
+  VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found',
+  VersionManagerVersionMetadataIncorrectType: 'version_manager_version_metadata_incorrect_type'
 };
