@@ -9,5 +9,5 @@
     "**/versions/[0-9]**/**": true
   },
   "prettier": false,
-  "liveServer.settings.port": 5501
+  "liveServer.settings.port": 5502
 }
