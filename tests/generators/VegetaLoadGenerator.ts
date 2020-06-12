@@ -1,6 +1,5 @@
 import * as fs from 'fs';
 import * as url from 'url';
-import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from './OperationGenerator';
@@ -27,37 +26,28 @@ export default class VegetaLoadGenerator {
     fs.mkdirSync(absoluteFolderPath + '/requests');
 
     for (let i = 0; i < uniqueDidCount; i++) {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+
       // Generate a random pair of public-private key pair and save them on disk.
-      const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
-      fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
-      fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPrivateKey${i}.json`, JSON.stringify(createOperationData.recoveryPrivateKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/recoveryPublicKey${i}.json`, JSON.stringify(createOperationData.recoveryPublicKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/updatePrivateKey${i}.json`, JSON.stringify(createOperationData.updatePrivateKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/updatePublicKey${i}.json`, JSON.stringify(createOperationData.updatePublicKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/signingPrivateKey${i}.json`, JSON.stringify(createOperationData.signingPrivateKey));
+      fs.writeFileSync(absoluteFolderPath + `/keys/signingPublicKey${i}.json`, JSON.stringify(createOperationData.signingPublicKey));
 
-      const signingKeyId = 'signingKey';
-      const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
-      fs.writeFileSync(absoluteFolderPath + `/keys/signingPrivateKey${i}.json`, JSON.stringify(recoveryPrivateKey));
-      fs.writeFileSync(absoluteFolderPath + `/keys/signingPublicKey${i}.json`, JSON.stringify(recoveryPublicKey));
-      const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
+      // Save the create operation request on disk.
+      fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationData.createOperation.operationBuffer);
 
-      // Generate the Create request body and save it on disk.
-      const createOperationBuffer = await OperationGenerator.generateCreateOperationBuffer(
-        recoveryPublicKey,
-        signingPublicKey,
-        services
-      );
-      fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationBuffer);
-
-      // Compute the DID unique suffix from the generated Create payload.
-      const createOperation = await CreateOperation.parse(createOperationBuffer);
-      const didUniqueSuffix = createOperation.didUniqueSuffix;
-      const [newPublicKey] = await Jwk.generateEs256kKeyPair();
-      const newUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(newPublicKey);
+      const [newUpdatePublicKey] = await Jwk.generateEs256kKeyPair();
+      const newUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(newUpdatePublicKey);
 
       // Generate an update operation
       const [additionalKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-        didUniqueSuffix,
-        signingPublicKey.jwk,
-        signingPrivateKey,
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.updatePublicKey,
+        createOperationData.updatePrivateKey,
         additionalKey,
         newUpdateCommitmentHash
       );
@@ -70,7 +60,7 @@ export default class VegetaLoadGenerator {
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey
+        createOperationData.createOperation.didUniqueSuffix, createOperationData.recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey
       );
 
       // Save the recover operation request on disk.
