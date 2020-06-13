@@ -92,6 +92,8 @@ export default class OperationGenerator {
       anchoredOperationModel,
       recoveryPublicKey: createOperationData.recoveryPublicKey,
       recoveryPrivateKey: createOperationData.recoveryPrivateKey,
+      updatePublicKey: createOperationData.updatePublicKey,
+      updatePrivateKey: createOperationData.updatePrivateKey,
       signingPublicKey: createOperationData.signingPublicKey,
       signingPrivateKey: createOperationData.signingPrivateKey,
       nextUpdateRevealValueEncodedString: createOperationData.nextUpdateRevealValueEncodedString
@@ -104,12 +106,13 @@ export default class OperationGenerator {
   public static async generateCreateOperation () {
     const signingKeyId = 'signingKey';
     const [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+    const [updatePublicKey, updatePrivateKey] = await Jwk.generateEs256kKeyPair();
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
     const service = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
 
     const operationRequest = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
-      signingPublicKey.jwk,
+      updatePublicKey,
       [signingPublicKey],
       service
     );
@@ -124,6 +127,8 @@ export default class OperationGenerator {
       operationRequest,
       recoveryPublicKey,
       recoveryPrivateKey,
+      updatePublicKey,
+      updatePrivateKey,
       signingPublicKey,
       signingPrivateKey,
       nextUpdateRevealValueEncodedString
@@ -170,13 +175,13 @@ export default class OperationGenerator {
   /**
    * Generates an update operation that adds a new key.
    */
-  public static async generateUpdateOperation (didUniqueSuffix: string, updateKey: JwkEs256k, updatePrivateKey: JwkEs256k) {
+  public static async generateUpdateOperation (didUniqueSuffix: string, updatePublicKey: JwkEs256k, updatePrivateKey: JwkEs256k) {
     const additionalKeyId = `additional-key`;
     const [additionalPublicKey, additionalPrivateKey] = await OperationGenerator.generateKeyPair(additionalKeyId);
 
     const operationJson = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
       didUniqueSuffix,
-      updateKey,
+      updatePublicKey,
       updatePrivateKey,
       additionalPublicKey,
       Multihash.canonicalizeThenHashThenEncode(additionalPublicKey)
@@ -217,16 +222,14 @@ export default class OperationGenerator {
 
   /**
    * Generates a create operation request.
-   * @param nextRecoveryCommitment The encoded commitment hash for the next recovery.
-   * @param nextUpdateCommitment The encoded commitment hash for the next update.
    */
   public static async generateCreateOperationRequest (
     recoveryPublicKey: JwkEs256k,
     updatePublicKey: JwkEs256k,
-    publicKeys: PublicKeyModel[],
+    otherPublicKeys: PublicKeyModel[],
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document: DocumentModel = {
-      public_keys: publicKeys,
+      public_keys: otherPublicKeys,
       service_endpoints: serviceEndpoints
     };
 
@@ -440,7 +443,7 @@ export default class OperationGenerator {
    */
   public static async createUpdateOperationRequestForAddingAKey (
     didUniqueSuffix: string,
-    updateKey: JwkEs256k,
+    updatePublicKey: JwkEs256k,
     updatePrivateKey: JwkEs256k,
     newPublicKey: PublicKeyModel,
     nextUpdateCommitmentHash: string) {
@@ -456,7 +459,7 @@ export default class OperationGenerator {
 
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      updateKey,
+      updatePublicKey,
       updatePrivateKey,
       nextUpdateCommitmentHash,
       patches

@@ -417,6 +417,19 @@ describe('OperationProcessor', async () => {
       expect(didState!.document).toBeDefined();
     });
 
+    it('should return `undefined` if operation of unknown type is given.', async () => {
+      // Create a non-create operation.
+      const anyDid = OperationGenerator.generateRandomHash();
+      const [, anyRecoveryPrivateKey] = await OperationGenerator.generateKeyPair('anyRecoveryKey');
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDid, anyRecoveryPrivateKey);
+      const anchoredDeactivateOperation
+        = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
+
+      const newDidState = await operationProcessor.apply(anchoredDeactivateOperation, undefined);
+
+      expect(newDidState).toBeUndefined();
+    });
+
     it('should throw if operation of unknown type is given.', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 2, transactionNumber: 2, operationIndex: 2 });
       const anchoredOperationModel = createOperationData.anchoredOperationModel;

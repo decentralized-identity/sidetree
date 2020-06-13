@@ -225,18 +225,18 @@ describe('Resolver', () => {
       // Generate 3 anchored update operations with the same reveal value but different anchored time.
       const updateOperation1Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
-        createOperationData.signingPublicKey.jwk,
-        createOperationData.signingPrivateKey
+        createOperationData.updatePublicKey,
+        createOperationData.updatePrivateKey
       );
       const updateOperation2Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
-        createOperationData.signingPublicKey.jwk,
-        createOperationData.signingPrivateKey
+        createOperationData.updatePublicKey,
+        createOperationData.updatePrivateKey
       );
       const updateOperation3Data = await OperationGenerator.generateUpdateOperation(
         createOperationData.createOperation.didUniqueSuffix,
-        createOperationData.signingPublicKey.jwk,
-        createOperationData.signingPrivateKey
+        createOperationData.updatePublicKey,
+        createOperationData.updatePrivateKey
       );
       const updateOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation1Data.updateOperation, 2, 2, 2);
       const updateOperation2 = OperationGenerator.createAnchoredOperationModelFromOperationModel(updateOperation2Data.updateOperation, 3, 3, 3);
