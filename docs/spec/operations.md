@@ -23,11 +23,9 @@ Sidetree Methods MAY rely on the DID Document data model when verifying protocol
 
 Use the following process to generate a Sidetree-based DID:
 
-1. Generate a [recovery key pair](#recovery-key-pair) using the defined [`KEY_ALGORITHM`](#key-algorithm), where the public key of this pair is used for generating the [recovery commitment](#recovery-commitment), and the private key for use in the next [recovery](#recovery) operation.
-2. Generate a [recovery commitment](#recovery-commitment) using the defined [recovery commitment scheme](#recovery-commitment-scheme) and public key of the generated [recovery key pair](#recovery-key-pair).
-3. Generate an [operation commit value](#operation-commit-value), let the result be known as the _Update Operation Commit Value_.
-4. Generate an [operation commitment](#operation-commitment) using the _Update Operation Commit Value_ as the [operation commit value](#operation-commit-value), let the result be known as the _Update Operation Commitment_.
-5. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
+1. Generate a key pair using the defined [`KEY_ALGORITHM`](#key-algorithm), let this be known as the [update key pair](#update-key-pair).
+2. Generate a [public key commitment](#public-key-commitment) using the defined [public key commitment scheme](#public-key-commitment-scheme) and public key of the generated [update key pair](#update-key-pair), let this resulting commitment be known as the [update commitment](#update-commitment).
+3. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
     ```json
     {
       "patches": [ PATCH_1, PATCH_2, ... ],
@@ -35,7 +33,9 @@ Use the following process to generate a Sidetree-based DID:
     }
     ```
     - The object ****MUST**** contain a `patches` property, and its value ****MUST**** be a JSON array of [DID State Patches](#did-state-patches).
-    - The object ****MUST**** contain a `update_commitment` property, and its value ****MUST**** be the _Update Operation Commitment_, as described above.
+    - The object ****MUST**** contain an `update_commitment` property, and its value ****MUST**** be the [update commitment](#update-commitment) as generated in step 2.
+4. Generate a key pair using the defined [`KEY_ALGORITHM`](#key-algorithm), let this be known as the [recovery key pair](#recovery-key-pair), where the public key of this pair is used for generating the [recovery commitment](#recovery-commitment), and the private key for use in the next [recovery](#recovery) operation.
+5. Generate a [public key commitment](#public-key-commitment) using the defined [public key commitment scheme](#public-key-commitment-scheme) and public key of the generated [recovery key pair](#recovery-key-pair), let this resulting commitment be known as the [recovery commitment](#recovery-commitment).
 6. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Suffix Data Object_](#create-suffix-data-object){ id="create-suffix-data-object" }:
     ```json
     {
@@ -44,7 +44,7 @@ Use the following process to generate a Sidetree-based DID:
     }
     ```
     - The object ****MUST**** contain a `delta_hash` property, and its value ****MUST**** be a hash of the decoded [_Create Operation Delta Object_](#create-delta-object) (detailed above), generated via the [Hashing Process](#hashing-process).
-    - The object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be a [recovery commitment](#recovery-commitment) (detailed above).
+    - The object ****MUST**** contain a `recovery_commitment` property, and its value ****MUST**** be the [recovery commitment](#recovery-commitment) as generated in step 2.
 
 ::: note
 Implementations ****MAY**** choose to define additional properties for inclusion in the [_Create Operation Suffix Data Object_](#create-suffix-data-object), but the presence of any properties beyond the standard properties or implementation-defined properties ****ARE NOT**** permitted.
