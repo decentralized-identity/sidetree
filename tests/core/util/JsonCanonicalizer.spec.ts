@@ -12,7 +12,9 @@ describe('JsonCanonicalizer', async () => {
 
       const canonicalizedBuffer = JsonCanonicalizer.canonicalizeAsBuffer(jwk);
 
-      const expectedCanonicalizedString = '{"crv":"secp256k1","kty":"EC","x":"5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM","y":"v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"}';      
+      const expectedCanonicalizedString =
+        '{"crv":"secp256k1","kty":"EC","x":"5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM","y":"v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY"}';
+
       expect(canonicalizedBuffer.toString()).toEqual(expectedCanonicalizedString);
     });
   });
