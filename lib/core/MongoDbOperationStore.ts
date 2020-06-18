@@ -48,7 +48,7 @@ export default class MongoDbOperationStore implements IOperationStore {
    * Initialize the MongoDB operation store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl);
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
     const db = client.db(this.databaseName);
     const collections = await db.collections();
     const collectionNames = collections.map(collection => collection.collectionName);

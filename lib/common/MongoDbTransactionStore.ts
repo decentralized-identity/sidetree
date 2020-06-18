@@ -30,7 +30,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * Initialize the MongoDB transaction store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl);
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
     this.db = client.db(this.databaseName);
     this.transactionCollection = await MongoDbTransactionStore.createTransactionCollectionIfNotExist(this.db);
   }
@@ -90,8 +90,10 @@ export default class MongoDbTransactionStore implements ITransactionStore {
    * Clears the transaction store.
    */
   public async clearCollection () {
-    await this.transactionCollection!.drop();
-    this.transactionCollection = await MongoDbTransactionStore.createTransactionCollectionIfNotExist(this.db!);
+    // NOTE: We avoid implementing this by deleting and recreating the collection in rapid succession,
+    // because doing so against some cloud MongoDB services such as CosmosDB,
+    // especially in rapid repetition that can occur in tests, will lead to `MongoError: ns not found` connectivity error.
+    await this.transactionCollection!.deleteMany({ }); // Empty filter removes all entries in collection.
   }
 
   async addTransaction (transaction: TransactionModel): Promise<void> {

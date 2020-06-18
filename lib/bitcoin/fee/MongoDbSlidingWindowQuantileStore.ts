@@ -21,7 +21,7 @@ export default class MongoDbSlidingWindowQuantileStore implements ISlidingWindow
    * Initialize the MongoDB store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl);
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
     this.db = client.db(this.databaseName);
     this.quantileCollection = await MongoDbSlidingWindowQuantileStore.createQuantileCollectionIfNotExist(this.db);
   }

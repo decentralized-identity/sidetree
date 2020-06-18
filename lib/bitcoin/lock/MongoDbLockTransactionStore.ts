@@ -27,7 +27,7 @@ export default class MongoDbLockTransactionStore {
    * Initializes this object by creating the required collection.
    */
   public async initialize () {
-    const client = await MongoClient.connect(this.serverUrl);
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
     this.db = client.db(this.databaseName);
     this.lockCollection = await MongoDbLockTransactionStore.creatLockCollectionIfNotExist(this.db);
   }

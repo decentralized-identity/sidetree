@@ -43,7 +43,7 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    * Initialize the MongoDB unresolvable transaction store.
    */
   public async initialize (): Promise<void> {
-    const client = await MongoClient.connect(this.serverUrl);
+    const client = await MongoClient.connect(this.serverUrl, { useNewUrlParser: true }); // `useNewUrlParser` addresses nodejs's URL parser deprecation warning.
     this.db = client.db(this.databaseName);
     this.unresolvableTransactionCollection = await MongoDbUnresolvableTransactionStore.createUnresolvableTransactionCollectionIfNotExist(this.db);
   }
@@ -52,8 +52,10 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
    * * Clears the unresolvable transaction store.
    */
   public async clearCollection () {
-    await this.unresolvableTransactionCollection!.drop();
-    this.unresolvableTransactionCollection = await MongoDbUnresolvableTransactionStore.createUnresolvableTransactionCollectionIfNotExist(this.db!);
+    // NOTE: We avoid implementing this by deleting and recreating the collection in rapid succession,
+    // because doing so against some cloud MongoDB services such as CosmosDB,
+    // especially in rapid repetition that can occur in tests, will lead to `MongoError: ns not found` connectivity error.
+    await this.unresolvableTransactionCollection!.deleteMany({ }); // Empty filter removes all entries in collection.
   }
 
   async recordUnresolvableTransactionFetchAttempt (transaction: TransactionModel): Promise<void> {
