@@ -7,7 +7,7 @@ import * as fs from 'fs';
 export default class BitcoinFileReader implements IBitcoinFileReader {
   /**
    * Constructor
-   * @param bitcoinDataDirectory The same directory used by bitcoin core
+   * @param bitcoinDataDirectory The same directory used by bitcoind
    */
   public constructor (public bitcoinDataDirectory: string) {}
 
