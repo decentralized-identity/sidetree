@@ -29,6 +29,7 @@ export default {
   ChunkFileDeltasNotArrayOfStrings: 'chunk_file_deltas_not_array_of_string',
   ChunkFileDeltasPropertyNotArray: 'chunk_file_deltas_property_not_array',
   ChunkFileUnexpectedProperty: 'chunk_file_unexpected_property',
+  CompressorMaxAllowedDecompressedDataSizeExceeded: 'compressor_max_allowed_decompressed_data_size_exceeded',
   CreateOperationMissingOrUnknownProperty: 'create_operation_missing_or_unknown_property',
   CreateOperationSuffixDataMissingOrNotString: 'create_operation_suffix_data_missing_or_not_string',
   CreateOperationSuffixDataMissingOrUnknownProperty: 'create_operation_suffix_data_missing_or_unknown_property',

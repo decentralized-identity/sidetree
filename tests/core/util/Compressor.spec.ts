@@ -1,4 +1,6 @@
 import Compressor from '../../../lib/core/versions/latest/util/Compressor';
+import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
+import SidetreeError from '../../../lib/common/SidetreeError';
 
 describe('Compressor', async () => {
 
@@ -8,8 +10,50 @@ describe('Compressor', async () => {
   it('should compress and decompress as Buffer correctly.', async () => {
     const inputAsBuffer = Buffer.from(randomJsonStr);
     const compressedBuffer = await Compressor.compress(inputAsBuffer);
-    const decompressedBuffer = await Compressor.decompress(compressedBuffer);
+    const decompressedBuffer = await Compressor.decompress(compressedBuffer, 100000);
 
     expect(decompressedBuffer).toEqual(inputAsBuffer);
+  });
+
+  it('Should throw error if decompressed data exceeds maximum size specified.', async (done) => {
+    // Generat a 100MB buffer with just 1's in it.
+    const decompressedBufferSize = 100000000;
+    const uncompressedBuffer = Buffer.alloc(decompressedBufferSize);
+    for (let i = 0; i < uncompressedBuffer.length; i++) {
+      uncompressedBuffer[i] = 49; // 49 is ASCII value for '1'.
+    }
+
+    const compressedBuffer = await Compressor.compress(uncompressedBuffer);
+
+    const maxAllowedDecompressedSizeInBytes = 100000; // 100KB
+    try {
+      await Compressor.decompress(compressedBuffer, maxAllowedDecompressedSizeInBytes);
+    } catch (error) {
+      // Expect Sidetree error.
+      if (error instanceof SidetreeError &&
+        error.code === ErrorCode.CompressorMaxAllowedDecompressedDataSizeExceeded) {
+
+        // Further check the error message to ensure that the decompressed bytes are less than the fully decompressed data size,
+        // to ensure that "chunking" is taking place.
+
+        // Parsing out the bytes decompressed from error message.
+        // NOTE: Error message looks like: 'Max data size allowed: 100000 bytes, aborted decompression at 114688 bytes.`
+        let message = error.message;
+        message = message.substring(0, message.length - 6); // Removing the trailing 'bytes.' string.
+        const bytesDecompressed = Number.parseInt(message.substring(message.indexOf('at ') + 3), 10); // Base 10.
+
+        // NOTE: bytes decompressed will go over the max allowed size since that's the error condition.
+        // But it should not go over too much (default decompressed chunks in gunzip lib are ~16K),
+        // in the test we allow total decompressed data to go over max allowed size by no more than 2x for simplicity,
+        // which is still a tiny fraction of the original data size.
+        if (bytesDecompressed > maxAllowedDecompressedSizeInBytes * 2) {
+          fail();
+        }
+      } else {
+        throw error; // Unexpected error, throw to fail the test.
+      }
+    }
+
+    done();
   });
 });

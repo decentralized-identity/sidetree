@@ -145,7 +145,7 @@ describe('RequestHandler', () => {
     const expectedBatchBuffer = await ChunkFile.createBuffer([createOperationData.createOperation], [], []);
     const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
     const fetchResult = await cas.read(expectedChunkFileHash, maxChunkFileSize);
-    const decompressedData = await Compressor.decompress(fetchResult.content!);
+    const decompressedData = await Compressor.decompress(fetchResult.content!, maxChunkFileSize);
     const chunkFile = JSON.parse(decompressedData.toString());
     expect(chunkFile.deltas.length).toEqual(1);
   });

@@ -4,6 +4,7 @@ import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import MapFileModel from './models/MapFileModel';
 import Multihash from './Multihash';
+import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -29,7 +30,8 @@ export default class MapFile {
 
     let decompressedBuffer;
     try {
-      decompressedBuffer = await Compressor.decompress(mapFileBuffer);
+      const estimatedDecompressedFileSize = ProtocolParameters.maxMapFileSizeInBytes * Compressor.estimatedDecomporessionMultiplier;
+      decompressedBuffer = await Compressor.decompress(mapFileBuffer, estimatedDecompressedFileSize);
     } catch (error) {
       throw SidetreeError.createFromError(ErrorCode.MapFileDecompressionFailure, error);
     }
