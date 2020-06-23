@@ -57,6 +57,7 @@ export default class BitcoinRawDataParser {
         const block = new Block(rawBlockDataAsBuffer);
         blockMapper[block.hash] = block;
         currentHex = '';
+        count++;
       }
     }
 
