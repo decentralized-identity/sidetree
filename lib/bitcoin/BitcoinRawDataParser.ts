@@ -31,7 +31,7 @@ export default class BitcoinRawDataParser {
       magicBytes = BitcoinRawDataParser.magicBytes.testnet;
       hexStrings = rawBlockDataFileString.split(magicBytes);
     } else if (rawBlockDataFileString.startsWith(BitcoinRawDataParser.magicBytes.mainnet)) {
-      magicBytes = BitcoinRawDataParser.magicBytes.mainnet
+      magicBytes = BitcoinRawDataParser.magicBytes.mainnet;
       hexStrings = rawBlockDataFileString.split(magicBytes);
     } else {
       throw new Error('Invalid block data');
