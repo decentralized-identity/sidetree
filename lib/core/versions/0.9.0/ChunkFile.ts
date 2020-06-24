@@ -23,7 +23,8 @@ export default class ChunkFile {
   ): Promise<ChunkFileModel> {
 
     let endTimer = timeSpan();
-    const decompressedChunkFileBuffer = await Compressor.decompress(chunkFileBuffer);
+    const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxChunkFileSizeInBytes * Compressor.estimatedDecomporessionMultiplier;
+    const decompressedChunkFileBuffer = await Compressor.decompress(chunkFileBuffer, maxAllowedDecompressedSizeInBytes);
     const chunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
     console.info(`Parsed chunk file in ${endTimer.rounded()} ms.`);
 

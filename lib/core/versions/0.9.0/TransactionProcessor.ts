@@ -27,7 +27,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
     private downloadManager: DownloadManager,
     private operationStore: IOperationStore,
     private blockchain: IBlockchain,
-    private versionMetadataFetcher: IVersionMetadataFetcher) { }
+    private versionMetadataFetcher: IVersionMetadataFetcher) {
+  }
 
   public async processTransaction (transaction: TransactionModel): Promise<boolean> {
     try {
@@ -98,7 +99,6 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const valueTimeLock = anchorFile.model.writer_lock_id
                           ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
                           : undefined;
-
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
       valueTimeLock,
       paidOperationCount,

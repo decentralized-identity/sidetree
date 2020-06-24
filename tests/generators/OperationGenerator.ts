@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
+import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
@@ -554,5 +555,27 @@ export default class OperationGenerator {
       );
     }
     return serviceEndpoints;
+  }
+
+  /**
+   * Generates an anchor file.
+   */
+  public static async generateAnchorFile (recoveryOperationCount: number): Promise<Buffer> {
+    const mapFileUri = 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA';
+
+    const recoverOperations = [];
+
+    for (let i = 0; i < recoveryOperationCount; i++) {
+      const [, anyRecoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
+      const anyDid = OperationGenerator.generateRandomHash();
+      const recoverOperationData = await OperationGenerator.generateRecoverOperation(
+        { didUniqueSuffix: anyDid, recoveryPrivateKey: anyRecoveryPrivateKey });
+      const recoverOperation = recoverOperationData.recoverOperation;
+
+      recoverOperations.push(recoverOperation);
+    }
+    const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileUri, [], recoverOperations, []);
+
+    return anchorFileBuffer;
   }
 }

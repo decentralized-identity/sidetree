@@ -43,10 +43,9 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     try {
-      const lastOperationTransactionNumber = appliedDidState ? appliedDidState.lastOperationTransactionNumber : undefined;
-
       // If the operation was not applied, log some info in case needed for debugging.
-      if (previousOperationTransactionNumber === lastOperationTransactionNumber) {
+      if (appliedDidState === undefined ||
+          appliedDidState.lastOperationTransactionNumber === previousOperationTransactionNumber) {
         const index = anchoredOperationModel.operationIndex;
         const time = anchoredOperationModel.transactionTime;
         const number = anchoredOperationModel.transactionNumber;

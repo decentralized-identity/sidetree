@@ -36,7 +36,8 @@ export default class AnchorFile {
 
     let anchorFileDecompressedBuffer;
     try {
-      anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer);
+      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxAnchorFileSizeInBytes * Compressor.estimatedDecomporessionMultiplier;
+      anchorFileDecompressedBuffer = await Compressor.decompress(anchorFileBuffer, maxAllowedDecompressedSizeInBytes);
     } catch (e) {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileDecompressionFailure, e);
     }
