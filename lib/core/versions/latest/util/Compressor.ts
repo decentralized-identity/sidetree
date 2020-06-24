@@ -1,7 +1,7 @@
+import ErrorCode from '../ErrorCode';
+import SidetreeError from '../../../../common/SidetreeError';
 import util = require('util');
 import zlib = require('zlib');
-import SidetreeError from '../../../../common/SidetreeError';
-import ErrorCode from '../ErrorCode';
 
 /**
  * Encapsulates functionality to compress/decompress data.
