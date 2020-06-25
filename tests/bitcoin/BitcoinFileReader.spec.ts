@@ -26,7 +26,7 @@ describe('BitcoinFileReader', () => {
 
       expect(() => {
         bitcoinFileReader.listBlockFiles();
-      }).toThrow(new SidetreeError(ErrorCode.BitcoinFileReaderBlockDirectoryDoesNotExist));
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinFileReaderBlockCannotReadDirectory));
     });
   });
 
@@ -46,7 +46,7 @@ describe('BitcoinFileReader', () => {
       spyOn(fs, 'readFileSync' as any).and.throwError('Fake fs error in test');
       expect(() => {
         bitcoinFileReader.readBlockFile('fileName');
-      }).toThrow(new SidetreeError(ErrorCode.BitcoinFileReaderBlockFileDoesNotExist));
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinFileReaderBlockCannotReadFile));
     });
   });
 
