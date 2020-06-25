@@ -1,3 +1,5 @@
+import ErrorCode from './ErrorCode';
+import SidetreeError from '../common/SidetreeError';
 import { Block } from 'bitcore-lib';
 
 /**
@@ -10,9 +12,10 @@ export default class BitcoinRawDataParser {
    * followed by a 4 byte number indicating how big the block data is
    */
   private static magicBytes = {
-    testnet: '0b110907',
-    mainnet: 'f9beb4d9'
+    testnet: Buffer.from('0b110907', 'hex'),
+    mainnet: Buffer.from('f9beb4d9', 'hex')
   };
+  private static magicBytesLength = 4;
   private static sizeBytesLength = 4;
 
   /**
@@ -21,65 +24,42 @@ export default class BitcoinRawDataParser {
    * @param rawBlockDataFileBuffer The file, in buffer form, to be parsed as blocks
    */
   public static parseRawDataFile (rawBlockDataFileBuffer: Buffer): any {
-    let rawBlockDataFileString = rawBlockDataFileBuffer.toString('hex');
-    let hexStrings: string[];
-    let magicBytes: string;
+    // Expect raw block data to be in the format of
+    // <MagicBytes 4 bytes><SizeBytes 4 bytes><BlockData n bytes><MagicBytes><SizeBytes><BlockData>...repeating
     const blockMapper: any = {};
-
-    // split the hex by magic bytes
-    if (rawBlockDataFileString.startsWith(BitcoinRawDataParser.magicBytes.testnet)) {
-      magicBytes = BitcoinRawDataParser.magicBytes.testnet;
-      hexStrings = rawBlockDataFileString.split(magicBytes);
-    } else if (rawBlockDataFileString.startsWith(BitcoinRawDataParser.magicBytes.mainnet)) {
-      magicBytes = BitcoinRawDataParser.magicBytes.mainnet;
-      hexStrings = rawBlockDataFileString.split(magicBytes);
-    } else {
-      throw new Error('Invalid block data');
-    }
-
-    // remove the first empty string after split
-    hexStrings.shift();
-
-    let currentHex = '';
     let count = 0;
-    for (const hexString of hexStrings) {
-      if (currentHex === '') {
-        currentHex = hexString;
-      } else {
-        // take care of when non magic bytes get split. Add back the bytes and concat
-        currentHex = `${currentHex}${magicBytes}${hexString}`;
-      }
-      if (BitcoinRawDataParser.verifySize(currentHex)) {
-        // A hex string can be treated as raw block data once size is verified and size bytes removed
-        const rawBlockDataAsString = currentHex.slice(BitcoinRawDataParser.sizeBytesLength * 2);
-        const rawBlockDataAsBuffer = Buffer.from(rawBlockDataAsString, 'hex');
-        // this can throw if the data is malformed
-        const block = new Block(rawBlockDataAsBuffer);
-        blockMapper[block.hash] = block;
-        currentHex = '';
-        count++;
-      }
-    }
+    let cursor = 0;
 
-    if (currentHex.length > 0) {
-      throw new Error('Incomplete block data');
+    // loop through each block within the buffer
+    while (cursor < rawBlockDataFileBuffer.length) {
+      // first 4 bytes are magic bytes
+      const actualMagicBytes = rawBlockDataFileBuffer.subarray(cursor, cursor + BitcoinRawDataParser.magicBytesLength);
+      if (!actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.mainnet) && !actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.testnet)) {
+        throw new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes);
+      }
+      cursor += BitcoinRawDataParser.magicBytesLength;
+
+      // next 4 bytes must be a the size bytes in Uint little endian
+      // denoting how many bytes worth of block data are after it
+      const blockSizeInBytes = rawBlockDataFileBuffer.readUInt32LE(cursor);
+      cursor += BitcoinRawDataParser.sizeBytesLength;
+
+      // the next n bytes are the block data
+      const blockData = rawBlockDataFileBuffer.subarray(cursor, cursor + blockSizeInBytes);
+      let block: Block;
+      try {
+        block = new Block(blockData);
+      } catch (e) {
+        console.error(`Bitcore threw error when parsing block data ${e}`);
+        throw new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData);
+      }
+
+      blockMapper[block.hash] = block;
+      cursor += blockSizeInBytes;
+      count++;
     }
 
     console.info(`Finished processing ${count} blocks from raw block file`);
     return blockMapper;
-  }
-
-  /**
-   * Verify the size of a given block hex string
-   * @returns True if denoted size matches real size, false otherwise.
-   */
-  private static verifySize (hex: string) {
-    // first 4 bytes of a raw block data denote size in little endian, 2 characters is a byte
-    const sizeLittleEndian = hex.substring(0, BitcoinRawDataParser.sizeBytesLength * 2);
-    const sizeBigEndian = sizeLittleEndian.match(/../g)!.reverse().join('');
-
-    // parse the hex value as base 16. Plus 4 to take the size itself into account
-    const size = (parseInt(sizeBigEndian, 16) + BitcoinRawDataParser.sizeBytesLength) * 2;
-    return hex.length === size;
   }
 }

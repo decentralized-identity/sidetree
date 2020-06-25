@@ -3,6 +3,8 @@ export default {
   BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate: 'bitcion_processor_bitcoin_client_current_height_not_up_to_date',
   BitcoinProcessorCannotProcessBlocksBeforeGenesis: 'bitcoin_processor_cannot_process_blocks_before_genesis',
   BitcoinProcessInvalidPreviousBlockHash: 'bitcoin_processor_invalid_previous_block_hash',
+  BitcoinRawDataParserInvalidBlockData: 'bitcoin_raw_data_parser_invalid_block_data',
+  BitcoinRawDataParserInvalidMagicBytes: 'bitcoin_raw_data_parser_invalid_magic_bytes',
   LockIdentifierIncorrectFormat: 'lock_identifier_incorrect_format',
   LockMonitorCurrentValueTimeLockInPendingState: 'lock_monitor_current_value_time_lock_in_pending_state',
   LockMonitorDesiredLockAmountIsNotWholeNumber: 'lock_monitor_desired_lock_amount_is_not_whole_number',

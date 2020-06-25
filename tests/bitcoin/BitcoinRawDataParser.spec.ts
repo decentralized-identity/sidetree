@@ -1,4 +1,6 @@
 import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import SidetreeError from '../../lib/common/SidetreeError';
 import * as fs from 'fs';
 
 describe('BitcoinRawDataParser', () => {
@@ -19,27 +21,14 @@ describe('BitcoinRawDataParser', () => {
       const blockDataFileBuffer = Buffer.from('ffffffffffffffff', 'hex');
       expect(() => {
         BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
-      }).toThrow(new Error('Invalid block data'));
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes));
     });
 
     it('should handle invalid raw block files', () => {
-      const blockDataFileBuffer = Buffer.from('0b110907ffffffff', 'hex');
+      const blockDataFileBuffer = Buffer.from('0b11090700000001ff', 'hex');
       expect(() => {
         BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
-      }).toThrow(new Error('Incomplete block data'));
-    });
-  });
-
-  describe('verifySize', () => {
-    it('should return false if size mismatch', () => {
-      // size expected to be 3 but is 2
-      const result = BitcoinRawDataParser['verifySize']('03000000abab');
-      expect(result).toEqual(false);
-    });
-
-    it('should return true if size matches', () => {
-      const result = BitcoinRawDataParser['verifySize']('02000000abab');
-      expect(result).toEqual(true);
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData));
     });
   });
 });
