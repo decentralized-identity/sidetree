@@ -46,6 +46,9 @@
   "scripts": {
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
     "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
+    "publish:unstable": "./scripts/publish-unstable.sh",
+    "publish:release": "./scripts/publish.sh",
+    "version:release": "yarn version --minor --message \"release commit [skip ci]\"",
     "lint": "tslint --fix --project .",
     "spec": "node ./scripts/spec-render.js",
     "spec:edit": "node ./scripts/spec-edit.js"

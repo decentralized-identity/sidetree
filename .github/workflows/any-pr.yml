@@ -1,9 +1,10 @@
-name: CI
+name: any-pr
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
-  build:
+  any-pr:
+    name: Build and test
     runs-on: ubuntu-latest
     strategy:
       matrix:
