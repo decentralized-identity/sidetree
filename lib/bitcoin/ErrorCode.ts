@@ -1,4 +1,6 @@
 export default {
+  BitcoinFileReaderBlockCannotReadDirectory: 'bitcoin_file_reader_block_cannot_read_directory',
+  BitcoinFileReaderBlockCannotReadFile: 'bitcoin_file_reader_block_cannot_read_file',
   BitcoinWalletIncorrectImportString: 'bitcoin_wallet_incorrect_import_string',
   BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate: 'bitcion_processor_bitcoin_client_current_height_not_up_to_date',
   BitcoinProcessorCannotProcessBlocksBeforeGenesis: 'bitcoin_processor_cannot_process_blocks_before_genesis',
