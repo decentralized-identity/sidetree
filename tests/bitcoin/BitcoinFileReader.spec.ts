@@ -1,4 +1,6 @@
 import BitcoinFileReader from '../../lib/bitcoin/BitcoinFileReader';
+import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import SidetreeError from '../../lib/common/SidetreeError';
 import * as fs from 'fs';
 
 describe('BitcoinFileReader', () => {
@@ -22,8 +24,9 @@ describe('BitcoinFileReader', () => {
     it('should return empty array if fs throws', () => {
       spyOn(fs, 'readdirSync' as any).and.throwError('Fake fs error in test');
 
-      const result = bitcoinFileReader.listBlockFiles();
-      expect(result).toEqual([]);
+      expect(() => {
+        bitcoinFileReader.listBlockFiles();
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinFileReaderBlockDirectoryDoesNotExist));
     });
   });
 
@@ -41,8 +44,9 @@ describe('BitcoinFileReader', () => {
 
     it('should return undefined if fs throws', () => {
       spyOn(fs, 'readFileSync' as any).and.throwError('Fake fs error in test');
-      const result = bitcoinFileReader.readBlockFile('fileName');
-      expect(result).toBeUndefined();
+      expect(() => {
+        bitcoinFileReader.readBlockFile('fileName');
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinFileReaderBlockFileDoesNotExist));
     });
   });
 

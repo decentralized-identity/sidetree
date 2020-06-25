@@ -10,5 +10,5 @@ export default interface IBitcoinFileReader {
   /**
    * Read a block file as buffer
    */
-  readBlockFile (fileName: string): Buffer | undefined;
+  readBlockFile (fileName: string): Buffer;
 }

@@ -1,4 +1,6 @@
 export default {
+  BitcoinFileReaderBlockDirectoryDoesNotExist: 'bitcoin_file_reader_block_directory_does_not_exist',
+  BitcoinFileReaderBlockFileDoesNotExist: 'bitcoin_file_reader_block_file_does_not_exist',
   BitcoinWalletIncorrectImportString: 'bitcoin_wallet_incorrect_import_string',
   BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate: 'bitcion_processor_bitcoin_client_current_height_not_up_to_date',
   BitcoinProcessorCannotProcessBlocksBeforeGenesis: 'bitcoin_processor_cannot_process_blocks_before_genesis',
