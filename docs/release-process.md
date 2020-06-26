@@ -24,7 +24,7 @@ To create a stable release follow the following steps
 9. Push the release branch including the newly created tags `git push origin release --tags`
 10. Open a pull request for the release, once approvals have been sought, merge the pull request using **rebase**,
     preserving the commit message as `release commit [skip ci]`
-11. Observe the triggering of the `/.github/workflows/push-release.yaml` github workflow
+11. Observe the triggering of the `/.github/workflows/push-release.yml` github workflow
 
 **Note** It is important that **rebase** is used as the strategy for merging a release pull request as this preserves the created release tag.
 
