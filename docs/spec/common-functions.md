@@ -16,8 +16,16 @@ Pseudo-code example using current protocol defaults:
 let HashingOutput = Base64URL( Multihash(DATA, 'sha2-256') );
 ```
 
-### Commitment Value Generation
+### Commitment Schemes
 
-The values used as the revealed secrets for Sidetree's commit/reveal mechanism ****MUST**** be the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representations of cryptographic public keys. Implementers and wallets ****SHOULD NOT**** reuse keypairs across recovery invocations, and ****MUST NOT**** reuse commitment values (hashes of the JWK reveal values) across the entire lifetime of a DID.
+[Commitment schemes](#commitment-scheme) are used by the Sidetree protocol in important ways to preserve the integrity of operations and assist in recovery.
 
-The secret JWK values published during the reveal phase of Sidetree's commit/reveal mechanism ****SHOULD**** be deterministically regenerable, to minimize the number of sensitive values User Agent wallet applications need to track, secure, and store. The most common way to allow for a regenerable JWK value is to use a key derivation scheme, wherein the JWK value that was committed in the commitment phase is able to be regenerated at a later time (e.g. hardened BIP32 HD key generation).
+#### Public Key Commitment Scheme
+
+The following steps define the [commitment scheme](#commitment-scheme) for generating a [public key commitment](#public-key-commitment) from a public key.
+
+1. Encode the public key into the form of a valid [JWK](https://tools.ietf.org/html/rfc7517).
+2. Canonicalize the [JWK](https://tools.ietf.org/html/rfc7517) encoded public key using the [JSON Canonicalization Scheme](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17).
+3. Apply the defined [HASH_ALGORITHM](#hash-algorithm) to the canonicalized public key to produce the [public key commitment](#public-key-commitment).
+
+Implementers ****MUST NOT**** re-use public keys across different commitment invocations.
