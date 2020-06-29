@@ -1,4 +1,4 @@
-name: any-pr
+name: Continuous Integration  
 
 on: [pull_request]
 
