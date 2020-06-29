@@ -27,5 +27,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPMJS_TOKEN }}
     - run: git config user.name "DIF CI"
     - run: git config user.email "ci@identity.foundation"
+    # Note - this is not required but it gives a clean failure prior to attempting a release if the GH workflow runner is not authenticated with npm.js
     - run: npm whoami
     - run: npm run publish:release
