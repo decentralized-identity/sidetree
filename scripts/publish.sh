@@ -12,8 +12,8 @@ export PATH="$PATH:node_modules/.bin"
 # Fetch the current version from the package.json
 new_version=$(node -pe "require('./package.json').version")
 
-# Version to this new unstable version
-npm publish --no-git-tag-version --new-version $new_version
+# Version to this new stable version
+npm publish --no-git-tag-version
 
 # Reset changes to the package.json
 git checkout -- package.json
