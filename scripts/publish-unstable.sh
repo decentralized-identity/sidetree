@@ -18,8 +18,11 @@ new_version=$(node -pe "require('./package.json').version")
 # Fetch the new unstable version
 new_unstable_version=$new_version"-unstable.$(git rev-parse --short HEAD)"
 
+# Set the unstable version in the package.json
+npm version $new_unstable_version
+
 # Version to this new unstable version
-npm publish --no-git-tag-version --new-version $new_unstable_version --tag unstable
+# npm publish --no-git-tag-version --new-version $new_unstable_version --tag unstable
 
 # Reset changes to the package.json
-git checkout -- package.json
+# git checkout -- package.json
