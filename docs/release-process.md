@@ -19,7 +19,7 @@ To create a stable release follow the following steps
 3. Install the dependencies `npm install`
 5. Build the package `npm build`
 6. Test the package `npm test`
-7. Run `npm run version:release`, note by default this will do a minor package release as we are pre the `1.0.0` release
+7. Run `npm run version:release`, with an appropriate option such as [ `major` | `minor` | `patch` ].
 8. Observe the correctly incremented change to the `package.json`
 9. Push the release branch including the newly created tags `git push origin release --tags`
 10. Open a pull request for the release, once approvals have been sought, merge the pull request using **rebase**,
