@@ -41,7 +41,7 @@ Sidetree operations are considered valid when the JWS can be verified, and where
 
 An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by an [Operation Key Pair](#operation-key-pair) that is authorized for an update operation. The public key of this key pair or a commitment to the public key MAY be exposed in the DID Document or Resolver Meta Data, and MAY be associated with an `operation` verification relationship. 
 
-A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by [Recovery Key Pair](#recovery-key-pair). This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
+A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by [Recovery Key Pair](#recovery-key-pair) that is authorized for a recovery operation. The public key of this key pair or a commitment to the public key MAY be exposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
 
 A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by [Recovery Key Pair](#recovery-key-pair). This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
 
