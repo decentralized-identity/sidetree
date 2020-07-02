@@ -25,7 +25,7 @@ Here is an example of a decoded JWS header:
 
 ### Verifying
 
-Regardless of which proof purpose a verificationMethod is associated with, the process of verifying a JWS linked to a DID is the same.
+Regardless of which verification relationship a verificationMethod is associated with, the process of verifying a JWS linked to a DID is the same.
 
 The JWS header is parsed and a `kid` is extracted.
 
@@ -35,15 +35,15 @@ The JWS header is parsed and a `kid` is extracted.
 
 #### Operation Verification
 
-Sidetree operations are considered valid when the JWS can be verified, and where the verificationMethod used is associated with the correct proof purpose.
+Sidetree operations are considered valid when the JWS can be verified, and where the verificationMethod used is associated with the correct verification relationship.
 
-`operation`, `recovery` are proof purposes for verifying sidetree operations which sidetree DID Methods MUST support, and which MAY be exposed externally via the DID Document or Resolver Method Meta Data.
+`operation`, `recovery` are verification relationships for verifying sidetree operations which sidetree DID Methods MUST support, and which MAY be exposed externally via the DID Document or Resolver Method Meta Data.
 
-An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by a key associated with the `operation` proof purpose. 
+An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by an [Operation Key Pair](#operation-key-pair) that is authorized for an update operation. The public key of this key pair or a commitment to the public key MAY be exposed in the DID Document or Resolver Meta Data, and MAY be associated with an `operation` verification relationship. 
 
-A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by a key associated with the `recovery` proof purpose. 
+A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by [Recovery Key Pair](#recovery-key-pair) that is authorized for a recovery operation. The public key of this key pair or a commitment to the public key MAY be exposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
 
-A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by a key associated with the `recovery` proof purpose. 
+A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by [Recovery Key Pair](#recovery-key-pair) that is authorized for a recovery operation. The public key of this key pair or a commitment to the public key MAY be exposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
 
 If a verificationMethod with `id` matching the JWS `kid` is not present in the expected collection, the sidetree operation is considered not valid.
 
@@ -51,16 +51,22 @@ If a verificationMethod with `id` matching the JWS `kid` is not present in the e
   Operations may be verified, and yet still rejected in the resolution process.
 :::
 
-DID Core also defines proof purposes which sidetree DID Methods MAY support.
+DID Core also defines verification relationships which sidetree DID Methods MAY support.
 
 `assertionMethod` for use with Verifiable Credentials.
 `authentication` for use with Verifiable Presentations, and general authentication flows.
 `capabilityInvocation` and `capabilityDelegation` for use with Object Capabilities used by Secure Data Stores / Encrypted Data vaults. 
+
+_Operation Key_ and _Recovery Key_ public key representations MAY be present in any verification relationship.
 
 ::: warning
   verificationMethod objects can be embedded, or referenced by `id`.
 :::
 
 ::: warning
-  It is not recommended to reuse verificationMethods for multiple proof purposes.
+  verificationMethod `id` can be a pure fragment, such as `#key-0` or a well formed URI, such as `did:example:123#key-1`. The later is much more common, and the former may lead to interoperability issues.
+:::
+
+::: warning
+  It is not recommended to reuse verificationMethods for multiple verification relationships.
 :::

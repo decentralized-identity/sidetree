@@ -17,8 +17,9 @@
 | Multihash  { #multihash }            | Protocol for differentiating outputs from common cryptographic hash functions, addressing size + encoding considerations: https://multiformats.io/multihash/ |
 | DID Operation         | Set of delta-based modifications that change the state of a DID Document when applied.                                               |
 | Operation Request     | JWS formatted request sent to a _Sidetree Node_ to include a _DID Operation_ in a batch of operations.     |
+| Operation Key Pair {#operation-key-pair}| A cryptographic key used to produce an _Operation Request_ JWS. Public key representation MAY be present in the DID Document. Public key representation MUST be used to produce _Operation Request_ commitment.     |
+| Recovery Key Pair {#recovery-key-pair}        | A cryptographic key used to produce an _Operation Request_ of type Recover or Deactivate. Public key representation MAY be present in the DID Document. Public key representation MUST be used to produce _Operation Request_ commitment.         |
 | Public Key Commitment { #public-key-commitment } | The resulting [commitment](#commitment) obtained by applying the defined [commitment scheme](#operation-commitment-scheme) to a public key |
-| Recovery Key Pair { #recovery-key-pair }    | Public/private key pair used to perform a Recovery or Deactivate operation.          |
 | Recovery Commitment { #recovery-commitment }   | The resulting [commitment](#commitment) obtained by applying the defined [commitment scheme](#recovery-commitment-scheme) to the public key of a [recovery key pair](#recovery-key-pair)          |
 | Sidetree Node         | Executable code that implements all the required components, functionality, and rules specified in the Sidetree protocol specification.                            |
 | Transaction           | Ledger transaction that anchors a set of Sidetree operations, via a CAS URI for an associated Anchor File.          |
