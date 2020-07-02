@@ -5,7 +5,7 @@ import TransactionModel from '../../common/models/TransactionModel';
  */
 export enum TransactionProcessingStatus {
   Pending = 'pending',
-  Processsed = 'processed'
+  Processed = 'processed'
 }
 
 /**

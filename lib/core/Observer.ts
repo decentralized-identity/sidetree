@@ -210,7 +210,7 @@ export default class Observer {
       // Find the index of the first transaction that is not processed yet.
       let i = 0;
       while (i < unresolvableTransactionStatus.length &&
-             unresolvableTransactionStatus[i].processingStatus === TransactionProcessingStatus.Processsed) {
+             unresolvableTransactionStatus[i].processingStatus === TransactionProcessingStatus.Processed) {
         i++;
       }
 
@@ -229,7 +229,7 @@ export default class Observer {
   private async storeConsecutiveTransactionsProcessed () {
     let i = 0;
     while (i < this.transactionsUnderProcessing.length &&
-          this.transactionsUnderProcessing[i].processingStatus === TransactionProcessingStatus.Processsed) {
+          this.transactionsUnderProcessing[i].processingStatus === TransactionProcessingStatus.Processed) {
       await this.transactionStore.addTransaction(this.transactionsUnderProcessing[i].transaction);
       i++;
     }
@@ -256,7 +256,7 @@ export default class Observer {
     } finally {
       // Purposely setting processing status first before rest of the code to prevent any possibility of deadlocking the Observer.
       console.info(`Finished processing transaction '${transaction.transactionNumber}'.`);
-      transactionUnderProcessing.processingStatus = TransactionProcessingStatus.Processsed;
+      transactionUnderProcessing.processingStatus = TransactionProcessingStatus.Processed;
 
       if (transactionProcessedSuccessfully) {
         console.info(`Removing transaction '${transaction.transactionNumber}' from unresolvable transactions if exists...`);
