@@ -162,20 +162,15 @@ export default class CreateOperation implements OperationModel {
         throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengtGreaterThanFour);
       }
 
-      if (!/^[A-Za-z0-9_-]+$/.test(suffixData.type)) {
+      if (!Encoder.isBase64UrlString(suffixData.type)) {
         throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeInvalidCharacter);
       }
-
-      return {
-        deltaHash: suffixData.delta_hash,
-        recoveryCommitment: suffixData.recovery_commitment,
-        type: suffixData.type
-      };
     }
 
     return {
       deltaHash: suffixData.delta_hash,
-      recoveryCommitment: suffixData.recovery_commitment
+      recoveryCommitment: suffixData.recovery_commitment,
+      type: suffixData.type
     };
   }
 }
