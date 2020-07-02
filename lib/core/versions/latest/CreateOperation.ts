@@ -11,6 +11,7 @@ import SidetreeError from '../../../common/SidetreeError';
 interface SuffixDataModel {
   deltaHash: string;
   recoveryCommitment: string;
+  type?: string;
 }
 
 /**
@@ -140,7 +141,8 @@ export default class CreateOperation implements OperationModel {
     const suffixData = await JsonAsync.parse(suffixDataJsonString);
 
     const properties = Object.keys(suffixData);
-    if (properties.length !== 2) {
+    // will have 3 if has type
+    if (properties.length !== 3 && properties.length !== 2) {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
@@ -149,6 +151,27 @@ export default class CreateOperation implements OperationModel {
 
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
+
+    // type has to be max 4 character long string with only base64url character set
+    if (properties.length === 3) {
+      if (typeof suffixData.type !== 'string') {
+        throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeIsNotString);
+      }
+
+      if (suffixData.type.length > 4) {
+        throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengtGreaterThanFour);
+      }
+
+      if (!/^[A-Za-z0-9_-]+$/.test(suffixData.type)) {
+        throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeInvalidCharacter);
+      }
+
+      return {
+        deltaHash: suffixData.delta_hash,
+        recoveryCommitment: suffixData.recovery_commitment,
+        type: suffixData.type
+      };
+    }
 
     return {
       deltaHash: suffixData.delta_hash,
