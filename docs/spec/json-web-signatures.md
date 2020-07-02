@@ -39,11 +39,11 @@ Sidetree operations are considered valid when the JWS can be verified, and where
 
 `operation`, `recovery` are verification relationships for verifying sidetree operations which sidetree DID Methods MUST support, and which MAY be exposed externally via the DID Document or Resolver Method Meta Data.
 
-An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by an _Operation Key_. This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY beassociated with an `operation` verification relationship. 
+An [Update Operation](https://identity.foundation/sidetree/spec/#update) MUST be signed by an [Operation Key Pair](#operation-key-pair). This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY beassociated with an `operation` verification relationship. 
 
-A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by _Recovery Key_. This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
+A [Recover Operation](https://identity.foundation/sidetree/spec/#recover) MUST by signed by [Recovery Key Pair](#recovery-key-pair). This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
 
-A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by _Recovery Key_. This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
+A [Deactivate Operation](https://identity.foundation/sidetree/spec/#deactivate) MUST by signed by [Recovery Key Pair](#recovery-key-pair). This key or its commitment MAY be expposed in the DID Document or Resolver Meta Data, and MAY be associated with a `recovery` verification relationship. 
 
 If a verificationMethod with `id` matching the JWS `kid` is not present in the expected collection, the sidetree operation is considered not valid.
 
@@ -57,7 +57,7 @@ DID Core also defines verification relationships which sidetree DID Methods MAY 
 `authentication` for use with Verifiable Presentations, and general authentication flows.
 `capabilityInvocation` and `capabilityDelegation` for use with Object Capabilities used by Secure Data Stores / Encrypted Data vaults. 
 
-_Operation Key_ and _Recovery Key_ MAY be present in any verification relationship.
+_Operation Key_ and _Recovery Key_ public key representations MAY be present in any verification relationship.
 
 ::: warning
   verificationMethod objects can be embedded, or referenced by `id`.
