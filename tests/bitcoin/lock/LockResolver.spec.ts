@@ -6,9 +6,7 @@ import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
-import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
-import SidetreeTransactionParser from '../../../lib/bitcoin/SidetreeTransactionParser';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
 import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
@@ -48,9 +46,7 @@ describe('LockResolver', () => {
   beforeEach(() => {
     let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
 
-    const mongoQuantileStore = new MockSlidingWindowQuantileStore();
-    const sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient, 'sidetree');
-    const normalizedFeeCalculator = new NormalizedFeeCalculator(10, mongoQuantileStore, bitcoinClient, sidetreeTxnParser);
+    const normalizedFeeCalculator = new NormalizedFeeCalculator();
 
     lockResolver = new LockResolver(bitcoinClient, 200, 250, normalizedFeeCalculator);
   });

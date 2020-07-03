@@ -7,13 +7,11 @@ import LockIdentifier from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
 import LockMonitor from '../../../lib/bitcoin/lock/LockMonitor';
 import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
-import MockSlidingWindowQuantileStore from '../../mocks/MockSlidingWindowQuantileStore';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
 import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
 import SidetreeError from '../../../lib/common/SidetreeError';
-import SidetreeTransactionParser from '../../../lib/bitcoin/SidetreeTransactionParser';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
@@ -31,9 +29,7 @@ describe('LockMonitor', () => {
   const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
 
-  const mongoQuantileStore = new MockSlidingWindowQuantileStore();
-  const sidetreeTxnParser = new SidetreeTransactionParser(bitcoinClient, 'sidetree');
-  const normalizedFeeCalculator = new NormalizedFeeCalculator(10, mongoQuantileStore, bitcoinClient, sidetreeTxnParser);
+  const normalizedFeeCalculator = new NormalizedFeeCalculator();
 
   const lockResolver = new LockResolver(bitcoinClient, 500, 600, normalizedFeeCalculator);
 
