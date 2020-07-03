@@ -12,7 +12,7 @@ describe('DocumentComposer', async () => {
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all purpose types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
-      const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
       };
@@ -56,7 +56,7 @@ describe('DocumentComposer', async () => {
 
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
-      const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', ['auth']);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         publicKeys: [anySigningPublicKey, authPublicKey]
       };
