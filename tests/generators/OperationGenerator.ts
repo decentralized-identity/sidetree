@@ -60,7 +60,7 @@ export default class OperationGenerator {
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string, purpose?: string[]): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, purpose?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
@@ -102,7 +102,7 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates an create operation.
+   * Generates a create operation.
    */
   public static async generateCreateOperation () {
     const signingKeyId = 'signingKey';
