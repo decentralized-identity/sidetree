@@ -20,7 +20,5 @@ export default {
   LockResolverTransactionIsNotPayingToScript: 'lock_resolver_transaction_is_not_paying_to_script',
   LockResolverTransactionNotConfirmed: 'lock_resolver_transation_not_confirmed',
   LockResolverTransactionNotFound: 'lock_resolver_transaction_not_found',
-  QuantileCalculatorGroupIdsNotSequential: 'quantile_calculator_group_ids_not_sequential',
-  QuantileCalculatorInvalidQuantileMeasure: 'quantile_calculator_invalid_quantile_measure',
   ValueTimeLockInPendingState: 'value_time_lock_in_pending_state'
 };
