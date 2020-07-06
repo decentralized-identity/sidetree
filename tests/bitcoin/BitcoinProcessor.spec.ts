@@ -653,7 +653,7 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should throw if the the quantile calculator does not return a value.', async () => {
+    it('should throw if the the normalized fee calculator does not return a value.', async () => {
       spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(undefined);
 
       try {
@@ -665,7 +665,7 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should return the value from the quantile calculator.', async () => {
+    it('should return the value from the normalized fee calculator.', async () => {
       spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(509);
 
       const response = await bitcoinProcessor.getNormalizedFee(validBlockHeight);

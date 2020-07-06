@@ -329,13 +329,13 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const quantileValue = this.normalizedFeeCalculator.getNormalizedFee(block);
+    const normalizedTransactionFee = this.normalizedFeeCalculator.getNormalizedFee(block);
 
-    if (quantileValue) {
-      return { normalizedTransactionFee: quantileValue };
+    if (normalizedTransactionFee) {
+      return { normalizedTransactionFee };
     }
 
-    console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
+    console.error(`Unable to get the normalized fee for block: ${block}. Seems like that the service isn't ready yet.`);
     throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
   }
 
