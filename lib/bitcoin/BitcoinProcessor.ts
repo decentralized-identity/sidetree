@@ -89,7 +89,7 @@ export default class BitcoinProcessor {
 
   private normalizedFeeCalculator: NormalizedFeeCalculator;
 
-  private bitcoinDataDirectory: string;
+  private bitcoinDataDirectory: string | undefined;
 
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
@@ -173,8 +173,11 @@ export default class BitcoinProcessor {
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
     // this reads into the raw block files and parse to speed to the initial startup
     // will use this instead of the rpc processing when ready
-    // await this.fastProcessTransactions(startingBlock);
-    await this.processTransactions(startingBlock);
+    if (this.bitcoinDataDirectory) {
+      await this.fastProcessTransactions(startingBlock);
+    } else {
+      await this.processTransactions(startingBlock);
+    }
 
     // NOTE: important to this initialization after we have processed all the blocks
     // this is because that the lock monitor needs the normalized fee calculator to
@@ -184,66 +187,85 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * THIS SHOULD BE PRIVATE! Public now because og linter and it's not used yet
+   * A faster version of process transactions that requires access to bitcoin data directory
    * @param startingBlock the starting block to begin processing
    */
-  public async fastProcessTransactions (startingBlock: IBlockInfo) {
-    const fileReader = new BitcoinFileReader(this.bitcoinDataDirectory);
+  private async fastProcessTransactions (startingBlock: IBlockInfo) {
+    const fileReader = new BitcoinFileReader(this.bitcoinDataDirectory!);
     const blockFiles = fileReader.listBlockFiles().sort();
+    let fileIndex = blockFiles.length - 1;
+
     const bestHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    let bestHash = await this.bitcoinClient.getBlockHash(bestHeight);
+    const bestHash = await this.bitcoinClient.getBlockHash(bestHeight);
+
+    let currentHash = bestHash;
+    let previousHash = undefined;
     let numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
+
     const feeInfos = new Array(numOfBlocksToProcess).fill(undefined);
 
-    for (let i = blockFiles.length - 1; i > 0; i--) {
-      const blockFileName = blockFiles[i];
+    console.log(`Begin fast processing block ${startingBlock.height} to ${bestHeight}`);
+    // loop through files and process them until we process all blocks needed
+    while (numOfBlocksToProcess !== 0 && fileIndex >= 0) {
+      const blockFileName = blockFiles[fileIndex];
+      fileIndex--;
       const blockFile = fileReader.readBlockFile(blockFileName);
       const blockData = BitcoinRawDataParser.parseRawDataFile(blockFile);
+      // for each block within the current file, add fee info and write to db
       for (let key in blockData) {
         const block = blockData[key];
 
         const indexInFeeInfo = block.height - startingBlock.height;
         if (indexInFeeInfo >= 0 && indexInFeeInfo < numOfBlocksToProcess) {
-          if (feeInfos[indexInFeeInfo] === undefined) {
-            feeInfos[indexInFeeInfo] = {};
-          }
-          const blockReward = this.getBitcoinBlockReward(block.height);
-
-          feeInfos[indexInFeeInfo][key] = {
-            height: block.height,
-            satoshis: block.transactions[0].outputs[0].satoshis - blockReward,
-            transactionCount: block.transactions.length - 1, // minus one because of coinbase
-            prevHash: Buffer.from(block.header.prevHash).reverse().toString('hex')
-          };
+          this.addBlockToFeeInfos(feeInfos, indexInFeeInfo, block);
           await this.processSidetreeTransactionsInBlock(block);
         }
       }
 
+      // look through fee info to see if there are confirmed data
+      // we only need to look from numOfBlocksToProcess because we know the elements after it are confirmed
       let currentFeeData = feeInfos[numOfBlocksToProcess - 1];
-      while (currentFeeData !== undefined && currentFeeData[bestHash] !== undefined) {
-        for (let hash in currentFeeData) {
-          if (hash !== bestHash) {
+      while (currentFeeData !== undefined && currentFeeData[currentHash] !== undefined) {
+        // delete all unneeded key value pairs and db records
+        const hashes = Object.keys(currentFeeData);
+        for (let hash of hashes) {
+          if (hash !== currentHash) {
+            delete currentFeeData[hash];
             await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
           }
         }
-        const confirmedFeeData = currentFeeData[bestHash];
-        // this flattens the current element to only contain the confirmed block
-        feeInfos[numOfBlocksToProcess - 1] = {
-          height: confirmedFeeData.height,
-          satoshis: confirmedFeeData.satoshis,
-          transactionCount: confirmedFeeData.transactionCount
-        };
-        bestHash = confirmedFeeData.prevHash;
+        const confirmedFeeData = currentFeeData[currentHash];
+        if (currentHash === bestHash) {
+          previousHash = confirmedFeeData.prevHash;
+        }
+        currentHash = confirmedFeeData.prevHash;
         numOfBlocksToProcess--;
         currentFeeData = feeInfos[numOfBlocksToProcess - 1];
       }
-
-      if (numOfBlocksToProcess === 0) {
-        break;
-      }
     }
 
+    this.lastProcessedBlock = {
+      height: bestHeight,
+      hash: bestHash,
+      previousHash: previousHash
+    };
+    console.log('finished fast processing');
+    // TODO: Issue #783
     // Need to use the fee infos and set fee after here.
+  }
+
+  private addBlockToFeeInfos (feeInfos: any[], indexInFeeInfo: number, block: BitcoinBlockModel) {
+    if (feeInfos[indexInFeeInfo] === undefined) {
+      feeInfos[indexInFeeInfo] = {};
+    }
+    const blockReward = this.getBitcoinBlockReward(block.height);
+
+    feeInfos[indexInFeeInfo][block.hash] = {
+      height: block.height,
+      satoshis: block.transactions[0].outputs[0].satoshis - blockReward,
+      transactionCount: block.transactions.length - 1, // minus one because of coinbase
+      prevHash: block.previousHash
+    };
   }
 
   /**

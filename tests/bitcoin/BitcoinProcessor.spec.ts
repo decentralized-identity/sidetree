@@ -4,8 +4,8 @@ import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
-import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
+import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import RequestError from '../../lib/bitcoin/RequestError';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
@@ -17,6 +17,8 @@ import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import * as fs from 'fs';
+import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -32,6 +34,7 @@ function randomBlock (above: number = 0): IBlockInfo {
 
 describe('BitcoinProcessor', () => {
   const testConfig: IBitcoinConfig = {
+    bitcoinDataDirectory: undefined,
     bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
     bitcoinFeeSpendingCutoff: 1,
     bitcoinPeerUri: 'http://localhost:18332',
@@ -59,6 +62,7 @@ describe('BitcoinProcessor', () => {
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForPeriodicPollSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
+  let fastProcessTransactionsSpy: jasmine.Spy;
   let periodicPollSpy: jasmine.Spy;
   let mongoLockTxnStoreSpy: jasmine.Spy;
   let lockMonitorSpy: jasmine.Spy;
@@ -82,6 +86,8 @@ describe('BitcoinProcessor', () => {
 
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
+
+    fastProcessTransactionsSpy = spyOn(bitcoinProcessor, 'fastProcessTransactions' as any);
 
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
     trimDatabasesToLastFullyProcessedBlockSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToLastFullyProcessedBlock');
@@ -116,6 +122,7 @@ describe('BitcoinProcessor', () => {
   describe('constructor', () => {
     it('should use appropriate config values', () => {
       const config: IBitcoinConfig = {
+        bitcoinDataDirectory: undefined,
         bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
         bitcoinFeeSpendingCutoff: 1,
         bitcoinPeerUri: randomString(),
@@ -209,6 +216,32 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor.initialize();
       expect(getStartingBlockForPeriodicPollSpy).toHaveBeenCalled();
       expect(processTransactionsSpy).toHaveBeenCalled();
+      expect(fastProcessTransactionsSpy).not.toHaveBeenCalled();
+      done();
+    });
+
+    it('should process all the blocks since its last known With fastProcessTransactions', async (done) => {
+      bitcoinProcessor['bitcoinDataDirectory'] = 'somePath';
+      const fromNumber = randomNumber();
+      const fromHash = randomString();
+
+      getStartingBlockForPeriodicPollSpy.and.returnValue(
+        Promise.resolve({
+          height: fromNumber,
+          hash: fromHash
+        })
+      );
+
+      fastProcessTransactionsSpy.and.callFake((sinceBlock: IBlockInfo) => {
+        expect(sinceBlock.height).toEqual(fromNumber);
+        expect(sinceBlock.hash).toEqual(fromHash);
+      });
+      expect(getStartingBlockForPeriodicPollSpy).not.toHaveBeenCalled();
+      expect(fastProcessTransactionsSpy).not.toHaveBeenCalled();
+      await bitcoinProcessor.initialize();
+      expect(getStartingBlockForPeriodicPollSpy).toHaveBeenCalled();
+      expect(fastProcessTransactionsSpy).toHaveBeenCalled();
+      expect(processTransactionsSpy).not.toHaveBeenCalled();
       done();
     });
 
@@ -780,6 +813,72 @@ describe('BitcoinProcessor', () => {
       }, 300);
 
       expect(clearTimeoutSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('getBitcoinBlockReward', () => {
+    it('should return 0 if halving time is greater than or equal to 64', () => {
+      const result = bitcoinProcessor['getBitcoinBlockReward'](Number.MAX_SAFE_INTEGER);
+      expect(result).toEqual(0);
+    });
+
+    it('should return 50 billion satoshis if halving time is greater than or equal to 0', () => {
+      const result = bitcoinProcessor['getBitcoinBlockReward'](2);
+      expect(result).toEqual(5000000000);
+    });
+  });
+
+  describe('fastProcessTransactions', () => {
+    beforeEach(() => {
+      fastProcessTransactionsSpy.and.callThrough();
+    });
+
+    it('should process as intended', async () => {
+      const startBlock = randomBlock(testConfig.genesisBlockNumber);
+      const getCurrentHeightMock = spyOn(bitcoinProcessor['bitcoinClient'],'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));
+      const getCurrentHashMock = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockHash').and.returnValue(Promise.resolve('hash2'));
+      const fsReaddirSyncSpy = spyOn(fs, 'readdirSync').and.returnValue(['blk001.dat' as any]);
+      const fsReadFileSyncSpy = spyOn(fs, 'readFileSync').and.returnValue(Buffer.from('someBuffer'));
+      const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);
+      const removeTransactionByTransactionTimeHashSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionByTransactionTimeHash' as any);
+      const rawDataParserSpy = spyOn(BitcoinRawDataParser, 'parseRawDataFile').and.returnValue({
+        hash2: {
+          hash: 'hash2',
+          height: startBlock.height + 1,
+          previousHash: 'hash1',
+          transactions: [{ outputs: [{ satoshis: 12345, scriptAsmAsString: 'asm' }], inputs: [], confirmations: 1, id: 'is2', blockHash: 'hash2' }]
+        },
+        hash1: {
+          hash: 'hash1',
+          height: startBlock.height,
+          previousHash: 'hash0',
+          transactions: [{ outputs: [{ satoshis: 12345, scriptAsmAsString: 'asm' }], inputs: [], confirmations: 1, id: 'id1', blockHash: 'hash1' }]
+        },
+        fork1: {
+          hash: 'fork1',
+          height: startBlock.height,
+          previousHash: 'hash0',
+          transactions: [{ outputs: [{ satoshis: 12345, scriptAsmAsString: 'asm' }], inputs: [], confirmations: 1, id: 'idfork', blockHash: 'fork1' }]
+        },
+        outOfBound: {
+          hash: 'outOfBound',
+          height: startBlock.height + 100,
+          previousHash: 'otherHash',
+          transactions: [{ outputs: [{ satoshis: 12345, scriptAsmAsString: 'asm' }], inputs: [], confirmations: 1, id: 'outOfBound', blockHash: 'outOfBound' }]
+        }
+      });
+
+      await bitcoinProcessor['fastProcessTransactions'](startBlock);
+      expect(getCurrentHeightMock).toHaveBeenCalled();
+      expect(getCurrentHashMock).toHaveBeenCalled();
+      expect(fsReaddirSyncSpy).toHaveBeenCalled();
+      expect(fsReadFileSyncSpy).toHaveBeenCalled();
+      // 3 times because 3 blocks are in bound
+      expect(processSidetreeTransactionsInBlockSpy).toHaveBeenCalledTimes(3);
+      // onces because 1 block is forked
+      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledTimes(1);
+      expect(rawDataParserSpy).toHaveBeenCalled();
+
     });
   });
 

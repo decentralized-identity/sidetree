@@ -198,6 +198,19 @@ describe('MongoDbTransactionStore', async () => {
     expect(remainingTransactionNumbers.includes(5)).toBeTruthy();
   });
 
+  it('should be able to delete transactions by transaction time hash', async () => {
+    const transactions = await generateAndStoreTransactions(transactionStore, 10);
+    const hashToDelete = transactions[0].transactionTimeHash;
+
+    await transactionStore.removeTransactionByTransactionTimeHash(hashToDelete);
+
+    const remainingTransactions = await transactionStore.getTransactions();
+    expect(remainingTransactions.length).toEqual(9);
+    for (let transaction of remainingTransactions) {
+      expect(transaction.transactionTimeHash !== hashToDelete).toBeTruthy();
+    }
+  });
+
   it('should be able to delete all transactions.', async () => {
     const transactionCount = 10;
     await generateAndStoreTransactions(transactionStore, transactionCount);
