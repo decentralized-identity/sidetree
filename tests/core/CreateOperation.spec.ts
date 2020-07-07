@@ -57,22 +57,84 @@ describe('CreateOperation', async () => {
   });
 
   describe('parseSuffixData()', async () => {
+    it('should function as expected with type', async () => {
+      const suffixData = {
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        type: 'type'
+      };
+      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
+      const result = (CreateOperation as any).parseSuffixData(encodedSuffixData);
+      expect(result).toBeDefined();
+    });
+
+    it('should function as expected without type', async () => {
+      const suffixData = {
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
+      };
+      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
+      const result = (CreateOperation as any).parseSuffixData(encodedSuffixData);
+      expect(result).toBeDefined();
+    });
+
     it('should throw if suffix data is not string', async () => {
       await expectAsync((CreateOperation as any).parseSuffixData(123))
         .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrNotString));
     });
 
     it('should throw if suffix data contains an additional unknown property.', async () => {
-      const [anyRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_key: anyRecoveryPublicKey,
         recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        type: 'type',
         extraProperty: 'An unknown extra property'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
         .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty));
+    });
+
+    it('should throw if suffix data is missing properties', async () => {
+      const suffixData = {
+        onlyOneProperty: 'only 1 property'
+      };
+      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
+      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty));
+    });
+
+    it('should throw if suffix data type is not string', async () => {
+      const suffixData = {
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        type: 123
+      };
+      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
+      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeIsNotString));
+    });
+
+    it('should throw if suffix data type length is greater than 4', async () => {
+      const suffixData = {
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        type: 'this is too long!!!!!'
+      };
+      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
+      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeLengtGreaterThanFour));
+    });
+
+    it('should throw if suffix data type is not in base64url character set', async () => {
+      const suffixData = {
+        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        type: '/\|='
+      };
+      const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
+      await expectAsync((CreateOperation as any).parseSuffixData(encodedSuffixData))
+        .toBeRejectedWith(new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeInvalidCharacter));
     });
   });
 });

@@ -18,6 +18,13 @@ export default class TransactionNumber {
   }
 
   /**
+   * Constructs the transaction number of the last possible transaction of the specified block.
+   */
+  public static lastTransactionOfBlock (blockHeight: number) {
+    return TransactionNumber.construct(blockHeight + 1, 0) - 1;
+  }
+
+  /**
    * Returns the block number component of transactionNumber
    */
   public static getBlockNumber (transactionNumber: number) {

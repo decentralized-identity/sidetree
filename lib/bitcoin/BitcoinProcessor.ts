@@ -9,7 +9,6 @@ import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
-import MongoDbSlidingWindowQuantileStore from './fee/MongoDbSlidingWindowQuantileStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import NormalizedFeeCalculator from './fee/NormalizedFeeCalculator';
 import ProtocolParameters from './ProtocolParameters';
@@ -88,8 +87,6 @@ export default class BitcoinProcessor {
 
   private sidetreeTransactionParser: SidetreeTransactionParser;
 
-  private mongoQuantileStore: MongoDbSlidingWindowQuantileStore;
-
   private normalizedFeeCalculator: NormalizedFeeCalculator;
 
   private bitcoinDataDirectory: string;
@@ -123,14 +120,7 @@ export default class BitcoinProcessor {
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.sidetreePrefix);
 
-    this.mongoQuantileStore = new MongoDbSlidingWindowQuantileStore(config.mongoDbConnectionString, config.databaseName);
-
-    this.normalizedFeeCalculator = new NormalizedFeeCalculator(
-      this.genesisBlockNumber,
-      this.mongoQuantileStore,
-      this.bitcoinClient,
-      this.sidetreeTransactionParser
-    );
+    this.normalizedFeeCalculator = new NormalizedFeeCalculator();
 
     this.lockResolver =
       new LockResolver(
@@ -161,16 +151,15 @@ export default class BitcoinProcessor {
   public async initialize () {
     await this.transactionStore.initialize();
     await this.bitcoinClient.initialize();
-    await this.mongoQuantileStore.initialize();
     await this.normalizedFeeCalculator.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
-    // We always need to start the processing from the first block of a fee sampling group
-    // so that in-memory state for fee sampling will be repoppulated yielding correct fee calculation,
-    // so we trim the databases to make sure this condition is met.
+    // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
+    // so we need to trim the databases back to the last fully processed block.
     // NOTE: We also initialize the `lastProcessedBlock`, this is an opional step currently,
     // but will be required if Issue #692 is implemented.
-    this.lastProcessedBlock = await this.trimDatabasesToLastFeeSamplingGroupBoundary();
+    const lastSavedTransaction = await this.transactionStore.getLastTransaction();
+    this.lastProcessedBlock = await this.trimDatabasesToLastFullyProcessedBlock(lastSavedTransaction);
 
     console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForPeriodicPoll();
@@ -298,24 +287,24 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * NOTE: Should be used ONLY during service initialization.
-   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
+   * Trims the databases to the block prior to the block the given transaction is in.
+   * @returns The last fully processed block after trimming. `undefined` if all data are deleted after trimming.
    */
-  private async trimDatabasesToLastFeeSamplingGroupBoundary (): Promise<IBlockInfo | undefined> {
-    // Look in the transaction store to figure out the last block that we need to start from.
-    const lastSavedTransaction = await this.transactionStore.getLastTransaction();
+  private async trimDatabasesToLastFullyProcessedBlock (lastValidTransaction?: TransactionModel): Promise<IBlockInfo | undefined> {
+    // No known valid transaction given.
+    if (lastValidTransaction === undefined) {
+      await this.trimDatabasesToBlock(); // Trim all data.
+      console.warn('Reverted all data.');
 
-    // If there is no transaction saved in the DBs, we still need to perform trimming
-    // because there could be stale fee calculater data lingering, so we trim using the genesis block.
-    let lastValidBlock;
-    if (lastSavedTransaction === undefined) {
-      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(this.genesisBlockNumber);
-    } else {
-      // Else we trim DBs using the block number of the last saved transaction.
-      lastValidBlock = await this.trimDatabasesToFeeSamplingGroupBoundary(lastSavedTransaction.transactionTime);
+      return undefined;
     }
 
-    return lastValidBlock;
+    // Else we trim DBs using the block height of the last saved transaction.
+    const lastFullyProcessedBlockHeight = lastValidTransaction.transactionTime - 1;
+    await this.trimDatabasesToBlock(lastFullyProcessedBlockHeight);
+
+    const lastFullyProcessedBlock = this.bitcoinClient.getBlockInfoFromHeight(lastFullyProcessedBlockHeight);
+    return lastFullyProcessedBlock;
   }
 
   /**
@@ -452,13 +441,13 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const quantileValue = this.normalizedFeeCalculator.getNormalizedFee(block);
+    const normalizedTransactionFee = this.normalizedFeeCalculator.getNormalizedFee(block);
 
-    if (quantileValue) {
-      return { normalizedTransactionFee: quantileValue };
+    if (normalizedTransactionFee) {
+      return { normalizedTransactionFee };
     }
 
-    console.error(`Unable to get the normalized fee from the quantile calculator for block: ${block}. Seems like that the service isn't ready yet.`);
+    console.error(`Unable to get the normalized fee for block: ${block}. Seems like that the service isn't ready yet.`);
     throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
   }
 
@@ -584,7 +573,7 @@ export default class BitcoinProcessor {
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
     // If last processed block is undefined, start processing from genesis block.
     if (this.lastProcessedBlock === undefined) {
-      await this.trimDatabasesToLastFeeSamplingGroupBoundary();
+      await this.trimDatabasesToLastFullyProcessedBlock(); // Trim all data.
       return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 
@@ -619,59 +608,32 @@ export default class BitcoinProcessor {
    * @returns A known valid block before the fork. `undefined` if no known valid block can be found.
    */
   private async revertDatabases (): Promise<IBlockInfo | undefined> {
-    console.info('Reverting transactions');
-
     const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
     const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
 
-    // No known valid transaction found.
-    if (lastKnownValidTransaction === undefined) {
-      await this.trimDatabasesToFeeSamplingGroupBoundary(this.genesisBlockNumber);
-      console.warn('Reverted all known transactions.');
-
-      return undefined;
-    }
-
-    // Else we have a valid transaction, so revert the DBs based using that last knwon valid transaction.
-    const lastValidBlockAfterDatabaseTrimming = this.trimDatabasesToFeeSamplingGroupBoundary(lastKnownValidTransaction.transactionTime);
-    return lastValidBlockAfterDatabaseTrimming;
+    return this.trimDatabasesToLastFullyProcessedBlock(lastKnownValidTransaction);
   }
 
   /**
-   * Trims entries from the system DBs to the closest previous full fee sampling group boundary of the given a block number.
-   * @param blockNumber The block number to perform DB trimming on.
-   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
+   * Trims entries in the system DBs to the given a block height.
+   * Trims all entries if no block height is given.
+   * @param blockHeight The exclusive block height to perform DB trimming on.
    */
-  private async trimDatabasesToFeeSamplingGroupBoundary (blockNumber: number): Promise<IBlockInfo | undefined> {
+  private async trimDatabasesToBlock (blockHeight?: number) {
+    console.info(`Trimming all fee and transaction data after block height: ${blockHeight}`);
 
-    console.info(`Reverting quantile and transaction DBs to closest fee sampling group boundary given block: ${blockNumber}`);
-
-    // Basically, we need to remove all the transactions/normazlied-fee-data from the system later than the
-    // specified `blockNumber` input.
-
-    // Get the first block and transaction from the group which are supposed to be deleted
-    const firstTxnOfGroup = this.normalizedFeeCalculator.getFirstTransactionOfGroup(blockNumber);
-    const firstBlockInGroup = TransactionNumber.getBlockNumber(firstTxnOfGroup);
+    // Basically, we need to remove all the transactions/fee-data from the system later than the last known valid transaction.
 
     // NOTE:
     // *****
-    // Make sure that we remove the transaction data BEFORE we remove the normalized data. This is
+    // Make sure that we remove the transaction data BEFORE we remove the fee data. This is
     // because that if the service stops at any moment after this, the initialize code looks at
-    // the transaction store and can revert the quantile db accordingly.
+    // the transaction store and can revert the fee DB accordingly.
     // Remove all the txns which are in that first block (and greater)
-    await this.transactionStore.removeTransactionsLaterThan(firstTxnOfGroup - 1);
+    const lastTransactionNumberOfGivenBlock = blockHeight ? TransactionNumber.lastTransactionOfBlock(blockHeight) : undefined;
+    await this.transactionStore.removeTransactionsLaterThan(lastTransactionNumberOfGivenBlock);
 
-    // Remove all the data from the normalized fee data DBs
-    await this.normalizedFeeCalculator.trimDatabasesToGroupBoundary(blockNumber);
-
-    // If we have deleted all data, there is no last known valid block in the system to return.
-    if (firstBlockInGroup <= this.genesisBlockNumber) {
-      return undefined;
-    }
-
-    // Else the last valid block becomes the block just before `firstBlockInGroup`.
-    const lastValidBlockAfterTrimming = firstBlockInGroup - 1;
-    return this.bitcoinClient.getBlockInfoFromHeight(lastValidBlockAfterTrimming);
+    // TODO: Issue #783 - Remove all the data from the fee data DB
   }
 
   /**
@@ -713,9 +675,7 @@ export default class BitcoinProcessor {
         `Previous hash from blockchain: ${blockData.previousHash}. Expected value: ${previousBlockHash}`);
     }
 
-    await this.normalizedFeeCalculator.processBlock(blockData);
     await this.processSidetreeTransactionsInBlock(blockData);
-
     return blockHash;
   }
 

@@ -23,8 +23,8 @@ Sidetree Methods MAY rely on the DID Document data model when verifying protocol
 
 Use the following process to generate a Sidetree-based DID:
 
-1. Generate a key pair using the defined [`KEY_ALGORITHM`](#key-algorithm), let this be known as the [update key pair](#update-key-pair).
-2. Generate a [public key commitment](#public-key-commitment) using the defined [public key commitment scheme](#public-key-commitment-scheme) and public key of the generated [update key pair](#update-key-pair), let this resulting commitment be known as the [update commitment](#update-commitment).
+1. Generate a key pair using the defined [`KEY_ALGORITHM`](#key-algorithm), let this be known as the [operation key pair](#operation-key-pair).
+2. Generate a [public key commitment](#public-key-commitment) using the defined [public key commitment scheme](#public-key-commitment-scheme) and public key of the generated [operation key pair](#operation-key-pair), let this resulting commitment be known as the [update commitment](#update-commitment).
 3. Generate an encoded representation of the following object using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), herein referred to as the [_Create Operation Delta Object_](#create-delta-object){ id="create-delta-object" }:
     ```json
     {
@@ -87,9 +87,9 @@ The following process must be used to update the state a Sidetree-based DID:
 Use the following process to recover a Sidetree-based DID:
 
 1. Retrieve the _Recovery Key_ that matches the previously anchored _Recovery Commitment_. This value will be used in constructing an [_Anchor File Recovery Entry_](#anchor-file-recovery-entry) for the DID being recovered.
-2. Generate a new recovery key pair, which ****MUST NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Recovery Public Key_ for use in generating the next _Recovery Commitment_, and the private key for use in the next [Recovery](#recover) operation.
+2. Generate a new [recovery key pair](#recovery-key-pair), which ****MUST NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Recovery Public Key_ for use in generating the next _Recovery Commitment_, and the private key for use in the next [Recovery](#recover) operation.
 3. Create a _Recovery Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the _Next Recovery Public Key_, and retain the hash value for inclusion in an [Anchor File](#anchor-file).
-4. Generate a new update key pair, which ****SHOULD NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Update Public Key_ for use in generating the next _Update Commitment_, and the private key for use in the next [Update](#update) operation.
+4. Generate a new operation key pair, which ****SHOULD NOT**** be the same key used in any previous operations, via the [`KEY_ALGORITHM`](#key-algorithm), retaining the _Next Update Public Key_ for use in generating the next _Update Commitment_, and the private key for use in the next [Update](#update) operation.
 5. Create an _Update Commitment_ using the [Hashing Process](#hashing-process) to generate a hash value from the [JCS canonicalized](https://tools.ietf.org/html/draft-rundgren-json-canonicalization-scheme-17) [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) JWK representation of the _Next Update Public Key_, and retain the hash value for inclusion in the [_Recovery Operation Delta Object_](#recover-delta-object)(as described below).
 6. Generate and retain a [`COMMITMENT_VALUE`](#commitment-value), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, for use in the next Update operation, herein referred to as the _Update Reveal Value_.
 7. Generate an _Update Commitment_ using the [Hashing Process](#hashing-process), in adherence with the [Commitment Value Generation](#commitment-value-generation) directives, to generate a hash of the _Update Reveal Value_, and retain the resulting hash value for inclusion in an [Anchor File](#anchor-file).
