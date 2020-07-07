@@ -759,6 +759,7 @@ describe('BitcoinClient', async () => {
 
       expect(redeemScript).toEqual(mockRedeemScript.toHex());
       expect(actualTxn.getFee()).toEqual(mockTxnFee);
+      expect((actualTxn as any).version).toEqual(2);
 
       // There should be 2 outputs
       expect(actualTxn.outputs.length).toEqual(2);
@@ -883,7 +884,7 @@ describe('BitcoinClient', async () => {
       const publicKeyHashOutScript = Script.buildPublicKeyHashOut(walletAddressFromBitcoinClient);
 
       const mockLockUntilBufferAsHex = mockLockUntilBuffer.toString('hex');
-      const expectedScriptAsm = `${mockLockUntilBufferAsHex} OP_NOP2 OP_DROP ${publicKeyHashOutScript.toASM()}`;
+      const expectedScriptAsm = `${mockLockUntilBufferAsHex} OP_NOP3 OP_DROP ${publicKeyHashOutScript.toASM()}`;
 
       const redeemScript = BitcoinClient['createFreezeScript'](mockLockUntilBlock, walletAddressFromBitcoinClient);
       expect(redeemScript.toASM()).toEqual(expectedScriptAsm);
