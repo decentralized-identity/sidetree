@@ -799,7 +799,7 @@ describe('BitcoinClient', async () => {
       expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock, walletAddressFromBitcoinClient);
 
       const expectedPayToScriptAddress = new Address(mockRedeemScriptHashOutput);
-      expect(utilFuncSpy).toHaveBeenCalledWith(mockFreezeTxn1, mockFreezeUntilPreviousBlock, expectedPayToScriptAddress);
+      expect(utilFuncSpy).toHaveBeenCalledWith(mockFreezeTxn1, mockFreezeUntilPreviousBlock, mockFreezeUntilBlock, expectedPayToScriptAddress);
     });
   });
 
@@ -813,12 +813,12 @@ describe('BitcoinClient', async () => {
 
       const actual = await bitcoinClient['createSpendToWalletTransaction'](mockFreezeTxn1, mockFreezeUntilBlock);
       expect(actual).toEqual(mockFreezeTxn2);
-      expect(utilFuncSpy).toHaveBeenCalledWith(mockFreezeTxn1, mockFreezeUntilBlock, walletAddressFromBitcoinClient);
+      expect(utilFuncSpy).toHaveBeenCalledWith(mockFreezeTxn1, mockFreezeUntilBlock, undefined, walletAddressFromBitcoinClient);
     });
   });
 
   describe('createSpendTransactionFromFrozenTransaction', () => {
-    it('should create the spend transaction correctly', async () => {
+    it('should create the spend transaction correctly if the spend is another freeze.', async () => {
       const mockFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 12345);
       const mockFreezeUntilBlock = 987654;
 
@@ -834,10 +834,11 @@ describe('BitcoinClient', async () => {
       const createUnspentSpy = spyOn(bitcoinClient as any, 'createUnspentOutputFromFrozenTransaction').and.returnValue(mockUnspentOutput);
       const estimateFeeSpy = spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(mockTxnFee);
 
-      const actual = await bitcoinClient['createSpendTransactionFromFrozenTransaction'](mockFreezeTxn, mockFreezeUntilBlock, mockPayToAddress);
+      const mockCurrentFreezeDuration = 45987;
+      const actual =
+        await bitcoinClient['createSpendTransactionFromFrozenTransaction'](mockFreezeTxn, mockFreezeUntilBlock, mockCurrentFreezeDuration, mockPayToAddress);
 
-      // Txn should go into the unlock block
-      expect(actual.getLockTime()).toEqual(mockFreezeUntilBlock);
+      expect((actual as any).version).toEqual(2);
 
       // Output should be to the mock address passed in
       expect(actual.outputs.length).toEqual(1);
@@ -850,10 +851,34 @@ describe('BitcoinClient', async () => {
       expect(actual.inputs.length).toEqual(1);
       expect(actual.inputs[0].prevTxId.toString('hex')).toEqual(mockUnspentOutput.txId);
       expect(actual.inputs[0].outputIndex).toEqual(mockUnspentOutput.outputIndex);
+      expect(actual.inputs[0].sequenceNumber).toEqual(mockCurrentFreezeDuration);
 
       // Check other function calls
       expect(createUnspentSpy).toHaveBeenCalledWith(mockFreezeTxn, mockFreezeUntilBlock);
       expect(estimateFeeSpy).toHaveBeenCalled();
+    });
+
+    it('should create the spend transaction correctly if the spend is not another freeze', async () => {
+      const mockFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString, 12345);
+
+      const mockPayToAddress = walletAddressFromBitcoinClient;
+
+      const mockUnspentOutput = Transaction.UnspentOutput.fromObject({
+        txid: mockFreezeTxn.id, vout: 3, scriptPubKey: Script.empty(), satoshis: 456789
+      });
+
+      const mockTxnFee = 21897;
+
+      spyOn(bitcoinClient as any, 'createUnspentOutputFromFrozenTransaction').and.returnValue(mockUnspentOutput);
+      spyOn(bitcoinClient as any, 'calculateTransactionFee').and.returnValue(mockTxnFee);
+
+      const actual = await bitcoinClient['createSpendTransactionFromFrozenTransaction'](mockFreezeTxn, 1234, undefined, mockPayToAddress);
+
+      expect((actual as any).version).toEqual(2);
+
+      // There's only 1 input (from the previous freeze txn)
+      expect(actual.inputs.length).toEqual(1);
+      expect(actual.inputs[0].sequenceNumber).toBeGreaterThan(0);
     });
   });
 
