@@ -4,6 +4,7 @@ import IBitcoinWallet from './interfaces/IBitcoinWallet';
  * Defines all the configuration parameters needed to initialize Sidetree bitcoin service.
  */
 export default interface IBitcoinConfig {
+  bitcoinDataDirectory: string;
   bitcoinFeeSpendingCutoffPeriodInBlocks: number;
   bitcoinFeeSpendingCutoff: number;
   bitcoinPeerUri: string;

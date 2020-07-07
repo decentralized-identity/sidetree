@@ -677,7 +677,11 @@ export default class BitcoinClient {
     };
   }
 
-  private static createBitcoinTransactionModel (transactionWrapper: BitcoreTransactionWrapper): BitcoinTransactionModel {
+  /**
+   * create internal bitcoin transaction model from bitcore transaction model
+   * @param transactionWrapper the bitcore transaction model wrapper
+   */
+  public static createBitcoinTransactionModel (transactionWrapper: BitcoreTransactionWrapper): BitcoinTransactionModel {
 
     const bitcoinInputs = transactionWrapper.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });
     const bitcoinOutputs = transactionWrapper.outputs.map((output) => { return BitcoinClient.createBitcoinOutputModel(output); });
