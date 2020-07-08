@@ -10,9 +10,10 @@ import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockedModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
-import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
 import SidetreeError from '../../../lib/common/SidetreeError';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
+import VersionManager from '../../../lib/bitcoin/VersionManager';
+import VersionModel from '../../../lib/common/models/VersionModel';
 
 function createLockState (latestSavedLockInfo: SavedLockedModel | undefined, activeValueTimeLock: ValueTimeLockModel | undefined, status: any) {
   return {
@@ -29,9 +30,10 @@ describe('LockMonitor', () => {
   const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
   const mongoDbLockStore = new MongoDbLockTransactionStore('server-url', 'db');
 
-  const normalizedFeeCalculator = new NormalizedFeeCalculator();
+  const versionModels: VersionModel[] = [{ startingBlockchainTime: 0, version: 'latest' }];
+  const versionManager = new VersionManager(versionModels);
 
-  const lockResolver = new LockResolver(bitcoinClient, 500, 600, normalizedFeeCalculator);
+  const lockResolver = new LockResolver(versionManager, bitcoinClient, 500, 600);
 
   let lockMonitor: LockMonitor;
 
