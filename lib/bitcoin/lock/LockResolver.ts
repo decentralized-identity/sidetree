@@ -4,9 +4,9 @@ import BitcoinOutputModel from '../models/BitcoinOutputModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
-import NormalizedFeeCalculator from '../fee/NormalizedFeeCalculator';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
+import VersionManager from '../VersionManager';
 import { Script } from 'bitcore-lib';
 
 /** Structure (internal for this class) to hold the redeem script verification results */
@@ -25,10 +25,10 @@ interface LockScriptVerifyResult {
 export default class LockResolver {
 
   constructor (
+    private versionManager: VersionManager,
     private bitcoinClient: BitcoinClient,
     private minimumLockDurationInBlocks: number,
-    private maximumLockDurationInBlocks: number,
-    private normalizedFeeCalculator: NormalizedFeeCalculator) {
+    private maximumLockDurationInBlocks: number) {
   }
 
   /**
@@ -90,12 +90,7 @@ export default class LockResolver {
                               `Lock start block: ${lockStartBlock}. Unlock block: ${scriptVerifyResult.unlockAtBlock}`);
     }
 
-    const normalizedFee = this.normalizedFeeCalculator.getNormalizedFee(lockStartBlock);
-
-    if (!normalizedFee) {
-      throw new SidetreeError(ErrorCode.LockResolverNormalizedFeeCannotBeCalculated,
-                              `Normalized fee cannot be calculated for the block: ${lockStartBlock}`);
-    }
+    const normalizedFee = this.versionManager.getFeeCalculator(lockStartBlock).getNormalizedFee(lockStartBlock);
 
     return {
       identifier: serializedLockIdentifier,

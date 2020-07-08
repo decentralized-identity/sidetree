@@ -13,7 +13,9 @@ import MockTransactionStore from '../mocks/MockTransactionStore';
 import OperationType from '../../lib/core/enums/OperationType';
 import Resolver from '../../lib/core/Resolver';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import VersionManager, { ProtocolVersionModel } from '../../lib/core/VersionManager';
+import VersionManager from '../../lib/core/VersionManager';
+import VersionModel from '../../lib/common/models/VersionModel';
+import OperationGenerator from '../generators/OperationGenerator';
 
 describe('VersionManager', async () => {
 
@@ -37,11 +39,11 @@ describe('VersionManager', async () => {
 
     it('should initialize all the objects correctly.', async () => {
 
-      const protocolVersionConfig: ProtocolVersionModel[] = [
+      const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
-      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      const versionMgr = new VersionManager(config, versionModels);
       spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
@@ -56,11 +58,11 @@ describe('VersionManager', async () => {
 
     it('should throw if version metadata is the wrong type.', async () => {
 
-      const protocolVersionConfig: ProtocolVersionModel[] = [
+      const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
-      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      const versionMgr = new VersionManager(config, versionModels);
       spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         if (className === 'VersionMetadata') {
           const fakeClass = class {}; // a fake class that does nothing
@@ -81,23 +83,79 @@ describe('VersionManager', async () => {
     });
 
     it('should throw if the versions folder is missing.', async () => {
-      const protocolVersionConfig: ProtocolVersionModel[] = [
+      const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: 'invalid_version' }
       ];
 
-      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      const versionMgr = new VersionManager(config, versionModels);
       const resolver = new Resolver(versionMgr, operationStore);
       await expectAsync(versionMgr.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore)).toBeRejected();
     });
   });
 
+  describe('loadDefaultExportsForVersion()', async () => {
+    it('should be able to load a default export of a versioned component successfully.', async () => {
+      const versionModels: VersionModel[] = [
+        { startingBlockchainTime: 1, version: 'unused' }
+      ];
+
+      const versionManager = new VersionManager(config, versionModels);
+
+      /* tslint:disable-next-line */
+      const OperationProcessor = await (versionManager as any).loadDefaultExportsForVersion('latest', 'OperationProcessor');
+      const operationProcessor = new OperationProcessor();
+      expect(operationProcessor).toBeDefined();
+    });
+  });
+
+  describe('getTransactionSelector()', async () => {
+    it('should return the correct version of `ITransactionSelector`.', async () => {
+
+      const versionModels: VersionModel[] = [
+        { startingBlockchainTime: 1000, version: '1000' },
+        { startingBlockchainTime: 2000, version: '2000' }
+      ];
+
+      const versionManager = new VersionManager(config, versionModels);
+
+      // Setting up loading of mock ITransactionSelector implementations.
+      const mockTransactionSelector1 = class {
+        /* tslint:disable-next-line */
+        selectQualifiedTransactions () { return [] }
+      };
+      const anyTransactionModel = OperationGenerator.generateTransactionModel();
+      const mockTransactionSelector2 = class {
+        /* tslint:disable-next-line */
+        selectQualifiedTransactions () { return [anyTransactionModel] }
+      };
+      spyOn(versionManager as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
+        if (className === 'TransactionSelector') {
+          if (version === '1000') {
+            return mockTransactionSelector1;
+          } else { // '2000'
+            return mockTransactionSelector2;
+          }
+        }
+
+        // Default to loading from `latest` for components not being tested.
+        return (await import(`../../lib/core/versions/latest/${className}`)).default;
+      });
+
+      const resolver = new Resolver(versionManager, operationStore);
+      await versionManager.initialize(blockChain, cas, downloadMgr, operationStore, resolver, mockTransactionStore);
+      const transactions = await versionManager.getTransactionSelector(2001).selectQualifiedTransactions([]);
+
+      expect(transactions[0].anchorString).toEqual(anyTransactionModel.anchorString);
+    });
+  });
+
   describe('getVersionMetadata', () => {
     it('should return the expected versionMetadata', async () => {
-      const protocolVersionConfig: ProtocolVersionModel[] = [
+      const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
-      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      const versionMgr = new VersionManager(config, versionModels);
       spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
@@ -114,11 +172,11 @@ describe('VersionManager', async () => {
   describe('get* functions.', async () => {
 
     it('should return the correct version-ed objects for valid version.', async () => {
-      const protocolVersionConfig: ProtocolVersionModel[] = [
+      const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
-      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      const versionMgr = new VersionManager(config, versionModels);
       spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         return (await import(`./versions/${version}/${className}`)).default;
       });
@@ -162,11 +220,11 @@ describe('VersionManager', async () => {
     });
 
     it('should throw for an invalid version.', async () => {
-      const protocolVersionConfig: ProtocolVersionModel[] = [
+      const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: 'test-version-1' }
       ];
 
-      const versionMgr = new VersionManager(config, protocolVersionConfig);
+      const versionMgr = new VersionManager(config, versionModels);
       spyOn(versionMgr as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         return (await import(`./versions/${version}/${className}`)).default;
       });

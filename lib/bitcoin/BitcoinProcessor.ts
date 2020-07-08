@@ -7,7 +7,6 @@ import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
-import NormalizedFeeCalculator from './fee/NormalizedFeeCalculator';
 import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
 import ResponseStatus from '../common/enums/ResponseStatus';
@@ -21,6 +20,8 @@ import TransactionFeeModel from '../common/models/TransactionFeeModel';
 import TransactionModel from '../common/models/TransactionModel';
 import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
+import VersionManager from './VersionManager';
+import VersionModel from '../common/models/VersionModel';
 
 /**
  * Object representing a blockchain time and hash
@@ -64,6 +65,8 @@ export default class BitcoinProcessor {
   /** Days of notice before the wallet is depeleted of all funds */
   public lowBalanceNoticeDays: number;
 
+  private versionManager: VersionManager;
+
   /** Last seen block */
   private lastProcessedBlock: IBlockInfo | undefined;
 
@@ -84,12 +87,12 @@ export default class BitcoinProcessor {
 
   private sidetreeTransactionParser: SidetreeTransactionParser;
 
-  private normalizedFeeCalculator: NormalizedFeeCalculator;
-
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
 
-  public constructor (config: IBitcoinConfig) {
+  public constructor (config: IBitcoinConfig, versionModels: VersionModel[]) {
+    this.versionManager = new VersionManager(versionModels);
+
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
@@ -114,14 +117,12 @@ export default class BitcoinProcessor {
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.sidetreePrefix);
 
-    this.normalizedFeeCalculator = new NormalizedFeeCalculator();
-
     this.lockResolver =
       new LockResolver(
+        this.versionManager,
         this.bitcoinClient,
         ProtocolParameters.minimumValueTimeLockDurationInBlocks,
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks,
-        this.normalizedFeeCalculator);
+        ProtocolParameters.maximumValueTimeLockDurationInBlocks);
 
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
@@ -143,9 +144,9 @@ export default class BitcoinProcessor {
    * Initializes the Bitcoin processor
    */
   public async initialize () {
+    await this.versionManager.initialize();
     await this.transactionStore.initialize();
     await this.bitcoinClient.initialize();
-    await this.normalizedFeeCalculator.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
     // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
@@ -329,14 +330,9 @@ export default class BitcoinProcessor {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
     }
 
-    const normalizedTransactionFee = this.normalizedFeeCalculator.getNormalizedFee(block);
+    const normalizedTransactionFee = this.versionManager.getFeeCalculator(block).getNormalizedFee(block);
 
-    if (normalizedTransactionFee) {
-      return { normalizedTransactionFee };
-    }
-
-    console.error(`Unable to get the normalized fee for block: ${block}. Seems like that the service isn't ready yet.`);
-    throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.BlockchainTimeOutOfRange);
+    return { normalizedTransactionFee };
   }
 
   /**
