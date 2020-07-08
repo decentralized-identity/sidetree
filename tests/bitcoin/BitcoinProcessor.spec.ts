@@ -20,7 +20,6 @@ import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import VersionModel from '../../lib/common/models/VersionModel';
-import * as fs from 'fs';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
