@@ -15,7 +15,9 @@ import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel
 import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
+import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
+import DataGenerator from './DataGenerator';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -44,6 +46,21 @@ interface GeneratedRecoverOperationData {
  * Mainly useful for testing purposes.
  */
 export default class OperationGenerator {
+
+  /**
+   * Generates a random `TransactionModel`.
+   */
+  public static generateTransactionModel (): TransactionModel {
+    return {
+      anchorString: OperationGenerator.generateRandomHash(),
+      normalizedTransactionFee: DataGenerator.generateInteger(),
+      transactionFeePaid: DataGenerator.generateInteger(),
+      transactionNumber: DataGenerator.generateInteger(),
+      transactionTime: DataGenerator.generateInteger(),
+      transactionTimeHash: OperationGenerator.generateRandomHash(),
+      writer: OperationGenerator.generateRandomHash()
+    };
+  }
 
   /**
    * Generates random hash.

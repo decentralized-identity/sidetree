@@ -1,4 +1,4 @@
-import NormalizedFeeCalculator from '../../../lib/bitcoin/fee/NormalizedFeeCalculator';
+import NormalizedFeeCalculator from '../../../lib/bitcoin/versions/latest/NormalizedFeeCalculator';
 
 describe('NormalizedFeeCalculaor', () => {
   let normalizedFeeCalculator: NormalizedFeeCalculator;
