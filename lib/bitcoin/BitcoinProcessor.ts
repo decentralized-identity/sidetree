@@ -310,8 +310,8 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Trims the databases to the block prior to the block the given transaction is in.
-   * @returns The last fully processed block after trimming. `undefined` if all data are deleted after trimming.
+   * NOTE: Should be used ONLY during service initialization.
+   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
    */
   private async trimDatabasesToLastFullyProcessedBlock (lastValidTransaction?: TransactionModel): Promise<IBlockInfo | undefined> {
     // No known valid transaction given.
@@ -694,6 +694,7 @@ export default class BitcoinProcessor {
     }
 
     await this.processSidetreeTransactionsInBlock(blockData);
+
     return blockHash;
   }
 

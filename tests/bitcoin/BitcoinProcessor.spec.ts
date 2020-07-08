@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as httpStatus from 'http-status';
 import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
