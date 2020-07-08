@@ -109,7 +109,7 @@ describe('VersionManager', async () => {
   });
 
   describe('getTransactionSelector()', async () => {
-    it('should return the correct version of `ITransactionSelector`.', async () => {
+    fit('should return the correct version of `ITransactionSelector`.', async () => {
 
       const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: '1000' },
@@ -137,8 +137,15 @@ describe('VersionManager', async () => {
           }
         }
 
-        // Default to loading from `latest` for components not being tested.
-        return (await import(`../../lib/core/versions/latest/${className}`)).default;
+        // Else we are loading components unrelated to this test, default to loading from `latest` version folder.
+        const classObject = (await import(`../../lib/core/versions/latest/${className}`)).default;
+
+        // Override the `intialize()` call so no network call occurs, else the test the will fail in GitHub CICD.
+        if (className === 'MongoDbOperationQueue') {
+          classObject.prototype.initialize = async () => {};
+        }
+
+        return classObject;
       });
 
       const resolver = new Resolver(versionManager, operationStore);
