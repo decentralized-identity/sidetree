@@ -109,7 +109,7 @@ describe('VersionManager', async () => {
   });
 
   describe('getTransactionSelector()', async () => {
-    fit('should return the correct version of `ITransactionSelector`.', async () => {
+    it('should return the correct version of `ITransactionSelector`.', async () => {
 
       const versionModels: VersionModel[] = [
         { startingBlockchainTime: 1000, version: '1000' },
