@@ -14,6 +14,9 @@ In general the release process can be summarized by the following flow
 
 To create a stable release follow the following steps
 
+**Note** At present there is a manual step that must be performed prior to the following defined release process that includes reviewing any changes
+since the previously released version in `./lib/core/versions`.
+
 1. Checkout the head of master `git checkout master && git pull`
 2. Create a new release branch from master called `release`
 3. Install the dependencies `npm install`
@@ -27,6 +30,7 @@ To create a stable release follow the following steps
 11. Observe the triggering of the `/.github/workflows/push-release.yml` github workflow
 
 **Note** It is important that **rebase** is used as the strategy for merging a release pull request as this preserves the created release tag.
+
 
 The resulting release will publish the new package to [npm](https://www.npmjs.com/).
 
