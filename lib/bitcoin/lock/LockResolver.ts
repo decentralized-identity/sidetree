@@ -15,8 +15,8 @@ interface LockScriptVerifyResult {
   isScriptValid: boolean;
   /** the public key hash of the target address when the script unlcoks; undefined if the script is not valid. */
   publicKeyHash: string | undefined;
-  /** the block at which the amount gets unlocked; undefined if the script is not valid. */
-  unlockAtBlock: number | undefined;
+  /** the duration in blocks for which the lock is valid; undefined if the script is not valid. */
+  lockDurationInBlocks: number | undefined;
 }
 
 /**
@@ -85,9 +85,11 @@ export default class LockResolver {
     const lockStartBlock = await this.calculateLockStartingBlock(lockTransaction);
 
     // (C). verify that the lock duration is valid
-    if (!this.isLockDurationValid(lockStartBlock, scriptVerifyResult.unlockAtBlock!)) {
+    const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks! + 1;
+
+    if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
       throw new SidetreeError(ErrorCode.LockResolverDurationIsInvalid,
-                              `Lock start block: ${lockStartBlock}. Unlock block: ${scriptVerifyResult.unlockAtBlock}`);
+                              `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}`);
     }
 
     const normalizedFee = this.normalizedFeeCalculator.getNormalizedFee(lockStartBlock);
@@ -101,7 +103,7 @@ export default class LockResolver {
       identifier: serializedLockIdentifier,
       amountLocked: lockTransaction.outputs[0].satoshis,
       lockTransactionTime: lockStartBlock,
-      unlockTransactionTime: scriptVerifyResult.unlockAtBlock!,
+      unlockTransactionTime: unlockAtBlock,
       normalizedFee: normalizedFee,
       owner: scriptVerifyResult.publicKeyHash!
     };
@@ -120,19 +122,19 @@ export default class LockResolver {
     // Verify different parts; [0] & [5] indeces are parsed only if the script is valid
     const isScriptValid =
       scriptAsmParts.length === 8 &&
-      scriptAsmParts[1] === 'OP_NOP2' &&
+      scriptAsmParts[1] === 'OP_NOP3' &&
       scriptAsmParts[2] === 'OP_DROP' &&
       scriptAsmParts[3] === 'OP_DUP' &&
       scriptAsmParts[4] === 'OP_HASH160' &&
       scriptAsmParts[6] === 'OP_EQUALVERIFY' &&
       scriptAsmParts[7] === 'OP_CHECKSIG';
 
-    let unlockAtBlock: number | undefined;
+    let lockDurationInBlocks: number | undefined;
     let publicKeyHash: string | undefined;
 
     if (isScriptValid) {
-      const unlockAtBlockBuffer = Buffer.from(scriptAsmParts[0], 'hex');
-      unlockAtBlock = unlockAtBlockBuffer.readIntLE(0, unlockAtBlockBuffer.length);
+      const lockDurationInBlocksBuffer = Buffer.from(scriptAsmParts[0], 'hex');
+      lockDurationInBlocks = lockDurationInBlocksBuffer.readIntLE(0, lockDurationInBlocksBuffer.length);
 
       publicKeyHash = scriptAsmParts[5];
     }
@@ -140,7 +142,7 @@ export default class LockResolver {
     return {
       isScriptValid: isScriptValid,
       publicKeyHash: publicKeyHash,
-      unlockAtBlock: unlockAtBlock
+      lockDurationInBlocks: lockDurationInBlocks
     };
   }
 

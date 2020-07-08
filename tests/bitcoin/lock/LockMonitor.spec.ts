@@ -591,9 +591,6 @@ describe('LockMonitor', () => {
       const mockWalletBalance = 32430234 + lockMonitor['transactionFeesAmountInSatoshis'] + 200;
       spyOn(lockMonitor['bitcoinClient'], 'getBalanceInSatoshis').and.returnValue(Promise.resolve(mockWalletBalance));
 
-      const mockCurrentBlockHeight = 455678;
-      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
-
       const mockLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',
         serializedTransactionObject: 'serialized txn',
@@ -619,8 +616,7 @@ describe('LockMonitor', () => {
       expect(actual).toEqual(mockLockInfoSaved);
 
       const expectedLockAmount = desiredLockAmount + lockMonitor['transactionFeesAmountInSatoshis'];
-      const expectedLockUntilBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
-      expect(createLockTxnSpy).toHaveBeenCalledWith(expectedLockAmount, expectedLockUntilBlock);
+      expect(createLockTxnSpy).toHaveBeenCalledWith(expectedLockAmount, lockMonitor['lockPeriodInBlocks']);
 
       expect(saveBroadcastSpy).toHaveBeenCalledWith(mockLockTxn, SavedLockType.Create, desiredLockAmount);
     });
@@ -874,9 +870,6 @@ describe('LockMonitor', () => {
 
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
 
-      const mockCurrentBlockHeight = 455678;
-      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
-
       const mockRenewLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',
         serializedTransactionObject: 'serialized txn',
@@ -912,8 +905,8 @@ describe('LockMonitor', () => {
 
       expect(actual).toEqual(mockLockInfo);
 
-      const expectedNewLockBlock = mockCurrentBlockHeight + lockMonitor['lockPeriodInBlocks'];
-      expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, currentLockInfoInput.unlockTransactionTime, expectedNewLockBlock);
+      const existingLockDuration = currentLockInfoInput.unlockTransactionTime - currentLockInfoInput.lockTransactionTime;
+      expect(createRelockTxnSpy).toHaveBeenCalledWith(mockCurrentLockId.transactionId, existingLockDuration, lockMonitor['lockPeriodInBlocks']);
       expect(saveBroadcastSpy).toHaveBeenCalledWith(mockRenewLockTxn, SavedLockType.Relock, desiredLockAmountInput);
     });
 
@@ -924,9 +917,6 @@ describe('LockMonitor', () => {
       };
 
       spyOn(LockIdentifierSerializer, 'deserialize').and.returnValue(mockCurrentLockId);
-
-      const mockCurrentBlockHeight = 455678;
-      spyOn(lockMonitor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(mockCurrentBlockHeight));
 
       const mockRenewLockTxn: BitcoinLockTransactionModel = {
         redeemScriptAsHex: 'renew lock txn redeem script',
