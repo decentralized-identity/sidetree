@@ -23,8 +23,8 @@ jobs:
     - run: npm i
     - run: npm run test
     - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc 2> /dev/null
-        env:
-          NPM_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+      env:
+        NPM_TOKEN: ${{ secrets.NPMJS_TOKEN }}
     - run: git config user.name "DIF CI"
     - run: git config user.email "ci@identity.foundation"
     # Note - this is not required but it gives a clean failure prior to attempting a release if the GH workflow runner is not authenticated with npm.js
