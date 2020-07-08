@@ -3,6 +3,7 @@ import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
+import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
@@ -17,8 +18,8 @@ import TransactionFeeModel from '../../lib/common/models/TransactionFeeModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionNumber from '../../lib/bitcoin/TransactionNumber';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import VersionModel from '../../lib/common/models/VersionModel';
 import * as fs from 'fs';
-import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 
 function randomString (length: number = 16): string {
   return Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(16).substring(0, length);
@@ -33,6 +34,10 @@ function randomBlock (above: number = 0): IBlockInfo {
 }
 
 describe('BitcoinProcessor', () => {
+  const versionModels: VersionModel[] = [
+    { startingBlockchainTime: 0, version: 'latest' }
+  ];
+
   const testConfig: IBitcoinConfig = {
     bitcoinDataDirectory: undefined,
     bitcoinFeeSpendingCutoffPeriodInBlocks: 100,
@@ -58,7 +63,6 @@ describe('BitcoinProcessor', () => {
   let bitcoinProcessor: BitcoinProcessor;
   let transactionStoreInitializeSpy: jasmine.Spy;
   let bitcoinClientInitializeSpy: jasmine.Spy;
-  let normalizedFeeCalculatorInitializeSpy: jasmine.Spy;
   let transactionStoreLatestTransactionSpy: jasmine.Spy;
   let getStartingBlockForPeriodicPollSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
@@ -69,7 +73,7 @@ describe('BitcoinProcessor', () => {
   let trimDatabasesToLastFullyProcessedBlockSpy: jasmine.Spy;
 
   beforeEach(() => {
-    bitcoinProcessor = new BitcoinProcessor(testConfig);
+    bitcoinProcessor = new BitcoinProcessor(testConfig, versionModels);
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
     mongoLockTxnStoreSpy = spyOn(bitcoinProcessor['mongoDbLockTransactionStore'], 'initialize');
@@ -80,9 +84,6 @@ describe('BitcoinProcessor', () => {
 
     getStartingBlockForPeriodicPollSpy = spyOn(bitcoinProcessor as any, 'getStartingBlockForPeriodicPoll');
     getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
-
-    normalizedFeeCalculatorInitializeSpy = spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'initialize');
-    normalizedFeeCalculatorInitializeSpy.and.returnValue(Promise.resolve());
 
     processTransactionsSpy = spyOn(bitcoinProcessor, 'processTransactions' as any);
     processTransactionsSpy.and.returnValue(Promise.resolve({ hash: 'IamAHash', height: 54321 }));
@@ -143,7 +144,7 @@ describe('BitcoinProcessor', () => {
         valueTimeLockTransactionFeesAmountInBitcoins: undefined
       };
 
-      const bitcoinProcessor = new BitcoinProcessor(config);
+      const bitcoinProcessor = new BitcoinProcessor(config, versionModels);
       expect(bitcoinProcessor.genesisBlockNumber).toEqual(config.genesisBlockNumber);
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect(bitcoinProcessor.pollPeriod).toEqual(60);
@@ -168,7 +169,6 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinClientInitializeSpy).not.toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).not.toHaveBeenCalled();
       expect(lockMonitorSpy).not.toHaveBeenCalled();
-      expect(normalizedFeeCalculatorInitializeSpy).not.toHaveBeenCalled();
 
       await bitcoinProcessor.initialize();
 
@@ -177,7 +177,6 @@ describe('BitcoinProcessor', () => {
       expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
       expect(processTransactionsSpy).toHaveBeenCalledBefore(lockMonitorSpy);
       expect(lockMonitorSpy).toHaveBeenCalled();
-      expect(normalizedFeeCalculatorInitializeSpy).toHaveBeenCalled();
       done();
     });
 
@@ -686,20 +685,11 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should throw if the the normalized fee calculator does not return a value.', async () => {
-      spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(undefined);
-
-      try {
-        await bitcoinProcessor.getNormalizedFee(validBlockHeight);
-        fail('should have failed');
-      } catch (error) {
-        expect(error.status).toEqual(httpStatus.BAD_REQUEST);
-        expect(error.code).toEqual(SharedErrorCode.BlockchainTimeOutOfRange);
-      }
-    });
-
     it('should return the value from the normalized fee calculator.', async () => {
-      spyOn(bitcoinProcessor['normalizedFeeCalculator'], 'getNormalizedFee').and.returnValue(509);
+      const mockFeeCalculator = {
+        getNormalizedFee () { return 509; }
+      };
+      spyOn(bitcoinProcessor['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
       const response = await bitcoinProcessor.getNormalizedFee(validBlockHeight);
       expect(response).toBeDefined();

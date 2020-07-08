@@ -9,12 +9,6 @@ export default {
   BlockchainReadInvalidArguments: 'blockchain_read_invalid_arguments',
   BlockchainReadResponseNotOk: 'blockchain_read_response_not_ok',
   BlockchainWriteResponseNotOk: 'blockchain_write_response_not_ok',
-  VersionManagerBatchWriterNotFound: 'version_manager_batch_writer_not_found',
-  VersionManagerDocumentComposerNotFound: 'version_manager_document_composer_not_found',
-  VersionManagerOperationProcessorNotFound: 'version_manager_operation_processor_not_found',
-  VersionManagerRequestHandlerNotFound: 'version_manager_request_handler_not_found',
-  VersionManagerTransactionProcessorNotFound: 'version_manager_transaction_processor_not_found',
-  VersionManagerTransactionSelectorNotFound: 'version_manager_transaction_selector_not_found',
   VersionManagerVersionStringNotFound: 'version_manager_version_string_not_found',
   VersionManagerVersionMetadataIncorrectType: 'version_manager_version_metadata_incorrect_type'
 };

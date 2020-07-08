@@ -11,7 +11,8 @@ import Resolver from './Resolver';
 import ResponseModel from '../common/models/ResponseModel';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfo from '../common/ServiceInfoProvider';
-import VersionManager, { ProtocolVersionModel } from './VersionManager';
+import VersionManager from './VersionManager';
+import VersionModel from '../common/models/VersionModel';
 
 /**
  * The core class that is instantiated when running a Sidetree node.
@@ -32,9 +33,9 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: Config, protocolVersions: ProtocolVersionModel[]) {
+  public constructor (config: Config, versionModels: VersionModel[]) {
     // Component dependency construction & injection.
-    this.versionManager = new VersionManager(config, protocolVersions); // `VersionManager` is first constructed component.
+    this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component.
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.cas = new Cas(config.contentAddressableStoreServiceUri);
