@@ -150,12 +150,12 @@ export default class BitcoinClient {
    * this transaction before spending from the wallet.
    *
    * @param lockAmountInSatoshis The amount to lock.
-   * @param freezeDurationInBlocks  The number of blocks to freeze the amount for; the amount becomes spendable AFTER this many blocks.
+   * @param lockDurationInBlocks  The number of blocks to lock the amount for; the amount becomes spendable AFTER this many blocks.
    */
-  public async createLockTransaction (lockAmountInSatoshis: number, freezeDurationInBlocks: number): Promise<BitcoinLockTransactionModel> {
+  public async createLockTransaction (lockAmountInSatoshis: number, lockDurationInBlocks: number): Promise<BitcoinLockTransactionModel> {
     const unspentCoins = await this.getUnspentOutputs(this.bitcoinWallet.getAddress());
 
-    const [freezeTransaction, redeemScriptAsHex] = await this.createFreezeTransaction(unspentCoins, freezeDurationInBlocks, lockAmountInSatoshis);
+    const [freezeTransaction, redeemScriptAsHex] = await this.createFreezeTransaction(unspentCoins, lockDurationInBlocks, lockAmountInSatoshis);
 
     const signedTransaction = await this.bitcoinWallet.signTransaction(freezeTransaction);
     const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
@@ -555,12 +555,12 @@ export default class BitcoinClient {
   private async createSpendToFreezeTransaction (
     previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeDurationInBlocks: number,
-    freezeDurationInBlocks: number): Promise<[Transaction, string]> {
+    newFreezeDurationInBlocks: number): Promise<[Transaction, string]> {
 
     // tslint:disable-next-line: max-line-length
-    console.info(`Creating a freeze transaction with freeze time in blocks: ${freezeDurationInBlocks} from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
+    console.info(`Creating a freeze transaction with freeze time in blocks: ${newFreezeDurationInBlocks} from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
 
-    const freezeScript = BitcoinClient.createFreezeScript(freezeDurationInBlocks, this.bitcoinWallet.getAddress());
+    const freezeScript = BitcoinClient.createFreezeScript(newFreezeDurationInBlocks, this.bitcoinWallet.getAddress());
     const payToScriptHashOutput = Script.buildScriptHashOut(freezeScript);
     const payToScriptAddress = new Address(payToScriptHashOutput);
 
@@ -569,7 +569,7 @@ export default class BitcoinClient {
     const reFreezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeDurationInBlocks,
-      freezeDurationInBlocks,
+      newFreezeDurationInBlocks,
       payToScriptAddress);
 
     return [reFreezeTransaction, freezeScript.toHex()];
@@ -585,7 +585,7 @@ export default class BitcoinClient {
     return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeDurationInBlocks,
-      undefined, // Spending back to wallet === amount is no longer frozen
+      undefined, // Spending back to wallet === no longer a freeze
       this.bitcoinWallet.getAddress());
   }
 
@@ -596,13 +596,13 @@ export default class BitcoinClient {
    *
    * @param previousFreezeTransaction The previously frozen transaction.
    * @param previousFreezeDurationInBlocks The previously frozen transaction's freeze time in blocks.
-   * @param currentFreezeDurationInBlocks If the new transaction is another freeze then current freeze time in blocks; undefined otherwise.
+   * @param newFreezeDurationInBlocks If the new spend transaction is another freeze then new freeze time in blocks; undefined otherwise.
    * @param paytoAddress The address where the spend transaction should go to.
    */
   private async createSpendTransactionFromFrozenTransaction (
     previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeDurationInBlocks: number,
-    currentFreezeDurationInBlocks: number | undefined,
+    newFreezeDurationInBlocks: number | undefined,
     paytoAddress: Address): Promise<Transaction> {
 
     // First create an input from the previous frozen transaction output. Note that we update
@@ -619,10 +619,13 @@ export default class BitcoinClient {
     // The check-sequence-verify lock requires transaction version 2
     (spendTransaction as any).version = 2;
 
-    // If the current freeze time is specified then it means that the spend transaction is also another freeze
-    // transaction. This means that we need to set the sequence number of the input correctly.
-    if (currentFreezeDurationInBlocks) {
-      (spendTransaction.inputs[0] as any).sequenceNumber = currentFreezeDurationInBlocks;
+    // If a new freeze time is specified then it means that the spend transaction is also another freeze
+    // transaction and we need to set the sequence number of the input correctly.
+    // See the bitcoin documentation on relative-lock and the sequence number for more info:
+    //   relative lock: https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
+    //   sequence number: https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki
+    if (newFreezeDurationInBlocks) {
+      (spendTransaction.inputs[0] as any).sequenceNumber = newFreezeDurationInBlocks;
     }
 
     const transactionFee = await this.calculateTransactionFee(spendTransaction);
