@@ -1,6 +1,6 @@
-import BitcoinFileReader from "./BitcoinFileReader";
-import BitcoinBlockModel from "./models/BitcoinBlockModel";
-import BitcoinRawDataParser from "./BitcoinRawDataParser";
+import BitcoinFileReader from './BitcoinFileReader';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinRawDataParser from './BitcoinRawDataParser';
 
 /**
  * Iterates through block data by parsing raw block data file from latest file to oldest
