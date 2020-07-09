@@ -27,14 +27,15 @@ describe('BitcoinRawDataParser', () => {
       const blockDataFileBuffer = Buffer.from('ffffffffffffffff', 'hex');
       expect(() => {
         BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
-      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes));
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes,
+        'ffffffff at cursor position 0 is not valid bitcoin testnet or mainnet magic bytes'));
     });
 
     it('should handle invalid raw block files', () => {
       const blockDataFileBuffer = Buffer.from('0b11090700000001ff', 'hex');
       expect(() => {
         BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
-      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData));
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData, 'Attempt to access memory outside buffer bounds'));
     });
   });
 });

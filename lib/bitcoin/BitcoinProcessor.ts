@@ -1,7 +1,6 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinClient from './BitcoinClient';
-import BitcoinFileReader from './BitcoinFileReader';
-import BitcoinRawDataParser from './BitcoinRawDataParser';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
@@ -46,6 +45,13 @@ export interface IBlockInfo {
   hash: string;
   /** Previous block hash. */
   previousHash: string;
+}
+
+interface IChainInfo {
+  height: number;
+  satoshis: number;
+  transactionCount: number;
+  prevHash: string;
 }
 
 /**
@@ -172,9 +178,8 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
-    // this reads into the raw block files and parse to speed to the initial startup
-    // will use this instead of the rpc processing when ready
     if (this.bitcoinDataDirectory) {
+      // This reads into the raw block files and parse to speed up the initial startup instead of rpc
       await this.fastProcessTransactions(startingBlock);
     } else {
       await this.processTransactions(startingBlock);
@@ -192,81 +197,95 @@ export default class BitcoinProcessor {
    * @param startingBlock the starting block to begin processing
    */
   private async fastProcessTransactions (startingBlock: IBlockInfo) {
-    const fileReader = new BitcoinFileReader(this.bitcoinDataDirectory!);
-    const blockFiles = fileReader.listBlockFiles().sort();
-    let fileIndex = blockFiles.length - 1;
-
+    const bitcoinBlockDataIterator = new BitcoinBlockDataIterator(this.bitcoinDataDirectory!);
     const bestHeight = await this.bitcoinClient.getCurrentBlockHeight();
     const bestHash = await this.bitcoinClient.getBlockHash(bestHeight);
 
     let currentHash = bestHash;
-    let previousHash = undefined;
-    let numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
+    let currentHeight = bestHeight;
+    const numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
 
-    const feeInfos = new Array(numOfBlocksToProcess).fill(undefined);
+    const chainInfos: (Map<string, IChainInfo> | undefined)[] = new Array(numOfBlocksToProcess).fill(undefined);
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${bestHeight}`);
     // loop through files and process them until we process all blocks needed
-    while (numOfBlocksToProcess !== 0 && fileIndex >= 0) {
-      const blockFileName = blockFiles[fileIndex];
-      fileIndex--;
-      const blockFile = fileReader.readBlockFile(blockFileName);
-      const blockData = BitcoinRawDataParser.parseRawDataFile(blockFile);
-      // for each block within the current file, add fee info and write to db
-      for (let key in blockData) {
-        const block = blockData[key];
-
-        const indexInFeeInfo = block.height - startingBlock.height;
-        if (indexInFeeInfo >= 0 && indexInFeeInfo < numOfBlocksToProcess) {
-          this.addBlockToFeeInfos(feeInfos, indexInFeeInfo, block);
-          await this.processSidetreeTransactionsInBlock(block);
-        }
-      }
-
-      // look through fee info to see if there are confirmed data
-      // we only need to look from numOfBlocksToProcess because we know the elements after it are confirmed
-      let currentFeeData = feeInfos[numOfBlocksToProcess - 1];
-      while (currentFeeData !== undefined && currentFeeData[currentHash] !== undefined) {
-        // delete all unneeded key value pairs and db records
-        const hashes = Object.keys(currentFeeData);
-        for (let hash of hashes) {
-          if (hash !== currentHash) {
-            delete currentFeeData[hash];
-            await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
-          }
-        }
-        const confirmedFeeData = currentFeeData[currentHash];
-        if (currentHash === bestHash) {
-          previousHash = confirmedFeeData.prevHash;
-        }
-        currentHash = confirmedFeeData.prevHash;
-        numOfBlocksToProcess--;
-        currentFeeData = feeInfos[numOfBlocksToProcess - 1];
-      }
+    while (bitcoinBlockDataIterator.hasNext() && currentHeight >= startingBlock.height) {
+      const blockData = bitcoinBlockDataIterator.next()!;
+      await this.processBlockData(blockData, chainInfos, startingBlock.height, currentHeight);
+      [currentHeight, currentHash] = await this.markBestHeight(chainInfos, currentHeight, currentHash, startingBlock.height);
     }
 
     this.lastProcessedBlock = {
       height: bestHeight,
       hash: bestHash,
-      previousHash: previousHash
+      previousHash: chainInfos[chainInfos.length - 1]!.get(bestHash)!.prevHash
     };
     console.log('finished fast processing');
     // TODO: Issue #783
     // Need to use the fee infos and set fee after here.
   }
 
-  private addBlockToFeeInfos (feeInfos: any[], indexInFeeInfo: number, block: BitcoinBlockModel) {
-    if (feeInfos[indexInFeeInfo] === undefined) {
-      feeInfos[indexInFeeInfo] = {};
+  private async processBlockData (
+    blockData: {[blockHash: string]: BitcoinBlockModel},
+    chainInfos: (Map<string, IChainInfo> | undefined)[],
+    startingBlockHeight: number,
+    currentHeight: number) {
+
+    for (let key in blockData) {
+      const block = blockData[key];
+
+      const indexInChainInfos = block.height - startingBlockHeight;
+      if (block.height >= startingBlockHeight && block.height <= currentHeight) {
+        this.addBlockToChainInfo(chainInfos, indexInChainInfos, block);
+        await this.processSidetreeTransactionsInBlock(block);
+      }
+    }
+  }
+
+  /**
+   * Check in the chain info to mark the new best height and delete extra blocks with the same height
+   */
+  private async markBestHeight (
+    chainInfos: (Map<string, IChainInfo> | undefined)[],
+    currentHeight: number,
+    currentHash: string,
+    startingBlockHeight: number): Promise<[number, string]> {
+
+    let index = currentHeight - startingBlockHeight;
+    let currentFeeData = chainInfos[index];
+    while (currentFeeData !== undefined && currentFeeData.get(currentHash) !== undefined) {
+      console.log(`Found valid block ${currentHash}`);
+      // delete all unneeded key value pairs and db records
+      const hashes = currentFeeData.keys();
+      for (let hash of hashes) {
+        if (hash !== currentHash) {
+          console.log(`Deleting data for block ${hash} because it has the same height as ${currentHash}`);
+          currentFeeData.delete(hash);
+          await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
+        }
+      }
+      const confirmedFeeData = currentFeeData.get(currentHash)!;
+      currentHash = confirmedFeeData.prevHash;
+      currentHeight--;
+      index--;
+      currentFeeData = chainInfos[index];
+    }
+    return [currentHeight, currentHash];
+  }
+
+  private addBlockToChainInfo (chainInfos: (Map<string, IChainInfo> | undefined)[], indexInChainInto: number, block: BitcoinBlockModel) {
+    if (chainInfos[indexInChainInto] === undefined) {
+      chainInfos[indexInChainInto] = new Map();
     }
     const blockReward = this.getBitcoinBlockReward(block.height);
 
-    feeInfos[indexInFeeInfo][block.hash] = {
-      height: block.height,
-      satoshis: block.transactions[0].outputs[0].satoshis - blockReward,
-      transactionCount: block.transactions.length - 1, // minus one because of coinbase
-      prevHash: block.previousHash
-    };
+    chainInfos[indexInChainInto]!.set(
+      block.hash,
+      { height: block.height,
+        satoshis: block.transactions[0].outputs[0].satoshis - blockReward,
+        transactionCount: block.transactions.length - 1, // minus one because of coinbase
+        prevHash: block.previousHash }
+      );
   }
 
   /**

@@ -1,8 +1,8 @@
+import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import ErrorCode from './ErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import { Block } from 'bitcore-lib';
-import BitcoinBlockModel from './models/BitcoinBlockModel';
 
 /**
  * Parser for raw bitcoin block data
@@ -26,7 +26,7 @@ export default class BitcoinRawDataParser {
    * creating new Block, or validating size
    * @param rawBlockDataFileBuffer The file, in buffer form, to be parsed as blocks
    */
-  public static parseRawDataFile (rawBlockDataFileBuffer: Buffer): {[name: string]: BitcoinBlockModel} {
+  public static parseRawDataFile (rawBlockDataFileBuffer: Buffer): {[blockHash: string]: BitcoinBlockModel} {
     // Expect raw block data to be in the format of
     // <MagicBytes 4 bytes><SizeBytes 4 bytes><BlockData n bytes><MagicBytes><SizeBytes><BlockData>...repeating
     const blockMapper: {[name: string]: BitcoinBlockModel} = {};
@@ -41,7 +41,8 @@ export default class BitcoinRawDataParser {
         break;
       }
       if (!actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.mainnet) && !actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.testnet)) {
-        throw new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes);
+        throw new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes,
+          `${actualMagicBytes.toString('hex')} at cursor position ${cursor} is not valid bitcoin testnet or mainnet magic bytes`);
       }
       cursor += BitcoinRawDataParser.magicBytesLength;
 
@@ -56,27 +57,17 @@ export default class BitcoinRawDataParser {
       try {
         block = new Block(blockData);
       } catch (e) {
-        console.error(`Bitcore threw error when parsing block data ${e}`);
-        throw new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData);
+        throw SidetreeError.createFromError(ErrorCode.BitcoinRawDataParserInvalidBlockData, e);
       }
 
       // the first transaction, the coinbase, contains the block height in its input
-      const coinbaseInputScript = (block.transactions[0].inputs[0] as any)._scriptBuffer;
+      const coinbaseInputScript = (block.transactions[0].inputs[0] as any)._scriptBuffer as Buffer;
       // this denotes how many bytes following represent the block height
-      const heightBytes = coinbaseInputScript.readUInt8();
+      const heightBytes = coinbaseInputScript.readUInt8(0);
       // the next n bytes are the block height in little endian
       const blockHeight = coinbaseInputScript.readUIntLE(1, heightBytes);
 
-      const transactionModels = block.transactions.map((transaction: any) => {
-        const bitcoreTransaction = {
-          id: transaction.id,
-          blockHash: block.hash,
-          confirmations: 1, // set to 1 because it has to be confirmed to be on the current longest chain
-          inputs: transaction.inputs,
-          outputs: transaction.outputs
-        };
-        return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
-      });
+      const transactionModels = BitcoinClient.convertToBitcoinTransactionModels(block);
 
       blockMapper[block.hash] = {
         hash: block.hash,
