@@ -32,10 +32,10 @@ describe('BitcoinRawDataParser', () => {
     });
 
     it('should handle invalid raw block files', () => {
-      const blockDataFileBuffer = Buffer.from('0b11090700000001ff', 'hex');
+      const blockDataFileBuffer = Buffer.from('0b11090700000000', 'hex');
       expect(() => {
         BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
-      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData, 'Attempt to access memory outside buffer bounds'));
+      }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidBlockData, 'Invalid state: No block data received'));
     });
   });
 });
