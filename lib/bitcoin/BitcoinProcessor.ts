@@ -203,7 +203,7 @@ export default class BitcoinProcessor {
     let currentHeight = bestHeight;
     const numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
 
-    // An array of maps<hash, IBlockMetadata>.
+    // An array of maps<hash, IBlockInfoExtended>.
     const chainInfos = [...new Array(numOfBlocksToProcess)].map<Map<string, IBlockInfoExtended>>(() => new Map());
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${bestHeight}`);
