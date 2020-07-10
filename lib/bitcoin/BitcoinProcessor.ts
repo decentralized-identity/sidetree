@@ -49,9 +49,9 @@ export interface IBlockInfo {
 
 interface IBlockMetadata {
   height: number;
-  satoshis: number;
+  totalFee: number;
   transactionCount: number;
-  prevHash: string;
+  previousHash: string;
 }
 
 /**
@@ -219,7 +219,7 @@ export default class BitcoinProcessor {
     this.lastProcessedBlock = {
       height: bestHeight,
       hash: bestHash,
-      previousHash: chainInfos[chainInfos.length - 1]!.get(bestHash)!.prevHash
+      previousHash: chainInfos[chainInfos.length - 1]!.get(bestHash)!.previousHash
     };
     console.log('finished fast processing');
     // TODO: Issue #783
@@ -266,7 +266,7 @@ export default class BitcoinProcessor {
         }
       }
       const confirmedFeeData = currentFeeData.get(currentHash)!;
-      currentHash = confirmedFeeData.prevHash;
+      currentHash = confirmedFeeData.previousHash;
       currentHeight--;
       index--;
       currentFeeData = chainInfos[index];
@@ -280,9 +280,9 @@ export default class BitcoinProcessor {
     chainInfos[indexInChainInto]!.set(
       block.hash,
       { height: block.height,
-        satoshis: block.transactions[0].outputs[0].satoshis - blockReward,
+        totalFee: block.transactions[0].outputs[0].satoshis - blockReward,
         transactionCount: block.transactions.length - 1, // minus one because of coinbase
-        prevHash: block.previousHash }
+        previousHash: block.previousHash }
       );
   }
 
