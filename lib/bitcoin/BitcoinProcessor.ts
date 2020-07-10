@@ -47,7 +47,7 @@ export interface IBlockInfo {
   previousHash: string;
 }
 
-interface IChainInfo {
+interface IBlockMetadata {
   height: number;
   satoshis: number;
   transactionCount: number;
@@ -205,7 +205,8 @@ export default class BitcoinProcessor {
     let currentHeight = bestHeight;
     const numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
 
-    const chainInfos: (Map<string, IChainInfo> | undefined)[] = new Array(numOfBlocksToProcess).fill(undefined);
+    // An array of maps<hash, IBlockMetadata>.
+    const chainInfos = [...new Array(numOfBlocksToProcess)].map<Map<string, IBlockMetadata>>(() => new Map());
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${bestHeight}`);
     // loop through files and process them until we process all blocks needed
@@ -227,16 +228,16 @@ export default class BitcoinProcessor {
 
   private async processBlockData (
     blockData: {[blockHash: string]: BitcoinBlockModel},
-    chainInfos: (Map<string, IChainInfo> | undefined)[],
+    chainInfos: Map<string, IBlockMetadata>[],
     startingBlockHeight: number,
     currentHeight: number) {
 
-    for (let key in blockData) {
-      const block = blockData[key];
+    for (let blockHash in blockData) {
+      const block = blockData[blockHash];
 
-      const indexInChainInfos = block.height - startingBlockHeight;
       if (block.height >= startingBlockHeight && block.height <= currentHeight) {
-        this.addBlockToChainInfo(chainInfos, indexInChainInfos, block);
+        const indexInChainInfos = block.height - startingBlockHeight;
+        BitcoinProcessor.addBlockToChainInfo(chainInfos, indexInChainInfos, block);
         await this.processSidetreeTransactionsInBlock(block);
       }
     }
@@ -246,7 +247,7 @@ export default class BitcoinProcessor {
    * Check in the chain info to mark the new best height and delete extra blocks with the same height
    */
   private async markBestHeight (
-    chainInfos: (Map<string, IChainInfo> | undefined)[],
+    chainInfos: Map<string, IBlockMetadata>[],
     currentHeight: number,
     currentHash: string,
     startingBlockHeight: number): Promise<[number, string]> {
@@ -273,11 +274,8 @@ export default class BitcoinProcessor {
     return [currentHeight, currentHash];
   }
 
-  private addBlockToChainInfo (chainInfos: (Map<string, IChainInfo> | undefined)[], indexInChainInto: number, block: BitcoinBlockModel) {
-    if (chainInfos[indexInChainInto] === undefined) {
-      chainInfos[indexInChainInto] = new Map();
-    }
-    const blockReward = this.getBitcoinBlockReward(block.height);
+  private static addBlockToChainInfo (chainInfos: Map<string, IBlockMetadata>[], indexInChainInto: number, block: BitcoinBlockModel) {
+    const blockReward = BitcoinProcessor.getBitcoinBlockReward(block.height);
 
     chainInfos[indexInChainInto]!.set(
       block.hash,
@@ -291,7 +289,7 @@ export default class BitcoinProcessor {
   /**
    * Given the block height, return the block reward
    */
-  private getBitcoinBlockReward (height: number) {
+  private static getBitcoinBlockReward (height: number) {
     const halvingTimes = Math.floor(height / 210000);
     if (halvingTimes >= 64) {
       return 0;

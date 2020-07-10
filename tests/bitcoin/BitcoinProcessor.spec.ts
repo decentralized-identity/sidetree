@@ -808,12 +808,12 @@ describe('BitcoinProcessor', () => {
 
   describe('getBitcoinBlockReward', () => {
     it('should return 0 if halving time is greater than or equal to 64', () => {
-      const result = bitcoinProcessor['getBitcoinBlockReward'](Number.MAX_SAFE_INTEGER);
+      const result = BitcoinProcessor['getBitcoinBlockReward'](Number.MAX_SAFE_INTEGER);
       expect(result).toEqual(0);
     });
 
     it('should return 50 billion satoshis if halving time is greater than or equal to 0', () => {
-      const result = bitcoinProcessor['getBitcoinBlockReward'](2);
+      const result = BitcoinProcessor['getBitcoinBlockReward'](2);
       expect(result).toEqual(5000000000);
     });
   });
