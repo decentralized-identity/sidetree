@@ -818,16 +818,103 @@ describe('BitcoinProcessor', () => {
     });
   });
 
+  describe('processBlockData', () => {
+    it('should process as intended', async () => {
+      const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);
+      const blockData: any = {
+        abc: { hash: 'abc', height: 2, previousHash: 'def', transactions: [ { outputs: [{ satoshis: 5000000000 }] }] },
+        def: { hash: 'def', height: 1, previousHash: 'out of range', transactions: [] },
+        ghi: { hash: 'ghi', height: 4, previousHash: 'out of range', transactions: [] }
+      };
+      const notYetValidatedBlocks: Map<string, any> = new Map();
+      const startingHeight = 2;
+      const heightOfEarliestKnownValidBlock = 3;
+      await bitcoinProcessor['processBlockData'](blockData, notYetValidatedBlocks, startingHeight, heightOfEarliestKnownValidBlock);
+      expect(notYetValidatedBlocks.get('abc')).toEqual({
+        hash: 'abc',
+        height: 2,
+        previousHash: 'def',
+        totalFee: 0,
+        transactionCount: 0
+      });
+      expect(processSidetreeTransactionsInBlockSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('findEarliestValidBlockAndAddToValidBlocks', () => {
+    it('should return new height and hash and update validBlocks while ignoring extra blocks', async () => {
+      const validBlocks = [undefined, undefined, { hash: 'hash', height: 3, previousHash: 'asb', totalFee: 123, transactionCount: 456 }];
+      const notYetValidatedBlocks: Map<string, any> = new Map();
+      notYetValidatedBlocks.set('abc', { hash: 'abc', height: 2, previousHash: 'def', totalFee: 2, transactionCount: 2 });
+      notYetValidatedBlocks.set('def', { hash: 'def', height: 1, previousHash: 'out of range', totalFee: 1, transactionCount: 1 });
+      notYetValidatedBlocks.set('out of range', { previousHash: 'this is out of range' });
+      notYetValidatedBlocks.set('something that is garbage', { previousHash: 'garbage' });
+      const heightOfEarliestKnownValidBlock = 2;
+      const hashOfEarliestKnownValidBlock = 'abc';
+      const startingBlockHeight = 1;
+      const [resultingHeight, resultingHash] = await bitcoinProcessor['findEarliestValidBlockAndAddToValidBlocks'](
+        validBlocks,
+        notYetValidatedBlocks,
+        heightOfEarliestKnownValidBlock,
+        hashOfEarliestKnownValidBlock,
+        startingBlockHeight);
+      expect(resultingHeight).toEqual(0);
+      expect(resultingHash).toEqual('out of range');
+      expect(validBlocks[0]).toEqual({ hash: 'def', height: 1, previousHash: 'out of range', totalFee: 1, transactionCount: 1 });
+      expect(validBlocks[1]).toEqual({ hash: 'abc', height: 2, previousHash: 'def', totalFee: 2, transactionCount: 2 });
+      expect(notYetValidatedBlocks.size).toEqual(2);
+      expect(notYetValidatedBlocks.get('out of range')).toBeDefined();
+      expect(notYetValidatedBlocks.get('something that is garbage')).toBeDefined();
+      expect(notYetValidatedBlocks.get('abc')).toBeUndefined();
+      expect(notYetValidatedBlocks.get('def')).toBeUndefined();
+    });
+
+    it('should return original values when no valid blocks are found', async () => {
+      const validBlocks = [undefined, undefined];
+      const invalidBlocks: Map<string, any> = new Map();
+      invalidBlocks.set('abc', {});
+      invalidBlocks.set('def', {});
+      const heightOfEarliestKnownValidBlock = 2;
+      const hashOfEarliestKnownValidBlock = 'not in the map';
+      const startingBlockHeight = 1;
+      const [resultingHeight, resultingHash] = await bitcoinProcessor['findEarliestValidBlockAndAddToValidBlocks'](
+        validBlocks,
+        invalidBlocks,
+        heightOfEarliestKnownValidBlock,
+        hashOfEarliestKnownValidBlock,
+        startingBlockHeight);
+      expect(resultingHeight).toEqual(heightOfEarliestKnownValidBlock);
+      expect(resultingHash).toEqual(hashOfEarliestKnownValidBlock);
+      expect(validBlocks[0]).toBeUndefined();
+      expect(validBlocks[1]).toBeUndefined();
+      expect(invalidBlocks.size).toEqual(2);
+    });
+  });
+
+  describe('processInvalidBlocks', () => {
+    it('should process invalid blocks as intended', async () => {
+      const removeTransactionByTransactionTimeHashSpy = spyOn(bitcoinProcessor['transactionStore'], 'removeTransactionByTransactionTimeHash' as any);
+      const invalidBlocks: Map<string, any> = new Map();
+      invalidBlocks.set('abc', {});
+      invalidBlocks.set('def', {});
+      await bitcoinProcessor['processInvalidBlocks'](invalidBlocks);
+      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledWith('abc');
+      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledWith('def');
+      expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('fastProcessTransactions', () => {
     beforeEach(() => {
       fastProcessTransactionsSpy.and.callThrough();
     });
 
     it('should process as intended', async () => {
+      // this is the end to end test
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const getCurrentHeightMock = spyOn(bitcoinProcessor['bitcoinClient'],'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));
       const getCurrentHashMock = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight')
-        .and.returnValue(Promise.resolve({ hash: 'hash2', height: startBlock.height + 1, previousHash: 'hash1'}));
+        .and.returnValue(Promise.resolve({ hash: 'hash2', height: startBlock.height + 1, previousHash: 'hash1' }));
       const fsReaddirSyncSpy = spyOn(fs, 'readdirSync').and.returnValue(['blk001.dat' as any]);
       const fsReadFileSyncSpy = spyOn(fs, 'readFileSync').and.returnValue(Buffer.from('someBuffer'));
       const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);

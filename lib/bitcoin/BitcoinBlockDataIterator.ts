@@ -3,7 +3,7 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinRawDataParser from './BitcoinRawDataParser';
 
 /**
- * Iterates through block data by parsing raw block data file from latest file to oldest
+ * Iterates through block data by parsing raw block data file from latest file to earliest
  */
 export default class BitcoinBlockDataIterator {
   private fileReader: BitcoinFileReader;
@@ -26,7 +26,7 @@ export default class BitcoinBlockDataIterator {
    * Returns the previous block data or undefined if there is no previous.
    */
   public previous (): {[blockHash: string]: BitcoinBlockModel} | undefined {
-    if (this.currentIndex < 0) {
+    if (!this.hasPrevious()) {
       return undefined;
     }
     console.log(`Parsing file: ${this.fileNames[this.currentIndex]}`);
