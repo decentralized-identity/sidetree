@@ -47,11 +47,9 @@ export interface IBlockInfo {
   previousHash: string;
 }
 
-interface IBlockMetadata {
-  height: number;
+interface IBlockInfoExtended extends IBlockInfo {
   totalFee: number;
   transactionCount: number;
-  previousHash: string;
 }
 
 /**
@@ -206,7 +204,7 @@ export default class BitcoinProcessor {
     const numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
 
     // An array of maps<hash, IBlockMetadata>.
-    const chainInfos = [...new Array(numOfBlocksToProcess)].map<Map<string, IBlockMetadata>>(() => new Map());
+    const chainInfos = [...new Array(numOfBlocksToProcess)].map<Map<string, IBlockInfoExtended>>(() => new Map());
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${bestHeight}`);
     // loop through files and process them until we process all blocks needed
@@ -228,7 +226,7 @@ export default class BitcoinProcessor {
 
   private async processBlockData (
     blockData: {[blockHash: string]: BitcoinBlockModel},
-    chainInfos: Map<string, IBlockMetadata>[],
+    chainInfos: Map<string, IBlockInfoExtended>[],
     startingBlockHeight: number,
     currentHeight: number) {
 
@@ -247,7 +245,7 @@ export default class BitcoinProcessor {
    * Check in the chain info to mark the new best height and delete extra blocks with the same height
    */
   private async markBestHeight (
-    chainInfos: Map<string, IBlockMetadata>[],
+    chainInfos: Map<string, IBlockInfoExtended>[],
     currentHeight: number,
     currentHash: string,
     startingBlockHeight: number): Promise<[number, string]> {
@@ -274,12 +272,14 @@ export default class BitcoinProcessor {
     return [currentHeight, currentHash];
   }
 
-  private static addBlockToChainInfo (chainInfos: Map<string, IBlockMetadata>[], indexInChainInto: number, block: BitcoinBlockModel) {
+  private static addBlockToChainInfo (chainInfos: Map<string, IBlockInfoExtended>[], indexInChainInto: number, block: BitcoinBlockModel) {
     const blockReward = BitcoinProcessor.getBitcoinBlockReward(block.height);
 
     chainInfos[indexInChainInto]!.set(
       block.hash,
-      { height: block.height,
+      {
+        height: block.height,
+        hash: block.hash,
         totalFee: block.transactions[0].outputs[0].satoshis - blockReward,
         transactionCount: block.transactions.length - 1, // minus one because of coinbase
         previousHash: block.previousHash }
