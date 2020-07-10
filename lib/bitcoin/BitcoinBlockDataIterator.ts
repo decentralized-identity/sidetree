@@ -23,7 +23,7 @@ export default class BitcoinBlockDataIterator {
   }
 
   /**
-   * Returns the next block data or undefined if there is no next
+   * Returns the previous block data or undefined if there is no previous.
    */
   public previous (): {[blockHash: string]: BitcoinBlockModel} | undefined {
     if (this.currentIndex < 0) {
