@@ -205,7 +205,7 @@ export default class BitcoinProcessor {
     const chainInfos = [...new Array(numOfBlocksToProcess)].map<Map<string, IBlockInfoExtended>>(() => new Map());
     
     console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
-    // loop through files and process them until we process all blocks needed
+    // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
     let hashOfOldestKnownValidBlock = lastBlockInfo.hash;
     let heightOfOldestKnownValidBlock = lastBlockInfo.height;
     while (bitcoinBlockDataIterator.hasPrevious() && heightOfOldestKnownValidBlock >= startingBlock.height) {
