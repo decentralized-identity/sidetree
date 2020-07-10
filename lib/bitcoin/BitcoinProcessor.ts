@@ -196,44 +196,42 @@ export default class BitcoinProcessor {
    */
   private async fastProcessTransactions (startingBlock: IBlockInfo) {
     const bitcoinBlockDataIterator = new BitcoinBlockDataIterator(this.bitcoinDataDirectory!);
-    const bestHeight = await this.bitcoinClient.getCurrentBlockHeight();
-    const bestHash = await this.bitcoinClient.getBlockHash(bestHeight);
+    const lastBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
+    const lastBlockInfo = await this.bitcoinClient.getBlockInfoFromHeight(lastBlockHeight);
 
-    let currentHash = bestHash;
-    let currentHeight = bestHeight;
-    const numOfBlocksToProcess = bestHeight - startingBlock.height + 1;
-
+    const numOfBlocksToProcess = lastBlockHeight - startingBlock.height + 1;
+    
     // An array of maps<hash, IBlockInfoExtended>.
     const chainInfos = [...new Array(numOfBlocksToProcess)].map<Map<string, IBlockInfoExtended>>(() => new Map());
-
-    console.log(`Begin fast processing block ${startingBlock.height} to ${bestHeight}`);
-    // loop through files and process them until we process all blocks needed
-    while (bitcoinBlockDataIterator.hasNext() && currentHeight >= startingBlock.height) {
-      const blockData = bitcoinBlockDataIterator.next()!;
-      await this.processBlockData(blockData, chainInfos, startingBlock.height, currentHeight);
-      [currentHeight, currentHash] = await this.markBestHeight(chainInfos, currentHeight, currentHash, startingBlock.height);
+    
+    console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
+    // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
+    let hashOfEarliestKnownValidBlock = lastBlockInfo.hash;
+    let heightOfEarliestKnownValidBlock = lastBlockInfo.height;
+    while (bitcoinBlockDataIterator.hasPrevious() && heightOfEarliestKnownValidBlock >= startingBlock.height) {
+      const blockData = bitcoinBlockDataIterator.previous()!;
+      await this.processBlockData(blockData, chainInfos, startingBlock.height, heightOfEarliestKnownValidBlock);
+      [heightOfEarliestKnownValidBlock, hashOfEarliestKnownValidBlock]
+        = await this.findEarliestValidBlock(chainInfos, heightOfEarliestKnownValidBlock, hashOfEarliestKnownValidBlock, startingBlock.height);
     }
 
-    this.lastProcessedBlock = {
-      height: bestHeight,
-      hash: bestHash,
-      previousHash: chainInfos[chainInfos.length - 1]!.get(bestHash)!.previousHash
-    };
-    console.log('finished fast processing');
     // TODO: Issue #783
     // Need to use the fee infos and set fee after here.
+
+    this.lastProcessedBlock = lastBlockInfo;
+    console.log('finished fast processing');
   }
 
   private async processBlockData (
     blockData: {[blockHash: string]: BitcoinBlockModel},
     chainInfos: Map<string, IBlockInfoExtended>[],
     startingBlockHeight: number,
-    currentHeight: number) {
+    heightOfEarliestKnownValidBlock: number) {
 
     for (let blockHash in blockData) {
       const block = blockData[blockHash];
 
-      if (block.height >= startingBlockHeight && block.height <= currentHeight) {
+      if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
         const indexInChainInfos = block.height - startingBlockHeight;
         BitcoinProcessor.addBlockToChainInfo(chainInfos, indexInChainInfos, block);
         await this.processSidetreeTransactionsInBlock(block);
@@ -242,34 +240,35 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Check in the chain info to mark the new best height and delete extra blocks with the same height
+   * Checks in the chain info to find the earliest valid block and its hash,
+   * and delete all transactions from invalid blocks in DB.
    */
-  private async markBestHeight (
+  private async findEarliestValidBlock (
     chainInfos: Map<string, IBlockInfoExtended>[],
-    currentHeight: number,
-    currentHash: string,
+    heightOfEarliestKnownValidBlock: number,
+    hashOfEarliestKnownValidBlock: string,
     startingBlockHeight: number): Promise<[number, string]> {
 
-    let index = currentHeight - startingBlockHeight;
+    let index = heightOfEarliestKnownValidBlock - startingBlockHeight;
     let currentFeeData = chainInfos[index];
-    while (currentFeeData !== undefined && currentFeeData.get(currentHash) !== undefined) {
-      console.log(`Found valid block ${currentHash}`);
+    while (currentFeeData !== undefined && currentFeeData.get(hashOfEarliestKnownValidBlock) !== undefined) {
+      console.log(`Found valid block ${hashOfEarliestKnownValidBlock}`);
       // delete all unneeded key value pairs and db records
       const hashes = currentFeeData.keys();
       for (let hash of hashes) {
-        if (hash !== currentHash) {
-          console.log(`Deleting data for block ${hash} because it has the same height as ${currentHash}`);
+        if (hash !== hashOfEarliestKnownValidBlock) {
+          console.log(`Deleting data for block ${hash} because it has the same height as ${hashOfEarliestKnownValidBlock}`);
           currentFeeData.delete(hash);
           await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
         }
       }
-      const confirmedFeeData = currentFeeData.get(currentHash)!;
-      currentHash = confirmedFeeData.previousHash;
-      currentHeight--;
+      const confirmedFeeData = currentFeeData.get(hashOfEarliestKnownValidBlock)!;
+      hashOfEarliestKnownValidBlock = confirmedFeeData.previousHash;
+      heightOfEarliestKnownValidBlock--;
       index--;
       currentFeeData = chainInfos[index];
     }
-    return [currentHeight, currentHash];
+    return [heightOfEarliestKnownValidBlock, hashOfEarliestKnownValidBlock];
   }
 
   private static addBlockToChainInfo (chainInfos: Map<string, IBlockInfoExtended>[], indexInChainInto: number, block: BitcoinBlockModel) {

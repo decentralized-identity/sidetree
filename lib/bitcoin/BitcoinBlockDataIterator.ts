@@ -18,14 +18,14 @@ export default class BitcoinBlockDataIterator {
   /**
    * Returns if there is another file to read
    */
-  public hasNext (): boolean {
+  public hasPrevious (): boolean {
     return this.currentIndex >= 0;
   }
 
   /**
-   * Returns the next block data or undefined if there is no next
+   * Returns the previous block data or undefined if there is no previous.
    */
-  public next (): {[blockHash: string]: BitcoinBlockModel} | undefined {
+  public previous (): {[blockHash: string]: BitcoinBlockModel} | undefined {
     if (this.currentIndex < 0) {
       return undefined;
     }
