@@ -210,7 +210,7 @@ export default class BitcoinProcessor {
     let heightOfEarliestKnownValidBlock = lastBlockInfo.height;
     while (bitcoinBlockDataIterator.hasPrevious() && heightOfEarliestKnownValidBlock >= startingBlock.height) {
       const blocks = bitcoinBlockDataIterator.previous()!;
-      await this.processBlockData(blocks, notYetValidatedBlocks, startingBlock.height, heightOfEarliestKnownValidBlock);
+      await this.processBlocks(blocks, notYetValidatedBlocks, startingBlock.height, heightOfEarliestKnownValidBlock);
       this.findEarliestValidBlockAndAddToValidBlocks(
         validatedBlocks,
         notYetValidatedBlocks,
@@ -232,7 +232,7 @@ export default class BitcoinProcessor {
     console.log('finished fast processing');
   }
 
-  private async processBlockData (
+  private async processBlocks (
     blocks: BitcoinBlockModel[],
     notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
     startingBlockHeight: number,

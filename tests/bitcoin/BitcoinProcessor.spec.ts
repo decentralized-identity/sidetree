@@ -818,7 +818,7 @@ describe('BitcoinProcessor', () => {
     });
   });
 
-  describe('processBlockData', () => {
+  describe('processBlocks', () => {
     it('should process as intended', async () => {
       const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);
       const blockData: any[] = [
@@ -829,7 +829,7 @@ describe('BitcoinProcessor', () => {
       const notYetValidatedBlocks: Map<string, any> = new Map();
       const startingHeight = 2;
       const heightOfEarliestKnownValidBlock = 3;
-      await bitcoinProcessor['processBlockData'](blockData, notYetValidatedBlocks, startingHeight, heightOfEarliestKnownValidBlock);
+      await bitcoinProcessor['processBlocks'](blockData, notYetValidatedBlocks, startingHeight, heightOfEarliestKnownValidBlock);
       expect(notYetValidatedBlocks.get('abc')).toEqual({
         hash: 'abc',
         height: 2,
