@@ -9,50 +9,40 @@ The protocol defines the following three file structures, which house DID operat
 
 Anchor Files contain [Create](#create), [Recover](#recover), and [Deactivate](#deactivate) operation values, as well as a CAS URI for the related Sidetree Map file (detailed below). As the name suggests, Anchor Files are anchored to the target ledger system via embedding a CAS URI in the ledger's transactional history.
 
-::: example
+
+::: example Anchor File
 ```json
 {
-  "map_file_uri": CAS_URI,
-  "writer_lock_id": OPTIONAL_LOCKING_VALUE,
+  "map_file_uri": "QmYTSmpYWEH3pg4ZosnpbeNc9ao2MeXZdg2NUtskBaREjK",
   "operations": {
     "create": [
       {
-        "suffix_data": { // Base64URL encoded
-          "delta_hash": DELTA_HASH,
-          "recovery_commitment": COMMITMENT_HASH
-        }
-      },
-      {...}
+        "suffix_data": "eyJkZWx0YV9oYXNoIjoiRWlEdlBwR3NyZ3pOSG1vUkNaSE1pUTZ5TTJ5TFVqUTZla2lRSkMtM2lycFR0ZyIsInJlY292ZXJ5X2NvbW1pdG1lbnQiOiJFaUI5RFBzY3NuS2dsNVJqX2JLU0pONTVQWTJ3TWV2S1JiSDFlb1ZEeGd2TGNRIn0"
+      }
     ],
-    "recover": [
+    "recover": [],
+    "deactivate": []
+  }
+}
+```
+:::
+
+::: example Anchor File Decoded
+```json
+{
+  "map_file_uri": "QmYTSmpYWEH3pg4ZosnpbeNc9ao2MeXZdg2NUtskBaREjK",
+  "operations": {
+    "create": [
       {
-        "did_suffix": SUFFIX_STRING,
-        "signed_data": { // Base64URL encoded, compact JWS
-          "protected": {...},
-          "payload": {
-            "recovery_commitment": COMMITMENT_HASH,
-            "recovery_key": JWK_OBJECT,
-            "delta_hash": DELTA_HASH
-          },
-          "signature": SIGNATURE_STRING
+        // JSON.parse(base64url.decode(suffix_data))
+        "suffix_data": {
+          "delta_hash": "EiDvPpGsrgzNHmoRCZHMiQ6yM2yLUjQ6ekiQJC-3irpTtg",
+          "recovery_commitment": "EiB9DPscsnKgl5Rj_bKSJN55PY2wMevKRbH1eoVDxgvLcQ"
         }
-      },
-      {...}
+      }
     ],
-    "deactivate": [
-      {
-        "did_suffix": SUFFIX_STRING,
-        "signed_data": { // Base64URL encoded, compact JWS
-            "protected": {...},
-            "payload": {
-              "did_suffix": SUFFIX_STRING,
-              "recovery_key": JWK_OBJECT
-            },
-            "signature": SIGNATURE_STRING
-        }
-      },
-      {...}
-    ]
+    "recover": [],
+    "deactivate": []
   }
 }
 ```
@@ -83,29 +73,12 @@ A valid [Anchor File](#anchor-file) is a JSON document that ****MUST NOT**** exc
 
 Map Files contain [Update](#update) operation proving data, as well as CAS URI links to [Chunk Files](#chunk-files).
 
-::: example
+::: example Map File
 ```json
 {
   "chunks": [
-    { "chunk_file_uri": CHUNK_HASH },
-    {...}
-  ],
-  "operations": {
-    "update": [
-      {
-        "did_suffix": DID_SUFFIX,
-        "signed_data": { // Base64URL encoded, compact JWS
-            "protected": {...},
-            "payload": {
-              "update_key": JWK_OBJECT,
-              "delta_hash": DELTA_HASH
-            },
-            "signature": SIGNATURE_STRING
-        }   
-      },
-      {...}
-    ]
-  }
+    { "chunk_file_uri": "QmZdSFX7LpHExTX6JMLXStjC18xdtZTdoMi9hYCv8R78Pv" }
+  ]
 }
 ```
 :::
@@ -126,16 +99,54 @@ Chunk Files are JSON Documents, compressed via the [COMPRESSION_ALGORITHM](#comp
 
 For this version of the protocol, there will only exist a single Chunk File that contains all the state modifying data for all operations in the included set. Future versions of the protocol will separate the total set of included operations into multiple chunks, each with their own Chunk File.
 
-::: example Create operation Chunk File entry
+::: example Chunk File
 ```json
 {
   "deltas": [
-       
-    { // JSON.stringify()-ed, and Base64URL encoded
-      "patches": PATCH_ARRAY,
-      "update_commitment": COMMITMENT_HASH
-    },
-    ...
+    "eyJ1cGRhdGVfY29tbWl0bWVudCI6IkVpQ2t6LW50TVVmbV90WjRKeTYzYmVwa1ZfWl9CR0xveFhZaG9hbGNKZ0JSUkEiLCJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljS2V5cyI6W3siaWQiOiJrZXkyIiwidHlwZSI6IkVjZHNhU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOSIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6InNlY3AyNTZrMSIsIngiOiI3cFE4UGRsUm5OZmlaWU9HdmpLdzlrdFJxN1FoQWZtLWVSck1vVERrd2VjIiwieSI6ImpabEI1QmZKZGt3dGhXM3VIZ1UwVDhZaDJEbDFwdkFNQkZzTUxDeXNIT00ifSwicHVycG9zZSI6WyJhdXRoIiwiZ2VuZXJhbCJdfV0sInNlcnZpY2VFbmRwb2ludHMiOlt7ImlkIjoic2VydmljZUVuZHBvaW50SWQxMjMiLCJ0eXBlIjoic29tZVR5cGUiLCJlbmRwb2ludCI6Imh0dHBzOi8vd3d3LnVybC5jb20ifV19fV19"
+  ]
+}
+```
+:::
+
+::: example Chunk File Decoded
+```json
+{
+  "deltas": [
+    // JSON.parse(base64url.decode(deltas[0]))
+    {
+      // COMMITMENT_HASH
+      "update_commitment": "EiCkz-ntMUfm_tZ4Jy63bepkV_Z_BGLoxXYhoalcJgBRRA",
+      // PATCH_ARRAY
+      "patches": [
+        {
+          "action": "replace",
+          "document": {
+            "publicKeys": [
+              {
+                "id": "key2",
+                "type": "EcdsaSecp256k1VerificationKey2019",
+                "jwk": {
+                  "kty": "EC",
+                  "crv": "secp256k1",
+                  "x": "7pQ8PdlRnNfiZYOGvjKw9ktRq7QhAfm-eRrMoTDkwec",
+                  "y": "jZlB5BfJdkwthW3uHgU0T8Yh2Dl1pvAMBFsMLCysHOM"
+                },
+                "purpose": ["auth", "general"]
+              }
+            ],
+            "serviceEndpoints": [
+              {
+                "id": "serviceEndpointId123",
+                "type": "someType",
+                "endpoint": "https://www.url.com"
+              }
+            ]
+          }
+        }
+      ]
+    }
+    // ...
   ]
 }
 ```
