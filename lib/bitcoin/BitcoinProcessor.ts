@@ -1,3 +1,5 @@
+import BitcoinBlockModel from './models/BitcoinBlockModel';
+import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import ErrorCode from './ErrorCode';
@@ -45,6 +47,11 @@ export interface IBlockInfo {
   previousHash: string;
 }
 
+interface IBlockInfoExtended extends IBlockInfo {
+  totalFee: number;
+  transactionCount: number;
+}
+
 /**
  * Processor for Bitcoin REST API calls
  */
@@ -87,6 +94,8 @@ export default class BitcoinProcessor {
 
   private sidetreeTransactionParser: SidetreeTransactionParser;
 
+  private bitcoinDataDirectory: string | undefined;
+
   /** at least 10 blocks per page unless reaching the last block */
   private static readonly pageSizeInBlocks = 10;
 
@@ -96,6 +105,7 @@ export default class BitcoinProcessor {
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
+    this.bitcoinDataDirectory = config.bitcoinDataDirectory;
 
     this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
       BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
@@ -166,7 +176,12 @@ export default class BitcoinProcessor {
     }
 
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
-    await this.processTransactions(startingBlock);
+    if (this.bitcoinDataDirectory) {
+      // This reads into the raw block files and parse to speed up the initial startup instead of rpc
+      await this.fastProcessTransactions(startingBlock);
+    } else {
+      await this.processTransactions(startingBlock);
+    }
 
     // NOTE: important to this initialization after we have processed all the blocks
     // this is because that the lock monitor needs the normalized fee calculator to
@@ -176,8 +191,142 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Trims the databases to the block prior to the block the given transaction is in.
-   * @returns The last fully processed block after trimming. `undefined` if all data are deleted after trimming.
+   * A faster version of process transactions that requires access to bitcoin data directory
+   * @param startingBlock the starting block to begin processing
+   */
+  private async fastProcessTransactions (startingBlock: IBlockInfo) {
+    const bitcoinBlockDataIterator = new BitcoinBlockDataIterator(this.bitcoinDataDirectory!);
+    const lastBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
+    const lastBlockInfo = await this.bitcoinClient.getBlockInfoFromHeight(lastBlockHeight);
+
+    // a map of all blocks mapped with their hash being the key
+    const notYetValidatedBlocks: Map<string, IBlockInfoExtended> = new Map();
+    // An array of blocks representing the validated chain reverse sorted by height
+    const validatedBlocks: IBlockInfoExtended[] = [];
+
+    console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
+    // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
+    let hashOfEarliestKnownValidBlock = lastBlockInfo.hash;
+    let heightOfEarliestKnownValidBlock = lastBlockInfo.height;
+    while (bitcoinBlockDataIterator.hasPrevious() && heightOfEarliestKnownValidBlock >= startingBlock.height) {
+      const blocks = bitcoinBlockDataIterator.previous()!;
+      await this.processBlocks(blocks, notYetValidatedBlocks, startingBlock.height, heightOfEarliestKnownValidBlock);
+      this.findEarliestValidBlockAndAddToValidBlocks(
+        validatedBlocks,
+        notYetValidatedBlocks,
+        hashOfEarliestKnownValidBlock,
+        startingBlock.height);
+      if (validatedBlocks.length > 0) {
+        heightOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].height - 1;
+        hashOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].previousHash;
+      }
+    }
+
+    // at this point, all the blocks in notYetValidatedBlocks are for sure not valid because we've filled the valid blocks with the ones we want
+    await this.removeInvalidBlocks(notYetValidatedBlocks);
+
+    // TODO: Issue #783
+    // Need to use the fee infos and set fee after here.
+
+    this.lastProcessedBlock = lastBlockInfo;
+    console.log('finished fast processing');
+  }
+
+  private async processBlocks (
+    blocks: BitcoinBlockModel[],
+    notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
+    startingBlockHeight: number,
+    heightOfEarliestKnownValidBlock: number) {
+
+    for (let block of blocks) {
+      if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
+        const blockReward = BitcoinProcessor.getBitcoinBlockReward(block.height);
+        notYetValidatedBlocks.set(
+          block.hash,
+          {
+            height: block.height,
+            hash: block.hash,
+            totalFee: block.transactions[0].outputs[0].satoshis - blockReward,
+            transactionCount: block.transactions.length,
+            previousHash: block.previousHash }
+          );
+        await this.processSidetreeTransactionsInBlock(block);
+      }
+    }
+  }
+
+  /**
+   * Find all hashes in the notYetValidatedBlocks that are actually valid,
+   * add them to the validated list and delete them from the map.
+   */
+  private findEarliestValidBlockAndAddToValidBlocks (
+    validatedBlocks: (IBlockInfoExtended | undefined)[],
+    notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
+    hashOfEarliestKnownValidBlock: string,
+    startingBlockHeight: number) {
+
+    let validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
+    while (validBlock !== undefined && validBlock.height >= startingBlockHeight) {
+      console.log(`Found valid block ${hashOfEarliestKnownValidBlock}`);
+      validatedBlocks.push(validBlock);
+      // delete because it is now validated
+      notYetValidatedBlocks.delete(hashOfEarliestKnownValidBlock);
+      // the previous block hash becomes valid
+      hashOfEarliestKnownValidBlock = validBlock.previousHash;
+      validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
+    }
+  }
+
+  private async removeInvalidBlocks (invalidBlocks: Map<string, IBlockInfoExtended>) {
+    const hashes = invalidBlocks.keys();
+    for (const hash of hashes) {
+      await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
+    }
+  }
+
+  /**
+   * Given the block height, return the block reward
+   */
+  private static getBitcoinBlockReward (height: number) {
+    const halvingTimes = Math.floor(height / 210000);
+    if (halvingTimes >= 64) {
+      return 0;
+    }
+    return Math.floor(5000000000 / (Math.pow(2, halvingTimes)));
+  }
+
+  /**
+   * Iterates through the transactions within the given block and process the sidetree transactions
+   * @param block the block to process
+   */
+  private async processSidetreeTransactionsInBlock (block: BitcoinBlockModel) {
+    const transactions = block.transactions;
+    // iterate through transactions
+    for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
+      const transaction = transactions[transactionIndex];
+
+      try {
+        const sidetreeTxToAdd = await this.getSidetreeTransactionModelIfExist(transaction, transactionIndex, block.height);
+
+        // If there are transactions found then add them to the transaction store
+        if (sidetreeTxToAdd) {
+          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
+          await this.transactionStore.addTransaction(sidetreeTxToAdd);
+        }
+      } catch (e) {
+        const inputs = { blockHeight: block.height, blockHash: block.hash, transactionIndex: transactionIndex };
+        console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
+                      JSON.stringify(inputs),
+                      JSON.stringify(e, Object.getOwnPropertyNames(e)));
+
+        throw e;
+      }
+    }
+  }
+
+  /**
+   * NOTE: Should be used ONLY during service initialization.
+   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
    */
   private async trimDatabasesToLastFullyProcessedBlock (lastValidTransaction?: TransactionModel): Promise<IBlockInfo | undefined> {
     // No known valid transaction given.
@@ -559,29 +708,7 @@ export default class BitcoinProcessor {
         `Previous hash from blockchain: ${blockData.previousHash}. Expected value: ${previousBlockHash}`);
     }
 
-    const transactions = blockData.transactions;
-
-    // iterate through transactions
-    for (let transactionIndex = 0; transactionIndex < transactions.length; transactionIndex++) {
-      const transaction = transactions[transactionIndex];
-
-      try {
-        const sidetreeTxToAdd = await this.getSidetreeTransactionModelIfExist(transaction, transactionIndex, block);
-
-        // If there are transactions found then add them to the transaction store
-        if (sidetreeTxToAdd) {
-          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
-          await this.transactionStore.addTransaction(sidetreeTxToAdd);
-        }
-      } catch (e) {
-        const inputs = { block: block, blockHash: blockHash, transactionIndex: transactionIndex };
-        console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
-                       JSON.stringify(inputs),
-                       JSON.stringify(e, Object.getOwnPropertyNames(e)));
-
-        throw e;
-      }
-    }
+    await this.processSidetreeTransactionsInBlock(blockData);
 
     return blockHash;
   }

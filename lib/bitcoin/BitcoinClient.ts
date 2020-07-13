@@ -9,7 +9,7 @@ import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
+import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit, Block } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
@@ -438,6 +438,25 @@ export default class BitcoinClient {
     return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
   }
 
+  /**
+   * Convert a block to bitcoin transaction models
+   * @param block The block to convert
+   */
+  public static convertToBitcoinTransactionModels (block: Block): BitcoinTransactionModel[] {
+    const transactionModels = block.transactions.map((transaction: any) => {
+      const bitcoreTransaction = {
+        id: transaction.id,
+        blockHash: block.hash,
+        confirmations: 1, // Unused, but need to set to a value to be able to reuse `BitcoinTransactionModel`.
+        inputs: transaction.inputs,
+        outputs: transaction.outputs
+      };
+      return BitcoinClient.createBitcoinTransactionModel(bitcoreTransaction);
+    });
+
+    return transactionModels;
+  }
+
   private async getRawTransactionRpc (transactionId: string): Promise<BitcoreTransactionWrapper> {
     const request = {
       method: 'getrawtransaction',
@@ -677,6 +696,10 @@ export default class BitcoinClient {
     };
   }
 
+  /**
+   * create internal bitcoin transaction model from bitcore transaction model
+   * @param transactionWrapper the bitcore transaction model wrapper
+   */
   private static createBitcoinTransactionModel (transactionWrapper: BitcoreTransactionWrapper): BitcoinTransactionModel {
 
     const bitcoinInputs = transactionWrapper.inputs.map((input) => { return BitcoinClient.createBitcoinInputModel(input); });

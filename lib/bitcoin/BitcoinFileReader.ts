@@ -19,9 +19,7 @@ export default class BitcoinFileReader implements IBitcoinFileReader {
     try {
       blockDataDir = fs.readdirSync(blocksDataDirectoryPath);
     } catch (e) {
-      // log fs error and throw
-      console.error(`Error thrown while reading directory: ${e}`);
-      throw new SidetreeError(ErrorCode.BitcoinFileReaderBlockCannotReadDirectory);
+      throw SidetreeError.createFromError(ErrorCode.BitcoinFileReaderBlockCannotReadDirectory, e);
     }
     const blockFileList = blockDataDir.filter((fileName) => { return fileName.startsWith('blk'); });
     return blockFileList;
@@ -31,9 +29,7 @@ export default class BitcoinFileReader implements IBitcoinFileReader {
     try {
       return fs.readFileSync(`${this.bitcoinDataDirectory}/blocks/${fileName}`);
     } catch (e) {
-      // log fs error and throw
-      console.error(`Error thrown while reading file: ${e}`);
-      throw new SidetreeError(ErrorCode.BitcoinFileReaderBlockCannotReadFile);
+      throw SidetreeError.createFromError(ErrorCode.BitcoinFileReaderBlockCannotReadFile, e);
     }
   }
 }
