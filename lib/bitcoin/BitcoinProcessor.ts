@@ -201,7 +201,7 @@ export default class BitcoinProcessor {
 
     // a map of all blocks mapped with their hash being the key
     const notYetValidatedBlocks: Map<string, IBlockInfoExtended> = new Map();
-    // An array of blocks representing the validated chain sorted by height
+    // An array of blocks representing the validated chain reverse sorted by height
     const validatedBlocks: IBlockInfoExtended[] = [];
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
@@ -216,7 +216,7 @@ export default class BitcoinProcessor {
         notYetValidatedBlocks,
         hashOfEarliestKnownValidBlock,
         startingBlock.height);
-      if (validatedBlocks.length) {
+      if (validatedBlocks.length > 0) {
         heightOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].height - 1;
         hashOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].previousHash;
       }
