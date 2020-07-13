@@ -152,6 +152,14 @@ export default class MongoDbTransactionStore implements ITransactionStore {
   }
 
   /**
+   * Remove transactions by transaction time hash
+   * @param transactionTimeHash the transaction time hash which the transactions should be removed for
+   */
+  public async removeTransactionByTransactionTimeHash (transactionTimeHash: string) {
+    await this.transactionCollection!.deleteMany({ transactionTimeHash: { $eq:  transactionTimeHash } });
+  }
+
+  /**
    * Gets the list of processed transactions.
    * Mainly used for test purposes.
    */

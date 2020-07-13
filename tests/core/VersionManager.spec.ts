@@ -142,6 +142,7 @@ describe('VersionManager', async () => {
 
         // Override the `intialize()` call so no network call occurs, else the test the will fail in GitHub CICD.
         if (className === 'MongoDbOperationQueue') {
+          // tslint:disable-next-line:no-empty
           classObject.prototype.initialize = async () => {};
         }
 

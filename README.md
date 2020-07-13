@@ -9,7 +9,6 @@ See the [latest spec](https://identity.foundation/sidetree/spec/) for full Sidet
 
 See the [implementation document](docs/implementation.md) for the detailed description of this implementation.
 
-
 ## Code Contributions:
 
 1. Must pass `npm run test`.
@@ -38,3 +37,7 @@ See the [implementation document](docs/implementation.md) for the detailed descr
 > NOTE: 2019-08-13: docker-compose out-of-date, needs to be udpated.
 
 The Sidetree components are available via docker containers . Please see the [docker document](docs/docker.md) to find out details on building and running.
+
+## Release Process
+
+Refer to [here](/docs/release-process.md) for details on the release process of the artifacts in this repository.
