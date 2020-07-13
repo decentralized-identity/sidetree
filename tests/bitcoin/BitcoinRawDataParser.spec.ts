@@ -10,17 +10,13 @@ describe('BitcoinRawDataParser', () => {
       const blockDataFileBuffer = Buffer.from(hex, 'hex');
       const result = BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
       expect(result).toBeDefined();
-      const keys = Object.keys(result);
-      expect(keys.length).toEqual(2);
-      for (const key of keys) {
-        expect(key).toEqual(result[key].hash);
-      }
+      expect(result.length).toEqual(2);
     });
 
     it('should handle skip magic bytes', () => {
       const blockDataFileBuffer = Buffer.from('0000000000000000', 'hex');
       const result = BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
-      expect(result).toEqual({});
+      expect(result).toEqual([]);
     });
 
     it('should handle invalid magic bytes', () => {

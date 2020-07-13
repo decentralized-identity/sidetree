@@ -26,10 +26,10 @@ export default class BitcoinRawDataParser {
    * creating new Block, or validating size
    * @param rawBlockDataFileBuffer The file, in buffer form, to be parsed as blocks
    */
-  public static parseRawDataFile (rawBlockDataFileBuffer: Buffer): {[blockHash: string]: BitcoinBlockModel} {
+  public static parseRawDataFile (rawBlockDataFileBuffer: Buffer): BitcoinBlockModel[] {
     // Expect raw block data to be in the format of
     // <MagicBytes 4 bytes><SizeBytes 4 bytes><BlockData n bytes><MagicBytes><SizeBytes><BlockData>...repeating
-    const blockMapper: {[name: string]: BitcoinBlockModel} = {};
+    const processedBlocks: BitcoinBlockModel[] = [];
     let count = 0;
     let cursor = 0;
 
@@ -69,17 +69,17 @@ export default class BitcoinRawDataParser {
 
       const transactionModels = BitcoinClient.convertToBitcoinTransactionModels(block);
 
-      blockMapper[block.hash] = {
+      processedBlocks.push({
         hash: block.hash,
         height: blockHeight,
         previousHash: Buffer.from(block.header.prevHash).reverse().toString('hex'),
         transactions: transactionModels
-      };
+      });
       cursor += blockSizeInBytes;
       count++;
     }
 
     console.info(`Finished processing ${count} blocks from raw block file`);
-    return blockMapper;
+    return processedBlocks;
   }
 }

@@ -34,11 +34,11 @@ describe('bitcoinBlockDataIterator', () => {
       bitcoinBlockDataIterator['currentIndex'] = 1;
       bitcoinBlockDataIterator['fileNames'] = ['some', 'files'];
       const fileReaderSpy = spyOn(bitcoinBlockDataIterator['fileReader'], 'readBlockFile');
-      const bitcoinRawDataParserSpy = spyOn(BitcoinRawDataParser, 'parseRawDataFile').and.returnValue({});
+      const bitcoinRawDataParserSpy = spyOn(BitcoinRawDataParser, 'parseRawDataFile').and.returnValue([]);
       const result = bitcoinBlockDataIterator.previous();
 
       expect(bitcoinBlockDataIterator['currentIndex']).toEqual(0);
-      expect(result).toEqual({});
+      expect(result).toEqual([]);
       expect(fileReaderSpy).toHaveBeenCalledTimes(1);
       expect(bitcoinRawDataParserSpy).toHaveBeenCalledTimes(1);
     });

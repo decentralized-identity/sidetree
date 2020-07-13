@@ -199,30 +199,31 @@ export default class BitcoinProcessor {
     const lastBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     const lastBlockInfo = await this.bitcoinClient.getBlockInfoFromHeight(lastBlockHeight);
 
-    const numOfBlocksToProcess = lastBlockHeight - startingBlock.height + 1;
-
     // a map of all blocks mapped with their hash being the key
     const notYetValidatedBlocks: Map<string, IBlockInfoExtended> = new Map();
     // An array of blocks representing the validated chain sorted by height
-    const validatedBlocks: (IBlockInfoExtended | undefined)[] = [...new Array(numOfBlocksToProcess)];
+    const validatedBlocks: IBlockInfoExtended[] = [];
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
     // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
     let hashOfEarliestKnownValidBlock = lastBlockInfo.hash;
     let heightOfEarliestKnownValidBlock = lastBlockInfo.height;
     while (bitcoinBlockDataIterator.hasPrevious() && heightOfEarliestKnownValidBlock >= startingBlock.height) {
-      const blockData = bitcoinBlockDataIterator.previous()!;
-      await this.processBlockData(blockData, notYetValidatedBlocks, startingBlock.height, heightOfEarliestKnownValidBlock);
-      [heightOfEarliestKnownValidBlock, hashOfEarliestKnownValidBlock] = await this.findEarliestValidBlockAndAddToValidBlocks(
+      const blocks = bitcoinBlockDataIterator.previous()!;
+      await this.processBlockData(blocks, notYetValidatedBlocks, startingBlock.height, heightOfEarliestKnownValidBlock);
+      this.findEarliestValidBlockAndAddToValidBlocks(
         validatedBlocks,
         notYetValidatedBlocks,
-        heightOfEarliestKnownValidBlock,
         hashOfEarliestKnownValidBlock,
         startingBlock.height);
+      if (validatedBlocks.length) {
+        heightOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].height - 1;
+        hashOfEarliestKnownValidBlock = validatedBlocks[validatedBlocks.length - 1].previousHash;
+      }
     }
 
     // at this point, all the blocks in notYetValidatedBlocks are for sure not valid because we've filled the valid blocks with the ones we want
-    await this.processInvalidBlocks(notYetValidatedBlocks);
+    await this.removeInvalidBlocks(notYetValidatedBlocks);
 
     // TODO: Issue #783
     // Need to use the fee infos and set fee after here.
@@ -232,14 +233,12 @@ export default class BitcoinProcessor {
   }
 
   private async processBlockData (
-    blockData: {[blockHash: string]: BitcoinBlockModel},
+    blocks: BitcoinBlockModel[],
     notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
     startingBlockHeight: number,
     heightOfEarliestKnownValidBlock: number) {
 
-    for (let blockHash in blockData) {
-      const block = blockData[blockHash];
-
+    for (let block of blocks) {
       if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
         const blockReward = BitcoinProcessor.getBitcoinBlockReward(block.height);
         notYetValidatedBlocks.set(
@@ -248,7 +247,7 @@ export default class BitcoinProcessor {
             height: block.height,
             hash: block.hash,
             totalFee: block.transactions[0].outputs[0].satoshis - blockReward,
-            transactionCount: block.transactions.length - 1, // minus one because of coinbase
+            transactionCount: block.transactions.length,
             previousHash: block.previousHash }
           );
         await this.processSidetreeTransactionsInBlock(block);
@@ -260,30 +259,25 @@ export default class BitcoinProcessor {
    * Find all hashes in the notYetValidatedBlocks that are actually valid,
    * add them to the validated list and delete them from the map.
    */
-  private async findEarliestValidBlockAndAddToValidBlocks (
+  private findEarliestValidBlockAndAddToValidBlocks (
     validatedBlocks: (IBlockInfoExtended | undefined)[],
     notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
-    heightOfEarliestKnownValidBlock: number,
     hashOfEarliestKnownValidBlock: string,
-    startingBlockHeight: number): Promise<[number, string]> {
+    startingBlockHeight: number) {
 
-    let index = heightOfEarliestKnownValidBlock - startingBlockHeight;
     let validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
-    while (validBlock !== undefined && index >= 0) {
+    while (validBlock !== undefined && validBlock.height >= startingBlockHeight) {
       console.log(`Found valid block ${hashOfEarliestKnownValidBlock}`);
-      validatedBlocks[index] = validBlock;
+      validatedBlocks.push(validBlock);
       // delete because it is now validated
       notYetValidatedBlocks.delete(hashOfEarliestKnownValidBlock);
       // the previous block hash becomes valid
       hashOfEarliestKnownValidBlock = validBlock.previousHash;
-      heightOfEarliestKnownValidBlock--;
-      index--;
       validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
     }
-    return [heightOfEarliestKnownValidBlock, hashOfEarliestKnownValidBlock];
   }
 
-  private async processInvalidBlocks (invalidBlocks: Map<string, IBlockInfoExtended>) {
+  private async removeInvalidBlocks (invalidBlocks: Map<string, IBlockInfoExtended>) {
     const hashes = invalidBlocks.keys();
     for (const hash of hashes) {
       await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
