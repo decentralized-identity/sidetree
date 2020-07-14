@@ -18,9 +18,6 @@ export default class MongoDbTransactionStore implements ITransactionStore {
 
   /**
    * Constructs a `MongoDbTransactionStore`;
-   * @param retryExponentialDelayFactor
-   *   The exponential delay factor in milliseconds for retries of unresolvable transactions.
-   *   e.g. if it is set to 1 seconds, then the delays for retries will be 1 second, 2 seconds, 4 seconds... until the transaction can be resolved.
    */
   constructor (private serverUrl: string, databaseName?: string) {
     this.databaseName = databaseName ? databaseName : MongoDbTransactionStore.defaultDatabaseName;

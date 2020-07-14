@@ -6,6 +6,7 @@ import BitcoinDataGenerator from './BitcoinDataGenerator';
 import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
+import BlockMetadata from '../../lib/bitcoin/models/BlockMetadata';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import IBitcoinConfig from '../../lib/bitcoin/IBitcoinConfig';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
@@ -866,7 +867,7 @@ describe('BitcoinProcessor', () => {
     });
 
     it('should return original values when no valid blocks are found', async () => {
-      const validBlocks = [undefined, undefined];
+      const validBlocks: BlockMetadata[] = [];
       const invalidBlocks: Map<string, any> = new Map();
       invalidBlocks.set('abc', {});
       invalidBlocks.set('def', {});
@@ -877,8 +878,7 @@ describe('BitcoinProcessor', () => {
         invalidBlocks,
         hashOfEarliestKnownValidBlock,
         startingBlockHeight);
-      expect(validBlocks[0]).toBeUndefined();
-      expect(validBlocks[1]).toBeUndefined();
+      expect(validBlocks.length).toEqual(0);
       expect(invalidBlocks.size).toEqual(2);
     });
   });
@@ -906,7 +906,7 @@ describe('BitcoinProcessor', () => {
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const getCurrentHeightMock = spyOn(bitcoinProcessor['bitcoinClient'],'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));
       const getCurrentHashMock = spyOn(bitcoinProcessor['bitcoinClient'],'getBlockInfoFromHeight')
-        .and.returnValue(Promise.resolve({ hash: 'hash2', height: startBlock.height + 1, previousHash: 'hash1' }));
+      .and.returnValue(Promise.resolve({ hash: 'hash2', height: startBlock.height + 1, previousHash: 'hash1' }));
       const fsReaddirSyncSpy = spyOn(fs, 'readdirSync').and.returnValue(['blk001.dat' as any]);
       const fsReadFileSyncSpy = spyOn(fs, 'readFileSync').and.returnValue(Buffer.from('someBuffer'));
       const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);
@@ -937,7 +937,8 @@ describe('BitcoinProcessor', () => {
           transactions: [{ outputs: [{ satoshis: 12345, scriptAsmAsString: 'asm' }], inputs: [], confirmations: 1, id: 'outOfBound', blockHash: 'outOfBound' }]
         }
       ]);
-
+      const blockMetadataStorePutSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'addBlockMetadata');
+      
       await bitcoinProcessor['fastProcessTransactions'](startBlock);
       expect(getCurrentHeightMock).toHaveBeenCalled();
       expect(getCurrentHashMock).toHaveBeenCalled();
@@ -948,7 +949,7 @@ describe('BitcoinProcessor', () => {
       // onces because 1 block is forked
       expect(removeTransactionByTransactionTimeHashSpy).toHaveBeenCalledTimes(1);
       expect(rawDataParserSpy).toHaveBeenCalled();
-
+      expect(blockMetadataStorePutSpy).toHaveBeenCalledTimes(1);
     });
   });
 

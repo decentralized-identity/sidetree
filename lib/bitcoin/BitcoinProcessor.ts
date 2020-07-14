@@ -2,11 +2,13 @@ import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinClient from './BitcoinClient';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
+import BlockMetadata from './models/BlockMetadata';
 import ErrorCode from './ErrorCode';
 import IBitcoinConfig from './IBitcoinConfig';
 import LockMonitor from './lock/LockMonitor';
 import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
+import MongoDbBlockMetadataStore from './MongoDbBlockMetadataStore';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import ProtocolParameters from './ProtocolParameters';
@@ -47,11 +49,6 @@ export interface IBlockInfo {
   previousHash: string;
 }
 
-interface IBlockInfoExtended extends IBlockInfo {
-  totalFee: number;
-  transactionCount: number;
-}
-
 /**
  * Processor for Bitcoin REST API calls
  */
@@ -86,6 +83,8 @@ export default class BitcoinProcessor {
 
   private spendingMonitor: SpendingMonitor;
 
+  private blockMetadataStore: MongoDbBlockMetadataStore;
+
   private mongoDbLockTransactionStore: MongoDbLockTransactionStore;
 
   private lockResolver: LockResolver;
@@ -104,8 +103,10 @@ export default class BitcoinProcessor {
 
     this.sidetreePrefix = config.sidetreeTransactionPrefix;
     this.genesisBlockNumber = config.genesisBlockNumber;
-    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.bitcoinDataDirectory = config.bitcoinDataDirectory;
+
+    this.blockMetadataStore = new MongoDbBlockMetadataStore(config.mongoDbConnectionString, config.databaseName);
+    this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     this.spendingMonitor = new SpendingMonitor(config.bitcoinFeeSpendingCutoffPeriodInBlocks,
       BitcoinClient.convertBtcToSatoshis(config.bitcoinFeeSpendingCutoff),
@@ -155,6 +156,7 @@ export default class BitcoinProcessor {
    */
   public async initialize () {
     await this.versionManager.initialize();
+    await this.blockMetadataStore.initialize();
     await this.transactionStore.initialize();
     await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
@@ -200,9 +202,9 @@ export default class BitcoinProcessor {
     const lastBlockInfo = await this.bitcoinClient.getBlockInfoFromHeight(lastBlockHeight);
 
     // a map of all blocks mapped with their hash being the key
-    const notYetValidatedBlocks: Map<string, IBlockInfoExtended> = new Map();
+    const notYetValidatedBlocks: Map<string, BlockMetadata> = new Map();
     // An array of blocks representing the validated chain reverse sorted by height
-    const validatedBlocks: IBlockInfoExtended[] = [];
+    const validatedBlocks: BlockMetadata[] = [];
 
     console.log(`Begin fast processing block ${startingBlock.height} to ${lastBlockHeight}`);
     // Loop through files backwards and process blocks from the end/tip of the blockchain until we reach the starting block given.
@@ -225,6 +227,9 @@ export default class BitcoinProcessor {
     // at this point, all the blocks in notYetValidatedBlocks are for sure not valid because we've filled the valid blocks with the ones we want
     await this.removeInvalidBlocks(notYetValidatedBlocks);
 
+    // Write the block info to DB.
+    await this.blockMetadataStore.addBlockMetadata(validatedBlocks);
+
     // TODO: Issue #783
     // Need to use the fee infos and set fee after here.
 
@@ -234,7 +239,7 @@ export default class BitcoinProcessor {
 
   private async processBlocks (
     blocks: BitcoinBlockModel[],
-    notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
+    notYetValidatedBlocks: Map<string, BlockMetadata>,
     startingBlockHeight: number,
     heightOfEarliestKnownValidBlock: number) {
 
@@ -259,8 +264,8 @@ export default class BitcoinProcessor {
    * add them to the validated list and delete them from the map.
    */
   private findEarliestValidBlockAndAddToValidBlocks (
-    validatedBlocks: (IBlockInfoExtended | undefined)[],
-    notYetValidatedBlocks: Map<string, IBlockInfoExtended>,
+    validatedBlocks: BlockMetadata[],
+    notYetValidatedBlocks: Map<string, BlockMetadata>,
     hashOfEarliestKnownValidBlock: string,
     startingBlockHeight: number) {
 
@@ -276,7 +281,7 @@ export default class BitcoinProcessor {
     }
   }
 
-  private async removeInvalidBlocks (invalidBlocks: Map<string, IBlockInfoExtended>) {
+  private async removeInvalidBlocks (invalidBlocks: Map<string, BlockMetadata>) {
     const hashes = invalidBlocks.keys();
     for (const hash of hashes) {
       await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
