@@ -217,7 +217,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(404);
-    expect(response.body).toBeUndefined();
+    expect(response.body).toEqual({ code: ErrorCode.DidNotFound, message: 'DID Not Found' });
   });
 
   it('should return BadRequest given a malformed DID.', async () => {
