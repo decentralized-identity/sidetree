@@ -48,6 +48,7 @@ export default {
   DidLongFormOnlyInitialStateParameterIsAllowed: 'did_long_form_only_initial_values_parameter_is_allowed',
   DidLongFormOnlyOneQueryParamAllowed: 'did_long_form_only_one_query_param_allowed',
   DidNoUniqueSuffix: 'did_no_unique_suffix',
+  DidNotFound: 'did_not_found',
   DidUniqueSuffixFromInitialStateMismatch: 'did_unique_suffix_from_initial_state_mismatch',
   DocumentComposerDocumentMissing: 'document_composer_document_missing',
   DocumentComposerIdNotString: 'document_composer_id_not_string',
