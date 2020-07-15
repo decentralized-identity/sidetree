@@ -937,7 +937,7 @@ describe('BitcoinProcessor', () => {
           transactions: [{ outputs: [{ satoshis: 12345, scriptAsmAsString: 'asm' }], inputs: [], confirmations: 1, id: 'outOfBound', blockHash: 'outOfBound' }]
         }
       ]);
-      const blockMetadataStorePutSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'addBlockMetadata');
+      const blockMetadataStorePutSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'add');
       
       await bitcoinProcessor['fastProcessTransactions'](startBlock);
       expect(getCurrentHeightMock).toHaveBeenCalled();

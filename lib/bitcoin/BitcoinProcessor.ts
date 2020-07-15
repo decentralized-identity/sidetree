@@ -1,6 +1,7 @@
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinClient from './BitcoinClient';
+import BitcoinServiceStateModel from './models/BitcoinServiceStateModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BlockMetadata from './models/BlockMetadata';
 import ErrorCode from './ErrorCode';
@@ -10,6 +11,7 @@ import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
 import MongoDbBlockMetadataStore from './MongoDbBlockMetadataStore';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
+import MongoDbServiceStateStore from './MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
@@ -83,6 +85,8 @@ export default class BitcoinProcessor {
 
   private spendingMonitor: SpendingMonitor;
 
+  private serviceStateStore: MongoDbServiceStateStore<BitcoinServiceStateModel>;
+
   private blockMetadataStore: MongoDbBlockMetadataStore;
 
   private mongoDbLockTransactionStore: MongoDbLockTransactionStore;
@@ -105,6 +109,7 @@ export default class BitcoinProcessor {
     this.genesisBlockNumber = config.genesisBlockNumber;
     this.bitcoinDataDirectory = config.bitcoinDataDirectory;
 
+    this.serviceStateStore = new MongoDbServiceStateStore(config.mongoDbConnectionString, config.databaseName);
     this.blockMetadataStore = new MongoDbBlockMetadataStore(config.mongoDbConnectionString, config.databaseName);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
@@ -156,10 +161,18 @@ export default class BitcoinProcessor {
    */
   public async initialize () {
     await this.versionManager.initialize();
+    await this.serviceStateStore.initialize();
     await this.blockMetadataStore.initialize();
     await this.transactionStore.initialize();
     await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
+
+    // Write initial service state to DB if no state is found.
+    const serviceState = await this.serviceStateStore.get();
+    if (serviceState === undefined) {
+      const serviceVersion = await this.getServiceVersion();
+      this.serviceStateStore.put({ serviceVersion: serviceVersion.version })
+    }
 
     // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
     // so we need to trim the databases back to the last fully processed block.
@@ -228,7 +241,7 @@ export default class BitcoinProcessor {
     await this.removeInvalidBlocks(notYetValidatedBlocks);
 
     // Write the block info to DB.
-    await this.blockMetadataStore.addBlockMetadata(validatedBlocks);
+    await this.blockMetadataStore.add(validatedBlocks);
 
     // TODO: Issue #783
     // Need to use the fee infos and set fee after here.
