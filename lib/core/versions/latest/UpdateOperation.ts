@@ -98,12 +98,12 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.did_suffix !== 'string') {
+    if (typeof operationObject.didUniqueSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    const signedData = Jws.parseCompactJws(operationObject.signed_data);
-    const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signed_data);
+    const signedData = await UpdateOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
     let encodedDelta = undefined;
@@ -113,11 +113,11 @@ export default class UpdateOperation implements OperationModel {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }
 
-      encodedDelta = operationObject.delta;
+      encodedDelta = operationObject.encodedDelta;
       delta = await Operation.parseDelta(encodedDelta);
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, encodedDelta, delta);
+    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedDataJws, signedData, encodedDelta, delta);
   }
 
   private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {
@@ -129,14 +129,14 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationSignedDataHasMissingOrUnknownProperty);
     }
 
-    Jwk.validateJwkEs256k(signedData.update_key);
+    Jwk.validateJwkEs256k(signedData.updateKey);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
+    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
     return {
-      deltaHash: signedData.delta_hash,
-      updateKey: signedData.update_key
+      deltaHash: signedData.deltaHash,
+      updateKey: signedData.updateKey
     };
   }
 }
