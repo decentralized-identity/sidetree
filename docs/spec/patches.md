@@ -51,7 +51,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
 1. The object ****MUST**** include an `action` property, and its value ****MUST**** be `add-public-keys`.
 2. The object ****MUST**** include a `public_keys` property, and its value ****MUST**** be an array.
 3. Each key being added ****MUST**** be represented by an entry in the `public_keys` array, and each entry must be an object composed as follows:
-    1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with no more than twenty (50) ASCII encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
+    1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with no more than fifty (50) ASCII encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
     2. The object ****MUST**** include a type property, and its value ****SHOULD**** be the identifier type string of a registered [Cryptographic Suite](https://w3c-ccg.github.io/ld-cryptosuite-registry/) that supports JWK representations - for example:
         - `EcdsaSecp256k1VerificationKey2019`
         - `JwsVerificationKey2020`
