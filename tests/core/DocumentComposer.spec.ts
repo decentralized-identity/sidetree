@@ -14,7 +14,7 @@ describe('DocumentComposer', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', [PublicKeyPurpose.Auth]);
       const document = {
-        public_keys: [anySigningPublicKey, authPublicKey]
+        publicKeys: [anySigningPublicKey, authPublicKey]
       };
       const didState: DidState = {
         document,
@@ -75,12 +75,12 @@ describe('DocumentComposer', async () => {
   describe('addServiceEndpoints', () => {
     it('should add expected service endpoints to document', () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
       };
 
       const patch = {
         action: 'add-service-endpoints',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: 'someType',
           endpoint: 'someEndpoint'}]
@@ -88,15 +88,15 @@ describe('DocumentComposer', async () => {
 
       const result = DocumentComposer['addServiceEndpoints'](document, patch);
 
-      expect(result.service_endpoints).toEqual([{ id: 'someId', type: 'someType', endpoint: 'someEndpoint' }]);
+      expect(result.serviceEndpoints).toEqual([{ id: 'someId', type: 'someType', endpoint: 'someEndpoint' }]);
     });
   });
 
   describe('removeServiceEndpoints', () => {
-    it('should remove the expected elements from service_endpoints', () => {
+    it('should remove the expected elements from serviceEndpoints', () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
-        service_endpoints: [
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
+        serviceEndpoints: [
           { id: '1', type: 't', endpoint: 'se' },
           { id: '2', type: 't', endpoint: 'se' },
           { id: '3', type: 't', endpoint: 'se' },
@@ -112,8 +112,8 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
-        service_endpoints: [
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
+        serviceEndpoints: [
           { id: '2', type: 't', endpoint: 'se' },
           { id: '4', type: 't', endpoint: 'se' }
         ]
@@ -124,7 +124,7 @@ describe('DocumentComposer', async () => {
 
     it('should leave document unchanged if it does not have service endpoint property', () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
       };
 
       const patch = {
@@ -195,7 +195,7 @@ describe('DocumentComposer', async () => {
       const patch = {
         extra: 'unknown value',
         action: 'add-service-endpoints',
-        service_endpoints: 'not an array'
+        serviceEndpoints: 'not an array'
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
@@ -204,7 +204,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerIdTooLong if id is too long', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'super long super long super long super long super long super long super long super long super long',
           type: undefined,
           endpoint: 'something'
@@ -217,7 +217,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if service endpoint has unknown property', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           extra: 'property',
           id: 'someId',
           type: undefined,
@@ -231,7 +231,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerServiceEndpointMissingOrUnknownProperty if endpoint is missing', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: undefined
         }]
@@ -243,7 +243,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerPatchServiceEndpointTypeNotString if type is not a string', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: undefined,
           endpoint: 'something'
@@ -256,7 +256,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerPatchServiceEndpointTypeTooLong if type too long', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: '1234567890123456789012345678901234567890',
           endpoint: 'something'
@@ -269,7 +269,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotString if endpoint is not a string', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: 'someType',
           endpoint: undefined
@@ -282,7 +282,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if endpoint is too long', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: 'someType',
           endpoint: 'https://www.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678900.long'
@@ -295,7 +295,7 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl if endpoint is not valid url', () => {
       const patch = {
         action: 'add-service-endpoint',
-        service_endpoints: [{
+        serviceEndpoints: [{
           id: 'someId',
           type: 'someType',
           endpoint: 'this is not a valid url'
@@ -315,8 +315,8 @@ describe('DocumentComposer', async () => {
     it('should throw DocumentComposerServiceNotArray if service is not an array', () => {
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
       const document = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
-        service_endpoints: 'this is not an array'
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', controller: 'someId' }],
+        serviceEndpoints: 'this is not an array'
       };
       spyOn(DocumentComposer as any, 'validatePublicKeys').and.returnValue(1);
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
@@ -347,17 +347,17 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `public_keys` in an add-public-keys patch is not an array.', async () => {
+    it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[0] as any).public_keys = 'incorrectType';
+      (patches[0] as any).publicKeys = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeysNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if an entry in `public_keys` in an add-public-keys patch contains additional unknown property.', async () => {
+    it('should throw error if an entry in `publicKeys` in an add-public-keys patch contains additional unknown property.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[0].public_keys![0] as any).unknownProperty = 'unknownProperty';
+      (patches[0].publicKeys![0] as any).unknownProperty = 'unknownProperty';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -365,7 +365,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if `id` of a public key in an add-public-keys patch is not a string.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[0].public_keys![0] as any).id = { invalidType: true };
+      (patches[0].publicKeys![0] as any).id = { invalidType: true };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => { DocumentComposer.validateDocumentPatches(patches); }, ErrorCode.DocumentComposerIdNotString
@@ -376,9 +376,9 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
 
       // Simulate that `jwk` is missing.
-      delete (patches[0].public_keys![0] as any).jwk;
+      delete (patches[0].publicKeys![0] as any).jwk;
 
-      (patches[0].public_keys![0] as any).publicKeyPem = 'DummyPemString';
+      (patches[0].publicKeys![0] as any).publicKeyPem = 'DummyPemString';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -388,7 +388,7 @@ describe('DocumentComposer', async () => {
       const patches = generatePatchesForPublicKeys();
 
       // Simulate that a `type` has an incorrect type.
-      (patches[0].public_keys![0] as any).type = 123;
+      (patches[0].publicKeys![0] as any).type = 123;
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPublicKeyTypeMissingOrIncorrectType);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -402,9 +402,9 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `public_keys` in an add-public-keys patch is not an array.', async () => {
+    it('should throw error if `publicKeys` in an add-public-keys patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[1] as any).public_keys = 'incorrectType';
+      (patches[1] as any).publicKeys = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdsNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -412,15 +412,15 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if any of the public keys in a remove-public-keys patch is not a string.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[1].public_keys![0] as any) = { invalidType: true };
+      (patches[1].publicKeys![0] as any) = { invalidType: true };
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchPublicKeyIdNotString);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
     });
 
-    it('should throw error if `service_endpoints` in an add-service-endpoints patch is not an array.', async () => {
+    it('should throw error if `serviceEndpoints` in an add-service-endpoints patch is not an array.', async () => {
       const patches = generatePatchesForPublicKeys();
-      (patches[2] as any).service_endpoints = 'incorrectType';
+      (patches[2] as any).serviceEndpoints = 'incorrectType';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -428,7 +428,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw error if any of the service endpoints in the add-service-endpoints patch is not a valid DID.', async () => {
       const patches = generatePatchesForPublicKeys() as any;
-      patches[2].service_endpoints[0] = 111;
+      patches[2].serviceEndpoints[0] = 111;
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerServiceEndpointMissingOrUnknownProperty);
       expect(() => { DocumentComposer.validateDocumentPatches(patches); }).toThrow(expectedError);
@@ -442,7 +442,7 @@ describe('DocumentComposer', async () => {
       const patches = [
         {
           action: 'add-public-keys',
-          public_keys: [
+          publicKeys: [
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
         }
@@ -450,7 +450,7 @@ describe('DocumentComposer', async () => {
 
       const resultantDocument = DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.public_keys).toEqual([
+      expect(resultantDocument.publicKeys).toEqual([
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
 
@@ -458,13 +458,13 @@ describe('DocumentComposer', async () => {
 
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
-        service_endpoints: []
+        publicKeys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
+        serviceEndpoints: []
       };
       const patches = [
         {
           action: 'add-public-keys',
-          public_keys: [
+          publicKeys: [
             { id: 'aRepeatingId', type: 'newTypeValue' },
             { id: 'aNonRepeatingId', type: 'someType' }
           ]
@@ -473,7 +473,7 @@ describe('DocumentComposer', async () => {
 
       const resultantDocument = DocumentComposer.applyPatches(document, patches);
 
-      expect(resultantDocument.public_keys).toEqual([
+      expect(resultantDocument.publicKeys).toEqual([
         { id: 'aRepeatingId', type: 'newTypeValue' },
         { id: 'aNonRepeatingId', type: 'someType' }
       ]);
@@ -493,7 +493,7 @@ describe('DocumentComposer', async () => {
   describe('validateDocument()', async () => {
     it('should throw if document contains 2 keys of with the same ID.', async () => {
       const document = {
-        public_keys: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -515,7 +515,7 @@ describe('DocumentComposer', async () => {
 
     it('should throw if document public key purpose is empty array.', async () => {
       const document = {
-        public_keys: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -529,9 +529,9 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document public_keys purpose is not an array.', async () => {
+    it('should throw if document publicKeys purpose is not an array.', async () => {
       const document = {
-        public_keys: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -545,9 +545,9 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document public_keys is bigger than expected length.', async () => {
+    it('should throw if document publicKeys is bigger than expected length.', async () => {
       const document = {
-        public_keys: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -561,9 +561,9 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document public_keys contains invalid purpose.', async () => {
+    it('should throw if document publicKeys contains invalid purpose.', async () => {
       const document = {
-        public_keys: [
+        publicKeys: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
@@ -600,7 +600,7 @@ function generatePatchesForPublicKeys () {
   return [
     {
       action: 'add-public-keys',
-      public_keys: [
+      publicKeys: [
         {
           id: 'keyX',
           type: 'EcdsaSecp256k1VerificationKey2019',
@@ -616,11 +616,11 @@ function generatePatchesForPublicKeys () {
     },
     {
       action: 'remove-public-keys',
-      public_keys: ['keyY']
+      publicKeys: ['keyY']
     },
     {
       action: 'add-service-endpoints',
-      service_endpoints: OperationGenerator.generateServiceEndpoints(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
+      serviceEndpoints: OperationGenerator.generateServiceEndpoints(['EiBQilmIz0H8818Cmp-38Fl1ao03yOjOh03rd9znsK2-8B'])
     }
   ];
 }

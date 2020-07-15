@@ -64,12 +64,12 @@ export default class Operation {
 
     // Validate `patches` property using the DocumentComposer.
     DocumentComposer.validateDocumentPatches(delta.patches);
-    const nextUpdateCommitment = Encoder.decodeAsBuffer(delta.update_commitment);
+    const nextUpdateCommitment = Encoder.decodeAsBuffer(delta.updateCommitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitment);
 
     return {
       patches: delta.patches,
-      updateCommitment: delta.update_commitment
+      updateCommitment: delta.updateCommitment
     };
   }
 }
