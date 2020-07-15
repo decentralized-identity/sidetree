@@ -560,7 +560,7 @@ export default class OperationGenerator {
    * Generates an array of service endpoints with specified ids
    * @param ids the id field in endpoint.
    */
-  public static generateServiceEndpoints (ids: string[]): any[] {
+  public static generateServiceEndpoints (ids: string[]): ServiceEndpointModel[] {
     const serviceEndpoints = [];
     for (const id of ids) {
       serviceEndpoints.push(
