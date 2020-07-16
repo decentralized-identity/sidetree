@@ -291,14 +291,13 @@ export default class BitcoinProcessor {
   private static getBitcoinBlockTotalFee (block: BitcoinBlockModel) {
     // get the total fee including block reward
     const coinbaseTransaction = block.transactions[0];
-    let totalFee = 0;
+    let totalOutputSatoshi = 0;
     for (let output of coinbaseTransaction.outputs) {
-      totalFee += output.satoshis;
+      totalOutputSatoshi += output.satoshis;
     }
 
     // subtract block reward
-    totalFee -= BitcoinProcessor.getBitcoinBlockReward(block.height);
-    return totalFee;
+    return totalOutputSatoshi - BitcoinProcessor.getBitcoinBlockReward(block.height);
   }
 
   /**
