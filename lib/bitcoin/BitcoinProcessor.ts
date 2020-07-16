@@ -29,6 +29,8 @@ import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
 import VersionModel from '../common/models/VersionModel';
 
+import timeSpan = require('time-span');
+
 /**
  * Object representing a blockchain time and hash
  */
@@ -167,21 +169,12 @@ export default class BitcoinProcessor {
     await this.bitcoinClient.initialize();
     await this.mongoDbLockTransactionStore.initialize();
 
-    // Write initial service state to DB if no state is found.
-    const serviceState = await this.serviceStateStore.get();
-    if (serviceState === undefined) {
-      const serviceVersion = await this.getServiceVersion();
-      this.serviceStateStore.put({ serviceVersion: serviceVersion.version })
-    }
+    await this.upgradeDatabaseIfNeeded();
 
     // Current implementation records processing progress at block increments using `this.lastProcessedBlock`,
     // so we need to trim the databases back to the last fully processed block.
-    // NOTE: We also initialize the `lastProcessedBlock`, this is an opional step currently,
-    // but will be required if Issue #692 is implemented.
-    const lastSavedTransaction = await this.transactionStore.getLastTransaction();
-    this.lastProcessedBlock = await this.trimDatabasesToLastFullyProcessedBlock(lastSavedTransaction);
+    this.lastProcessedBlock = await this.blockMetadataStore.getLast();
 
-    console.debug('Synchronizing blocks for sidetree transactions...');
     const startingBlock = await this.getStartingBlockForPeriodicPoll();
 
     // Throw if bitcoin client is not synced up to the bitcoin service's known height.
@@ -190,6 +183,7 @@ export default class BitcoinProcessor {
       throw new SidetreeError(ErrorCode.BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate);
     }
 
+    console.debug('Synchronizing blocks for sidetree transactions...');
     console.info(`Starting block: ${startingBlock.height} (${startingBlock.hash})`);
     if (this.bitcoinDataDirectory) {
       // This reads into the raw block files and parse to speed up the initial startup instead of rpc
@@ -203,6 +197,26 @@ export default class BitcoinProcessor {
     // have all the data.
     await this.lockMonitor.initialize();
     void this.periodicPoll();
+  }
+
+  private async upgradeDatabaseIfNeeded () {
+    const currentServiceVersion = await this.getServiceVersion();
+    const savedServiceState = await this.serviceStateStore.get();
+    const savedServiceVersion = savedServiceState ? savedServiceState.serviceVersion : 'unknown';
+
+    // Upgrade the DB if the saved service version is different to current running service version.
+    if (savedServiceVersion !== currentServiceVersion.version) {
+      console.info(`Upgrading database from version '${savedServiceVersion}' to '${currentServiceVersion.version}'...`);
+      const timer = timeSpan();
+
+      // Currently upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
+      await this.blockMetadataStore.clearCollection();
+      await this.transactionStore.clearCollection();
+
+      await this.serviceStateStore.put({ serviceVersion: currentServiceVersion.version });
+
+      console.info(`DB upgraded in: ${timer.rounded()} ms.`);
+    }
   }
 
   /**
@@ -238,13 +252,12 @@ export default class BitcoinProcessor {
     }
 
     // at this point, all the blocks in notYetValidatedBlocks are for sure not valid because we've filled the valid blocks with the ones we want
-    await this.removeInvalidBlocks(notYetValidatedBlocks);
+    await this.removeTransactionsInInvalidBlocks(notYetValidatedBlocks);
 
-    // Write the block info to DB.
+    // Write the block metadata to DB.
+    const timer = timeSpan(); // Start timer to measure time taken to write block metadata.
     await this.blockMetadataStore.add(validatedBlocks);
-
-    // TODO: Issue #783
-    // Need to use the fee infos and set fee after here.
+    console.info(`Inserted metadata of ${validatedBlocks.length} blocks to DB. Duration: ${timer.rounded()} ms.`);
 
     this.lastProcessedBlock = lastBlockInfo;
     console.log('finished fast processing');
@@ -294,7 +307,7 @@ export default class BitcoinProcessor {
     }
   }
 
-  private async removeInvalidBlocks (invalidBlocks: Map<string, BlockMetadata>) {
+  private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadata>) {
     const hashes = invalidBlocks.keys();
     for (const hash of hashes) {
       await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
@@ -356,27 +369,6 @@ export default class BitcoinProcessor {
         throw e;
       }
     }
-  }
-
-  /**
-   * NOTE: Should be used ONLY during service initialization.
-   * @returns The last processed block after trimming. `undefined` if all data are deleted after trimming.
-   */
-  private async trimDatabasesToLastFullyProcessedBlock (lastValidTransaction?: TransactionModel): Promise<IBlockInfo | undefined> {
-    // No known valid transaction given.
-    if (lastValidTransaction === undefined) {
-      await this.trimDatabasesToBlock(); // Trim all data.
-      console.warn('Reverted all data.');
-
-      return undefined;
-    }
-
-    // Else we trim DBs using the block height of the last saved transaction.
-    const lastFullyProcessedBlockHeight = lastValidTransaction.transactionTime - 1;
-    await this.trimDatabasesToBlock(lastFullyProcessedBlockHeight);
-
-    const lastFullyProcessedBlock = this.bitcoinClient.getBlockInfoFromHeight(lastFullyProcessedBlockHeight);
-    return lastFullyProcessedBlock;
   }
 
   /**
@@ -446,17 +438,14 @@ export default class BitcoinProcessor {
   }
 
   /**
-   * Given an ordered list of Sidetree transactions, returns the first transaction in the list that is valid.
-   * @param transactions List of transactions to check
-   * @returns The first valid transaction, or undefined if none are valid
+   * Given a list block metadata, returns the first in the list that has a valid hash,
+   * returns `undefined` if a valid block is not found.
    */
-  public async firstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
-    for (let index = 0; index < transactions.length; index++) {
-      const transaction = transactions[index];
-      const height = transaction.transactionTime;
-      const hash = transaction.transactionTimeHash;
-      if (await this.verifyBlock(height, hash)) {
-        return transaction;
+  public async firstValidBlock (blocks: IBlockInfo[]): Promise<IBlockInfo | undefined> {
+    for (let index = 0; index < blocks.length; index++) {
+      const block = blocks[index];
+      if (await this.verifyBlock(block.height, block.hash)) {
+        return block;
       }
     }
     return;
@@ -624,6 +613,8 @@ export default class BitcoinProcessor {
     for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
       const processedBlockHash = await this.processBlock(blockHeight, previousBlockHash);
 
+      // await this.blockMetadataStore.add(validatedBlocks);
+
       this.lastProcessedBlock = {
         height: blockHeight,
         hash: processedBlockHash,
@@ -640,7 +631,7 @@ export default class BitcoinProcessor {
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
     // If last processed block is undefined, start processing from genesis block.
     if (this.lastProcessedBlock === undefined) {
-      await this.trimDatabasesToLastFullyProcessedBlock(); // Trim all data.
+      await this.trimDatabasesToBlock(); // Trim all data.
       return this.bitcoinClient.getBlockInfoFromHeight(this.genesisBlockNumber);
     }
 
@@ -651,6 +642,10 @@ export default class BitcoinProcessor {
     let lastValidBlock: IBlockInfo | undefined;
     if (lastProcessedBlockIsValid) {
       lastValidBlock = this.lastProcessedBlock;
+
+      // We need trim the DB data to the last processed block,
+      // in case transactions in a block is saved successfully but error occurred when saving the block metadata.
+      await this.trimDatabasesToBlock(lastValidBlock.height);
     } else {
       // The revert logic will return the last valid block.
       lastValidBlock = await this.revertDatabases();
@@ -675,10 +670,12 @@ export default class BitcoinProcessor {
    * @returns A known valid block before the fork. `undefined` if no known valid block can be found.
    */
   private async revertDatabases (): Promise<IBlockInfo | undefined> {
-    const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
-    const lastKnownValidTransaction = await this.firstValidTransaction(exponentiallySpacedTransactions);
+    const exponentiallySpacedBlocks = await this.blockMetadataStore.lookBackExponentially();
+    const lastKnownValidBlock = await this.firstValidBlock(exponentiallySpacedBlocks);
 
-    return this.trimDatabasesToLastFullyProcessedBlock(lastKnownValidTransaction);
+    await this.trimDatabasesToBlock(lastKnownValidBlock?.height);
+
+    return lastKnownValidBlock;
   }
 
   /**
@@ -689,18 +686,13 @@ export default class BitcoinProcessor {
   private async trimDatabasesToBlock (blockHeight?: number) {
     console.info(`Trimming all fee and transaction data after block height: ${blockHeight}`);
 
-    // Basically, we need to remove all the transactions/fee-data from the system later than the last known valid transaction.
-
-    // NOTE:
+    // NOTE: Order is IMPORTANT!
     // *****
-    // Make sure that we remove the transaction data BEFORE we remove the fee data. This is
-    // because that if the service stops at any moment after this, the initialize code looks at
-    // the transaction store and can revert the fee DB accordingly.
-    // Remove all the txns which are in that first block (and greater)
+    // Remove block metadata BEFORE we remove any other data, because block metata is used as the timestamp.
+    await this.blockMetadataStore.removeLaterThan(blockHeight);
+
     const lastTransactionNumberOfGivenBlock = blockHeight ? TransactionNumber.lastTransactionOfBlock(blockHeight) : undefined;
     await this.transactionStore.removeTransactionsLaterThan(lastTransactionNumberOfGivenBlock);
-
-    // TODO: Issue #783 - Remove all the data from the fee data DB
   }
 
   /**
@@ -743,6 +735,10 @@ export default class BitcoinProcessor {
     }
 
     await this.processSidetreeTransactionsInBlock(blockData);
+
+    // Compute the total fee paid and total transaction count.
+    // const transactionCount = blockData.transactions.length;
+    // const totalFee = BitcoinProcessor.computeFee();
 
     return blockHash;
   }

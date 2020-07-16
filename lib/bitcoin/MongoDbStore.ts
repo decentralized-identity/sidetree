@@ -11,7 +11,9 @@ export default class MongoDbStore {
   /** Database name used by this store. */
   public readonly databaseName: string;
 
+  /** MondoDB instance. */
   protected db: Db | undefined;
+  /** MongoDB collection */
   protected collection: Collection<any> | undefined;
 
   /**
@@ -34,11 +36,18 @@ export default class MongoDbStore {
   /**
    * Clears the store, only used by tests.
    */
-  public async clearStore () {
-    // NOTE: We avoid implementing this by deleting and recreating the collection in rapid succession,
-    // because doing so against some cloud MongoDB services such as CosmosDB,
-    // especially in rapid repetition that can occur in tests, will lead to `MongoError: ns not found` connectivity error.
+  public async clearCollection () {
     await this.collection!.deleteMany({ }); // Empty filter removes all entries in collection.
+  }
+
+  /**
+   * Drops the entire collection, only used by tests.
+   * NOTE: Avoid dropping and recreating the collection in rapid succession (such as in tests), because:
+   * 1. It takes some time (seconds) for the collection be create again.
+   * 2. Some cloud MongoDB services such as CosmosDB will lead to `MongoError: ns not found` connectivity error.
+   */
+  public async dropCollection () {
+    await this.collection!.drop();
   }
 
   /**

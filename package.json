@@ -27,7 +27,7 @@
     "@types/bitcore-lib": "0.15.1",
     "@types/http-status": "0.2.30",
     "@types/jasmine": "3.3.12",
-    "@types/mongodb": "3.1.23",
+    "@types/mongodb": "3.5.25",
     "@types/node": "11.13.4",
     "@types/node-fetch": "2.3.2",
     "@types/time-span": "2.0.0",
@@ -41,7 +41,7 @@
     "ts-node": "8.3.0",
     "tslint": "5.11.0",
     "tslint-config-standard": "8.0.1",
-    "typescript": "3.4.3"
+    "typescript": "3.9.6"
   },
   "scripts": {
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",

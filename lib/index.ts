@@ -12,7 +12,7 @@ export {
   SidetreeCore,
   SidetreeResponse,
   SidetreeResponseModel,
-  SidetreeVersionModel,
+  SidetreeVersionModel
 };
 
 // Blockchain service exports.

@@ -4,7 +4,7 @@
   "sidetreeTransactionPrefix": "sidetree:",
   "genesisBlockNumber": 1500000,
   "databaseName": "sidetree-bitcoin",
-  "mongoDbConnectionString": "mongodb://hentsai-cosmos-v32:Tt1HQUCVFyHgDw7kPkVcRxRZszwiFApHHBJTiNaNYmfFWutI8w9nfgfhDU7V5bxPElRSt9MMKdUisBlGpcFd3Q%3D%3D@hentsai-cosmos-v32.documents.azure.com:10255/?ssl=true",
+  "mongoDbConnectionString": "mongodb://localhost:27017/",
   "port": 3002,
   "sidetreeTransactionFeeMarkupPercentage": 10
 }

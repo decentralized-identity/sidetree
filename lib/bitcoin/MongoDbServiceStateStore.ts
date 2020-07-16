@@ -20,8 +20,8 @@ export default class MongoDbServiceStateStore<T> extends MongoDbStore implements
   }
 
   public async get (): Promise<T | undefined> {
-    const queryOptions =  { fields: { _id: 0 } }; // Exclude `_id` field from being returned.
-    const serviceState = await this.collection!.findOne<T>({ }, queryOptions); // 
+    const queryOptions = { fields: { _id: 0 } }; // Exclude `_id` field from being returned.
+    const serviceState = await this.collection!.findOne<T>({ }, queryOptions); //
 
     if (serviceState === null) {
       return undefined;
