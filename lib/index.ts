@@ -5,12 +5,14 @@ import SidetreeCore from './core/Core';
 import SidetreeConfig from './core/models/Config';
 import SidetreeResponse from './common/Response';
 import SidetreeResponseModel from './common/models/ResponseModel';
+import SidetreeVersionModel from './common/models/VersionModel';
 
 export {
   SidetreeConfig,
   SidetreeCore,
   SidetreeResponse,
-  SidetreeResponseModel
+  SidetreeResponseModel,
+  SidetreeVersionModel
 };
 
 // Blockchain service exports.

@@ -15,7 +15,7 @@ export default interface IBitcoinConfig {
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;
   mongoDbConnectionString: string;
-  databaseName: string | undefined;
+  databaseName: string;
   requestTimeoutInMilliseconds: number | undefined;
   requestMaxRetries: number | undefined;
   transactionPollPeriodInSeconds: number | undefined;
