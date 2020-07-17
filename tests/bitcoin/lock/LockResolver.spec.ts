@@ -125,7 +125,7 @@ describe('LockResolver', () => {
       };
       const getFeeCalculatorSpy = spyOn(lockResolver['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
-      const expectedUnlockTransactionTime = mockLockStartBlock + lockDurationInput + 1;
+      const expectedUnlockTransactionTime = mockLockStartBlock + lockDurationInput;
 
       const expectedOutput: ValueTimeLockModel = {
         identifier: mockSerializedLockIdentifier,

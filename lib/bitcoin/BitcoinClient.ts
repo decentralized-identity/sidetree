@@ -561,9 +561,6 @@ export default class BitcoinClient {
                               .to(payToScriptAddress, freezeAmountInSatoshis)
                               .change(walletAddress);
 
-    // The check-sequence-verify lock requires transaction version 2
-    (freezeTransaction as any).version = 2;
-
     const transactionFee = await this.calculateTransactionFee(freezeTransaction);
 
     freezeTransaction.fee(transactionFee);
@@ -588,7 +585,6 @@ export default class BitcoinClient {
     const reFreezeTransaction = await this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeDurationInBlocks,
-      newFreezeDurationInBlocks,
       payToScriptAddress);
 
     return [reFreezeTransaction, freezeScript.toHex()];
@@ -604,7 +600,6 @@ export default class BitcoinClient {
     return this.createSpendTransactionFromFrozenTransaction(
       previousFreezeTransaction,
       previousFreezeDurationInBlocks,
-      undefined, // Spending back to wallet === no longer a freeze
       this.bitcoinWallet.getAddress());
   }
 
@@ -615,13 +610,11 @@ export default class BitcoinClient {
    *
    * @param previousFreezeTransaction The previously frozen transaction.
    * @param previousFreezeDurationInBlocks The previously frozen transaction's freeze time in blocks.
-   * @param newFreezeDurationInBlocks If the new spend transaction is another freeze then new freeze time in blocks; undefined otherwise.
    * @param paytoAddress The address where the spend transaction should go to.
    */
   private async createSpendTransactionFromFrozenTransaction (
     previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeDurationInBlocks: number,
-    newFreezeDurationInBlocks: number | undefined,
     paytoAddress: Address): Promise<Transaction> {
 
     // First create an input from the previous frozen transaction output. Note that we update
@@ -638,14 +631,11 @@ export default class BitcoinClient {
     // The check-sequence-verify lock requires transaction version 2
     (spendTransaction as any).version = 2;
 
-    // If a new freeze time is specified then it means that the spend transaction is also another freeze
-    // transaction and we need to set the sequence number of the input correctly.
+    // When spending from freeze, we need to set the sequence number of the input correctly.
     // See the bitcoin documentation on relative-lock and the sequence number for more info:
     //   relative lock: https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
     //   sequence number: https://github.com/bitcoin/bips/blob/master/bip-0068.mediawiki
-    if (newFreezeDurationInBlocks) {
-      (spendTransaction.inputs[0] as any).sequenceNumber = newFreezeDurationInBlocks;
-    }
+    (spendTransaction.inputs[0] as any).sequenceNumber = previousFreezeDurationInBlocks;
 
     const transactionFee = await this.calculateTransactionFee(spendTransaction);
 

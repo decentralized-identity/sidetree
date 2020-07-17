@@ -82,7 +82,7 @@ export default class LockResolver {
 
     // (C). verify that the lock duration is valid
     const lockStartBlock = await this.calculateLockStartingBlock(lockTransaction);
-    const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks! + 1;
+    const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks!;
 
     if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
       throw new SidetreeError(ErrorCode.LockResolverDurationIsInvalid,
