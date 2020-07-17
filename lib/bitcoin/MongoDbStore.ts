@@ -34,7 +34,7 @@ export default class MongoDbStore {
   }
 
   /**
-   * Clears the store, only used by tests.
+   * Clears the store.
    */
   public async clearCollection () {
     await this.collection!.deleteMany({ }); // Empty filter removes all entries in collection.
