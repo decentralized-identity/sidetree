@@ -204,12 +204,17 @@ export default class BitcoinProcessor {
     const savedServiceState = await this.serviceStateStore.get();
     const savedServiceVersion = savedServiceState ? savedServiceState.serviceVersion : 'unknown';
 
-    // Upgrade the DB if the saved service version is different to current running service version.
-    if (savedServiceVersion !== currentServiceVersion.version) {
-      console.info(`Upgrading database from version '${savedServiceVersion}' to '${currentServiceVersion.version}'...`);
+    if (savedServiceVersion === currentServiceVersion.version) {
+      return;
+    }
+
+    // Add DB upgrade code below.
+
+    // Only upgrade the DB if we don't know the save service version.
+    if (savedServiceVersion === 'unknown') {
       const timer = timeSpan();
 
-      // Currently upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
+      // Current upgrade action is simply clearing/deleting existing DB such that initial sync can occur from genesis block.
       await this.blockMetadataStore.clearCollection();
       await this.transactionStore.clearCollection();
 

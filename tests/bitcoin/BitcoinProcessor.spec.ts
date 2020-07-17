@@ -1545,20 +1545,17 @@ describe('BitcoinProcessor', () => {
       upgradeDatabaseIfNeededSpy.and.callThrough();
     });
 
-    it('should perform upgrade if running service version is different from saved service version.', async () => {
-      const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
-      const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');
+    it('should not perform upgrade if saved service version is the same as the running service version.', async () => {
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');
 
-      // Simulate that the saved service version is different from the running service version.
-      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: 'anyDifferentString' }));
+      // Simulate that the saved service version is the same as the running service version.
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: '1' }));
+      spyOn(bitcoinProcessor['serviceInfoProvider'], 'getServiceVersion').and.returnValue({ name: 'unused', version: '1' });
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
       // Verify that that upgrade path was invoked.
-      expect(blockMetadataStoreClearCollectionSpy).toHaveBeenCalled();
-      expect(transactionStoreClearCollectionSpy).toHaveBeenCalled();
-      expect(serviceStateStorePutSpy).toHaveBeenCalled();
+      expect(serviceStateStorePutSpy).not.toHaveBeenCalled();
     });
 
     it('should perform upgrade if saved service state is `undefined`.', async () => {
