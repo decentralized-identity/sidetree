@@ -35,11 +35,6 @@ describe('MongoDbBlockMetadataStore', async () => {
     await blockMetadataStore.clearCollection();
   });
 
-  it('should default the database name if not explicitly overriden.', async () => {
-    const store = new MongoDbBlockMetadataStore(config.mongoDbConnectionString);
-    expect(store.databaseName).toEqual(MongoDbBlockMetadataStore.defaultDatabaseName);
-  });
-
   it('should add and get metadata of blocks correctly.', async (done) => {
     const block1: BlockMetadata = { hash: '1', height: 1, previousHash: '1', totalFee: 1, transactionCount: 1 };
     const block2: BlockMetadata = { hash: '2', height: 2, previousHash: '2', totalFee: 2, transactionCount: 2 };

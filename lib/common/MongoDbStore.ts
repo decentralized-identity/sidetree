@@ -4,13 +4,6 @@ import { Collection, Db, MongoClient } from 'mongodb';
  * Base class that contains the common MongoDB collection setup.
  */
 export default class MongoDbStore {
-  /** Default database name used if not specified in constructor. */
-  public static readonly defaultDatabaseName: string = 'sidetree';
-  /** Collection name of this store. */
-  public readonly collectionName: string;
-  /** Database name used by this store. */
-  public readonly databaseName: string;
-
   /** MondoDB instance. */
   protected db: Db | undefined;
   /** MongoDB collection */
@@ -19,10 +12,7 @@ export default class MongoDbStore {
   /**
    * Constructs a `MongoDbStore`;
    */
-  constructor (private serverUrl: string, collectionName: string, databaseName?: string) {
-    this.databaseName = databaseName ? databaseName : MongoDbStore.defaultDatabaseName;
-    this.collectionName = collectionName;
-  }
+  constructor (private serverUrl: string, private collectionName: string, private databaseName: string) { }
 
   /**
    * Initialize the MongoDB transaction store.

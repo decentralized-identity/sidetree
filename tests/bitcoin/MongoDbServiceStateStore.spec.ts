@@ -1,7 +1,7 @@
 import BitcoinServiceStateModel from '../../lib/bitcoin/models/BitcoinServiceStateModel';
 import Config from '../../lib/core/models/Config';
 import MongoDb from '../common/MongoDb';
-import MongoDbServiceStateStore from '../../lib/bitcoin/MongoDbServiceStateStore';
+import MongoDbServiceStateStore from '../../lib/common/MongoDbServiceStateStore';
 
 /**
  * Creates a MongoDbServiceStateStore and initializes it.

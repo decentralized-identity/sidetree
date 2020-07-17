@@ -1,6 +1,6 @@
 import BlockMetadata from './models/BlockMetadata';
 import IBlockMetadataStore from './interfaces/IBlockMetadataStore';
-import MongoDbStore from './MongoDbStore';
+import MongoDbStore from '../common/MongoDbStore';
 import { Collection, Cursor } from 'mongodb';
 
 /**
@@ -16,7 +16,7 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
   /**
    * Constructs a `MongoDbBlockMetadataStore`;
    */
-  constructor (serverUrl: string, databaseName?: string) {
+  constructor (serverUrl: string, databaseName: string) {
     super(serverUrl, MongoDbBlockMetadataStore.collectionName, databaseName);
   }
 

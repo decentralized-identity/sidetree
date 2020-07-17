@@ -11,7 +11,7 @@ import LockResolver from './lock/LockResolver';
 import LogColor from '../common/LogColor';
 import MongoDbBlockMetadataStore from './MongoDbBlockMetadataStore';
 import MongoDbLockTransactionStore from './lock/MongoDbLockTransactionStore';
-import MongoDbServiceStateStore from './MongoDbServiceStateStore';
+import MongoDbServiceStateStore from '../common/MongoDbServiceStateStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import ProtocolParameters from './ProtocolParameters';
 import RequestError from './RequestError';
@@ -618,7 +618,11 @@ export default class BitcoinProcessor {
 
       await this.blockMetadataStore.add([processedBlockMetadata]);
 
-      this.lastProcessedBlock = processedBlockMetadata;
+      this.lastProcessedBlock = {
+        hash: processedBlockMetadata.hash,
+        height: processedBlockMetadata.height,
+        previousHash: processedBlockMetadata.previousHash
+      };
 
       blockHeight++;
       previousBlockHash = processedBlockMetadata.hash;
@@ -642,7 +646,7 @@ export default class BitcoinProcessor {
     if (lastProcessedBlockIsValid) {
       lastValidBlock = this.lastProcessedBlock;
 
-      // We need trim the DB data to the last processed block,
+      // We need to trim the DB data to the last processed block,
       // in case transactions in a block is saved successfully but error occurred when saving the block metadata.
       await this.trimDatabasesToBlock(lastValidBlock.height);
     } else {
@@ -683,7 +687,7 @@ export default class BitcoinProcessor {
    * @param blockHeight The exclusive block height to perform DB trimming on.
    */
   private async trimDatabasesToBlock (blockHeight?: number) {
-    console.info(`Trimming all fee and transaction data after block height: ${blockHeight}`);
+    console.info(`Trimming all block and transaction data after block height: ${blockHeight}`);
 
     // NOTE: Order is IMPORTANT!
     // *****

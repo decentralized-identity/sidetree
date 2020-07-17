@@ -63,27 +63,35 @@ describe('BitcoinProcessor', () => {
   };
 
   let bitcoinProcessor: BitcoinProcessor;
-  let transactionStoreInitializeSpy: jasmine.Spy;
-  let bitcoinClientInitializeSpy: jasmine.Spy;
+
+  // DB related spys.
+  let blockMetadataStoreInitializeSpy: jasmine.Spy;
+  let blockMetadataStoreAddSpy: jasmine.Spy;
   let blockMetadataStoreGetLastSpy: jasmine.Spy;
+  let serviceStateStoreInitializeSpy: jasmine.Spy;
+  let transactionStoreInitializeSpy: jasmine.Spy;
+  let mongoLockTxnStoreSpy: jasmine.Spy;
+  let trimDatabasesToBlockSpy: jasmine.Spy;
+  let upgradeDatabaseIfNeededSpy: jasmine.Spy;
+
+  let bitcoinClientInitializeSpy: jasmine.Spy;
   let getStartingBlockForPeriodicPollSpy: jasmine.Spy;
   let processTransactionsSpy: jasmine.Spy;
   let fastProcessTransactionsSpy: jasmine.Spy;
   let periodicPollSpy: jasmine.Spy;
-  let mongoLockTxnStoreSpy: jasmine.Spy;
   let lockMonitorSpy: jasmine.Spy;
-  let trimDatabasesToBlockSpy: jasmine.Spy;
-  let blockMetadataStoreAddSpy: jasmine.Spy;
 
   beforeEach(() => {
     bitcoinProcessor = new BitcoinProcessor(testConfig, versionModels);
+
+    blockMetadataStoreInitializeSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'initialize');
+    serviceStateStoreInitializeSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'initialize');
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
     mongoLockTxnStoreSpy = spyOn(bitcoinProcessor['mongoDbLockTransactionStore'], 'initialize');
     lockMonitorSpy = spyOn(bitcoinProcessor['lockMonitor'], 'initialize');
 
     blockMetadataStoreAddSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'add');
-
     blockMetadataStoreGetLastSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'getLast');
     blockMetadataStoreGetLastSpy.and.returnValue(Promise.resolve(undefined));
 
@@ -97,6 +105,7 @@ describe('BitcoinProcessor', () => {
 
     periodicPollSpy = spyOn(bitcoinProcessor, 'periodicPoll' as any);
     trimDatabasesToBlockSpy = spyOn(bitcoinProcessor as any, 'trimDatabasesToBlock');
+    upgradeDatabaseIfNeededSpy = spyOn(bitcoinProcessor as any, 'upgradeDatabaseIfNeeded');
   });
 
   function createTransactions (count?: number, height?: number, incrementalHeight = false): TransactionModel[] {
@@ -153,7 +162,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor.lowBalanceNoticeDays).toEqual(28);
       expect(bitcoinProcessor.pollPeriod).toEqual(60);
       expect(bitcoinProcessor.sidetreePrefix).toEqual(config.sidetreeTransactionPrefix);
-      expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName!);
+      expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
     });
@@ -175,6 +184,9 @@ describe('BitcoinProcessor', () => {
 
       await bitcoinProcessor.initialize();
 
+      expect(blockMetadataStoreInitializeSpy).toHaveBeenCalled();
+      expect(serviceStateStoreInitializeSpy).toHaveBeenCalled();
+      expect(upgradeDatabaseIfNeededSpy).toHaveBeenCalled();
       expect(transactionStoreInitializeSpy).toHaveBeenCalled();
       expect(bitcoinClientInitializeSpy).toHaveBeenCalled();
       expect(mongoLockTxnStoreSpy).toHaveBeenCalled();
@@ -1529,6 +1541,10 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('upgradeDatabaseIfNeeded', () => {
+    beforeEach(() => {
+      upgradeDatabaseIfNeededSpy.and.callThrough();
+    });
+
     it('should perform upgrade if running service version is different from saved service version.', async () => {
       const blockMetadataStoreClearCollectionSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'clearCollection');
       const transactionStoreClearCollectionSpy = spyOn(bitcoinProcessor['transactionStore'], 'clearCollection');

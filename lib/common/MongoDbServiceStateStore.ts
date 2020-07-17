@@ -1,4 +1,4 @@
-import IServiceStateStore from './interfaces/IServiceStateStore';
+import IServiceStateStore from '../bitcoin/interfaces/IServiceStateStore';
 import MongoDbStore from './MongoDbStore';
 
 /**
@@ -11,7 +11,7 @@ export default class MongoDbServiceStateStore<T> extends MongoDbStore implements
   /**
    * Constructs a `MongoDbServiceStateStore`;
    */
-  constructor (serverUrl: string, databaseName?: string) {
+  constructor (serverUrl: string, databaseName: string) {
     super(serverUrl, MongoDbServiceStateStore.collectionName, databaseName);
   }
 
