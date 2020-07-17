@@ -80,17 +80,18 @@ export default class LockResolver {
                              `Transaction id: ${lockIdentifier.transactionId} Script: ${redeemScriptObj.toASM()}`);
     }
 
-    // (C). verify that the lock duration is valid
+    // Now that the lock identifier has been verified, return the lock information
+    const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);
     const lockStartBlock = await this.calculateLockStartingBlock(lockTransaction);
+
+    // (C). verify that the lock duration is valid
     const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks!;
 
     if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
       throw new SidetreeError(ErrorCode.LockResolverDurationIsInvalid,
-        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}`);
+                             `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}`);
     }
 
-      // Now that the lock identifier has been verified, return the lock information
-    const serializedLockIdentifier = LockIdentifierSerializer.serialize(lockIdentifier);
     const normalizedFee = this.versionManager.getFeeCalculator(lockStartBlock).getNormalizedFee(lockStartBlock);
 
     return {
