@@ -6,7 +6,7 @@ import BlockMetadata from '../models/BlockMetadata';
 export default interface IBlockMetadataStore {
 
   /**
-   * Adds the given metadata of blocks to the store.
+   * Adds the given metadata of blocks to the store. Idempotent operation.
    */
   add (blockMetadata: BlockMetadata[]): Promise<void>;
 

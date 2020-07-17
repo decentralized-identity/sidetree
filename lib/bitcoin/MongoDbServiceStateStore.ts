@@ -2,10 +2,10 @@ import IServiceStateStore from './interfaces/IServiceStateStore';
 import MongoDbStore from './MongoDbStore';
 
 /**
- * Implementation of IBlockMetadataStore using MongoDB database.
+ * Implementation of IServiceStateStore using MongoDB database.
  */
 export default class MongoDbServiceStateStore<T> extends MongoDbStore implements IServiceStateStore<T> {
-  /** Collection name for storing block metadata. */
+  /** Collection name for storing service state. */
   public static readonly collectionName = 'service';
 
   /**

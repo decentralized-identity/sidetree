@@ -295,7 +295,7 @@ export default class BitcoinProcessor {
     hashOfEarliestKnownValidBlock: string,
     startingBlockHeight: number) {
 
-    let validBlockCount = 0;
+    let validBlockCount = 0; // Just for console print out purpose at the end.
     let validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
     while (validBlock !== undefined && validBlock.height >= startingBlockHeight) {
       validatedBlocks.push(validBlock);
@@ -305,7 +305,7 @@ export default class BitcoinProcessor {
       hashOfEarliestKnownValidBlock = validBlock.previousHash;
       validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
 
-      validBlockCount++; // Just for console print out purpose at the end.
+      validBlockCount++;
     }
 
     console.log(`Found ${validBlockCount} valid blocks.`);
@@ -745,7 +745,7 @@ export default class BitcoinProcessor {
       previousHash: blockData.previousHash,
       totalFee,
       transactionCount
-    }
+    };
 
     return processedBlockMetadata;
   }

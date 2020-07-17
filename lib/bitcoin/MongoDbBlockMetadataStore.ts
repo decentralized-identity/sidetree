@@ -30,7 +30,6 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
 
     arrayOfBlockMetadata.sort((a, b) => a.height - b.height);
     for (const blockMetadata of arrayOfBlockMetadata) {
-      // bulkOperations.insert(blockMetadata);
       bulkOperations.find({ height: blockMetadata.height }).upsert().replaceOne(blockMetadata);
     }
 

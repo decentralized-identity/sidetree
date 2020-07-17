@@ -950,7 +950,7 @@ describe('BitcoinProcessor', () => {
       const startBlock = randomBlock(testConfig.genesisBlockNumber);
       const processMock = spyOn(bitcoinProcessor, 'processBlock' as any).and.returnValue(Promise.resolve(mockProcessedBlockMetadata));
       const getCurrentHeightMock = spyOn(bitcoinProcessor['bitcoinClient'],'getCurrentBlockHeight').and.returnValue(Promise.resolve(startBlock.height + 1));
-      
+
       await bitcoinProcessor['processTransactions'](startBlock);
 
       expect(bitcoinProcessor['lastProcessedBlock']).toBeDefined();
@@ -1535,7 +1535,7 @@ describe('BitcoinProcessor', () => {
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');
 
       // Simulate that the saved service version is different from the running service version.
-      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({serviceVersion: 'anyDifferentString'}))
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve({ serviceVersion: 'anyDifferentString' }));
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 
@@ -1551,7 +1551,7 @@ describe('BitcoinProcessor', () => {
       const serviceStateStorePutSpy = spyOn(bitcoinProcessor['serviceStateStore'], 'put');
 
       // Simulate that the saved service state is `undefined`.
-      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve(undefined))
+      spyOn(bitcoinProcessor['serviceStateStore'], 'get').and.returnValue(Promise.resolve(undefined));
 
       await (bitcoinProcessor as any).upgradeDatabaseIfNeeded();
 

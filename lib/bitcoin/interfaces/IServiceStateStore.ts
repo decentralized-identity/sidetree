@@ -1,5 +1,5 @@
 /**
- * An abstraction for the persistence service state.
+ * An abstraction for the persistence of service state.
  */
 export default interface IServiceStateStore<T> {
 
