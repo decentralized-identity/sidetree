@@ -822,9 +822,9 @@ describe('BitcoinProcessor', () => {
     it('should process as intended', async () => {
       const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);
       const blockData: any[] = [
-        { hash: 'abc', height: 2, previousHash: 'def', transactions: [ { outputs: [{ satoshis: 5000000000 }] }] },
-        { hash: 'def', height: 1, previousHash: 'out of range', transactions: [] },
-        { hash: 'ghi', height: 4, previousHash: 'out of range', transactions: [] }
+        { hash: 'abc', height: 2, previousHash: 'def', transactions: [ { outputs: [{ satoshis: 100 }, { satoshis: 5000000000 }, { satoshis: 50 }] }] },
+        { hash: 'def', height: 1, previousHash: 'out of range', transactions: [ { outputs: [{ satoshis: 5000000000 }] }] },
+        { hash: 'ghi', height: 4, previousHash: 'out of range', transactions: [ { outputs: [{ satoshis: 5000000000 }] }] }
       ];
       const notYetValidatedBlocks: Map<string, any> = new Map();
       const startingHeight = 2;
@@ -834,7 +834,7 @@ describe('BitcoinProcessor', () => {
         hash: 'abc',
         height: 2,
         previousHash: 'def',
-        totalFee: 0,
+        totalFee: 150, // all the outputs' satoshis added up minus the block reward
         transactionCount: 1
       });
       expect(processSidetreeTransactionsInBlockSpy).toHaveBeenCalledTimes(1);

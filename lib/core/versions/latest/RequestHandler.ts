@@ -166,7 +166,8 @@ export default class RequestHandler implements IRequestHandler {
 
       if (didState === undefined) {
         return {
-          status: ResponseStatus.NotFound
+          status: ResponseStatus.NotFound,
+          body: { code: ErrorCode.DidNotFound, message: 'DID Not Found' }
         };
       }
 

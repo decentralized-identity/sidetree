@@ -240,13 +240,12 @@ export default class BitcoinProcessor {
 
     for (let block of blocks) {
       if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
-        const blockReward = BitcoinProcessor.getBitcoinBlockReward(block.height);
         notYetValidatedBlocks.set(
           block.hash,
           {
             height: block.height,
             hash: block.hash,
-            totalFee: block.transactions[0].outputs[0].satoshis - blockReward,
+            totalFee: BitcoinProcessor.getBitcoinBlockTotalFee(block),
             transactionCount: block.transactions.length,
             previousHash: block.previousHash }
           );
@@ -282,6 +281,23 @@ export default class BitcoinProcessor {
     for (const hash of hashes) {
       await this.transactionStore.removeTransactionByTransactionTimeHash(hash);
     }
+  }
+
+  /**
+   * Iterate through all the outputs in the first transaction (coinbase) and add up all the satoshis
+   * then minus the block reward to get the total transaction fee.
+   * @param block The block to get the fee for
+   */
+  private static getBitcoinBlockTotalFee (block: BitcoinBlockModel) {
+    // get the total fee including block reward
+    const coinbaseTransaction = block.transactions[0];
+    let totalOutputSatoshi = 0;
+    for (let output of coinbaseTransaction.outputs) {
+      totalOutputSatoshi += output.satoshis;
+    }
+
+    // subtract block reward
+    return totalOutputSatoshi - BitcoinProcessor.getBitcoinBlockReward(block.height);
   }
 
   /**
