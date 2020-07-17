@@ -295,16 +295,20 @@ export default class BitcoinProcessor {
     hashOfEarliestKnownValidBlock: string,
     startingBlockHeight: number) {
 
+    let validBlockCount = 0;
     let validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
     while (validBlock !== undefined && validBlock.height >= startingBlockHeight) {
-      console.log(`Found valid block ${hashOfEarliestKnownValidBlock}`);
       validatedBlocks.push(validBlock);
       // delete because it is now validated
       notYetValidatedBlocks.delete(hashOfEarliestKnownValidBlock);
       // the previous block hash becomes valid
       hashOfEarliestKnownValidBlock = validBlock.previousHash;
       validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
+
+      validBlockCount++; // Just for console print out purpose at the end.
     }
+
+    console.log(`Found ${validBlockCount} valid blocks.`);
   }
 
   private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadata>) {
@@ -592,9 +596,8 @@ export default class BitcoinProcessor {
   /**
    * Processes transactions from startBlock (or genesis) to the current blockchain height.
    * @param startBlock The block to begin from (inclusive)
-   * @returns The block height and hash it processed to
    */
-  private async processTransactions (startBlock: IBlockInfo): Promise<IBlockInfo> {
+  private async processTransactions (startBlock: IBlockInfo) {
     console.info(`Starting processTransaction at: ${Date.now()}`);
 
     const startBlockHeight = startBlock.height;
@@ -608,24 +611,20 @@ export default class BitcoinProcessor {
     const endBlockHeight = await this.bitcoinClient.getCurrentBlockHeight();
     console.info(`Processing transactions from ${startBlockHeight} to ${endBlockHeight}`);
 
+    let blockHeight = startBlockHeight;
     let previousBlockHash = startBlock.previousHash;
+    while (blockHeight <= endBlockHeight) {
+      const processedBlockMetadata = await this.processBlock(blockHeight, previousBlockHash);
 
-    for (let blockHeight = startBlockHeight; blockHeight <= endBlockHeight; blockHeight++) {
-      const processedBlockHash = await this.processBlock(blockHeight, previousBlockHash);
+      await this.blockMetadataStore.add([processedBlockMetadata]);
 
-      // await this.blockMetadataStore.add(validatedBlocks);
+      this.lastProcessedBlock = processedBlockMetadata;
 
-      this.lastProcessedBlock = {
-        height: blockHeight,
-        hash: processedBlockHash,
-        previousHash: previousBlockHash
-      };
-
-      previousBlockHash = processedBlockHash;
+      blockHeight++;
+      previousBlockHash = processedBlockMetadata.hash;
     }
 
     console.info(`Finished processing blocks ${startBlockHeight} to ${endBlockHeight}`);
-    return this.lastProcessedBlock!;
   }
 
   private async getStartingBlockForPeriodicPoll (): Promise<IBlockInfo | undefined> {
@@ -718,13 +717,13 @@ export default class BitcoinProcessor {
 
   /**
    * Given a Bitcoin block height, processes that block for Sidetree transactions
-   * @param block Block height to process
+   * @param blockHeight Height of block to process
    * @param previousBlockHash Block hash of the previous block
-   * @returns the block hash processed
+   * @returns the metadata of block processed
    */
-  private async processBlock (block: number, previousBlockHash: string): Promise<string> {
-    console.info(`Processing block ${block}`);
-    const blockHash = await this.bitcoinClient.getBlockHash(block);
+  private async processBlock (blockHeight: number, previousBlockHash: string): Promise<BlockMetadata> {
+    console.info(`Processing block ${blockHeight}`);
+    const blockHash = await this.bitcoinClient.getBlockHash(blockHeight);
     const blockData = await this.bitcoinClient.getBlock(blockHash);
 
     // This check detects fork by ensuring the fetched block points to the expected previous block.
@@ -737,10 +736,18 @@ export default class BitcoinProcessor {
     await this.processSidetreeTransactionsInBlock(blockData);
 
     // Compute the total fee paid and total transaction count.
-    // const transactionCount = blockData.transactions.length;
-    // const totalFee = BitcoinProcessor.computeFee();
+    const transactionCount = blockData.transactions.length;
+    const totalFee = BitcoinProcessor.getBitcoinBlockTotalFee(blockData);
 
-    return blockHash;
+    const processedBlockMetadata: BlockMetadata = {
+      hash: blockHash,
+      height: blockHeight,
+      previousHash: blockData.previousHash,
+      totalFee,
+      transactionCount
+    }
+
+    return processedBlockMetadata;
   }
 
   private async getSidetreeTransactionModelIfExist (
