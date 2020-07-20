@@ -89,7 +89,8 @@ export default class LockResolver {
 
     if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
       throw new SidetreeError(ErrorCode.LockResolverDurationIsInvalid,
-                              `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}`);
+                              // tslint:disable-next-line: max-line-length
+                              `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Allowed range: [${this.minimumLockDurationInBlocks} - ${this.maximumLockDurationInBlocks}.]`);
     }
 
     const normalizedFee = this.versionManager.getFeeCalculator(lockStartBlock).getNormalizedFee(lockStartBlock);
