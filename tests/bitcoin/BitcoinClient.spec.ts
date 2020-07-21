@@ -835,8 +835,7 @@ describe('BitcoinClient', async () => {
 
       const actual = await bitcoinClient['createSpendTransactionFromFrozenTransaction'](mockFreezeTxn, mockFreezeUntilBlock, mockPayToAddress);
 
-      // Txn should go into the unlock block
-      expect(actual.getLockTime()).toEqual(mockFreezeUntilBlock);
+      expect((actual as any).version).toEqual(2);
 
       // Output should be to the mock address passed in
       expect(actual.outputs.length).toEqual(1);
@@ -849,6 +848,7 @@ describe('BitcoinClient', async () => {
       expect(actual.inputs.length).toEqual(1);
       expect(actual.inputs[0].prevTxId.toString('hex')).toEqual(mockUnspentOutput.txId);
       expect(actual.inputs[0].outputIndex).toEqual(mockUnspentOutput.outputIndex);
+      expect(actual.inputs[0].sequenceNumber).toEqual(mockFreezeUntilBlock);
 
       // Check other function calls
       expect(createUnspentSpy).toHaveBeenCalledWith(mockFreezeTxn, mockFreezeUntilBlock);
@@ -883,7 +883,7 @@ describe('BitcoinClient', async () => {
       const publicKeyHashOutScript = Script.buildPublicKeyHashOut(walletAddressFromBitcoinClient);
 
       const mockLockUntilBufferAsHex = mockLockUntilBuffer.toString('hex');
-      const expectedScriptAsm = `${mockLockUntilBufferAsHex} OP_NOP2 OP_DROP ${publicKeyHashOutScript.toASM()}`;
+      const expectedScriptAsm = `${mockLockUntilBufferAsHex} OP_NOP3 OP_DROP ${publicKeyHashOutScript.toASM()}`;
 
       const redeemScript = BitcoinClient['createFreezeScript'](mockLockUntilBlock, walletAddressFromBitcoinClient);
       expect(redeemScript.toASM()).toEqual(expectedScriptAsm);

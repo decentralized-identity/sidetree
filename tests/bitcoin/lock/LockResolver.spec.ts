@@ -12,22 +12,22 @@ import VersionModel from '../../../lib/common/models/VersionModel';
 import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
 import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 
-function createValidLockRedeemScript (lockUntilBlock: number, targetWalletAddress: Address): Script {
-  const lockUntilBlockBuffer = Buffer.alloc(3);
-  lockUntilBlockBuffer.writeIntLE(lockUntilBlock, 0, 3);
+function createValidLockRedeemScript (lockDurationInBlocks: number, targetWalletAddress: Address): Script {
+  const lockDurationInBlocksBuffer = Buffer.alloc(3);
+  lockDurationInBlocksBuffer.writeIntLE(lockDurationInBlocks, 0, 3);
 
   return Script.empty()
-               .add(lockUntilBlockBuffer)
-               .add(177) // OP_CLTV
+               .add(lockDurationInBlocksBuffer)
+               .add(178) // OP_CSV
                .add(117) // OP_DROP
                .add(Script.buildPublicKeyHashOut(targetWalletAddress));
 }
 
-function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, unlockAtBlock: number | undefined): any {
+function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, lockDurationInBlocks: number | undefined): any {
   return {
     isScriptValid: isScriptValid,
     publicKeyHash: owner,
-    unlockAtBlock: unlockAtBlock
+    lockDurationInBlocks: lockDurationInBlocks
   };
 }
 
@@ -86,8 +86,8 @@ describe('LockResolver', () => {
 
   describe('resolveLockIdentifierAndThrowOnError', () => {
     it('should correctly resolve a valid lock identifier.', async () => {
-      const lockBlockInput = 1665191;
-      const validScript = createValidLockRedeemScript(lockBlockInput, validTestWalletAddress);
+      const lockDurationInput = 166;
+      const validScript = createValidLockRedeemScript(lockDurationInput, validTestWalletAddress);
 
       const mockLockIdentifier: LockIdentifierModel = {
         transactionId: 'some transactoin id',
@@ -104,7 +104,7 @@ describe('LockResolver', () => {
         ]
       };
 
-      const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockBlockInput);
+      const mockLockScriptVerifyResult = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockDurationInput);
 
       const getTxnSpy = spyOn(lockResolver as any, 'getTransaction').and.returnValue(Promise.resolve(mockTransaction));
       const createScriptSpy = spyOn(LockResolver as any, 'createScript').and.returnValue(validScript);
@@ -125,11 +125,13 @@ describe('LockResolver', () => {
       };
       const getFeeCalculatorSpy = spyOn(lockResolver['versionManager'], 'getFeeCalculator').and.returnValue(mockFeeCalculator);
 
+      const expectedUnlockTransactionTime = mockLockStartBlock + lockDurationInput;
+
       const expectedOutput: ValueTimeLockModel = {
         identifier: mockSerializedLockIdentifier,
         amountLocked: mockTransaction.outputs[0].satoshis,
         lockTransactionTime: mockLockStartBlock,
-        unlockTransactionTime: lockBlockInput,
+        unlockTransactionTime: expectedUnlockTransactionTime,
         normalizedFee: mockNormalizedFee,
         owner: validPublicKeyHashOutString
       };
@@ -141,7 +143,7 @@ describe('LockResolver', () => {
       expect(createScriptSpy).toHaveBeenCalledWith(mockLockIdentifier.redeemScriptAsHex);
       expect(checkLockScriptSpy).toHaveBeenCalled();
       expect(payToScriptSpy).toHaveBeenCalledWith(mockTransaction.outputs[0], validScript);
-      expect(lockDurationSpy).toHaveBeenCalledWith(mockLockStartBlock, mockLockScriptVerifyResult.unlockAtBlock);
+      expect(lockDurationSpy).toHaveBeenCalledWith(mockLockStartBlock, expectedUnlockTransactionTime);
       expect(getFeeCalculatorSpy).toHaveBeenCalledWith(mockLockStartBlock);
     });
 
@@ -232,10 +234,10 @@ describe('LockResolver', () => {
   describe('isRedeemScriptALockScript', () => {
     it('should validate and return the correct block if the script is valid.', async () => {
 
-      const lockBlockInput = 1665191;
-      const validScript = createValidLockRedeemScript(lockBlockInput, validTestWalletAddress);
+      const lockDurationInput = 424;
+      const validScript = createValidLockRedeemScript(lockDurationInput, validTestWalletAddress);
 
-      const expectedOutput = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockBlockInput);
+      const expectedOutput = createLockScriptVerifyResult(true, validPublicKeyHashOutString, lockDurationInput);
 
       const actual = LockResolver['isRedeemScriptALockScript'](validScript);
       expect(actual).toEqual(expectedOutput);
@@ -336,7 +338,7 @@ describe('LockResolver', () => {
       done();
     });
 
-    it('should throw if the number of confiramtions on the input is < 0', async (done) => {
+    it('should throw if the number of confirmations on the input is < 0', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
         blockHash: 'block hash',
@@ -352,7 +354,7 @@ describe('LockResolver', () => {
       done();
     });
 
-    it('should throw if the number of confiramtions on the input is 0', async (done) => {
+    it('should throw if the number of confirmations on the input is 0', async (done) => {
       const mockTransaction: BitcoinTransactionModel = {
         id: 'some id',
         blockHash: 'block hash',

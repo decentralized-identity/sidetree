@@ -286,8 +286,7 @@ export default class LockMonitor {
 
     console.info(`Going to create a new lock for amount: ${totalLockAmount} satoshis. Current wallet balance: ${walletBalance}`);
 
-    const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
-    const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, lockUntilBlock);
+    const lockTransaction = await this.bitcoinClient.createLockTransaction(totalLockAmount, this.lockPeriodInBlocks);
 
     return this.saveThenBroadcastTransaction(lockTransaction, SavedLockType.Create, desiredLockAmountInSatoshis);
   }
@@ -364,13 +363,13 @@ export default class LockMonitor {
   private async renewLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<SavedLockModel> {
 
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
-    const lockUntilBlock = await this.bitcoinClient.getCurrentBlockHeight() + this.lockPeriodInBlocks;
+    const currentLockDuration = currentValueTimeLock.unlockTransactionTime - currentValueTimeLock.lockTransactionTime;
 
     const relockTransaction =
       await this.bitcoinClient.createRelockTransaction(
           currentLockIdentifier.transactionId,
-          currentValueTimeLock.unlockTransactionTime,
-          lockUntilBlock);
+          currentLockDuration,
+          this.lockPeriodInBlocks);
 
     // If the transaction fee is making the relock amount less than the desired amount
     if (currentValueTimeLock.amountLocked - relockTransaction.transactionFee < desiredLockAmountInSatoshis) {
@@ -385,11 +384,12 @@ export default class LockMonitor {
 
   private async releaseLock (currentValueTimeLock: ValueTimeLockModel, desiredLockAmountInSatoshis: number): Promise<SavedLockModel> {
     const currentLockIdentifier = LockIdentifierSerializer.deserialize(currentValueTimeLock.identifier);
+    const currentLockDuration = currentValueTimeLock.unlockTransactionTime - currentValueTimeLock.lockTransactionTime;
 
     const releaseLockTransaction =
       await this.bitcoinClient.createReleaseLockTransaction(
         currentLockIdentifier.transactionId,
-        currentValueTimeLock.unlockTransactionTime);
+        currentLockDuration);
 
     return this.saveThenBroadcastTransaction(releaseLockTransaction, SavedLockType.ReturnToWallet, desiredLockAmountInSatoshis);
   }
