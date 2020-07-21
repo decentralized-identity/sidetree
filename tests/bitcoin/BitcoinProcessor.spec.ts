@@ -559,6 +559,45 @@ describe('BitcoinProcessor', () => {
     });
   });
 
+  describe('firstValidTransaction', () => {
+    it('should return the first of the valid transactions', async (done) => {
+      const transactions: TransactionModel[] = [];
+      let heights: number[] = [];
+      const count = 10;
+      for (let i = 0; i < count; i++) {
+        const height = randomNumber();
+        const feePaidRandom = randomNumber();
+
+        heights.push(height);
+        transactions.push({
+          anchorString: randomString(),
+          transactionNumber: TransactionNumber.construct(height, randomNumber()),
+          transactionTime: height,
+          transactionTimeHash: randomString(),
+          transactionFeePaid: feePaidRandom,
+          normalizedTransactionFee: feePaidRandom,
+          writer: randomString()
+        });
+      }
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.callFake((height: number) => {
+        expect(height).toEqual(heights.shift()!);
+        return Promise.resolve(heights.length === 0);
+      });
+      const actual = await bitcoinProcessor.firstValidTransaction(transactions);
+      expect(verifyMock).toHaveBeenCalledTimes(count);
+      expect(actual).toBeDefined();
+      done();
+    });
+    it('should return undefined if no valid transactions are found', async (done) => {
+      const transactions = createTransactions();
+      const verifyMock = spyOn(bitcoinProcessor, 'verifyBlock' as any).and.returnValue(Promise.resolve(false));
+      const actual = await bitcoinProcessor.firstValidTransaction(transactions);
+      expect(actual).toBeUndefined();
+      expect(verifyMock).toHaveBeenCalled();
+      done();
+    });
+  });
+
   describe('writeTransaction', () => {
     const bitcoinFee = 4000;
     const lowLevelWarning = testConfig.lowBalanceNoticeInDays! * 24 * 6 * bitcoinFee;

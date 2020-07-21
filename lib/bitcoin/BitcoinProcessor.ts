@@ -461,6 +461,23 @@ export default class BitcoinProcessor {
   }
 
   /**
+   * Given an ordered list of Sidetree transactions, returns the first transaction in the list that is valid.
+   * @param transactions List of transactions to check
+   * @returns The first valid transaction, or undefined if none are valid
+   */
+  public async firstValidTransaction (transactions: TransactionModel[]): Promise<TransactionModel | undefined> {
+    for (let index = 0; index < transactions.length; index++) {
+      const transaction = transactions[index];
+      const height = transaction.transactionTime;
+      const hash = transaction.transactionTimeHash;
+      if (await this.verifyBlock(height, hash)) {
+        return transaction;
+      }
+    }
+    return;
+  }
+
+  /**
    * Writes a Sidetree transaction to the underlying Bitcoin's blockchain.
    * @param anchorString The string to be written as part of the transaction.
    * @param minimumFee The minimum fee to be paid for this transaction.
