@@ -13,6 +13,7 @@ import IOperationStore from '../../interfaces/IOperationStore';
 import ITransactionProcessor from '../../interfaces/ITransactionProcessor';
 import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import JsonAsync from './util/JsonAsync';
+import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
@@ -52,6 +53,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
       // If the code reaches here, it means that the batch of operations is valid, store the operations.
       await this.operationStore.put(operations);
+
+      console.log(LogColor.lightBlue(`Processed ${operations.length} operations.`));
 
       return true;
     } catch (error) {
