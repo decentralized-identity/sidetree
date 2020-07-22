@@ -14,10 +14,13 @@ module.exports = {
 			['sentence-case', 'start-case', 'pascal-case', 'upper-case']
 		],
 		"scope-empty": [2, "never"],
-        "scope-enum": [2, "always", [
-            "spec",
-            "ref-impl"
-        ]],
+        "scope-enum": [
+			2, 
+			"always", [
+				"spec",
+				"ref-impl"
+			]
+		],
 		'type-case': [2, 'always', 'lower-case'],
 		'type-empty': [2, 'never'],
 		'type-enum': [
