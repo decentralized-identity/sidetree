@@ -59,6 +59,10 @@ or
 fix(spec): ambiguity around update operation terminology
 ```
 
+### Breaking changes
+
+When your commit features a breaking change, the commit body should feature `BREAKING CHANGE: <description of the breaking change>` so that these are noted correctly in the resulting changelog.
+
 ### Helper script
 
 A helper scripts of `commit` is included in the `package.json` to aid in making well formed commit messages, when you are ready to commit changes simply run the following and follow the prompts
