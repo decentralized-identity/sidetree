@@ -42,7 +42,6 @@
     "jasmine-reporters": "2.3.2",
     "jasmine-spec-reporter": "4.2.1",
     "nyc": "15.0.1",
-    "pretty-quick": "2.0.1",
     "ts-node": "8.3.0",
     "tslint": "5.11.0",
     "tslint-config-standard": "8.0.1",
@@ -62,7 +61,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "[[ -n $HUSKY_BYPASS ]] || npm run lint || pretty-quick --staged",
+      "pre-commit": "[[ -n $HUSKY_BYPASS ]] || npm run lint",
       "commit-msg": "[[ -n $HUSKY_BYPASS ]] || commitlint -E HUSKY_GIT_PARAMS"
     }
   },
