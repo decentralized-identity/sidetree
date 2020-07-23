@@ -1,4 +1,10 @@
 import * as crypto from 'crypto';
+
+import * as createFixture from '../fixtures/create/create.json';
+import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
+import * as recoverFixture from '../fixtures/recover/recover.json';
+import * as updateFixture from '../fixtures/update/update.json';
+
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
@@ -128,6 +134,30 @@ describe('RequestHandler', () => {
 
     // Trigger the batch writing to clear the operation queue for future tests.
     await batchScheduler.writeOperationBatch();
+  });
+
+  it('should process create operation from test vectors correctly', async () => {
+    const createOperationBuffer = Buffer.from(JSON.stringify(createFixture));
+    const response = await requestHandler.handleOperationRequest(createOperationBuffer);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+  });
+
+  it('should process update operation from test vectors correctly', async () => {
+    const updateOperationBuffer = Buffer.from(JSON.stringify(updateFixture));
+    const response = await requestHandler.handleOperationRequest(updateOperationBuffer);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+  });
+
+  it('should process recover operation from test vectors correctly', async () => {
+    const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverFixture));
+    const response = await requestHandler.handleOperationRequest(recoverOperationBuffer);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+  });
+
+  it('should process deactivate operation from test vectors correctly', async () => {
+    const deactivateOperationBuffer = Buffer.from(JSON.stringify(deactivateFixture));
+    const response = await requestHandler.handleOperationRequest(deactivateOperationBuffer);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
   });
 
   it('should queue operation request and have it processed by the batch scheduler correctly.', async () => {

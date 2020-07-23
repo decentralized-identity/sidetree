@@ -1,0 +1,39 @@
+{
+  "@context": "https://www.w3.org/ns/did-resolution/v1",
+  "didDocument": {
+    "id": "did:sidetree:EiAdHUPfyqtr9d-NBYwwMHCzryLaTYVAyZl4Hu9GvrupYQ",
+    "@context": [
+      "https://www.w3.org/ns/did/v1",
+      {
+        "@base": "did:sidetree:EiAdHUPfyqtr9d-NBYwwMHCzryLaTYVAyZl4Hu9GvrupYQ"
+      }
+    ],
+    "service": [
+      {
+        "id": "#serviceEndpointId123",
+        "type": "someType",
+        "serviceEndpoint": "https://www.url.com"
+      }
+    ],
+    "publicKey": [
+      {
+        "id": "#newKey",
+        "controller": "",
+        "type": "EcdsaSecp256k1VerificationKey2019",
+        "publicKeyJwk": {
+          "kty": "EC",
+          "crv": "secp256k1",
+          "x": "SZVYm5guP8RNo5yGvPMyPq2RkDsZygAfQlschH0Zb_M",
+          "y": "1WpFLidwQezXkO1OdsX7tFJAF68ezkSQtkCIW4Ng_20"
+        }
+      }
+    ],
+    "authentication": [
+      "#newKey"
+    ]
+  },
+  "methodMetadata": {
+    "recoveryCommitment": "EiDmNGrlFH0fe8uGzlyCyF1uIF1eZtSUb5LdhKzR_8T-5Q",
+    "updateCommitment": "EiB-KmuNII4gZeHWHuUsjH8W_jhWd_Ig4QU80Lgb-LiLPQ"
+  }
+}
