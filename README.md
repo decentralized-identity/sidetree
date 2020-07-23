@@ -7,6 +7,8 @@ The Node.js implementation of a blockchain-agnostic Sidetree Node using TypeScri
 
 See the [latest spec](https://identity.foundation/sidetree/spec/) for full Sidetree protocol specification.
 
+See The [test vectors](tests/fixtures) for input fixtures that are expected by all sidetree implementations.
+
 See the [implementation document](docs/implementation.md) for the detailed description of this implementation.
 
 ## Code Contributions:
