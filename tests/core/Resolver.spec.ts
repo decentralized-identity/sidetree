@@ -1,5 +1,19 @@
+import * as createFixture from '../fixtures/create/create.json';
+import * as createResultingDocument from '../fixtures/create/resultingDocument.json';
+import * as deactivateFixtureCreate from '../fixtures/deactivate/create.json';
+import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
+import * as deactivateResultingDocument from '../fixtures/deactivate/resultingDocument.json';
+import * as recoverFixtureCreate from '../fixtures/recover/create.json';
+import * as recoverFixture from '../fixtures/recover/recover.json';
+import * as recoverResultingDocument from '../fixtures/recover/resultingDocument.json';
+import * as updateFixtureCreate from '../fixtures/update/create.json';
+import * as updateFixture from '../fixtures/update/update.json';
+import * as updateResultingDocument from '../fixtures/update/resultingDocument.json';
+
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
+import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import Document from '../../lib/core/versions/latest/Document';
 import DidState from '../../lib/core/models/DidState';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
@@ -27,6 +41,105 @@ describe('Resolver', () => {
 
     operationStore = new MockOperationStore();
     resolver = new Resolver(versionManager, operationStore);
+  });
+
+  describe('Resolving against test vectors', () => {
+    it('should resolve create operation', async () => {
+      const operationBuffer = Buffer.from(JSON.stringify(createFixture));
+      const createOperation = await CreateOperation.parse(operationBuffer);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+      const anchoredOperationModel = {
+        type: OperationType.Create,
+        didUniqueSuffix: didUniqueSuffix,
+        operationBuffer,
+        transactionNumber: 1,
+        transactionTime: 1,
+        operationIndex: 1
+      };
+      await operationStore.put([anchoredOperationModel]);
+
+      const didState = await resolver.resolve(didUniqueSuffix) as DidState;
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      expect(resultingDocument).toEqual(createResultingDocument);
+    });
+
+    it('should resolve update operation', async () => {
+      const operationBuffer = Buffer.from(JSON.stringify(updateFixtureCreate));
+      const createOperation = await CreateOperation.parse(operationBuffer);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+      const anchoredOperationModel = {
+        type: OperationType.Create,
+        didUniqueSuffix: didUniqueSuffix,
+        operationBuffer,
+        transactionNumber: 1,
+        transactionTime: 1,
+        operationIndex: 1
+      };
+      await operationStore.put([anchoredOperationModel]);
+
+      const updateOperation = Buffer.from(JSON.stringify(updateFixture));
+      const anchoredUpdateOperation: AnchoredOperationModel = {
+        type: OperationType.Update,
+        didUniqueSuffix,
+        operationBuffer: updateOperation,
+        transactionTime: 2,
+        transactionNumber: 2,
+        operationIndex: 2
+      };
+      await operationStore.put([anchoredUpdateOperation]);
+
+      const didState = await resolver.resolve(didUniqueSuffix) as DidState;
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      expect(resultingDocument).toEqual(updateResultingDocument);
+    });
+
+    it('should resolve recover operation', async () => {
+      const operationBuffer = Buffer.from(JSON.stringify(recoverFixtureCreate));
+      const createOperation = await CreateOperation.parse(operationBuffer);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+      const anchoredOperationModel = {
+        type: OperationType.Create,
+        didUniqueSuffix: didUniqueSuffix,
+        operationBuffer,
+        transactionNumber: 1,
+        transactionTime: 1,
+        operationIndex: 1
+      };
+      await operationStore.put([anchoredOperationModel]);
+
+      const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverFixture));
+      const recoverOperation = await RecoverOperation.parse(recoverOperationBuffer);
+      const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
+      await operationStore.put([anchoredRecoverOperation]);
+
+      const didState = await resolver.resolve(didUniqueSuffix) as DidState;
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      expect(resultingDocument).toEqual(recoverResultingDocument);
+    });
+
+    it('should resolve deactivate operation', async () => {
+      const operationBuffer = Buffer.from(JSON.stringify(deactivateFixtureCreate));
+      const createOperation = await CreateOperation.parse(operationBuffer);
+      const didUniqueSuffix = createOperation.didUniqueSuffix;
+      const anchoredOperationModel = {
+        type: OperationType.Create,
+        didUniqueSuffix: didUniqueSuffix,
+        operationBuffer,
+        transactionNumber: 1,
+        transactionTime: 1,
+        operationIndex: 1
+      };
+      await operationStore.put([anchoredOperationModel]);
+
+      const deactivateOperationBuffer = Buffer.from(JSON.stringify(deactivateFixture));
+      const recoverOperation = await DeactivateOperation.parse(deactivateOperationBuffer);
+      const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
+      await operationStore.put([anchoredRecoverOperation]);
+
+      const didState = await resolver.resolve(didUniqueSuffix) as DidState;
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      expect(resultingDocument).toEqual(deactivateResultingDocument);
+    });
   });
 
   describe('Recovery operation', () => {
