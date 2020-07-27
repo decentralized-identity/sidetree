@@ -18,7 +18,7 @@ module.exports = {
 			2, 
 			"always", [
 				"spec",
-				"ref-impl"
+				"ref-imp"
 			]
 		],
 		'type-case': [2, 'always', 'lower-case'],
