@@ -8,7 +8,7 @@ on:
 jobs:
   push-master:
     # Only run on any commit that features the release commit message syntax in the commit message
-    if: "contains(github.event.head_commit.message, 'release commit')"
+    if: "contains(github.event.head_commit.message, 'chore(ref-imp): publish release')"
     name: Build, test and publish stable release
     runs-on: ubuntu-latest
     strategy:

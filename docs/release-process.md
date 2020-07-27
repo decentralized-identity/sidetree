@@ -23,7 +23,7 @@ since the previously released version in `./lib/core/versions`.
 5. Build the package `npm build`
 6. Test the package `npm test`
 7. Run `npm run version:release`, with an appropriate option such as [ `major` | `minor` | `patch` ].
-8. Observe the correctly incremented change to the `package.json`
+8. Observe the correctly incremented change to the `package.json` and changes to `CHANGELOG.md`
 9. Push the release branch including the newly created tags `git push origin release --tags`
 10. Open a pull request for the release, once approvals have been sought, merge the pull request using **rebase**,
     preserving the commit message as `release commit [skip ci]`
