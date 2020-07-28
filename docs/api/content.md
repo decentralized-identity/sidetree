@@ -9,8 +9,9 @@ Resolution requests consist of a DID and MAY include DID parameters.
 As detailed in [Resolution](#resolution), the resolution request MAY include the initial state DID parameter.
 
 The server responds with the [DID Resolution Result](https://w3c-ccg.github.io/did-resolution/#did-resolution-result) composed of the DID Document and Method Metadata.
-Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` method metadata.
+Sidetree defines `published`, `initialState`, `updateCommitment`, and `recoveryCommitment` method metadata.
    - `published` is detailed in [Published Property](#published-property).
+   - `initialState` is detailed in [Long-Form DID URIs](https://identity.foundation/sidetree/spec/#long-form-did-uris).
    - `updateCommitment` is the commitement for the next update operation as defined in [commitment value generation](https://identity.foundation/sidetree/spec/#commitment-value-generation).
    - `recoveryCommitment` is the commitement for the next recover or deactivate operation as defined in [commitment value generation](https://identity.foundation/sidetree/spec/#commitment-value-generation).
 
@@ -21,6 +22,7 @@ Sidetree defines `published`, `updateCommitment`, and `recoveryCommitment` metho
     "didDocument": DID_DOCUMENT_OBJECT,
     "methodMetadata": {
         "published": boolean,
+        "initialState": INITIAL_STATE,
         "updateCommitment": UPDATE_COMMITMENT,
         "recoveryCommitment": RECOVERY_COMMITMENT
     }
