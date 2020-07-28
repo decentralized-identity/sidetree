@@ -313,7 +313,7 @@ export default class BitcoinProcessor {
       validBlockCount++;
     }
 
-    console.log(`Found ${validBlockCount} valid blocks.`);
+    console.log(LogColor.lightBlue(`Found ${LogColor.green(validBlockCount)} valid blocks.`));
   }
 
   private async removeTransactionsInInvalidBlocks (invalidBlocks: Map<string, BlockMetadata>) {
@@ -366,7 +366,7 @@ export default class BitcoinProcessor {
 
         // If there are transactions found then add them to the transaction store
         if (sidetreeTxToAdd) {
-          console.debug(`Sidetree transaction found; adding ${JSON.stringify(sidetreeTxToAdd)}`);
+          console.debug(LogColor.lightBlue(`Sidetree transaction found; adding ${LogColor.green(JSON.stringify(sidetreeTxToAdd))}`));
           await this.transactionStore.addTransaction(sidetreeTxToAdd);
         }
       } catch (e) {

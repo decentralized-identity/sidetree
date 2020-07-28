@@ -14,8 +14,7 @@ In general the release process can be summarized by the following flow
 
 To create a stable release follow the following steps
 
-**Note** At present there is a manual step that must be performed prior to the following defined release process that includes reviewing any changes
-since the previously released version in `./lib/core/versions`.
+**Note** At present there is a manual step that must be performed prior to the following defined release process that includes reviewing `latest` since the previously released version in both `./lib/core/versions`, `./lib/bitcoin/versions`. If there are new chagnes, duplicate the `latest` folder with the new release version as the folder name.
 
 1. Checkout the head of master `git checkout master && git pull`
 2. Create a new release branch from master called `release`
