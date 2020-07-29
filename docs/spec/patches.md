@@ -54,7 +54,7 @@ The `add-public-keys` _Patch Action_ describes the addition of cryptographic key
     1. The object ****MUST**** include an `id` property, and its value ****MUST**** be a string with no more than fifty (50) ASCII encoded characters. If the value is not of the correct type or exceeds the specified length, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
     2. The object ****MUST**** include a type property, and its value ****SHOULD**** be the identifier type string of a registered [Cryptographic Suite](https://w3c-ccg.github.io/ld-cryptosuite-registry/) that supports JWK representations - for example:
         - `EcdsaSecp256k1VerificationKey2019`
-        - `JwsVerificationKey2020`
+        - `JsonWebKey2020`
     3. The object ****MUST**** include a `jwk` property, and its value ****MUST**** be a public key expressed as a [IETF RFC 7517](https://tools.ietf.org/html/rfc7517) compliant JWK representation for a [`KEY_ALGORITHM`](#key-algorithm) supported by the implementation. If the value is not a compliant JWK representation, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
     4. The object ****MUST**** include a `purpose` property, and its value ****MUST**** be an array that includes one or more of the strings listed below. If the value is not of the correct type or contains any string not listed below, the entire _Patch Action_ ****MUST**** be discarded, without any of it being used to modify the DID's state.
         - **`general`**: the key ****MUST**** be included in the `public_keys` section of the resolved _DID Document_.
