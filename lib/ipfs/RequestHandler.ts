@@ -23,13 +23,12 @@ export default class RequestHandler {
    * @param fetchTimeoutInSeconds Timeout for fetch request. Fetch request will return `not-found` when timed-out.
    * @param repo Optional IPFS datastore implementation.
    */
-  public static create (fetchTimeoutInSeconds: number, repo?: any): RequestHandler {
-    return new RequestHandler(fetchTimeoutInSeconds, repo);
+  public static create (fetchTimeoutInSeconds: number): RequestHandler {
+    return new RequestHandler(fetchTimeoutInSeconds);
   }
 
-  private constructor (private fetchTimeoutInSeconds: number, repo?: any) {
-    this.ipfsStorage = new IpfsStorage(repo);
-    this.ipfsStorage.initialize();
+  private constructor (private fetchTimeoutInSeconds: number) {
+    this.ipfsStorage = new IpfsStorage();
     this.serviceInfo = new ServiceInfo('ipfs');
   }
 
@@ -109,15 +108,17 @@ export default class RequestHandler {
     try {
       const base58EncodedMultihashString = await this.ipfsStorage.write(content);
       if (base58EncodedMultihashString === undefined) {
-        return {
+      const errorMessage = `IPFS write of ${content.length} bytes failed.`;
+      console.error(errorMessage);
+      return {
           status: ResponseStatus.ServerError,
-          body: 'ipfs write failed'
+          body: errorMessage
         };
       }
       const multihashBuffer = multihashes.fromB58String(base58EncodedMultihashString);
       base64urlEncodedMultihash = base64url.encode(multihashBuffer);
 
-      console.info(`Wrote content '${base64urlEncodedMultihash}'.`);
+      console.info(`Wrote content '${base64urlEncodedMultihash}' of ${content.length} bytes.`);
       return {
         status: ResponseStatus.Succeeded,
         body: { hash: base64urlEncodedMultihash }
