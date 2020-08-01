@@ -68,19 +68,16 @@ describe('Core', async () => {
       // the values alphabetically to validate the response later on.
       const expectedCoreVersion: ServiceVersionModel = { name: 'a-service', version: 'x.y.z' };
       const expectedBlockchainVersion: ServiceVersionModel = { name: 'b-service', version: 'a.b.c' };
-      const expectedCasVersion: ServiceVersionModel = { name: 'c-service', version: '1.x.c' };
 
       const core = new Core(testConfig, testVersionConfig);
 
       const serviceInfoSpy = spyOn(core['serviceInfo'], 'getServiceVersion').and.returnValue(expectedCoreVersion);
       const blockchainSpy = spyOn(core['blockchain'], 'getServiceVersion').and.returnValue(Promise.resolve(expectedBlockchainVersion));
-      const casSpy = spyOn(core['cas'], 'getServiceVersion').and.returnValue(Promise.resolve(expectedCasVersion));
 
       const fetchedResponse = await core.handleGetVersionRequest();
 
       expect(serviceInfoSpy).toHaveBeenCalled();
       expect(blockchainSpy).toHaveBeenCalled();
-      expect(casSpy).toHaveBeenCalled();
       expect(fetchedResponse.status).toEqual(ResponseStatus.Succeeded);
 
       // Sort the output to make it easier to validate
@@ -89,7 +86,6 @@ describe('Core', async () => {
 
       expect(fetchedVersions[0]).toEqual(expectedCoreVersion);
       expect(fetchedVersions[1]).toEqual(expectedBlockchainVersion);
-      expect(fetchedVersions[2]).toEqual(expectedCasVersion);
     });
   });
 

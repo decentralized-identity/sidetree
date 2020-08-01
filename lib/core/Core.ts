@@ -112,8 +112,7 @@ export default class Core {
   public async handleGetVersionRequest (): Promise<ResponseModel> {
     const responses = [
       this.serviceInfo.getServiceVersion(),
-      await this.blockchain.getServiceVersion(),
-      await this.cas.getServiceVersion()
+      await this.blockchain.getServiceVersion()
     ];
 
     return {

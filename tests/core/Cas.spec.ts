@@ -1,7 +1,6 @@
 import Cas from '../../lib/core/Cas';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import ReadableStream from '../../lib/common/ReadableStream';
-import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 
 describe('Cas', async () => {
   it('should return file hash of the content written.', async () => {
@@ -77,19 +76,5 @@ describe('Cas', async () => {
     expect(fetchSpy).toHaveBeenCalled();
     expect(readStreamSpy).toHaveBeenCalled();
     expect(fetchResult.code).toEqual(FetchResultCode.InvalidHash);
-  });
-
-  describe('getServiceVersion', async () => {
-    it('should get the version from the service version fetcher', async () => {
-      const casClient = new Cas('unused');
-      const expectedServiceVersion: ServiceVersionModel = { name: 'test-service', version: 'x.y.z' };
-
-      const serviceVersionSpy = spyOn(casClient['serviceVersionFetcher'], 'getVersion').and.returnValue(Promise.resolve(expectedServiceVersion));
-
-      const fetchedServiceVersion = await casClient.getServiceVersion();
-
-      expect(serviceVersionSpy).toHaveBeenCalled();
-      expect(fetchedServiceVersion).toEqual(expectedServiceVersion);
-    });
   });
 });

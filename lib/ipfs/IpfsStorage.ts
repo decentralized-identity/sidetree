@@ -3,8 +3,8 @@ import FetchResultCode from '../common/enums/FetchResultCode';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import httpStatus = require('http-status');
-import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
+import SidetreeError from '../common/SidetreeError';
 
 /**
  * Class that implements the IPFS Storage functionality.
