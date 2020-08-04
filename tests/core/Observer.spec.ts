@@ -2,7 +2,7 @@ import * as retry from 'async-retry';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Blockchain from '../../lib/core/Blockchain';
-import Cas from '../../lib/core/Cas';
+import Ipfs from '../../lib/ipfs/Ipfs';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import DownloadManager from '../../lib/core/DownloadManager';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -39,7 +39,7 @@ describe('Observer', async () => {
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
-    casClient = new Cas(config.contentAddressableStoreServiceUri);
+    casClient = new Ipfs(config.contentAddressableStoreServiceUri);
 
     // Setting the CAS to always return 404.
     spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));

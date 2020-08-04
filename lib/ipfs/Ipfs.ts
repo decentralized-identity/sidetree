@@ -4,7 +4,7 @@ import * as url from 'url';
 import base64url from 'base64url';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/enums/FetchResultCode';
-import ICas from './interfaces/ICas';
+import ICas from '../core/interfaces/ICas';
 import IpfsErrorCode from '../ipfs/IpfsErrorCode';
 import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
@@ -14,9 +14,9 @@ import SidetreeError from '../common/SidetreeError';
 const multihashes = require('multihashes');
 
 /**
- * Class that communicates with the underlying CAS using REST API defined by the protocol document.
+ * Class that implements the `ICas` interface by communicating with IPFS.
  */
-export default class Cas implements ICas {
+export default class Ipfs implements ICas {
   private fetch = nodeFetch;
 
   public constructor (public uri: string) { }

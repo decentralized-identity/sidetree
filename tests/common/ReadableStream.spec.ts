@@ -23,7 +23,7 @@ describe('ReadableStream', () => {
     expect(content).toEqual(expectedContent);
   });
 
-  fit('should throw error if stream exceeds the max allowed size.', async (done) => {
+  it('should throw error if stream exceeds the max allowed size.', async (done) => {
     const inputFilePath = './tests/bitcoin/testData/bitcoinTwoBlocksRawDataHex.txt';
     const stream = fs.createReadStream(inputFilePath);
     const maxAllowedContentSize = 100;
