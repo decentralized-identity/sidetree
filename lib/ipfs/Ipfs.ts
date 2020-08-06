@@ -20,7 +20,7 @@ const multihashes = require('multihashes');
 export default class Ipfs implements ICas {
   private fetch = nodeFetch;
 
-  public constructor (public uri: string, private fetchTimeoutInSeconds: number) { }
+  public constructor (private uri: string, private fetchTimeoutInSeconds: number) { }
 
   public async write (content: Buffer): Promise<string> {
     // A string that is cryptographically impossible to repeat as the boundary string.
@@ -79,7 +79,8 @@ export default class Ipfs implements ICas {
       const multihashBuffer = base64url.toBuffer(base64urlEncodedMultihash);
       multihashes.validate(multihashBuffer);
       base58EncodedMultihashString = multihashes.toB58String(multihashBuffer);
-    } catch {
+    } catch (error) {
+      console.log(`'${base64urlEncodedMultihash}' is not a valid hash: ${SidetreeError.stringify(error)}`);
       return { code: FetchResultCode.InvalidHash };
     }
 
@@ -91,10 +92,13 @@ export default class Ipfs implements ICas {
       // Log appropriately based on error.
       if (fetchResult instanceof SidetreeError &&
           fetchResult.code === IpfsErrorCode.TimeoutPromiseTimedOut) {
-        console.log(`'${base64urlEncodedMultihash}' not found on IPFS.`);
+        console.log(`Timed out fetching CID '${base58EncodedMultihashString}', base64url ID: ${base64urlEncodedMultihash}.`);
       } else {
         // Log any unexpected error for investigation.
-        console.error(`Unexpected error fetching '${base64urlEncodedMultihash}' not found on IPFS.`);
+        const errorMessage =
+          `Unexpected error while fetching CID '${base58EncodedMultihashString}', base64url ID: ${base64urlEncodedMultihash}. ` +
+          `Investigate and fix: ${SidetreeError.stringify(fetchResult)}`;
+        console.error(errorMessage);
       }
 
       return { code: FetchResultCode.NotFound };
@@ -103,7 +107,7 @@ export default class Ipfs implements ICas {
     // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
     if (fetchResult.code === FetchResultCode.Success) {
       await this.pinContent(base58EncodedMultihashString);
-      console.log(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${base58EncodedMultihashString}, base64url ID: ${base64urlEncodedMultihash}`);
+      console.log(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${base58EncodedMultihashString}, base64url ID: ${base64urlEncodedMultihash}.`);
     }
 
     return fetchResult;
@@ -114,6 +118,7 @@ export default class Ipfs implements ICas {
    * This method also allows easy mocking in tests.
    */
   private async fetchContent (base58Multihash: string, maxSizeInBytes: number): Promise<FetchResult> {
+    // Go-IPFS HTTP API call.
     let response;
     try {
       // e.g. 'http://127.0.0.1:5001/api/v0/cat?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL&length=100000'
@@ -124,10 +129,10 @@ export default class Ipfs implements ICas {
         return { code: FetchResultCode.CasNotReachable };
       }
 
-      console.error(`Unexpected error while fetching from IPFS for CID ${base58Multihash}, investigate and fix: ${SidetreeError.stringify(error)}`);
-      return { code: FetchResultCode.NotFound };
+      throw error;
     }
 
+    // Handle non-OK response.
     if (response.status !== HttpStatus.OK) {
       const body = await ReadableStream.readAll(response.body);
       const json = JSON.parse(body.toString());
@@ -140,6 +145,7 @@ export default class Ipfs implements ICas {
       return { code: FetchResultCode.NotFound };
     }
 
+    // Handle OK response.
     const fetchResult: FetchResult = { code: FetchResultCode.Success };
     try {
       fetchResult.content = await ReadableStream.readAll(response.body, maxSizeInBytes);
@@ -150,7 +156,6 @@ export default class Ipfs implements ICas {
         return { code: FetchResultCode.MaxSizeExceeded };
       }
 
-      console.error(`unexpected error while reading response body for CID ${base58Multihash}, please investigate and fix: ${SidetreeError.stringify(error)}`);
       throw error;
     }
   }

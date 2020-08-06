@@ -15,5 +15,14 @@ describe('Tmeout', async () => {
       
       expect((taskResult as any).code).toEqual(IpfsErrorCode.TimeoutPromiseTimedOut);
     });
+
+    it('should return error thrown by the task', async () => {
+      const aPromiseThatThrowsError = new Promise((_resolve, _reject) => {
+        throw new Error('some bad error');
+      });
+
+      const taskResult = await Timeout.timeout(aPromiseThatThrowsError, 1);
+      expect((taskResult as any).message).toEqual('some bad error');
+    });
   });
 });

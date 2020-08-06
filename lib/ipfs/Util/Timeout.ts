@@ -18,7 +18,13 @@ export default class Timeout {
       }, timeoutInMilliseconds);
     });
 
-    const content = await Promise.race([task, timeoutPromise]);
+    let content;
+    try {
+      content = await Promise.race([task, timeoutPromise]);
+    } catch (error) {
+      content = error;
+    }
+
     return content;
   }
 }
