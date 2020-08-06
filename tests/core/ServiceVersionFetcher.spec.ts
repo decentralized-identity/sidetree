@@ -10,12 +10,12 @@ describe('ServiceVersionFetcher', async () => {
       const serviceVersionFetcher = new ServiceVersionFetcher('someURI');
 
       const fetchSpy = spyOn(serviceVersionFetcher as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify(expectedServiceVersion))));
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify(expectedServiceVersion))));
 
       const version = await serviceVersionFetcher.getVersion();
 
       expect(fetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
+      expect(readAllSpy).toHaveBeenCalled();
       expect(version).toEqual(expectedServiceVersion);
     });
 
@@ -54,13 +54,13 @@ describe('ServiceVersionFetcher', async () => {
       const serviceVersionFetcher = new ServiceVersionFetcher('someURI');
 
       const fetchSpy = spyOn(serviceVersionFetcher as any, 'fetch').and.returnValue(Promise.resolve({ status: 200 }));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify(expectedServiceVersion))));
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(JSON.stringify(expectedServiceVersion))));
       const tryGetServiceVersionSpy = spyOn(serviceVersionFetcher as any, 'tryGetServiceVersion').and.callThrough();
 
       await serviceVersionFetcher.getVersion();
 
       expect(fetchSpy).toHaveBeenCalled();
-      expect(readStreamSpy).toHaveBeenCalled();
+      expect(readAllSpy).toHaveBeenCalled();
       expect(tryGetServiceVersionSpy).toHaveBeenCalled();
 
       // Update the last fetch time to ensure another network call

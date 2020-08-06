@@ -10,6 +10,7 @@ import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
+import Timeout from './Util/Timeout';
 
 const multihashes = require('multihashes');
 
@@ -19,7 +20,7 @@ const multihashes = require('multihashes');
 export default class Ipfs implements ICas {
   private fetch = nodeFetch;
 
-  public constructor (public uri: string) { }
+  public constructor (public uri: string, private fetchTimeoutInSeconds: number) { }
 
   public async write (content: Buffer): Promise<string> {
     // A string that is cryptographically impossible to repeat as the boundary string.
@@ -82,21 +83,30 @@ export default class Ipfs implements ICas {
       return { code: FetchResultCode.InvalidHash };
     }
 
-    try {
-      const fetchResult = await this.fetchContent(base58EncodedMultihashString, maxSizeInBytes);
+    const fetchContentPromise = this.fetchContent(base58EncodedMultihashString, maxSizeInBytes);
+    const fetchResult = await Timeout.timeout(fetchContentPromise, this.fetchTimeoutInSeconds * 1000);
 
-      // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
-      if (fetchResult.code === FetchResultCode.Success) {
-        await this.pinContent(base58EncodedMultihashString);
-        console.log(`Read and pinned ${fetchResult.content!.length} byte content for IPFS CID: ${base58EncodedMultihashString}, base64url ID: ${base64urlEncodedMultihash}`);
+    // Mark content as `not found` if any error is thrown while fetching.
+    if (fetchResult instanceof Error) {
+      // Log appropriately based on error.
+      if (fetchResult instanceof SidetreeError &&
+          fetchResult.code === IpfsErrorCode.TimeoutPromiseTimedOut) {
+        console.log(`'${base64urlEncodedMultihash}' not found on IPFS.`);
+      } else {
+        // Log any unexpected error for investigation.
+        console.error(`Unexpected error fetching '${base64urlEncodedMultihash}' not found on IPFS.`);
       }
 
-      return fetchResult;
-    } catch {
-      return {
-        code: FetchResultCode.CasNotReachable
-      };
+      return { code: FetchResultCode.NotFound };
     }
+
+    // "Pin" (store permanently in local repo) content if fetch is successful. Re-pinning already existing object does not create a duplicate.
+    if (fetchResult.code === FetchResultCode.Success) {
+      await this.pinContent(base58EncodedMultihashString);
+      console.log(`Read and pinned ${fetchResult.content!.length} bytes for CID: ${base58EncodedMultihashString}, base64url ID: ${base64urlEncodedMultihash}`);
+    }
+
+    return fetchResult;
   }
 
   /**
@@ -106,16 +116,33 @@ export default class Ipfs implements ICas {
   private async fetchContent (base58Multihash: string, maxSizeInBytes: number): Promise<FetchResult> {
     let response;
     try {
-      const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}`); // e.g. 'http://127.0.0.1:5001/api/v0/cat?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL'
+      // e.g. 'http://127.0.0.1:5001/api/v0/cat?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL&length=100000'
+      const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes}`);
       response = await this.fetch(catUrl, { method: 'POST' });
     } catch (error) {
-      console.debug(`Error thrown while downloading content from IPFS for CID ${base58Multihash}: ${SidetreeError.stringify(error)}`);
+      if (error.code === 'ECONNREFUSED') {
+        return { code: FetchResultCode.CasNotReachable };
+      }
+
+      console.error(`Unexpected error while fetching from IPFS for CID ${base58Multihash}, investigate and fix: ${SidetreeError.stringify(error)}`);
+      return { code: FetchResultCode.NotFound };
+    }
+
+    if (response.status !== HttpStatus.OK) {
+      const body = await ReadableStream.readAll(response.body);
+      const json = JSON.parse(body.toString());
+
+      if (json.Message === 'this dag node is a directory') {
+        return { code: FetchResultCode.NotAFile };
+      }
+
+      console.info(`Recieved response code ${response.status} from IPFS for CID ${base58Multihash}: ${json})}`);
       return { code: FetchResultCode.NotFound };
     }
 
     const fetchResult: FetchResult = { code: FetchResultCode.Success };
     try {
-      fetchResult.content = await ReadableStream.read(response.body, maxSizeInBytes);
+      fetchResult.content = await ReadableStream.readAll(response.body, maxSizeInBytes);
       return fetchResult;
     } catch (error) {
       if (error instanceof SidetreeError &&
@@ -123,13 +150,14 @@ export default class Ipfs implements ICas {
         return { code: FetchResultCode.MaxSizeExceeded };
       }
 
-      console.error(`unexpected error thrown for CID ${base58Multihash}, please investigate and fix: ${SidetreeError.stringify(error)}`);
+      console.error(`unexpected error while reading response body for CID ${base58Multihash}, please investigate and fix: ${SidetreeError.stringify(error)}`);
       throw error;
     }
   }
 
   private async pinContent (hash: string) {
-    const pinUrl = url.resolve(this.uri, `/api/v0/pin?arg=${hash}`); // e.g. 'http://127.0.0.1:5001/api/v0/pin?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL'
+    // e.g. 'http://127.0.0.1:5001/api/v0/pin?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL'
+    const pinUrl = url.resolve(this.uri, `/api/v0/pin?arg=${hash}`);
     await this.fetch(pinUrl, { method: 'POST' });
   }
 }

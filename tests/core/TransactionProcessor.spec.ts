@@ -19,8 +19,8 @@ import TransactionProcessor from '../../lib/core/versions/latest/TransactionProc
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 
-describe('TransactionProcessor', () => {
-  const config = require('../json/config-test.json');
+describe('TransactionProcessor', async () => {
+  const config = await import('../json/config-test.json');
   let casClient: Ipfs;
   let operationStore: MockOperationStore;
   let downloadManager: DownloadManager;
@@ -37,7 +37,8 @@ describe('TransactionProcessor', () => {
   };
 
   beforeEach(() => {
-    casClient = new Ipfs(config.contentAddressableStoreServiceUri);
+    const fetchTimeoutInSeconds = 1;
+    casClient = new Ipfs(config.contentAddressableStoreServiceUri, fetchTimeoutInSeconds);
     operationStore = new MockOperationStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();

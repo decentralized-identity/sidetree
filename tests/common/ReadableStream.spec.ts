@@ -29,7 +29,7 @@ describe('ReadableStream', () => {
     const maxAllowedContentSize = 100;
 
     await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-      () => ReadableStream.read(stream, maxAllowedContentSize),
+      () => ReadableStream.readAll(stream, maxAllowedContentSize),
       SharedErrorCode.ReadableStreamMaxAllowedDataSizeExceeded
     );
 

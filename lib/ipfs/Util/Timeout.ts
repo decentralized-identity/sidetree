@@ -1,3 +1,6 @@
+import IpfsErrorCode from '../IpfsErrorCode';
+import SidetreeError from '../../common/SidetreeError';
+
 /**
  * Class containing code execution timeout/timing utilities.
  */
@@ -11,7 +14,7 @@ export default class Timeout {
   public static async timeout<T> (task: Promise<T>, timeoutInMilliseconds: number): Promise<T | Error> {
     const timeoutPromise = new Promise<Error>((resolve, _reject) => {
       setTimeout(() => {
-        resolve(new Error(`The given promised timed out after ${timeoutInMilliseconds} milliseconds.`));
+        resolve(new SidetreeError(IpfsErrorCode.TimeoutPromiseTimedOut, `Promise timed out after ${timeoutInMilliseconds} milliseconds.`));
       }, timeoutInMilliseconds);
     });
 
