@@ -84,10 +84,12 @@ describe('Ipfs', async () => {
     });
 
     it('should set fetch result as not-found when `timeout()` returns a fetch timeout error.', async () => {
-      // Trigger a real timeout by making the `Ipfs` instance attempting to fetch against a non-existent endpoint within 1 second.
-      const casClient = new Ipfs('http://127.0.0.1:9999/', 1);
+      const fetchContentSpy = spyOn(casClient as any, 'fetchContent');
+      const timeoutSpy = spyOn(Timeout, 'timeout').and.returnValue(Promise.resolve(new SidetreeError(IpfsErrorCode.TimeoutPromiseTimedOut)));
       const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02X', 1);
 
+      expect(fetchContentSpy).toHaveBeenCalled();
+      expect(timeoutSpy).toHaveBeenCalled();
       expect(fetchResult.code).toEqual(FetchResultCode.NotFound);
     });
 
