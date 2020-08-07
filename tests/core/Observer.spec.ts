@@ -2,7 +2,6 @@ import * as retry from 'async-retry';
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Blockchain from '../../lib/core/Blockchain';
-import Cas from '../../lib/core/Cas';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import DownloadManager from '../../lib/core/DownloadManager';
 import Encoder from '../../lib/core/versions/latest/Encoder';
@@ -10,6 +9,7 @@ import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
+import Ipfs from '../../lib/ipfs/Ipfs';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MapFile from '../../lib/core/versions/latest/MapFile';
@@ -39,7 +39,8 @@ describe('Observer', async () => {
   beforeAll(async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
-    casClient = new Cas(config.contentAddressableStoreServiceUri);
+    const fetchTimeoutInSeconds = 1;
+    casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
 
     // Setting the CAS to always return 404.
     spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));

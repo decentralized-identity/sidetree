@@ -1,6 +1,5 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
-import Cas from '../../lib/core/Cas';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import DownloadManager from '../../lib/core/DownloadManager';
@@ -8,6 +7,7 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IBlockchain from '../../lib/core/interfaces/IBlockchain';
+import Ipfs from '../../lib/ipfs/Ipfs';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockBlockchain from '../mocks/MockBlockchain';
@@ -19,9 +19,9 @@ import TransactionProcessor from '../../lib/core/versions/latest/TransactionProc
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 
-describe('TransactionProcessor', () => {
-  const config = require('../json/config-test.json');
-  let casClient: Cas;
+describe('TransactionProcessor', async () => {
+  const config = await import('../json/config-test.json');
+  let casClient: Ipfs;
   let operationStore: MockOperationStore;
   let downloadManager: DownloadManager;
   let blockchain: IBlockchain;
@@ -37,7 +37,8 @@ describe('TransactionProcessor', () => {
   };
 
   beforeEach(() => {
-    casClient = new Cas(config.contentAddressableStoreServiceUri);
+    const fetchTimeoutInSeconds = 1;
+    casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
     operationStore = new MockOperationStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();
@@ -45,7 +46,7 @@ describe('TransactionProcessor', () => {
     transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
   });
 
-  describe('prcoessTransaction', () => {
+  describe('processTransaction', () => {
     it('should ignore error and return true when AnchoredDataSerializer throws a sidetree error', async () => {
       const anchoredData = 'Bad Format';
       const mockTransaction: TransactionModel = {

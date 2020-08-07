@@ -1,8 +1,8 @@
 import BatchScheduler from './BatchScheduler';
 import Blockchain from './Blockchain';
-import Cas from './Cas';
-import DownloadManager from './DownloadManager';
 import Config from './models/Config';
+import DownloadManager from './DownloadManager';
+import ICas from './interfaces/ICas';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
@@ -23,7 +23,6 @@ export default class Core {
   private operationStore: MongoDbOperationStore;
   private versionManager: VersionManager;
   private blockchain: Blockchain;
-  private cas: Cas;
   private downloadManager: DownloadManager;
   private observer: Observer;
   private batchScheduler: BatchScheduler;
@@ -33,12 +32,11 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: Config, versionModels: VersionModel[]) {
+  public constructor (config: Config, versionModels: VersionModel[], private cas: ICas) {
     // Component dependency construction & injection.
     this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component.
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = new Blockchain(config.blockchainServiceUri);
-    this.cas = new Cas(config.contentAddressableStoreServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
     this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
@@ -112,8 +110,7 @@ export default class Core {
   public async handleGetVersionRequest (): Promise<ResponseModel> {
     const responses = [
       this.serviceInfo.getServiceVersion(),
-      await this.blockchain.getServiceVersion(),
-      await this.cas.getServiceVersion()
+      await this.blockchain.getServiceVersion()
     ];
 
     return {

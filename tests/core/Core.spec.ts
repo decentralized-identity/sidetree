@@ -1,5 +1,6 @@
 import Core from '../../lib/core/Core';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
+import MockCas from '../mocks/MockCas';
 import ResponseModel from '../../lib/common/models/ResponseModel';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
@@ -8,6 +9,8 @@ describe('Core', async () => {
 
   const testConfig = require('../json/bitcoin-config-test.json');
   const testVersionConfig = require('../json/core-protocol-versioning-test.json');
+
+  const mockCas = new MockCas();
 
   const resolvedRequest: Promise<ResponseModel> = new Promise(resolve => {
     const responseModel: ResponseModel = { status: ResponseStatus.Succeeded, body: null };
@@ -19,7 +22,7 @@ describe('Core', async () => {
       // remove the optional parameter "databaseName"
       const minimalConfig = Object.assign({}, testConfig);
       delete minimalConfig.databaseName;
-      const core = new Core(minimalConfig, testVersionConfig);
+      const core = new Core(minimalConfig, testVersionConfig, mockCas);
       expect(core).toBeDefined();
       // test default database name
       expect(core['operationStore']['databaseName']).toEqual('sidetree');
@@ -28,7 +31,7 @@ describe('Core', async () => {
     it('should construct MongoDBOperationStore with database if passed in config', () => {
       const databaseName = 'mongoDbTestDatabase';
       const databaseIncludedConfig = Object.assign({}, testConfig, { databaseName });
-      const core = new Core(databaseIncludedConfig, testVersionConfig);
+      const core = new Core(databaseIncludedConfig, testVersionConfig, mockCas);
       expect(core['operationStore']['databaseName']).toEqual(databaseName);
       expect(core['transactionStore']['databaseName']).toEqual(databaseName);
       expect(core['unresolvableTransactionStore']['databaseName']).toEqual(databaseName);
@@ -37,7 +40,7 @@ describe('Core', async () => {
 
   describe('initialize', async () => {
     it('should initialize all required dependencies', async () => {
-      const core = new Core(testConfig, testVersionConfig);
+      const core = new Core(testConfig, testVersionConfig, mockCas);
       const transactionStoreInitSpy = spyOn(core['transactionStore'], 'initialize');
       const unresolvableTransactionStoreInitSpy = spyOn(core['unresolvableTransactionStore'], 'initialize');
       const operationStoreInitSpy = spyOn(core['operationStore'], 'initialize');
@@ -68,19 +71,16 @@ describe('Core', async () => {
       // the values alphabetically to validate the response later on.
       const expectedCoreVersion: ServiceVersionModel = { name: 'a-service', version: 'x.y.z' };
       const expectedBlockchainVersion: ServiceVersionModel = { name: 'b-service', version: 'a.b.c' };
-      const expectedCasVersion: ServiceVersionModel = { name: 'c-service', version: '1.x.c' };
 
-      const core = new Core(testConfig, testVersionConfig);
+      const core = new Core(testConfig, testVersionConfig, mockCas);
 
       const serviceInfoSpy = spyOn(core['serviceInfo'], 'getServiceVersion').and.returnValue(expectedCoreVersion);
       const blockchainSpy = spyOn(core['blockchain'], 'getServiceVersion').and.returnValue(Promise.resolve(expectedBlockchainVersion));
-      const casSpy = spyOn(core['cas'], 'getServiceVersion').and.returnValue(Promise.resolve(expectedCasVersion));
 
       const fetchedResponse = await core.handleGetVersionRequest();
 
       expect(serviceInfoSpy).toHaveBeenCalled();
       expect(blockchainSpy).toHaveBeenCalled();
-      expect(casSpy).toHaveBeenCalled();
       expect(fetchedResponse.status).toEqual(ResponseStatus.Succeeded);
 
       // Sort the output to make it easier to validate
@@ -89,13 +89,12 @@ describe('Core', async () => {
 
       expect(fetchedVersions[0]).toEqual(expectedCoreVersion);
       expect(fetchedVersions[1]).toEqual(expectedBlockchainVersion);
-      expect(fetchedVersions[2]).toEqual(expectedCasVersion);
     });
   });
 
   describe('handleResolveRequest', () => {
     it('should call the needed functions and return a response', async () => {
-      const core = new Core(testConfig, testVersionConfig);
+      const core = new Core(testConfig, testVersionConfig, mockCas);
       const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleResolveRequest']);
       mockRequestHandler.handleResolveRequest.and.callFake(() => { return resolvedRequest; });
       core['versionManager']['getRequestHandler'] = () => { return mockRequestHandler; };
@@ -108,7 +107,7 @@ describe('Core', async () => {
 
   describe('handleOperationRequest', () => {
     it('should call the needed functions and return a response', async () => {
-      const core = new Core(testConfig, testVersionConfig);
+      const core = new Core(testConfig, testVersionConfig, mockCas);
       const mockRequestHandler = jasmine.createSpyObj<IRequestHandler>('versionManagerSpy', ['handleOperationRequest']);
       mockRequestHandler.handleOperationRequest.and.callFake(() => { return resolvedRequest; });
       core['versionManager']['getRequestHandler'] = () => { return mockRequestHandler; };

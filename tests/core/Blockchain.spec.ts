@@ -361,14 +361,14 @@ describe('Blockchain', async () => {
       };
 
       const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
-      const identifierInput = 'indentifier input';
+      const identifierInput = 'identifier input';
       const actual = await blockchainClient.getValueTimeLock(identifierInput);
 
       expect(actual).toEqual(mockValueTimeLock);
       expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['locksUri']}/${identifierInput}`);
-      expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
+      expect(readAllSpy).toHaveBeenCalledWith(mockFetchResponse.body);
       done();
     });
 
@@ -427,13 +427,13 @@ describe('Blockchain', async () => {
       };
 
       const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
-      const readStreamSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
+      const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
       const actual = await blockchainClient.getWriterValueTimeLock();
 
       expect(actual).toEqual(mockValueTimeLock);
       expect(fetchSpy).toHaveBeenCalledWith(`${blockchainClient['writerLockUri']}`);
-      expect(readStreamSpy).toHaveBeenCalledWith(mockFetchResponse.body);
+      expect(readAllSpy).toHaveBeenCalledWith(mockFetchResponse.body);
       done();
     });
 
