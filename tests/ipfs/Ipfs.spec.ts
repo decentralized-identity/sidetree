@@ -85,7 +85,7 @@ describe('Ipfs', async () => {
 
     it('should set fetch result as not-found when `timeout()` throws a timeout error.', async () => {
       const fetchContentSpy = spyOn(casClient as any, 'fetchContent');
-      const timeoutSpy = spyOn(Timeout, 'timeout').and.callFake(() =>  { throw new SidetreeError(IpfsErrorCode.TimeoutPromiseTimedOut) });
+      const timeoutSpy = spyOn(Timeout, 'timeout').and.callFake(() => { throw new SidetreeError(IpfsErrorCode.TimeoutPromiseTimedOut); });
       const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02X', 1);
 
       expect(fetchContentSpy).toHaveBeenCalled();

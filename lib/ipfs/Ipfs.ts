@@ -126,7 +126,8 @@ export default class Ipfs implements ICas {
       // e.g. 'http://127.0.0.1:5001/api/v0/cat?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL&length=100000'
       // NOTE: we pass max size + 1 to the API because the API will return upto the size given,
       // so if we give the exact max size, we would not know when the content of the exact max size is returned,
-      // whether the content is truncated or not.
+      // whether the content is truncated or not; with the +1, if the content returned has size of max size + 1,
+      // we can safely discard the content (in the stream read below) and return size exceeded as the fecth result.
       // Alternatively, we could choose not to supply this optional `lenght` parameter, but we do so such that
       // IPFS is given the opportunity to optimize its download logic. (e.g. not needing to download the entire content).
       const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes + 1}`);
@@ -158,8 +159,7 @@ export default class Ipfs implements ICas {
       fetchResult.content = await ReadableStream.readAll(response.body, maxSizeInBytes);
       return fetchResult;
     } catch (error) {
-      if (error instanceof SidetreeError &&
-          error.code === SharedErrorCode.ReadableStreamMaxAllowedDataSizeExceeded) {
+      if (error.code === SharedErrorCode.ReadableStreamMaxAllowedDataSizeExceeded) {
         return { code: FetchResultCode.MaxSizeExceeded };
       }
 
