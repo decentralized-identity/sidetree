@@ -2,18 +2,18 @@ import IpfsErrorCode from '../../lib/ipfs/IpfsErrorCode';
 import Timeout from '../../lib/ipfs/Util/Timeout';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
-describe('Tmeout', async () => {
+describe('Timeout', async () => {
   describe('timeout()', async () => {
     it('should timeout if given task took too long.', async (done) => {
       // A 10 second running promise.
-      const longRunningPromsie = new Promise<number>((resolve, _reject) => {
+      const longRunningPromise = new Promise<number>((resolve, _reject) => {
         setTimeout(
           () => { resolve(1); },
           10);
       });
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => Timeout.timeout(longRunningPromsie, 1),
+        () => Timeout.timeout(longRunningPromise, 1),
         IpfsErrorCode.TimeoutPromiseTimedOut
       );
 

@@ -363,7 +363,7 @@ describe('Blockchain', async () => {
       const fetchSpy = spyOn(blockchainClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
       const readAllSpy = spyOn(ReadableStream, 'readAll').and.returnValue(Promise.resolve(Buffer.from(mockFetchResponse.body)));
 
-      const identifierInput = 'indentifier input';
+      const identifierInput = 'identifier input';
       const actual = await blockchainClient.getValueTimeLock(identifierInput);
 
       expect(actual).toEqual(mockValueTimeLock);

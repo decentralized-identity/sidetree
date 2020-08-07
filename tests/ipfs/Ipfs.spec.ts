@@ -75,7 +75,7 @@ describe('Ipfs', async () => {
 
     it('should set fetch result as not-found when `timeout()` throws an unexpected error.', async () => {
       const fetchContentSpy = spyOn(casClient as any, 'fetchContent');
-      const timeoutSpy = spyOn(Timeout, 'timeout').and.throwError('any unexpecte error');
+      const timeoutSpy = spyOn(Timeout, 'timeout').and.throwError('any unexpected error');
       const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
 
       expect(fetchContentSpy).toHaveBeenCalled();
@@ -132,21 +132,21 @@ describe('Ipfs', async () => {
 
     it('should return correct fetch result code if content found is not a file.', async () => {
       const mockFetchResponse = { status: 500 };
-      const fecthSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
 
       const readAllSpy = spyOn(ReadableStream, 'readAll')
         .and.returnValue(Promise.resolve(Buffer.from(JSON.stringify({ Message: 'this dag node is a directory' }))));
 
       const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
 
-      expect(fecthSpy).toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
       expect(fetchResult.code).toEqual(FetchResultCode.NotAFile);
     });
 
     it('should return correct fetch result code if content max size is exceeded.', async () => {
       const mockFetchResponse = { status: 200 };
-      const fecthSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
+      const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve(mockFetchResponse));
 
       const readAllSpy = spyOn(ReadableStream, 'readAll').and.callFake(() => {
         throw new SidetreeError(SharedErrorCode.ReadableStreamMaxAllowedDataSizeExceeded);
@@ -154,7 +154,7 @@ describe('Ipfs', async () => {
 
       const fetchResult = await casClient.read('EiCGEBPkUOwS6vKY0NXkrhSFj1obfNhlWfFcIUFhczR02w', 1);
 
-      expect(fecthSpy).toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalled();
       expect(readAllSpy).toHaveBeenCalled();
       expect(fetchResult.code).toEqual(FetchResultCode.MaxSizeExceeded);
     });

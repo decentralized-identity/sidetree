@@ -27,7 +27,7 @@ export default class Ipfs implements ICas {
     const multipartBoundaryString = crypto.randomBytes(32).toString('hex');
 
     // See https://tools.ietf.org/html/rfc7578#section-4.1
-    // An exmaple of multipart form data:
+    // An example of multipart form data:
     //
     // --ABoundaryString
     //
@@ -124,11 +124,11 @@ export default class Ipfs implements ICas {
     let response;
     try {
       // e.g. 'http://127.0.0.1:5001/api/v0/cat?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL&length=100000'
-      // NOTE: we pass max size + 1 to the API because the API will return upto the size given,
+      // NOTE: we pass max size + 1 to the API because the API will return up to the size given,
       // so if we give the exact max size, we would not know when the content of the exact max size is returned,
       // whether the content is truncated or not; with the +1, if the content returned has size of max size + 1,
-      // we can safely discard the content (in the stream read below) and return size exceeded as the fecth result.
-      // Alternatively, we could choose not to supply this optional `lenght` parameter, but we do so such that
+      // we can safely discard the content (in the stream read below) and return size exceeded as the fetch result.
+      // Alternatively, we could choose not to supply this optional `length` parameter, but we do so such that
       // IPFS is given the opportunity to optimize its download logic. (e.g. not needing to download the entire content).
       const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes + 1}`);
       response = await this.fetch(catUrl, { method: 'POST' });
@@ -149,7 +149,7 @@ export default class Ipfs implements ICas {
         return { code: FetchResultCode.NotAFile };
       }
 
-      console.info(`Recieved response code ${response.status} from IPFS for CID ${base58Multihash}: ${json})}`);
+      console.info(`Received response code ${response.status} from IPFS for CID ${base58Multihash}: ${json})}`);
       return { code: FetchResultCode.NotFound };
     }
 

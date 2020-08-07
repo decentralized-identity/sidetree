@@ -46,7 +46,7 @@ describe('TransactionProcessor', async () => {
     transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
   });
 
-  describe('prcoessTransaction', () => {
+  describe('processTransaction', () => {
     it('should ignore error and return true when AnchoredDataSerializer throws a sidetree error', async () => {
       const anchoredData = 'Bad Format';
       const mockTransaction: TransactionModel = {
