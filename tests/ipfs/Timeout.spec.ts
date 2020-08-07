@@ -1,9 +1,10 @@
 import IpfsErrorCode from '../../lib/ipfs/IpfsErrorCode';
 import Timeout from '../../lib/ipfs/Util/Timeout';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 
 describe('Tmeout', async () => {
   describe('timeout()', async () => {
-    it('should timeout if given task took too long.', async () => {
+    it('should timeout if given task took too long.', async (done) => {
       // A 10 second running promise.
       const longRunningPromsie = new Promise<number>((resolve, _reject) => {
         setTimeout(
@@ -11,18 +12,22 @@ describe('Tmeout', async () => {
           10);
       });
 
-      const taskResult = await Timeout.timeout(longRunningPromsie, 1);
-      
-      expect((taskResult as any).code).toEqual(IpfsErrorCode.TimeoutPromiseTimedOut);
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => Timeout.timeout(longRunningPromsie, 1),
+        IpfsErrorCode.TimeoutPromiseTimedOut
+      );
+
+      done();
     });
 
-    it('should return error thrown by the task', async () => {
+    it('should return error thrown by the task.', async (done) => {
+      const error = new Error('some bad error');
       const aPromiseThatThrowsError = new Promise((_resolve, _reject) => {
-        throw new Error('some bad error');
+        throw error;
       });
 
-      const taskResult = await Timeout.timeout(aPromiseThatThrowsError, 1);
-      expect((taskResult as any).message).toEqual('some bad error');
+      await expectAsync(Timeout.timeout(aPromiseThatThrowsError, 1000)).toBeRejected(error);
+      done();
     });
   });
 });

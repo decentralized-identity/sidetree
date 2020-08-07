@@ -26,6 +26,7 @@ export default class Ipfs implements ICas {
     // A string that is cryptographically impossible to repeat as the boundary string.
     const multipartBoundaryString = crypto.randomBytes(32).toString('hex');
 
+    // See https://tools.ietf.org/html/rfc7578#section-4.1
     // An exmaple of multipart form data:
     //
     // --ABoundaryString
@@ -84,23 +85,24 @@ export default class Ipfs implements ICas {
       return { code: FetchResultCode.InvalidHash };
     }
 
-    const fetchContentPromise = this.fetchContent(base58EncodedMultihashString, maxSizeInBytes);
-    const fetchResult = await Timeout.timeout(fetchContentPromise, this.fetchTimeoutInSeconds * 1000);
-
-    // Mark content as `not found` if any error is thrown while fetching.
-    if (fetchResult instanceof Error) {
+    // Fetch the content.
+    let fetchResult;
+    try {
+      const fetchContentPromise = this.fetchContent(base58EncodedMultihashString, maxSizeInBytes);
+      fetchResult = await Timeout.timeout(fetchContentPromise, this.fetchTimeoutInSeconds * 1000);
+    } catch (error) {
       // Log appropriately based on error.
-      if (fetchResult instanceof SidetreeError &&
-          fetchResult.code === IpfsErrorCode.TimeoutPromiseTimedOut) {
+      if (error.code === IpfsErrorCode.TimeoutPromiseTimedOut) {
         console.log(`Timed out fetching CID '${base58EncodedMultihashString}', base64url ID: ${base64urlEncodedMultihash}.`);
       } else {
         // Log any unexpected error for investigation.
         const errorMessage =
           `Unexpected error while fetching CID '${base58EncodedMultihashString}', base64url ID: ${base64urlEncodedMultihash}. ` +
-          `Investigate and fix: ${SidetreeError.stringify(fetchResult)}`;
+          `Investigate and fix: ${SidetreeError.stringify(error)}`;
         console.error(errorMessage);
       }
 
+      // Mark content as `not found` if any error is thrown while fetching.
       return { code: FetchResultCode.NotFound };
     }
 
@@ -122,7 +124,12 @@ export default class Ipfs implements ICas {
     let response;
     try {
       // e.g. 'http://127.0.0.1:5001/api/v0/cat?arg=QmPPsg8BeJdqK2TnRHx5L2BFyjmFr9FK6giyznNjdL93NL&length=100000'
-      const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes}`);
+      // NOTE: we pass max size + 1 to the API because the API will return upto the size given,
+      // so if we give the exact max size, we would not know when the content of the exact max size is returned,
+      // whether the content is truncated or not.
+      // Alternatively, we could choose not to supply this optional `lenght` parameter, but we do so such that
+      // IPFS is given the opportunity to optimize its download logic. (e.g. not needing to download the entire content).
+      const catUrl = url.resolve(this.uri, `/api/v0/cat?arg=${base58Multihash}&length=${maxSizeInBytes + 1}`);
       response = await this.fetch(catUrl, { method: 'POST' });
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {
