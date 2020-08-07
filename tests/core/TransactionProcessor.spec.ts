@@ -38,7 +38,7 @@ describe('TransactionProcessor', async () => {
 
   beforeEach(() => {
     const fetchTimeoutInSeconds = 1;
-    casClient = new Ipfs(config.contentAddressableStoreServiceUri, fetchTimeoutInSeconds);
+    casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
     operationStore = new MockOperationStore();
     downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
     downloadManager.start();

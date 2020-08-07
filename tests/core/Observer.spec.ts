@@ -40,7 +40,7 @@ describe('Observer', async () => {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 20000; // These asynchronous tests can take a bit longer than normal.
 
     const fetchTimeoutInSeconds = 1;
-    casClient = new Ipfs(config.contentAddressableStoreServiceUri, fetchTimeoutInSeconds);
+    casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
 
     // Setting the CAS to always return 404.
     spyOn(casClient, 'read').and.returnValue(Promise.resolve({ code: FetchResultCode.NotFound }));
