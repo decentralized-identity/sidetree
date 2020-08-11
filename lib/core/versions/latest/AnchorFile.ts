@@ -73,8 +73,6 @@ export default class AnchorFile {
       AnchorFile.validateWriterLockId(anchorFileModel.writer_lock_id);
     }
 
-    anchorFileModel.writer_lock_id
-
     // Map file hash validations.
     const mapFileUri = anchorFileModel.map_file_uri;
     if (typeof mapFileUri !== 'string') {
