@@ -64,10 +64,16 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
-    if (anchorFileModel.hasOwnProperty('writer_lock_id') &&
-        typeof anchorFileModel.writer_lock_id !== 'string') {
-      throw new SidetreeError(ErrorCode.AnchorFileWriterLockIPropertyNotString);
+    // `writer_lock_id` validations.
+    if (anchorFileModel.hasOwnProperty('writer_lock_id')) {
+      if (typeof anchorFileModel.writer_lock_id !== 'string') {
+        throw new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString);
+      }
+
+      AnchorFile.validateWriterLockId(anchorFileModel.writer_lock_id);
     }
+
+    anchorFileModel.writer_lock_id
 
     // Map file hash validations.
     const mapFileUri = anchorFileModel.map_file_uri;
@@ -157,6 +163,10 @@ export default class AnchorFile {
     deactivateOperationArray: DeactivateOperation[]
   ): Promise<AnchorFileModel> {
 
+    if (writerLockId !== undefined) {
+      AnchorFile.validateWriterLockId(writerLockId);
+    }
+
     const createOperations = createOperationArray.map(operation => {
       return {
         suffix_data: operation.encodedSuffixData
@@ -205,5 +215,16 @@ export default class AnchorFile {
     const anchorFileBuffer = Buffer.from(anchorFileJson);
 
     return Compressor.compress(anchorFileBuffer);
+  }
+
+  private static validateWriterLockId (writerLockId: string) {
+    // Max size check.
+    const writerLockIdSizeInBytes = Buffer.from(writerLockId).length;
+    if (writerLockIdSizeInBytes > ProtocolParameters.maxWriterLockIdInBytes) {
+      throw new SidetreeError(
+        ErrorCode.AnchorFileWriterLockIdExceededMaxSize,
+        `Writer lock ID of ${writerLockIdSizeInBytes} bytes exceeded the maximum size of ${ProtocolParameters.maxWriterLockIdInBytes} bytes.`
+      );
+    }
   }
 }

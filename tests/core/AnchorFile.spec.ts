@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
@@ -126,7 +127,7 @@ describe('AnchorFile', async () => {
     it('should throw if map file hash is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('writerLock', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).map_file_uri = 1234; // Intentionally setting the map_file_uri as an incorrect type.
 
@@ -139,7 +140,7 @@ describe('AnchorFile', async () => {
     it('should throw if map file hash is invalid.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const anchorFileModel = await AnchorFile.createModel('writerlock', 'invalidMapFileHash', [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('writerLock', 'invalidMapFileHash', [createOperation], [], []);
 
       try {
         const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
@@ -154,14 +155,29 @@ describe('AnchorFile', async () => {
     it('should throw if writer lock id is not string.', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
-      const anchorFileModel = await AnchorFile.createModel('writerlock', 'unusedMockFileHash', [createOperation], [], []);
+      const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', [createOperation], [], []);
 
       (anchorFileModel as any).writer_lock_id = {}; // intentionally set to invalid value
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
 
-      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileWriterLockIPropertyNotString));
+      await expectAsync(AnchorFile.parse(anchorFileCompressed)).toBeRejectedWith(new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString));
+    });
+
+    it('should throw if writer lock ID exceeded max size.', async () => {
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const createOperation = createOperationData.createOperation;
+      const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', [createOperation], [], []);
+
+      (anchorFileModel as any).writer_lock_id = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
+
+      const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
+      const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => AnchorFile.parse(anchorFileCompressed),
+        ErrorCode.AnchorFileWriterLockIdExceededMaxSize);
     });
 
     it('should throw if `create` property is not an array.', async () => {
@@ -254,18 +270,18 @@ describe('AnchorFile', async () => {
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation('anyDid2', anyRecoveryPrivateKey);
       const deactivateOperation = deactivateOperationData.deactivateOperation;
 
-      const anchoreFileModel = await AnchorFile.createModel(undefined, mapFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
+      const anchorFileModel = await AnchorFile.createModel(undefined, mapFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
 
-      expect(anchoreFileModel.map_file_uri).toEqual(mapFileUri);
-      expect(anchoreFileModel.operations.create![0].suffix_data).toEqual(createOperation.encodedSuffixData);
+      expect(anchorFileModel.map_file_uri).toEqual(mapFileUri);
+      expect(anchorFileModel.operations.create![0].suffix_data).toEqual(createOperation.encodedSuffixData);
 
       // Verify recover operation.
-      const recoveryOperationInAnchorFile = anchoreFileModel.operations.recover![0];
+      const recoveryOperationInAnchorFile = anchorFileModel.operations.recover![0];
       expect(recoveryOperationInAnchorFile.did_suffix).toEqual(recoverOperation.didUniqueSuffix);
       expect(recoveryOperationInAnchorFile.signed_data).toEqual(recoverOperation.signedDataJws.toCompactJws());
 
       // Verify deactivate operation.
-      const deactivateOperationInAnchorFile = anchoreFileModel.operations.deactivate![0];
+      const deactivateOperationInAnchorFile = anchorFileModel.operations.deactivate![0];
       expect(deactivateOperationInAnchorFile.did_suffix).toEqual(deactivateOperation.didUniqueSuffix);
       expect(deactivateOperationInAnchorFile.signed_data).toEqual(deactivateOperation.signedDataJws.toCompactJws());
     });
@@ -277,9 +293,9 @@ describe('AnchorFile', async () => {
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const createOperation = createOperationData.createOperation;
 
-      const anchoreFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, [createOperation], [], []);
+      const anchorFileBuffer = await AnchorFile.createBuffer(undefined, mapFileHash, [createOperation], [], []);
 
-      const anchorFile = await AnchorFile.parse(anchoreFileBuffer);
+      const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       expect(anchorFile.model.map_file_uri).toEqual(mapFileHash);
       expect(anchorFile.model.operations.create![0].suffix_data).toEqual(createOperation.encodedSuffixData);
