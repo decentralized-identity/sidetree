@@ -75,14 +75,14 @@ describe('ChunkFile', async () => {
       );
     });
 
-    it('should throw if any `delta` element is not a string.', async () => {
+    it('should throw if any `delta` element exceeds max size.', async () => {
       const randomBytes = crypto.randomBytes(2000); // Intentionally larger than maximum.
       const deltas = [
         Encoder.encode(randomBytes)
       ];
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.ChunkFileDeltaSizeExceedsLimit
+        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.DeltaExceedsMaximumSize
       );
     });
   });

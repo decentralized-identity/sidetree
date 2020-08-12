@@ -1,6 +1,7 @@
 import ChunkFileModel from './models/ChunkFileModel';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
+import Delta from './Delta';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
@@ -23,7 +24,7 @@ export default class ChunkFile {
   ): Promise<ChunkFileModel> {
 
     let endTimer = timeSpan();
-    const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxChunkFileSizeInBytes * Compressor.estimatedDecomporessionMultiplier;
+    const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxChunkFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
     const decompressedChunkFileBuffer = await Compressor.decompress(chunkFileBuffer, maxAllowedDecompressedSizeInBytes);
     const chunkFileObject = await JsonAsync.parse(decompressedChunkFileBuffer);
     console.info(`Parsed chunk file in ${endTimer.rounded()} ms.`);
@@ -53,15 +54,8 @@ export default class ChunkFile {
         throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfStrings, 'Invalid chunk file, deltas property is not an array of strings.');
       }
 
-      const deltaBuffer = Buffer.from(encodedDelta);
-
       // Verify size of each delta does not exceed the maximum allowed limit.
-      if (deltaBuffer.length > ProtocolParameters.maxDeltaSizeInBytes) {
-        throw new SidetreeError(
-          ErrorCode.ChunkFileDeltaSizeExceedsLimit,
-          `Operation size of ${deltaBuffer.length} bytes exceeds the allowed limit of ${ProtocolParameters.maxDeltaSizeInBytes} bytes.`
-        );
-      }
+      Delta.validateEncodedDeltaSize(encodedDelta);
     }
   }
 

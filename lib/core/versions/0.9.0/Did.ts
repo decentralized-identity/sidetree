@@ -1,4 +1,5 @@
 import CreateOperation from './CreateOperation';
+import Delta from './Delta';
 import ErrorCode from './ErrorCode';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
@@ -72,7 +73,7 @@ export default class Did {
       const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
-      // becasue a given long-form DID may have been created long ago,
+      // because a given long-form DID may have been created long ago,
       // thus this version of `CreateOperation.parse()` maybe using a different hashing algorithm than that of the unique DID suffix (short-form).
       // So we compute the suffix data hash again using the hashing algorithm used by the given unique DID suffix (short-form).
       const suffixDataHashMatchesUniqueSuffix = Multihash.isValidHash(createOperation.encodedSuffixData, did.uniqueSuffix);
@@ -147,6 +148,9 @@ export default class Did {
     const initialStateParts = initialState.split('.');
     const suffixData = initialStateParts[0];
     const delta = initialStateParts[1];
+
+    Delta.validateEncodedDeltaSize(delta);
+
     const createOperationRequest = {
       type: OperationType.Create,
       suffix_data: suffixData,
