@@ -9,7 +9,7 @@ import zlib = require('zlib');
 export default class Compressor {
 
   /** The estimated ratio/multiplier of decompressed Sidetree CAS file size compared against the compressed file size. */
-  public static readonly estimatedDecomporessionMultiplier = 3;
+  public static readonly estimatedDecompressionMultiplier = 3;
 
   private static readonly gzipAsync = util.promisify(zlib.gzip);
 

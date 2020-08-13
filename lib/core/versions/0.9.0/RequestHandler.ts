@@ -1,3 +1,4 @@
+import Delta from './Delta';
 import Did from './Did';
 import DidState from '../../models/DidState';
 import DocumentComposer from './DocumentComposer';
@@ -9,7 +10,6 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationProcessor from './OperationProcessor';
 import OperationType from '../../enums/OperationType';
-import ProtocolParameters from './ProtocolParameters';
 import Resolver from '../../Resolver';
 import ResponseModel from '../../../common/models/ResponseModel';
 import ResponseStatus from '../../../common/enums/ResponseStatus';
@@ -44,12 +44,7 @@ export default class RequestHandler implements IRequestHandler {
       if (operationRequest.type === OperationType.Create ||
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
-        const deltaBuffer = Buffer.from(operationRequest.delta);
-        if (deltaBuffer.length > ProtocolParameters.maxDeltaSizeInBytes) {
-          const errorMessage = `operationDdata byte size of ${deltaBuffer.length} exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes}`;
-          console.info(errorMessage);
-          throw new SidetreeError(ErrorCode.RequestHandlerDeltaExceedsMaximumSize, errorMessage);
-        }
+        Delta.validateEncodedDeltaSize(operationRequest.delta);
       }
 
       operationModel = await Operation.parse(request);

@@ -30,7 +30,7 @@ export default class MapFile {
 
     let decompressedBuffer;
     try {
-      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxMapFileSizeInBytes * Compressor.estimatedDecomporessionMultiplier;
+      const maxAllowedDecompressedSizeInBytes = ProtocolParameters.maxMapFileSizeInBytes * Compressor.estimatedDecompressionMultiplier;
       decompressedBuffer = await Compressor.decompress(mapFileBuffer, maxAllowedDecompressedSizeInBytes);
     } catch (error) {
       throw SidetreeError.createFromError(ErrorCode.MapFileDecompressionFailure, error);

@@ -1,5 +1,7 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -155,11 +157,10 @@ describe('TransactionSelector', () => {
       const transactions = getTestTransactionsFor1Block();
       transactions[transactions.length - 1].transactionTime = 12324;
 
-      try {
-        await transactionSelector.selectQualifiedTransactions(transactions);
-      } catch (e) {
-        expect(e.message).toEqual('transactions_not_in_same_block: transaction must be in the same block to perform rate limiting, investigate and fix');
-      }
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        () => transactionSelector.selectQualifiedTransactions(transactions),
+        ErrorCode.TransactionsNotInSameBlock
+      );
     });
 
     it('should deduct the number of operations if some operations in the current block were already in transactions store', async () => {

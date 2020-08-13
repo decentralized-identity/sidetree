@@ -40,7 +40,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 const util = require('util');
 
 describe('RequestHandler', () => {
-  // Surpress console logging during dtesting so we get a compact test summary in console.
+  // Suppress console logging during testing so we get a compact test summary in console.
   console.info = () => { return; };
   console.error = () => { return; };
   console.debug = () => { return; };
@@ -121,7 +121,7 @@ describe('RequestHandler', () => {
     expect(response).toBeDefined();
     expect(response.body.didDocument.id).toEqual(did);
 
-    // Inser the create operation into DB.
+    // Insert the create operation into DB.
     const namedAnchoredCreateOperationModel: AnchoredOperationModel = {
       didUniqueSuffix: createOperation.didUniqueSuffix,
       type: OperationType.Create,
@@ -170,7 +170,7 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
     expect(blockchainWriteSpy).toHaveBeenCalledTimes(1);
 
-    // Verfiy that CAS was invoked to store the chunk file.
+    // Verify that CAS was invoked to store the chunk file.
     const maxChunkFileSize = 20000000;
     const expectedBatchBuffer = await ChunkFile.createBuffer([createOperationData.createOperation], [], []);
     const expectedChunkFileHash = MockCas.getAddress(expectedBatchBuffer);
@@ -192,7 +192,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.RequestHandlerDeltaExceedsMaximumSize);
+    expect(response.body.code).toEqual(ErrorCode.DeltaExceedsMaximumSize);
   });
 
   it('should return bad request if two operations for the same DID is received.', async () => {

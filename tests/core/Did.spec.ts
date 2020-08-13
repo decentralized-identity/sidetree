@@ -1,12 +1,13 @@
+import * as crypto from 'crypto';
 import Did from '../../lib/core/versions/latest/Did';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 
 describe('DID', async () => {
   describe('create()', async () => {
-    it('should create a short-form DID succssefully.', async () => {
+    it('should create a short-form DID successfully.', async () => {
       const expectedDidMethodName = 'sidetree';
       const uniqueSuffix = 'abcdefg';
       const didString = `did:${expectedDidMethodName}:${uniqueSuffix}`;
@@ -18,7 +19,7 @@ describe('DID', async () => {
       expect(did.uniqueSuffix).toEqual(uniqueSuffix);
     });
 
-    it('should create a long-form DID succssefully.', async () => {
+    it('should create a long-form DID successfully.', async () => {
       // Create a long-form DID string.
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const didMethodName = 'sidetree';
@@ -36,7 +37,7 @@ describe('DID', async () => {
       expect(did.createOperation).toEqual(createOperationData.createOperation);
     });
 
-    it('should create a testnet long-form DID succssefully.', async () => {
+    it('should create a testnet long-form DID successfully.', async () => {
       // Create a long-form DID string.
       const createOperationData = await OperationGenerator.generateCreateOperation();
       const didMethodName = 'sidetree:testnet'; // A method name with network ID.
@@ -110,6 +111,22 @@ describe('DID', async () => {
         ErrorCode.DidLongFormNoInitialStateFound
       );
     });
+
+    it('should throw if long-form DID has `delta` that exceeds max size.', async () => {
+      // Create a long-form DID string.
+      const createOperationData = await OperationGenerator.generateCreateOperation();
+      const didMethodName = 'sidetree';
+      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
+      const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
+      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
+      const encodedDelta = crypto.randomBytes(2000).toString('hex');// Intentionally exceeding max size.
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
+
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+        async () => Did.create(longFormDid, didMethodName),
+        ErrorCode.DeltaExceedsMaximumSize
+      );
+    });
   });
 
   describe('constructCreateOperationFromInitialState()', async () => {
@@ -131,7 +148,7 @@ describe('DID', async () => {
       done();
     });
 
-    it('should throw if there are no two parts in intial state.', async (done) => {
+    it('should throw if there are no two parts in initial state.', async (done) => {
       const initialState1 = 'abc.'; // Intentionally not having two parts after splitting by '.'
       const initialState2 = '.abc'; // Intentionally not having two parts after splitting by '.'
 
