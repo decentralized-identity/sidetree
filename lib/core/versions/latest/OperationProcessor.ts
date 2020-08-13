@@ -123,7 +123,6 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     const newDidState = {
-      didUniqueSuffix: operation.didUniqueSuffix,
       document,
       nextRecoveryCommitmentHash: operation.suffixData.recoveryCommitment,
       nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
@@ -229,7 +228,6 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     const newDidState = {
-      didUniqueSuffix: operation.didUniqueSuffix,
       document,
       nextRecoveryCommitmentHash: operation.signedData.recoveryCommitment,
       nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
