@@ -158,7 +158,7 @@ describe('TransactionSelector', () => {
       try {
         await transactionSelector.selectQualifiedTransactions(transactions);
       } catch (e) {
-        expect(e.message).toEqual('transactions_not_in_same_block: transaction must be in the same block to perform rate limiting, investigate and fix');
+        expect(e.message).toEqual('transaction must be in the same block to perform rate limiting, investigate and fix');
       }
     });
 
