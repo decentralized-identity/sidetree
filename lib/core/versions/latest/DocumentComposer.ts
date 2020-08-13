@@ -14,7 +14,7 @@ export default class DocumentComposer {
   /**
    * Transforms the given DID state into a DID Document.
    */
-  public static transformToExternalDocument (didState: DidState, did: string): any {
+  public static transformToExternalDocument (didState: DidState, did: string, published: boolean): any {
     // If the DID is deactivated.
     if (didState.nextRecoveryCommitmentHash === undefined) {
       return { status: 'deactivated' };
@@ -83,6 +83,7 @@ export default class DocumentComposer {
       '@context': 'https://www.w3.org/ns/did-resolution/v1',
       didDocument: didDocument,
       methodMetadata: {
+        published,
         recoveryCommitment: didState.nextRecoveryCommitmentHash,
         updateCommitment: didState.nextUpdateCommitmentHash
       }

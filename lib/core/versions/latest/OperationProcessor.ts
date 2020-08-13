@@ -231,7 +231,6 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDidState = {
       didUniqueSuffix: operation.didUniqueSuffix,
       document,
-      recoveryKey: operation.signedData.recoveryKey,
       nextRecoveryCommitmentHash: operation.signedData.recoveryCommitment,
       nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
@@ -266,7 +265,6 @@ export default class OperationProcessor implements IOperationProcessor {
     const newDidState = {
       document: didState.document,
       // New values below.
-      recoveryKey: undefined,
       nextRecoveryCommitmentHash: undefined,
       nextUpdateCommitmentHash: undefined,
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber

@@ -58,12 +58,13 @@ describe('Resolver', () => {
       };
       await operationStore.put([anchoredOperationModel]);
 
+      const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
       expect(resultingDocument).toEqual(createResultingDocument);
     });
 
-    it('should resolve update operation', async () => {
+    it('should resolve DID that has an update operation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(updateFixtureCreate));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -88,12 +89,13 @@ describe('Resolver', () => {
       };
       await operationStore.put([anchoredUpdateOperation]);
 
+      const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
       expect(resultingDocument).toEqual(updateResultingDocument);
     });
 
-    it('should resolve recover operation', async () => {
+    it('should resolve DID that has a recover operation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(recoverFixtureCreate));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -112,12 +114,13 @@ describe('Resolver', () => {
       const anchoredRecoverOperation = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
       await operationStore.put([anchoredRecoverOperation]);
 
+      const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
       expect(resultingDocument).toEqual(recoverResultingDocument);
     });
 
-    it('should resolve deactivate operation', async () => {
+    it('should resolve DID that has a deactivate operation', async () => {
       const operationBuffer = Buffer.from(JSON.stringify(deactivateFixtureCreate));
       const createOperation = await CreateOperation.parse(operationBuffer);
       const didUniqueSuffix = createOperation.didUniqueSuffix;
@@ -137,7 +140,8 @@ describe('Resolver', () => {
       await operationStore.put([anchoredRecoverOperation]);
 
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`);
+      const published = true;
+      const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
       expect(resultingDocument).toEqual(deactivateResultingDocument);
     });
   });

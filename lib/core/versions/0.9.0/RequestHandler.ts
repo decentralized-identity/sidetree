@@ -132,7 +132,8 @@ export default class RequestHandler implements IRequestHandler {
     }
 
     const did = `did:${this.didMethodName}:${operationModel.didUniqueSuffix}`;
-    const document = DocumentComposer.transformToExternalDocument(didState, did);
+    const published = false;
+    const document = DocumentComposer.transformToExternalDocument(didState, did, published);
 
     return {
       status: ResponseStatus.Succeeded,
@@ -153,10 +154,12 @@ export default class RequestHandler implements IRequestHandler {
       const did = await Did.create(shortOrLongFormDid, this.didMethodName);
 
       let didState: DidState | undefined;
+      let published;
       if (did.isShortForm) {
         didState = await this.resolver.resolve(did.uniqueSuffix);
+        published = true;
       } else {
-        didState = await this.resolveLongFormDid(did);
+        [didState, published] = await this.resolveLongFormDid(did);
       }
 
       if (didState === undefined) {
@@ -166,7 +169,7 @@ export default class RequestHandler implements IRequestHandler {
         };
       }
 
-      const document = DocumentComposer.transformToExternalDocument(didState, shortOrLongFormDid);
+      const document = DocumentComposer.transformToExternalDocument(didState, shortOrLongFormDid, published);
 
       return {
         status: ResponseStatus.Succeeded,
@@ -190,22 +193,24 @@ export default class RequestHandler implements IRequestHandler {
 
   /**
    * Resolves the given long-form DID by resolving using operations found over the network first;
-   * if no operations found, the given create operation will is used to construct the DID state.
+   * if no operations found, the given create operation will be used to construct the DID state.
+   * 
+   * @returns [DID state, published]
    */
-  private async resolveLongFormDid (did: Did): Promise<DidState | undefined> {
+  private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {
     // Attempt to resolve the DID by using operations found from the network first.
     let didState = await this.resolver.resolve(did.uniqueSuffix);
 
     // If DID state found then return it.
     if (didState !== undefined) {
-      return didState;
+      return [didState, true];
     }
 
     // The code reaches here if this DID is not registered on the ledger.
 
     didState = await this.applyCreateOperation(did.createOperation!);
 
-    return didState;
+    return [didState, false];
   }
 
   private async applyCreateOperation (createOperation: OperationModel): Promise<DidState | undefined> {
