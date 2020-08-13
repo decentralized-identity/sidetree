@@ -14,7 +14,7 @@ export default class Delta {
   public static validateEncodedDeltaSize (encodedDelta: string) {
     const deltaBuffer = Buffer.from(encodedDelta);
     if (deltaBuffer.length > ProtocolParameters.maxDeltaSizeInBytes) {
-      const errorMessage = `${deltaBuffer.length} bytes of 'delta' exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes}`;
+      const errorMessage = `${deltaBuffer.length} bytes of 'delta' exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes} bytes.`;
       console.info(errorMessage);
       throw new SidetreeError(ErrorCode.DeltaExceedsMaximumSize, errorMessage);
     }
