@@ -1,10 +1,10 @@
 import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
+import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
+import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
-import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 
 describe('TransactionSelector', () => {
 
