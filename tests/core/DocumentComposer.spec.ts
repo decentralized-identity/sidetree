@@ -12,7 +12,7 @@ describe('DocumentComposer', async () => {
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all purpose types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
-      const [authPublicKey] = await OperationGenerator.generateKeyPair('authePbulicKey', [PublicKeyPurpose.Auth]);
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
       };
@@ -23,10 +23,12 @@ describe('DocumentComposer', async () => {
         nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
 
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
+      const published = true;
+      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
 
       expect(result['@context']).toEqual('https://www.w3.org/ns/did-resolution/v1');
       expect(result.methodMetadata).toEqual({
+        published: true,
         recoveryCommitment: 'anyCommitmentHash',
         updateCommitment: 'anyCommitmentHash'
       });
@@ -43,7 +45,7 @@ describe('DocumentComposer', async () => {
         authentication: [
           '#anySigningKey', // reference because it is a general purpose key
           {
-            id: '#authePbulicKey', // object here because it is an auth purpose only key
+            id: '#authPublicKey', // object here because it is an auth purpose only key
             controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {
@@ -52,6 +54,28 @@ describe('DocumentComposer', async () => {
           }
         ]
       });
+    });
+
+    it('should output method metadata with the given `published` value.', async () => {
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
+      const document = {
+        public_keys: [anySigningPublicKey, authPublicKey]
+      };
+      const didState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123,
+        nextRecoveryCommitmentHash: 'anyCommitmentHash',
+        nextUpdateCommitmentHash: 'anyCommitmentHash'
+      };
+
+      let published = false;
+      let result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
+      expect(result.methodMetadata.published).toEqual(published);
+
+      published = true;
+      result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
+      expect(result.methodMetadata.published).toEqual(published);
     });
 
     it('should return status deactivated if next recovery commit hash is undefined', async () => {
@@ -67,7 +91,8 @@ describe('DocumentComposer', async () => {
         nextUpdateCommitmentHash: 'anyCommitmentHash'
       };
 
-      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix');
+      const published = true;
+      const result = DocumentComposer.transformToExternalDocument(didState, 'did:method:suffix', published);
       expect(result).toEqual({ status: 'deactivated' });
     });
   });
@@ -483,7 +508,7 @@ describe('DocumentComposer', async () => {
 
   describe('validateId()', async () => {
     it('should throw if ID given is not using characters from Base64URL character set.', async () => {
-      const invalidId = 'AnInavlidIdWith#';
+      const invalidId = 'AnInvalidIdWith#';
 
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerIdNotUsingBase64UrlCharacterSet);
       expect(() => { (DocumentComposer as any).validateId(invalidId); }).toThrow(expectedError);

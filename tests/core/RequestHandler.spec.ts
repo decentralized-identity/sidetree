@@ -360,7 +360,7 @@ describe('RequestHandler', () => {
   });
 
   describe('resolveLongFormDid()', async () => {
-    it('should return the resolved DID document if it is resolvable as a registered DID.', async () => {
+    it('should return the resolved DID document, and `published` value as `true` if it is resolvable as a registered DID.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');
       const document = {
         publicKeys: [anySigningPublicKey]
@@ -373,8 +373,9 @@ describe('RequestHandler', () => {
       };
       spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
 
-      const didState = await (requestHandler as any).resolveLongFormDid('unused');
+      const [didState, published] = await (requestHandler as any).resolveLongFormDid('unused');
 
+      expect(published).toEqual(true);
       expect(didState.document.publicKeys.length).toEqual(1);
       expect(didState.document.publicKeys[0].jwk).toEqual(anySigningPublicKey.jwk);
     });

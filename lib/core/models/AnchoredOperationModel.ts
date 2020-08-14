@@ -10,7 +10,7 @@ export default interface AnchoredOperationModel {
   didUniqueSuffix: string;
   /** The type of operation. */
   type: OperationType;
-  /** The logical blockchain time that this opeartion was anchored on the blockchain */
+  /** The logical blockchain time that this operation was anchored on the blockchain */
   transactionTime: number;
   /** The transaction number of the transaction this operation was batched within. */
   transactionNumber: number;
