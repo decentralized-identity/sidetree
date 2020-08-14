@@ -23,6 +23,8 @@ export default class Did {
   public createOperation?: CreateOperation;
   /** The short form. */
   public shortForm: string;
+  /** The long form. */
+  public longForm: string | undefined;
 
   /**
    * Parses the input string as Sidetree DID.
@@ -51,6 +53,7 @@ export default class Did {
     } else {
       // This is long-form.
       this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
+      this.longForm = did;
     }
 
     if (this.uniqueSuffix.length === 0) {
