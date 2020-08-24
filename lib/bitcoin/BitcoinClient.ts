@@ -155,15 +155,15 @@ export default class BitcoinClient {
   public async createLockTransaction (lockAmountInSatoshis: number, lockDurationInBlocks: number): Promise<BitcoinLockTransactionModel> {
     const unspentCoins = await this.getUnspentOutputs(this.bitcoinWallet.getAddress());
 
-    const [freezeTransaction, redeemScriptAsHex] = await this.createFreezeTransaction(unspentCoins, lockDurationInBlocks, lockAmountInSatoshis);
+    const [freezeTransaction, redeemScript] = await this.createFreezeTransaction(unspentCoins, lockDurationInBlocks, lockAmountInSatoshis);
 
-    const signedTransaction = await this.bitcoinWallet.signTransaction(freezeTransaction);
+    const signedTransaction = await this.bitcoinWallet.signFreezeTransaction(freezeTransaction, redeemScript);
     const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
 
     return {
       transactionId: signedTransaction.id,
       transactionFee: freezeTransaction.getFee(),
-      redeemScriptAsHex: redeemScriptAsHex,
+      redeemScriptAsHex: redeemScript.toHex(),
       serializedTransactionObject: serializedTransaction
     };
   }
@@ -182,19 +182,19 @@ export default class BitcoinClient {
 
     const existingLockTransaction = await this.getRawTransactionRpc(existingLockTransactionId);
 
-    const [freezeTransaction, redeemScriptAsHex] =
+    const [freezeTransaction, redeemScript] =
       await this.createSpendToFreezeTransaction(existingLockTransaction, existingLockDurationInBlocks, newLockDurationInBlocks);
 
     // Now sign the transaction
     const previousFreezeScript = BitcoinClient.createFreezeScript(existingLockDurationInBlocks, this.bitcoinWallet.getAddress());
-    const signedTransaction = await this.bitcoinWallet.signSpendFromFreezeTransaction(freezeTransaction, previousFreezeScript);
+    const signedTransaction = await this.bitcoinWallet.signSpendFromFreezeTransaction(freezeTransaction, previousFreezeScript, redeemScript);
 
     const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
 
     return {
       transactionId: signedTransaction.id,
       transactionFee: freezeTransaction.getFee(),
-      redeemScriptAsHex: redeemScriptAsHex,
+      redeemScriptAsHex: redeemScript.toHex(),
       serializedTransactionObject: serializedTransaction
     };
   }
@@ -213,7 +213,7 @@ export default class BitcoinClient {
 
     // Now sign the transaction
     const previousFreezeScript = BitcoinClient.createFreezeScript(existingLockDurationInBlocks, this.bitcoinWallet.getAddress());
-    const signedTransaction = await this.bitcoinWallet.signSpendFromFreezeTransaction(releaseLockTransaction, previousFreezeScript);
+    const signedTransaction = await this.bitcoinWallet.signSpendFromFreezeTransaction(releaseLockTransaction, previousFreezeScript, undefined);
 
     const serializedTransaction = BitcoinClient.serializeSignedTransaction(signedTransaction);
 
@@ -547,7 +547,7 @@ export default class BitcoinClient {
   private async createFreezeTransaction (
     unspentCoins: Transaction.UnspentOutput[],
     freezeDurationInBlocks: number,
-    freezeAmountInSatoshis: number): Promise<[Transaction, string]> {
+    freezeAmountInSatoshis: number): Promise<[Transaction, Script]> {
 
     console.info(`Creating a freeze transaction for amount: ${freezeAmountInSatoshis} satoshis with freeze time in blocks: ${freezeDurationInBlocks}`);
 
@@ -565,13 +565,13 @@ export default class BitcoinClient {
 
     freezeTransaction.fee(transactionFee);
 
-    return [freezeTransaction, freezeScript.toHex()];
+    return [freezeTransaction, freezeScript];
   }
 
   private async createSpendToFreezeTransaction (
     previousFreezeTransaction: BitcoreTransactionWrapper,
     previousFreezeDurationInBlocks: number,
-    newFreezeDurationInBlocks: number): Promise<[Transaction, string]> {
+    newFreezeDurationInBlocks: number): Promise<[Transaction, Script]> {
 
     // tslint:disable-next-line: max-line-length
     console.info(`Creating a freeze transaction with freeze time in blocks: ${newFreezeDurationInBlocks} from previously frozen transaction with id: ${previousFreezeTransaction.id}`);
@@ -587,7 +587,7 @@ export default class BitcoinClient {
       previousFreezeDurationInBlocks,
       payToScriptAddress);
 
-    return [reFreezeTransaction, freezeScript.toHex()];
+    return [reFreezeTransaction, freezeScript];
   }
 
   private async createSpendToWalletTransaction (
