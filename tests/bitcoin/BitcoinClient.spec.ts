@@ -200,7 +200,7 @@ describe('BitcoinClient', async () => {
       const createFreezeTxnSpy = spyOn(bitcoinClient as any, 'createFreezeTransaction').and.returnValue(Promise.resolve(mockCreateFreezeTxnOutput));
 
       const mockSignedTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 19988);
-      const signSpy = spyOn(bitcoinClient['bitcoinWallet'], 'signTransaction').and.returnValue(Promise.resolve(mockSignedTxn));
+      const signSpy = spyOn(bitcoinClient['bitcoinWallet'], 'signFreezeTransaction').and.returnValue(Promise.resolve(mockSignedTxn));
 
       const mockSerializedTxn = 'mocked serialized transaction';
       const serializeSpy = spyOn(BitcoinClient as any, 'serializeSignedTransaction').and.returnValue(mockSerializedTxn);
@@ -292,7 +292,7 @@ describe('BitcoinClient', async () => {
 
       expect(createBack2WalletTxnSpy).toHaveBeenCalledWith(mockPreviousFreezeTxn, existingLockBlockInput);
       expect(createScriptSpy).toHaveBeenCalledWith(existingLockBlockInput, walletAddressFromBitcoinClient);
-      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockPreviousRedeemScript);
+      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockPreviousRedeemScript, undefined);
       expect(serializeSpy).toHaveBeenCalledWith(mockSignedTxn);
 
       const expectedOutput: BitcoinLockTransactionModel = {
