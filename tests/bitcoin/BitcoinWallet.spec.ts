@@ -37,15 +37,31 @@ describe('BitcoinWallet', () => {
     });
   });
 
+  describe('signFreezeTransaction', () => {
+    it('should call the other function for signing.', async (done) => {
+      const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10);
+      const signTxnSpy = spyOn(wallet, 'signTransaction').and.returnValue(Promise.resolve(transaction));
+
+      const outputRedeemScript = Script.empty();
+
+      const actual = await wallet.signFreezeTransaction(transaction, outputRedeemScript);
+      expect(signTxnSpy).toHaveBeenCalled();
+      expect(actual).toEqual(transaction);
+
+      done();
+    });
+  });
+
   describe('signSpendFromFreezeTransaction', () => {
     it('should sign the transaction correctly.', async (done) => {
       const unspentCoins = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1000);
       const transaction = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 10);
       transaction.from([unspentCoins]);
 
-      const redeemScript = Script.empty().add(117).add(177);
+      const inputRedeemScript = Script.empty().add(117).add(177);
+      const outputRedeemScript = Script.empty();
 
-      const actual = await wallet.signSpendFromFreezeTransaction(transaction, redeemScript);
+      const actual = await wallet.signSpendFromFreezeTransaction(transaction, inputRedeemScript, outputRedeemScript);
       expect(actual).toEqual(transaction);
 
       // The input script should have 3 parts: signature, public key of the bitcoinClient.privateKey, and redeem script
@@ -55,7 +71,7 @@ describe('BitcoinWallet', () => {
       expect(inputScriptAsmParts.length).toEqual(3);
       expect(inputScriptAsmParts[0].length).toBeGreaterThan(0); // Signature
       expect(inputScriptAsmParts[1]).toEqual(wallet['walletPublicKeyAsBuffer'].toString('hex'));
-      expect(inputScriptAsmParts[2]).toEqual(redeemScript.toBuffer().toString('hex'));
+      expect(inputScriptAsmParts[2]).toEqual(inputRedeemScript.toBuffer().toString('hex'));
 
       done();
     });

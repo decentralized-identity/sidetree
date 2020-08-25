@@ -191,7 +191,7 @@ describe('BitcoinClient', async () => {
     it('should create the lock transaction.', async () => {
       const mockFreezeTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString);
       spyOn(mockFreezeTxn, 'getFee').and.returnValue(122987);
-      const mockRedeemScript = 'some redeem script';
+      const mockRedeemScript = Script.empty().add(177);
 
       const mockUnspentOutput = BitcoinDataGenerator.generateUnspentCoin(bitcoinWalletImportString, 1233423426);
       spyOn(bitcoinClient as any, 'getUnspentOutputs').and.returnValue(Promise.resolve([mockUnspentOutput]));
@@ -200,7 +200,7 @@ describe('BitcoinClient', async () => {
       const createFreezeTxnSpy = spyOn(bitcoinClient as any, 'createFreezeTransaction').and.returnValue(Promise.resolve(mockCreateFreezeTxnOutput));
 
       const mockSignedTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 19988);
-      const signSpy = spyOn(bitcoinClient['bitcoinWallet'], 'signTransaction').and.returnValue(Promise.resolve(mockSignedTxn));
+      const signSpy = spyOn(bitcoinClient['bitcoinWallet'], 'signFreezeTransaction').and.returnValue(Promise.resolve(mockSignedTxn));
 
       const mockSerializedTxn = 'mocked serialized transaction';
       const serializeSpy = spyOn(BitcoinClient as any, 'serializeSignedTransaction').and.returnValue(mockSerializedTxn);
@@ -211,13 +211,13 @@ describe('BitcoinClient', async () => {
       const actual = await bitcoinClient.createLockTransaction(lockAmountInput, lockUntilBlockInput);
 
       expect(createFreezeTxnSpy).toHaveBeenCalledWith([mockUnspentOutput], lockUntilBlockInput, lockAmountInput);
-      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn);
+      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockRedeemScript);
       expect(serializeSpy).toHaveBeenCalledWith(mockSignedTxn);
 
       const expectedOutput: BitcoinLockTransactionModel = {
         transactionId: mockSignedTxn.id,
         transactionFee: mockFreezeTxn.getFee(),
-        redeemScriptAsHex: mockRedeemScript,
+        redeemScriptAsHex: mockRedeemScript.toHex(),
         serializedTransactionObject: mockSerializedTxn
       };
       expect(actual).toEqual(expectedOutput);
@@ -231,14 +231,14 @@ describe('BitcoinClient', async () => {
       spyOn(mockFreezeTxn, 'getFee').and.returnValue(122987);
 
       const mockPreviousFreezeTxn = generateBitcoreTransactionWrapper(bitcoinWalletImportString);
-      const mockRedeemScript = 'some redeem script';
+      const mockRedeemScript = Script.empty().add(177);
 
       const mockCreateFreezeTxnOutput = [mockFreezeTxn, mockRedeemScript];
       const createFreezeTxnSpy = spyOn(bitcoinClient as any, 'createSpendToFreezeTransaction').and.returnValue(Promise.resolve(mockCreateFreezeTxnOutput));
 
       spyOn(bitcoinClient as any, 'getRawTransactionRpc').and.returnValue(Promise.resolve(mockPreviousFreezeTxn));
 
-      const mockPreviousRedeemScript = 'previous redeem script';
+      const mockPreviousRedeemScript = Script.empty().add(179);
       const createScriptSpy = spyOn(BitcoinClient as any, 'createFreezeScript').and.returnValue(mockPreviousRedeemScript);
 
       const mockSignedTxn = BitcoinDataGenerator.generateBitcoinTransaction(bitcoinWalletImportString, 19988);
@@ -254,13 +254,13 @@ describe('BitcoinClient', async () => {
 
       expect(createFreezeTxnSpy).toHaveBeenCalledWith(mockPreviousFreezeTxn, existingLockBlockInput, lockUntilBlockInput);
       expect(createScriptSpy).toHaveBeenCalledWith(existingLockBlockInput, walletAddressFromBitcoinClient);
-      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockPreviousRedeemScript);
+      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockPreviousRedeemScript, mockRedeemScript);
       expect(serializeSpy).toHaveBeenCalledWith(mockSignedTxn);
 
       const expectedOutput: BitcoinLockTransactionModel = {
         transactionId: mockSignedTxn.id,
         transactionFee: mockFreezeTxn.getFee(),
-        redeemScriptAsHex: mockRedeemScript,
+        redeemScriptAsHex: mockRedeemScript.toHex(),
         serializedTransactionObject: mockSerializedTxn
       };
       expect(actual).toEqual(expectedOutput);
@@ -292,7 +292,7 @@ describe('BitcoinClient', async () => {
 
       expect(createBack2WalletTxnSpy).toHaveBeenCalledWith(mockPreviousFreezeTxn, existingLockBlockInput);
       expect(createScriptSpy).toHaveBeenCalledWith(existingLockBlockInput, walletAddressFromBitcoinClient);
-      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockPreviousRedeemScript);
+      expect(signSpy).toHaveBeenCalledWith(mockFreezeTxn, mockPreviousRedeemScript, undefined);
       expect(serializeSpy).toHaveBeenCalledWith(mockSignedTxn);
 
       const expectedOutput: BitcoinLockTransactionModel = {
@@ -757,7 +757,7 @@ describe('BitcoinClient', async () => {
 
       const [actualTxn, redeemScript] = await bitcoinClient['createFreezeTransaction']([mockUnspentOutput], mockFreezeUntilBlock, mockFreezeAmount);
 
-      expect(redeemScript).toEqual(mockRedeemScript.toHex());
+      expect(redeemScript).toEqual(mockRedeemScript);
       expect(actualTxn.getFee()).toEqual(mockTxnFee);
 
       // There should be 2 outputs
@@ -794,7 +794,7 @@ describe('BitcoinClient', async () => {
       // tslint:disable-next-line: max-line-length
       const [actualTxn, redeemScript] = await bitcoinClient['createSpendToFreezeTransaction'](mockFreezeTxn1, mockFreezeUntilPreviousBlock, mockFreezeUntilBlock);
       expect(actualTxn).toEqual(mockFreezeTxn2);
-      expect(redeemScript).toEqual(mockRedeemScript.toHex());
+      expect(redeemScript).toEqual(mockRedeemScript);
       expect(createScriptSpy).toHaveBeenCalledWith(mockFreezeUntilBlock, walletAddressFromBitcoinClient);
 
       const expectedPayToScriptAddress = new Address(mockRedeemScriptHashOutput);
