@@ -12,7 +12,7 @@ export default interface ICas {
   /**
    * Reads the content of the given address in CAS.
    * @param maxSizeInBytes The maximum allowed size limit of the content.
-   * @returns The fetch result containg the content buffer if found.
+   * @returns The fetch result containing the content buffer if found.
    *          The result `code` is set to `FetchResultCode.MaxSizeExceeded` if the content exceeds the specified max size.
    */
   read (address: string, maxSizeInBytes: number): Promise<FetchResult>;

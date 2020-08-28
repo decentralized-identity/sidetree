@@ -43,7 +43,7 @@ async function createOperationChain (
       currentPublicKey.jwk,
       currentPrivateKey,
       newPublicKey, // we add the same key as the secret public key value for convenience, this should not be by user
-      Multihash.canonicalizeThenHashThenEncode(newPublicKey.jwk)
+      Multihash.canonicalizeThenDoubleHashThenEncode(newPublicKey.jwk)
     );
     currentPublicKey = newPublicKey;
     currentPrivateKey = newPrivateKey;

@@ -14,8 +14,26 @@ export default class Multihash {
   /**
    * Hashes the content using the hashing algorithm specified.
    * @param hashAlgorithmInMultihashCode The hashing algorithm to use. If not given, latest supported hashing algorithm will be used.
+   * @returns A multihash buffer.
    */
   public static hash (content: Buffer, hashAlgorithmInMultihashCode?: number): Buffer {
+    if (hashAlgorithmInMultihashCode === undefined) {
+      hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
+    }
+
+    const conventionalHash = this.hashAsNonMultihashBuffer(content, hashAlgorithmInMultihashCode);
+
+    const multihash = multihashes.encode(conventionalHash, hashAlgorithmInMultihashCode);
+
+    return multihash;
+  }
+
+  /**
+   * Hashes the content using the hashing algorithm specified as a generic (non-multihash) hash.
+   * @param hashAlgorithmInMultihashCode The hashing algorithm to use. If not given, latest supported hashing algorithm will be used.
+   * @returns A multihash buffer.
+   */
+  public static hashAsNonMultihashBuffer (content: Buffer, hashAlgorithmInMultihashCode?: number): Buffer {
     if (hashAlgorithmInMultihashCode === undefined) {
       hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
     }
@@ -29,19 +47,19 @@ export default class Multihash {
         throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
     }
 
-    const hashAlgorithmName = multihashes.codes[hashAlgorithmInMultihashCode];
-    const multihash = multihashes.encode(hash, hashAlgorithmName);
-
-    return multihash;
+    return hash;
   }
 
   /**
-   * Canonicalize the given content, then multihashes the result using the lastest supported hash algorithm, then encodes the multihash.
+   * Canonicalize the given content, then double hashes the result using the latest supported hash algorithm, then encodes the multihash.
    * Mainly used for testing purposes.
    */
-  public static canonicalizeThenHashThenEncode (content: object) {
+  public static canonicalizeThenDoubleHashThenEncode (content: object) {
     const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
-    const multihashEncodedString = Multihash.hashThenEncode(contentBuffer, ProtocolParameters.hashAlgorithmInMultihashCode);
+
+    // Double hash.
+    const intermediateHashBuffer = Multihash.hashAsNonMultihashBuffer(contentBuffer, ProtocolParameters.hashAlgorithmInMultihashCode);
+    const multihashEncodedString = Multihash.hashThenEncode(intermediateHashBuffer, ProtocolParameters.hashAlgorithmInMultihashCode);
     return multihashEncodedString;
   }
 
@@ -123,9 +141,10 @@ export default class Multihash {
   }
 
   /**
-   * Canonicalizes the given content object, then verifies the multihash against the canonicalized string as a UTF8 buffer.
+   * Canonicalizes the given content object, then verifies the multihash as a "double hash"
+   * (ie. the given multihash is the hash of a hash) against the canonicalized string as a UTF8 buffer.
    */
-  public static canonicalizeAndVerify (content: object | undefined, encodedMultihash: string): boolean {
+  public static canonicalizeAndVerifyDoubleHash (content: object | undefined, encodedMultihash: string): boolean {
     if (content === undefined) {
       return false;
     }
@@ -133,7 +152,31 @@ export default class Multihash {
     try {
       const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
 
-      return Multihash.verify(contentBuffer, encodedMultihash);
+      return Multihash.verifyDoubleHash(contentBuffer, encodedMultihash);
+    } catch (error) {
+      console.log(error);
+      return false;
+    }
+  }
+
+  /**
+   * Verifies the multihash as a "double hash" (ie. the given multihash is a hash of a hash) against the content `Buffer`.
+   * Note that the intermediate hash is required to be a non-multihash hash by the same hash algorithm as the final multihash.
+   */
+  private static verifyDoubleHash (content: Buffer, encodedMultihash: string): boolean {
+
+    try {
+      const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
+      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(expectedMultihashBuffer);
+
+      const intermediateHashBuffer = Multihash.hashAsNonMultihashBuffer(content, hashAlgorithmCode);
+      const actualMultihashBuffer = Multihash.hash(intermediateHashBuffer, hashAlgorithmCode);
+
+      if (Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) !== 0) {
+        return false;
+      }
+
+      return true;
     } catch (error) {
       console.log(error);
       return false;
@@ -146,12 +189,12 @@ export default class Multihash {
   private static verify (content: Buffer, encodedMultihash: string): boolean {
 
     try {
-      const multihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
+      const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
+      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(expectedMultihashBuffer);
 
-      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(multihashBuffer);
-      const actualHashBuffer = Multihash.hash(content, hashAlgorithmCode);
+      const actualMultihashBuffer = Multihash.hash(content, hashAlgorithmCode);
 
-      if (Buffer.compare(actualHashBuffer, multihashBuffer) !== 0) {
+      if (Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) !== 0) {
         return false;
       }
 

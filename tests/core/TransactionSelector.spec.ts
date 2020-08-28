@@ -157,7 +157,7 @@ describe('TransactionSelector', () => {
       const transactions = getTestTransactionsFor1Block();
       transactions[transactions.length - 1].transactionTime = 12324;
 
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
+      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => transactionSelector.selectQualifiedTransactions(transactions),
         ErrorCode.TransactionsNotInSameBlock
       );

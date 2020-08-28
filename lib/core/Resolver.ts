@@ -202,7 +202,7 @@ export default class Resolver {
 
   /**
    * Constructs a single commit value -> operation lookup map by looping through each supported hash algorithm,
-   * hashing each operations as key, then adding the result to a map.
+   * hashing each operation's reveal value as key, then adding the result to a map.
    */
   private async constructCommitValueToOperationLookupMap (nonCreateOperations: AnchoredOperationModel[])
     : Promise<Map<string, AnchoredOperationModel[]>> {

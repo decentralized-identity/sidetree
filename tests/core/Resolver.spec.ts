@@ -180,7 +180,7 @@ describe('Resolver', () => {
         signingPublicKey.jwk,
         signingPrivateKey,
         additionalKey,
-        Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk)
+        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk)
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
       const anchoredUpdateOperation1PriorRecovery: AnchoredOperationModel = {
@@ -245,7 +245,7 @@ describe('Resolver', () => {
         newSigningPublicKey.jwk,
         newSigningPrivateKey,
         newKey2ForUpdate1AfterRecovery,
-        Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk)
+        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk)
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
       const anchoredUpdateOperation1AfterRecovery: AnchoredOperationModel = {

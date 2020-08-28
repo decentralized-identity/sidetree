@@ -34,7 +34,7 @@ async function createUpdateSequence (
   let currentPrivateKey = privateKey;
   for (let i = 0; i < numberOfUpdates; ++i) {
     const [nextUpdateKey, nextPrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
     const patches = [
       {
         action: 'remove-service-endpoints',
@@ -390,7 +390,7 @@ describe('OperationProcessor', async () => {
       // Generate key(s) and service endpoint(s) to be included in the DID Document.
       [recoveryPublicKey, recoveryPrivateKey] = await Jwk.generateEs256kKeyPair();
       [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('signingKey');
-      nextRecoveryCommitmentHash = Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey);
+      nextRecoveryCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey);
       const serviceEndpoints = OperationGenerator.generateServiceEndpoints(['dummyHubUri']);
 
       // Create the initial create operation.
@@ -580,7 +580,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.document).toEqual({ });
 
-        const expectedNewRecoveryCommitment = Multihash.canonicalizeThenHashThenEncode(anyNewRecoveryPublicKey);
+        const expectedNewRecoveryCommitment = Multihash.canonicalizeThenDoubleHashThenEncode(anyNewRecoveryPublicKey);
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(expectedNewRecoveryCommitment);
       });
     });

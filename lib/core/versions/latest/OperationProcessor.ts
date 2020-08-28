@@ -67,22 +67,23 @@ export default class OperationProcessor implements IOperationProcessor {
 
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
-    let revealValueBuffer;
+    let canonicalizedKeyBuffer;
     switch (operation.type) {
       case OperationType.Recover:
         const recoverOperation = (operation as RecoverOperation);
-        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
+        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
         break;
       case OperationType.Update:
         const updateOperation = (operation as UpdateOperation);
-        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
+        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
         break;
       default: // This is a deactivate.
         const deactivateOperation = (operation as DeactivateOperation);
-        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
+        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
         break;
     }
 
+    const revealValueBuffer = Multihash.hashAsNonMultihashBuffer(canonicalizedKeyBuffer);
     return revealValueBuffer;
   }
 
@@ -143,7 +144,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await UpdateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the update key hash.
-    const isValidUpdateKey = Multihash.canonicalizeAndVerify(operation.signedData.updateKey, didState.nextUpdateCommitmentHash!);
+    const isValidUpdateKey = Multihash.canonicalizeAndVerifyDoubleHash(operation.signedData.updateKey, didState.nextUpdateCommitmentHash!);
     if (!isValidUpdateKey) {
       return didState;
     }
@@ -194,7 +195,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the recovery key hash.
-    const isValidRecoveryKey = Multihash.canonicalizeAndVerify(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
+    const isValidRecoveryKey = Multihash.canonicalizeAndVerifyDoubleHash(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
     if (!isValidRecoveryKey) {
       return didState;
     }
@@ -248,7 +249,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await DeactivateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the recovery key hash.
-    const isValidRecoveryKey = Multihash.canonicalizeAndVerify(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
+    const isValidRecoveryKey = Multihash.canonicalizeAndVerifyDoubleHash(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
     if (!isValidRecoveryKey) {
       return didState;
     }
