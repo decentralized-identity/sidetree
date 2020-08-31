@@ -21,8 +21,6 @@ import VersionModel from '../common/models/VersionModel';
  * The class that handles code versioning.
  */
 export default class VersionManager implements IVersionManager, IVersionMetadataFetcher {
-  public allSupportedHashAlgorithms: number[] = [];
-
   // Reverse sorted implementation versions. ie. latest version first.
   private versionsReverseSorted: VersionModel[];
 
@@ -104,10 +102,6 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
       }
       this.versionMetadatas.set(version, versionMetadata);
     }
-
-    // Get and cache supported hash algorithms.
-    const hashAlgorithmsWithDuplicates = Array.from(this.versionMetadatas.values(), value => value.hashAlgorithmInMultihashCode);
-    this.allSupportedHashAlgorithms = Array.from(new Set(hashAlgorithmsWithDuplicates)); // This line removes duplicates.
   }
 
   /**

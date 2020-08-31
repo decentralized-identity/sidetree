@@ -604,11 +604,11 @@ describe('OperationProcessor', async () => {
     });
   });
 
-  describe('getRevealValue()', () => {
+  describe('getMultihashRevealValue()', () => {
     it('should throw if a create operation is given.', async () => {
       const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
 
-      await expectAsync(operationProcessor.getRevealValue(createOperationData.anchoredOperationModel))
+      await expectAsync(operationProcessor.getMultihashRevealValue(createOperationData.anchoredOperationModel))
         .toBeRejectedWith(new SidetreeError(ErrorCode.OperationProcessorCreateOperationDoesNotHaveRevealValue));
     });
   });

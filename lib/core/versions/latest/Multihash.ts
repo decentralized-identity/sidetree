@@ -33,11 +33,7 @@ export default class Multihash {
    * @param hashAlgorithmInMultihashCode The hashing algorithm to use. If not given, latest supported hashing algorithm will be used.
    * @returns A multihash buffer.
    */
-  public static hashAsNonMultihashBuffer (content: Buffer, hashAlgorithmInMultihashCode?: number): Buffer {
-    if (hashAlgorithmInMultihashCode === undefined) {
-      hashAlgorithmInMultihashCode = ProtocolParameters.hashAlgorithmInMultihashCode;
-    }
-
+  public static hashAsNonMultihashBuffer (content: Buffer, hashAlgorithmInMultihashCode: number): Buffer {
     let hash;
     switch (hashAlgorithmInMultihashCode) {
       case 18: // SHA256
@@ -74,10 +70,11 @@ export default class Multihash {
   }
 
   /**
-   * Given a multihash, returns the code of the hash algorithm used.
+   * Given a multihash, returns the code of the hash algorithm, and digest buffer.
+   * @returns [hash algorithm code, digest buffer]
    * @throws `SidetreeError` if hash algorithm used for the given multihash is unsupported.
    */
-  public static getHashAlgorithmCode (multihashBuffer: Buffer): number {
+  public static decode (multihashBuffer: Buffer): { algorithm: number, hash: Buffer } {
     const multihash = multihashes.decode(multihashBuffer);
 
     // Hash algorithm must be SHA-256.
@@ -85,7 +82,10 @@ export default class Multihash {
       throw new SidetreeError(ErrorCode.MultihashUnsupportedHashAlgorithm);
     }
 
-    return multihash.code;
+    return {
+      algorithm: multihash.code,
+      hash: multihash.digest
+    };
   }
 
   /**
@@ -167,7 +167,7 @@ export default class Multihash {
 
     try {
       const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
-      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(expectedMultihashBuffer);
+      const hashAlgorithmCode = Multihash.decode(expectedMultihashBuffer).algorithm;
 
       const intermediateHashBuffer = Multihash.hashAsNonMultihashBuffer(content, hashAlgorithmCode);
       const actualMultihashBuffer = Multihash.hash(intermediateHashBuffer, hashAlgorithmCode);
@@ -190,7 +190,7 @@ export default class Multihash {
 
     try {
       const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);
-      const hashAlgorithmCode = Multihash.getHashAlgorithmCode(expectedMultihashBuffer);
+      const hashAlgorithmCode = Multihash.decode(expectedMultihashBuffer).algorithm;
 
       const actualMultihashBuffer = Multihash.hash(content, hashAlgorithmCode);
 
