@@ -172,11 +172,7 @@ export default class Multihash {
       const intermediateHashBuffer = Multihash.hashAsNonMultihashBuffer(content, hashAlgorithmCode);
       const actualMultihashBuffer = Multihash.hash(intermediateHashBuffer, hashAlgorithmCode);
 
-      if (Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) !== 0) {
-        return false;
-      }
-
-      return true;
+      return Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) == 0;
     } catch (error) {
       console.log(error);
       return false;
@@ -194,11 +190,7 @@ export default class Multihash {
 
       const actualMultihashBuffer = Multihash.hash(content, hashAlgorithmCode);
 
-      if (Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) !== 0) {
-        return false;
-      }
-
-      return true;
+      return Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) == 0;
     } catch (error) {
       console.log(error);
       return false;
