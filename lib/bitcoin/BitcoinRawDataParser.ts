@@ -16,6 +16,7 @@ export default class BitcoinRawDataParser {
   private static magicBytes = {
     testnet: Buffer.from('0b110907', 'hex'),
     mainnet: Buffer.from('f9beb4d9', 'hex'),
+    regtest: Buffer.from('fabfb5da', 'hex'),
     skip: Buffer.from('00000000', 'hex') // this means to skip the rest of the file
   };
   private static magicBytesLength = 4;
@@ -35,14 +36,17 @@ export default class BitcoinRawDataParser {
 
     // loop through each block within the buffer
     while (cursor < rawBlockDataFileBuffer.length) {
+
       // first 4 bytes are magic bytes
       const actualMagicBytes = rawBlockDataFileBuffer.subarray(cursor, cursor + BitcoinRawDataParser.magicBytesLength);
       if (actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.skip)) {
         break;
       }
-      if (!actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.mainnet) && !actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.testnet)) {
+      if (!actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.mainnet) &&
+          !actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.testnet) &&
+          !actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.regtest)) {
         throw new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes,
-          `${actualMagicBytes.toString('hex')} at cursor position ${cursor} is not valid bitcoin testnet or mainnet magic bytes`);
+          `${actualMagicBytes.toString('hex')} at cursor position ${cursor} is not valid bitcoin mainnet, testnet or regtest magic bytes`);
       }
       cursor += BitcoinRawDataParser.magicBytesLength;
 
@@ -53,6 +57,8 @@ export default class BitcoinRawDataParser {
 
       // the next n bytes are the block data
       const blockData = rawBlockDataFileBuffer.subarray(cursor, cursor + blockSizeInBytes);
+      cursor += blockSizeInBytes;
+
       let block: Block;
       try {
         block = new Block(blockData);
@@ -64,8 +70,17 @@ export default class BitcoinRawDataParser {
       const coinbaseInputScript = (block.transactions[0].inputs[0] as any)._scriptBuffer as Buffer;
       // this denotes how many bytes following represent the block height
       const heightBytes = coinbaseInputScript.readUInt8(0);
+
+      let blockHeight;
+      // for regtest blocks 1-16 the blockheight is recorded as 0x51..0x with no heightBytes so adjust this here if it is encountered
+      // see: https://bitcoin.stackexchange.com/questions/97116/why-is-the-data-format-for-block-height-in-coinbase-scriptsigs-inconsistent-for
+      if (actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.regtest) &&
+          heightBytes > 80 && heightBytes < 97) {
+        blockHeight = heightBytes - 80;
+      } else {
       // the next n bytes are the block height in little endian
-      const blockHeight = coinbaseInputScript.readUIntLE(1, heightBytes);
+        blockHeight = coinbaseInputScript.readUIntLE(1, heightBytes);
+      }
 
       const transactionModels = BitcoinClient.convertToBitcoinTransactionModels(block);
 
@@ -75,7 +90,6 @@ export default class BitcoinRawDataParser {
         previousHash: Buffer.from(block.header.prevHash).reverse().toString('hex'),
         transactions: transactionModels
       });
-      cursor += blockSizeInBytes;
       count++;
     }
 

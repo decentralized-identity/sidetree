@@ -24,7 +24,7 @@ describe('BitcoinRawDataParser', () => {
       expect(() => {
         BitcoinRawDataParser.parseRawDataFile(blockDataFileBuffer);
       }).toThrow(new SidetreeError(ErrorCode.BitcoinRawDataParserInvalidMagicBytes,
-        'ffffffff at cursor position 0 is not valid bitcoin testnet or mainnet magic bytes'));
+        'ffffffff at cursor position 0 is not valid bitcoin mainnet, testnet or regtest magic bytes'));
     });
 
     it('should handle invalid raw block files', () => {
