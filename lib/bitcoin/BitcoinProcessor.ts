@@ -698,7 +698,7 @@ export default class BitcoinProcessor {
     const exponentiallySpacedBlocks = await this.blockMetadataStore.lookBackExponentially();
     const lastKnownValidBlock = await this.firstValidBlock(exponentiallySpacedBlocks);
 
-    await this.trimDatabasesToBlock(lastKnownValidBlock!.height);
+    await this.trimDatabasesToBlock(lastKnownValidBlock ? lastKnownValidBlock.height : undefined);
 
     return lastKnownValidBlock;
   }
