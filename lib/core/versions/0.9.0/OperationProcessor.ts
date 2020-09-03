@@ -9,6 +9,7 @@ import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationType from '../../enums/OperationType';
+import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
@@ -60,30 +61,34 @@ export default class OperationProcessor implements IOperationProcessor {
     return appliedDidState;
   }
 
-  public async getRevealValue (anchoredOperationModel: AnchoredOperationModel): Promise<Buffer> {
+  public async getMultihashRevealValue (anchoredOperationModel: AnchoredOperationModel): Promise<Buffer> {
     if (anchoredOperationModel.type === OperationType.Create) {
       throw new SidetreeError(ErrorCode.OperationProcessorCreateOperationDoesNotHaveRevealValue);
     }
 
     const operation = await Operation.parse(anchoredOperationModel.operationBuffer);
 
-    let revealValueBuffer;
+    let canonicalizedKeyBuffer;
     switch (operation.type) {
       case OperationType.Recover:
         const recoverOperation = (operation as RecoverOperation);
-        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
+        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(recoverOperation.signedData.recoveryKey);
         break;
       case OperationType.Update:
         const updateOperation = (operation as UpdateOperation);
-        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
+        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(updateOperation.signedData.updateKey);
         break;
       default: // This is a deactivate.
         const deactivateOperation = (operation as DeactivateOperation);
-        revealValueBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
+        canonicalizedKeyBuffer = JsonCanonicalizer.canonicalizeAsBuffer(deactivateOperation.signedData.recoveryKey);
         break;
     }
 
-    return revealValueBuffer;
+    // TODO: Issue #766 - Remove temporary assumption on reveal value being calculated using the same hash algorithm
+    // as the algorithm used by the protocol version when the operation is anchored.
+    const revealValueHashAlgorithm = ProtocolParameters.hashAlgorithmInMultihashCode;
+    const multihashRevealValueBuffer = Multihash.hash(canonicalizedKeyBuffer, revealValueHashAlgorithm);
+    return multihashRevealValueBuffer;
   }
 
   /**

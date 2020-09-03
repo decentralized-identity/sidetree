@@ -16,7 +16,7 @@ describe('Ipfs', async () => {
     casClient = new Ipfs('unused', fetchTimeoutInSeconds);
   });
 
-  describe('read()', async () => {
+  describe('write()', async () => {
     it('should return file hash of the content written.', async () => {
       const fetchSpy = spyOn(casClient as any, 'fetch').and.returnValue(Promise.resolve({ status: 200, body: 'unused' }));
       const readAllSpy = spyOn(ReadableStream, 'readAll')

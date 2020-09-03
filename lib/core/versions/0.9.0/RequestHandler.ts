@@ -201,7 +201,7 @@ export default class RequestHandler implements IRequestHandler {
   /**
    * Resolves the given long-form DID by resolving using operations found over the network first;
    * if no operations found, the given create operation will be used to construct the DID state.
-   * 
+   *
    * @returns [DID state, published]
    */
   private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {

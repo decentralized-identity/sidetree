@@ -9,10 +9,6 @@ import ITransactionSelector from '../../lib/core/interfaces/ITransactionSelector
  * Mock version manager for testing.
  */
 export default class MockVersionManager implements IVersionManager {
-
-  // Hard-coded to support only SHA256.
-  public allSupportedHashAlgorithms = [18];
-
   /* tslint:disable-next-line */
   public constructor () {}
 

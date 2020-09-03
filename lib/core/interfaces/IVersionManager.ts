@@ -8,13 +8,9 @@ import ITransactionSelector from './ITransactionSelector';
  * Defines an interface to return the correct 'version-ed' objects.
  */
 export default interface IVersionManager {
-
-  /** All the supported hash algorithms. */
-  allSupportedHashAlgorithms: number[];
-
   /**
-   * Gets the batchwriter for the given blockchain time.
-   * @param blockchainTime The blockchain time for which the batchwriter is needed.
+   * Gets the batch writer for the given blockchain time.
+   * @param blockchainTime The blockchain time for which the batch writer is needed.
    */
   getBatchWriter (blockchainTime: number): IBatchWriter;
 
@@ -26,7 +22,7 @@ export default interface IVersionManager {
 
   /**
    * Gets the request handler for the given blockchain time.
-   * @param blockchainTime The blockchain time for which the requesthandler is needed.
+   * @param blockchainTime The blockchain time for which the request handler is needed.
    */
   getRequestHandler (blockchainTime: number): IRequestHandler;
 

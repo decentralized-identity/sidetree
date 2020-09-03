@@ -113,8 +113,7 @@ export default class OperationGenerator {
       updatePublicKey: createOperationData.updatePublicKey,
       updatePrivateKey: createOperationData.updatePrivateKey,
       signingPublicKey: createOperationData.signingPublicKey,
-      signingPrivateKey: createOperationData.signingPrivateKey,
-      nextUpdateRevealValueEncodedString: createOperationData.nextUpdateRevealValueEncodedString
+      signingPrivateKey: createOperationData.signingPrivateKey
     };
   }
 
@@ -139,7 +138,6 @@ export default class OperationGenerator {
 
     const createOperation = await CreateOperation.parse(operationBuffer);
 
-    const nextUpdateRevealValueEncodedString = Multihash.canonicalizeThenHashThenEncode(signingPublicKey.jwk);
     return {
       createOperation,
       operationRequest,
@@ -148,8 +146,7 @@ export default class OperationGenerator {
       updatePublicKey,
       updatePrivateKey,
       signingPublicKey,
-      signingPrivateKey,
-      nextUpdateRevealValueEncodedString
+      signingPrivateKey
     };
   }
 
@@ -202,7 +199,7 @@ export default class OperationGenerator {
       updatePublicKey,
       updatePrivateKey,
       additionalPublicKey,
-      Multihash.canonicalizeThenHashThenEncode(additionalPublicKey)
+      Multihash.canonicalizeThenDoubleHashThenEncode(additionalPublicKey)
     );
 
     const operationBuffer = Buffer.from(JSON.stringify(operationJson));
@@ -257,7 +254,7 @@ export default class OperationGenerator {
     }];
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenHashThenEncode(updatePublicKey),
+      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
       patches
     };
 
@@ -266,7 +263,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       delta_hash: deltaHash,
-      recovery_commitment: Multihash.canonicalizeThenHashThenEncode(recoveryPublicKey)
+      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
     const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
@@ -288,7 +285,7 @@ export default class OperationGenerator {
       didUniqueSuffix = OperationGenerator.generateRandomHash();
     }
     const [nextUpdateKey] = await OperationGenerator.generateKeyPair('nextUpdateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
     const anyNewSigningPublicKeyId = 'anyNewKey';
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair(anyNewSigningPublicKeyId);
     const patches = [
@@ -368,7 +365,7 @@ export default class OperationGenerator {
       service_endpoints: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
-      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenHashThenEncode(newSigningPublicKey.jwk), document
+      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.jwk), document
     );
     return recoverOperation;
   }
@@ -399,7 +396,7 @@ export default class OperationGenerator {
     const signedDataPayloadObject = {
       delta_hash: deltaHash,
       recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
-      recovery_commitment: Multihash.canonicalizeThenHashThenEncode(newRecoveryPublicKey)
+      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 

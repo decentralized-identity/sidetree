@@ -201,27 +201,23 @@ export default class Resolver {
   }
 
   /**
-   * Constructs a single commit value -> operation lookup map by looping through each supported hash algorithm,
-   * hashing each operations as key, then adding the result to a map.
+   * Constructs a single commit value -> operation lookup map by hashing each operation's reveal value as key, then adding the result to a map.
    */
   private async constructCommitValueToOperationLookupMap (nonCreateOperations: AnchoredOperationModel[])
     : Promise<Map<string, AnchoredOperationModel[]>> {
     const commitValueToOperationMap = new Map<string, AnchoredOperationModel[]>();
 
-    // Loop through each supported algorithm and hash each operation.
-    const allSupportedHashAlgorithms = this.versionManager.allSupportedHashAlgorithms;
-    for (const hashAlgorithm of allSupportedHashAlgorithms) {
-      for (const operation of nonCreateOperations) {
+    // Loop through each operation and add an entry to the commit value -> operations map.
+    for (const operation of nonCreateOperations) {
+      const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
+      const multihashRevealValueBuffer = await operationProcessor.getMultihashRevealValue(operation);
+      const multihashRevealValue = Multihash.decode(multihashRevealValueBuffer);
+      const multihashOfRevealValue = Multihash.hashThenEncode(multihashRevealValue.hash, multihashRevealValue.algorithm);
 
-        const operationProcessor = this.versionManager.getOperationProcessor(operation.transactionTime);
-        const revealValueBuffer = await operationProcessor.getRevealValue(operation);
-        const hashOfRevealValue = Multihash.hashThenEncode(revealValueBuffer, hashAlgorithm);
-
-        if (commitValueToOperationMap.has(hashOfRevealValue)) {
-          commitValueToOperationMap.get(hashOfRevealValue)!.push(operation);
-        } else {
-          commitValueToOperationMap.set(hashOfRevealValue, [operation]);
-        }
+      if (commitValueToOperationMap.has(multihashOfRevealValue)) {
+        commitValueToOperationMap.get(multihashOfRevealValue)!.push(operation);
+      } else {
+        commitValueToOperationMap.set(multihashOfRevealValue, [operation]);
       }
     }
 

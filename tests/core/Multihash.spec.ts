@@ -7,14 +7,14 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 const multihashes = require('multihashes');
 
 describe('Multihash', async () => {
-  describe('getHashAlgorithmCode()', async () => {
+  describe('decode()', async () => {
     it('should throws if multihash buffer given used an unsupported hash algorithm.', async () => {
       const content = 'any content';
       const hash = crypto.createHash('sha512').update(content).digest();
       const multihash = multihashes.encode(hash, 19); // SHA2-512
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Multihash.getHashAlgorithmCode(multihash),
+        () => Multihash.decode(multihash),
         ErrorCode.MultihashUnsupportedHashAlgorithm
       );
     });
@@ -58,9 +58,9 @@ describe('Multihash', async () => {
     });
   });
 
-  describe('canonicalizeAndVerify()', async () => {
+  describe('canonicalizeAndVerifyDoubleHash()', async () => {
     it('should return false if `undefined` is given as content.', async () => {
-      const validHash = Multihash.canonicalizeAndVerify(undefined, 'unusedMultihashValue');
+      const validHash = Multihash.canonicalizeAndVerifyDoubleHash(undefined, 'unusedMultihashValue');
 
       expect(validHash).toBeFalsy();
     });
@@ -69,7 +69,7 @@ describe('Multihash', async () => {
       // Simulate an error thrown.
       spyOn(JsonCanonicalizer, 'canonicalizeAsBuffer').and.throwError('any error');
 
-      const validHash = Multihash.canonicalizeAndVerify({ unused: 'unused' }, 'unusedMultihashValue');
+      const validHash = Multihash.canonicalizeAndVerifyDoubleHash({ unused: 'unused' }, 'unusedMultihashValue');
 
       expect(validHash).toBeFalsy();
     });
@@ -81,6 +81,17 @@ describe('Multihash', async () => {
       spyOn(Encoder, 'decodeAsBuffer').and.throwError('any error');
 
       const validHash = (Multihash as any).verify(Buffer.from('anyValue'), 'unusedMultihashValue');
+
+      expect(validHash).toBeFalsy();
+    });
+  });
+
+  describe('verifyDoubleHash()', async () => {
+    it('should return false if unexpected error is caught.', async () => {
+      // Simulate an error thrown.
+      spyOn(Encoder, 'decodeAsBuffer').and.throwError('any error');
+
+      const validHash = (Multihash as any).verifyDoubleHash(Buffer.from('anyValue'), 'unusedMultihashValue');
 
       expect(validHash).toBeFalsy();
     });

@@ -11,9 +11,11 @@ export default class VegetaLoadGenerator {
 
   /**
    * Creates a Create request followed by an Update request for each DID.
-   * Two targets files will be generated:
-   *   One targets file containing all Create requests;
-   *   One targest file containing all Update requests
+   * Following targets files will be generated:
+   *   One targets file containing all Create requests
+   *   One targets file containing all Update requests
+   *   One targets file containing all recovery requests
+    *  One targets file containing all deactivate requests
    * @param uniqueDidCount The number of unique DID to be generated.
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
@@ -40,7 +42,7 @@ export default class VegetaLoadGenerator {
       fs.writeFileSync(absoluteFolderPath + `/requests/create${i}.json`, createOperationData.createOperation.operationBuffer);
 
       const [newUpdatePublicKey] = await Jwk.generateEs256kKeyPair();
-      const newUpdateCommitmentHash = Multihash.canonicalizeThenHashThenEncode(newUpdatePublicKey);
+      const newUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(newUpdatePublicKey);
 
       // Generate an update operation
       const [additionalKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
@@ -60,12 +62,28 @@ export default class VegetaLoadGenerator {
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
       const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('newSigningKey');
       const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
-        createOperationData.createOperation.didUniqueSuffix, createOperationData.recoveryPrivateKey, newRecoveryPublicKey, newSigningPublicKey
+        createOperationData.createOperation.didUniqueSuffix,
+        createOperationData.recoveryPrivateKey,
+        newRecoveryPublicKey,
+        newSigningPublicKey,
+        OperationGenerator.generateServiceEndpoints(['newDummyEndpoint']),
+        [newSigningPublicKey]
       );
 
       // Save the recover operation request on disk.
       const recoverOperationBuffer = Buffer.from(JSON.stringify(recoverOperationRequest));
       fs.writeFileSync(`${absoluteFolderPath}/requests/recovery${i}.json`, recoverOperationBuffer);
+
+      // Generate a deactivate operation request.
+      // NOTE: generated deactivate operation request is mutually exclusive with the recover operation counter part,
+      // ie. one can only choose to submit either recovery or deactivate request but not both.
+      const deactivateOperationRequest = await OperationGenerator.createDeactivateOperationRequest(
+        createOperationData.createOperation.didUniqueSuffix, createOperationData.recoveryPrivateKey
+      );
+
+      // Save the deactivate operation request on disk.
+      const deactivateOperationBuffer = Buffer.from(JSON.stringify(deactivateOperationRequest));
+      fs.writeFileSync(`${absoluteFolderPath}/requests/deactivate${i}.json`, deactivateOperationBuffer);
     }
 
     // Operations URL.
@@ -79,7 +97,7 @@ export default class VegetaLoadGenerator {
     }
     fs.writeFileSync(absoluteFolderPath + '/createTargets.txt', createTargetsFileString);
 
-    // Add Updtae API calls in a targets file.
+    // Add Update API calls in a targets file.
     let updateTargetsFileString = '';
     for (let i = 0; i < uniqueDidCount; i++) {
       updateTargetsFileString += `POST ${operationsUrl}\n`;
@@ -94,5 +112,13 @@ export default class VegetaLoadGenerator {
       recoveryTargetsFileString += `@${absoluteFolderPath}/requests/recovery${i}.json\n\n`;
     }
     fs.writeFileSync(absoluteFolderPath + '/recoveryTargets.txt', recoveryTargetsFileString);
+
+    // Add Deactivate API calls in a targets file.
+    let deactivateTargetsFileString = '';
+    for (let i = 0; i < uniqueDidCount; i++) {
+      deactivateTargetsFileString += `POST ${operationsUrl}\n`;
+      deactivateTargetsFileString += `@${absoluteFolderPath}/requests/deactivate${i}.json\n\n`;
+    }
+    fs.writeFileSync(absoluteFolderPath + '/deactivateTargets.txt', deactivateTargetsFileString);
   }
 }

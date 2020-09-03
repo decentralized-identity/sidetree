@@ -2,11 +2,6 @@
 
 OFFICIAL SIDETREE SPECIFICATION HERE: https://identity.foundation/sidetree/spec/
 
-![Sidetree System Overview](../www/diagrams/overview-diagram.png)
-
-## Operation chaining of a DID
-![DID Operation Chaining](../www/diagrams/operationChaining.png)
-
 
 ## DDoS Attack & Mitigation
 
@@ -36,15 +31,7 @@ Sidetree specification defines the following mechanisms to enable scaling, while
 
 #### Proof of Fee
 
-   Each Sidetree transaction on the target chain is required to include a deterministic fee, based on the number of DID operations they seek to include via the on-chain transaction. The deterministic rules for the default configuration are still under discussion, but the following are roughly represent the direction under discussion:
-
-   1. Simple inclusion of a transaction in a block will enable the transaction writer to include a baseline of N operations
-   2. Any number of operations that exceed N will be subject to proof that a fee was paid that meets or exceeds a required amount, determined as follows:
-      1. Let the block range R include the last block the node believes to be the latest confirmed and the 9 blocks that precede it.
-      2. Compute an array of median fees M, wherein the result of each computation is the median of all transactions fees in each block, less any Sidetree-bearing transactions.
-      3. Let the target fee F be the average of all the values contained in M.
-      4. Let the per operation cost C be F divided by the baseline amount N.
-   3. To test the batch for adherence to the Proof of Fee requirement, divide the number of operations in the batch by the fee paid in the host transaction, and ensure that the resulting per operation amount exceeds the required per operation cost C.
+   Each Sidetree transaction on the target chain is required to include a deterministic fee, based on the number of DID operations they seek to include via the on-chain transaction.
 
 #### One Operation per DID per Batch
   Only one operation per DID per batch is allowed, this prevents the operation chain of any DID from growing at an intractable rate.
@@ -56,9 +43,6 @@ Sidetree specification defines the following mechanisms to enable scaling, while
   https://en.wikipedia.org/wiki/Commitment_scheme
 
   The DID owner must reproduce and reveal the correct commitment value in the subsequent operation for the operation to be considered valid. In addition, each subsequent operation must also include the hash of the new commitment value(s) for the next operation. This scheme enables efficient dismissal of counterfeit operations without needing to evaluate signatures.
-
-  See [Sidetree REST API](#sidetree-rest-api) section for the schema used to specify reveal values and commitment hashes in each operation.
-
 
 ## Sidetree Client Guidelines
 A Sidetree client manages the private keys and performs document operations on behalf of the DID owner. The Sidetree client needs to comply to the following guidelines to keep the DIDs it manages secure.

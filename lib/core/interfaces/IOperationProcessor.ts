@@ -20,7 +20,7 @@ export default interface IOperationProcessor {
   ): Promise<DidState | undefined>;
 
   /**
-   * Gets the reveal value of a non-create operation.
+   * Gets the multihash buffer used as the reveal value of a non-create operation.
    */
-  getRevealValue (operation: AnchoredOperationModel): Promise<Buffer>;
+  getMultihashRevealValue (operation: AnchoredOperationModel): Promise<Buffer>;
 }
