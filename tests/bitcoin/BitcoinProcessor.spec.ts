@@ -195,13 +195,12 @@ describe('BitcoinProcessor', () => {
       done();
     });
 
-    it('should throw error if unable to find a starting block.', async (done) => {
+    it('should skip initialization if unable to find a starting block.', async (done) => {
       getStartingBlockForPeriodicPollSpy.and.returnValue(Promise.resolve(undefined));
 
-      await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => bitcoinProcessor.initialize(),
-        ErrorCode.BitcoinProcessorBitcoinClientCurrentHeightNotUpToDate
-      );
+      await bitcoinProcessor.initialize();
+      expect(processTransactionsSpy).not.toHaveBeenCalled();
+      expect(fastProcessTransactionsSpy).not.toHaveBeenCalled();
 
       done();
     });

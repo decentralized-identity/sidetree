@@ -15,7 +15,7 @@ export default class VegetaLoadGenerator {
    *   One targets file containing all Create requests
    *   One targets file containing all Update requests
    *   One targets file containing all recovery requests
-    *  One targets file containing all deactivate requests
+   *   One targets file containing all deactivate requests
    * @param uniqueDidCount The number of unique DID to be generated.
    * @param endpointUrl The URL that the requests will be sent to.
    * @param absoluteFolderPath The folder that all the generated files will be saved to.
