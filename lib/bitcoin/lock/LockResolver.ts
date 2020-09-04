@@ -13,7 +13,7 @@ import { Script } from 'bitcore-lib';
 interface LockScriptVerifyResult {
   /** whether or not the script was valid */
   isScriptValid: boolean;
-  /** the public key hash of the target address when the script unlcoks; undefined if the script is not valid. */
+  /** the public key hash of the target address when the script unlocks; undefined if the script is not valid. */
   publicKeyHash: string | undefined;
   /** the duration in blocks for which the lock is valid; undefined if the script is not valid. */
   lockDurationInBlocks: number | undefined;
@@ -53,7 +53,7 @@ export default class LockResolver {
 
     console.info(`Starting lock resolution for identifier: ${JSON.stringify(lockIdentifier)}`);
 
-    // The verifictation of a lock-identifier has the following steps:
+    // The verification of a lock-identifier has the following steps:
     //   (A). The redeem script in the lock-identifier is actually a 'locking' script
     //   (B). The transaction in the lock-identifier is paying to the redeem script in the lock-identifier
     //   (C). The lock duration is valid

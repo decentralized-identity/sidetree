@@ -3,7 +3,7 @@
  */
 export default class ArrayMethods {
   /**
-   * Checkes to see if there are duplicates in the given array.
+   * Checks to see if there are duplicates in the given array.
    */
   public static hasDuplicates<T> (array: Array<T>): boolean {
     const uniqueValues = new Set<T>();

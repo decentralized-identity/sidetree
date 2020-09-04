@@ -28,7 +28,7 @@ export default interface IBitcoinWallet {
   signTransaction (transaction: Transaction): Promise<Transaction>;
 
   /**
-   * Signs the specified freeeze transaction using the keys associated with this wallet. The freeze transaction is
+   * Signs the specified freeze transaction using the keys associated with this wallet. The freeze transaction is
    * the one which freezes the funds from a previously unfrozen outputs.
    *
    * @param transaction The transaction to sign.

@@ -3,7 +3,7 @@ import ReadableStream from '../common/ReadableStream';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
 
 /**
- * Encapsulates the functionality of getting the version information from the dependendant services.
+ * Encapsulates the functionality of getting the version information from the dependent services.
  */
 export default class ServiceVersionFetcher {
   private static readonly fetchWaitTimeInMilliseconds = 600000; // 10 minutes

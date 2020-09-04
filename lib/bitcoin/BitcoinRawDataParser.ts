@@ -72,7 +72,7 @@ export default class BitcoinRawDataParser {
       const heightBytes = coinbaseInputScript.readUInt8(0);
 
       let blockHeight;
-      // for regtest blocks 1-16 the blockheight is recorded as 0x51..0x with no heightBytes so adjust this here if it is encountered
+      // for regtest blocks 1-16 the blockheight is recorded as 0x51..0x60 (Decimal 81..96) with no heightBytes so adjust this here if it is encountered
       // see: https://bitcoin.stackexchange.com/questions/97116/why-is-the-data-format-for-block-height-in-coinbase-scriptsigs-inconsistent-for
       if (actualMagicBytes.equals(BitcoinRawDataParser.magicBytes.regtest) &&
           heightBytes > 80 && heightBytes < 97) {

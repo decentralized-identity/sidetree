@@ -39,7 +39,7 @@ export default class BatchScheduler {
    * Processes the operations in the queue.
    */
   public async writeOperationBatch () {
-    const endTimer = timeSpan(); // For calcuating time taken to write operations.
+    const endTimer = timeSpan(); // For calculating time taken to write operations.
 
     try {
       console.info('Start operation batch writing...');

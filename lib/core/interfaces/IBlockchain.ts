@@ -8,7 +8,7 @@ import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
  */
 export default interface IBlockchain {
   /**
-   * Writes a Sidtree transaction with the given anchor string to blockchain.
+   * Writes a Sidetree transaction with the given anchor string to blockchain.
    * @param anchorString Data to write to the blockchain.
    * @param fee Fee for the current transaction.
    */
@@ -37,7 +37,7 @@ export default interface IBlockchain {
 
   /**
    * Gets the approximate latest time synchronously without requiring to make network call.
-   * Useful for cases where high performance is desired and hgih accuracy is not required.
+   * Useful for cases where high performance is desired and high accuracy is not required.
    */
   approximateTime: BlockchainTimeModel;
 

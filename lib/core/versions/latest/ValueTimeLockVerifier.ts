@@ -27,7 +27,7 @@ export default class ValueTimeLockVerifier {
     const valueTimeLockAmountMultiplier = versionMetadata.valueTimeLockAmountMultiplier;
 
     // Using the following formula:
-    //  requiredLockAmount = normalizedfee * normalizedFeeMultipier * numberOfOps * valueTimeLockMultiplier
+    //  requiredLockAmount = normalizedFee * normalizedFeeMultiplier * numberOfOps * valueTimeLockMultiplier
     //
     // We are going to find the numberOfOps given the requiredLockAmount
     const feePerOperation = valueTimeLock.normalizedFee * normalizedFeeToPerOperationFeeMultiplier;
@@ -45,7 +45,7 @@ export default class ValueTimeLockVerifier {
    * Verifies that the value lock object (amount, transaction time range) is correct for the specified number
    * of operations.
    *
-   * @param valueTimeLock The value time lock object used for verificiation.
+   * @param valueTimeLock The value time lock object used for verification.
    * @param numberOfOperations The target number of operations.
    * @param sidetreeTransactionTime The transaction time where the operations were written.
    * @param sidetreeTransactionWriter The writer of the transaction.
