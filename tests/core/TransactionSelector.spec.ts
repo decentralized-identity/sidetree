@@ -160,7 +160,9 @@ describe('TransactionSelector', () => {
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         () => transactionSelector.selectQualifiedTransactions(transactions),
         ErrorCode.TransactionsNotInSameBlock
-      );
+      ).catch(error => {
+        console.log(error);
+      });
     });
 
     it('should deduct the number of operations if some operations in the current block were already in transactions store', async () => {
