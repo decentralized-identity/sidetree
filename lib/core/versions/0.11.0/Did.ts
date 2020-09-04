@@ -40,9 +40,9 @@ export default class Did {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
 
-    const indexOfQuestionMarkChar = did.indexOf('?');
-    // If there is no question mark, then DID can only be in short-form.
-    if (indexOfQuestionMarkChar < 0) {
+    const indexOfDotChar = did.indexOf('.');
+    // If there is no 'dot', then DID can only be in short-form.
+    if (indexOfDotChar < 0) {
       this.isShortForm = true;
     } else {
       this.isShortForm = false;
@@ -51,8 +51,17 @@ export default class Did {
     if (this.isShortForm) {
       this.uniqueSuffix = did.substring(didPrefix.length);
     } else {
-      // This is long-form.
-      this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
+      // Long-form can be in the form of:
+      // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
+      // 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+
+      const indexOfQuestionMarkChar = did.indexOf('?');
+      if (indexOfQuestionMarkChar > 0) {
+        this.uniqueSuffix = did.substring(didPrefix.length, indexOfQuestionMarkChar);
+      } else {
+        this.uniqueSuffix = did.substring(didPrefix.length, did.lastIndexOf(':'));
+      }
+
       this.longForm = did;
     }
 
@@ -72,7 +81,18 @@ export default class Did {
 
     // If DID is long-form, ensure the unique suffix constructed from the suffix data matches the short-form DID and populate the `createOperation` property.
     if (!did.isShortForm) {
-      const initialState = Did.getInitialStateFromDidString(didString, didMethodName);
+      // Long-form can be in the form of:
+      // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
+      // 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+
+      const indexOfQuestionMarkChar = didString.indexOf('?');
+      let initialState;
+      if (indexOfQuestionMarkChar > 0) {
+        initialState = Did.getInitialStateFromDidStringWithQueryParameter(didString, didMethodName);
+      } else {
+        initialState = Did.getInitialStateFromDidStringWithExtraColon(didString);
+      }
+
       const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
@@ -92,7 +112,7 @@ export default class Did {
     return did;
   }
 
-  private static getInitialStateFromDidString (didString: string, methodNameWithNetworkId: string): string {
+  private static getInitialStateFromDidStringWithQueryParameter (didString: string, methodNameWithNetworkId: string): string {
     let didStringUrl = undefined;
     try {
       didStringUrl = new URL(didString);
@@ -127,6 +147,16 @@ export default class Did {
     if (initialStateValue === undefined) {
       throw new SidetreeError(ErrorCode.DidLongFormNoInitialStateFound);
     }
+
+    return initialStateValue;
+  }
+
+  private static getInitialStateFromDidStringWithExtraColon (didString: string): string {
+    // DID example: 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+
+    const lastColonIndex = didString.lastIndexOf(':');
+
+    const initialStateValue = didString.substring(lastColonIndex + 1);
 
     return initialStateValue;
   }

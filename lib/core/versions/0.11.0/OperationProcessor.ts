@@ -148,7 +148,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await UpdateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the update key hash.
-    const isValidUpdateKey = Multihash.canonicalizeAndVerify(operation.signedData.updateKey, didState.nextUpdateCommitmentHash!);
+    const isValidUpdateKey = Multihash.canonicalizeAndVerifyDoubleHash(operation.signedData.updateKey, didState.nextUpdateCommitmentHash!);
     if (!isValidUpdateKey) {
       return didState;
     }
@@ -199,7 +199,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the recovery key hash.
-    const isValidRecoveryKey = Multihash.canonicalizeAndVerify(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
+    const isValidRecoveryKey = Multihash.canonicalizeAndVerifyDoubleHash(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
     if (!isValidRecoveryKey) {
       return didState;
     }
@@ -253,7 +253,7 @@ export default class OperationProcessor implements IOperationProcessor {
     const operation = await DeactivateOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the recovery key hash.
-    const isValidRecoveryKey = Multihash.canonicalizeAndVerify(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
+    const isValidRecoveryKey = Multihash.canonicalizeAndVerifyDoubleHash(operation.signedData.recoveryKey, didState.nextRecoveryCommitmentHash!);
     if (!isValidRecoveryKey) {
       return didState;
     }
