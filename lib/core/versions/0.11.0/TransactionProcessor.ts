@@ -113,13 +113,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
   }
 
   /**
-   * NOTE: In order to be forward-compatable with data-pruning feature,
+   * NOTE: In order to be forward-compatible with data-pruning feature,
    * we must continue to process the operations declared in the anchor file even if the map/chunk file is invalid.
-   * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
+   * This means that this method MUST ONLY throw errors that are retry-able (e.g. network or file not found errors),
    * It is a design choice to hide the complexity of map file downloading and construction within this method,
    * instead of throwing errors and letting the caller handle them.
    * @returns `MapFile` if downloaded file is valid; `undefined` otherwise.
-   * @throws SidetreeErrors that are retryable.
+   * @throws SidetreeErrors that are retry-able.
    */
   private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFile | undefined> {
     try {
@@ -129,7 +129,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
       const fileBuffer = await this.downloadFileFromCas(anchorFileModel.map_file_uri, ProtocolParameters.maxMapFileSizeInBytes);
       const mapFile = await MapFile.parse(fileBuffer);
 
-      // Calulate the max paid update operation count.
+      // Calculate the max paid update operation count.
       const operationCountInAnchorFile = anchorFile.didUniqueSuffixes.length;
       const maxPaidUpdateOperationCount = paidOperationCount - operationCountInAnchorFile;
 
@@ -162,13 +162,13 @@ export default class TransactionProcessor implements ITransactionProcessor {
   }
 
   /**
-   * NOTE: In order to be forward-compatable with data-pruning feature,
+   * NOTE: In order to be forward-compatible with data-pruning feature,
    * we must continue to process the operations declared in the anchor file even if the map/chunk file is invalid.
-   * This means that this method MUST ONLY throw errors that are retryable (e.g. network or file not found errors),
+   * This means that this method MUST ONLY throw errors that are retry-able (e.g. network or file not found errors),
    * It is a design choice to hide the complexity of chunk file downloading and construction within this method,
    * instead of throwing errors and letting the caller handle them.
    * @returns `ChunkFileModel` if downloaded file is valid; `undefined` otherwise.
-   * @throws SidetreeErrors that are retryable.
+   * @throws SidetreeErrors that are retry-able.
    */
   private async downloadAndVerifyChunkFile (
     mapFile: MapFile | undefined
@@ -227,7 +227,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
     const patchedOperationBuffers: Buffer[] = [];
     if (chunkFile !== undefined) {
 
-      // TODO: https://github.com/decentralized-identity/sidetree/issues/442
+      // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
       // Use actual operation request object instead of buffer.
 
       const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;

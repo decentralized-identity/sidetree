@@ -43,7 +43,7 @@ export default class UpdateOperation implements OperationModel {
   public readonly encodedDelta: string | undefined;
 
   /**
-   * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
+   * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
     operationBuffer: Buffer,

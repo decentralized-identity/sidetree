@@ -41,7 +41,7 @@ export default class FeeManager {
    * @param numberOfOperations The number of operations written.
    * @param normalizedFee The normalized fee for that transaction.
    *
-   * @throws if the number of operations is <= 0; if the feepaid is invalid.
+   * @throws if the number of operations is <= 0; if the fee paid is invalid.
    */
   public static verifyTransactionFeeAndThrowOnError (transactionFeePaid: number, numberOfOperations: number, normalizedFee: number): void {
 
