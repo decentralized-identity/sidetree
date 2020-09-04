@@ -57,7 +57,7 @@ export default class VersionManager implements IVersionManager, IVersionMetadata
     resolver: Resolver,
     transactionStore: ITransactionStore
   ) {
-    // NOTE: In principal each version of the interface implemtnations can have different constructors,
+    // NOTE: In principal each version of the interface implementations can have different constructors,
     // but we currently keep the constructor signature the same as much as possible for simple instance construction,
     // but it is not inherently "bad" if we have to have conditional constructions for each if we have to.
     for (const versionModel of this.versionsReverseSorted) {

@@ -165,7 +165,7 @@ export default class Blockchain implements IBlockchain {
 
     const responseBody = JSON.parse(responseBodyString);
 
-    // Update the cached blockchain time everytime blockchain time is fetched over the network,
+    // Update the cached blockchain time every time blockchain time is fetched over the network,
     this.cachedBlockchainTime = responseBody;
 
     console.info(`Refreshed blockchain time: ${responseBodyString}`);

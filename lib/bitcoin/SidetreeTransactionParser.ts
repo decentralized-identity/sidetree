@@ -44,7 +44,7 @@ export default class SidetreeTransactionParser {
   private getValidSidetreeDataFromOutputs (transactionOutputs: BitcoinOutputModel[], sidetreePrefix: string): string | undefined {
 
     // The sidetree transaction output has the following requirements:
-    //  1. We will recognize only the first sidetree anchorstring and ignore the rest.
+    //  1. We will recognize only the first sidetree anchor string and ignore the rest.
 
     for (let i = 0; i < transactionOutputs.length; i++) {
       const currentOutput = transactionOutputs[i];

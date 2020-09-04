@@ -70,7 +70,7 @@ export default class BitcoinProcessor {
   /** Number of seconds between transaction queries */
   public pollPeriod: number;
 
-  /** Days of notice before the wallet is depeleted of all funds */
+  /** Days of notice before the wallet is depleted of all funds */
   public lowBalanceNoticeDays: number;
 
   private versionManager: VersionManager;
@@ -154,7 +154,7 @@ export default class BitcoinProcessor {
         this.lockResolver,
         config.valueTimeLockPollPeriodInSeconds || 10 * 60,
         BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
-        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amoount in satoshis
+        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
         ProtocolParameters.maximumValueTimeLockDurationInBlocks);                 // Desired lock duration in blocks
   }
 
@@ -713,7 +713,7 @@ export default class BitcoinProcessor {
 
     // NOTE: Order is IMPORTANT!
     // *****
-    // Remove block metadata BEFORE we remove any other data, because block metata is used as the timestamp.
+    // Remove block metadata BEFORE we remove any other data, because block metadata is used as the timestamp.
     await this.blockMetadataStore.removeLaterThan(blockHeight);
 
     const lastTransactionNumberOfGivenBlock = blockHeight ? TransactionNumber.lastTransactionOfBlock(blockHeight) : undefined;

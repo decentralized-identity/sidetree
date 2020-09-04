@@ -23,7 +23,7 @@ interface DownloadInfo {
 
   /**
    * The resolve function that will be invoked by the download manager when download is completed
-   * regarless if the download is successful or not.
+   * regardless if the download is successful or not.
    */
   resolve: (value?: {} | PromiseLike<{}> | undefined) => void;
 
@@ -48,7 +48,7 @@ export default class DownloadManager {
 
   /**
    * Constructs the download manager.
-   * @param cas The Content Adressable Store to use for fetching the actual content.
+   * @param cas The Content Addressable Store to use for fetching the actual content.
    */
   public constructor (
     public maxConcurrentDownloads: number,
@@ -56,9 +56,9 @@ export default class DownloadManager {
 
     // If maximum concurrent CAS download count is NaN, set it to a default value.
     if (isNaN(maxConcurrentDownloads)) {
-      const defaultmaxConcurrentDownloads = 20;
-      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultmaxConcurrentDownloads}.`);
-      this.maxConcurrentDownloads = defaultmaxConcurrentDownloads;
+      const defaultMaxConcurrentDownloads = 20;
+      console.info(`Maximum concurrent CAS download count not given, defaulting to ${defaultMaxConcurrentDownloads}.`);
+      this.maxConcurrentDownloads = defaultMaxConcurrentDownloads;
     }
   }
 
