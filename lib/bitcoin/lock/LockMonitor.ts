@@ -107,10 +107,10 @@ export default class LockMonitor {
       await this.handlePeriodicPolling();
 
     } catch (e) {
-      const message = `An error occured during periodic poll: ${SidetreeError.stringify(e)}`;
+      const message = `An error occurred during periodic poll: ${SidetreeError.stringify(e)}`;
       console.error(message);
 
-      // Rethrow if the error is in the initialization phase. We don't want to conitinue with the
+      // Rethrow if the error is in the initialization phase. We don't want to continue with the
       // service during initialization.
       if (!this.initialized) {
         throw e;

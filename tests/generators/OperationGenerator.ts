@@ -63,7 +63,7 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates random hash.
+   * Generates a random multihash.
    */
   public static generateRandomHash (): string {
     const randomBuffer = crypto.randomBytes(32);
