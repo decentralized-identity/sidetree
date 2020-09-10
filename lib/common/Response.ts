@@ -13,6 +13,8 @@ export default class Response {
         return 200;
       case ResponseStatus.BadRequest:
         return 400;
+      case ResponseStatus.Deactivated:
+        return 410;
       case ResponseStatus.NotFound:
         return 404;
       case ResponseStatus.ServerError:

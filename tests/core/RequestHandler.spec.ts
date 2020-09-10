@@ -297,6 +297,21 @@ describe('RequestHandler', () => {
 
       expect(response.status).toEqual(ResponseStatus.ServerError);
     });
+
+    it('[Bug #817] should return status as `deactivated` if DID is deactivated.', async () => {
+      // Intentionally not 
+      const document = { unused: 'unused' };
+      const mockedResolverReturnedDidState: DidState = {
+        document,
+        lastOperationTransactionNumber: 123
+      };
+      spyOn((requestHandler as any).resolver, 'resolve').and.returnValue(Promise.resolve(mockedResolverReturnedDidState));
+
+      const anyDid = 'did:sidetree:' + OperationGenerator.generateRandomHash();
+      const response = await requestHandler.handleResolveRequest(anyDid);
+
+      expect(response.status).toEqual(ResponseStatus.Deactivated);
+    });
   });
 
   describe('handleOperationRequest()', async () => {

@@ -179,8 +179,12 @@ export default class RequestHandler implements IRequestHandler {
       const didStringToUseInDidDocument = published ? did.shortForm : did.longForm!;
       const document = DocumentComposer.transformToExternalDocument(didState, didStringToUseInDidDocument, published);
 
+      // Status is different if DID is deactivated.
+      const didDeactivated = didState.nextRecoveryCommitmentHash === undefined;
+      const status = didDeactivated ? ResponseStatus.Deactivated : ResponseStatus.Succeeded;
+
       return {
-        status: ResponseStatus.Succeeded,
+        status,
         body: document
       };
     } catch (error) {
