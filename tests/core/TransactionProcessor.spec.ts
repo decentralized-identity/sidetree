@@ -12,6 +12,7 @@ import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MapFile from '../../lib/core/versions/latest/MapFile';
 import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
+import Operation from '../../lib/core/versions/latest/Operation';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -19,8 +20,7 @@ import TransactionProcessor from '../../lib/core/versions/latest/TransactionProc
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 
-describe('TransactionProcessor', async () => {
-  const config = await import('../json/config-test.json');
+describe('TransactionProcessor', () => {
   let casClient: Ipfs;
   let operationStore: MockOperationStore;
   let downloadManager: DownloadManager;
@@ -39,9 +39,12 @@ describe('TransactionProcessor', async () => {
   beforeEach(() => {
     const fetchTimeoutInSeconds = 1;
     casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
-    operationStore = new MockOperationStore();
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
+
+    const maxConcurrentDownloads = 10;
+    downloadManager = new DownloadManager(maxConcurrentDownloads, casClient);
     downloadManager.start();
+
+    operationStore = new MockOperationStore();
     blockchain = new MockBlockchain();
     transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
   });
@@ -527,7 +530,6 @@ describe('TransactionProcessor', async () => {
       const chunkFileBuffer = await ChunkFile.createBuffer([createOperation], [], [updateOperation]);
       const chunkFileModel = await ChunkFile.parse(chunkFileBuffer);
 
-      // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
       const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, mapFileModel, chunkFileModel);
 
       expect(anchoredOperationModels.length).toEqual(2);
@@ -557,13 +559,41 @@ describe('TransactionProcessor', async () => {
       const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [createOperation], [], []);
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
-      // Setting the total paid operation count to be 1 (needs to be at least 2 in success case).
       const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, undefined, undefined);
 
       expect(anchoredOperationModels.length).toEqual(1);
       expect(anchoredOperationModels[0].didUniqueSuffix).toEqual(createOperation.didUniqueSuffix);
       expect(anchoredOperationModels[0].operationIndex).toEqual(0);
       expect(anchoredOperationModels[0].transactionTime).toEqual(1);
+      done();
+    });
+
+    it('[Bug #820] should populate operation buffer for deactivate operations.', async (done) => {
+      // Create `TransactionModel`.
+      const transactionModel: TransactionModel = {
+        anchorString: 'anything',
+        normalizedTransactionFee: 999,
+        transactionFeePaid: 9999,
+        transactionNumber: 1,
+        transactionTime: 1,
+        transactionTimeHash: 'anyValue',
+        writer: 'anyWriter'
+      };
+
+      // Create anchor file with 1 deactivate operation.
+      const anyDidUniqueSuffix = OperationGenerator.generateRandomHash();
+      const [, anyPrivateKey] = await OperationGenerator.generateKeyPair('anyKeyId');
+      const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDidUniqueSuffix, anyPrivateKey);
+      const deactivateOperation = deactivateOperationData.deactivateOperation;
+      const mapFileHash = OperationGenerator.generateRandomHash();
+      const anchorFileBuffer = await AnchorFile.createBuffer('writerLockId', mapFileHash, [], [], [deactivateOperation]);
+      const anchorFile = await AnchorFile.parse(anchorFileBuffer);
+
+      const anchoredOperationModels = await transactionProcessor['composeAnchoredOperationModels'](transactionModel, anchorFile, undefined, undefined);
+
+      const returnedOperation = await Operation.parse(anchoredOperationModels[0].operationBuffer);
+      expect(returnedOperation.didUniqueSuffix).toEqual(deactivateOperation.didUniqueSuffix);
+      expect(returnedOperation.operationBuffer.length).toBeGreaterThan(0);
       done();
     });
   });

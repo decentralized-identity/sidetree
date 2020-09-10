@@ -15,6 +15,7 @@ import IVersionMetadataFetcher from '../../interfaces/IVersionMetadataFetcher';
 import JsonAsync from './util/JsonAsync';
 import LogColor from '../../../common/LogColor';
 import MapFile from './MapFile';
+import OperationType from '../../enums/OperationType';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
 import TransactionModel from '../../../common/models/TransactionModel';
@@ -222,37 +223,29 @@ export default class TransactionProcessor implements ITransactionProcessor {
     operations.push(...updateOperations);
     operations.push(...deactivateOperations);
 
-    // If chunk file is found/given, we need to add `type` and `delta` from chunk file to each operation.
-    // NOTE: there is no delta for deactivate operations.
-    const patchedOperationBuffers: Buffer[] = [];
-    if (chunkFile !== undefined) {
+    // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
+    // Use actual operation request object instead of buffer.
 
-      // TODO: Issue 442 - https://github.com/decentralized-identity/sidetree/issues/442
-      // Use actual operation request object instead of buffer.
-
-      const operationCountExcludingDeactivates = createOperations.length + recoverOperations.length + updateOperations.length;
-      for (let i = 0; i < operationCountExcludingDeactivates &&
-                      i < chunkFile.deltas.length; i++) {
-        const operation = operations[i];
-        const operationJsonString = operation.operationBuffer.toString();
-        const operationObject = await JsonAsync.parse(operationJsonString);
-        operationObject.type = operation.type;
-        operationObject.delta = chunkFile.deltas[i];
-
-        const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
-        patchedOperationBuffers.push(patchedOperationBuffer);
-      }
-    }
-
-    // Add anchored timestamp to each operation.
+    // NOTE: The last set of `operations` are deactivates, they don't have `delta` property.
     const anchoredOperationModels = [];
     for (let i = 0; i < operations.length; i++) {
       const operation = operations[i];
+      const operationJsonString = operation.operationBuffer.toString();
+      const operationObject = await JsonAsync.parse(operationJsonString);
+      operationObject.type = operation.type;
 
+      // Add `delta` property read from chunk file to each operation if chunk file exists.
+      // NOTE: Deactivate operation does not have delta.
+      if (chunkFile !== undefined &&
+          operation.type !== OperationType.Deactivate) {
+        operationObject.delta = chunkFile.deltas[i];
+      }
+
+      const patchedOperationBuffer = Buffer.from(JSON.stringify(operationObject));
       const anchoredOperationModel: AnchoredOperationModel = {
         didUniqueSuffix: operation.didUniqueSuffix,
         type: operation.type,
-        operationBuffer: patchedOperationBuffers[i],
+        operationBuffer: patchedOperationBuffer,
         operationIndex: i,
         transactionNumber: transaction.transactionNumber,
         transactionTime: transaction.transactionTime

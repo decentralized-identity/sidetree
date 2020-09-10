@@ -34,7 +34,7 @@ export default class DeactivateOperation implements OperationModel {
   public readonly signedData: SignedDataModel;
 
   /**
-   * NOTE: should only be used by `parse()` and `parseObject()` else the contructed instance could be invalid.
+   * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
   private constructor (
     operationBuffer: Buffer,
