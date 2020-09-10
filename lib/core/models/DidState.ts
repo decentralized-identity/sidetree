@@ -4,7 +4,7 @@
  */
 export default interface DidState {
   document: any;
-  nextRecoveryCommitmentHash: string | undefined; // NOTE: Can be undefined after a deactivate operation is applied.
-  nextUpdateCommitmentHash: string | undefined; // NOTE: Can be undefined after a deactivate operation is applied.
+  nextRecoveryCommitmentHash?: string; // NOTE: Can be undefined after a deactivate operation is applied.
+  nextUpdateCommitmentHash?: string; // NOTE: Can be undefined after a deactivate operation is applied.
   lastOperationTransactionNumber: number;
 }
