@@ -235,10 +235,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
       operationObject.type = operation.type;
 
       // Add `delta` property read from chunk file to each operation if chunk file exists.
-      if (operation.type === OperationType.Deactivate) {
-        // Deactivate operation does not have delta.
-      } else if (chunkFile !== undefined) {
-        // Else this operation is either a create, recover, or update. Add `delta` if chunk file exists.
+      // NOTE: Deactivate operation does not have delta.
+      if (chunkFile !== undefined &&
+          operation.type !== OperationType.Deactivate) {
         operationObject.delta = chunkFile.deltas[i];
       }
 
