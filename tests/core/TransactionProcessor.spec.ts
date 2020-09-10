@@ -21,7 +21,6 @@ import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 
 describe('TransactionProcessor', () => {
-  const config = require('../json/config-test.json');
   let casClient: Ipfs;
   let operationStore: MockOperationStore;
   let downloadManager: DownloadManager;
@@ -40,9 +39,12 @@ describe('TransactionProcessor', () => {
   beforeEach(() => {
     const fetchTimeoutInSeconds = 1;
     casClient = new Ipfs('unusedUri', fetchTimeoutInSeconds);
-    operationStore = new MockOperationStore();
-    downloadManager = new DownloadManager(config.maxConcurrentDownloads, casClient);
+
+    const maxConcurrentDownloads = 10;
+    downloadManager = new DownloadManager(maxConcurrentDownloads, casClient);
     downloadManager.start();
+
+    operationStore = new MockOperationStore();
     blockchain = new MockBlockchain();
     transactionProcessor = new TransactionProcessor(downloadManager, operationStore, blockchain, versionMetadataFetcher);
   });
