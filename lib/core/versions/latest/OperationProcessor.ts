@@ -125,8 +125,15 @@ export default class OperationProcessor implements IOperationProcessor {
     if (delta !== undefined) {
       // update the commitment hash regardless
       newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
-      document = DocumentComposer.applyPatches(document, delta.patches);
-      newDidState.document = document;
+      try {
+        document = DocumentComposer.applyPatches(document, delta.patches);
+        newDidState.document = document;
+      } catch (error) {
+        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+        const transactionNumber = anchoredOperationModel.transactionNumber;
+        console.debug(
+          `Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+      }
     }
 
     return newDidState;
@@ -226,8 +233,16 @@ export default class OperationProcessor implements IOperationProcessor {
     if (delta !== undefined) {
       // update the commitment hash regardless
       newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
-      document = DocumentComposer.applyPatches(document, delta.patches);
-      newDidState.document = document;
+      try {
+        document = DocumentComposer.applyPatches(document, delta.patches);
+        newDidState.document = document;
+      } catch (error) {
+        const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
+        const transactionNumber = anchoredOperationModel.transactionNumber;
+        console.debug(
+          `Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+      }
+
     }
 
     return newDidState;
