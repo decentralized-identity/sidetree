@@ -103,36 +103,31 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
+    // When delta parsing fails, operation.delta is undefined.
     const operation = await CreateOperation.parse(anchoredOperationModel.operationBuffer);
+
+    const newDidState: DidState = {
+      document: { },
+      nextRecoveryCommitmentHash: operation.suffixData.recoveryCommitment,
+      nextUpdateCommitmentHash: undefined,
+      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
+    };
 
     // Ensure actual delta hash matches expected delta hash.
     const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.suffixData.deltaHash);
     if (!isMatchingDelta) {
-      return didState;
+      return newDidState;
     }
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
     let document = { };
-    try {
-      if (delta !== undefined) {
-        document = DocumentComposer.applyPatches(document, delta.patches);
-      }
-    } catch (error) {
-      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-      const transactionNumber = anchoredOperationModel.transactionNumber;
-      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
-
-      // Return the given DID state if error is encountered applying the patches.
-      return didState;
+    if (delta !== undefined) {
+      // update the commitment hash regardless
+      newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
+      document = DocumentComposer.applyPatches(document, delta.patches);
+      newDidState.document = document;
     }
-
-    const newDidState = {
-      document,
-      nextRecoveryCommitmentHash: operation.suffixData.recoveryCommitment,
-      nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
-      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
-    };
 
     return newDidState;
   }
@@ -196,6 +191,7 @@ export default class OperationProcessor implements IOperationProcessor {
     didState: DidState
   ): Promise<DidState> {
 
+    // When delta parsing fails, operation.delta is undefined.
     const operation = await RecoverOperation.parse(anchoredOperationModel.operationBuffer);
 
     // Verify the recovery key hash.
@@ -210,34 +206,29 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     }
 
+    const newDidState: DidState = {
+      nextRecoveryCommitmentHash: operation.signedData.recoveryCommitment,
+      document: { },
+      nextUpdateCommitmentHash: undefined,
+      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
+    };
+
     // Verify the actual delta hash against the expected delta hash.
     const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
-      return didState;
+      return newDidState;
     }
 
     // Apply the given patches against an empty object.
     const delta = operation.delta;
     let document = { };
-    try {
-      if (delta !== undefined) {
-        document = DocumentComposer.applyPatches(document, delta.patches);
-      }
-    } catch (error) {
-      const didUniqueSuffix = anchoredOperationModel.didUniqueSuffix;
-      const transactionNumber = anchoredOperationModel.transactionNumber;
-      console.debug(`Unable to apply document patch in transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
 
-      // Return the given DID state if error is encountered applying the patches.
-      return didState;
+    if (delta !== undefined) {
+      // update the commitment hash regardless
+      newDidState.nextUpdateCommitmentHash = delta.updateCommitment;
+      document = DocumentComposer.applyPatches(document, delta.patches);
+      newDidState.document = document;
     }
-
-    const newDidState = {
-      document,
-      nextRecoveryCommitmentHash: operation.signedData.recoveryCommitment,
-      nextUpdateCommitmentHash: delta ? delta.updateCommitment : undefined,
-      lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
-    };
 
     return newDidState;
   }
