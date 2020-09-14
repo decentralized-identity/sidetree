@@ -133,7 +133,7 @@ export default class OperationProcessor implements IOperationProcessor {
         const transactionNumber = anchoredOperationModel.transactionNumber;
         console.debug(
           `Partial update on next commitment hash applied because: ` +
-          Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
+          `Unable to apply delta patches for transaction number ${transactionNumber} for DID ${didUniqueSuffix}: ${SidetreeError.stringify(error)}.`);
       }
     }
 
