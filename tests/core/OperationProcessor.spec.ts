@@ -463,13 +463,13 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
       });
 
-      it('should apply the create operation by with { } document if encoded data and suffix data do not match', async () => {
+      fit('should apply the create operation with { } as document if encoded data and suffix data do not match', async () => {
         isValidHashSpy.and.returnValue(false);
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toEqual({ });
-        expect(newDidState!.nextRecoveryCommitmentHash).not.toEqual(nextRecoveryCommitmentHash);
+        expect(newDidState!.nextRecoveryCommitmentHash).toEqual(Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey));
       });
     });
 
