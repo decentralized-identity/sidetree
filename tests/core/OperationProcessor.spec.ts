@@ -463,7 +463,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.nextRecoveryCommitmentHash).toEqual(nextRecoveryCommitmentHash);
       });
 
-      fit('should apply the create operation with { } as document if encoded data and suffix data do not match', async () => {
+      it('should apply the create operation with { } as document if encoded data and suffix data do not match', async () => {
         isValidHashSpy.and.returnValue(false);
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
