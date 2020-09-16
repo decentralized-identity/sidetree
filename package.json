@@ -17,7 +17,7 @@
     "multihashes": "0.4.14",
     "node-fetch": "2.6.0",
     "priorityqueue": "1.0.0",
-    "spec-up": "0.9.79",
+    "spec-up": "0.9.82",
     "time-span": "3.1.0",
     "yieldable-json": "1.1.0"
   },

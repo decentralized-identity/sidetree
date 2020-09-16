@@ -74,12 +74,31 @@ The follow sequence of rules and processing steps must be followed to correctly 
 
 1. The [Map File](#map-file) ****MUST NOT**** exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Map File](#map-file) ****MUST**** validate against the protocol-defined [Map File](#map-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
-3. If processing of rules 1 and 2 above resulted in successful validation of the Map File, begin retrieval of the Chunk Files by iterating the `chunks` array and using the [`CAS_PROTOCOL`](#cas-protocol) to fetch each entry's `chunk_file_uri` (a _CAS URI_ based on the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm). This is only a ****SUGGESTED**** point at which to begin retrieval of the Map File, not a blocking procedural step, so you may continue with processing before retrieval of the Chunk File chunks is complete.
+3. If processing of rules 1 and 2 above resulted in successful validation of the Map File, begin retrieval of the Chunk Files by iterating the `chunks` array and using the [`CAS_PROTOCOL`](#cas-protocol) to fetch each entry's `chunk_file_uri` (a _CAS URI_ based on the [`CAS_URI_ALGORITHM`](#cas-uri-algorithm)). This is only a ****SUGGESTED**** point at which to begin retrieval of the [Chunk Files](#chunk-files), not a blocking procedural step, so you may continue with processing before retrieval of the [Chunk Files](#chunk-files) is complete.
 4. Iterate the [_Map File Update Entries_](#map-file-update-entry), and for each entry, process as follows:
     1. Ensure the [DID Suffix](#did-suffix) of the operation entry has not been included in another valid operation that was previously processed in the scope of the [Map File](#map-file) or its parent [Anchor File](#anchor-file). If another previous, valid operation was already processed in the scope of this [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
-    2. Ensure there IS NOT an existing, valid [Map File Update Entry](#map-file-update-entry) for the same [DID Suffix](#did-suffix), with the same update reveal value, at a previous logical time in the implementation node's observed state-history: If another valid [Map File Update Entry](#map-file-update-entry) has already update a DID matching the same [DID Suffix](#did-suffix), using the same update commitment in any previously observed transaction preceding the current transaction in [Ledger Time](#ledger-time), do not process the operation and move to the next operation in the array.
     2. Create an entry for the operation within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
 5. If the node is in a [_Light Node_](#light-node) configuration, retain a reference to the [Chunk Files](#chunk-files) relative to the DIDs in the anchored batch for just-in-time fetch of the [Chunk Files](#chunk-files) during DID resolution.
+
+### Core Proof File Processing
+
+The follow sequence of rules and processing steps must be followed to correctly process an [Core Proof File](#core-proof-file):
+
+1. The [Core Proof File](#core-proof-file) ****MUST NOT**** exceed the [`MAX_PROOF_FILE_SIZE`](#max-proof-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The [Core Proof File](#core-proof-file) ****MUST**** validate against the protocol-defined [Core Proof File](#core-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. Iterate any [_Core Proof File Recovery Entries_](#core-proof-file-recovery-entry) and [_Core Proof File Deactivate Entries_](#core-proof-file-recovery-entry) that may be present, and for each entry, process as follows:
+    1. Ensure an operation for the related DID has not been included in another valid operation that was previously processed in the scope of the [Core Proof File](#core-proof-file) or its parent [Anchor File](#anchor-file). If another previous, valid operation was already processed in the scope of the [Core Proof File](#core-proof-file) or [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+    2. Create an entry, or associate with an existing entry, the proof payload within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
+
+### Provisional Proof File Processing
+
+The follow sequence of rules and processing steps must be followed to correctly process an [Provisional Proof File](#provisional-proof-file):
+
+1. The [_Provisional Proof File_](#provisional-proof-file) ****MUST NOT**** exceed the [`MAX_PROOF_FILE_SIZE`](#max-proof-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+2. The [_Provisional Proof File_](#provisional-proof-file) ****MUST**** validate against the protocol-defined [_Provisional Proof File_](#provisional-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
+3. Iterate any [_Provisional Proof File Update Entries_](#provisional-proof-file-update-entry) that may be present, and for each entry, process as follows:
+    1. Ensure an operation for the related DID has not been included in another valid operation that was previously processed in the scope of the [_Provisional Proof File_](#provisional-proof-file) or its parent [Anchor File](#anchor-file). If another previous, valid operation was already processed in the scope of the [_Provisional Proof File_](#provisional-proof-file) or [Anchor File](#anchor-file) for the same DID, do not process the operation and move to the next operation in the array.
+    2. Create an entry, or associate with an existing entry, the proof payload within the _Operation Storage_ area relative to the [DID Suffix](#did-suffix).
 
 ### Chunk File Processing
 
