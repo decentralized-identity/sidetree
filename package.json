@@ -15,7 +15,7 @@
     "jose": "1.25.0",
     "mongodb": "3.2.3",
     "multihashes": "0.4.14",
-    "node-fetch": "2.6.0",
+    "node-fetch": "2.6.1",
     "priorityqueue": "1.0.0",
     "spec-up": "0.9.82",
     "time-span": "3.1.0",
