@@ -123,6 +123,10 @@ export default class CreateOperation implements OperationModel {
     }
 
     CreateOperation.validateSuffixData(operationObject.suffix_data);
+    const suffixData = {
+      deltaHash: operationObject.suffix_data.delta_hash,
+      recoveryCommitment: operationObject.suffix_data.recovery_commitment
+    }
 
     // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
     // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
@@ -130,7 +134,10 @@ export default class CreateOperation implements OperationModel {
     let delta;
     try {
       Operation.validateDelta(operationObject.delta);
-      delta = operationObject.delta;
+      delta = {
+        patches: operationObject.delta.patches,
+        updateCommitment: operationObject.delta.update_commitment
+      };
     } catch {
       delta = undefined;
     }
@@ -139,7 +146,7 @@ export default class CreateOperation implements OperationModel {
 
     const encodedSuffixData = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.suffix_data));
     const encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
-    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, operationObject.suffix_data, encodedDelta, delta);
+    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedDelta, delta);
   }
 
   /**

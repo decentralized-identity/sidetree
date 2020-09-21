@@ -2,9 +2,11 @@ import * as crypto from 'crypto';
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
+import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
+import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import Jws from '../../lib/core/versions/latest/util/Jws';
@@ -17,7 +19,6 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import UpdateOperation from '../../lib/core/versions/latest/UpdateOperation';
-import DataGenerator from './DataGenerator';
 
 interface AnchoredCreateOperationGenerationInput {
   transactionNumber: number;
@@ -114,6 +115,65 @@ export default class OperationGenerator {
       updatePrivateKey: createOperationData.updatePrivateKey,
       signingPublicKey: createOperationData.signingPublicKey,
       signingPrivateKey: createOperationData.signingPrivateKey
+    };
+  }
+
+  /**
+   * generate a long form did
+   * @param recoveryPublicKey 
+   * @param updatePublicKey 
+   * @param otherPublicKeys 
+   * @param serviceEndpoints 
+   */
+  public static async generateLongFormDid (
+    recoveryPublicKey?: JwkEs256k,
+    updatePublicKey?: JwkEs256k,
+    otherPublicKeys?: PublicKeyModel[],
+    serviceEndpoints?: ServiceEndpointModel[]) {
+
+    const document = {
+      public_keys: otherPublicKeys || [],
+      service_endpoints: serviceEndpoints || []
+    };
+
+    const patches = [{
+      action: 'replace',
+      document
+    }];
+
+    [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+    [updatePublicKey] = await Jwk.generateEs256kKeyPair();
+
+    const delta = {
+      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
+      patches
+    };
+
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
+
+    const suffixData = {
+      delta_hash: deltaHash,
+      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
+    };
+
+    const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
+    const shortFormDid = `did:sidetree:${didUniqueSuffix}`;
+
+    // TODO: discuss if canonicalization is necessary.
+    const initialState = {
+      suffix_data: suffixData,
+      delta: delta
+    };
+
+    const canonicalizedInitialStateBuffer = JsonCanonicalizer.canonicalizeAsBuffer(initialState);
+    const encodedCanonicalizedInitialStateString = Encoder.encode(canonicalizedInitialStateBuffer);
+
+    const longFormDid = `${shortFormDid}:${encodedCanonicalizedInitialStateString}`;
+    return {
+      longFormDid,
+      shortFormDid,
+      didUniqueSuffix,
+      
     };
   }
 

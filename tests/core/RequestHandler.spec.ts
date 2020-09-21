@@ -223,7 +223,7 @@ describe('RequestHandler', () => {
     validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
-  it('should return a resolved DID Document given a valid long-form DID.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID with query param initial state format.', async () => {
     // Create a long-form DID string.
     const createOperationData = await OperationGenerator.generateCreateOperation();
     const didMethodName = 'sidetree';
@@ -232,6 +232,19 @@ describe('RequestHandler', () => {
     const encodedDelta = createOperationData.createOperation.encodedDelta;
     const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
     const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
+
+    const response = await requestHandler.handleResolveRequest(longFormDid);
+    const httpStatus = Response.toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+    expect(response.body).toBeDefined();
+
+    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
+  });
+
+  it('should return a resolved DID Document given a valid long-form DID with JCS format.', async () => {
+    // Create a long-form DID string.
+    const longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 
     const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);
@@ -255,7 +268,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
+    expect(response.body.code).toEqual(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString);
   });
 
   it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {

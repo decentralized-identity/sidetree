@@ -38,20 +38,15 @@ describe('DID', async () => {
 
     it('should create a long-form DID with suffix data and delta successfully.', async () => {
       // Create a long-form DID string.
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const didMethodName = 'sidetree';
-      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-      const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-      const encodedDelta = createOperationData.createOperation.encodedDelta;
-      const longFormDid = `${shortFormDid}:${encodedSuffixData}.${encodedDelta}`;
 
-      const did = await Did.create(longFormDid, didMethodName);
+      const generatedLongFormDidData = await OperationGenerator.generateLongFormDid();
+      const didMethodName = 'sidetree';
+
+      const did = await Did.create(generatedLongFormDidData.longFormDid, didMethodName);
       expect(did.isShortForm).toBeFalsy();
       expect(did.didMethodName).toEqual(didMethodName);
-      expect(did.shortForm).toEqual(shortFormDid);
-      expect(did.uniqueSuffix).toEqual(didUniqueSuffix);
-      expect(did.createOperation).toEqual(createOperationData.createOperation);
+      expect(did.shortForm).toEqual(generatedLongFormDidData.shortFormDid);
+      expect(did.uniqueSuffix).toEqual(generatedLongFormDidData.didUniqueSuffix);
     });
 
     it('should create a testnet long-form DID successfully.', async () => {
