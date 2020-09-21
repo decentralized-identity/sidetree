@@ -38,6 +38,7 @@ import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 const util = require('util');
+const fs = require('fs');
 
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
@@ -135,6 +136,13 @@ describe('RequestHandler', () => {
     // Trigger the batch writing to clear the operation queue for future tests.
     await batchScheduler.writeOperationBatch();
   });
+
+  it('should resolve long form did from test vectors correctly', async () => {
+    const longFormFixture = fs.readFileSync('./tests/fixtures/longFormDid/longFormDid.txt', 'utf8');
+    // const longFormFixture = 'did:sidetree:EiAhWlyxTdyM9XLFcWNJvz_kkbnklMfD5XiQKpBAIOnPuw:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljX2tleXMiOlt7ImlkIjoiYW55U2lnbmluZ0tleUlkIiwiandrIjp7ImNydiI6InNlY3AyNTZrMSIsImt0eSI6IkVDIiwieCI6IkVZanU4c3h5YVRvb2o4ekFzTG9fblZOSncxaHJobkhRUVRwT0hzd2g1X0UiLCJ5IjoiWG9jOFVVQUFnUWs4a196dEhlSEpGUlFySGFxb2F2Z3RyR3Fzb3cwdFh2dyJ9LCJwdXJwb3NlIjpbImF1dGgiXSwidHlwZSI6IkVjZHNhU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOSJ9XSwic2VydmljZV9lbmRwb2ludHMiOlt7ImVuZHBvaW50IjoiYW55RW5kcG9pbnQiLCJpZCI6ImFueVNlcnZpY2VFbmRwb2ludElkIiwidHlwZSI6ImFueVR5cGUifV19fV0sInVwZGF0ZV9jb21taXRtZW50IjoiRWlEZnBOSmNDOWJKc3A0Q0t1Uk5Vd0JCYUxFckdwc25DUTlBTTl5c2ZqTUhQZyJ9LCJzdWZmaXhfZGF0YSI6eyJkZWx0YV9oYXNoIjoiRWlBT3BOeXNJQndpSHpKQ1NCcjhuLUR4Sjl6bG1YUFNjeGFaTW05aW5fQzVjdyIsInJlY292ZXJ5X2NvbW1pdG1lbnQiOiJFaUR4UUJhajJsUDIyYkNjQ2w0NHhLUVJ2Y21ib1h6c1ZBaTFyQnI3SGozVERRIn19'
+    const response = await requestHandler.handleResolveRequest(longFormFixture);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+  })
 
   it('should process create operation from test vectors correctly', async () => {
     const createOperationBuffer = Buffer.from(JSON.stringify(createFixture));
