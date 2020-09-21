@@ -7,6 +7,7 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 interface SuffixDataModel {
   deltaHash: string;
@@ -70,6 +71,17 @@ export default class CreateOperation implements OperationModel {
   }
 
   /**
+   * Computes the DID unique suffix given the encoded suffix data object.
+   * @param suffixData the suffix data object to calculate unique suffix from
+   */
+  private static computeJcsDidUniqueSuffix (suffixData: object): string {
+    const suffixDataBuffer = JsonCanonicalizer.canonicalizeAsBuffer(suffixData);
+    const multihash = Multihash.hash(suffixDataBuffer);
+    const encodedMultihash = Encoder.encode(multihash);
+    return encodedMultihash;
+  }
+
+  /**
    * Parses the given input as a create operation entry in the anchor file.
    */
   public static async parseOperationFromAnchorFile (input: any): Promise<CreateOperation> {
@@ -85,8 +97,49 @@ export default class CreateOperation implements OperationModel {
   public static async parse (operationBuffer: Buffer): Promise<CreateOperation> {
     const operationJsonString = operationBuffer.toString();
     const operationObject = await JsonAsync.parse(operationJsonString);
-    const createOperation = await CreateOperation.parseObject(operationObject, operationBuffer, false);
+    let createOperation;
+    if (typeof operationObject.suffix_data === 'string') {
+      createOperation = await CreateOperation.parseObject(operationObject, operationBuffer, false);
+    } else {
+      createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer);
+    }
     return createOperation;
+  }
+
+  /**
+   * Parse the given operation object as a CreateOperation
+   * @param operationObject The operationObject is a json object with no encoding
+   * @param operationBuffer The buffer format of the operationObject
+   */
+  public static parseJcsObject (operationObject: any, operationBuffer: Buffer): CreateOperation {
+    let expectedPropertyCount = 3;
+    const properties = Object.keys(operationObject);
+    if (properties.length !== expectedPropertyCount) {
+      throw new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty);
+    }
+
+    if (operationObject.type !== OperationType.Create) {
+      throw new SidetreeError(ErrorCode.CreateOperationTypeIncorrect);
+    }
+
+    CreateOperation.validateSuffixData(operationObject.suffix_data);
+
+    // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
+    // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
+    // so here we let `delta` be `undefined`.
+    let delta;
+    try {
+      Operation.validateDelta(operationObject.delta);
+      delta = operationObject.delta;
+    } catch {
+      delta = undefined;
+    }
+
+    const didUniqueSuffix = CreateOperation.computeJcsDidUniqueSuffix(operationObject.suffix_data);
+
+    const encodedSuffixData = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.suffix_data));
+    const encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
+    return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, operationObject.suffix_data, encodedDelta, delta);
   }
 
   /**
@@ -132,13 +185,10 @@ export default class CreateOperation implements OperationModel {
     return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedDelta, delta);
   }
 
-  private static async parseSuffixData (suffixDataEncodedString: any): Promise<SuffixDataModel> {
-    if (typeof suffixDataEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrNotString);
+  private static validateSuffixData (suffixData: any): void {
+    if (typeof suffixData !== 'object') {
+      throw new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject)
     }
-
-    const suffixDataJsonString = Encoder.decodeAsString(suffixDataEncodedString);
-    const suffixData = await JsonAsync.parse(suffixDataJsonString);
 
     const properties = Object.keys(suffixData);
     // will have 3 if has type
@@ -166,6 +216,16 @@ export default class CreateOperation implements OperationModel {
         throw new SidetreeError(ErrorCode.CreateOperationSuffixDataTypeInvalidCharacter);
       }
     }
+  }
+
+  private static async parseSuffixData (suffixDataEncodedString: any): Promise<SuffixDataModel> {
+    if (typeof suffixDataEncodedString !== 'string') {
+      throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrNotString);
+    }
+
+    const suffixDataJsonString = Encoder.decodeAsString(suffixDataEncodedString);
+    const suffixData = await JsonAsync.parse(suffixDataJsonString);
+    CreateOperation.validateSuffixData(suffixData);
 
     return {
       deltaHash: suffixData.delta_hash,

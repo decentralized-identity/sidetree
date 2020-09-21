@@ -42,16 +42,10 @@ export default class Operation {
     }
   }
 
-  /**
-   * Parses the given encoded delta string into an internal `DeltaModel`.
-   */
-  public static async parseDelta (deltaEncodedString: any): Promise<DeltaModel> {
-    if (typeof deltaEncodedString !== 'string') {
-      throw new SidetreeError(ErrorCode.DeltaMissingOrNotString);
+  public static validateDelta (delta: any): void {
+    if (typeof delta !== 'object') {
+      throw new SidetreeError(ErrorCode.DeltaIsNotObject);
     }
-
-    const deltaJsonString = Encoder.decodeAsString(deltaEncodedString);
-    const delta = await JsonAsync.parse(deltaJsonString);
 
     const properties = Object.keys(delta);
     if (properties.length !== 2) {
@@ -66,6 +60,20 @@ export default class Operation {
     DocumentComposer.validateDocumentPatches(delta.patches);
     const nextUpdateCommitment = Encoder.decodeAsBuffer(delta.update_commitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextUpdateCommitment);
+  }
+
+  /**
+   * Parses the given encoded delta string into an internal `DeltaModel`.
+   */
+  public static async parseDelta (deltaEncodedString: any): Promise<DeltaModel> {
+    if (typeof deltaEncodedString !== 'string') {
+      throw new SidetreeError(ErrorCode.DeltaMissingOrNotString);
+    }
+
+    const deltaJsonString = Encoder.decodeAsString(deltaEncodedString);
+    const delta = await JsonAsync.parse(deltaJsonString);
+
+    Operation.validateDelta(delta);
 
     return {
       patches: delta.patches,

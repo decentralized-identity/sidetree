@@ -5,6 +5,7 @@ import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 import { URL } from 'url';
+import Encoder from './Encoder';
 
 /**
  * Class containing reusable Sidetree DID related operations.
@@ -40,9 +41,10 @@ export default class Did {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
 
-    const indexOfDotChar = did.indexOf('.');
-    // If there is no 'dot', then DID can only be in short-form.
-    if (indexOfDotChar < 0) {
+    // split by : and ?, if there are 3 elements, then it's short form. Long form has 4 elements
+    // when the ? format is deprecated, `:` will be the only seperator.
+    const didSplitLength = did.split(/:|\?/).length;
+    if (didSplitLength === 3) {
       this.isShortForm = true;
     } else {
       this.isShortForm = false;
@@ -53,7 +55,7 @@ export default class Did {
     } else {
       // Long-form can be in the form of:
       // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-      // 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+      // 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
       const indexOfQuestionMarkChar = did.indexOf('?');
       if (indexOfQuestionMarkChar > 0) {
@@ -83,17 +85,17 @@ export default class Did {
     if (!did.isShortForm) {
       // Long-form can be in the form of:
       // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-      // 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+      // 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
       const indexOfQuestionMarkChar = didString.indexOf('?');
-      let initialState;
+      let createOperation;
       if (indexOfQuestionMarkChar > 0) {
-        initialState = Did.getInitialStateFromDidStringWithQueryParameter(didString, didMethodName);
+        const initialState = Did.getInitialStateFromDidStringWithQueryParameter(didString, didMethodName);
+        createOperation = await Did.constructCreateOperationFromInitialState(initialState);
       } else {
-        initialState = Did.getInitialStateFromDidStringWithExtraColon(didString);
+        const initialStateEncodedJcs = Did.getInitialStateFromDidStringWithExtraColon(didString);
+        createOperation = Did.constructCreateOperationFromEncodedJCS(initialStateEncodedJcs);
       }
-
-      const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
       // because a given long-form DID may have been created long ago,
@@ -152,13 +154,33 @@ export default class Did {
   }
 
   private static getInitialStateFromDidStringWithExtraColon (didString: string): string {
-    // DID example: 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+    // DID example: 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
     const lastColonIndex = didString.lastIndexOf(':');
 
     const initialStateValue = didString.substring(lastColonIndex + 1);
 
     return initialStateValue;
+  }
+
+  private static constructCreateOperationFromEncodedJCS (initialStateEncodedJcs: string): CreateOperation {
+    // Initial state should be in the format base64url(JCS(initialState))
+    const initialStateDecodedJcs = Encoder.decodeAsString(initialStateEncodedJcs);
+    let initialStateObject;
+    try {
+      initialStateObject = JSON.parse(initialStateDecodedJcs)
+    } catch {
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'long form initial state should be encoded jcs');
+    }
+
+    const createOperationRequest = {
+      type: OperationType.Create,
+      suffix_data: initialStateObject.suffix_data,
+      delta: initialStateObject.delta
+    };
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer);
+    return createOperation;
   }
 
   private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {

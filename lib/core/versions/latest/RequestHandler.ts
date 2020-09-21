@@ -146,7 +146,7 @@ export default class RequestHandler implements IRequestHandler {
    * @param shortOrLongFormDid Can either be:
    *   1. A short-form DID. e.g. 'did:<methodName>:abc' or
    *   2. A long-form DID. e.g. 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-   *                            'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+   *                            'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
    */
   public async handleResolveRequest (shortOrLongFormDid: string): Promise<ResponseModel> {
     try {
