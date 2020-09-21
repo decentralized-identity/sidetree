@@ -6,6 +6,7 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 import { URL } from 'url';
 import Encoder from './Encoder';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 /**
  * Class containing reusable Sidetree DID related operations.
@@ -173,6 +174,8 @@ export default class Did {
       throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'long form initial state should be encoded jcs');
     }
 
+    Did.validateInitialState(initialStateEncodedJcs, initialStateObject);
+
     const createOperationRequest = {
       type: OperationType.Create,
       suffix_data: initialStateObject.suffix_data,
@@ -181,6 +184,16 @@ export default class Did {
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
     const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer);
     return createOperation;
+  }
+
+  /**
+   * Make sure initial state is JCS
+   */
+  private static validateInitialState(initialStateEncodedJcs: string, initialStateObject: any): void {
+    const expectedInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(initialStateObject));
+    if (expectedInitialState !== initialStateEncodedJcs) {
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'make sure to jcs then encode the initial state');
+    }
   }
 
   private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {

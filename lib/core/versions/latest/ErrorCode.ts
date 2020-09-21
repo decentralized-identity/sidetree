@@ -48,6 +48,7 @@ export default {
   DeltaExceedsMaximumSize: 'delta_exceeds_maximum_size',
   DeltaMissingOrUnknownProperty: 'delta_missing_or_unknown_property',
   DidIncorrectPrefix: 'did_incorrect_prefix',
+  DidInitialStateJcsIsNotJcs: 'did_initial_state_jcs_is_not_jcs',
   DidInitialStateJcsIsNotJosn: 'did_initial_state_jcs_is_not_json',
   DidInitialStateValueContainsMoreThanOneDot: 'did_initial_state_value_contains_more_than_one_dot',
   DidInitialStateValueContainsNoDot: 'did_initial_state_value_contains_no_dot',
