@@ -9,6 +9,24 @@ import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('CreateOperation', async () => {
   describe('parseJcsObject', () => {
+    it('should leave delta as empty if it is not valid', () => {
+      const operationObject = {
+        type: 'create',
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something'
+        },
+        delta: 'this is not a valid delta'
+      }
+
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(()=> { 
+        //do nothing 
+      })
+
+      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'));
+      expect(result.delta).toBeUndefined();
+    });
+
     it('should throw sidetree error if object contains more or less than 3 properties', () => {
       const twoProperties = { one: 1, two: 2 };
       const fourProperties = { one: 1, two: 2, three: 3, four: 4 };
