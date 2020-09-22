@@ -126,7 +126,7 @@ export default class CreateOperation implements OperationModel {
     const suffixData = {
       deltaHash: operationObject.suffix_data.delta_hash,
       recoveryCommitment: operationObject.suffix_data.recovery_commitment
-    }
+    };
 
     // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
     // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
@@ -195,7 +195,7 @@ export default class CreateOperation implements OperationModel {
 
   private static validateSuffixData (suffixData: any): void {
     if (typeof suffixData !== 'object') {
-      throw new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject)
+      throw new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject);
     }
 
     const properties = Object.keys(suffixData);

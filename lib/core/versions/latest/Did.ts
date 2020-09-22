@@ -95,7 +95,7 @@ export default class Did {
         createOperation = await Did.constructCreateOperationFromInitialState(initialState);
       } else {
         const initialStateEncodedJcs = Did.getInitialStateFromDidStringWithExtraColon(didString);
-        createOperation = Did.constructCreateOperationFromEncodedJCS(initialStateEncodedJcs);
+        createOperation = Did.constructCreateOperationFromEncodedJcs(initialStateEncodedJcs);
       }
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
@@ -164,12 +164,12 @@ export default class Did {
     return initialStateValue;
   }
 
-  private static constructCreateOperationFromEncodedJCS (initialStateEncodedJcs: string): CreateOperation {
+  private static constructCreateOperationFromEncodedJcs (initialStateEncodedJcs: string): CreateOperation {
     // Initial state should be in the format base64url(JCS(initialState))
     const initialStateDecodedJcs = Encoder.decodeAsString(initialStateEncodedJcs);
     let initialStateObject;
     try {
-      initialStateObject = JSON.parse(initialStateDecodedJcs)
+      initialStateObject = JSON.parse(initialStateDecodedJcs);
     } catch {
       throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'long form initial state should be encoded jcs');
     }
@@ -189,7 +189,7 @@ export default class Did {
   /**
    * Make sure initial state is JCS
    */
-  private static validateInitialState(initialStateEncodedJcs: string, initialStateObject: any): void {
+  private static validateInitialState (initialStateEncodedJcs: string, initialStateObject: any): void {
     const expectedInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(initialStateObject));
     if (expectedInitialState !== initialStateEncodedJcs) {
       throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'make sure to jcs then encode the initial state');

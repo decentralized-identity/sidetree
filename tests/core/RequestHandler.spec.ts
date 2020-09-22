@@ -143,7 +143,7 @@ describe('RequestHandler', () => {
     const response = await requestHandler.handleResolveRequest(longFormFixture);
     expect(response.status).toEqual(ResponseStatus.Succeeded);
     expect(response).toEqual(longFormResultingDocument as any);
-  })
+  });
 
   it('should process create operation from test vectors correctly', async () => {
     const createOperationBuffer = Buffer.from(JSON.stringify(createFixture));
@@ -321,7 +321,7 @@ describe('RequestHandler', () => {
     });
 
     it('[Bug #817] should return status as `deactivated` if DID is deactivated.', async () => {
-      // Intentionally not 
+      // Intentionally not
       const document = { unused: 'unused' };
       const mockedResolverReturnedDidState: DidState = {
         document,

@@ -120,10 +120,10 @@ export default class OperationGenerator {
 
   /**
    * generate a long form did
-   * @param recoveryPublicKey 
-   * @param updatePublicKey 
-   * @param otherPublicKeys 
-   * @param serviceEndpoints 
+   * @param recoveryPublicKey
+   * @param updatePublicKey
+   * @param otherPublicKeys
+   * @param serviceEndpoints
    */
   public static async generateLongFormDid (
     recoveryPublicKey?: JwkEs256k,
@@ -172,8 +172,8 @@ export default class OperationGenerator {
     return {
       longFormDid,
       shortFormDid,
-      didUniqueSuffix,
-      
+      didUniqueSuffix
+
     };
   }
 

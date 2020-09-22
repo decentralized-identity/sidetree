@@ -17,11 +17,11 @@ describe('CreateOperation', async () => {
           recovery_commitment: 'something'
         },
         delta: 'this is not a valid delta'
-      }
+      };
 
-      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(()=> { 
-        //do nothing 
-      })
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
+        // do nothing
+      });
 
       const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'));
       expect(result.delta).toBeUndefined();
@@ -44,18 +44,18 @@ describe('CreateOperation', async () => {
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
-    })
+    });
 
     it('should throw sidetree error if type is not create', () => {
-      const testObject = {type: 'notCreate', two: 2, three: 3};
+      const testObject = { type: 'notCreate', two: 2, three: 3 };
       try {
         CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)));
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
       }
-    })
-  })
+    });
+  });
   describe('computeDidUniqueSuffix()', async () => {
     it('should pass test vector.', async (done) => {
       const suffixDataString = 'AStringActingAsTheSuffixData';
@@ -113,7 +113,7 @@ describe('CreateOperation', async () => {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject));
       }
     });
-  })
+  });
 
   describe('parseSuffixData()', async () => {
     // TODO SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData

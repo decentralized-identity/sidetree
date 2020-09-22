@@ -11,23 +11,23 @@ describe('DID', async () => {
     it('should throw sidetree error if initial state is not an json', () => {
       const testInitialState = Encoder.encode('notJson');
       try {
-        Did['constructCreateOperationFromEncodedJCS'](testInitialState)
+        Did['constructCreateOperationFromEncodedJcs'](testInitialState);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'long form initial state should be encoded jcs'));
       }
-    })
+    });
 
     it('should throw sidetree error if initial state is not jcs', () => {
-      const testInitialState = Encoder.encode(JSON.stringify({z: 1, a: 2, b: 1}));
+      const testInitialState = Encoder.encode(JSON.stringify({ z: 1, a: 2, b: 1 }));
       try {
-        Did['constructCreateOperationFromEncodedJCS'](testInitialState)
+        Did['constructCreateOperationFromEncodedJcs'](testInitialState);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'make sure to jcs then encode the initial state'));
       }
-    })
-  })
+    });
+  });
 
   describe('create()', async () => {
     it('should create a short-form DID successfully.', async () => {

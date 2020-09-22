@@ -42,6 +42,10 @@ export default class Operation {
     }
   }
 
+  /**
+   * validate delta and throw if invalid
+   * @param delta the delta to validate
+   */
   public static validateDelta (delta: any): void {
     if (typeof delta !== 'object') {
       throw new SidetreeError(ErrorCode.DeltaIsNotObject);
