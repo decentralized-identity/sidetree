@@ -197,6 +197,7 @@ export default class Did {
   }
 
   private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
+    // TODO SIP 2 #781 deprecates this. Should be deleted when fully switched over
     // Initial state should be in the format: <suffix-data>.<delta>
     const firstIndexOfDot = initialState.indexOf('.');
     if (firstIndexOfDot === -1) {

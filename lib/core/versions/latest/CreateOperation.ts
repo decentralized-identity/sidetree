@@ -157,6 +157,7 @@ export default class CreateOperation implements OperationModel {
    * @param anchorFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<CreateOperation> {
+    // TODO SIP 2 #781 deprecates this. Should be deleted when fully switched over
     let expectedPropertyCount = 3;
     if (anchorFileMode) {
       expectedPropertyCount = 1;

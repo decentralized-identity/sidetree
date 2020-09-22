@@ -1,10 +1,34 @@
 import * as crypto from 'crypto';
 import Did from '../../lib/core/versions/latest/Did';
+import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import OperationGenerator from '../generators/OperationGenerator';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('DID', async () => {
+  describe('constructCreateOperationFromEncodedJCS', () => {
+    it('should throw sidetree error if initial state is not an json', () => {
+      const testInitialState = Encoder.encode('notJson');
+      try {
+        Did['constructCreateOperationFromEncodedJCS'](testInitialState)
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'long form initial state should be encoded jcs'));
+      }
+    })
+
+    it('should throw sidetree error if initial state is not jcs', () => {
+      const testInitialState = Encoder.encode(JSON.stringify({z: 1, a: 2, b: 1}));
+      try {
+        Did['constructCreateOperationFromEncodedJCS'](testInitialState)
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'make sure to jcs then encode the initial state'));
+      }
+    })
+  })
+
   describe('create()', async () => {
     it('should create a short-form DID successfully.', async () => {
       const expectedDidMethodName = 'sidetree';

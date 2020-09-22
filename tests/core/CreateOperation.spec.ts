@@ -8,6 +8,36 @@ import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('CreateOperation', async () => {
+  describe('parseJcsObject', () => {
+    it('should throw sidetree error if object contains more or less than 3 properties', () => {
+      const twoProperties = { one: 1, two: 2 };
+      const fourProperties = { one: 1, two: 2, three: 3, four: 4 };
+
+      try {
+        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)));
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
+      }
+
+      try {
+        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)));
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
+      }
+    })
+
+    it('should throw sidetree error if type is not create', () => {
+      const testObject = {type: 'notCreate', two: 2, three: 3};
+      try {
+        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)));
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
+      }
+    })
+  })
   describe('computeDidUniqueSuffix()', async () => {
     it('should pass test vector.', async (done) => {
       const suffixDataString = 'AStringActingAsTheSuffixData';
@@ -56,7 +86,19 @@ describe('CreateOperation', async () => {
     });
   });
 
+  describe('validateSuffixData', () => {
+    it('should throw if the input is not an object', () => {
+      const input = 'this is not an object, this is a string';
+      try {
+        CreateOperation['validateSuffixData'](input);
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationSuffixDataIsNotObject));
+      }
+    });
+  })
+
   describe('parseSuffixData()', async () => {
+    // TODO SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
     it('should function as expected with type', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
