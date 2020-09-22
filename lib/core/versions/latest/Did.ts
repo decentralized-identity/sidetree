@@ -37,15 +37,18 @@ export default class Did {
   private constructor (did: string, didMethodName: string) {
     this.didMethodName = didMethodName;
     const didPrefix = `did:${didMethodName}:`;
+    // TODO https://github.com/decentralized-identity/sidetree/issues/470 add network prefix to the didPrefix string
 
     if (!did.startsWith(didPrefix)) {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
 
-    // split by : and ?, if there are 3 elements, then it's short form. Long form has 4 elements
+    const didWithoutPrefix = did.split(didPrefix)[1];
+
+    // split by : and ?, if there are 1 elements, then it's short form. Long form has 2 elements
     // when the ? format is deprecated, `:` will be the only seperator.
-    const didSplitLength = did.split(/:|\?/).length;
-    if (didSplitLength === 3) {
+    const didSplitLength = didWithoutPrefix.split(/:|\?/).length;
+    if (didSplitLength === 1) {
       this.isShortForm = true;
     } else {
       this.isShortForm = false;
