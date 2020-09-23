@@ -69,7 +69,7 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw sidetree error if type is not create', () => {
-      const testObject = { 
+      const testObject = {
         type: 'notCreate',
         suffix_data: {
           delta_hash: 'something',
@@ -92,7 +92,7 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw sidetree error if has more or less than 1 property when in anchor file mode', () => {
-      const testObject = { 
+      const testObject = {
         type: 'this should not exist',
         suffix_data: {
           delta_hash: 'something',
@@ -106,7 +106,7 @@ describe('CreateOperation', async () => {
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
-    })
+    });
   });
 
   describe('computeJcsDidUniqueSuffix', () => {
