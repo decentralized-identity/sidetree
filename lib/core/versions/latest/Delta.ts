@@ -19,4 +19,18 @@ export default class Delta {
       throw new SidetreeError(ErrorCode.DeltaExceedsMaximumSize, errorMessage);
     }
   }
+
+  /**
+   * Validates size of the delta object
+   * TODO: SIP 2 #781 make observer check that the chunk file is cannonicalized, so we know that no filler characters are used
+   * Once we know there are no filler characters, it is valid to do size check on delta object because we know the object size === size in file
+   */
+  public static validateDeltaSize (delta: object) {
+    const size = Buffer.byteLength(JSON.stringify(delta), 'utf8');
+    if (size > ProtocolParameters.maxDeltaSizeInBytes) {
+      const errorMessage = `${size} bytes of 'delta' exceeded limit of ${ProtocolParameters.maxDeltaSizeInBytes} bytes.`;
+      console.info(errorMessage);
+      throw new SidetreeError(ErrorCode.DeltaExceedsMaximumSize, errorMessage);
+    }
+  }
 }

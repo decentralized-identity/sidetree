@@ -3,6 +3,7 @@ import Did from '../../lib/core/versions/latest/Did';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
 
@@ -27,6 +28,19 @@ describe('DID', async () => {
         expect(e).toEqual(new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'Initial state object and JCS string mismatch.'));
       }
     });
+
+    it('should throw sidetree error if delta exceeds size limit', () => {
+      const largeData = crypto.randomBytes(2000).toString('hex');// Intentionally exceeding max size.
+      const largeDelta = { data: largeData };
+      const testInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({ suffix_data: 'some data', delta: largeDelta }));
+
+      try {
+        Did['constructCreateOperationFromEncodedJcs'](testInitialState);
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e.code).toEqual(ErrorCode.DeltaExceedsMaximumSize);
+      }
+    })
   });
 
   describe('create()', async () => {
