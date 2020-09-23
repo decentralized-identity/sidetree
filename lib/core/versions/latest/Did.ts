@@ -185,7 +185,7 @@ export default class Did {
       delta: initialStateObject.delta
     };
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
-    const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer);
+    const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer, false);
     return createOperation;
   }
 

@@ -102,25 +102,28 @@ export default class CreateOperation implements OperationModel {
       // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
       createOperation = await CreateOperation.parseObject(operationObject, operationBuffer, false);
     } else {
-      createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer);
+      createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer, false);
     }
     return createOperation;
   }
 
   /**
-   * Parse the given operation object as a CreateOperation
+   * Parses the given operation object as a `CreateOperation`.
+   * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
+   * NOTE: This method is purely intended to be used as an optimization method over the `parse` method in that
+   * JSON parsing is not required to be performed more than once when an operation buffer of an unknown operation type is given.
    * @param operationObject The operationObject is a json object with no encoding
    * @param operationBuffer The buffer format of the operationObject
+   * @param anchorFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
-  public static parseJcsObject (operationObject: any, operationBuffer: Buffer): CreateOperation {
+  public static parseJcsObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): CreateOperation {
     let expectedPropertyCount = 3;
+    if (anchorFileMode) {
+      expectedPropertyCount = 1;
+    }
     const properties = Object.keys(operationObject);
     if (properties.length !== expectedPropertyCount) {
       throw new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty);
-    }
-
-    if (operationObject.type !== OperationType.Create) {
-      throw new SidetreeError(ErrorCode.CreateOperationTypeIncorrect);
     }
 
     CreateOperation.validateSuffixData(operationObject.suffix_data);
@@ -137,20 +140,29 @@ export default class CreateOperation implements OperationModel {
     // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
     // so here we let `delta` be `undefined`.
     let delta;
-    try {
-      Operation.validateDelta(operationObject.delta);
-      delta = {
-        patches: operationObject.delta.patches,
-        updateCommitment: operationObject.delta.update_commitment
-      };
-    } catch {
-      delta = undefined;
+    let encodedDelta;
+    if (!anchorFileMode) {
+      if (operationObject.type !== OperationType.Create) {
+        throw new SidetreeError(ErrorCode.CreateOperationTypeIncorrect);
+      }
+
+      try {
+        Operation.validateDelta(operationObject.delta);
+        delta = {
+          patches: operationObject.delta.patches,
+          updateCommitment: operationObject.delta.update_commitment
+        };
+      } catch {
+        // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
+        // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
+        // so here we let `delta` be `undefined`.
+      }
+      encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 
     const didUniqueSuffix = CreateOperation.computeJcsDidUniqueSuffix(operationObject.suffix_data);
 
     const encodedSuffixData = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.suffix_data));
-    const encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     return new CreateOperation(operationBuffer, didUniqueSuffix, encodedSuffixData, suffixData, encodedDelta, delta);
   }
 

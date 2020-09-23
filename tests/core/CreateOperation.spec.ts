@@ -27,8 +27,26 @@ describe('CreateOperation', async () => {
         // do nothing
       });
 
-      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'));
+      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'), false);
       expect(result.delta).toBeUndefined();
+    });
+
+    it('should process as anchor file mode when anchorFileMode is true', () => {
+      const operationObject = {
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        }
+      };
+
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
+        // do nothing
+      });
+
+      const result = CreateOperation.parseJcsObject(operationObject, Buffer.from('something'), true);
+      expect(result.delta).toBeUndefined();
+      expect(result.suffixData).toBeDefined();
     });
 
     it('should throw sidetree error if object contains more or less than 3 properties', () => {
@@ -36,14 +54,14 @@ describe('CreateOperation', async () => {
       const fourProperties = { one: 1, two: 2, three: 3, four: 4 };
 
       try {
-        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)));
+        CreateOperation.parseJcsObject(twoProperties, Buffer.from(JSON.stringify(twoProperties)), false);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
       }
 
       try {
-        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)));
+        CreateOperation.parseJcsObject(fourProperties, Buffer.from(JSON.stringify(fourProperties)), false);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
@@ -51,14 +69,44 @@ describe('CreateOperation', async () => {
     });
 
     it('should throw sidetree error if type is not create', () => {
-      const testObject = { type: 'notCreate', two: 2, three: 3 };
+      const testObject = { 
+        type: 'notCreate',
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        },
+        delta: 'something'
+      };
+
+      spyOn(CreateOperation as any, 'validateSuffixData').and.callFake(() => {
+        // do nothing
+      });
+
       try {
-        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)));
+        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)), false);
         fail('expect to throw sidetree error but did not');
       } catch (e) {
         expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationTypeIncorrect));
       }
     });
+
+    it('should throw sidetree error if has more or less than 1 property when in anchor file mode', () => {
+      const testObject = { 
+        type: 'this should not exist',
+        suffix_data: {
+          delta_hash: 'something',
+          recovery_commitment: 'something',
+          type: 'type'
+        }
+      };
+      try {
+        CreateOperation.parseJcsObject(testObject, Buffer.from(JSON.stringify(testObject)), true);
+        fail('expect to throw sidetree error but did not');
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.CreateOperationMissingOrUnknownProperty));
+      }
+    })
   });
 
   describe('computeJcsDidUniqueSuffix', () => {
