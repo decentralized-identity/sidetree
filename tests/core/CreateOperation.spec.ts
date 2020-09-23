@@ -17,7 +17,8 @@ describe('CreateOperation', async () => {
         type: 'create',
         suffix_data: {
           delta_hash: 'something',
-          recovery_commitment: 'something'
+          recovery_commitment: 'something',
+          type: 'type'
         },
         delta: 'this is not a valid delta'
       };
