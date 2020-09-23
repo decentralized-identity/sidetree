@@ -65,8 +65,8 @@ describe('CreateOperation', async () => {
       const actual = Multihash.canonicalizeThenHashThenEncode(suffixData);
       const expected = fs.readFileSync('tests/fixtures/uniqueSuffix/resultingSuffix.txt', 'utf8');
       expect(actual).toEqual(expected);
-    })
-  })
+    });
+  });
 
   describe('computeDidUniqueSuffix()', async () => {
     it('should return expected did unique suffix', async (done) => {

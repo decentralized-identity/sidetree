@@ -130,7 +130,7 @@ export default class CreateOperation implements OperationModel {
     };
 
     if (operationObject.suffix_data.type !== undefined) {
-      suffixData.type = operationObject.suffix_data.type
+      suffixData.type = operationObject.suffix_data.type;
     }
 
     // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
