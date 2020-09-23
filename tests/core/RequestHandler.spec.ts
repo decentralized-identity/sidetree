@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 
 import * as createFixture from '../fixtures/create/create.json';
 import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
+import * as longFormResultingDocument from '../fixtures/longFormDid/resultingDocument.json';
 import * as recoverFixture from '../fixtures/recover/recover.json';
 import * as updateFixture from '../fixtures/update/update.json';
 
@@ -38,6 +39,7 @@ import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 const util = require('util');
+const fs = require('fs');
 
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
@@ -136,6 +138,13 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
   });
 
+  it('should resolve long form did from test vectors correctly', async () => {
+    const longFormFixture = fs.readFileSync('./tests/fixtures/longFormDid/longFormDid.txt', 'utf8');
+    const response = await requestHandler.handleResolveRequest(longFormFixture);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+    expect(response).toEqual(longFormResultingDocument as any);
+  });
+
   it('should process create operation from test vectors correctly', async () => {
     const createOperationBuffer = Buffer.from(JSON.stringify(createFixture));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
@@ -223,7 +232,7 @@ describe('RequestHandler', () => {
     validateDidReferencesInDidDocument(response.body.didDocument, did);
   });
 
-  it('should return a resolved DID Document given a valid long-form DID.', async () => {
+  it('should return a resolved DID Document given a valid long-form DID with query param initial state format.', async () => {
     // Create a long-form DID string.
     const createOperationData = await OperationGenerator.generateCreateOperation();
     const didMethodName = 'sidetree';
@@ -232,6 +241,19 @@ describe('RequestHandler', () => {
     const encodedDelta = createOperationData.createOperation.encodedDelta;
     const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
     const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
+
+    const response = await requestHandler.handleResolveRequest(longFormDid);
+    const httpStatus = Response.toHttpStatus(response.status);
+
+    expect(httpStatus).toEqual(200);
+    expect(response.body).toBeDefined();
+
+    validateDidReferencesInDidDocument(response.body.didDocument, longFormDid);
+  });
+
+  it('should return a resolved DID Document given a valid long-form DID with JCS format.', async () => {
+    // Create a long-form DID string.
+    const longFormDid = (await OperationGenerator.generateLongFormDid()).longFormDid;
 
     const response = await requestHandler.handleResolveRequest(longFormDid);
     const httpStatus = Response.toHttpStatus(response.status);
@@ -255,7 +277,7 @@ describe('RequestHandler', () => {
     const httpStatus = Response.toHttpStatus(response.status);
 
     expect(httpStatus).toEqual(400);
-    expect(response.body.code).toEqual(ErrorCode.DidInitialStateValueDoesNotContainTwoParts);
+    expect(response.body.code).toEqual(ErrorCode.EncoderValidateBase64UrlStringInputNotBase64UrlString);
   });
 
   it('should respond with HTTP 200 when DID deactivate operation request is successful.', async () => {
@@ -299,7 +321,7 @@ describe('RequestHandler', () => {
     });
 
     it('[Bug #817] should return status as `deactivated` if DID is deactivated.', async () => {
-      // Intentionally not 
+      // Intentionally not
       const document = { unused: 'unused' };
       const mockedResolverReturnedDidState: DidState = {
         document,

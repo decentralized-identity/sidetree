@@ -50,6 +50,17 @@ export default class Multihash {
    * Canonicalize the given content, then double hashes the result using the latest supported hash algorithm, then encodes the multihash.
    * Mainly used for testing purposes.
    */
+  public static canonicalizeThenHashThenEncode (content: object) {
+    const canonicalizedStringBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
+
+    const multihashEncodedString = Multihash.hashThenEncode(canonicalizedStringBuffer, ProtocolParameters.hashAlgorithmInMultihashCode);
+    return multihashEncodedString;
+  }
+
+  /**
+   * Canonicalize the given content, then double hashes the result using the latest supported hash algorithm, then encodes the multihash.
+   * Mainly used for testing purposes.
+   */
   public static canonicalizeThenDoubleHashThenEncode (content: object) {
     const contentBuffer = JsonCanonicalizer.canonicalizeAsBuffer(content);
 

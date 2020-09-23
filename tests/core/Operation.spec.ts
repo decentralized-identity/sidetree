@@ -18,6 +18,17 @@ describe('Operation', async () => {
     });
   });
 
+  describe('validateDelta', () => {
+    it('should throw sidetree error if input is not an object', () => {
+      const input = 'this is not an object, this is a string';
+      try {
+        Operation.validateDelta(input);
+      } catch (e) {
+        expect(e).toEqual(new SidetreeError(ErrorCode.DeltaIsNotObject));
+      }
+    });
+  });
+
   describe('parseDelta()', async () => {
     it('should throw if delta is not string', async () => {
       await expectAsync(Operation.parseDelta(123)).toBeRejectedWith(new SidetreeError(ErrorCode.DeltaMissingOrNotString));

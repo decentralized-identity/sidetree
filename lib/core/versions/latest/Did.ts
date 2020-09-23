@@ -1,6 +1,8 @@
 import CreateOperation from './CreateOperation';
 import Delta from './Delta';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
@@ -35,14 +37,18 @@ export default class Did {
   private constructor (did: string, didMethodName: string) {
     this.didMethodName = didMethodName;
     const didPrefix = `did:${didMethodName}:`;
+    // TODO https://github.com/decentralized-identity/sidetree/issues/470 add network prefix to the didPrefix string
 
     if (!did.startsWith(didPrefix)) {
       throw new SidetreeError(ErrorCode.DidIncorrectPrefix);
     }
 
-    const indexOfDotChar = did.indexOf('.');
-    // If there is no 'dot', then DID can only be in short-form.
-    if (indexOfDotChar < 0) {
+    const didWithoutPrefix = did.split(didPrefix)[1];
+
+    // split by : and ?, if there is 1 element, then it's short form. Long form has 2 elements
+    // TODO: SIP 2 #781 when the ? format is deprecated, `:` will be the only seperator.
+    const didSplitLength = didWithoutPrefix.split(/:|\?/).length;
+    if (didSplitLength === 1) {
       this.isShortForm = true;
     } else {
       this.isShortForm = false;
@@ -53,7 +59,7 @@ export default class Did {
     } else {
       // Long-form can be in the form of:
       // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-      // 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+      // 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
       const indexOfQuestionMarkChar = did.indexOf('?');
       if (indexOfQuestionMarkChar > 0) {
@@ -83,17 +89,17 @@ export default class Did {
     if (!did.isShortForm) {
       // Long-form can be in the form of:
       // 'did:<methodName>:<unique-portion>?-<methodName>-initial-state=<create-operation-suffix-data>.<create-operation-delta>' or
-      // 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+      // 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
       const indexOfQuestionMarkChar = didString.indexOf('?');
-      let initialState;
+      let createOperation;
       if (indexOfQuestionMarkChar > 0) {
-        initialState = Did.getInitialStateFromDidStringWithQueryParameter(didString, didMethodName);
+        const initialState = Did.getInitialStateFromDidStringWithQueryParameter(didString, didMethodName);
+        createOperation = await Did.constructCreateOperationFromInitialState(initialState);
       } else {
-        initialState = Did.getInitialStateFromDidStringWithExtraColon(didString);
+        const initialStateEncodedJcs = Did.getInitialStateFromDidStringWithExtraColon(didString);
+        createOperation = Did.constructCreateOperationFromEncodedJcs(initialStateEncodedJcs);
       }
-
-      const createOperation = await Did.constructCreateOperationFromInitialState(initialState);
 
       // NOTE: we cannot use the unique suffix directly from `createOperation.didUniqueSuffix` for comparison,
       // because a given long-form DID may have been created long ago,
@@ -152,7 +158,7 @@ export default class Did {
   }
 
   private static getInitialStateFromDidStringWithExtraColon (didString: string): string {
-    // DID example: 'did:<methodName>:<unique-portion>:<create-operation-suffix-data>.<create-operation-delta>'
+    // DID example: 'did:<methodName>:<unique-portion>:Base64url(JCS({suffix-data, delta}))'
 
     const lastColonIndex = didString.lastIndexOf(':');
 
@@ -161,7 +167,40 @@ export default class Did {
     return initialStateValue;
   }
 
+  private static constructCreateOperationFromEncodedJcs (initialStateEncodedJcs: string): CreateOperation {
+    // Initial state should be in the format base64url(JCS(initialState))
+    const initialStateDecodedJcs = Encoder.decodeAsString(initialStateEncodedJcs);
+    let initialStateObject;
+    try {
+      initialStateObject = JSON.parse(initialStateDecodedJcs);
+    } catch {
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'Long form initial state should be encoded jcs.');
+    }
+
+    Did.validateInitialState(initialStateEncodedJcs, initialStateObject);
+
+    const createOperationRequest = {
+      type: OperationType.Create,
+      suffix_data: initialStateObject.suffix_data,
+      delta: initialStateObject.delta
+    };
+    const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
+    const createOperation = CreateOperation.parseJcsObject(createOperationRequest, createOperationBuffer, false);
+    return createOperation;
+  }
+
+  /**
+   * Make sure initial state is JCS
+   */
+  private static validateInitialState (initialStateEncodedJcs: string, initialStateObject: any): void {
+    const expectedInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(initialStateObject));
+    if (expectedInitialState !== initialStateEncodedJcs) {
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'Initial state object and JCS string mismatch.');
+    }
+  }
+
   private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
+    // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
     // Initial state should be in the format: <suffix-data>.<delta>
     const firstIndexOfDot = initialState.indexOf('.');
     if (firstIndexOfDot === -1) {
