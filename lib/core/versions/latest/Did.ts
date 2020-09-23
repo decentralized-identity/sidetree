@@ -1,12 +1,12 @@
 import CreateOperation from './CreateOperation';
 import Delta from './Delta';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 import { URL } from 'url';
-import Encoder from './Encoder';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 /**
  * Class containing reusable Sidetree DID related operations.
@@ -45,8 +45,8 @@ export default class Did {
 
     const didWithoutPrefix = did.split(didPrefix)[1];
 
-    // split by : and ?, if there are 1 elements, then it's short form. Long form has 2 elements
-    // when the ? format is deprecated, `:` will be the only seperator.
+    // split by : and ?, if there is 1 element, then it's short form. Long form has 2 elements
+    // TODO: SIP 2 #781 when the ? format is deprecated, `:` will be the only seperator.
     const didSplitLength = didWithoutPrefix.split(/:|\?/).length;
     if (didSplitLength === 1) {
       this.isShortForm = true;
@@ -174,7 +174,7 @@ export default class Did {
     try {
       initialStateObject = JSON.parse(initialStateDecodedJcs);
     } catch {
-      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'long form initial state should be encoded jcs');
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJosn, 'Long form initial state should be encoded jcs.');
     }
 
     Did.validateInitialState(initialStateEncodedJcs, initialStateObject);
@@ -195,12 +195,12 @@ export default class Did {
   private static validateInitialState (initialStateEncodedJcs: string, initialStateObject: any): void {
     const expectedInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(initialStateObject));
     if (expectedInitialState !== initialStateEncodedJcs) {
-      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'make sure to jcs then encode the initial state');
+      throw new SidetreeError(ErrorCode.DidInitialStateJcsIsNotJcs, 'Initial state object and JCS string mismatch.');
     }
   }
 
   private static async constructCreateOperationFromInitialState (initialState: string): Promise<CreateOperation> {
-    // TODO SIP 2 #781 deprecates this. Should be deleted when fully switched over
+    // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
     // Initial state should be in the format: <suffix-data>.<delta>
     const firstIndexOfDot = initialState.indexOf('.');
     if (firstIndexOfDot === -1) {

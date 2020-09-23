@@ -2,12 +2,12 @@ import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Multihash from './Multihash';
 import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 interface SuffixDataModel {
   deltaHash: string;
@@ -99,6 +99,7 @@ export default class CreateOperation implements OperationModel {
     const operationObject = await JsonAsync.parse(operationJsonString);
     let createOperation;
     if (typeof operationObject.suffix_data === 'string') {
+      // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
       createOperation = await CreateOperation.parseObject(operationObject, operationBuffer, false);
     } else {
       createOperation = CreateOperation.parseJcsObject(operationObject, operationBuffer);
@@ -123,10 +124,14 @@ export default class CreateOperation implements OperationModel {
     }
 
     CreateOperation.validateSuffixData(operationObject.suffix_data);
-    const suffixData = {
+    const suffixData: SuffixDataModel = {
       deltaHash: operationObject.suffix_data.delta_hash,
       recoveryCommitment: operationObject.suffix_data.recovery_commitment
     };
+
+    if (operationObject.suffix_data.type !== undefined) {
+      suffixData.type = operationObject.suffix_data.type
+    }
 
     // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
     // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
@@ -157,7 +162,7 @@ export default class CreateOperation implements OperationModel {
    * @param anchorFileMode If set to true, then `delta` and `type` properties are expected to be absent.
    */
   public static async parseObject (operationObject: any, operationBuffer: Buffer, anchorFileMode: boolean): Promise<CreateOperation> {
-    // TODO SIP 2 #781 deprecates this. Should be deleted when fully switched over
+    // TODO: SIP 2 #781 deprecates this. Should be deleted when fully switched over
     let expectedPropertyCount = 3;
     if (anchorFileMode) {
       expectedPropertyCount = 1;

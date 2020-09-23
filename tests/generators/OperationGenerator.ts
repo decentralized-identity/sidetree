@@ -156,10 +156,11 @@ export default class OperationGenerator {
       recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
+    console.log(suffixData);
+
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
     const shortFormDid = `did:sidetree:${didUniqueSuffix}`;
 
-    // TODO: discuss if canonicalization is necessary.
     const initialState = {
       suffix_data: suffixData,
       delta: delta
@@ -173,7 +174,6 @@ export default class OperationGenerator {
       longFormDid,
       shortFormDid,
       didUniqueSuffix
-
     };
   }
 

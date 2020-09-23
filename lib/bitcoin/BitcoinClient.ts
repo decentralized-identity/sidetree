@@ -7,9 +7,9 @@ import BitcoinOutputModel from './models/BitcoinOutputModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
 import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
-import nodeFetch, { FetchError, Response, RequestInit } from 'node-fetch';
+import nodeFetch, { FetchError, RequestInit, Response } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, crypto, Networks, PrivateKey, Script, Transaction, Unit, Block } from 'bitcore-lib';
+import { Address, Block, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**

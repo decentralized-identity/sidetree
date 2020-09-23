@@ -7,6 +7,9 @@ import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
 
+import * as fs from 'fs';
+import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
+
 describe('CreateOperation', async () => {
   describe('parseJcsObject', () => {
     it('should leave delta as empty if it is not valid', () => {
@@ -56,8 +59,17 @@ describe('CreateOperation', async () => {
       }
     });
   });
+
+  describe('computeJcsDidUniqueSuffix', () => {
+    it('should return expected did unique suffix', () => {
+      const actual = Multihash.canonicalizeThenHashThenEncode(suffixData);
+      const expected = fs.readFileSync('tests/fixtures/uniqueSuffix/resultingSuffix.txt', 'utf8');
+      expect(actual).toEqual(expected);
+    })
+  })
+
   describe('computeDidUniqueSuffix()', async () => {
-    it('should pass test vector.', async (done) => {
+    it('should return expected did unique suffix', async (done) => {
       const suffixDataString = 'AStringActingAsTheSuffixData';
       const encodedSuffixDataString = Encoder.encode(suffixDataString);
       const didUniqueSuffix = (CreateOperation as any).computeDidUniqueSuffix(encodedSuffixDataString);
@@ -116,7 +128,7 @@ describe('CreateOperation', async () => {
   });
 
   describe('parseSuffixData()', async () => {
-    // TODO SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
+    // TODO: SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
     it('should function as expected with type', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
