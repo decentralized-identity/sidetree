@@ -1,7 +1,7 @@
 import ErrorCode from './ErrorCode';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import ProtocolParameters from './ProtocolParameters';
 import SidetreeError from '../../../common/SidetreeError';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 /**
  * Class containing reusable operation delta functionalities.
@@ -10,7 +10,7 @@ export default class Delta {
 
   /**
    * Validates size of the encoded delta string.
-   * TODO: SIP 2 #781 delete this and use validateDeltaSize only
+   * TODO: SIP 2 #781 delete this and use validateDeltaSize only in chunk file
    * @throws `SidetreeError` if fails validation.
    */
   public static validateEncodedDeltaSize (encodedDelta: string) {

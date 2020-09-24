@@ -40,7 +40,7 @@ describe('DID', async () => {
       } catch (e) {
         expect(e.code).toEqual(ErrorCode.DeltaExceedsMaximumSize);
       }
-    })
+    });
   });
 
   describe('create()', async () => {
