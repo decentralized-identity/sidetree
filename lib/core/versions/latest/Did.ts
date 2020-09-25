@@ -178,6 +178,7 @@ export default class Did {
     }
 
     Did.validateInitialState(initialStateEncodedJcs, initialStateObject);
+    Delta.validateDeltaSize(initialStateObject.delta);
 
     const createOperationRequest = {
       type: OperationType.Create,
