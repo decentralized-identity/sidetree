@@ -210,12 +210,12 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      if (publicKey.purpose.length > 3) {
+      if (publicKey.purpose.length > 2) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
       }
 
       const validPurposes = new Set(Object.values(PublicKeyPurpose));
-      // Purpose must be one of the valid ones in KeyPurpose
+      // Purpose must be one of the valid ones in PublicKeyPurpose
       for (const purpose of publicKey.purpose) {
         if (!validPurposes.has(purpose)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
@@ -295,22 +295,28 @@ export default class DocumentComposer {
       if (typeof serviceEndpoint.type !== 'string') {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeNotString);
       }
+
       if (serviceEndpoint.type.length > 30) {
         throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);
       }
-      if (typeof serviceEndpoint.endpoint !== 'string') {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotString);
-      }
-      if (serviceEndpoint.endpoint.length > 100) {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointTooLong);
-      }
 
-      try {
-        // just want to validate url, no need to assign to variable, it will throw if not valid
-        // tslint:disable-next-line
-        new URL(serviceEndpoint.endpoint);
-      } catch {
-        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
+      // `endpoint` validation.
+      const endpoint = serviceEndpoint.endpoint;
+      if (typeof endpoint === 'string') {
+        try {
+          // just want to validate url, no need to assign to variable, it will throw if not valid
+          // tslint:disable-next-line
+          new URL(serviceEndpoint.endpoint);
+        } catch {
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
+        }
+      } else if (typeof endpoint === 'object'){
+        // Allow `object` type only if it is not an array.
+        if (Array.isArray(endpoint)) {
+          throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);
+        }
+      } else {
+        throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
       }
     }
   }

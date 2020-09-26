@@ -59,6 +59,15 @@ export default class Jwk {
     if (typeof jwk.y !== 'string') {
       throw new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeY);
     }
+
+    // `x` and `y` need 43 Base64URL encoded bytes to contain 256 bits.
+    if (jwk.x.length !== 43) {
+      throw new SidetreeError(ErrorCode.JwkEs256kHasIncorrectLengthOfX, `SECP256K1 JWK 'x' property must be 43 bytes.`);
+    }
+
+    if (jwk.y.length !== 43) {
+      throw new SidetreeError(ErrorCode.JwkEs256kHasIncorrectLengthOfY, `SECP256K1 JWK 'y' property must be 43 bytes.`);
+    }
   }
 
   /**

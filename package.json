@@ -60,8 +60,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "[[ -n $HUSKY_BYPASS ]] || npm run lint",
-      "commit-msg": "[[ -n $HUSKY_BYPASS ]] || commitlint -E HUSKY_GIT_PARAMS"
+      "pre-commit": "npm run lint",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
   "config": {
@@ -80,6 +80,8 @@
       "lib/**"
     ],
     "exclude": [
+      "**/index.d.ts",
+      "**/index.ts",
       "lib/bitcoin/versions/[0-9]**/**",
       "lib/core/versions/[0-9]**/**",
       "lib/core/versions/**/VersionMetadata.ts",
