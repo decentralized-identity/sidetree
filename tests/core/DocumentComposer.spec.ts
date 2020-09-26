@@ -115,24 +115,6 @@ describe('DocumentComposer', async () => {
 
       expect(result.service_endpoints).toEqual([{ id: 'someId', type: 'someType', endpoint: 'someEndpoint' }]);
     });
-
-    it('should allow an non-array object as endpoint.', () => {
-      const document: DocumentModel = {
-        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
-      };
-
-      const patch = {
-        action: 'add-service-endpoints',
-        service_endpoints: [{
-          id: 'someId',
-          type: 'someType',
-          endpoint: { anyObject: '123'}}]
-      };
-
-      const result = DocumentComposer['addServiceEndpoints'](document, patch);
-
-      expect(result.service_endpoints).toEqual([{ id: 'someId', type: 'someType', endpoint: { anyObject: '123'} }]);
-    });
   });
 
   describe('removeServiceEndpoints', () => {
@@ -307,6 +289,20 @@ describe('DocumentComposer', async () => {
       };
       const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointTypeTooLong);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
+    });
+
+    it('should allow an non-array object as endpoint.', () => {
+      const patch = {
+        action: 'add-service-endpoint',
+        service_endpoints: [{
+          id: 'someId',
+          type: 'someType',
+          endpoint: { anyObject: '123' }
+        }]
+      };
+
+      // Expecting this call to succeed without errors.
+      DocumentComposer['validateAddServiceEndpointsPatch'](patch);
     });
 
     it('should throw error if endpoint is an array.', () => {
