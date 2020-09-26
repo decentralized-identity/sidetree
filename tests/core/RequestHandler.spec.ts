@@ -321,7 +321,7 @@ describe('RequestHandler', () => {
     });
 
     it('[Bug #817] should return status as `deactivated` if DID is deactivated.', async () => {
-      // Intentionally not
+      // Intentionally not including `nextRecoveryCommitmentHash` and `nextUpdateCommitmentHash` to simulate deactivated state.
       const document = { unused: 'unused' };
       const mockedResolverReturnedDidState: DidState = {
         document,

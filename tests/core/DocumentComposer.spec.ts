@@ -115,6 +115,24 @@ describe('DocumentComposer', async () => {
 
       expect(result.service_endpoints).toEqual([{ id: 'someId', type: 'someType', endpoint: 'someEndpoint' }]);
     });
+
+    it('should allow an non-array object as endpoint.', () => {
+      const document: DocumentModel = {
+        public_keys: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
+      };
+
+      const patch = {
+        action: 'add-service-endpoints',
+        service_endpoints: [{
+          id: 'someId',
+          type: 'someType',
+          endpoint: { anyObject: '123'}}]
+      };
+
+      const result = DocumentComposer['addServiceEndpoints'](document, patch);
+
+      expect(result.service_endpoints).toEqual([{ id: 'someId', type: 'someType', endpoint: { anyObject: '123'} }]);
+    });
   });
 
   describe('removeServiceEndpoints', () => {
@@ -291,29 +309,29 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointNotString if endpoint is not a string', () => {
+    it('should throw error if endpoint is an array.', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: undefined
+          endpoint: []
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotString);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
-    it('should throw DocumentComposerPatchServiceEndpointServiceEndpointTooLong if endpoint is too long', () => {
+    it('should throw error if endpoint has an invalid type.', () => {
       const patch = {
         action: 'add-service-endpoint',
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'https://www.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678900.long'
+          endpoint: 123 // Invalid endpoint type.
         }]
       };
-      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointTooLong);
+      const expectedError = new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointMustBeStringOrNonArrayObject);
       expect(() => { DocumentComposer['validateAddServiceEndpointsPatch'](patch); }).toThrow(expectedError);
     });
 
