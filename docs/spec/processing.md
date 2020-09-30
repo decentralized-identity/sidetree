@@ -92,7 +92,7 @@ The follow sequence of rules and processing steps must be followed to correctly 
 
 ### Provisional Proof File Processing
 
-The follow sequence of rules and processing steps must be followed to correctly process an [Provisional Proof File](#provisional-proof-file):
+The follow sequence of rules and processing steps ****must**** be followed to correctly process an [Provisional Proof File](#provisional-proof-file):
 
 1. The [_Provisional Proof File_](#provisional-proof-file) ****MUST NOT**** exceed the [`MAX_PROOF_FILE_SIZE`](#max-proof-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [_Provisional Proof File_](#provisional-proof-file) ****MUST**** validate against the protocol-defined [_Provisional Proof File_](#provisional-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
