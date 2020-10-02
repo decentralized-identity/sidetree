@@ -493,7 +493,6 @@ export default class BitcoinProcessor {
 
     if (!feeWithinSpendingLimits) {
       throw new RequestError(ResponseStatus.BadRequest, SharedErrorCode.SpendingCapPerPeriodReached);
-
     }
 
     // Write a warning if the balance is running low

@@ -42,7 +42,8 @@ export default class BitcoinClient {
     bitcoinWalletOrImportString: IBitcoinWallet | string,
     private requestTimeout: number,
     private requestMaxRetries: number,
-    private sidetreeTransactionFeeMarkupPercentage: number) {
+    private sidetreeTransactionFeeMarkupPercentage: number,
+    private estimatedFeeSatoshiPerKB?: number) {
 
     if (typeof bitcoinWalletOrImportString === 'string') {
       console.info('Creating bitcoin wallet using the import string passed in.');
@@ -336,7 +337,7 @@ export default class BitcoinClient {
   /**
    * Gets the transaction fee of a transaction in satoshis.
    * @param transactionId the id of the target transaction.
-   * @returns the transaction fee.
+   * @returns the transaction fee in satoshis.
    */
   public async getTransactionFeeInSatoshis (transactionId: string): Promise<number> {
 
@@ -397,11 +398,11 @@ export default class BitcoinClient {
     return response.labels.length > 0 || response.iswatchonly;
   }
 
-  private async getCurrentEstimatedFeeInSatoshisPerKb (): Promise<number> {
+  private async getCurrentEstimatedFeeInSatoshisPerKB (): Promise<number> {
     const request = {
       method: 'estimatesmartfee',
       params: [
-        1 // Number of confirmation targtes
+        1 // Number of confirmation targets
       ]
     };
 
@@ -416,6 +417,21 @@ export default class BitcoinClient {
     const feerateInBtc = response.feerate;
 
     return BitcoinClient.convertBtcToSatoshis(feerateInBtc);
+  }
+
+  /** Get the current estimated fee from RPC or return the stored estimate */
+  private async getEstimatedFeeInSatoshisPerKB (): Promise<number> {
+    let estimatedFeeSatoshiPerKB;
+    try {
+      estimatedFeeSatoshiPerKB = await this.getCurrentEstimatedFeeInSatoshisPerKB();
+      this.estimatedFeeSatoshiPerKB = estimatedFeeSatoshiPerKB;
+    } catch (error) {
+      estimatedFeeSatoshiPerKB = this.estimatedFeeSatoshiPerKB;
+      if (!estimatedFeeSatoshiPerKB) {
+        throw error;
+      }
+    }
+    return estimatedFeeSatoshiPerKB;
   }
 
   /** Get the transaction out value in satoshi, for a specified output index */
@@ -526,19 +542,20 @@ export default class BitcoinClient {
    * be already set to get the estimate more accurate.
    *
    * @param transaction The transaction for which the fee is to be calculated.
+   * @returns the transaction fee in satoshis.
    */
   private async calculateTransactionFee (transaction: Transaction): Promise<number> {
-    // Get esimtated fee from RPC
-    const estimatedFeeInKb = await this.getCurrentEstimatedFeeInSatoshisPerKb();
+    // Get estimated fee from RPC
+    const estimatedFeePerKB = await this.getEstimatedFeeInSatoshisPerKB();
 
     // Estimate the size of the transaction
     const estimatedSizeInBytes = (transaction.inputs.length * 150) + (transaction.outputs.length * 50);
-    const estimatedSizeInKb = estimatedSizeInBytes / 1000;
+    const estimatedSizeInKB = estimatedSizeInBytes / 1000;
 
-    const estimatedFee = estimatedSizeInKb * estimatedFeeInKb;
+    const estimatedFee = estimatedSizeInKB * estimatedFeePerKB;
 
     // Add a percentage to the fee (trying to be on the higher end of the estimate)
-    const estimatedFeeWithPercentage = estimatedFee + (estimatedFee * .4);
+    const estimatedFeeWithPercentage = estimatedFee * 1.4;
 
     // Make sure that there are no decimals in the fee as it is not supported
     return Math.ceil(estimatedFeeWithPercentage);

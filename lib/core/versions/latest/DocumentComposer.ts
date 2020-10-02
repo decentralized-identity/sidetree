@@ -310,7 +310,7 @@ export default class DocumentComposer {
         } catch {
           throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointServiceEndpointNotValidUrl);
         }
-      } else if (typeof endpoint === 'object'){
+      } else if (typeof endpoint === 'object') {
         // Allow `object` type only if it is not an array.
         if (Array.isArray(endpoint)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointValueCannotBeAnArray);

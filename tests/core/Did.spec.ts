@@ -34,7 +34,9 @@ describe('DID', async () => {
       const largeDelta = { data: largeData };
       const testInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({ suffix_data: 'some data', delta: largeDelta }));
 
-      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => { Did['constructCreateOperationFromEncodedJcs'](testInitialState); }, ErrorCode.DeltaExceedsMaximumSize);
+      JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
+        Did['constructCreateOperationFromEncodedJcs'](testInitialState);
+      }, ErrorCode.DeltaExceedsMaximumSize);
     });
   });
 
