@@ -37,7 +37,10 @@
             "error",
             "expression"
         ],
-        "semi": "error",
+        "semi": [
+            "error",
+            "always"
+        ],
         "sort-imports": "error"
     }
 }
