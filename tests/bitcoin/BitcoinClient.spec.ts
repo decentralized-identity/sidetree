@@ -79,6 +79,12 @@ describe('BitcoinClient', async () => {
       const actual = new BitcoinClient('uri:mock', 'u', 'p', bitcoinWalletImportString, 10, 10, 10);
       expect(actual['bitcoinWallet']).toEqual(expectedWallet);
     });
+
+    it('should use the estimated fee set by the estimatedFeeSatoshiPerKB parameter', () => {
+      const expectedEstimatedFee = 42;
+      const actual = new BitcoinClient('uri:mock', 'u', 'p', ctorWallet, 10, 10, 10, expectedEstimatedFee);
+      expect(actual['estimatedFeeSatoshiPerKB']).toEqual(expectedEstimatedFee);
+    });
   });
 
   describe('createSidetreeTransaction', () => {
@@ -505,13 +511,13 @@ describe('BitcoinClient', async () => {
     });
   });
 
-  describe('getEstimatedFeeInSatoshisPerKB', () => {
+  describe('updateEstimatedFeeInSatoshisPerKB', () => {
     it('should always call the correct rpc and return the updated fee', async () => {
       const mockFeeInBitcoins = 156;
       const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
       const spy = spyOn(bitcoinClient as any, 'getCurrentEstimatedFeeInSatoshisPerKB').and.returnValue(expectedFeeInSatoshis);
 
-      const actual = await bitcoinClient['getEstimatedFeeInSatoshisPerKB']();
+      const actual = await bitcoinClient['updateEstimatedFeeInSatoshisPerKB']();
       expect(actual).toEqual(expectedFeeInSatoshis);
       expect(bitcoinClient['estimatedFeeSatoshiPerKB']).toEqual(expectedFeeInSatoshis);
       expect(spy).toHaveBeenCalled();
@@ -525,7 +531,7 @@ describe('BitcoinClient', async () => {
       const expectedFeeInSatoshis = mockFeeInBitcoins * 100000000;
       bitcoinClient['estimatedFeeSatoshiPerKB'] = expectedFeeInSatoshis;
 
-      const actual = await bitcoinClient['getEstimatedFeeInSatoshisPerKB']();
+      const actual = await bitcoinClient['updateEstimatedFeeInSatoshisPerKB']();
       expect(actual).toEqual(expectedFeeInSatoshis);
       expect(bitcoinClient['estimatedFeeSatoshiPerKB']).toEqual(expectedFeeInSatoshis);
       expect(spy).toHaveBeenCalled();
@@ -536,7 +542,7 @@ describe('BitcoinClient', async () => {
       spy.and.throwError('test');
 
       try {
-        await bitcoinClient['getEstimatedFeeInSatoshisPerKB']();
+        await bitcoinClient['updateEstimatedFeeInSatoshisPerKB']();
         fail('should have thrown');
       } catch {
         expect(spy).toHaveBeenCalled();

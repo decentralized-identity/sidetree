@@ -419,8 +419,8 @@ export default class BitcoinClient {
     return BitcoinClient.convertBtcToSatoshis(feerateInBtc);
   }
 
-  /** Get the current estimated fee from RPC or return the stored estimate */
-  private async getEstimatedFeeInSatoshisPerKB (): Promise<number> {
+  /** Get the current estimated fee from RPC and update stored estimate */
+  private async updateEstimatedFeeInSatoshisPerKB (): Promise<number> {
     let estimatedFeeSatoshiPerKB;
     try {
       estimatedFeeSatoshiPerKB = await this.getCurrentEstimatedFeeInSatoshisPerKB();
@@ -546,7 +546,7 @@ export default class BitcoinClient {
    */
   private async calculateTransactionFee (transaction: Transaction): Promise<number> {
     // Get estimated fee from RPC
-    const estimatedFeePerKB = await this.getEstimatedFeeInSatoshisPerKB();
+    const estimatedFeePerKB = await this.updateEstimatedFeeInSatoshisPerKB();
 
     // Estimate the size of the transaction
     const estimatedSizeInBytes = (transaction.inputs.length * 150) + (transaction.outputs.length * 50);

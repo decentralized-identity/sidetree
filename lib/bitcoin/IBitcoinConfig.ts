@@ -11,6 +11,7 @@ export default interface IBitcoinConfig {
   bitcoinRpcUsername: string | undefined;
   bitcoinRpcPassword: string | undefined;
   bitcoinWalletOrImportString: IBitcoinWallet | string;
+  defaultTransactionFeeInSatoshisPerKB: number | undefined;
   lowBalanceNoticeInDays: number | undefined;
   sidetreeTransactionPrefix: string;
   genesisBlockNumber: number;

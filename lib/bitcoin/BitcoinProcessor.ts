@@ -131,7 +131,8 @@ export default class BitcoinProcessor {
         config.bitcoinWalletOrImportString,
         config.requestTimeoutInMilliseconds || 300,
         config.requestMaxRetries || 3,
-        config.sidetreeTransactionFeeMarkupPercentage || 0);
+        config.sidetreeTransactionFeeMarkupPercentage || 0,
+        config.defaultTransactionFeeInSatoshisPerKB);
 
     this.sidetreeTransactionParser = new SidetreeTransactionParser(this.bitcoinClient, this.sidetreePrefix);
 
