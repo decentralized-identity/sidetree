@@ -37,7 +37,7 @@
             "error",
             "expression"
         ],
-        "semi": "off",
+        "semi": "error",
         "sort-imports": "error"
     }
 }
