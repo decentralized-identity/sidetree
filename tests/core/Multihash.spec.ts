@@ -84,6 +84,23 @@ describe('Multihash', async () => {
 
       expect(validHash).toBeFalsy();
     });
+
+    it('should return false if given encoded multihash is not using the canonical encoding.', async () => {
+      const anyContent = Buffer.from('any content');
+
+      // Canonical encoded multihash of 'any content' is 'EiDDidVHVekuMIYV3HI5nfp8KP6s3_W44Pd-MO5b-XK5iQ'
+      const defaultContentEncodedMultihash = 'EiDDidVHVekuMIYV3HI5nfp8KP6s3_W44Pd-MO5b-XK5iQ';
+      const modifiedContentEncodedMultihash = 'EiDDidVHVekuMIYV3HI5nfp8KP6s3_W44Pd-MO5b-XK5iR';
+
+      // Two multihash strings decodes into the same buffer.
+      expect(Encoder.decodeAsBuffer(defaultContentEncodedMultihash)).toEqual(Encoder.decodeAsBuffer(modifiedContentEncodedMultihash));
+
+      const validHashCheckResult = (Multihash as any).verify(anyContent, defaultContentEncodedMultihash);
+      const invalidHashCheckResult = (Multihash as any).verify(anyContent, modifiedContentEncodedMultihash);
+
+      expect(validHashCheckResult).toBeTruthy();
+      expect(invalidHashCheckResult).toBeFalsy();
+    });
   });
 
   describe('verifyDoubleHash()', async () => {
