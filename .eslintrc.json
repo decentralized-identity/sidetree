@@ -1,54 +1,42 @@
 {
-    "env": {
-        "es6": true,
-        "node": true,
-        "jasmine": true
-    },
-    "extends": [
-        "standard"
+  "env": {
+    "es6": true,
+    "node": true,
+    "jasmine": true
+  },
+  "extends": [
+    "standard"
+  ],
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 11,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "rules": {
+    "dot-notation": ["off"],
+    "func-style": ["error", "expression"],
+    "max-len": ["error", { "code": 160, "ignoreStrings": true }],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "args": "after-used",
+        "ignoreRestSiblings": true,
+        "argsIgnorePattern": "^_"
+      }
     ],
-    "globals": {
-        "Atomics": "readonly",
-        "SharedArrayBuffer": "readonly"
-    },
-    "parser": "@typescript-eslint/parser",
-    "parserOptions": {
-        "ecmaVersion": 11,
-        "sourceType": "module"
-    },
-    "plugins": [
-        "@typescript-eslint"
-    ],
-    "rules": {
-        "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": [
-            "error",
-            {
-                "vars": "all",
-                "args": "after-used",
-                "ignoreRestSiblings": true,
-                "argsIgnorePattern": "^_"
-            }
-        ],
-        "quotes": [
-            "error",
-            "single",
-            {
-                "avoidEscape": true
-            }
-        ],
-        "max-lines": [
-            "error",
-            160
-        ],
-        "func-style": [
-            "error",
-            "expression"
-        ],
-        "semi": [
-            "error",
-            "always"
-        ],
-        "sort-imports": "error"
-    }
+    "padded-blocks": ["off"],
+    "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true} ],
+    "semi": ["off"],
+    "@typescript-eslint/semi": ["error", "always"],
+    "sort-imports": "error"
+  }
 }

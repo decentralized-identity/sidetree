@@ -211,10 +211,10 @@ export default class TransactionProcessor implements ITransactionProcessor {
     chunkFile: ChunkFileModel | undefined
   ): Promise<AnchoredOperationModel[]> {
 
-    let createOperations = anchorFile.createOperations;
-    let recoverOperations = anchorFile.recoverOperations;
-    let deactivateOperations = anchorFile.deactivateOperations;
-    let updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
+    const createOperations = anchorFile.createOperations;
+    const recoverOperations = anchorFile.recoverOperations;
+    const deactivateOperations = anchorFile.deactivateOperations;
+    const updateOperations = (mapFile && mapFile.updateOperations) ? mapFile.updateOperations : [];
 
     // Add the operations in the following order of types: create, recover, update, deactivate.
     const operations = [];

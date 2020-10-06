@@ -38,7 +38,7 @@ export default class Jwk {
     }
 
     const allowedProperties = new Set(['kty', 'crv', 'x', 'y']);
-    for (let property in jwk) {
+    for (const property in jwk) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.JwkEs256kHasUnknownProperty);
       }

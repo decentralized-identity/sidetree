@@ -34,9 +34,9 @@ async function generateAndStoreLocks (lockStore: MongoDbLockTransactionStore, co
 }
 
 function getLockTypeFromIndex (i: number): SavedLockType {
-  return (i % 3 === 0) ? SavedLockType.Create :
-         (i % 3 === 1) ? SavedLockType.Relock :
-         SavedLockType.ReturnToWallet;
+  return (i % 3 === 0) ? SavedLockType.Create
+         : (i % 3 === 1) ? SavedLockType.Relock
+         : SavedLockType.ReturnToWallet;
 }
 
 describe('MongoDbLockTransactionStore', async () => {

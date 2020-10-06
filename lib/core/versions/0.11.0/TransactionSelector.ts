@@ -47,8 +47,8 @@ export default class TransactionSelector implements ITransactionSelector {
     TransactionSelector.enqueueFirstTransactionFromEachWriter(transactions, currentTransactionTime, transactionsPriorityQueue);
 
     const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInTransactionTime(currentTransactionTime);
-    let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
-    let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
+    const numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
+    const numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
 
     const transactionsToReturn = TransactionSelector.getHighestFeeTransactionsFromCurrentTransactionTime(
       numberOfOperationsToQualify,
@@ -112,9 +112,9 @@ export default class TransactionSelector implements ITransactionSelector {
     let numberOfOperationsSeen = 0;
     const transactionsToReturn = [];
 
-    while (transactionsToReturn.length < numberOfTransactionsToQualify
-      && numberOfOperationsSeen < numberOfOperationsToQualify
-      && transactionsPriorityQueue.length > 0) {
+    while (transactionsToReturn.length < numberOfTransactionsToQualify &&
+      numberOfOperationsSeen < numberOfOperationsToQualify &&
+      transactionsPriorityQueue.length > 0) {
       const currentTransaction = transactionsPriorityQueue.pop();
       try {
         const numOfOperationsInCurrentTransaction = AnchoredDataSerializer.deserialize(currentTransaction.anchorString).numberOfOperations;

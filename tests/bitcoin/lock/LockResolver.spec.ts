@@ -9,7 +9,7 @@ import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
 import VersionModel from '../../../lib/common/models/VersionModel';
-import { Address, crypto, Networks, PrivateKey, Script } from 'bitcore-lib';
+import { Address, Networks, PrivateKey, Script, crypto } from 'bitcore-lib';
 import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 
 function createValidLockRedeemScript (lockDurationInBlocks: number, targetWalletAddress: Address): Script {
@@ -47,7 +47,7 @@ describe('LockResolver', () => {
   let lockResolver: LockResolver;
 
   beforeEach(() => {
-    let bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
+    const bitcoinClient = new BitcoinClient('uri:test', 'u', 'p', validTestWalletImportString, 10, 1, 0);
 
     lockResolver = new LockResolver(versionManager, bitcoinClient, 200, 250);
   });

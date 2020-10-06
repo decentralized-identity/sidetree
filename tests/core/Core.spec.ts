@@ -84,7 +84,7 @@ describe('Core', async () => {
       expect(fetchedResponse.status).toEqual(ResponseStatus.Succeeded);
 
       // Sort the output to make it easier to validate
-      let fetchedVersions: ServiceVersionModel[] = JSON.parse(fetchedResponse.body);
+      const fetchedVersions: ServiceVersionModel[] = JSON.parse(fetchedResponse.body);
       fetchedVersions.sort((a, b) => a.name > b.name ? 1 : -1);
 
       expect(fetchedVersions[0]).toEqual(expectedCoreVersion);

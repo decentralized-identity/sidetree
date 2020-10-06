@@ -76,7 +76,7 @@ async function createUpdateSequence (
 
 function getFactorial (n: number): number {
   let factorial = 1;
-  for (let i = 2 ; i <= n ; ++i) {
+  for (let i = 2; i <= n; ++i) {
     factorial *= i;
   }
   return factorial;
@@ -89,11 +89,11 @@ function getFactorial (n: number): number {
 function getPermutation (size: number, index: number): Array<number> {
   const permutation: Array<number> = [];
 
-  for (let i = 0 ; i < size ; ++i) {
+  for (let i = 0; i < size; ++i) {
     permutation.push(i);
   }
 
-  for (let i = 0 ; i < size ; ++i) {
+  for (let i = 0; i < size; ++i) {
     const j = i + Math.floor(index / getFactorial(size - i - 1));
     index = index % getFactorial(size - i - 1);
 
@@ -226,7 +226,7 @@ describe('OperationProcessor', async () => {
     const numberOfUpdates = 10;
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
-    for (let i = numberOfUpdates ; i >= 0 ; --i) {
+    for (let i = numberOfUpdates; i >= 0; --i) {
       await operationStore.put([ops[i]]);
     }
     const didState = await resolver.resolve(didUniqueSuffix);
@@ -239,9 +239,9 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     const numberOfOps = ops.length;
-    let numberOfPermutations = getFactorial(numberOfOps);
+    const numberOfPermutations = getFactorial(numberOfOps);
 
-    for (let i = 0 ; i < numberOfPermutations; ++i) {
+    for (let i = 0; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);
       operationStore = new MockOperationStore();
       resolver = new Resolver(versionManager, operationStore);
@@ -305,7 +305,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     // elide i = 0, the create operation
-    for (let i = 1 ; i < ops.length ; ++i) {
+    for (let i = 1; i < ops.length; ++i) {
       await operationStore.put([ops[i]]);
     }
 
@@ -425,8 +425,8 @@ describe('OperationProcessor', async () => {
       const anyDid = OperationGenerator.generateRandomHash();
       const [, anyRecoveryPrivateKey] = await OperationGenerator.generateKeyPair('anyRecoveryKey');
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDid, anyRecoveryPrivateKey);
-      const anchoredDeactivateOperation
-        = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
+      const anchoredDeactivateOperation =
+        OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
 
       const newDidState = await operationProcessor.apply(anchoredDeactivateOperation, undefined);
 

@@ -561,7 +561,7 @@ describe('BitcoinProcessor', () => {
   describe('firstValidTransaction', () => {
     it('should return the first of the valid transactions', async (done) => {
       const transactions: TransactionModel[] = [];
-      let heights: number[] = [];
+      const heights: number[] = [];
       const count = 10;
       for (let i = 0; i < count; i++) {
         const height = randomNumber();
@@ -1133,8 +1133,8 @@ describe('BitcoinProcessor', () => {
       revertDatabaseSpy.and.returnValue(Promise.resolve(undefined));
 
       // Simulate that current height in bitcoin core is ahead than the desired starting block.
-      const getCurrentBlockHeightSpy
-        = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
+      const getCurrentBlockHeightSpy =
+        spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
 
       await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
 

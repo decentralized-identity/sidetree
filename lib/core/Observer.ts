@@ -180,8 +180,6 @@ export default class Observer {
       // Wait a little before checking again.
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    return;
   }
 
   /**
@@ -276,8 +274,8 @@ export default class Observer {
     const exponentiallySpacedTransactions = await this.transactionStore.getExponentiallySpacedTransactions();
 
     // Find a known valid Sidetree transaction that is prior to the block reorganization.
-    const bestKnownValidRecentTransaction
-      = await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
+    const bestKnownValidRecentTransaction =
+      await this.blockchain.getFirstValidTransaction(exponentiallySpacedTransactions);
 
     const bestKnownValidRecentTransactionNumber = bestKnownValidRecentTransaction === undefined ? undefined : bestKnownValidRecentTransaction.transactionNumber;
     console.info(`Best known valid recent transaction: ${bestKnownValidRecentTransactionNumber}`);

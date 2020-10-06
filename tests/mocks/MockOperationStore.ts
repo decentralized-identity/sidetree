@@ -96,9 +96,7 @@ export default class MockOperationStore implements IOperationStore {
     }
   }
 
-  public async deleteUpdatesEarlierThan (_didUniqueSuffix: string, _transactionNumber: number, _operationIndex: number): Promise<void> {
-    return;
-  }
+  public async deleteUpdatesEarlierThan (_didUniqueSuffix: string, _transactionNumber: number, _operationIndex: number): Promise<void> { }
 
   /**
    * Remove operations. A simple linear scan + filter that leaves the
@@ -107,7 +105,7 @@ export default class MockOperationStore implements IOperationStore {
   private static removeOperations (operations: AnchoredOperationModel[], transactionNumber: number) {
     let writeIndex = 0;
 
-    for (let i = 0 ; i < operations.length ; i++) {
+    for (let i = 0; i < operations.length; i++) {
       if (operations[i].transactionNumber <= transactionNumber) {
         operations[writeIndex++] = operations[i];
       }

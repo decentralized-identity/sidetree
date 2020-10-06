@@ -121,12 +121,12 @@ describe('VersionManager', async () => {
       // Setting up loading of mock ITransactionSelector implementations.
       const mockTransactionSelector1 = class {
         /* tslint:disable-next-line */
-        selectQualifiedTransactions () { return [] }
+        selectQualifiedTransactions () { return []; }
       };
       const anyTransactionModel = OperationGenerator.generateTransactionModel();
       const mockTransactionSelector2 = class {
         /* tslint:disable-next-line */
-        selectQualifiedTransactions () { return [anyTransactionModel] }
+        selectQualifiedTransactions () { return [anyTransactionModel]; }
       };
       spyOn(versionManager as any, 'loadDefaultExportsForVersion').and.callFake(async (version: string, className: string) => {
         if (className === 'TransactionSelector') {

@@ -206,7 +206,7 @@ describe('MongoDbTransactionStore', async () => {
 
     const remainingTransactions = await transactionStore.getTransactions();
     expect(remainingTransactions.length).toEqual(9);
-    for (let transaction of remainingTransactions) {
+    for (const transaction of remainingTransactions) {
       expect(transaction.transactionTimeHash !== hashToDelete).toBeTruthy();
     }
   });

@@ -9,7 +9,7 @@ import BitcoinWallet from './BitcoinWallet';
 import IBitcoinWallet from './interfaces/IBitcoinWallet';
 import nodeFetch, { FetchError, RequestInit, Response } from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
-import { Address, Block, crypto, Networks, PrivateKey, Script, Transaction, Unit } from 'bitcore-lib';
+import { Address, Block, Networks, PrivateKey, Script, Transaction, Unit, crypto } from 'bitcore-lib';
 import { IBlockInfo } from './BitcoinProcessor';
 
 /**
@@ -343,7 +343,7 @@ export default class BitcoinClient {
     const transaction = await this.getRawTransaction(transactionId);
 
     let inputSatoshiSum = 0;
-    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+    for (let i = 0; i < transaction.inputs.length; i++) {
 
       const currentInput = transaction.inputs[i];
       const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);
@@ -748,11 +748,11 @@ export default class BitcoinClient {
 
   private async rpcCall (request: any, timeout: boolean): Promise<any> {
     // append some standard jrpc parameters
-    request['jsonrpc'] = '1.0';
-    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
+    request.jsonrpc = '1.0';
+    request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
+    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
 
     const requestOptions: RequestInit = {
       body: requestString,

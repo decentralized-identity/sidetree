@@ -622,9 +622,9 @@ export default class OperationGenerator {
     for (const id of ids) {
       serviceEndpoints.push(
         {
-          'id': id,
-          'type': 'someType',
-          'endpoint': 'https://www.url.com'
+          id: id,
+          type: 'someType',
+          endpoint: 'https://www.url.com'
         }
       );
     }
