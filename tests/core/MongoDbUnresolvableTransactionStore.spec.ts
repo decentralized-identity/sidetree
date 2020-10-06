@@ -131,8 +131,8 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
     const maxReturnCount = 2;
     let unresolvableTransactionsDueForRetry = await store.getUnresolvableTransactionsDueForRetry(maxReturnCount);
     expect(unresolvableTransactionsDueForRetry.length).toEqual(2);
-    // Simulate successful resolution of the 2 returend transactions and removing them from the store.
-    for (let transaction of unresolvableTransactionsDueForRetry) {
+    // Simulate successful resolution of the 2 returned transactions and removing them from the store.
+    for (const transaction of unresolvableTransactionsDueForRetry) {
       await store.removeUnresolvableTransaction(transaction);
     }
     unresolvableTransactions = await store.getUnresolvableTransactions();
@@ -141,8 +141,8 @@ describe('MongoDbUnresolvableTransactionStore', async () => {
     // Get remaining 1 unresolvable transaction due for retry.
     unresolvableTransactionsDueForRetry = await store.getUnresolvableTransactionsDueForRetry(maxReturnCount);
     expect(unresolvableTransactionsDueForRetry.length).toEqual(1);
-    // Simulate successful resolution of the 1 returend transaction and removing it from the store.
-    for (let transaction of unresolvableTransactionsDueForRetry) {
+    // Simulate successful resolution of the 1 returned transaction and removing it from the store.
+    for (const transaction of unresolvableTransactionsDueForRetry) {
       await store.removeUnresolvableTransaction(transaction);
     }
     unresolvableTransactions = await store.getUnresolvableTransactions();

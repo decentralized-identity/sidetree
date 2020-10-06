@@ -239,7 +239,7 @@ describe('OperationProcessor', async () => {
     const ops = await createUpdateSequence(didUniqueSuffix, createOp, numberOfUpdates, signingPrivateKey);
 
     const numberOfOps = ops.length;
-    let numberOfPermutations = getFactorial(numberOfOps);
+    const numberOfPermutations = getFactorial(numberOfOps);
 
     for (let i = 0; i < numberOfPermutations; ++i) {
       const permutation = getPermutation(numberOfOps, i);

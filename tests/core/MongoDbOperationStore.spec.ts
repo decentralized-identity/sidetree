@@ -300,7 +300,7 @@ describe('MongoDbOperationStore', async () => {
       const returnedOperationsAfterDeletion = await operationStore.get(didUniqueSuffix);
 
       // Expected remaining operations is the first operation + the last 5 update operations.
-      let expectedRemainingOperations = [anchoredOperationModel];
+      const expectedRemainingOperations = [anchoredOperationModel];
       expectedRemainingOperations.push(...operationChain.slice(5));
       checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
     });
@@ -326,7 +326,7 @@ describe('MongoDbOperationStore', async () => {
       const returnedOperationsAfterDeletion = await operationStore.get(didUniqueSuffix);
 
       // Expected remaining operations is the first operation + the last 5 update operations.
-      let expectedRemainingOperations = [anchoredOperationModel];
+      const expectedRemainingOperations = [anchoredOperationModel];
       expectedRemainingOperations.push(...operationChain.slice(5));
       checkEqualArray(expectedRemainingOperations, returnedOperationsAfterDeletion);
     });

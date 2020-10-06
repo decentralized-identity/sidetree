@@ -80,7 +80,7 @@ describe('MongoDbOperationQueue', async () => {
     expect(dequeuedOperations.length).toBe(0);
 
     dequeuedOperations = await operationQueue.dequeue(2);
-    let remainingOperations = await operationQueue.peek(operationCount);
+    const remainingOperations = await operationQueue.peek(operationCount);
     expect(dequeuedOperations.length).toEqual(2);
     expect(dequeuedOperations[0].operationBuffer).toEqual(queuedOperations[0].operationBuffer);
     expect(dequeuedOperations[1].operationBuffer).toEqual(queuedOperations[1].operationBuffer);

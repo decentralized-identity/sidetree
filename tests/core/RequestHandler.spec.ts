@@ -426,14 +426,14 @@ function validateDidReferencesInDidDocument (didDocument: any, did: string) {
   expect(didDocument.id).toEqual(did);
 
   if (didDocument.publicKey) {
-    for (let publicKeyEntry of didDocument.publicKey) {
+    for (const publicKeyEntry of didDocument.publicKey) {
       expect(publicKeyEntry.controller).toEqual('');
       expect((publicKeyEntry.id as string).startsWith('#'));
     }
   }
 
   if (didDocument.service) {
-    for (let serviceEntry of didDocument.service) {
+    for (const serviceEntry of didDocument.service) {
       expect((serviceEntry.id as string).startsWith('#'));
     }
   }

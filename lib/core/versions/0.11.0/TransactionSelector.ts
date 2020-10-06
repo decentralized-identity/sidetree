@@ -47,8 +47,8 @@ export default class TransactionSelector implements ITransactionSelector {
     TransactionSelector.enqueueFirstTransactionFromEachWriter(transactions, currentTransactionTime, transactionsPriorityQueue);
 
     const [numberOfOperations, numberOfTransactions] = await this.getNumberOfOperationsAndTransactionsAlreadyInTransactionTime(currentTransactionTime);
-    let numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
-    let numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
+    const numberOfOperationsToQualify = this.maxNumberOfOperationsPerBlock - numberOfOperations;
+    const numberOfTransactionsToQualify = this.maxNumberOfTransactionsPerBlock - numberOfTransactions;
 
     const transactionsToReturn = TransactionSelector.getHighestFeeTransactionsFromCurrentTransactionTime(
       numberOfOperationsToQualify,

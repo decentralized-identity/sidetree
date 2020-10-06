@@ -50,7 +50,7 @@ export default class AnchorFile {
     }
 
     const allowedProperties = new Set(['map_file_uri', 'operations', 'writer_lock_id']);
-    for (let property in anchorFileModel) {
+    for (const property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
       }
@@ -88,7 +88,7 @@ export default class AnchorFile {
 
     const allowedOperationsProperties = new Set(['create', 'recover', 'deactivate']);
     const operations = anchorFileModel.operations;
-    for (let property in operations) {
+    for (const property in operations) {
       if (!allowedOperationsProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileUnexpectedPropertyInOperations, `Unexpected property ${property} in 'operations' property in anchor file.`);
       }

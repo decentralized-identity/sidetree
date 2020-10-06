@@ -5,7 +5,7 @@ describe('ServiceInfoProvider', () => {
   it('should return the version from the package.json file.', async () => {
     const packageJson = require('../../package.json');
 
-    let serviceInfo = new ServiceInfo('test-service');
+    const serviceInfo = new ServiceInfo('test-service');
     const serviceVersion = serviceInfo.getServiceVersion();
 
     expect(serviceVersion.name).toEqual('test-service');

@@ -37,7 +37,7 @@ export default class Jws {
     const decodedProtectedHeadJsonString = Encoder.decodeBase64UrlAsString(protectedHeader);
     const decodedProtectedHeader = JSON.parse(decodedProtectedHeadJsonString);
 
-    let expectedHeaderPropertyCount = 1; // By default we must have header property is `alg`.
+    const expectedHeaderPropertyCount = 1; // By default we must have header property is `alg`.
 
     const headerProperties = Object.keys(decodedProtectedHeader);
     if (headerProperties.length !== expectedHeaderPropertyCount) {

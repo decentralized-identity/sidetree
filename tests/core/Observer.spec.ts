@@ -241,7 +241,7 @@ describe('Observer', async () => {
     [FetchResultCode.NotAFile, 'is not a file'],
     [FetchResultCode.InvalidHash, 'is not a valid hash']
   ];
-  for (let tuple of invalidAnchorFileTestsInput) {
+  for (const tuple of invalidAnchorFileTestsInput) {
     const mockFetchReturnCode = tuple[0];
     const expectedConsoleLogSubstring = tuple[1];
 
