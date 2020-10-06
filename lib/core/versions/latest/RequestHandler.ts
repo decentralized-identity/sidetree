@@ -167,6 +167,7 @@ export default class RequestHandler implements IRequestHandler {
       }
 
       if (didState === undefined) {
+        console.info(`DID not found for DID '${shortOrLongFormDid}'...`);
         return {
           status: ResponseStatus.NotFound,
           body: { code: ErrorCode.DidNotFound, message: 'DID Not Found' }
@@ -183,6 +184,7 @@ export default class RequestHandler implements IRequestHandler {
       const didDeactivated = didState.nextRecoveryCommitmentHash === undefined;
       const status = didDeactivated ? ResponseStatus.Deactivated : ResponseStatus.Succeeded;
 
+      console.info(`DID Document found for DID '${shortOrLongFormDid}'...`);
       return {
         status,
         body: document
@@ -190,6 +192,7 @@ export default class RequestHandler implements IRequestHandler {
     } catch (error) {
       // Give meaningful/specific error code and message when possible.
       if (error instanceof SidetreeError) {
+        console.info(`Bad request. Code: ${error.code}. Message: ${error.message}`);
         return {
           status: ResponseStatus.BadRequest,
           body: { code: error.code, message: error.message }
@@ -210,6 +213,8 @@ export default class RequestHandler implements IRequestHandler {
    * @returns [DID state, published]
    */
   private async resolveLongFormDid (did: Did): Promise<[DidState | undefined, boolean]> {
+    console.info(`Handling long-form DID resolution of DID '${did}'...`);
+
     // Attempt to resolve the DID by using operations found from the network first.
     let didState = await this.resolver.resolve(did.uniqueSuffix);
 
