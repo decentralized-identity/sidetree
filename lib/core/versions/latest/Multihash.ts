@@ -201,7 +201,11 @@ export default class Multihash {
 
       const actualMultihashBuffer = Multihash.hash(content, hashAlgorithmCode);
 
-      return Buffer.compare(actualMultihashBuffer, expectedMultihashBuffer) === 0;
+      // Compare the strings instead of buffers, because encoding schemes such as base64URL can allow two distinct strings to decode into the same buffer.
+      // e.g. 'EiAJID5-y7rbEs7I3PPiMtwVf28LTkPFD4BWIZPCtb6AMg' and
+      //      'EiAJID5-y7rbEs7I3PPiMtwVf28LTkPFD4BWIZPCtb6AMv' would decode into the same buffer.
+      const actualMultihashString = Encoder.encode(actualMultihashBuffer);
+      return actualMultihashString === encodedMultihash;
     } catch (error) {
       console.log(error);
       return false;
