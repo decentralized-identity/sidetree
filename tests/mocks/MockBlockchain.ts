@@ -56,6 +56,7 @@ export default class MockBlockchain implements IBlockchain {
   public get approximateTime (): BlockchainTimeModel {
     return this.latestTime!;
   }
+
   /**
    * Hardcodes the latest time to be returned.
    */
