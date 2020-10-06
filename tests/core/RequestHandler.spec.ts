@@ -43,9 +43,9 @@ const fs = require('fs');
 
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
-  console.info = () => { return; };
-  console.error = () => { return; };
-  console.debug = () => { return; };
+  console.info = () => { };
+  console.error = () => { };
+  console.debug = () => { };
 
   const config: Config = require('../json/config-test.json');
   const didMethodName = config.didMethodName;

@@ -180,8 +180,6 @@ export default class Observer {
       // Wait a little before checking again.
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    return;
   }
 
   /**

@@ -343,7 +343,7 @@ export default class BitcoinClient {
     const transaction = await this.getRawTransaction(transactionId);
 
     let inputSatoshiSum = 0;
-    for (let i = 0 ; i < transaction.inputs.length ; i++) {
+    for (let i = 0; i < transaction.inputs.length; i++) {
 
       const currentInput = transaction.inputs[i];
       const transactionOutValue = await this.getTransactionOutValueInSatoshi(currentInput.previousTransactionId, currentInput.outputIndexInPreviousTransaction);

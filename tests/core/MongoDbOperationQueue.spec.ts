@@ -119,7 +119,7 @@ describe('MongoDbOperationQueue', async () => {
     } catch (error) {
       if (error instanceof SidetreeError &&
           error.code === ErrorCode.BatchWriterAlreadyHasOperationForDid) {
-        return; // Expected Sidetree error.
+        // Expected Sidetree error.
       } else {
         throw error; // Unexpected error, throw to fail the test.
       }
@@ -139,7 +139,7 @@ describe('MongoDbOperationQueue', async () => {
       await generateAndQueueOperations(operationQueue, 1);
     } catch (error) {
       if (error.code === 'unexpected-error') {
-        return; // Expected behavior.
+         // Expected behavior.
       } else {
         throw error; // Unexpected behavior, throw to fail the test.
       }

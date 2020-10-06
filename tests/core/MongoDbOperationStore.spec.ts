@@ -33,7 +33,7 @@ async function createOperationChain (
 
   let currentPublicKey = signingKey;
   let currentPrivateKey = signingPrivateKey;
-  for (let i = 1; i < chainLength ; i++) {
+  for (let i = 1; i < chainLength; i++) {
     const transactionNumberToUse = transactionNumber ? transactionNumber : i;
     const transactionTimeToUse = transactionNumberToUse;
 
@@ -75,7 +75,7 @@ function checkEqual (operation1: AnchoredOperationModel, operation2: AnchoredOpe
 function checkEqualArray (putOperations: AnchoredOperationModel[], gotOperations: AnchoredOperationModel[]): void {
   expect(gotOperations.length).toEqual(putOperations.length);
 
-  for (let i = 0 ; i < putOperations.length ; i++) {
+  for (let i = 0; i < putOperations.length; i++) {
     checkEqual(gotOperations[i], putOperations[i]);
   }
 }
@@ -271,7 +271,7 @@ describe('MongoDbOperationStore', async () => {
     const operationChain = await createOperationChain(anchoredOperationModel, chainSize, signingPublicKey, signingPrivateKey);
 
     // Insert operations in reverse transaction time order
-    for (let i = chainSize - 1 ; i >= 0 ; i--) {
+    for (let i = chainSize - 1; i >= 0; i--) {
       await operationStore.put([operationChain[i]]);
     }
 

@@ -145,7 +145,7 @@ export default class BitcoinProcessor {
     this.mongoDbLockTransactionStore = new MongoDbLockTransactionStore(config.mongoDbConnectionString, config.databaseName);
 
     const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
-                                              : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
+      : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
 
     this.lockMonitor =
       new LockMonitor(
@@ -272,7 +272,7 @@ export default class BitcoinProcessor {
     startingBlockHeight: number,
     heightOfEarliestKnownValidBlock: number) {
 
-    for (let block of blocks) {
+    for (const block of blocks) {
       if (block.height >= startingBlockHeight && block.height <= heightOfEarliestKnownValidBlock) {
         notYetValidatedBlocks.set(
           block.hash,
@@ -281,8 +281,9 @@ export default class BitcoinProcessor {
             hash: block.hash,
             totalFee: BitcoinProcessor.getBitcoinBlockTotalFee(block),
             transactionCount: block.transactions.length,
-            previousHash: block.previousHash }
-          );
+            previousHash: block.previousHash
+          }
+        );
         await this.processSidetreeTransactionsInBlock(block);
       }
     }
@@ -330,7 +331,7 @@ export default class BitcoinProcessor {
     // get the total fee including block reward
     const coinbaseTransaction = block.transactions[0];
     let totalOutputSatoshi = 0;
-    for (let output of coinbaseTransaction.outputs) {
+    for (const output of coinbaseTransaction.outputs) {
       totalOutputSatoshi += output.satoshis;
     }
 
@@ -370,8 +371,8 @@ export default class BitcoinProcessor {
       } catch (e) {
         const inputs = { blockHeight: block.height, blockHash: block.hash, transactionIndex: transactionIndex };
         console.debug('An error happened when trying to add sidetree transaction to the store. Moving on to the next transaction. Inputs: %s\r\nFull error: %s',
-                      JSON.stringify(inputs),
-                      JSON.stringify(e, Object.getOwnPropertyNames(e)));
+          JSON.stringify(inputs),
+          JSON.stringify(e, Object.getOwnPropertyNames(e)));
 
         throw e;
       }
@@ -426,7 +427,7 @@ export default class BitcoinProcessor {
     console.info(`Returning transactions since ${since ? 'block ' + TransactionNumber.getBlockNumber(since) : 'beginning'}...`);
     // deep copy last processed block
     const currentLastProcessedBlock = Object.assign({}, this.lastProcessedBlock!);
-    let [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
+    const [transactions, numOfBlocksAcquired] = await this.getTransactionsSince(since, currentLastProcessedBlock.height);
 
     // make sure the last processed block hasn't changed since before getting transactions
     // if changed, then a block reorg happened.
@@ -455,7 +456,8 @@ export default class BitcoinProcessor {
         return block;
       }
     }
-    return;
+
+    return undefined;
   }
 
   /**
@@ -472,7 +474,8 @@ export default class BitcoinProcessor {
         return transaction;
       }
     }
-    return;
+
+    return undefined;
   }
 
   /**
