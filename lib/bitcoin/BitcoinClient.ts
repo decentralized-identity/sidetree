@@ -748,11 +748,11 @@ export default class BitcoinClient {
 
   private async rpcCall (request: any, timeout: boolean): Promise<any> {
     // append some standard jrpc parameters
-    request['jsonrpc'] = '1.0';
-    request['id'] = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
+    request.jsonrpc = '1.0';
+    request.id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(32);
 
     const requestString = JSON.stringify(request);
-    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request['method']}`);
+    console.debug(`Sending jRPC request: id: ${request.id}, method: ${request.method}`);
 
     const requestOptions: RequestInit = {
       body: requestString,

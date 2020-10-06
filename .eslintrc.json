@@ -20,6 +20,7 @@
     "@typescript-eslint"
   ],
   "rules": {
+    "dot-notation": ["off"],
     "func-style": ["error", "expression"],
     "max-len": ["error", { "code": 160, "ignoreStrings": true }],
     "no-unused-vars": "off",
@@ -34,7 +35,6 @@
     ],
     "padded-blocks": ["off"],
     "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true} ],
-
     "semi": ["off"],
     "@typescript-eslint/semi": ["error", "always"],
     "sort-imports": "error"

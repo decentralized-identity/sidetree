@@ -1023,7 +1023,7 @@ describe('BitcoinClient', async () => {
 
     it('should throw if the request failed', async (done) => {
       const request: any = {
-        'test': 'some random string'
+        test: 'some random string'
       };
       const result = 'some result';
       const statusCode = 7890;
@@ -1058,7 +1058,7 @@ describe('BitcoinClient', async () => {
 
     it('should throw if the RPC call failed', async (done) => {
       const request: any = {
-        'test': 'some request value'
+        test: 'some request value'
       };
       const result = 'some result';
 
