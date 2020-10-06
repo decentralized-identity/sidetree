@@ -1133,8 +1133,8 @@ describe('BitcoinProcessor', () => {
       revertDatabaseSpy.and.returnValue(Promise.resolve(undefined));
 
       // Simulate that current height in bitcoin core is ahead than the desired starting block.
-      const getCurrentBlockHeightSpy
-        = spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
+      const getCurrentBlockHeightSpy =
+        spyOn(bitcoinProcessor['bitcoinClient'], 'getCurrentBlockHeight').and.returnValue(Promise.resolve(Number.MAX_SAFE_INTEGER));
 
       await bitcoinProcessor['getStartingBlockForPeriodicPoll']();
 

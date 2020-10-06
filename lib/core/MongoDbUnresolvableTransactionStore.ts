@@ -111,8 +111,8 @@ export default class MongoDbUnresolvableTransactionStore implements IUnresolvabl
     }
 
     const now = Date.now();
-    const unresolvableTransactionsToRetry
-      = await this.unresolvableTransactionCollection!.find({ nextRetryTime: { $lte: now } }).sort({ nextRetryTime: 1 }).limit(returnCount).toArray();
+    const unresolvableTransactionsToRetry =
+      await this.unresolvableTransactionCollection!.find({ nextRetryTime: { $lte: now } }).sort({ nextRetryTime: 1 }).limit(returnCount).toArray();
 
     return unresolvableTransactionsToRetry;
   }

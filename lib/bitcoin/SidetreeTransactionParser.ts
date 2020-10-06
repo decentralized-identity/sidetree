@@ -132,11 +132,11 @@ export default class SidetreeTransactionParser {
     const scriptAsmParts = scriptAsm.split(' ');
 
     const isScriptValid =
-      scriptAsmParts.length === 5
-      && scriptAsmParts[0] === 'OP_DUP'
-      && scriptAsmParts[1] === 'OP_HASH160'
-      && scriptAsmParts[3] === 'OP_EQUALVERIFY'
-      && scriptAsmParts[4] === 'OP_CHECKSIG';
+      scriptAsmParts.length === 5 &&
+      scriptAsmParts[0] === 'OP_DUP' &&
+      scriptAsmParts[1] === 'OP_HASH160' &&
+      scriptAsmParts[3] === 'OP_EQUALVERIFY' &&
+      scriptAsmParts[4] === 'OP_CHECKSIG';
 
     return isScriptValid ? scriptAsmParts[2] : undefined;
   }

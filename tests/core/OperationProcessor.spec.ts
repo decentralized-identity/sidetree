@@ -425,8 +425,8 @@ describe('OperationProcessor', async () => {
       const anyDid = OperationGenerator.generateRandomHash();
       const [, anyRecoveryPrivateKey] = await OperationGenerator.generateKeyPair('anyRecoveryKey');
       const deactivateOperationData = await OperationGenerator.createDeactivateOperation(anyDid, anyRecoveryPrivateKey);
-      const anchoredDeactivateOperation
-        = OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
+      const anchoredDeactivateOperation =
+        OperationGenerator.createAnchoredOperationModelFromOperationModel(deactivateOperationData.deactivateOperation, 1, 1, 1);
 
       const newDidState = await operationProcessor.apply(anchoredDeactivateOperation, undefined);
 

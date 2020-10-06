@@ -11,8 +11,8 @@ export default class TransactionNumber {
    */
   public static construct (blockNumber: number, position: number) {
     const transactionNumber =
-      blockNumber * (2 ** this.bitWidth)
-      + position;
+      blockNumber * (2 ** this.bitWidth) +
+      position;
 
     return transactionNumber;
   }

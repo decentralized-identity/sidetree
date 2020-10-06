@@ -361,8 +361,8 @@ describe('Resolver', () => {
 
       // Intentionally insert earliest valid recover operation in between the other two operations to test sorting.
       // Intentionally using the resolver's map construction method to test operations with the same reveal value are placed in the same array.
-      const updateCommitValueToOperationMap: Map<string, AnchoredOperationModel[]>
-        = await (resolver as any).constructCommitValueToOperationLookupMap([updateOperation3, updateOperation1, updateOperation2]);
+      const updateCommitValueToOperationMap: Map<string, AnchoredOperationModel[]> =
+        await (resolver as any).constructCommitValueToOperationLookupMap([updateOperation3, updateOperation1, updateOperation2]);
       const nextUpdateCommitment = createOperationData.createOperation.delta!.updateCommitment;
       const updatesWithSameReveal = updateCommitValueToOperationMap.get(nextUpdateCommitment);
       expect(updatesWithSameReveal).toBeDefined();
