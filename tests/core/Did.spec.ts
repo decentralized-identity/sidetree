@@ -51,24 +51,6 @@ describe('DID', async () => {
       expect(did.uniqueSuffix).toEqual(uniqueSuffix);
     });
 
-    it('should create a long-form DID successfully.', async () => {
-      // Create a long-form DID string.
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const didMethodName = 'sidetree';
-      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-      const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-      const encodedDelta = createOperationData.createOperation.encodedDelta;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
-
-      const did = await Did.create(longFormDid, didMethodName);
-      expect(did.isShortForm).toBeFalsy();
-      expect(did.didMethodName).toEqual(didMethodName);
-      expect(did.shortForm).toEqual(shortFormDid);
-      expect(did.uniqueSuffix).toEqual(didUniqueSuffix);
-      expect(did.createOperation).toEqual(createOperationData.createOperation);
-    });
-
     it('should create a long-form DID with suffix data and delta successfully.', async () => {
       // Create a long-form DID string.
 
@@ -82,22 +64,16 @@ describe('DID', async () => {
       expect(did.uniqueSuffix).toEqual(generatedLongFormDidData.didUniqueSuffix);
     });
 
-    it('should create a testnet long-form DID successfully.', async () => {
+    it('should create a testnet long-form DID with suffix data and delta successfully.', async () => {
       // Create a long-form DID string.
-      const createOperationData = await OperationGenerator.generateCreateOperation();
-      const didMethodName = 'sidetree:testnet'; // A method name with network ID.
-      const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
-      const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const encodedSuffixData = createOperationData.createOperation.encodedSuffixData;
-      const encodedDelta = createOperationData.createOperation.encodedDelta;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=${encodedSuffixData}.${encodedDelta}`;
+      const generatedLongFormDidData = await OperationGenerator.generateLongFormDid(undefined, undefined, undefined, undefined, 'testnet');
+      const didMethodName = 'sidetree:testnet';
 
-      const did = await Did.create(longFormDid, didMethodName);
+      const did = await Did.create(generatedLongFormDidData.longFormDid, didMethodName);
       expect(did.isShortForm).toBeFalsy();
       expect(did.didMethodName).toEqual(didMethodName);
-      expect(did.shortForm).toEqual(shortFormDid);
-      expect(did.uniqueSuffix).toEqual(didUniqueSuffix);
-      expect(did.createOperation).toEqual(createOperationData.createOperation);
+      expect(did.shortForm).toEqual(generatedLongFormDidData.shortFormDid);
+      expect(did.uniqueSuffix).toEqual(generatedLongFormDidData.didUniqueSuffix);
     });
 
     it('should throw error if more than one query param is provided', async () => {

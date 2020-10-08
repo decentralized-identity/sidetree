@@ -129,7 +129,8 @@ export default class OperationGenerator {
     recoveryPublicKey?: JwkEs256k,
     updatePublicKey?: JwkEs256k,
     otherPublicKeys?: PublicKeyModel[],
-    serviceEndpoints?: ServiceEndpointModel[]) {
+    serviceEndpoints?: ServiceEndpointModel[],
+    network?: string) {
 
     const document = {
       public_keys: otherPublicKeys || [],
@@ -159,7 +160,8 @@ export default class OperationGenerator {
     console.log(suffixData);
 
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
-    const shortFormDid = `did:sidetree:${didUniqueSuffix}`;
+
+    const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
 
     const initialState = {
       suffix_data: suffixData,
@@ -318,20 +320,17 @@ export default class OperationGenerator {
       patches
     };
 
-    const deltaBuffer = Buffer.from(JSON.stringify(delta));
-    const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
       delta_hash: deltaHash,
       recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
-    const suffixDataEncodedString = Encoder.encode(JSON.stringify(suffixData));
-    const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Create,
-      suffix_data: suffixDataEncodedString,
-      delta: deltaEncodedString
+      suffix_data: suffixData,
+      delta: delta
     };
 
     return operation;
@@ -390,9 +389,7 @@ export default class OperationGenerator {
       patches,
       update_commitment: nextUpdateCommitmentHash
     };
-    const deltaJsonString = JSON.stringify(delta);
-    const deltaHash = Encoder.encode(Multihash.hash(Buffer.from(deltaJsonString)));
-    const encodedDeltaString = Encoder.encode(deltaJsonString);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
       update_key: updatePublicKey,
@@ -403,7 +400,7 @@ export default class OperationGenerator {
     const updateOperationRequest = {
       type: OperationType.Update,
       did_suffix: didUniqueSuffix,
-      delta: encodedDeltaString,
+      delta: delta,
       signed_data: signedData
     };
 
@@ -450,8 +447,7 @@ export default class OperationGenerator {
       update_commitment: nextUpdateCommitmentHash
     };
 
-    const deltaBuffer = Buffer.from(JSON.stringify(delta));
-    const deltaHash = Encoder.encode(Multihash.hash(deltaBuffer));
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
       delta_hash: deltaHash,
@@ -460,12 +456,11 @@ export default class OperationGenerator {
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
-    const deltaEncodedString = Encoder.encode(deltaBuffer);
     const operation = {
       type: OperationType.Recover,
       did_suffix: didUniqueSuffix,
       signed_data: signedData,
-      delta: deltaEncodedString
+      delta: delta
     };
 
     return operation;

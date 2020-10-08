@@ -43,6 +43,7 @@ export default class ChunkFile {
   }
 
   private static validateDeltasProperty (deltas: any) {
+    // TODO: SIP 2 #781 change this
     // Make sure deltas is an array.
     if (!(deltas instanceof Array)) {
       throw new SidetreeError(ErrorCode.ChunkFileDeltasPropertyNotArray, 'Invalid chunk file, deltas property is not an array.');

@@ -10,6 +10,7 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 interface SignedDataModel {
   deltaHash: string;
@@ -82,6 +83,7 @@ export default class RecoverOperation implements OperationModel {
     return recoverOperation;
   }
 
+
   /**
    * Parses the given operation object as a `RecoverOperation`.
    * The `operationBuffer` given is assumed to be valid and is assigned to the `operationBuffer` directly.
@@ -115,14 +117,18 @@ export default class RecoverOperation implements OperationModel {
         throw new SidetreeError(ErrorCode.RecoverOperationTypeIncorrect);
       }
 
-      encodedDelta = operationObject.delta;
       try {
-        delta = await Operation.parseDelta(operationObject.delta);
+        Operation.validateDelta(operationObject.delta);
+        delta = {
+          patches: operationObject.delta.patches,
+          updateCommitment: operationObject.delta.update_commitment
+        };
       } catch {
-        // For compatibility with data pruning, we have to assume that delta may be unavailable,
-        // thus an operation with invalid delta needs to be processed as an operation with unavailable delta,
-        // so here we let delta be `undefined`.
+        // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
+        // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
+        // so here we let `delta` be `undefined`.
       }
+      encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 
     return new RecoverOperation(

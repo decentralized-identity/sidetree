@@ -15,7 +15,6 @@ import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Config from '../../lib/core/models/Config';
-import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
@@ -138,6 +137,14 @@ describe('RequestHandler', () => {
     await batchScheduler.writeOperationBatch();
   });
 
+  it('should resolve LEGACY long form did from test vectors correctly', async () => {
+    // TODO: SIP2 #781 delete this test when legacy format is deprecated
+    const longFormFixture = fs.readFileSync('./tests/fixtures/longFormDid/longFormDid.txt', 'utf8');
+    const response = await requestHandler.handleResolveRequest(longFormFixture);
+    expect(response.status).toEqual(ResponseStatus.Succeeded);
+    expect(response).toEqual(longFormResultingDocument as any);
+  });
+
   it('should resolve long form did from test vectors correctly', async () => {
     const longFormFixture = fs.readFileSync('./tests/fixtures/longFormDid/longFormDid.txt', 'utf8');
     const response = await requestHandler.handleResolveRequest(longFormFixture);
@@ -194,7 +201,10 @@ describe('RequestHandler', () => {
     const createOperationRequest = createOperationData.operationRequest;
     const getRandomBytesAsync = util.promisify(crypto.randomBytes);
     const largeBuffer = await getRandomBytesAsync(4000);
-    createOperationRequest.delta = Encoder.encode(largeBuffer);
+    createOperationRequest.delta = {
+      update_commitment: largeBuffer.toString(),
+      patches: []
+    }
 
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);

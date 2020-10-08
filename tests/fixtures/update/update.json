@@ -1,6 +1,29 @@
 {
   "type": "update",
-  "did_suffix": "EiBbDEkbYF5XUBraDOv92wSLaZfetEJETtWvboqFngyAGw",
-  "delta": "eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJhZGQtcHVibGljLWtleXMiLCJwdWJsaWNfa2V5cyI6W3siaWQiOiJhZGRpdGlvbmFsS2V5IiwidHlwZSI6IkVjZHNhU2VjcDI1NmsxVmVyaWZpY2F0aW9uS2V5MjAxOSIsImp3ayI6eyJrdHkiOiJFQyIsImNydiI6InNlY3AyNTZrMSIsIngiOiJBRVdFanl6Wk5Va3k5ODBZbzdBYXlKYnRoNVBfNW50dU5hd0phclBtZ0hnIiwieSI6ImtqSEZDREgtWmZWeGQxRVpYakF5V29ZU1g4cjdBM1BvMnFCY0ltcnByd1UifSwicHVycG9zZSI6WyJhdXRoIiwiZ2VuZXJhbCJdfV19XSwidXBkYXRlX2NvbW1pdG1lbnQiOiJFaUNzanpfZ3BWc1Z2cDFuZGlsQzhITEo4WmlQTEFQOXRxNXBxWDlONWZtNzl3In0",
-  "signed_data": "eyJhbGciOiJFUzI1NksifQ.eyJ1cGRhdGVfa2V5Ijp7Imt0eSI6IkVDIiwiY3J2Ijoic2VjcDI1NmsxIiwieCI6IlFLQWVOc0hYOGwycEZxQmhhQVI2SmdSMWRjVUR0Q011cTYzc0ZtZEVGTWciLCJ5IjoiSGs3dy0xZExGWFY4Ymk5TW4xQlptZjJ1ZEVyekZYZy1HOWQ4cUw3T3IyUSJ9LCJkZWx0YV9oYXNoIjoiRWlEVHBrVndDa29UbUw5X0Z1OEh4WGQ0MnJzdVRCRjhuUHdxVTM3bndLNTdLQSJ9.7vEjFkKLtjk53IUDUJHKhfCvEfkgxngSg57e1sg4vRiw022--Aye6srkn-OANvEmmlnB9whCKRNDvsVg8w8fKA"
+  "did_suffix": "EiBx43KticwcUiN9X93G-msVuB5xLVWlcNYFT8GJXm5Nwg",
+  "delta": {
+    "patches": [
+      {
+        "action": "add-public-keys",
+        "public_keys": [
+          {
+            "id": "newKeyId",
+            "type": "EcdsaSecp256k1VerificationKey2019",
+            "jwk": {
+              "kty": "EC",
+              "crv": "secp256k1",
+              "x": "Chs7Z51pFL2YDr5Mn6abWOSHi2LJjo7kZKhM5BuOvbM",
+              "y": "9MggrGvRNHHls0hXEsZZETLizRvqsQxJtPMqiLwGyVI"
+            },
+            "purpose": [
+              "auth",
+              "general"
+            ]
+          }
+        ]
+      }
+    ],
+    "update_commitment": "EiB3AABjBMu2u61U7J1JJL-Srrt5Ypz0Ec6dYMQW1V4dXA"
+  },
+  "signed_data": "eyJhbGciOiJFUzI1NksifQ.eyJ1cGRhdGVfa2V5Ijp7Imt0eSI6IkVDIiwiY3J2Ijoic2VjcDI1NmsxIiwieCI6ImxQd1JQNHViQ0VYdkVLd09wb0NxUG13YlFFeHFpd2s3cm9NSjJTaFJfRFUiLCJ5IjoiaHkzSmw5VTJ1a3hDa2tlcmN4alV4TVZOTXp3cVVFUDhuV3NYdTRwWU5kcyJ9LCJkZWx0YV9oYXNoIjoiRWlDOWx4eHlnOWhiVEFmUnByekVBTm1uckx3cGFaRHZOb2NGdmVrVy1EQVhidyJ9.LBtyNgEaC_ocpsSOtMobHuikV-Lm-9ptK9t-9XQ2r7L94nO2TLl6ZDG7DmUUrYkNlrSOLhYaGfo8N5t7rkkQ-Q"
 }

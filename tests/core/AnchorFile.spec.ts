@@ -273,7 +273,9 @@ describe('AnchorFile', async () => {
       const anchorFileModel = await AnchorFile.createModel(undefined, mapFileUri, [createOperation], [recoverOperation], [deactivateOperation]);
 
       expect(anchorFileModel.map_file_uri).toEqual(mapFileUri);
-      expect(anchorFileModel.operations.create![0].suffix_data).toEqual(createOperation.encodedSuffixData);
+      expect(anchorFileModel.operations.create![0].suffix_data).toEqual({
+        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment 
+      });
 
       // Verify recover operation.
       const recoveryOperationInAnchorFile = anchorFileModel.operations.recover![0];
@@ -298,7 +300,9 @@ describe('AnchorFile', async () => {
       const anchorFile = await AnchorFile.parse(anchorFileBuffer);
 
       expect(anchorFile.model.map_file_uri).toEqual(mapFileHash);
-      expect(anchorFile.model.operations.create![0].suffix_data).toEqual(createOperation.encodedSuffixData);
+      expect(anchorFile.model.operations.create![0].suffix_data).toEqual({
+        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment 
+      });
     });
   });
 });

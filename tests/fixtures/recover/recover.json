@@ -1,6 +1,38 @@
 {
   "type": "recover",
-  "did_suffix": "EiBbDEkbYF5XUBraDOv92wSLaZfetEJETtWvboqFngyAGw",
-  "signed_data": "eyJhbGciOiJFUzI1NksifQ.eyJkZWx0YV9oYXNoIjoiRWlDbG1BbHZvamNGTjlnMGkzSUNpVE1KbnRTLWZtdFVLR0ZxSmtqS3lwaTZJUSIsInJlY292ZXJ5X2tleSI6eyJrdHkiOiJFQyIsImNydiI6InNlY3AyNTZrMSIsIngiOiJCNnBhMVZydFhvUXZaRXV0TF9EM1RjS3FiVVlQdFZfQzFxRHpTSmZhUmFZIiwieSI6Ik43UnJCQkNDOG9aY04yU2d5YUJjdWQ3d29JajhvbnBIckRlQUV2SlFLVGcifSwicmVjb3ZlcnlfY29tbWl0bWVudCI6IkVpQ05pQ05WUm5maE00QnQ3bHVSc3RDeTVmX29jRVpjY01iWENpMzJyZjRPMEEifQ.oX8OxtSHUVcrTbvq25gPvGquM4QLZC3yQGvCRqosKn6D-nqxgaBLXvAVWTF5AlRdJYhHNon3VsTlr-6XxqTClw",
-  "delta": "eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljX2tleXMiOlt7ImlkIjoibmV3U2lnbmluZ0tleSIsInR5cGUiOiJFY2RzYVNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTkiLCJqd2siOnsia3R5IjoiRUMiLCJjcnYiOiJzZWNwMjU2azEiLCJ4IjoieDYtRnN2Y1J0dHI4d0xDQWRQQ0RHbmh2NTRlQ2lJMm03MllYZTRFYkRRUSIsInkiOiI4VjdiT2xUcG1FRmNDMEpHbDg0aWVRdGRWOHk5ckJWZG94TkRUbnlkYk1jIn0sInB1cnBvc2UiOlsiYXV0aCIsImdlbmVyYWwiXX1dLCJzZXJ2aWNlX2VuZHBvaW50cyI6W3siaWQiOiJuZXdEdW1teUVuZHBvaW50IiwidHlwZSI6InNvbWVUeXBlIiwiZW5kcG9pbnQiOiJodHRwczovL3d3dy51cmwuY29tIn1dfX1dLCJ1cGRhdGVfY29tbWl0bWVudCI6IkVpQVY5T3ZkejBCWVFuZkNPaVF5NGUyWlZ1a0JCZE1yRFhsTFUxSnlhMkJtd1EifQ"
+  "did_suffix": "EiCUIeUqj-Y9ceSYRjWJmGw-YTpB98DVsRfmcDBGko9x7Q",
+  "signed_data": "eyJhbGciOiJFUzI1NksifQ.eyJkZWx0YV9oYXNoIjoiRWlEUkpZQ2NmdGxTX3V5eG52VjVQT3dKcFkzdVc3THVRdU4tSElURXJMemJhUSIsInJlY292ZXJ5X2tleSI6eyJrdHkiOiJFQyIsImNydiI6InNlY3AyNTZrMSIsIngiOiJ2Q3ZPZnUzamVGakVOM2VaYXFJSEhESmExQWNTWWNoaDFsOTd5TzdZeGE0IiwieSI6IjVmamNzV1JkalNOeENtd0VCRFpuSndLdUNnZ2lidE8xV2g3U3VfX3laZjAifSwicmVjb3ZlcnlfY29tbWl0bWVudCI6IkVpRHZOXzI2WUJrakdwWndEUFI4U2t2Y05FTGdZT3AzZk83b1pVZW51T3EzV1EifQ.nfzlXC3SD2s4K6U1dzFM5IH-vg4N5fSMCK8SQuyZRPovnMPGOBeo72RgaSd1O8q2bZktkW4aBVG5XsPiT4kNJQ",
+  "delta": {
+    "patches": [
+      {
+        "action": "replace",
+        "document": {
+          "public_keys": [
+            {
+              "id": "newDocumentKey",
+              "type": "EcdsaSecp256k1VerificationKey2019",
+              "jwk": {
+                "kty": "EC",
+                "crv": "secp256k1",
+                "x": "SlZcxuiumcdkU3SG1IMfRlsNwYe-soW-T6EQHxp2mH0",
+                "y": "A_FoCyt9mi3mn46bjTEsRRN70LPQLKGlW4CfMm8aA7M"
+              },
+              "purpose": [
+                "auth",
+                "general"
+              ]
+            }
+          ],
+          "service_endpoints": [
+            {
+              "id": "newId",
+              "type": "someType",
+              "endpoint": "https://www.url.com"
+            }
+          ]
+        }
+      }
+    ],
+    "update_commitment": "EiAxp_CSxxPkNzkCrvjGyDy10hmgHy0cuYHLywWyFIipnQ"
+  }
 }

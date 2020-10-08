@@ -87,7 +87,7 @@ export default class CreateOperation implements OperationModel {
   public static async parseOperationFromAnchorFile (input: any): Promise<CreateOperation> {
     // Issue #442 - Replace `operationBuffer` in `OperationModel` and `AnchoredOperationModel` with actual operation request
     const operationBuffer = Buffer.from(JSON.stringify(input));
-    const operation = await CreateOperation.parseObject(input, operationBuffer, true);
+    const operation = await CreateOperation.parseJcsObject(input, operationBuffer, true);
     return operation;
   }
 

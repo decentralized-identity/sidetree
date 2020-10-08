@@ -167,7 +167,7 @@ export default class AnchorFile {
 
     const createOperations = createOperationArray.map(operation => {
       return {
-        suffix_data: operation.encodedSuffixData
+        suffix_data: { delta_hash: operation.suffixData.deltaHash, recovery_commitment: operation.suffixData.recoveryCommitment }
       };
     });
 

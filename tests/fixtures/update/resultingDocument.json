@@ -1,11 +1,11 @@
 {
   "@context": "https://www.w3.org/ns/did-resolution/v1",
   "didDocument": {
-    "id": "did:sidetree:EiBbDEkbYF5XUBraDOv92wSLaZfetEJETtWvboqFngyAGw",
+    "id": "did:sidetree:EiBx43KticwcUiN9X93G-msVuB5xLVWlcNYFT8GJXm5Nwg",
     "@context": [
       "https://www.w3.org/ns/did/v1",
       {
-        "@base": "did:sidetree:EiBbDEkbYF5XUBraDOv92wSLaZfetEJETtWvboqFngyAGw"
+        "@base": "did:sidetree:EiBx43KticwcUiN9X93G-msVuB5xLVWlcNYFT8GJXm5Nwg"
       }
     ],
     "service": [
@@ -23,30 +23,30 @@
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "JNO1XlDeQ48qPxk6AMn6E633qbXu5WK_n_Nkf0o5kWc",
-          "y": "QwPpBJu5tPZHi2iyW9YmtmYitc7bKoNncBk8Rag6ESQ"
+          "x": "rnua16iJUNo443KlZedBm9_xVDUMTTtNN4mm1JlBGyA",
+          "y": "L2etlQlBnmL5CX7MRkEuewOV8UHYp2OKYBFpoEsD1Zw"
         }
       },
       {
-        "id": "#additionalKey",
+        "id": "#newKeyId",
         "controller": "",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "AEWEjyzZNUky980Yo7AayJbth5P_5ntuNawJarPmgHg",
-          "y": "kjHFCDH-ZfVxd1EZXjAyWoYSX8r7A3Po2qBcImrprwU"
+          "x": "Chs7Z51pFL2YDr5Mn6abWOSHi2LJjo7kZKhM5BuOvbM",
+          "y": "9MggrGvRNHHls0hXEsZZETLizRvqsQxJtPMqiLwGyVI"
         }
       }
     ],
     "authentication": [
       "#signingKey",
-      "#additionalKey"
+      "#newKeyId"
     ]
   },
   "methodMetadata": {
     "published": true,
-    "recoveryCommitment": "EiAyVInmF_nzpaefyWj6BoNGdY_9FRNef-WI3crrK6vIyA",
-    "updateCommitment": "EiCsjz_gpVsVvp1ndilC8HLJ8ZiPLAP9tq5pqX9N5fm79w"
+    "recoveryCommitment": "EiAPN6FqOS487qru2NgQmnu6zFOTeOaPsH7HbGQmLmUZpQ",
+    "updateCommitment": "EiB3AABjBMu2u61U7J1JJL-Srrt5Ypz0Ec6dYMQW1V4dXA"
   }
 }

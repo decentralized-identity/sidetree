@@ -10,6 +10,7 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 interface SignedDataModel {
   deltaHash: string;
@@ -112,9 +113,12 @@ export default class UpdateOperation implements OperationModel {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }
-
-      encodedDelta = operationObject.delta;
-      delta = await Operation.parseDelta(encodedDelta);
+      Operation.validateDelta(operationObject.delta);
+      delta = {
+        patches: operationObject.delta.patches,
+        updateCommitment: operationObject.delta.update_commitment
+      };
+      encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 
     return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, encodedDelta, delta);
