@@ -1,5 +1,5 @@
-import Multihash from "../../lib/core/versions/latest/Multihash";
 import Jwk from "../../lib/core/versions/latest/util/Jwk";
+import Multihash from "../../lib/core/versions/latest/Multihash";
 import OperationGenerator from "./OperationGenerator";
 
 export default class TestVectorGenerator {

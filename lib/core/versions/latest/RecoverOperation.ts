@@ -2,6 +2,7 @@ import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
+import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Jwk from './util/Jwk';
 import JwkEs256k from '../../models/JwkEs256k';
 import Jws from './util/Jws';
@@ -10,7 +11,6 @@ import Operation from './Operation';
 import OperationModel from './models/OperationModel';
 import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 
 interface SignedDataModel {
   deltaHash: string;
@@ -82,7 +82,6 @@ export default class RecoverOperation implements OperationModel {
     const recoverOperation = await RecoverOperation.parseObject(operationObject, operationBuffer, false);
     return recoverOperation;
   }
-
 
   /**
    * Parses the given operation object as a `RecoverOperation`.
