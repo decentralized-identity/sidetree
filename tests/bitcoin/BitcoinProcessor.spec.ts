@@ -49,14 +49,15 @@ describe('BitcoinProcessor', () => {
     bitcoinRpcPassword: '123456789',
     bitcoinWalletOrImportString: BitcoinClient.generatePrivateKey('testnet'),
     databaseName: 'bitcoin-test',
-    requestTimeoutInMilliseconds: 300,
+    defaultTransactionFeeInSatoshisPerKB: undefined,
     genesisBlockNumber: 1480000,
     lowBalanceNoticeInDays: 28,
-    requestMaxRetries: 3,
     mongoDbConnectionString: 'mongodb://localhost:27017',
+    requestMaxRetries: 3,
+    requestTimeoutInMilliseconds: 300,
     sidetreeTransactionPrefix: 'sidetree:',
-    transactionPollPeriodInSeconds: 60,
     sidetreeTransactionFeeMarkupPercentage: 0,
+    transactionPollPeriodInSeconds: 60,
     valueTimeLockPollPeriodInSeconds: 60,
     valueTimeLockAmountInBitcoins: 1,
     valueTimeLockTransactionFeesAmountInBitcoins: undefined
@@ -144,6 +145,7 @@ describe('BitcoinProcessor', () => {
         bitcoinRpcPassword: 'password123',
         bitcoinWalletOrImportString: BitcoinClient.generatePrivateKey('testnet'),
         databaseName: randomString(),
+        defaultTransactionFeeInSatoshisPerKB: 42,
         genesisBlockNumber: randomNumber(),
         mongoDbConnectionString: randomString(),
         sidetreeTransactionPrefix: randomString(4),
@@ -165,6 +167,7 @@ describe('BitcoinProcessor', () => {
       expect(bitcoinProcessor['transactionStore'].databaseName).toEqual(config.databaseName);
       expect(bitcoinProcessor['transactionStore']['serverUrl']).toEqual(config.mongoDbConnectionString);
       expect(bitcoinProcessor['bitcoinClient']['sidetreeTransactionFeeMarkupPercentage']).toEqual(0);
+      expect(bitcoinProcessor['bitcoinClient']['estimatedFeeSatoshiPerKB']).toEqual(42);
     });
   });
 
