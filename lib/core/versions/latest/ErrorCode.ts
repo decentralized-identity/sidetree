@@ -26,7 +26,7 @@ export default {
   CasFileNotFound: 'cas_file_not_found',
   CasFileTooLarge: 'cas_file_too_large',
   CasNotReachable: 'cas_not_reachable',
-  ChunkFileDeltasNotArrayOfStrings: 'chunk_file_deltas_not_array_of_string',
+  ChunkFileDeltasNotArrayOfObjects: 'chunk_file_deltas_not_array_of_objects',
   ChunkFileDeltasPropertyNotArray: 'chunk_file_deltas_property_not_array',
   ChunkFileUnexpectedProperty: 'chunk_file_unexpected_property',
   CompressorMaxAllowedDecompressedDataSizeExceeded: 'compressor_max_allowed_decompressed_data_size_exceeded',
