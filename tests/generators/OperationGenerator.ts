@@ -126,8 +126,6 @@ export default class OperationGenerator {
    * @param serviceEndpoints
    */
   public static async generateLongFormDid (
-    recoveryPublicKey?: JwkEs256k,
-    updatePublicKey?: JwkEs256k,
     otherPublicKeys?: PublicKeyModel[],
     serviceEndpoints?: ServiceEndpointModel[],
     network?: string) {
@@ -142,8 +140,8 @@ export default class OperationGenerator {
       document
     }];
 
-    [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
-    [updatePublicKey] = await Jwk.generateEs256kKeyPair();
+    const [recoveryPublicKey] = await Jwk.generateEs256kKeyPair();
+    const [updatePublicKey] = await Jwk.generateEs256kKeyPair();
 
     const delta = {
       update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
@@ -156,8 +154,6 @@ export default class OperationGenerator {
       delta_hash: deltaHash,
       recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
-
-    console.log(suffixData);
 
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
 

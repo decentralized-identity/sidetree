@@ -66,7 +66,7 @@ describe('DID', async () => {
 
     it('should create a testnet long-form DID with suffix data and delta successfully.', async () => {
       // Create a long-form DID string.
-      const generatedLongFormDidData = await OperationGenerator.generateLongFormDid(undefined, undefined, undefined, undefined, 'testnet');
+      const generatedLongFormDidData = await OperationGenerator.generateLongFormDid(undefined, undefined, 'testnet');
       const didMethodName = 'sidetree:testnet';
 
       const did = await Did.create(generatedLongFormDidData.longFormDid, didMethodName);

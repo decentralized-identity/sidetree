@@ -157,6 +157,7 @@ export default class CreateOperation implements OperationModel {
         // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
         // so here we let `delta` be `undefined`.
       }
+      // TODO: SIP 2 #781 remove encoded delta and encoded suffix data when old long form is fully deprecated.
       encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 

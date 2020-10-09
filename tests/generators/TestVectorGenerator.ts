@@ -2,11 +2,13 @@ import Jwk from "../../lib/core/versions/latest/util/Jwk";
 import Multihash from "../../lib/core/versions/latest/Multihash";
 import OperationGenerator from "./OperationGenerator";
 
+import * as fs from 'fs';
+
 export default class TestVectorGenerator {
     /**
      * Generate and prints out test vectors for operation requests
      */
-    public static async generateOperationVectors() {
+    public static async generateOperationVectors(writeToDisc?: boolean, saveLocation?: string) {
 
         // generate a create operation request
         const createOperationData = await OperationGenerator.generateCreateOperation();
@@ -46,10 +48,25 @@ export default class TestVectorGenerator {
           newServiceEndpoints,
           [documentKey]
         );
+
+        const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(createOperationData.createOperation.didUniqueSuffix, createOperationData.recoveryPrivateKey);
   
   
-        console.log(JSON.stringify(createOperationData.operationRequest));
-        console.log(JSON.stringify(updateRequest));
-        console.log(JSON.stringify(recoverOperationRequest))
+        const createRequestString = JSON.stringify(createOperationData.operationRequest, null, 2);
+        const updateRequestString = JSON.stringify(updateRequest, null, 2);
+        const recoverRequestString = JSON.stringify(recoverOperationRequest, null, 2);
+        const deactivateRequestString = JSON.stringify(deactivateRequest);
+
+        if (writeToDisc && saveLocation) {
+            fs.writeFileSync(`${saveLocation}/create.json`, createRequestString);
+            fs.writeFileSync(`${saveLocation}/update.json`, updateRequestString);
+            fs.writeFileSync(`${saveLocation}/recover.json`, recoverRequestString);
+            fs.writeFileSync(`${saveLocation}/deactivate.json`, deactivateRequestString);
+        } else {
+            console.log(createRequestString);
+            console.log(updateRequestString);
+            console.log(recoverRequestString);
+            console.log(deactivateRequestString);
+        }
     }
 }

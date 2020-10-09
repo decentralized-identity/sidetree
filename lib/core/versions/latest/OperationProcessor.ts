@@ -3,6 +3,7 @@ import CreateOperation from './CreateOperation';
 import DeactivateOperation from './DeactivateOperation';
 import DocumentComposer from './DocumentComposer';
 import DidState from '../../models/DidState';
+import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import IOperationProcessor from '../../interfaces/IOperationProcessor';
 import JsonCanonicalizer from './util/JsonCanonicalizer';
@@ -113,8 +114,12 @@ export default class OperationProcessor implements IOperationProcessor {
       lastOperationTransactionNumber: anchoredOperationModel.transactionNumber
     };
 
-    // Ensure actual delta hash matches expected delta hash.
-    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.suffixData.deltaHash);
+    // Verify the delta hash against the expected delta hash.
+    const expectedDeltaHash = operation.delta ? Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({
+      update_commitment: operation.delta.updateCommitment,
+      patches: operation.delta.patches
+    })) : undefined;
+    const isMatchingDelta = Multihash.isValidHash(expectedDeltaHash, operation.suffixData.deltaHash);
     if (!isMatchingDelta) {
       return newDidState;
     }
@@ -163,7 +168,11 @@ export default class OperationProcessor implements IOperationProcessor {
     }
 
     // Verify the delta hash against the expected delta hash.
-    const isValidDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
+    const expectedDeltaHash = operation.delta ? Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({
+      update_commitment: operation.delta.updateCommitment,
+      patches: operation.delta.patches
+    })) : undefined;
+    const isValidDelta = Multihash.isValidHash(expectedDeltaHash, operation.signedData.deltaHash);
     if (!isValidDelta) {
       return didState;
     }
@@ -222,7 +231,11 @@ export default class OperationProcessor implements IOperationProcessor {
     };
 
     // Verify the actual delta hash against the expected delta hash.
-    const isMatchingDelta = Multihash.isValidHash(operation.encodedDelta, operation.signedData.deltaHash);
+    const expectedDeltaHash = operation.delta ? Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({
+      update_commitment: operation.delta.updateCommitment,
+      patches: operation.delta.patches
+    })) : undefined;
+    const isMatchingDelta = Multihash.isValidHash(expectedDeltaHash, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return newDidState;
     }

@@ -2,7 +2,6 @@ import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Jwk from './util/Jwk';
 import JwkEs256k from '../../models/JwkEs256k';
 import Jws from './util/Jws';
@@ -35,9 +34,6 @@ export default class RecoverOperation implements OperationModel {
   /** Signed data. */
   public readonly signedDataJws: Jws;
 
-  /** Encoded string of the delta. */
-  public readonly encodedDelta: string | undefined;
-
   /** Decoded signed data payload. */
   public readonly signedData: SignedDataModel;
 
@@ -52,7 +48,6 @@ export default class RecoverOperation implements OperationModel {
     didUniqueSuffix: string,
     signedDataJws: Jws,
     signedData: SignedDataModel,
-    encodedDelta: string | undefined,
     delta: DeltaModel | undefined
   ) {
     this.operationBuffer = operationBuffer;
@@ -60,7 +55,6 @@ export default class RecoverOperation implements OperationModel {
     this.didUniqueSuffix = didUniqueSuffix;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
-    this.encodedDelta = encodedDelta;
     this.delta = delta;
   }
 
@@ -109,7 +103,6 @@ export default class RecoverOperation implements OperationModel {
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.
-    let encodedDelta = undefined;
     let delta = undefined;
     if (!anchorFileMode) {
       if (operationObject.type !== OperationType.Recover) {
@@ -127,7 +120,6 @@ export default class RecoverOperation implements OperationModel {
         // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
         // so here we let `delta` be `undefined`.
       }
-      encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 
     return new RecoverOperation(
@@ -135,7 +127,6 @@ export default class RecoverOperation implements OperationModel {
       operationObject.did_suffix,
       signedDataJws,
       signedData,
-      encodedDelta,
       delta
     );
   }

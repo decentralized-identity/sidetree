@@ -2,7 +2,6 @@ import DeltaModel from './models/DeltaModel';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
 import JsonAsync from './util/JsonAsync';
-import JsonCanonicalizer from './util/JsonCanonicalizer';
 import Jwk from './util/Jwk';
 import JwkEs256k from '../../models/JwkEs256k';
 import Jws from './util/Jws';
@@ -40,9 +39,6 @@ export default class UpdateOperation implements OperationModel {
   /** Patch data. */
   public readonly delta: DeltaModel | undefined;
 
-  /** Encoded string of the delta. */
-  public readonly encodedDelta: string | undefined;
-
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
@@ -51,14 +47,12 @@ export default class UpdateOperation implements OperationModel {
     didUniqueSuffix: string,
     signedDataJws: Jws,
     signedData: SignedDataModel,
-    encodedDelta: string | undefined,
     delta: DeltaModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
-    this.encodedDelta = encodedDelta;
     this.delta = delta;
   }
 
@@ -107,7 +101,6 @@ export default class UpdateOperation implements OperationModel {
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
-    let encodedDelta = undefined;
     let delta = undefined;
     if (!mapFileMode) {
       if (operationObject.type !== OperationType.Update) {
@@ -118,10 +111,9 @@ export default class UpdateOperation implements OperationModel {
         patches: operationObject.delta.patches,
         updateCommitment: operationObject.delta.update_commitment
       };
-      encodedDelta = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer(operationObject.delta));
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, encodedDelta, delta);
+    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, delta);
   }
 
   private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {
