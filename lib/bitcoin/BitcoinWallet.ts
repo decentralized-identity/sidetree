@@ -58,9 +58,9 @@ export default class BitcoinWallet implements IBitcoinWallet {
 
     // Create a script and add it to the input.
     const inputScript = Script.empty()
-                              .add(signature.toTxFormat())
-                              .add(this.walletPublicKeyAsBuffer)
-                              .add(inputRedeemScript.toBuffer());
+      .add(signature.toTxFormat())
+      .add(this.walletPublicKeyAsBuffer)
+      .add(inputRedeemScript.toBuffer());
 
     (lockTransaction.inputs[0] as any).setScript(inputScript);
 

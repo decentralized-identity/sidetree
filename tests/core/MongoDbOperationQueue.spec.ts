@@ -139,7 +139,7 @@ describe('MongoDbOperationQueue', async () => {
       await generateAndQueueOperations(operationQueue, 1);
     } catch (error) {
       if (error.code === 'unexpected-error') {
-         // Expected behavior.
+        // Expected behavior.
       } else {
         throw error; // Unexpected behavior, throw to fail the test.
       }

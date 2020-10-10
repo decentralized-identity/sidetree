@@ -622,8 +622,8 @@ describe('DocumentComposer', async () => {
       };
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-       async () => { DocumentComposer['validateDocument'](document); },
-       ErrorCode.DocumentComposerUnknownPropertyInDocument
+        async () => { DocumentComposer['validateDocument'](document); },
+        ErrorCode.DocumentComposerUnknownPropertyInDocument
       );
     });
   });

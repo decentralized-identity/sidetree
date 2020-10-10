@@ -17,10 +17,10 @@ function createValidLockRedeemScript (lockDurationInBlocks: number, targetWallet
   lockDurationInBlocksBuffer.writeIntLE(lockDurationInBlocks, 0, 3);
 
   return Script.empty()
-               .add(lockDurationInBlocksBuffer)
-               .add(178) // OP_CSV
-               .add(117) // OP_DROP
-               .add(Script.buildPublicKeyHashOut(targetWalletAddress));
+    .add(lockDurationInBlocksBuffer)
+    .add(178) // OP_CSV
+    .add(117) // OP_DROP
+    .add(Script.buildPublicKeyHashOut(targetWalletAddress));
 }
 
 function createLockScriptVerifyResult (isScriptValid: boolean, owner: string | undefined, lockDurationInBlocks: number | undefined): any {
@@ -311,8 +311,8 @@ describe('LockResolver', () => {
       spyOn(lockResolver['bitcoinClient'], 'getRawTransaction').and.throwError('not found custom error.');
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-      () => lockResolver['getTransaction']('input id'),
-      ErrorCode.LockResolverTransactionNotFound);
+        () => lockResolver['getTransaction']('input id'),
+        ErrorCode.LockResolverTransactionNotFound);
     });
   });
 
