@@ -232,7 +232,7 @@ describe('Resolver', () => {
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
       expect(didState.document.publicKey.length).toEqual(2);
-      expect(didState.document.service_endpoints.length).toEqual(2);
+      expect(didState.document.service.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
       const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
@@ -306,10 +306,10 @@ describe('Resolver', () => {
       expect(document.publicKey.length).toEqual(2);
       expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
       expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
-      expect(document.service_endpoints).toBeDefined();
-      expect(document.service_endpoints.length).toEqual(1);
-      expect(document.service_endpoints[0].endpoint).toBeDefined();
-      expect(document.service_endpoints[0].id).toEqual('newDummyHubUri2');
+      expect(document.service).toBeDefined();
+      expect(document.service.length).toEqual(1);
+      expect(document.service[0].endpoint).toBeDefined();
+      expect(document.service[0].id).toEqual('newDummyHubUri2');
     });
 
   });

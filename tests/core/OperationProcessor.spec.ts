@@ -42,7 +42,7 @@ async function createUpdateSequence (
       },
       {
         action: 'add-service-endpoints',
-        service_endpoints: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
+        service: OperationGenerator.generateServiceEndpoints(['serviceEndpointId' + i])
       }
     ];
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
@@ -107,7 +107,7 @@ function getPermutation (size: number, index: number): Array<number> {
 
 function validateDocumentAfterUpdates (document: DocumentModel | undefined, numberOfUpdates: number) {
   expect(document).toBeDefined();
-  expect(document!.service_endpoints![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
+  expect(document!.service![0].id).toEqual('serviceEndpointId' + (numberOfUpdates - 1));
 }
 
 describe('OperationProcessor', async () => {

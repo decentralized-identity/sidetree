@@ -7,5 +7,5 @@ import ServiceEndpointModel from './ServiceEndpointModel';
  */
 export default interface DocumentModel {
   publicKey?: PublicKeyModel[];
-  service_endpoints?: ServiceEndpointModel[];
+  service?: ServiceEndpointModel[];
 }

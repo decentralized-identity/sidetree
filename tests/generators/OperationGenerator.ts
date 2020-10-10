@@ -132,7 +132,7 @@ export default class OperationGenerator {
 
     const document = {
       publicKey: otherPublicKeys || [],
-      service_endpoints: serviceEndpoints || []
+      service: serviceEndpoints || []
     };
 
     const patches = [{
@@ -340,7 +340,7 @@ export default class OperationGenerator {
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document: DocumentModel = {
       publicKey: otherPublicKeys,
-      service_endpoints: serviceEndpoints
+      service: serviceEndpoints
     };
 
     const patches = [{
@@ -452,7 +452,7 @@ export default class OperationGenerator {
     publicKeys?: PublicKeyModel[]) {
     const document = {
       publicKey: publicKeys,
-      service_endpoints: serviceEndpoints
+      service: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
       didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.jwk), document
@@ -586,7 +586,7 @@ export default class OperationGenerator {
     if (idOfServiceEndpointToAdd !== undefined) {
       const patch = {
         action: 'add-service-endpoints',
-        service_endpoints: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
+        service: OperationGenerator.generateServiceEndpoints([idOfServiceEndpointToAdd])
       };
 
       patches.push(patch);

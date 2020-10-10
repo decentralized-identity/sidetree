@@ -52,9 +52,9 @@ export default class DocumentComposer {
 
     // Only update `serviceEndpoints` if the array is present
     let serviceEndpoints;
-    if (Array.isArray(document.service_endpoints)) {
+    if (Array.isArray(document.service)) {
       serviceEndpoints = [];
-      for (const serviceEndpoint of document.service_endpoints) {
+      for (const serviceEndpoint of document.service) {
         const didDocumentServiceEndpoint = {
           id: '#' + serviceEndpoint.id,
           type: serviceEndpoint.type,
@@ -112,7 +112,7 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerDocumentMissing);
     }
 
-    const allowedProperties = new Set(['publicKey', 'service_endpoints']);
+    const allowedProperties = new Set(['publicKey', 'service']);
     for (const property in document) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.DocumentComposerUnknownPropertyInDocument, `Unexpected property ${property} in document.`);
@@ -124,10 +124,10 @@ export default class DocumentComposer {
       DocumentComposer.validatePublicKeys(document.publicKey);
     }
 
-    // Verify 'service_endpoints' property if it exists.
-    if (document.hasOwnProperty('service_endpoints')) {
-      // Verify each endpoint entry in service_endpoints.
-      DocumentComposer.validateServiceEndpoints(document.service_endpoints);
+    // Verify 'service' property if it exists.
+    if (document.hasOwnProperty('service')) {
+      // Verify each endpoint entry in service.
+      DocumentComposer.validateServiceEndpoints(document.service);
     }
   }
 
@@ -268,11 +268,11 @@ export default class DocumentComposer {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchMissingOrUnknownProperty);
     }
 
-    if (!Array.isArray(patch.service_endpoints)) {
+    if (!Array.isArray(patch.service)) {
       throw new SidetreeError(ErrorCode.DocumentComposerPatchServiceEndpointsNotArray);
     }
 
-    DocumentComposer.validateServiceEndpoints(patch.service_endpoints);
+    DocumentComposer.validateServiceEndpoints(patch.service);
   }
 
   /**
@@ -407,25 +407,25 @@ export default class DocumentComposer {
   }
 
   private static addServiceEndpoints (document: DocumentModel, patch: any): DocumentModel {
-    const serviceEndpoints = patch.service_endpoints;
+    const serviceEndpoints = patch.service;
 
-    if (document.service_endpoints === undefined) {
+    if (document.service === undefined) {
       // create a new array if service did not exist
-      document.service_endpoints = [];
+      document.service = [];
     }
 
     const idToIndexMapper = new Map();
     // map all id and their index
-    for (const idx in document.service_endpoints) {
-      idToIndexMapper.set(document.service_endpoints[idx].id, idx);
+    for (const idx in document.service) {
+      idToIndexMapper.set(document.service[idx].id, idx);
     }
 
     for (const serviceEndpoint of serviceEndpoints) {
       if (idToIndexMapper.has(serviceEndpoint.id)) {
         const idx = idToIndexMapper.get(serviceEndpoint.id);
-        document.service_endpoints[idx] = serviceEndpoint;
+        document.service[idx] = serviceEndpoint;
       } else {
-        document.service_endpoints.push(serviceEndpoint);
+        document.service.push(serviceEndpoint);
       }
     }
 
@@ -433,12 +433,12 @@ export default class DocumentComposer {
   }
 
   private static removeServiceEndpoints (document: DocumentModel, patch: any): DocumentModel {
-    if (document.service_endpoints === undefined) {
+    if (document.service === undefined) {
       return document;
     }
 
     const idsToRemove = new Set(patch.ids);
-    document.service_endpoints = document.service_endpoints.filter(serviceEndpoint => !idsToRemove.has(serviceEndpoint.id));
+    document.service = document.service.filter(serviceEndpoint => !idsToRemove.has(serviceEndpoint.id));
 
     return document;
   }
