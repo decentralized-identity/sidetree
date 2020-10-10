@@ -218,7 +218,7 @@ describe('TransactionProcessor', () => {
       };
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction,'mock_hash', 999999), // Some really large paid operation count.
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'mock_hash', 999999), // Some really large paid operation count.
         ErrorCode.TransactionProcessorPaidOperationCountExceedsLimit);
 
       done();

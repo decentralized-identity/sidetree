@@ -610,7 +610,7 @@ describe('LockMonitor', () => {
         type: SavedLockType.Create
       };
 
-      const saveBroadcastSpy = spyOn(lockMonitor as any,'saveThenBroadcastTransaction').and.returnValue(Promise.resolve(mockLockInfoSaved));
+      const saveBroadcastSpy = spyOn(lockMonitor as any, 'saveThenBroadcastTransaction').and.returnValue(Promise.resolve(mockLockInfoSaved));
 
       const desiredLockAmount = mockWalletBalance - (mockWalletBalance * 0.5);
       const actual = await lockMonitor['handleCreatingNewLock'](desiredLockAmount);
@@ -1006,7 +1006,7 @@ describe('LockMonitor', () => {
       };
 
       const mockDateValue = Date.now();
-      spyOn(Date,'now').and.returnValue(mockDateValue);
+      spyOn(Date, 'now').and.returnValue(mockDateValue);
 
       const lockStoreSpy = spyOn(lockMonitor['lockTransactionStore'], 'addLock').and.returnValue(Promise.resolve());
       const broadcastTxnSpy = spyOn(lockMonitor['bitcoinClient'], 'broadcastLockTransaction').and.returnValue(Promise.resolve('id'));

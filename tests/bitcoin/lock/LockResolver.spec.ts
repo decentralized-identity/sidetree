@@ -290,7 +290,7 @@ describe('LockResolver', () => {
     });
 
     it('should throw if script creation throws.', async () => {
-      spyOn(Buffer,'from').and.throwError('som error');
+      spyOn(Buffer, 'from').and.throwError('som error');
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
         () => LockResolver['createScript']('some input'),
