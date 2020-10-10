@@ -109,7 +109,7 @@ export default class UpdateOperation implements OperationModel {
       Operation.validateDelta(operationObject.delta);
       delta = {
         patches: operationObject.delta.patches,
-        updateCommitment: operationObject.delta.update_commitment
+        updateCommitment: operationObject.delta.updateCommitment
       };
     }
 

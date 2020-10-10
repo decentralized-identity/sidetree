@@ -144,7 +144,7 @@ export default class OperationGenerator {
     const [updatePublicKey] = await Jwk.generateEs256kKeyPair();
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
       patches
     };
 
@@ -181,7 +181,7 @@ export default class OperationGenerator {
   public static async longFormFromCreateOperationData (createOperationData:any, network?: string) {
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey),
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.updatePublicKey),
       patches: createOperationData.createOperation.delta.patches
     };
 
@@ -349,7 +349,7 @@ export default class OperationGenerator {
     }];
 
     const delta = {
-      update_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
+      updateCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(updatePublicKey),
       patches
     };
 
@@ -420,7 +420,7 @@ export default class OperationGenerator {
   ) {
     const delta = {
       patches,
-      update_commitment: nextUpdateCommitmentHash
+      updateCommitment: nextUpdateCommitmentHash
     };
     const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);
 
@@ -477,7 +477,7 @@ export default class OperationGenerator {
 
     const delta = {
       patches,
-      update_commitment: nextUpdateCommitmentHash
+      updateCommitment: nextUpdateCommitmentHash
     };
 
     const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);

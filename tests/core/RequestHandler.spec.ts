@@ -205,7 +205,7 @@ describe('RequestHandler', () => {
     const getRandomBytesAsync = util.promisify(crypto.randomBytes);
     const largeBuffer = await getRandomBytesAsync(4000);
     createOperationRequest.delta = {
-      update_commitment: largeBuffer.toString(),
+      updateCommitment: largeBuffer.toString(),
       patches: []
     };
 

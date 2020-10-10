@@ -113,7 +113,7 @@ export default class RecoverOperation implements OperationModel {
         Operation.validateDelta(operationObject.delta);
         delta = {
           patches: operationObject.delta.patches,
-          updateCommitment: operationObject.delta.update_commitment
+          updateCommitment: operationObject.delta.updateCommitment
         };
       } catch {
         // For compatibility with data pruning, we have to assume that `delta` may be unavailable,

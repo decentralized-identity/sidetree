@@ -123,7 +123,7 @@ export default {
   OperationCreateInvalidDidDocument: 'operation_create_invalid_did_document',
   OperationCountLessThanZero: 'operation_count_less_than_zero',
   OperationCreatePayloadHasMissingOrInvalidNextRecoveryCommitment: 'operation_create_payload_has_missing_or_invalid_next_recoveryCommitment',
-  OperationCreatePayloadHasMissingOrInvalidNextUpdateCommitment:  'operation_create_payload_has_missing_or_invalid_next_update_commitment',
+  OperationCreatePayloadHasMissingOrInvalidNextUpdateCommitment:  'operation_create_payload_has_missing_or_invalid_next_updateCommitment',
   OperationCreatePayloadMissingOrUnknownProperty: 'operation_create_payload_missing_or_unknown_property',
   OperationDocumentPatchesMissing: 'operation_document_patches_missing',
   OperationPayloadMissingOrIncorrectType: 'operation_payload_missing_or_incorrect_type',
