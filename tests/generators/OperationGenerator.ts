@@ -152,7 +152,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       delta_hash: delta_hash,
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
@@ -189,7 +189,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       delta_hash: delta_hash,
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey)
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey)
     };
 
     const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);

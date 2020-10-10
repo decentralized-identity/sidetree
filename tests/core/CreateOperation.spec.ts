@@ -6,9 +6,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
-
-import * as fs from 'fs';
-import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
+import * as generatedFixtures from '../vectors/generated.json';
 
 describe('CreateOperation', async () => {
   describe('parseJcsObject', () => {
@@ -111,9 +109,8 @@ describe('CreateOperation', async () => {
 
   describe('computeJcsDidUniqueSuffix', () => {
     it('should return expected did unique suffix', () => {
-      const actual = Multihash.canonicalizeThenHashThenEncode(suffixData);
-      const expected = fs.readFileSync('tests/fixtures/uniqueSuffix/resultingSuffix.txt', 'utf8');
-      expect(actual).toEqual(expected);
+      const actual = Multihash.canonicalizeThenHashThenEncode(generatedFixtures.create.createOperation.suffixData);
+      expect(actual).toEqual(generatedFixtures.create.didUniqueSuffix);
     });
   });
 

@@ -23,6 +23,8 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import { fixtureDriftHelper } from '../utils';
 
+const OVERWRITE_FIXTURES = false;
+
 describe('Resolver', () => {
   let resolver: Resolver;
   let operationProcessor: IOperationProcessor;
@@ -55,7 +57,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/shortFormResponse.json', false);
+      fixtureDriftHelper(resultingDocument, afterCreate, 'resolution/afterCreate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterCreate);
     });
 
@@ -87,7 +89,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', false);
+      fixtureDriftHelper(resultingDocument, afterUpdate, 'resolution/afterUpdate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterUpdate);
     });
 
@@ -113,7 +115,7 @@ describe('Resolver', () => {
       const published = true;
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', false);
+      fixtureDriftHelper(resultingDocument, afterRecover, 'resolution/afterRecover.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterRecover);
     });
 
@@ -155,7 +157,7 @@ describe('Resolver', () => {
       const didState = await resolver.resolve(didUniqueSuffix) as DidState;
       const published = true;
       const resultingDocument = DocumentComposer.transformToExternalDocument(didState, `did:sidetree:${didUniqueSuffix}`, published);
-      fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', false);
+      fixtureDriftHelper(resultingDocument, afterDeactivate, 'resolution/afterDeactivate.json', OVERWRITE_FIXTURES);
       expect(resultingDocument).toEqual(afterDeactivate);
     });
   });
