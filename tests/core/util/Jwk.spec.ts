@@ -10,7 +10,7 @@ describe('Jwk', async () => {
     });
 
     it('should throw error if un unknown property is included in the JWK.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         unknownProperty: 'any value',
         kty: 'EC',
         crv: 'secp256k1',
@@ -18,55 +18,55 @@ describe('Jwk', async () => {
         y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
       };
 
-      expect(() => { Jwk.validateJwkEs256k(jwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kHasUnknownProperty));
+      expect(() => { Jwk.validateJwkEs256k(publicKeyJwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kHasUnknownProperty));
     });
 
     it('should throw error if JWK has the wrong `kty` value.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         kty: 'WRONG_TYPE',
         crv: 'secp256k1',
         x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
         y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
       };
 
-      expect(() => { Jwk.validateJwkEs256k(jwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidKty));
+      expect(() => { Jwk.validateJwkEs256k(publicKeyJwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidKty));
     });
 
     it('should throw error if JWK has the wrong `crv` value.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         kty: 'EC',
         crv: 'WRONG_CURVE',
         x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
         y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
       };
 
-      expect(() => { Jwk.validateJwkEs256k(jwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidCrv));
+      expect(() => { Jwk.validateJwkEs256k(publicKeyJwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidCrv));
     });
 
     it('should throw error if JWK has the wrong `x` type.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         kty: 'EC',
         crv: 'secp256k1',
         x: 123,
         y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
       };
 
-      expect(() => { Jwk.validateJwkEs256k(jwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeX));
+      expect(() => { Jwk.validateJwkEs256k(publicKeyJwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeX));
     });
 
     it('should throw error if JWK has the wrong `y` type.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         kty: 'EC',
         crv: 'secp256k1',
         x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
         y: 123
       };
 
-      expect(() => { Jwk.validateJwkEs256k(jwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeY));
+      expect(() => { Jwk.validateJwkEs256k(publicKeyJwk); }).toThrow(new SidetreeError(ErrorCode.JwkEs256kMissingOrInvalidTypeY));
     });
 
     it('should throw error if given key contains invalid x length.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         kty: 'EC',
         crv: 'secp256k1',
         x: 'incorrectLength',
@@ -74,13 +74,13 @@ describe('Jwk', async () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Jwk.validateJwkEs256k(jwk),
+        () => Jwk.validateJwkEs256k(publicKeyJwk),
         ErrorCode.JwkEs256kHasIncorrectLengthOfX
       );
     });
 
     it('should throw error if given key contains invalid y length.', async () => {
-      const jwk = {
+      const publicKeyJwk = {
         kty: 'EC',
         crv: 'secp256k1',
         x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
@@ -88,7 +88,7 @@ describe('Jwk', async () => {
       };
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => Jwk.validateJwkEs256k(jwk),
+        () => Jwk.validateJwkEs256k(publicKeyJwk),
         ErrorCode.JwkEs256kHasIncorrectLengthOfY
       );
     });

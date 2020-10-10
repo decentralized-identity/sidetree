@@ -83,7 +83,7 @@ export default class OperationGenerator {
     const publicKeyModel = {
       id,
       type: 'EcdsaSecp256k1VerificationKey2019',
-      jwk: publicKey,
+      publicKeyJwk: publicKey,
       verificationRelationship: verificationRelationship || Object.values(PublicKeyPurpose)
     };
 
@@ -306,7 +306,7 @@ export default class OperationGenerator {
       additionalKeyId,
       additionalPublicKey,
       additionalPrivateKey,
-      nextUpdateKey: additionalPublicKey.jwk
+      nextUpdateKey: additionalPublicKey.publicKeyJwk
     };
   }
 
@@ -377,7 +377,7 @@ export default class OperationGenerator {
       didUniqueSuffix = OperationGenerator.generateRandomHash();
     }
     const [nextUpdateKey] = await OperationGenerator.generateKeyPair('nextUpdateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const anyNewSigningPublicKeyId = 'anyNewKey';
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair(anyNewSigningPublicKeyId);
     const patches = [
@@ -392,7 +392,7 @@ export default class OperationGenerator {
     const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair(signingKeyId);
     const request = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      signingPublicKey.jwk,
+      signingPublicKey.publicKeyJwk,
       signingPrivateKey,
       nextUpdateCommitmentHash,
       patches
@@ -455,7 +455,7 @@ export default class OperationGenerator {
       service: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
-      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.jwk), document
+      didUniqueSuffix, recoveryPrivateKey, newRecoveryPublicKey, Multihash.canonicalizeThenDoubleHashThenEncode(newSigningPublicKey.publicKeyJwk), document
     );
     return recoverOperation;
   }
@@ -533,7 +533,7 @@ export default class OperationGenerator {
   ): Promise<Buffer> {
     const operation = await OperationGenerator.generateCreateOperationRequest(
       recoveryPublicKey,
-      signingPublicKey.jwk,
+      signingPublicKey.publicKeyJwk,
       [signingPublicKey],
       serviceEndpoints
     );

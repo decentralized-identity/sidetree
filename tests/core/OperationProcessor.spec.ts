@@ -34,7 +34,7 @@ async function createUpdateSequence (
   let currentPrivateKey = privateKey;
   for (let i = 0; i < numberOfUpdates; ++i) {
     const [nextUpdateKey, nextPrivateKey] = await OperationGenerator.generateKeyPair('updateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const patches = [
       {
         action: 'remove-service-endpoints',
@@ -54,7 +54,7 @@ async function createUpdateSequence (
     );
 
     // Now that the update payload is created, update the update reveal for the next operation generation to use.
-    currentUpdateKey = nextUpdateKey.jwk;
+    currentUpdateKey = nextUpdateKey.publicKeyJwk;
     currentPrivateKey = nextPrivateKey;
 
     const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -186,7 +186,7 @@ describe('OperationProcessor', async () => {
     const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA';
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
       didUniqueSuffix,
-      signingPublicKey.jwk,
+      signingPublicKey.publicKeyJwk,
       signingPrivateKey,
       nextUpdateCommitmentHash,
       patches
@@ -319,7 +319,7 @@ describe('OperationProcessor', async () => {
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const [invalidKey] = await OperationGenerator.generateKeyPair('invalidKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, invalidKey.jwk, signingPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
+      didUniqueSuffix, invalidKey.publicKeyJwk, signingPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
     );
 
     // Generate operation with an invalid key
@@ -342,7 +342,7 @@ describe('OperationProcessor', async () => {
     const [, anyIncorrectSigningPrivateKey] = await OperationGenerator.generateKeyPair('key1');
     const [anyPublicKey] = await OperationGenerator.generateKeyPair(`additionalKey`);
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, anyIncorrectSigningPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
+      didUniqueSuffix, signingPublicKey.publicKeyJwk, anyIncorrectSigningPrivateKey, anyPublicKey, OperationGenerator.generateRandomHash()
     );
 
     const updateOperationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -507,7 +507,7 @@ describe('OperationProcessor', async () => {
         const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
-          signingPublicKey.jwk,
+          signingPublicKey.publicKeyJwk,
           recoveryPrivateKey, // NOTE: Using recovery private key to generate an invalid signautre.
           additionalKey,
           OperationGenerator.generateRandomHash()
@@ -536,7 +536,7 @@ describe('OperationProcessor', async () => {
         const [invalidUpdateKey] = await OperationGenerator.generateKeyPair('invalid');
         const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
           didUniqueSuffix,
-          invalidUpdateKey.jwk,
+          invalidUpdateKey.publicKeyJwk,
           signingPrivateKey,
           additionalKey,
           OperationGenerator.generateRandomHash()

@@ -133,7 +133,7 @@ describe('CreateOperation', async () => {
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         [signingPublicKey],
         services
       );
@@ -150,7 +150,7 @@ describe('CreateOperation', async () => {
       const services = OperationGenerator.generateServiceEndpoints(['serviceEndpointId123']);
       const createOperationRequest = await OperationGenerator.generateCreateOperationRequest(
         recoveryPublicKey,
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         [signingPublicKey],
         services
       );

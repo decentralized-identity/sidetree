@@ -193,10 +193,10 @@ describe('Resolver', () => {
       let [nextUpdateKey, nextUpdatePrivateKey] = await OperationGenerator.generateKeyPair(`next-update-key`);
       const updateOperation1PriorRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         additionalKey,
-        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk)
+        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk)
       );
       const updateOperation1BufferPriorRecovery = Buffer.from(JSON.stringify(updateOperation1PriorRecovery));
       const anchoredUpdateOperation1PriorRecovery: AnchoredOperationModel = {
@@ -212,7 +212,7 @@ describe('Resolver', () => {
       // Create another update operation and insert it to the operation store.
       const updatePayload2PriorRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
-        nextUpdateKey.jwk,
+        nextUpdateKey.publicKeyJwk,
         nextUpdatePrivateKey,
         OperationGenerator.generateRandomHash(),
         'dummyUri2',
@@ -258,10 +258,10 @@ describe('Resolver', () => {
       [nextUpdateKey, nextUpdatePrivateKey] = await OperationGenerator.generateKeyPair(`next-update-key`);
       const updateOperation1AfterRecovery = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
         didUniqueSuffix,
-        newSigningPublicKey.jwk,
+        newSigningPublicKey.publicKeyJwk,
         newSigningPrivateKey,
         newKey2ForUpdate1AfterRecovery,
-        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk)
+        Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk)
       );
       const updateOperation1BufferAfterRecovery = Buffer.from(JSON.stringify(updateOperation1AfterRecovery));
       const anchoredUpdateOperation1AfterRecovery: AnchoredOperationModel = {
@@ -277,7 +277,7 @@ describe('Resolver', () => {
       // Create another update and insert it to the operation store.
       const updatePayload2AfterRecovery = await OperationGenerator.createUpdateOperationRequestForHubEndpoints(
         didUniqueSuffix,
-        nextUpdateKey.jwk,
+        nextUpdateKey.publicKeyJwk,
         nextUpdatePrivateKey,
         OperationGenerator.generateRandomHash(),
         'newDummyHubUri2',
@@ -304,8 +304,8 @@ describe('Resolver', () => {
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
       expect(document.publicKey.length).toEqual(2);
-      expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
-      expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
+      expect(actualNewSigningPublicKey1!.publicKeyJwk).toEqual(newSigningPublicKey.publicKeyJwk);
+      expect(actualNewSigningPublicKey2!.publicKeyJwk).toEqual(newKey2ForUpdate1AfterRecovery.publicKeyJwk);
       expect(document.service).toBeDefined();
       expect(document.service.length).toEqual(1);
       expect(document.service[0].endpoint).toBeDefined();

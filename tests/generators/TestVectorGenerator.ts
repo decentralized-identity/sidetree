@@ -14,7 +14,7 @@ export default class TestVectorGenerator {
 
     // derive an update operation request from the create
     const [nextUpdateKey] = await OperationGenerator.generateKeyPair('nextUpdateKey');
-    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.jwk);
+    const nextUpdateCommitmentHash = Multihash.canonicalizeThenDoubleHashThenEncode(nextUpdateKey.publicKeyJwk);
     const [anyNewSigningKey] = await OperationGenerator.generateKeyPair('newKeyId');
     const patches = [
       {

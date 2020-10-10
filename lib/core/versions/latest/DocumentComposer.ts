@@ -33,7 +33,7 @@ export default class DocumentComposer {
           id: id,
           controller: '',
           type: publicKey.type,
-          publicKeyJwk: publicKey.jwk
+          publicKeyJwk: publicKey.publicKeyJwk
         };
         const purposeSet: Set<string> = new Set(publicKey.verificationRelationship);
 
@@ -185,12 +185,12 @@ export default class DocumentComposer {
     const publicKeyIdSet: Set<string> = new Set();
     for (const publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      // the expected fields are id, verificationRelationship, type and jwk
+      // the expected fields are id, verificationRelationship, type and publicKeyJwk
       if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
 
-      if (typeof publicKey.jwk !== 'object' || Array.isArray(publicKey.jwk)) {
+      if (typeof publicKey.publicKeyJwk !== 'object' || Array.isArray(publicKey.publicKeyJwk)) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyJwkMissingOrIncorrectType);
       }
 

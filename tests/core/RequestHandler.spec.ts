@@ -306,7 +306,7 @@ describe('RequestHandler', () => {
     const [additionalKey] = await OperationGenerator.generateKeyPair(`new-key1`);
     const [signingPublicKey] = await OperationGenerator.generateKeyPair('signingKey');
     const updateOperationRequest = await OperationGenerator.createUpdateOperationRequestForAddingAKey(
-      didUniqueSuffix, signingPublicKey.jwk, anySigningPrivateKey, additionalKey, OperationGenerator.generateRandomHash()
+      didUniqueSuffix, signingPublicKey.publicKeyJwk, anySigningPrivateKey, additionalKey, OperationGenerator.generateRandomHash()
     );
 
     const requestBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
@@ -427,7 +427,7 @@ describe('RequestHandler', () => {
 
       expect(published).toEqual(true);
       expect(didState.document.publicKeys.length).toEqual(1);
-      expect(didState.document.publicKeys[0].jwk).toEqual(anySigningPublicKey.jwk);
+      expect(didState.document.publicKeys[0].publicKeyJwk).toEqual(anySigningPublicKey.publicKeyJwk);
     });
   });
 });

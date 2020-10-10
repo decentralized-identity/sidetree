@@ -98,9 +98,9 @@ export default class Jws {
    * Verifies the compact JWS string using the given JWK key.
    * @returns true if signature is valid; else otherwise.
    */
-  public static verifyCompactJws (compactJws: string, jwk: any): boolean {
+  public static verifyCompactJws (compactJws: string, publicKeyJwk: any): boolean {
     try {
-      JWS.verify(compactJws, jwk);
+      JWS.verify(compactJws, publicKeyJwk);
       return true;
     } catch (error) {
       console.log(`Input '${compactJws}' failed signature verification: ${SidetreeError.createFromError(ErrorCode.JwsFailedSignatureValidation, error)}`);

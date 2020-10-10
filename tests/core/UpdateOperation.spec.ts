@@ -11,7 +11,7 @@ describe('UpdateOperation', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         OperationGenerator.generateRandomHash(),
         []
@@ -26,7 +26,7 @@ describe('UpdateOperation', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
         'opaque-unused-document-patch'
@@ -42,7 +42,7 @@ describe('UpdateOperation', async () => {
       const [signingPublicKey, signingPrivateKey] = await OperationGenerator.generateKeyPair('key');
       const updateOperationRequest = await OperationGenerator.createUpdateOperationRequest(
         'unused-DID-unique-suffix',
-        signingPublicKey.jwk,
+        signingPublicKey.publicKeyJwk,
         signingPrivateKey,
         'unusedNextUpdateCommitmentHash',
         'opaque-unused-document-patch'

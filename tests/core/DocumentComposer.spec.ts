@@ -40,7 +40,7 @@ describe('DocumentComposer', async () => {
           id: '#anySigningKey',
           controller: '',
           type: 'EcdsaSecp256k1VerificationKey2019',
-          publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
+          publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
         }],
         authentication: [
           '#anySigningKey', // reference because it is a general verificationRelationship key
@@ -49,7 +49,7 @@ describe('DocumentComposer', async () => {
             controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {
-              kty: 'EC', crv: 'secp256k1', x: authPublicKey.jwk.x, y: authPublicKey.jwk.y
+              kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y
             }
           }
         ]
@@ -100,7 +100,7 @@ describe('DocumentComposer', async () => {
   describe('addServiceEndpoints', () => {
     it('should add expected service endpoints to document', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }]
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }]
       };
 
       const patch = {
@@ -121,7 +121,7 @@ describe('DocumentComposer', async () => {
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from service', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
         service: [
           { id: '1', type: 't', endpoint: 'se' },
           { id: '2', type: 't', endpoint: 'se' },
@@ -138,7 +138,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
         service: [
           { id: '2', type: 't', endpoint: 'se' },
           { id: '4', type: 't', endpoint: 'se' }
@@ -150,7 +150,7 @@ describe('DocumentComposer', async () => {
 
     it('should leave document unchanged if it does not have service endpoint property', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }]
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }]
       };
 
       const patch = {
@@ -412,11 +412,11 @@ describe('DocumentComposer', async () => {
       );
     });
 
-    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not specified in `jwk` property.', async () => {
+    it('should throw error if the a secp256k1 public key in an add-public-keys patch is not specified in `publicKeyJwk` property.', async () => {
       const patches = generatePatchesForPublicKeys();
 
-      // Simulate that `jwk` is missing.
-      delete (patches[0].publicKey![0] as any).jwk;
+      // Simulate that `publicKeyJwk` is missing.
+      delete (patches[0].publicKey![0] as any).publicKeyJwk;
 
       (patches[0].publicKey![0] as any).publicKeyPem = 'DummyPemString';
 
@@ -498,7 +498,7 @@ describe('DocumentComposer', async () => {
 
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', publicKeyJwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
         service: []
       };
       const patches = [
@@ -537,13 +537,13 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: { a: 'unused a' },
+            publicKeyJwk: { a: 'unused a' },
             verificationRelationship: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: { b: 'unused b' },
+            publicKeyJwk: { b: 'unused b' },
             verificationRelationship: ['general']
           }
         ]
@@ -559,7 +559,7 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: {},
+            publicKeyJwk: {},
             verificationRelationship: []
           }
         ]
@@ -575,7 +575,7 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: {},
+            publicKeyJwk: {},
             verificationRelationship: undefined
           }
         ]
@@ -591,7 +591,7 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: {},
+            publicKeyJwk: {},
             verificationRelationship: ['general', 'general', 'general', 'general']
           }
         ]
@@ -607,7 +607,7 @@ describe('DocumentComposer', async () => {
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
-            jwk: {},
+            publicKeyJwk: {},
             verificationRelationship: ['general', 'somethingInvalid']
           }
         ]
@@ -644,7 +644,7 @@ function generatePatchesForPublicKeys () {
         {
           id: 'keyX',
           type: 'EcdsaSecp256k1VerificationKey2019',
-          jwk: {
+          publicKeyJwk: {
             kty: 'EC',
             crv: 'secp256k1',
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
