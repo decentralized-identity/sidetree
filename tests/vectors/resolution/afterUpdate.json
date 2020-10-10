@@ -18,7 +18,7 @@
     "publicKey": [
       {
         "id": "#signingKey",
-        "controller": "",
+        "controller": "did:sidetree:EiDaoqCY8szpCmAJmFwBOg4MhfIDkX6eYkK2rqTpdQxo0Q",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
@@ -29,7 +29,7 @@
       },
       {
         "id": "#additional-key",
-        "controller": "",
+        "controller": "did:sidetree:EiDaoqCY8szpCmAJmFwBOg4MhfIDkX6eYkK2rqTpdQxo0Q",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",

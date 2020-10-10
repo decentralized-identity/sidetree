@@ -440,7 +440,7 @@ function validateDidReferencesInDidDocument (didDocument: any, did: string) {
 
   if (didDocument.publicKey) {
     for (const publicKeyEntry of didDocument.publicKey) {
-      expect(publicKeyEntry.controller).toEqual('');
+      expect(publicKeyEntry.controller).toEqual(did);
       expect((publicKeyEntry.id as string).startsWith('#'));
     }
   }

@@ -38,7 +38,7 @@ describe('DocumentComposer', async () => {
         service: undefined,
         publicKey: [{
           id: '#anySigningKey',
-          controller: '',
+          controller: result.didDocument.id,
           type: 'EcdsaSecp256k1VerificationKey2019',
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.publicKeyJwk.x, y: anySigningPublicKey.publicKeyJwk.y }
         }],
@@ -46,7 +46,7 @@ describe('DocumentComposer', async () => {
           '#anySigningKey', // reference because it is a general verificationRelationship key
           {
             id: '#authPublicKey', // object here because it is an auth verificationRelationship only key
-            controller: '',
+            controller: result.didDocument.id,
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {
               kty: 'EC', crv: 'secp256k1', x: authPublicKey.publicKeyJwk.x, y: authPublicKey.publicKeyJwk.y

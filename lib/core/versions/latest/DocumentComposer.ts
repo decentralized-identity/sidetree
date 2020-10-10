@@ -31,7 +31,7 @@ export default class DocumentComposer {
         const id = '#' + publicKey.id;
         const didDocumentPublicKey = {
           id: id,
-          controller: '',
+          controller: did,
           type: publicKey.type,
           publicKeyJwk: publicKey.publicKeyJwk
         };

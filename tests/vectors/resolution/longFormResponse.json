@@ -20,7 +20,7 @@
       "publicKey": [
         {
           "id": "#signingKey",
-          "controller": "",
+          "controller": "did:sidetree:EiDaoqCY8szpCmAJmFwBOg4MhfIDkX6eYkK2rqTpdQxo0Q:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljS2V5IjpbeyJpZCI6InNpZ25pbmdLZXkiLCJwdWJsaWNLZXlKd2siOnsiY3J2Ijoic2VjcDI1NmsxIiwia3R5IjoiRUMiLCJ4IjoiX1ZGQWhNaXphSDNUM3VaUzVhRmZlYmxrUkFMdzF1cnh6a25xLWpXdUFQdyIsInkiOiJJV1BGOWNiTXJxMUx6SWtscmhQS2VrSWJSQXpzZGl0Rl9kY1dLWHdTZXVJIn0sInR5cGUiOiJFY2RzYVNlY3AyNTZrMVZlcmlmaWNhdGlvbktleTIwMTkiLCJ2ZXJpZmljYXRpb25SZWxhdGlvbnNoaXAiOlsidmVyaWZpY2F0aW9uTWV0aG9kIiwiYXV0aGVudGljYXRpb24iLCJhc3NlcnRpb25NZXRob2QiLCJjYXBhYmlsaXR5SW52b2NhdGlvbiIsImNhcGFiaWxpdHlEZWxlZ2F0aW9uIiwia2V5QWdyZWVtZW50Il19XSwic2VydmljZSI6W3siZW5kcG9pbnQiOiJodHRwczovL3d3dy51cmwuY29tIiwiaWQiOiJzZXJ2aWNlRW5kcG9pbnRJZDEyMyIsInR5cGUiOiJzb21lVHlwZSJ9XX19XSwidXBkYXRlQ29tbWl0bWVudCI6IkVpQVY1alpOQjBETkg0dVgzUUxlSnlncmhWT0lSUmxWOVNLUFFzdVJfZmpvQ3cifSwic3VmZml4RGF0YSI6eyJkZWx0YUhhc2giOiJFaUNnNC1KYWh4elpkZTB1Z0pnVnN1M1ZsMVpYaVVnVVViX3dMU1AyXzJZd253IiwicmVjb3ZlcnlDb21taXRtZW50IjoiRWlDbmE1eERMNkhSeFZjVFBVSVpZSncxQVFmRkxFMnZXSFZJaXNJdzJwUFNmZyJ9fQ",
           "type": "EcdsaSecp256k1VerificationKey2019",
           "publicKeyJwk": {
             "crv": "secp256k1",
