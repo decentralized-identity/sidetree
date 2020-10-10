@@ -1,8 +1,8 @@
 import Config from '../../lib/core/models/Config';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbUnresolvableTransactionStore from '../../lib/core/MongoDbUnresolvableTransactionStore';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import { MongoClient } from 'mongodb';
 
 /**
  * Creates a MongoDbUnresolvableTransactionStore and initializes it.

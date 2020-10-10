@@ -180,7 +180,7 @@ export default class MongoDbTransactionStore implements ITransactionStore {
         $and: [
           { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
           { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
-        ] 
+        ]
       });
     }
 

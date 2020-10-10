@@ -1,6 +1,5 @@
-import * as crypto from 'crypto';
-
 import * as createFixture from '../fixtures/create/create.json';
+import * as crypto from 'crypto';
 import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
 import * as legacyLongFormResultingDocument from '../fixtures/legacyLongFormDid/resultingDocument.json';
 import * as longFormResultingDocument from '../fixtures/longFormDid/resultingDocument.json';
@@ -205,7 +204,7 @@ describe('RequestHandler', () => {
     createOperationRequest.delta = {
       update_commitment: largeBuffer.toString(),
       patches: []
-    }
+    };
 
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
