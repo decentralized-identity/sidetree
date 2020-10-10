@@ -68,8 +68,8 @@ export default class MockOperationStore implements IOperationStore {
 
     // Sort needed if there was a put operation since last sort.
     if (updatedSinceLastSort) {
-      didOps.sort(compareOperation);       // in-place sort
-      didOps = didOps.filter((elem, index, self) => {  // remove duplicates
+      didOps.sort(compareOperation); // in-place sort
+      didOps = didOps.filter((elem, index, self) => { // remove duplicates
         return (index === 0) || compareOperation(elem, self[index - 1]) !== 0;
       });
       this.didUpdatedSinceLastSort.set(didUniqueSuffix, false);
@@ -118,7 +118,7 @@ export default class MockOperationStore implements IOperationStore {
 
   private ensureDidContainerExist (did: string) {
     if (this.didToOperations.get(did) === undefined) {
-      this.didToOperations.set(did, new Array<AnchoredOperationModel>());
+      this.didToOperations.set(did, []);
       this.didUpdatedSinceLastSort.set(did, false);
     }
   }

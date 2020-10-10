@@ -11,7 +11,7 @@ describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all purpose types.', async () => {
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
@@ -57,7 +57,7 @@ describe('DocumentComposer', async () => {
     });
 
     it('should output method metadata with the given `published` value.', async () => {
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
@@ -108,7 +108,8 @@ describe('DocumentComposer', async () => {
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'someEndpoint'}]
+          endpoint: 'someEndpoint'
+        }]
       };
 
       const result = DocumentComposer['addServiceEndpoints'](document, patch);
@@ -622,8 +623,8 @@ describe('DocumentComposer', async () => {
       };
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-       async () => { DocumentComposer['validateDocument'](document); },
-       ErrorCode.DocumentComposerUnknownPropertyInDocument
+        async () => { DocumentComposer['validateDocument'](document); },
+        ErrorCode.DocumentComposerUnknownPropertyInDocument
       );
     });
   });

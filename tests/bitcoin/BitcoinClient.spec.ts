@@ -103,7 +103,8 @@ describe('BitcoinClient', async () => {
       expect(result).toEqual({
         transactionId: mockSignedTxn.id,
         transactionFee: mockTxn.getFee(),
-        serializedTransactionObject: mockSerializedTxn});
+        serializedTransactionObject: mockSerializedTxn
+      });
     });
   });
 

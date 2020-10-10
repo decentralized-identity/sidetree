@@ -101,8 +101,8 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     // Verify required lock if one was needed.
     const valueTimeLock = anchorFile.model.writer_lock_id
-                          ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
-                          : undefined;
+      ? await this.blockchain.getValueTimeLock(anchorFile.model.writer_lock_id)
+      : undefined;
     ValueTimeLockVerifier.verifyLockAmountAndThrowOnError(
       valueTimeLock,
       paidOperationCount,

@@ -1,14 +1,14 @@
 import * as crypto from 'crypto';
-import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
-import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';

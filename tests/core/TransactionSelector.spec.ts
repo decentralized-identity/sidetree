@@ -3,8 +3,8 @@ import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MockTransactionStore from '../mocks/MockTransactionStore';
-import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
+import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 
 describe('TransactionSelector', () => {
 

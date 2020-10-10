@@ -1,6 +1,6 @@
 import IpfsErrorCode from '../../lib/ipfs/IpfsErrorCode';
-import Timeout from '../../lib/ipfs/Util/Timeout';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
+import Timeout from '../../lib/ipfs/Util/Timeout';
 
 describe('Timeout', async () => {
   describe('timeout()', async () => {
