@@ -108,7 +108,8 @@ describe('DocumentComposer', async () => {
         service_endpoints: [{
           id: 'someId',
           type: 'someType',
-          endpoint: 'someEndpoint'}]
+          endpoint: 'someEndpoint'
+        }]
       };
 
       const result = DocumentComposer['addServiceEndpoints'](document, patch);
