@@ -1,0 +1,45 @@
+{
+    "create": {
+      "status": "succeeded",
+      "body": {
+        "@context": "https://www.w3.org/ns/did-resolution/v1",
+        "didDocument": {
+          "id": "did:sidetree:EiDFmo0V9aNcRXkKFUO57iHRPxzNIcKgfgSXbhrXPVKn3A:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljX2tleXMiOlt7ImlkIjoic2lnbmluZ0tleSIsImp3ayI6eyJjcnYiOiJzZWNwMjU2azEiLCJrdHkiOiJFQyIsIngiOiJWVzZ2SkFyeEczU1VQOXpBNGlxczd0V1JUaHQyekVOaHNWc1lPZm4yaEVrIiwieSI6IjlYTGs2RGhYTEtydmdiY1k1X0EwbnBwYl8zWFJnajJFTDQ1SUFQeHVVM1kifSwicHVycG9zZSI6WyJhdXRoIiwiZ2VuZXJhbCJdLCJ0eXBlIjoiRWNkc2FTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE5In1dLCJzZXJ2aWNlX2VuZHBvaW50cyI6W3siZW5kcG9pbnQiOiJodHRwczovL3d3dy51cmwuY29tIiwiaWQiOiJzZXJ2aWNlRW5kcG9pbnRJZDEyMyIsInR5cGUiOiJzb21lVHlwZSJ9XX19XSwidXBkYXRlX2NvbW1pdG1lbnQiOiJFaUNtZmd0Tmg2dS1wZ0dZQWdHSGVMS2R6ZjFsNTZkX3FTUUtvOUwwYWZLUVBnIn0sInN1ZmZpeERhdGEiOnsiZGVsdGFfaGFzaCI6IkVpQjY1REYwTUtPX3NYeWR1VWpsQjhBWFdtS0hBbzFaSmxQMUsyRjhkOXMzNkEiLCJyZWNvdmVyeV9jb21taXRtZW50IjoiRWlDdmZ1T0pPWnR4X2dpV3BlZnZrN2ZaSjRTVi1adWI0aDFxdTQxVThaNm9uUSJ9fQ",
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            {
+              "@base": "did:sidetree:EiDFmo0V9aNcRXkKFUO57iHRPxzNIcKgfgSXbhrXPVKn3A:eyJkZWx0YSI6eyJwYXRjaGVzIjpbeyJhY3Rpb24iOiJyZXBsYWNlIiwiZG9jdW1lbnQiOnsicHVibGljX2tleXMiOlt7ImlkIjoic2lnbmluZ0tleSIsImp3ayI6eyJjcnYiOiJzZWNwMjU2azEiLCJrdHkiOiJFQyIsIngiOiJWVzZ2SkFyeEczU1VQOXpBNGlxczd0V1JUaHQyekVOaHNWc1lPZm4yaEVrIiwieSI6IjlYTGs2RGhYTEtydmdiY1k1X0EwbnBwYl8zWFJnajJFTDQ1SUFQeHVVM1kifSwicHVycG9zZSI6WyJhdXRoIiwiZ2VuZXJhbCJdLCJ0eXBlIjoiRWNkc2FTZWNwMjU2azFWZXJpZmljYXRpb25LZXkyMDE5In1dLCJzZXJ2aWNlX2VuZHBvaW50cyI6W3siZW5kcG9pbnQiOiJodHRwczovL3d3dy51cmwuY29tIiwiaWQiOiJzZXJ2aWNlRW5kcG9pbnRJZDEyMyIsInR5cGUiOiJzb21lVHlwZSJ9XX19XSwidXBkYXRlX2NvbW1pdG1lbnQiOiJFaUNtZmd0Tmg2dS1wZ0dZQWdHSGVMS2R6ZjFsNTZkX3FTUUtvOUwwYWZLUVBnIn0sInN1ZmZpeERhdGEiOnsiZGVsdGFfaGFzaCI6IkVpQjY1REYwTUtPX3NYeWR1VWpsQjhBWFdtS0hBbzFaSmxQMUsyRjhkOXMzNkEiLCJyZWNvdmVyeV9jb21taXRtZW50IjoiRWlDdmZ1T0pPWnR4X2dpV3BlZnZrN2ZaSjRTVi1adWI0aDFxdTQxVThaNm9uUSJ9fQ"
+            }
+          ],
+          "service": [
+            {
+              "id": "#serviceEndpointId123",
+              "type": "someType",
+              "serviceEndpoint": "https://www.url.com"
+            }
+          ],
+          "publicKey": [
+            {
+              "id": "#signingKey",
+              "controller": "",
+              "type": "EcdsaSecp256k1VerificationKey2019",
+              "publicKeyJwk": {
+                "crv": "secp256k1",
+                "kty": "EC",
+                "x": "VW6vJArxG3SUP9zA4iqs7tWRTht2zENhsVsYOfn2hEk",
+                "y": "9XLk6DhXLKrvgbcY5_A0nppb_3XRgj2EL45IAPxuU3Y"
+              }
+            }
+          ],
+          "authentication": [
+            "#signingKey"
+          ]
+        },
+        "methodMetadata": {
+          "published": false,
+          "recoveryCommitment": "EiCvfuOJOZtx_giWpefvk7fZJ4SV-Zub4h1qu41U8Z6onQ",
+          "updateCommitment": "EiCmfgtNh6u-pgGYAgGHeLKdzf1l56d_qSQKo9L0afKQPg"
+        }
+      }
+    }
+}

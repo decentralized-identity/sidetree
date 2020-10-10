@@ -12,7 +12,7 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  deltaHash: string;
+  delta_hash: string;
   recoveryKey: JwkEs256k;
   recoveryCommitment: string;
 }
@@ -142,14 +142,14 @@ export default class RecoverOperation implements OperationModel {
 
     Jwk.validateJwkEs256k(signedData.recovery_key);
 
-    const deltaHash = Encoder.decodeAsBuffer(signedData.delta_hash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
+    const delta_hash = Encoder.decodeAsBuffer(signedData.delta_hash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(delta_hash);
 
     const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recovery_commitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return {
-      deltaHash: signedData.delta_hash,
+      delta_hash: signedData.delta_hash,
       recoveryKey: signedData.recovery_key,
       recoveryCommitment: signedData.recovery_commitment
     };

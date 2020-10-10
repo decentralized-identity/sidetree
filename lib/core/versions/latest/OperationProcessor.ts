@@ -122,7 +122,7 @@ export default class OperationProcessor implements IOperationProcessor {
       return newDidState;
     };
 
-    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.suffixData.deltaHash);
+    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.suffixData.delta_hash);
     if (!isMatchingDelta) {
       return newDidState;
     };
@@ -179,7 +179,7 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     };
 
-    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
+    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.delta_hash);
     if (!isMatchingDelta) {
       return didState;
     };
@@ -246,7 +246,7 @@ export default class OperationProcessor implements IOperationProcessor {
       return newDidState;
     };
 
-    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.deltaHash);
+    const isMatchingDelta = Multihash.verifyEncodedMultihashForContent(deltaPayload, operation.signedData.delta_hash);
     if (!isMatchingDelta) {
       return newDidState;
     };

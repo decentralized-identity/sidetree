@@ -35,6 +35,9 @@ describe('Test Vectors', () => {
       createOperationData.updatePrivateKey
     );
     const fixtureData = { ...updateOperationData } as any;
+    // TODO: fix operation data structures so stuff like this is not requiried
+    // to get consistent references to request objects.
+    fixtureData.operationRequest = JSON.parse(fixtureData.updateOperation.operationBuffer.toString());
     delete fixtureData.updateOperation.operationBuffer;
     delete fixtureData.operationBuffer;
     fixture = {
@@ -53,6 +56,9 @@ describe('Test Vectors', () => {
     };
     recoverOperationData = await OperationGenerator.generateRecoverOperation(input);
     const fixtureData = { ...recoverOperationData } as any;
+    // TODO: fix operation data structures so stuff like this is not requiried
+    // to get consistent references to request objects.
+    fixtureData.operationRequest = JSON.parse(fixtureData.recoverOperation.operationBuffer.toString());
     delete fixtureData.recoverOperation.operationBuffer;
     delete fixtureData.operationBuffer;
     fixture = {
@@ -70,6 +76,9 @@ describe('Test Vectors', () => {
       recoverOperationData.recoveryPrivateKey
     );
     const fixtureData = { ...deactivateOperationData } as any;
+    // TODO: fix operation data structures so stuff like this is not requiried
+    // to get consistent references to request objects.
+    fixtureData.operationRequest = JSON.parse(fixtureData.deactivateOperation.operationBuffer.toString());
     delete fixtureData.deactivateOperation.operationBuffer;
     delete fixtureData.operationBuffer;
     fixture = {
