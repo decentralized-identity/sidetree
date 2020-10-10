@@ -1,8 +1,7 @@
+import * as fs from 'fs';
 import Jwk from "../../lib/core/versions/latest/util/Jwk";
 import Multihash from "../../lib/core/versions/latest/Multihash";
 import OperationGenerator from "./OperationGenerator";
-
-import * as fs from 'fs';
 
 export default class TestVectorGenerator {
   /**

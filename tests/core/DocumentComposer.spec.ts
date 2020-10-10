@@ -11,7 +11,7 @@ describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
     it('should output the expected resolution result given key(s) across all purpose types.', async () => {
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]
@@ -57,7 +57,7 @@ describe('DocumentComposer', async () => {
     });
 
     it('should output method metadata with the given `published` value.', async () => {
-      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey');  // All purposes will be included by default.
+      const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
         public_keys: [anySigningPublicKey, authPublicKey]

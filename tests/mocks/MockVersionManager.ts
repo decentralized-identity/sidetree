@@ -9,9 +9,6 @@ import IVersionManager from '../../lib/core/interfaces/IVersionManager';
  * Mock version manager for testing.
  */
 export default class MockVersionManager implements IVersionManager {
-  /* tslint:disable-next-line */
-  public constructor () {}
-
   public getBatchWriter (blockchainTime: number): IBatchWriter {
     throw new Error('Not implemented. Use spyOn to override the functionality. Input: ' + blockchainTime);
   }

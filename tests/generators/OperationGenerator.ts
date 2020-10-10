@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
-import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DataGenerator from './DataGenerator';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
