@@ -6,7 +6,7 @@ export default interface AnchorFileModel {
   map_file_uri: string;
   operations: {
     create?: {
-      suffix_data: {
+      suffixData: {
         delta_hash: string;
         recovery_commitment: string;
         type?: string;

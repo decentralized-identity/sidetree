@@ -160,7 +160,7 @@ export default class OperationGenerator {
     const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
 
     const initialState = {
-      suffix_data: suffixData,
+      suffixData: suffixData,
       delta: delta
     };
 
@@ -325,7 +325,7 @@ export default class OperationGenerator {
 
     const operation = {
       type: OperationType.Create,
-      suffix_data: suffixData,
+      suffixData: suffixData,
       delta: delta
     };
 

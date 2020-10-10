@@ -32,7 +32,7 @@ describe('DID', async () => {
     it('should throw sidetree error if delta exceeds size limit', () => {
       const largeData = crypto.randomBytes(2000).toString('hex');// Intentionally exceeding max size.
       const largeDelta = { data: largeData };
-      const testInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({ suffix_data: 'some data', delta: largeDelta }));
+      const testInitialState = Encoder.encode(JsonCanonicalizer.canonicalizeAsBuffer({ suffixData: 'some data', delta: largeDelta }));
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(() => {
         Did['constructCreateOperationFromEncodedJcs'](testInitialState);
@@ -84,7 +84,7 @@ describe('DID', async () => {
       const didMethodName = 'sidetree';
       const didUniqueSuffix = createOperationData.createOperation.didUniqueSuffix;
       const shortFormDid = `did:${didMethodName}:${didUniqueSuffix}`;
-      const longFormDid = `${shortFormDid}?-sidetree-initial-state=unused_suffix_data.unused_delta&extra-param`;
+      const longFormDid = `${shortFormDid}?-sidetree-initial-state=unused_suffixData.unused_delta&extra-param`;
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
         async () => Did.create(longFormDid, didMethodName),

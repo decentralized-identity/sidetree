@@ -15,7 +15,7 @@ describe('CreateOperation', async () => {
     it('should leave delta as empty if it is not valid', () => {
       const operationObject = {
         type: 'create',
-        suffix_data: {
+        suffixData: {
           delta_hash: 'something',
           recovery_commitment: 'something',
           type: 'type'
@@ -33,7 +33,7 @@ describe('CreateOperation', async () => {
 
     it('should process as anchor file mode when anchorFileMode is true', () => {
       const operationObject = {
-        suffix_data: {
+        suffixData: {
           delta_hash: 'something',
           recovery_commitment: 'something',
           type: 'type'
@@ -71,7 +71,7 @@ describe('CreateOperation', async () => {
     it('should throw sidetree error if type is not create', () => {
       const testObject = {
         type: 'notCreate',
-        suffix_data: {
+        suffixData: {
           delta_hash: 'something',
           recovery_commitment: 'something',
           type: 'type'
@@ -94,7 +94,7 @@ describe('CreateOperation', async () => {
     it('should throw sidetree error if has more or less than 1 property when in anchor file mode', () => {
       const testObject = {
         type: 'this should not exist',
-        suffix_data: {
+        suffixData: {
           delta_hash: 'something',
           recovery_commitment: 'something',
           type: 'type'

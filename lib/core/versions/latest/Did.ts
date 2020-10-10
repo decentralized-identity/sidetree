@@ -182,7 +182,7 @@ export default class Did {
 
     const createOperationRequest = {
       type: OperationType.Create,
-      suffix_data: initialStateObject.suffix_data,
+      suffixData: initialStateObject.suffixData,
       delta: initialStateObject.delta
     };
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
@@ -226,7 +226,7 @@ export default class Did {
 
     const createOperationRequest = {
       type: OperationType.Create,
-      suffix_data: suffixData,
+      suffixData: suffixData,
       delta
     };
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
