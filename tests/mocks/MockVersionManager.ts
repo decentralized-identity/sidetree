@@ -2,8 +2,8 @@ import IBatchWriter from '../../lib/core/interfaces/IBatchWriter';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
 import ITransactionProcessor from '../../lib/core/interfaces/ITransactionProcessor';
-import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import ITransactionSelector from '../../lib/core/interfaces/ITransactionSelector';
+import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 
 /**
  * Mock version manager for testing.

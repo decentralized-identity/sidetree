@@ -7,8 +7,8 @@ import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperat
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import JsonCanonicalizer from '../../lib/core/versions/latest/util/JsonCanonicalizer';
-import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
+import JwkEs256k from '../../lib/core/models/JwkEs256k';
 import Jws from '../../lib/core/versions/latest/util/Jws';
 import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';

@@ -1,6 +1,6 @@
 import * as retry from 'async-retry';
-import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import Blockchain from '../../lib/core/Blockchain';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import DownloadManager from '../../lib/core/DownloadManager';
@@ -9,10 +9,10 @@ import ErrorCode from '../../lib/common/SharedErrorCode';
 import FetchResult from '../../lib/common/models/FetchResult';
 import FetchResultCode from '../../lib/common/enums/FetchResultCode';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
-import Ipfs from '../../lib/ipfs/Ipfs';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
-import MockBlockchain from '../mocks/MockBlockchain';
+import Ipfs from '../../lib/ipfs/Ipfs';
 import MapFile from '../../lib/core/versions/latest/MapFile';
+import MockBlockchain from '../mocks/MockBlockchain';
 import MockOperationStore from '../mocks/MockOperationStore';
 import MockTransactionStore from '../mocks/MockTransactionStore';
 import MockVersionManager from '../mocks/MockVersionManager';
@@ -20,9 +20,9 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import Observer from '../../lib/core/Observer';
 import OperationGenerator from '../generators/OperationGenerator';
 import SidetreeError from '../../lib/common/SidetreeError';
-import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import TransactionProcessor from '../../lib/core/versions/latest/TransactionProcessor';
+import TransactionSelector from '../../lib/core/versions/latest/TransactionSelector';
 
 describe('Observer', async () => {
   const config = require('../json/config-test.json');

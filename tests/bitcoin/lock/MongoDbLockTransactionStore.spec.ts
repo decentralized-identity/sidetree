@@ -1,10 +1,10 @@
 
 import Config from '../../../lib/core/models/Config';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../../common/MongoDb';
 import MongoDbLockTransactionStore from '../../../lib/bitcoin/lock/MongoDbLockTransactionStore';
 import SavedLockModel from '../../../lib/bitcoin/models/SavedLockedModel';
 import SavedLockType from '../../../lib/bitcoin/enums/SavedLockType';
-import { MongoClient } from 'mongodb';
 
 async function createLockStore (transactionStoreUri: string, databaseName: string): Promise<MongoDbLockTransactionStore> {
   const lockStore = new MongoDbLockTransactionStore(transactionStoreUri, databaseName);
