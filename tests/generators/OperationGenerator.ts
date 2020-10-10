@@ -14,7 +14,7 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationModel from '../../lib/core/versions/latest/models/OperationModel';
 import OperationType from '../../lib/core/enums/OperationType';
 import PublicKeyModel from '../../lib/core/versions/latest/models/PublicKeyModel';
-import PublicKeyPurpose from '../../lib/core/versions/latest/PublicKeyPurpose';
+import VerificationRelationship from '../../lib/core/versions/latest/VerificationRelationship';
 import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import ServiceEndpointModel from '../../lib/core/versions/latest/models/ServiceEndpointModel';
 import TransactionModel from '../../lib/common/models/TransactionModel';
@@ -78,13 +78,13 @@ export default class OperationGenerator {
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string, verificationRelationship?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, verificationRelationship?: VerificationRelationship[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
       type: 'EcdsaSecp256k1VerificationKey2019',
       publicKeyJwk: publicKey,
-      verificationRelationship: verificationRelationship || Object.values(PublicKeyPurpose)
+      verificationRelationship: verificationRelationship || Object.values(VerificationRelationship)
     };
 
     return [publicKeyModel, privateKey];

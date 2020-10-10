@@ -2,7 +2,7 @@ import DocumentModel from './models/DocumentModel';
 import DidState from '../../models/DidState';
 import Encoder from './Encoder';
 import ErrorCode from './ErrorCode';
-import PublicKeyPurpose from './PublicKeyPurpose';
+import VerificationRelationship from './VerificationRelationship';
 import SidetreeError from '../../../common/SidetreeError';
 import UpdateOperation from './UpdateOperation';
 
@@ -37,13 +37,13 @@ export default class DocumentComposer {
         };
         const purposeSet: Set<string> = new Set(publicKey.verificationRelationship);
 
-        if (purposeSet.has(PublicKeyPurpose.General)) {
+        if (purposeSet.has(VerificationRelationship.VerificationMethod)) {
           publicKeys.push(didDocumentPublicKey);
-          if (purposeSet.has(PublicKeyPurpose.Auth)) {
+          if (purposeSet.has(VerificationRelationship.Authentication)) {
             // add into authentication by reference if has auth and has general
             authentication.push(id);
           }
-        } else if (purposeSet.has(PublicKeyPurpose.Auth)) {
+        } else if (purposeSet.has(VerificationRelationship.Authentication)) {
           // add into authentication by object if has auth but no general
           authentication.push(didDocumentPublicKey);
         }
@@ -210,12 +210,14 @@ export default class DocumentComposer {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      if (publicKey.verificationRelationship.length > 2) {
+      // TODO: this test is not strong enough... what about repeated values?
+      // suggest using json schema.
+      if (publicKey.verificationRelationship.length > Object.values(VerificationRelationship).length) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
       }
 
-      const validPurposes = new Set(Object.values(PublicKeyPurpose));
-      // Purpose must be one of the valid ones in PublicKeyPurpose
+      const validPurposes = new Set(Object.values(VerificationRelationship));
+      // Purpose must be one of the valid ones in VerificationRelationship
       for (const verificationRelationship of publicKey.verificationRelationship) {
         if (!validPurposes.has(verificationRelationship)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
