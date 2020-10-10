@@ -5,8 +5,8 @@ import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import MapFile from '../../lib/core/versions/latest/MapFile';
 import MapFileModel from '../../lib/core/versions/latest/models/MapFileModel';
 import Multihash from '../../lib/core/versions/latest/Multihash';
-import SidetreeError from '../../lib/common/SidetreeError';
 import OperationGenerator from '../generators/OperationGenerator';
+import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('MapFile', async () => {
   describe('parse()', async () => {

@@ -307,15 +307,15 @@ describe('Resolver', () => {
       // Generate 3 anchored recover operations with the same reveal value but different anchored time.
       const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryPrivateKey: createOperationData.recoveryPrivateKey 
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
       });
       const recoveryOperation2Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryPrivateKey: createOperationData.recoveryPrivateKey 
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
       });
       const recoveryOperation3Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryPrivateKey: createOperationData.recoveryPrivateKey 
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
       });
       const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
       const recoveryOperation2 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation2Data.recoverOperation, 3, 3, 3);

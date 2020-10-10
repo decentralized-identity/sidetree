@@ -1,5 +1,5 @@
-import ICas from '../../lib/core/interfaces/ICas';
 import DownloadManager from '../../lib/core/DownloadManager';
+import ICas from '../../lib/core/interfaces/ICas';
 import MockCas from '../mocks/MockCas';
 import timeSpan = require('time-span');
 

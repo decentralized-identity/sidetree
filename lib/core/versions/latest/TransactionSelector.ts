@@ -74,7 +74,7 @@ export default class TransactionSelector implements ITransactionSelector {
       // only 1 transaction is allowed per writer
       if (writerToTransactionNumberMap.has(transaction.writer)) {
         const acceptedTransactionNumber = writerToTransactionNumberMap.get(transaction.writer);
-        // tslint:disable-next-line:max-line-length
+        // eslint-disable-next-line max-len
         console.info(`Multiple transactions found in transaction time ${currentTransactionTime} from writer ${transaction.writer}, considering transaction ${acceptedTransactionNumber} and ignoring ${transaction.transactionNumber}`);
       } else {
         transactionsPriorityQueue.push(transaction);

@@ -301,7 +301,7 @@ describe('AnchorFile', async () => {
 
       expect(anchorFile.model.map_file_uri).toEqual(mapFileHash);
       expect(anchorFile.model.operations.create![0].suffix_data).toEqual({
-        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment 
+        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment
       });
     });
   });

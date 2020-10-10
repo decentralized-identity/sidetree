@@ -1,9 +1,9 @@
 import Config from '../../lib/core/models/Config';
 import ITransactionStore from '../../lib/core/interfaces/ITransactionStore';
+import { MongoClient } from 'mongodb';
 import MongoDb from '../common/MongoDb';
 import MongoDbTransactionStore from '../../lib/common/MongoDbTransactionStore';
 import TransactionModel from '../../lib/common/models/TransactionModel';
-import { MongoClient } from 'mongodb';
 
 /**
  * Creates a MongoDbTransactionStore and initializes it.

@@ -54,7 +54,7 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
       $and: [
         { height: { $gte: fromInclusiveHeight } },
         { height: { $lt: toExclusiveHeight } }
-      ] 
+      ]
     });
 
     // Add sort to query.

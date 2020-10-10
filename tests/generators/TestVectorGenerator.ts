@@ -31,14 +31,14 @@ export default class TestVectorGenerator {
       nextUpdateCommitmentHash,
       patches
     )
-        
+
     // derive a recover operation from the create operation
     const [newRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
     const [newSigningPublicKey] = await OperationGenerator.generateKeyPair('keyAfterRecover');
 
     const [documentKey] = await OperationGenerator.generateKeyPair('newDocumentKey');
     const newServiceEndpoints = OperationGenerator.generateServiceEndpoints(['newId']);
-  
+
     const recoverOperationRequest = await OperationGenerator.generateRecoverOperationRequest(
       createOperationData.createOperation.didUniqueSuffix,
       createOperationData.recoveryPrivateKey,
@@ -49,8 +49,8 @@ export default class TestVectorGenerator {
     );
 
     const deactivateRequest = await OperationGenerator.createDeactivateOperationRequest(createOperationData.createOperation.didUniqueSuffix, createOperationData.recoveryPrivateKey);
-  
-  
+
+
     const createRequestString = JSON.stringify(createOperationData.operationRequest, null, 2);
     const updateRequestString = JSON.stringify(updateRequest, null, 2);
     const recoverRequestString = JSON.stringify(recoverOperationRequest, null, 2);

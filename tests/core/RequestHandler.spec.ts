@@ -1,6 +1,5 @@
-import * as crypto from 'crypto';
-
 import * as createFixture from '../fixtures/create/create.json';
+import * as crypto from 'crypto';
 import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
 import * as legacyLongFormResultingDocument from '../fixtures/legacyLongFormDid/resultingDocument.json';
 import * as longFormResultingDocument from '../fixtures/longFormDid/resultingDocument.json';
@@ -11,11 +10,11 @@ import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel
 import BatchScheduler from '../../lib/core/BatchScheduler';
 import BatchWriter from '../../lib/core/versions/latest/BatchWriter';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
+import Config from '../../lib/core/models/Config';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Did from '../../lib/core/versions/latest/Did';
 import DidState from '../../lib/core/models/DidState';
-import Compressor from '../../lib/core/versions/latest/util/Compressor';
-import Config from '../../lib/core/models/Config';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import ICas from '../../lib/core/interfaces/ICas';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
@@ -205,7 +204,7 @@ describe('RequestHandler', () => {
     createOperationRequest.delta = {
       update_commitment: largeBuffer.toString(),
       patches: []
-    }
+    };
 
     const createOperationBuffer = Buffer.from(JSON.stringify(createOperationRequest));
     const response = await requestHandler.handleOperationRequest(createOperationBuffer);
