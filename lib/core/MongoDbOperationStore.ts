@@ -106,19 +106,21 @@ export default class MongoDbOperationStore implements IOperationStore {
   }
 
   public async deleteUpdatesEarlierThan (didUniqueSuffix: string, transactionNumber: number, operationIndex: number): Promise<void> {
-    await this.collection!.deleteMany({ $or: [
-      {
-        didSuffix: didUniqueSuffix,
-        txnNumber: { $lt: Long.fromNumber(transactionNumber) },
-        type: OperationType.Update
-      },
-      {
-        didSuffix: didUniqueSuffix,
-        txnNumber: Long.fromNumber(transactionNumber),
-        opIndex: { $lt: operationIndex },
-        type: OperationType.Update
-      }
-    ]});
+    await this.collection!.deleteMany({
+      $or: [
+        {
+          didSuffix: didUniqueSuffix,
+          txnNumber: { $lt: Long.fromNumber(transactionNumber) },
+          type: OperationType.Update
+        },
+        {
+          didSuffix: didUniqueSuffix,
+          txnNumber: Long.fromNumber(transactionNumber),
+          opIndex: { $lt: operationIndex },
+          type: OperationType.Update
+        }
+      ]
+    });
   }
 
   /**

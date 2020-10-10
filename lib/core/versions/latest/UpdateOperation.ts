@@ -39,9 +39,6 @@ export default class UpdateOperation implements OperationModel {
   /** Patch data. */
   public readonly delta: DeltaModel | undefined;
 
-  /** Encoded string of the delta. */
-  public readonly encodedDelta: string | undefined;
-
   /**
    * NOTE: should only be used by `parse()` and `parseObject()` else the constructed instance could be invalid.
    */
@@ -50,14 +47,12 @@ export default class UpdateOperation implements OperationModel {
     didUniqueSuffix: string,
     signedDataJws: Jws,
     signedData: SignedDataModel,
-    encodedDelta: string | undefined,
     delta: DeltaModel | undefined) {
     this.operationBuffer = operationBuffer;
     this.type = OperationType.Update;
     this.didUniqueSuffix = didUniqueSuffix;
     this.signedDataJws = signedDataJws;
     this.signedData = signedData;
-    this.encodedDelta = encodedDelta;
     this.delta = delta;
   }
 
@@ -106,18 +101,19 @@ export default class UpdateOperation implements OperationModel {
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.
-    let encodedDelta = undefined;
     let delta = undefined;
     if (!mapFileMode) {
       if (operationObject.type !== OperationType.Update) {
         throw new SidetreeError(ErrorCode.UpdateOperationTypeIncorrect);
       }
-
-      encodedDelta = operationObject.delta;
-      delta = await Operation.parseDelta(encodedDelta);
+      Operation.validateDelta(operationObject.delta);
+      delta = {
+        patches: operationObject.delta.patches,
+        updateCommitment: operationObject.delta.update_commitment
+      };
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, encodedDelta, delta);
+    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, delta);
   }
 
   private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {

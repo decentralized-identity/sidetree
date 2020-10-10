@@ -64,10 +64,10 @@ export default class MongoDbLockTransactionStore {
    */
   public async getLastLock (): Promise<SavedLockModel | undefined> {
     const lastLocks = await this.lockCollection!
-                            .find()
-                            .limit(1)
-                            .sort({ createTimestamp: -1 })
-                            .toArray();
+      .find()
+      .limit(1)
+      .sort({ createTimestamp: -1 })
+      .toArray();
 
     if (!lastLocks || lastLocks.length <= 0) {
       return undefined;

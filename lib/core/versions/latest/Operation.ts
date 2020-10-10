@@ -30,7 +30,7 @@ export default class Operation {
     const isAnchorFileMode = false;
 
     if (operationType === OperationType.Create) {
-      return CreateOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
+      return CreateOperation.parseJcsObject(operationObject, operationBuffer, isAnchorFileMode);
     } else if (operationType === OperationType.Update) {
       return UpdateOperation.parseObject(operationObject, operationBuffer, isAnchorFileMode);
     } else if (operationType === OperationType.Recover) {

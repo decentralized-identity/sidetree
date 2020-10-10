@@ -44,7 +44,7 @@ export default class RequestHandler implements IRequestHandler {
       if (operationRequest.type === OperationType.Create ||
           operationRequest.type === OperationType.Recover ||
           operationRequest.type === OperationType.Update) {
-        Delta.validateEncodedDeltaSize(operationRequest.delta);
+        Delta.validateDeltaSize(operationRequest.delta);
       }
 
       operationModel = await Operation.parse(request);

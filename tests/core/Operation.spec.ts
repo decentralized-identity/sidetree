@@ -1,7 +1,7 @@
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import Operation from '../../lib/core/versions/latest/Operation';
 import Multihash from '../../lib/core/versions/latest/Multihash';
+import Operation from '../../lib/core/versions/latest/Operation';
 import SidetreeError from '../../lib/common/SidetreeError';
 
 describe('Operation', async () => {

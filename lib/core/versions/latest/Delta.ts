@@ -10,7 +10,7 @@ export default class Delta {
 
   /**
    * Validates size of the encoded delta string.
-   * TODO: SIP 2 #781 delete this and use validateDeltaSize only in chunk file
+   * TODO: SIP 2 #781 delete this when long form is fully switched over
    * @throws `SidetreeError` if fails validation.
    */
   public static validateEncodedDeltaSize (encodedDelta: string) {

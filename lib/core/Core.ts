@@ -71,7 +71,7 @@ export default class Core {
       this.operationStore,
       this.resolver,
       this.transactionStore
-      ); // `VersionManager` is last initialized component.
+    ); // `VersionManager` is last initialized component.
 
     await this.observer.startPeriodicProcessing();
 

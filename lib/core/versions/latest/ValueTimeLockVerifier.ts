@@ -76,7 +76,7 @@ export default class ValueTimeLockVerifier {
           sidetreeTransactionTime >= valueTimeLock.unlockTransactionTime) {
         throw new SidetreeError(
           ErrorCode.ValueTimeLockVerifierTransactionTimeOutsideLockRange,
-          // tslint:disable-next-line: max-line-length
+          // eslint-disable-next-line max-len
           `Sidetree transaction block: ${sidetreeTransactionTime}; lock start time: ${valueTimeLock.lockTransactionTime}; unlock time: ${valueTimeLock.unlockTransactionTime}`);
       }
     }

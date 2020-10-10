@@ -574,9 +574,9 @@ export default class BitcoinClient {
     const payToScriptAddress = new Address(payToScriptHashOutput);
 
     const freezeTransaction = new Transaction()
-                              .from(unspentCoins)
-                              .to(payToScriptAddress, freezeAmountInSatoshis)
-                              .change(walletAddress);
+      .from(unspentCoins)
+      .to(payToScriptAddress, freezeAmountInSatoshis)
+      .change(walletAddress);
 
     const transactionFee = await this.calculateTransactionFee(freezeTransaction);
 
@@ -642,8 +642,8 @@ export default class BitcoinClient {
     // Now create a spend transaction using the frozen output. Create the transaction with all
     // inputs and outputs as they are needed to calculate the fee.
     const spendTransaction = new Transaction()
-                                   .from([frozenOutputAsInput])
-                                   .to(paytoAddress, previousFreezeAmountInSatoshis);
+      .from([frozenOutputAsInput])
+      .to(paytoAddress, previousFreezeAmountInSatoshis);
 
     // The check-sequence-verify lock requires transaction version 2
     (spendTransaction as any).version = 2;
@@ -661,7 +661,7 @@ export default class BitcoinClient {
     // and add another one with the correct amount.
     spendTransaction.outputs.shift();
     spendTransaction.to(paytoAddress, previousFreezeAmountInSatoshis - transactionFee)
-                    .fee(transactionFee);
+      .fee(transactionFee);
 
     return spendTransaction;
   }
@@ -691,10 +691,10 @@ export default class BitcoinClient {
     const publicKeyHashOut = Script.buildPublicKeyHashOut(walletAddress);
 
     const redeemScript = Script.empty()
-                         .add(lockBuffer)
-                         .add(178) // OP_CSV (https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki)
-                         .add(117) // OP_DROP
-                         .add(publicKeyHashOut);
+      .add(lockBuffer)
+      .add(178) // OP_CSV (https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki)
+      .add(117) // OP_DROP
+      .add(publicKeyHashOut);
 
     return redeemScript;
   }

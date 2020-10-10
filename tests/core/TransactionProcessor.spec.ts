@@ -1,5 +1,5 @@
-import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import AnchorFile from '../../lib/core/versions/latest/AnchorFile';
+import AnchoredDataSerializer from '../../lib/core/versions/latest/AnchoredDataSerializer';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
 import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import DownloadManager from '../../lib/core/DownloadManager';
@@ -218,7 +218,7 @@ describe('TransactionProcessor', () => {
       };
 
       await JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrownAsync(
-        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction,'mock_hash', 999999), // Some really large paid operation count.
+        () => transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'mock_hash', 999999), // Some really large paid operation count.
         ErrorCode.TransactionProcessorPaidOperationCountExceedsLimit);
 
       done();
@@ -324,7 +324,7 @@ describe('TransactionProcessor', () => {
 
       const paidBatchSize = 2;
       const downloadedAnchorFile = await transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'mock_hash', paidBatchSize);
-      expect(downloadedAnchorFile.model).toEqual(mockAnchorFileModel);
+      expect(JSON.stringify(downloadedAnchorFile.model)).toEqual(JSON.stringify(mockAnchorFileModel));
       done();
     });
   });

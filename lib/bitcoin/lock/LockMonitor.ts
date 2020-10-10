@@ -367,9 +367,9 @@ export default class LockMonitor {
 
     const relockTransaction =
       await this.bitcoinClient.createRelockTransaction(
-          currentLockIdentifier.transactionId,
-          currentLockDuration,
-          this.lockPeriodInBlocks);
+        currentLockIdentifier.transactionId,
+        currentLockDuration,
+        this.lockPeriodInBlocks);
 
     // If the transaction fee is making the relock amount less than the desired amount
     if (currentValueTimeLock.amountLocked - relockTransaction.transactionFee < desiredLockAmountInSatoshis) {

@@ -49,8 +49,8 @@ describe('ChunkFile', async () => {
       const decompressedChunkFileModel = await ChunkFile.parse(chunkFileBuffer);
 
       expect(decompressedChunkFileModel.deltas.length).toEqual(2);
-      expect(decompressedChunkFileModel.deltas[0]).toEqual(createOperation.encodedDelta!);
-      expect(decompressedChunkFileModel.deltas[1]).toEqual(recoverOperation.encodedDelta!);
+      expect(decompressedChunkFileModel.deltas[0]).toEqual(createOperation.delta!);
+      expect(decompressedChunkFileModel.deltas[1]).toEqual(recoverOperation.delta!);
 
     });
   });
@@ -71,14 +71,16 @@ describe('ChunkFile', async () => {
       ];
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.ChunkFileDeltasNotArrayOfStrings
+        () => (ChunkFile as any).validateDeltasProperty(deltas), ErrorCode.ChunkFileDeltasNotArrayOfObjects
       );
     });
 
     it('should throw if any `delta` element exceeds max size.', async () => {
       const randomBytes = crypto.randomBytes(2000); // Intentionally larger than maximum.
       const deltas = [
-        Encoder.encode(randomBytes)
+        {
+          objectKey: Encoder.encode(randomBytes)
+        }
       ];
 
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(

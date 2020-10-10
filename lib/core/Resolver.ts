@@ -166,7 +166,7 @@ export default class Resolver {
   private async applyOperation (
     operation: AnchoredOperationModel,
     didState: DidState | undefined
-    ): Promise<DidState | undefined> {
+  ): Promise<DidState | undefined> {
     let appliedDidState = didState;
 
     // NOTE: MUST NOT throw error, else a bad operation can be used to denial resolution for a DID.

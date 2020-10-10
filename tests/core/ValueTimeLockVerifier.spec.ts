@@ -1,8 +1,8 @@
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ProtocolParameters from '../../lib/core/versions/latest/ProtocolParameters';
-import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
+import ValueTimeLockVerifier from '../../lib/core/versions/latest/ValueTimeLockVerifier';
 
 describe('ValueTimeLockVerifier', () => {
   let versionMetadataFetcher: any = {};

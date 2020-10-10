@@ -1,12 +1,12 @@
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
+import DidState from '../../lib/core/models/DidState';
 import Document from '../../lib/core/versions/latest/Document';
 import DocumentModel from '../../lib/core/versions/latest/models/DocumentModel';
-import DidState from '../../lib/core/models/DidState';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
-import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
+import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import IVersionManager from '../../lib/core/interfaces/IVersionManager';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
 import JwkEs256k from '../../lib/core/models/JwkEs256k';
@@ -381,12 +381,12 @@ describe('OperationProcessor', async () => {
     let namedAnchoredCreateOperationModel: AnchoredOperationModel;
     let didState: DidState | undefined;
     let nextRecoveryCommitmentHash: string;
-    let isValidHashSpy: jasmine.Spy;
+    let verifyEncodedMultihashForContentSpy: jasmine.Spy;
 
     // Create a DID before each test.
     beforeEach(async () => {
-      isValidHashSpy = spyOn(Multihash, 'isValidHash');
-      isValidHashSpy.and.callThrough();
+      verifyEncodedMultihashForContentSpy = spyOn(Multihash, 'verifyEncodedMultihashForContent');
+      verifyEncodedMultihashForContentSpy.and.callThrough();
       // MUST reset the DID state back to `undefined` for each test.
       didState = undefined;
 
@@ -464,7 +464,7 @@ describe('OperationProcessor', async () => {
       });
 
       it('should apply the create operation with { } as document if encoded data and suffix data do not match', async () => {
-        isValidHashSpy.and.returnValue(false);
+        verifyEncodedMultihashForContentSpy.and.returnValue(false);
         const createOperationData = await OperationGenerator.generateAnchoredCreateOperation({ transactionTime: 1, transactionNumber: 1, operationIndex: 1 });
         const newDidState = await operationProcessor.apply(createOperationData.anchoredOperationModel, undefined);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
@@ -608,7 +608,7 @@ describe('OperationProcessor', async () => {
         );
         const recoverOperation = await RecoverOperation.parse(Buffer.from(JSON.stringify(recoverOperationRequest)));
         const anchoredRecoverOperationModel = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoverOperation, 2, 2, 2);
-        isValidHashSpy.and.returnValue(false);
+        verifyEncodedMultihashForContentSpy.and.returnValue(false);
         const newDidState = await operationProcessor.apply(anchoredRecoverOperationModel, didState);
         expect(newDidState!.lastOperationTransactionNumber).toEqual(2);
         expect(newDidState!.document).toEqual({ });

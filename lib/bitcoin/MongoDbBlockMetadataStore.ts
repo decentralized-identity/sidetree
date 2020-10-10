@@ -50,10 +50,12 @@ export default class MongoDbBlockMetadataStore extends MongoDbStore implements I
     let dbCursor: Cursor<BlockMetadata>;
 
     // Add filter to query.
-    dbCursor = this.collection!.find({ $and: [
-      { height: { $gte: fromInclusiveHeight } },
-      { height: { $lt: toExclusiveHeight } }
-    ] });
+    dbCursor = this.collection!.find({
+      $and: [
+        { height: { $gte: fromInclusiveHeight } },
+        { height: { $lt: toExclusiveHeight } }
+      ]
+    });
 
     // Add sort to query.
     dbCursor = dbCursor.sort({ height: 1 });

@@ -1,21 +1,21 @@
 import * as createFixture from '../fixtures/create/create.json';
 import * as createResultingDocument from '../fixtures/create/resultingDocument.json';
-import * as deactivateFixtureCreate from '../fixtures/deactivate/create.json';
 import * as deactivateFixture from '../fixtures/deactivate/deactivate.json';
+import * as deactivateFixtureCreate from '../fixtures/deactivate/create.json';
 import * as deactivateResultingDocument from '../fixtures/deactivate/resultingDocument.json';
-import * as recoverFixtureCreate from '../fixtures/recover/create.json';
 import * as recoverFixture from '../fixtures/recover/recover.json';
+import * as recoverFixtureCreate from '../fixtures/recover/create.json';
 import * as recoverResultingDocument from '../fixtures/recover/resultingDocument.json';
-import * as updateFixtureCreate from '../fixtures/update/create.json';
 import * as updateFixture from '../fixtures/update/update.json';
+import * as updateFixtureCreate from '../fixtures/update/create.json';
 import * as updateResultingDocument from '../fixtures/update/resultingDocument.json';
 
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import DeactivateOperation from '../../lib/core/versions/latest/DeactivateOperation';
-import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
-import Document from '../../lib/core/versions/latest/Document';
 import DidState from '../../lib/core/models/DidState';
+import Document from '../../lib/core/versions/latest/Document';
+import DocumentComposer from '../../lib/core/versions/latest/DocumentComposer';
 import IOperationProcessor from '../../lib/core/interfaces/IOperationProcessor';
 import IOperationStore from '../../lib/core/interfaces/IOperationStore';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
@@ -307,13 +307,16 @@ describe('Resolver', () => {
       // Generate 3 anchored recover operations with the same reveal value but different anchored time.
       const recoveryOperation1Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryPrivateKey: createOperationData.recoveryPrivateKey });
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
+      });
       const recoveryOperation2Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryPrivateKey: createOperationData.recoveryPrivateKey });
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
+      });
       const recoveryOperation3Data = await OperationGenerator.generateRecoverOperation({
         didUniqueSuffix: createOperationData.createOperation.didUniqueSuffix,
-        recoveryPrivateKey: createOperationData.recoveryPrivateKey });
+        recoveryPrivateKey: createOperationData.recoveryPrivateKey
+      });
       const recoveryOperation1 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation1Data.recoverOperation, 2, 2, 2);
       const recoveryOperation2 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation2Data.recoverOperation, 3, 3, 3);
       const recoveryOperation3 = OperationGenerator.createAnchoredOperationModelFromOperationModel(recoveryOperation3Data.recoverOperation, 4, 4, 4);

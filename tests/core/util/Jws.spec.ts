@@ -1,8 +1,8 @@
+import Encoder from '../../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../../lib/core/versions/latest/ErrorCode';
 import Jwk from '../../../lib/core/versions/latest/util/Jwk';
 import Jws from '../../../lib/core/versions/latest/util/Jws';
 import SidetreeError from '../../../lib/common/SidetreeError';
-import Encoder from '../../../lib/core/versions/latest/Encoder';
 
 describe('Jws', async () => {
   describe('parseCompactJws()', async () => {

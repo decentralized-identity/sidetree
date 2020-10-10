@@ -176,10 +176,12 @@ export default class MongoDbTransactionStore implements ITransactionStore {
       // if begin === end, query for 1 transaction time
       cursor = this.transactionCollection!.find({ transactionTime: { $eq: Long.fromNumber(inclusiveBeginTransactionTime) } });
     } else {
-      cursor = this.transactionCollection!.find({ $and: [
-        { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
-        { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
-      ] });
+      cursor = this.transactionCollection!.find({
+        $and: [
+          { transactionTime: { $gte: Long.fromNumber(inclusiveBeginTransactionTime) } },
+          { transactionTime: { $lt: Long.fromNumber(exclusiveEndTransactionTime) } }
+        ]
+      });
     }
 
     const transactions: TransactionModel[] = await cursor.sort({ transactionNumber: 1 }).toArray();

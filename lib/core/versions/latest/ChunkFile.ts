@@ -48,14 +48,14 @@ export default class ChunkFile {
       throw new SidetreeError(ErrorCode.ChunkFileDeltasPropertyNotArray, 'Invalid chunk file, deltas property is not an array.');
     }
 
-    // Validate every encoded delta string.
-    for (const encodedDelta of deltas) {
-      if (typeof encodedDelta !== 'string') {
-        throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfStrings, 'Invalid chunk file, deltas property is not an array of strings.');
+    // Validate every delta is an object
+    for (const delta of deltas) {
+      if (typeof delta !== 'object') {
+        throw new SidetreeError(ErrorCode.ChunkFileDeltasNotArrayOfObjects, 'Invalid chunk file, deltas property is not an array of objects.');
       }
 
       // Verify size of each delta does not exceed the maximum allowed limit.
-      Delta.validateEncodedDeltaSize(encodedDelta);
+      Delta.validateDeltaSize(delta);
     }
   }
 
@@ -64,9 +64,9 @@ export default class ChunkFile {
    */
   public static async createBuffer (createOperations: CreateOperation[], recoverOperations: RecoverOperation[], updateOperations: UpdateOperation[]) {
     const deltas = [];
-    deltas.push(...createOperations.map(operation => operation.encodedDelta!));
-    deltas.push(...recoverOperations.map(operation => operation.encodedDelta!));
-    deltas.push(...updateOperations.map(operation => operation.encodedDelta!));
+    deltas.push(...createOperations.map(operation => operation.delta!));
+    deltas.push(...recoverOperations.map(operation => operation.delta!));
+    deltas.push(...updateOperations.map(operation => operation.delta!));
 
     const chunkFileModel = {
       deltas

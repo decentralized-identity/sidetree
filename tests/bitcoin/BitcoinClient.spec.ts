@@ -109,7 +109,8 @@ describe('BitcoinClient', async () => {
       expect(result).toEqual({
         transactionId: mockSignedTxn.id,
         transactionFee: mockTxn.getFee(),
-        serializedTransactionObject: mockSerializedTxn});
+        serializedTransactionObject: mockSerializedTxn
+      });
     });
   });
 
@@ -870,7 +871,6 @@ describe('BitcoinClient', async () => {
       const createScriptSpy = spyOn(BitcoinClient as any, 'createFreezeScript').and.returnValue(mockRedeemScript);
       const utilFuncSpy = spyOn(bitcoinClient as any, 'createSpendTransactionFromFrozenTransaction').and.returnValue(mockFreezeTxn2);
 
-      // tslint:disable-next-line: max-line-length
       const [actualTxn, redeemScript] = await bitcoinClient['createSpendToFreezeTransaction'](mockFreezeTxn1, mockFreezeUntilPreviousBlock, mockFreezeUntilBlock);
       expect(actualTxn).toEqual(mockFreezeTxn2);
       expect(redeemScript).toEqual(mockRedeemScript);
