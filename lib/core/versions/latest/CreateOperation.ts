@@ -129,7 +129,7 @@ export default class CreateOperation implements OperationModel {
     CreateOperation.validateSuffixData(operationObject.suffixData);
     const suffixData: SuffixDataModel = {
       delta_hash: operationObject.suffixData.delta_hash,
-      recoveryCommitment: operationObject.suffixData.recovery_commitment
+      recoveryCommitment: operationObject.suffixData.recoveryCommitment
     };
 
     if (operationObject.suffixData.type !== undefined) {
@@ -223,7 +223,7 @@ export default class CreateOperation implements OperationModel {
     }
 
     const delta_hash = Encoder.decodeAsBuffer(suffixData.delta_hash);
-    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recovery_commitment);
+    const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recoveryCommitment);
 
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(delta_hash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
@@ -255,7 +255,7 @@ export default class CreateOperation implements OperationModel {
 
     return {
       delta_hash: suffixData.delta_hash,
-      recoveryCommitment: suffixData.recovery_commitment,
+      recoveryCommitment: suffixData.recoveryCommitment,
       type: suffixData.type
     };
   }

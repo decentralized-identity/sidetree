@@ -15,7 +15,7 @@ describe('CreateOperation', async () => {
         type: 'create',
         suffixData: {
           delta_hash: 'something',
-          recovery_commitment: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         },
         delta: 'this is not a valid delta'
@@ -33,7 +33,7 @@ describe('CreateOperation', async () => {
       const operationObject = {
         suffixData: {
           delta_hash: 'something',
-          recovery_commitment: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         }
       };
@@ -71,7 +71,7 @@ describe('CreateOperation', async () => {
         type: 'notCreate',
         suffixData: {
           delta_hash: 'something',
-          recovery_commitment: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         },
         delta: 'something'
@@ -94,7 +94,7 @@ describe('CreateOperation', async () => {
         type: 'this should not exist',
         suffixData: {
           delta_hash: 'something',
-          recovery_commitment: 'something',
+          recoveryCommitment: 'something',
           type: 'type'
         }
       };
@@ -178,7 +178,7 @@ describe('CreateOperation', async () => {
     it('should function as expected with type', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'type'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -189,7 +189,7 @@ describe('CreateOperation', async () => {
     it('should function as expected without type', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
       const result = (CreateOperation as any).parseSuffixData(encodedSuffixData);
@@ -204,7 +204,7 @@ describe('CreateOperation', async () => {
     it('should throw if suffix data contains an additional unknown property.', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'type',
         extraProperty: 'An unknown extra property'
       };
@@ -225,7 +225,7 @@ describe('CreateOperation', async () => {
     it('should throw if suffix data type is not string', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 123
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -236,7 +236,7 @@ describe('CreateOperation', async () => {
     it('should throw if suffix data type length is greater than 4', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'this is too long!!!!!'
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -247,7 +247,7 @@ describe('CreateOperation', async () => {
     it('should throw if suffix data type is not in base64url character set', async () => {
       const suffixData = {
         delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
-        recovery_commitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
+        recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: '/\|='
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));

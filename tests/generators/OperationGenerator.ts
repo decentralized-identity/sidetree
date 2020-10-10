@@ -357,7 +357,7 @@ export default class OperationGenerator {
 
     const suffixData = {
       delta_hash: delta_hash,
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
     const operation = {
@@ -485,7 +485,7 @@ export default class OperationGenerator {
     const signedDataPayloadObject = {
       delta_hash: delta_hash,
       recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
-      recovery_commitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
+      recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 

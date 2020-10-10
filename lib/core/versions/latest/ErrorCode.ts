@@ -122,7 +122,7 @@ export default {
   MultihashUnsupportedHashAlgorithm: 'multihash_unsupported_hash_algorithm',
   OperationCreateInvalidDidDocument: 'operation_create_invalid_did_document',
   OperationCountLessThanZero: 'operation_count_less_than_zero',
-  OperationCreatePayloadHasMissingOrInvalidNextRecoveryCommitment: 'operation_create_payload_has_missing_or_invalid_next_recovery_commitment',
+  OperationCreatePayloadHasMissingOrInvalidNextRecoveryCommitment: 'operation_create_payload_has_missing_or_invalid_next_recoveryCommitment',
   OperationCreatePayloadHasMissingOrInvalidNextUpdateCommitment:  'operation_create_payload_has_missing_or_invalid_next_update_commitment',
   OperationCreatePayloadMissingOrUnknownProperty: 'operation_create_payload_missing_or_unknown_property',
   OperationDocumentPatchesMissing: 'operation_document_patches_missing',

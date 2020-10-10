@@ -145,13 +145,13 @@ export default class RecoverOperation implements OperationModel {
     const delta_hash = Encoder.decodeAsBuffer(signedData.delta_hash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(delta_hash);
 
-    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recovery_commitment);
+    const nextRecoveryCommitmentHash = Encoder.decodeAsBuffer(signedData.recoveryCommitment);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitmentHash);
 
     return {
       delta_hash: signedData.delta_hash,
       recoveryKey: signedData.recovery_key,
-      recoveryCommitment: signedData.recovery_commitment
+      recoveryCommitment: signedData.recoveryCommitment
     };
   }
 }

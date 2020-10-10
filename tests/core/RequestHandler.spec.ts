@@ -37,6 +37,8 @@ import { fixtureDriftHelper } from '../utils';
 
 const util = require('util');
 
+const OVERWRITE_FIXTURES = true;
+
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
   console.info = () => { };
@@ -148,7 +150,7 @@ describe('RequestHandler', () => {
     // this will break every time fixtures are generated because of randomness.
     // really this should be in an "integration test", not request handler unit tests.
     // or even better, integrated into fixture generation.
-    fixtureDriftHelper(response, longFormResponse, 'resolution/longFormResponse.json', false);
+    fixtureDriftHelper(response, longFormResponse, 'resolution/longFormResponse.json', OVERWRITE_FIXTURES);
     expect(response).toEqual(longFormResponse as any);
 
   });

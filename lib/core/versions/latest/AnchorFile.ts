@@ -169,7 +169,7 @@ export default class AnchorFile {
       return {
         suffixData: { 
           delta_hash: operation.suffixData.delta_hash, 
-          recovery_commitment: operation.suffixData.recoveryCommitment, 
+          recoveryCommitment: operation.suffixData.recoveryCommitment, 
           type: operation.suffixData.type 
         }
       };
