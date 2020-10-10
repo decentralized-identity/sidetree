@@ -7,7 +7,7 @@ export default interface AnchorFileModel {
   operations: {
     create?: {
       suffixData: {
-        delta_hash: string;
+        deltaHash: string;
         recoveryCommitment: string;
         type?: string;
       };

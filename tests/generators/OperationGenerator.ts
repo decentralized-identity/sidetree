@@ -148,10 +148,10 @@ export default class OperationGenerator {
       patches
     };
 
-    const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
-      delta_hash: delta_hash,
+      deltaHash: deltaHash,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
@@ -185,10 +185,10 @@ export default class OperationGenerator {
       patches: createOperationData.createOperation.delta.patches
     };
 
-    const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
-      delta_hash: delta_hash,
+      deltaHash: deltaHash,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(createOperationData.recoveryPublicKey)
     };
 
@@ -353,10 +353,10 @@ export default class OperationGenerator {
       patches
     };
 
-    const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const suffixData = {
-      delta_hash: delta_hash,
+      deltaHash: deltaHash,
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(recoveryPublicKey)
     };
 
@@ -422,11 +422,11 @@ export default class OperationGenerator {
       patches,
       updateCommitment: nextUpdateCommitmentHash
     };
-    const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
       update_key: updatePublicKey,
-      delta_hash: delta_hash
+      deltaHash: deltaHash
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, updatePrivateKey);
 
@@ -480,10 +480,10 @@ export default class OperationGenerator {
       updateCommitment: nextUpdateCommitmentHash
     };
 
-    const delta_hash = Multihash.canonicalizeThenHashThenEncode(delta);
+    const deltaHash = Multihash.canonicalizeThenHashThenEncode(delta);
 
     const signedDataPayloadObject = {
-      delta_hash: delta_hash,
+      deltaHash: deltaHash,
       recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey),
       recoveryCommitment: Multihash.canonicalizeThenDoubleHashThenEncode(newRecoveryPublicKey)
     };

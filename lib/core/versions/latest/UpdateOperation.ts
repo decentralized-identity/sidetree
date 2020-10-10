@@ -12,7 +12,7 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SignedDataModel {
-  delta_hash: string;
+  deltaHash: string;
   updateKey: JwkEs256k;
 }
 
@@ -127,11 +127,11 @@ export default class UpdateOperation implements OperationModel {
 
     Jwk.validateJwkEs256k(signedData.update_key);
 
-    const delta_hash = Encoder.decodeAsBuffer(signedData.delta_hash);
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(delta_hash);
+    const deltaHash = Encoder.decodeAsBuffer(signedData.deltaHash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
 
     return {
-      delta_hash: signedData.delta_hash,
+      deltaHash: signedData.deltaHash,
       updateKey: signedData.update_key
     };
   }

@@ -274,7 +274,7 @@ describe('AnchorFile', async () => {
 
       expect(anchorFileModel.map_file_uri).toEqual(mapFileUri);
       expect(anchorFileModel.operations.create![0].suffixData).toEqual({
-        delta_hash: createOperation.suffixData.delta_hash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
+        deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
 
       // Verify recover operation.
@@ -301,7 +301,7 @@ describe('AnchorFile', async () => {
 
       expect(anchorFile.model.map_file_uri).toEqual(mapFileHash);
       expect(anchorFile.model.operations.create![0].suffixData).toEqual({
-        delta_hash: createOperation.suffixData.delta_hash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
+        deltaHash: createOperation.suffixData.deltaHash, recoveryCommitment: createOperation.suffixData.recoveryCommitment
       });
     });
   });

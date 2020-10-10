@@ -81,7 +81,7 @@ describe('UpdateOperation', async () => {
 
     it('should throw if signedData contains an additional unknown property.', async (done) => {
       const signedData = {
-        delta_hash: 'anyUnusedHash',
+        deltaHash: 'anyUnusedHash',
         extraProperty: 'An unknown extra property',
         update_key: {}
       };

@@ -10,7 +10,7 @@ import OperationType from '../../enums/OperationType';
 import SidetreeError from '../../../common/SidetreeError';
 
 interface SuffixDataModel {
-  delta_hash: string;
+  deltaHash: string;
   recoveryCommitment: string;
   type?: string;
 }
@@ -128,7 +128,7 @@ export default class CreateOperation implements OperationModel {
 
     CreateOperation.validateSuffixData(operationObject.suffixData);
     const suffixData: SuffixDataModel = {
-      delta_hash: operationObject.suffixData.delta_hash,
+      deltaHash: operationObject.suffixData.deltaHash,
       recoveryCommitment: operationObject.suffixData.recoveryCommitment
     };
 
@@ -222,10 +222,10 @@ export default class CreateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.CreateOperationSuffixDataMissingOrUnknownProperty);
     }
 
-    const delta_hash = Encoder.decodeAsBuffer(suffixData.delta_hash);
+    const deltaHash = Encoder.decodeAsBuffer(suffixData.deltaHash);
     const nextRecoveryCommitment = Encoder.decodeAsBuffer(suffixData.recoveryCommitment);
 
-    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(delta_hash);
+    Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(deltaHash);
     Multihash.verifyHashComputedUsingLatestSupportedAlgorithm(nextRecoveryCommitment);
 
     // type has to be max 4 character long string with only base64url character set
@@ -254,7 +254,7 @@ export default class CreateOperation implements OperationModel {
     CreateOperation.validateSuffixData(suffixData);
 
     return {
-      delta_hash: suffixData.delta_hash,
+      deltaHash: suffixData.deltaHash,
       recoveryCommitment: suffixData.recoveryCommitment,
       type: suffixData.type
     };

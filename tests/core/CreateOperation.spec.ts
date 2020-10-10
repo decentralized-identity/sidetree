@@ -14,7 +14,7 @@ describe('CreateOperation', async () => {
       const operationObject = {
         type: 'create',
         suffixData: {
-          delta_hash: 'something',
+          deltaHash: 'something',
           recoveryCommitment: 'something',
           type: 'type'
         },
@@ -32,7 +32,7 @@ describe('CreateOperation', async () => {
     it('should process as anchor file mode when anchorFileMode is true', () => {
       const operationObject = {
         suffixData: {
-          delta_hash: 'something',
+          deltaHash: 'something',
           recoveryCommitment: 'something',
           type: 'type'
         }
@@ -70,7 +70,7 @@ describe('CreateOperation', async () => {
       const testObject = {
         type: 'notCreate',
         suffixData: {
-          delta_hash: 'something',
+          deltaHash: 'something',
           recoveryCommitment: 'something',
           type: 'type'
         },
@@ -93,7 +93,7 @@ describe('CreateOperation', async () => {
       const testObject = {
         type: 'this should not exist',
         suffixData: {
-          delta_hash: 'something',
+          deltaHash: 'something',
           recoveryCommitment: 'something',
           type: 'type'
         }
@@ -177,7 +177,7 @@ describe('CreateOperation', async () => {
     // TODO: SIP 2 #781 deprecates this. These tests can be siwtched over to validateSuffixData
     it('should function as expected with type', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'type'
       };
@@ -188,7 +188,7 @@ describe('CreateOperation', async () => {
 
     it('should function as expected without type', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password')))
       };
       const encodedSuffixData = Encoder.encode(JSON.stringify(suffixData));
@@ -203,7 +203,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data contains an additional unknown property.', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'type',
         extraProperty: 'An unknown extra property'
@@ -224,7 +224,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data type is not string', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 123
       };
@@ -235,7 +235,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data type length is greater than 4', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: 'this is too long!!!!!'
       };
@@ -246,7 +246,7 @@ describe('CreateOperation', async () => {
 
     it('should throw if suffix data type is not in base64url character set', async () => {
       const suffixData = {
-        delta_hash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
+        deltaHash: Encoder.encode(Multihash.hash(Buffer.from('some data'))),
         recoveryCommitment: Encoder.encode(Multihash.hash(Buffer.from('some one time password'))),
         type: '/\|='
       };
