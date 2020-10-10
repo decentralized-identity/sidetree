@@ -15,11 +15,11 @@ describe('Test Vectors', () => {
     createOperationData = await OperationGenerator.generateCreateOperation();
     const fixtureData = { ...createOperationData } as any;
     delete fixtureData.createOperation.operationBuffer;
-    // const dids = await OperationGenerator.longFormFromCreateOperationData(createOperationData);
+    const dids = await OperationGenerator.longFormFromCreateOperationData(createOperationData);
     fixture = {
       ...fixture,
       create: {
-        // ...dids,
+        ...dids,
         ...fixtureData
       }
     };

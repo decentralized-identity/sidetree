@@ -176,6 +176,33 @@ export default class OperationGenerator {
   }
 
   /**
+   * Generates a long from from create operation data.
+   */
+  public static async longFormFromCreateOperationData (createOperationData:any, network?: string) {
+
+    const { suffixData, delta } = createOperationData.createOperation;
+
+    const didUniqueSuffix = CreateOperation['computeJcsDidUniqueSuffix'](suffixData);
+
+    const shortFormDid = network ? `did:sidetree:${network}:${didUniqueSuffix}` : `did:sidetree:${didUniqueSuffix}`;
+
+    const initialState = {
+      suffixData: suffixData,
+      delta: delta
+    };
+
+    const canonicalizedInitialStateBuffer = JsonCanonicalizer.canonicalizeAsBuffer(initialState);
+    const encodedCanonicalizedInitialStateString = Encoder.encode(canonicalizedInitialStateBuffer);
+
+    const longFormDid = `${shortFormDid}:${encodedCanonicalizedInitialStateString}`;
+    return {
+      longFormDid,
+      shortFormDid,
+      didUniqueSuffix
+    };
+  }
+
+  /**
    * Generates a create operation.
    */
   public static async generateCreateOperation () {
