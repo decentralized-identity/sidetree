@@ -74,17 +74,17 @@ export default class OperationGenerator {
   }
 
   /**
-   * Generates SECP256K1 key pair to be used in an operation. If purpose not supplied, all purposes will be included
+   * Generates SECP256K1 key pair to be used in an operation. If verificationRelationship not supplied, all purposes will be included
    * Mainly used for testing.
    * @returns [publicKey, privateKey]
    */
-  public static async generateKeyPair (id: string, purpose?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
+  public static async generateKeyPair (id: string, verificationRelationship?: PublicKeyPurpose[]): Promise<[PublicKeyModel, JwkEs256k]> {
     const [publicKey, privateKey] = await Jwk.generateEs256kKeyPair();
     const publicKeyModel = {
       id,
       type: 'EcdsaSecp256k1VerificationKey2019',
       jwk: publicKey,
-      purpose: purpose || Object.values(PublicKeyPurpose)
+      verificationRelationship: verificationRelationship || Object.values(PublicKeyPurpose)
     };
 
     return [publicKeyModel, privateKey];

@@ -10,7 +10,7 @@ import SidetreeError from '../../lib/common/SidetreeError';
 describe('DocumentComposer', async () => {
 
   describe('transformToExternalDocument', () => {
-    it('should output the expected resolution result given key(s) across all purpose types.', async () => {
+    it('should output the expected resolution result given key(s) across all verificationRelationship types.', async () => {
       const [anySigningPublicKey] = await OperationGenerator.generateKeyPair('anySigningKey'); // All purposes will be included by default.
       const [authPublicKey] = await OperationGenerator.generateKeyPair('authPublicKey', [PublicKeyPurpose.Auth]);
       const document = {
@@ -43,9 +43,9 @@ describe('DocumentComposer', async () => {
           publicKeyJwk: { kty: 'EC', crv: 'secp256k1', x: anySigningPublicKey.jwk.x, y: anySigningPublicKey.jwk.y }
         }],
         authentication: [
-          '#anySigningKey', // reference because it is a general purpose key
+          '#anySigningKey', // reference because it is a general verificationRelationship key
           {
-            id: '#authPublicKey', // object here because it is an auth purpose only key
+            id: '#authPublicKey', // object here because it is an auth verificationRelationship only key
             controller: '',
             type: 'EcdsaSecp256k1VerificationKey2019',
             publicKeyJwk: {
@@ -100,7 +100,7 @@ describe('DocumentComposer', async () => {
   describe('addServiceEndpoints', () => {
     it('should add expected service endpoints to document', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }]
       };
 
       const patch = {
@@ -121,7 +121,7 @@ describe('DocumentComposer', async () => {
   describe('removeServiceEndpoints', () => {
     it('should remove the expected elements from service', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
         service: [
           { id: '1', type: 't', endpoint: 'se' },
           { id: '2', type: 't', endpoint: 'se' },
@@ -138,7 +138,7 @@ describe('DocumentComposer', async () => {
       const result = DocumentComposer['removeServiceEndpoints'](document, patch);
 
       const expected = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
         service: [
           { id: '2', type: 't', endpoint: 'se' },
           { id: '4', type: 't', endpoint: 'se' }
@@ -150,7 +150,7 @@ describe('DocumentComposer', async () => {
 
     it('should leave document unchanged if it does not have service endpoint property', () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }]
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }]
       };
 
       const patch = {
@@ -498,7 +498,7 @@ describe('DocumentComposer', async () => {
 
     it('should replace old key with the same ID with new values.', async () => {
       const document: DocumentModel = {
-        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', purpose: [PublicKeyPurpose.General] }],
+        publicKey: [{ id: 'aRepeatingId', type: 'someType', jwk: 'any value', verificationRelationship: [PublicKeyPurpose.General] }],
         service: []
       };
       const patches = [
@@ -538,13 +538,13 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: { a: 'unused a' },
-            purpose: ['general']
+            verificationRelationship: ['general']
           },
           {
             id: 'key1', // Intentional duplicated key ID.
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: { b: 'unused b' },
-            purpose: ['general']
+            verificationRelationship: ['general']
           }
         ]
       };
@@ -553,14 +553,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document public key purpose is empty array.', async () => {
+    it('should throw if document public key verificationRelationship is empty array.', async () => {
       const document = {
         publicKey: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: {},
-            purpose: []
+            verificationRelationship: []
           }
         ]
       };
@@ -569,14 +569,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKey purpose is not an array.', async () => {
+    it('should throw if document publicKey verificationRelationship is not an array.', async () => {
       const document = {
         publicKey: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: {},
-            purpose: undefined
+            verificationRelationship: undefined
           }
         ]
       };
@@ -592,7 +592,7 @@ describe('DocumentComposer', async () => {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: {},
-            purpose: ['general', 'general', 'general', 'general']
+            verificationRelationship: ['general', 'general', 'general', 'general']
           }
         ]
       };
@@ -601,14 +601,14 @@ describe('DocumentComposer', async () => {
       expect(() => { DocumentComposer['validateDocument'](document); }).toThrow(expectedError);
     });
 
-    it('should throw if document publicKey contains invalid purpose.', async () => {
+    it('should throw if document publicKey contains invalid verificationRelationship.', async () => {
       const document = {
         publicKey: [
           {
             id: 'key1',
             type: 'EcdsaSecp256k1VerificationKey2019',
             jwk: {},
-            purpose: ['general', 'somethingInvalid']
+            verificationRelationship: ['general', 'somethingInvalid']
           }
         ]
       };
@@ -650,7 +650,7 @@ function generatePatchesForPublicKeys () {
             x: '5s3-bKjD1Eu_3NJu8pk7qIdOPl1GBzU_V8aR3xiacoM',
             y: 'v0-Q5H3vcfAfQ4zsebJQvMrIg3pcsaJzRvuIYZ3_UOY'
           },
-          purpose: ['general']
+          verificationRelationship: ['general']
         }
       ]
     },

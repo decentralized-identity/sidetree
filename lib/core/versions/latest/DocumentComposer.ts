@@ -22,8 +22,8 @@ export default class DocumentComposer {
 
     const document = didState.document as DocumentModel;
 
-    // Only populate `publicKey` if general purpose exists.
-    // Only populate `authentication` if auth purpose exists.
+    // Only populate `publicKey` if general verificationRelationship exists.
+    // Only populate `authentication` if auth verificationRelationship exists.
     const authentication: any[] = [];
     const publicKeys: any[] = [];
     if (Array.isArray(document.publicKey)) {
@@ -35,7 +35,7 @@ export default class DocumentComposer {
           type: publicKey.type,
           publicKeyJwk: publicKey.jwk
         };
-        const purposeSet: Set<string> = new Set(publicKey.purpose);
+        const purposeSet: Set<string> = new Set(publicKey.verificationRelationship);
 
         if (purposeSet.has(PublicKeyPurpose.General)) {
           publicKeys.push(didDocumentPublicKey);
@@ -185,7 +185,7 @@ export default class DocumentComposer {
     const publicKeyIdSet: Set<string> = new Set();
     for (const publicKey of publicKeys) {
       const publicKeyProperties = Object.keys(publicKey);
-      // the expected fields are id, purpose, type and jwk
+      // the expected fields are id, verificationRelationship, type and jwk
       if (publicKeyProperties.length !== 4) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyMissingOrUnknownProperty);
       }
@@ -206,18 +206,18 @@ export default class DocumentComposer {
       }
       publicKeyIdSet.add(publicKey.id);
 
-      if (!Array.isArray(publicKey.purpose) || publicKey.purpose.length === 0) {
+      if (!Array.isArray(publicKey.verificationRelationship) || publicKey.verificationRelationship.length === 0) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeMissingOrUnknown);
       }
 
-      if (publicKey.purpose.length > 2) {
+      if (publicKey.verificationRelationship.length > 2) {
         throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyPurposeExceedsMaxLength);
       }
 
       const validPurposes = new Set(Object.values(PublicKeyPurpose));
       // Purpose must be one of the valid ones in PublicKeyPurpose
-      for (const purpose of publicKey.purpose) {
-        if (!validPurposes.has(purpose)) {
+      for (const verificationRelationship of publicKey.verificationRelationship) {
+        if (!validPurposes.has(verificationRelationship)) {
           throw new SidetreeError(ErrorCode.DocumentComposerPublicKeyInvalidPurpose);
         }
       }

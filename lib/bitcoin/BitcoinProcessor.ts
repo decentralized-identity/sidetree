@@ -300,7 +300,7 @@ export default class BitcoinProcessor {
     hashOfEarliestKnownValidBlock: string,
     startingBlockHeight: number) {
 
-    let validBlockCount = 0; // Just for console print out purpose at the end.
+    let validBlockCount = 0; // Just for console print out verificationRelationship at the end.
     let validBlock = notYetValidatedBlocks.get(hashOfEarliestKnownValidBlock);
     while (validBlock !== undefined && validBlock.height >= startingBlockHeight) {
       validatedBlocks.push(validBlock);
