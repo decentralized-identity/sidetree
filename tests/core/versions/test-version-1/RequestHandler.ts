@@ -8,8 +8,11 @@ import ResponseModel from '../../../../lib/common/models/ResponseModel';
  */
 export default class RequestHandler implements IRequestHandler {
 
-  // tslint:disable-next-line: max-line-length
-  public constructor (private resolver: Resolver, private operationQueue: IOperationQueue, private didMethodName: string, private supportedAlgorithms: number[]) {
+  public constructor (
+    private resolver: Resolver,
+    private operationQueue: IOperationQueue,
+    private didMethodName: string,
+    private supportedAlgorithms: number[]) {
     console.debug(this.resolver, this.operationQueue, this.didMethodName, this.supportedAlgorithms);
   }
 
