@@ -193,7 +193,7 @@ export default class Multihash {
   /**
    * Verifies the multihash against the content `Buffer`.
    */
-  private static verify (content: Buffer, encodedMultihash: string): boolean {
+  public static verify (content: Buffer, encodedMultihash: string): boolean {
 
     try {
       const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);

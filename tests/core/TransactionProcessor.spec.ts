@@ -324,7 +324,7 @@ describe('TransactionProcessor', () => {
 
       const paidBatchSize = 2;
       const downloadedAnchorFile = await transactionProcessor['downloadAndVerifyAnchorFile'](mockTransaction, 'mock_hash', paidBatchSize);
-      expect(downloadedAnchorFile.model).toEqual(mockAnchorFileModel);
+      expect(JSON.stringify(downloadedAnchorFile.model)).toEqual(JSON.stringify(mockAnchorFileModel));
       done();
     });
   });

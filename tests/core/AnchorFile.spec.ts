@@ -274,7 +274,7 @@ describe('AnchorFile', async () => {
 
       expect(anchorFileModel.map_file_uri).toEqual(mapFileUri);
       expect(anchorFileModel.operations.create![0].suffix_data).toEqual({
-        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment 
+        delta_hash: createOperation.suffixData.deltaHash, recovery_commitment: createOperation.suffixData.recoveryCommitment, type: undefined
       });
 
       // Verify recover operation.
