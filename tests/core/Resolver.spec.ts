@@ -231,7 +231,7 @@ describe('Resolver', () => {
 
       // Sanity check to make sure the DID Document with update is resolved correctly.
       let didState = await resolver.resolve(didUniqueSuffix) as DidState;
-      expect(didState.document.public_keys.length).toEqual(2);
+      expect(didState.document.publicKey.length).toEqual(2);
       expect(didState.document.service_endpoints.length).toEqual(2);
 
       // Create new keys used for new document for recovery request.
@@ -303,7 +303,7 @@ describe('Resolver', () => {
       const actualNewSigningPublicKey2 = Document.getPublicKey(document, 'newKey2Updte1PostRec');
       expect(actualNewSigningPublicKey1).toBeDefined();
       expect(actualNewSigningPublicKey2).toBeDefined();
-      expect(document.public_keys.length).toEqual(2);
+      expect(document.publicKey.length).toEqual(2);
       expect(actualNewSigningPublicKey1!.jwk).toEqual(newSigningPublicKey.jwk);
       expect(actualNewSigningPublicKey2!.jwk).toEqual(newKey2ForUpdate1AfterRecovery.jwk);
       expect(document.service_endpoints).toBeDefined();

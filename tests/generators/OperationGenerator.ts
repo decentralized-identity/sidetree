@@ -131,7 +131,7 @@ export default class OperationGenerator {
     network?: string) {
 
     const document = {
-      public_keys: otherPublicKeys || [],
+      publicKey: otherPublicKeys || [],
       service_endpoints: serviceEndpoints || []
     };
 
@@ -339,7 +339,7 @@ export default class OperationGenerator {
     otherPublicKeys: PublicKeyModel[],
     serviceEndpoints?: ServiceEndpointModel[]) {
     const document: DocumentModel = {
-      public_keys: otherPublicKeys,
+      publicKey: otherPublicKeys,
       service_endpoints: serviceEndpoints
     };
 
@@ -383,7 +383,7 @@ export default class OperationGenerator {
     const patches = [
       {
         action: 'add-public-keys',
-        public_keys: [
+        publicKey: [
           anyNewSigningKey
         ]
       }
@@ -451,7 +451,7 @@ export default class OperationGenerator {
     serviceEndpoints?: ServiceEndpointModel[],
     publicKeys?: PublicKeyModel[]) {
     const document = {
-      public_keys: publicKeys,
+      publicKey: publicKeys,
       service_endpoints: serviceEndpoints
     };
     const recoverOperation = await OperationGenerator.createRecoverOperationRequest(
@@ -554,7 +554,7 @@ export default class OperationGenerator {
     const patches = [
       {
         action: 'add-public-keys',
-        public_keys: [
+        publicKey: [
           newPublicKey
         ]
       }

@@ -180,7 +180,7 @@ describe('OperationProcessor', async () => {
     const patches = [
       {
         action: 'remove-public-keys',
-        public_keys: [signingKeyId]
+        publicKey: [signingKeyId]
       }
     ];
     const nextUpdateCommitmentHash = 'EiD_UnusedNextUpdateCommitmentHash_AAAAAAAAAAA';
@@ -499,7 +499,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKey.length).toEqual(1);
       });
 
       it('should not apply update operation if signature is invalid.', async () => {
@@ -527,7 +527,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public signing keys should remain 1, not 2.
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKey.length).toEqual(1);
       });
 
       it('should not apply update operation if updateKey is invalid', async () => {
@@ -556,7 +556,7 @@ describe('OperationProcessor', async () => {
         expect(newDidState!.document).toBeDefined();
 
         // The count of public keys should remain 1, not 2.
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKey.length).toEqual(1);
       });
     });
 
@@ -597,7 +597,7 @@ describe('OperationProcessor', async () => {
       });
 
       it('should still apply successfully with resultant document being { } if delta hash mismatch.', async () => {
-        const document = { public_keys: [] };
+        const document = { publicKey: [] };
         const [anyNewRecoveryPublicKey] = await Jwk.generateEs256kKeyPair();
         const recoverOperationRequest = await OperationGenerator.createRecoverOperationRequest(
           didUniqueSuffix,
@@ -631,7 +631,7 @@ describe('OperationProcessor', async () => {
         // Expecting resulting DID state to still be the same as prior to attempting to apply the invalid deactivate operation.
         expect(newDidState!.lastOperationTransactionNumber).toEqual(1);
         expect(newDidState!.document).toBeDefined();
-        expect(newDidState!.document.public_keys.length).toEqual(1);
+        expect(newDidState!.document.publicKey.length).toEqual(1);
         expect(newDidState!.nextUpdateCommitmentHash).toEqual(didState!.nextUpdateCommitmentHash);
       });
     });
