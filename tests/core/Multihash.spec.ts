@@ -40,7 +40,7 @@ describe('Multihash', async () => {
     });
 
     it('should return false if encountered an unexpected error.', async () => {
-      const multihashHashSpy = spyOn(Multihash as any, 'verify').and.throwError('Simulated error message.');
+      const multihashHashSpy = spyOn(Multihash as any, 'verifyEncodedMultihashIsContent').and.throwError('Simulated error message.');
       const result = Multihash.isValidHash('revealValue', 'commitmentHash');
 
       expect(multihashHashSpy).toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe('Multihash', async () => {
       // Simulate an error thrown.
       spyOn(Encoder, 'decodeAsBuffer').and.throwError('any error');
 
-      const validHash = (Multihash as any).verify(Buffer.from('anyValue'), 'unusedMultihashValue');
+      const validHash = (Multihash as any).verifyEncodedMultihashIsContent(Buffer.from('anyValue'), 'unusedMultihashValue');
 
       expect(validHash).toBeFalsy();
     });
@@ -95,8 +95,8 @@ describe('Multihash', async () => {
       // Two multihash strings decodes into the same buffer.
       expect(Encoder.decodeAsBuffer(defaultContentEncodedMultihash)).toEqual(Encoder.decodeAsBuffer(modifiedContentEncodedMultihash));
 
-      const validHashCheckResult = (Multihash as any).verify(anyContent, defaultContentEncodedMultihash);
-      const invalidHashCheckResult = (Multihash as any).verify(anyContent, modifiedContentEncodedMultihash);
+      const validHashCheckResult = (Multihash as any).verifyEncodedMultihashIsContent(anyContent, defaultContentEncodedMultihash);
+      const invalidHashCheckResult = (Multihash as any).verifyEncodedMultihashIsContent(anyContent, modifiedContentEncodedMultihash);
 
       expect(validHashCheckResult).toBeTruthy();
       expect(invalidHashCheckResult).toBeFalsy();

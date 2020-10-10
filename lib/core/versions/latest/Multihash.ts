@@ -144,7 +144,7 @@ export default class Multihash {
 
     try {
       const contentBuffer = Encoder.decodeAsBuffer(encodedContent);
-      return Multihash.verify(contentBuffer, encodedMultihash);
+      return Multihash.verifyEncodedMultihashIsContent(contentBuffer, encodedMultihash);
     } catch (error) {
       console.log(error);
       return false;
@@ -193,7 +193,7 @@ export default class Multihash {
   /**
    * Verifies the multihash against the content `Buffer`.
    */
-  public static verify (content: Buffer, encodedMultihash: string): boolean {
+  public static verifyEncodedMultihashIsContent (content: Buffer, encodedMultihash: string): boolean {
 
     try {
       const expectedMultihashBuffer = Encoder.decodeAsBuffer(encodedMultihash);

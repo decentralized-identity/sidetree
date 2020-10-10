@@ -122,7 +122,7 @@ export default class OperationProcessor implements IOperationProcessor {
       return newDidState;
     };
 
-    const isMatchingDelta = Multihash.verify(deltaPayload, operation.suffixData.deltaHash);
+    const isMatchingDelta = Multihash.verifyEncodedMultihashIsContent(deltaPayload, operation.suffixData.deltaHash);
     if (!isMatchingDelta) {
       return newDidState;
     };
@@ -179,7 +179,7 @@ export default class OperationProcessor implements IOperationProcessor {
       return didState;
     };
 
-    const isMatchingDelta = Multihash.verify(deltaPayload, operation.signedData.deltaHash);
+    const isMatchingDelta = Multihash.verifyEncodedMultihashIsContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
       return didState;
     };
@@ -243,12 +243,12 @@ export default class OperationProcessor implements IOperationProcessor {
       patches: operation.delta.patches
     }) : undefined;
     if (deltaPayload === undefined) {
-      return didState;
+      return newDidState;
     };
 
-    const isMatchingDelta = Multihash.verify(deltaPayload, operation.signedData.deltaHash);
+    const isMatchingDelta = Multihash.verifyEncodedMultihashIsContent(deltaPayload, operation.signedData.deltaHash);
     if (!isMatchingDelta) {
-      return didState;
+      return newDidState;
     };
 
     // Apply the given patches against an empty object.
