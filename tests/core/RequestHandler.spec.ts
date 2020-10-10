@@ -1,7 +1,7 @@
 
 import * as crypto from 'crypto';
 import * as generatedFixture from '../vectors/generated.json';
-import * as generatedResolutionFixture from '../vectors/resolution.json';
+import * as longFormResponse from '../vectors/resolution/longFormResponse.json';
 
 import AnchoredOperationModel from '../../lib/core/models/AnchoredOperationModel';
 import BatchScheduler from '../../lib/core/BatchScheduler';
@@ -33,19 +33,9 @@ import Resolver from '../../lib/core/Resolver';
 import Response from '../../lib/common/Response';
 import ResponseStatus from '../../lib/common/enums/ResponseStatus';
 import SidetreeError from '../../lib/common/SidetreeError';
+import { fixtureDriftHelper } from '../utils';
 
 const util = require('util');
-
-// this funtion should not be necessary if fixtures are well designed
-// however, it is useful while they remain randomly generated.
-const fixtureDriftHelper = (recieved: any, expected: any) => {
-  const match = JSON.stringify(recieved) === JSON.stringify(expected);
-  if (!match) {
-    console.error('Fixture Drift!');
-    console.warn('Consider updating JSON to: ');
-    console.warn(JSON.stringify(recieved, null, 2));
-  }
-};
 
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.
@@ -150,7 +140,6 @@ describe('RequestHandler', () => {
     // for deprecated features in this PR.
     const response = await requestHandler.handleResolveRequest(generatedFixture.create.longFormDid);
     expect(response.status).toEqual(ResponseStatus.Succeeded);
-    fixtureDriftHelper(response, generatedResolutionFixture.create);
   });
 
   it('should resolve long form did from test vectors correctly', async () => {
@@ -159,7 +148,9 @@ describe('RequestHandler', () => {
     // this will break every time fixtures are generated because of randomness.
     // really this should be in an "integration test", not request handler unit tests.
     // or even better, integrated into fixture generation.
-    fixtureDriftHelper(response, generatedResolutionFixture.create);
+    fixtureDriftHelper(response, longFormResponse, 'resolution/longFormResponse.json', false);
+    expect(response).toEqual(longFormResponse as any);
+
   });
 
   it('should process create operation from test vectors correctly', async () => {
