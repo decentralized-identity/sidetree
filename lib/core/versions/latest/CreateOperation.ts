@@ -127,10 +127,7 @@ export default class CreateOperation implements OperationModel {
     }
 
     CreateOperation.validateSuffixData(operationObject.suffixData);
-    const suffixData: SuffixDataModel = {
-      deltaHash: operationObject.suffixData.deltaHash,
-      recoveryCommitment: operationObject.suffixData.recoveryCommitment
-    };
+    const suffixData: SuffixDataModel = operationObject.suffixData;
 
     if (operationObject.suffixData.type !== undefined) {
       suffixData.type = operationObject.suffixData.type;
