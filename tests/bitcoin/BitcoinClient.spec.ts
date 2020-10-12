@@ -1037,7 +1037,7 @@ describe('BitcoinClient', async () => {
         labels: [
           {
             name: 'sidetree',
-            verificationRelationship: 'receive'
+            purpose: 'receive'
           }
         ]
       });
