@@ -148,10 +148,7 @@ export default class CreateOperation implements OperationModel {
 
       try {
         Operation.validateDelta(operationObject.delta);
-        delta = {
-          patches: operationObject.delta.patches,
-          updateCommitment: operationObject.delta.updateCommitment
-        };
+        delta = operationObject.delta;
       } catch {
         // For compatibility with data pruning, we have to assume that `delta` may be unavailable,
         // thus an operation with invalid `delta` needs to be processed as an operation with unavailable `delta`,
