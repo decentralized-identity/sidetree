@@ -58,8 +58,8 @@
   "scripts": {
     "commit": "git-cz",
     "build": "tsc && copyfiles \"lib/**/*.json\" dist && copyfiles \"tests/**/*.js*\" dist && copyfiles \"package.json\" dist",
-    "test": "npm run build && jasmine --config=./tests/jasmine.json",
-    "test:coverage": "npm run build && nyc jasmine --config=./tests/jasmine.json",
+    "test": "npm run build && nyc jasmine --config=./tests/jasmine.json",
+    "test:only": "npm run build && jasmine --config=./tests/jasmine.json",
     "publish:unstable": "./scripts/publish-unstable.sh",
     "publish:release": "./scripts/publish.sh",
     "version:release": "npm version --message \"chore(ref-imp): publish release [skip ci]\"",
