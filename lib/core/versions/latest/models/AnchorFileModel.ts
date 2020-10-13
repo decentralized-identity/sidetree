@@ -2,7 +2,7 @@
  * Defines the external Anchor File structure.
  */
 export default interface AnchorFileModel {
-  writer_lock_id: string | undefined;
+  writerLockId: string | undefined;
   mapFileUri: string;
   operations: {
     create?: {

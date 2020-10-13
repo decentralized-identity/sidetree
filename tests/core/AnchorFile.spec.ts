@@ -63,7 +63,7 @@ describe('AnchorFile', async () => {
     it('should throw if has an unknown property.', async () => {
       const anchorFile = {
         unknownProperty: 'Unknown property',
-        writer_lock_id: 'writer lock',
+        writerLockId: 'writer lock',
         mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {}
       };
@@ -75,7 +75,7 @@ describe('AnchorFile', async () => {
 
     it('should throw if `operations` property has an unknown property.', async () => {
       const anchorFile = {
-        writer_lock_id: 'writer lock',
+        writerLockId: 'writer lock',
         mapFileUri: 'EiB4ypIXxG9aFhXv2YC8I2tQvLEBbQAsNzHmph17vMfVYA',
         operations: {
           unexpectedProperty: 'any value'
@@ -157,7 +157,7 @@ describe('AnchorFile', async () => {
       const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', [createOperation], [], []);
 
-      (anchorFileModel as any).writer_lock_id = {}; // intentionally set to invalid value
+      (anchorFileModel as any).writerLockId = {}; // intentionally set to invalid value
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);
@@ -170,7 +170,7 @@ describe('AnchorFile', async () => {
       const createOperation = createOperationData.createOperation;
       const anchorFileModel = await AnchorFile.createModel('unusedWriterLockId', 'unusedMockFileHash', [createOperation], [], []);
 
-      (anchorFileModel as any).writer_lock_id = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
+      (anchorFileModel as any).writerLockId = crypto.randomBytes(2000).toString('hex'); // Intentionally larger than maximum.
 
       const anchorFileBuffer = Buffer.from(JSON.stringify(anchorFileModel));
       const anchorFileCompressed = await Compressor.compress(anchorFileBuffer);

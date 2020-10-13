@@ -49,7 +49,7 @@ export default class AnchorFile {
       throw SidetreeError.createFromError(ErrorCode.AnchorFileNotJson, e);
     }
 
-    const allowedProperties = new Set(['mapFileUri', 'operations', 'writer_lock_id']);
+    const allowedProperties = new Set(['mapFileUri', 'operations', 'writerLockId']);
     for (const property in anchorFileModel) {
       if (!allowedProperties.has(property)) {
         throw new SidetreeError(ErrorCode.AnchorFileHasUnknownProperty);
@@ -64,13 +64,13 @@ export default class AnchorFile {
       throw new SidetreeError(ErrorCode.AnchorFileMissingOperationsProperty);
     }
 
-    // `writer_lock_id` validations.
-    if (anchorFileModel.hasOwnProperty('writer_lock_id')) {
-      if (typeof anchorFileModel.writer_lock_id !== 'string') {
+    // `writerLockId` validations.
+    if (anchorFileModel.hasOwnProperty('writerLockId')) {
+      if (typeof anchorFileModel.writerLockId !== 'string') {
         throw new SidetreeError(ErrorCode.AnchorFileWriterLockIdPropertyNotString);
       }
 
-      AnchorFile.validateWriterLockId(anchorFileModel.writer_lock_id);
+      AnchorFile.validateWriterLockId(anchorFileModel.writerLockId);
     }
 
     // Map file hash validations.
@@ -190,7 +190,7 @@ export default class AnchorFile {
     });
 
     const anchorFileModel = {
-      writer_lock_id: writerLockId,
+      writerLockId: writerLockId,
       mapFileUri: mapFileHash,
       operations: {
         create: createOperations,
