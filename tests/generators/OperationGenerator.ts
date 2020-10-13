@@ -434,7 +434,7 @@ export default class OperationGenerator {
       type: OperationType.Update,
       didSuffix: didUniqueSuffix,
       delta: delta,
-      signed_data: signedData
+      signedData: signedData
     };
 
     return updateOperationRequest;
@@ -492,7 +492,7 @@ export default class OperationGenerator {
     const operation = {
       type: OperationType.Recover,
       didSuffix: didUniqueSuffix,
-      signed_data: signedData,
+      signedData: signedData,
       delta: delta
     };
 
@@ -515,7 +515,7 @@ export default class OperationGenerator {
     const operation = {
       type: OperationType.Deactivate,
       didSuffix: didUniqueSuffix,
-      signed_data: signedData
+      signedData: signedData
     };
 
     return operation;

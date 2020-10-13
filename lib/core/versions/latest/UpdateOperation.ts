@@ -97,7 +97,7 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
-    const signedData = Jws.parseCompactJws(operationObject.signed_data);
+    const signedData = Jws.parseCompactJws(operationObject.signedData);
     const signedDataModel = await UpdateOperation.parseSignedDataPayload(signedData.payload);
 
     // If not in map file mode, we need to validate `type` and `delta` properties.

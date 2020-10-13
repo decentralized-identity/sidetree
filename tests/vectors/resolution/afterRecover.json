@@ -1,11 +1,11 @@
 {
   "@context": "https://www.w3.org/ns/did-resolution/v1",
   "didDocument": {
-    "id": "did:sidetree:EiCPar1hnDaEASf4Nmn2XTFhNfH_Ttwb-mdOnLMOjrjN5A",
+    "id": "did:sidetree:EiD4vXLerDDDF8Spt-D5jeCCTC6gKPdrS6-Bdacrhm_c2w",
     "@context": [
       "https://www.w3.org/ns/did/v1",
       {
-        "@base": "did:sidetree:EiCPar1hnDaEASf4Nmn2XTFhNfH_Ttwb-mdOnLMOjrjN5A"
+        "@base": "did:sidetree:EiD4vXLerDDDF8Spt-D5jeCCTC6gKPdrS6-Bdacrhm_c2w"
       }
     ],
     "service": [
@@ -18,13 +18,13 @@
     "publicKey": [
       {
         "id": "#newKey",
-        "controller": "did:sidetree:EiCPar1hnDaEASf4Nmn2XTFhNfH_Ttwb-mdOnLMOjrjN5A",
+        "controller": "did:sidetree:EiD4vXLerDDDF8Spt-D5jeCCTC6gKPdrS6-Bdacrhm_c2w",
         "type": "EcdsaSecp256k1VerificationKey2019",
         "publicKeyJwk": {
           "kty": "EC",
           "crv": "secp256k1",
-          "x": "m_hUHsIlJAklJruwzHPGQrB1_ptqqRs7UMJGL4t4n4o",
-          "y": "2LpQVtoriBf0LtUzVn6NfdyQ0SbKBUXaXSnkWm_QIV8"
+          "x": "Shmka4gDq6KUmGuxMsCp8F7JWXPp2bkIrx1diMSlHig",
+          "y": "oNsH-JCQeUyg816GfX7T-bDoG1MxHVFHIc5RkWcG7IQ"
         }
       }
     ],
@@ -34,7 +34,7 @@
   },
   "methodMetadata": {
     "published": true,
-    "recoveryCommitment": "EiB8kA6QufbyBuDAdXRTo5eHdwrlmk28vo9GTWVkKjUIrg",
-    "updateCommitment": "EiBdmkCKxeFBX9gnjjG5paVbnTNSgH43B8ZnI_zgpYG1vw"
+    "recoveryCommitment": "EiBUjNYeIMl8I4D2prDzn0weaJR9gokrVuI0a3olzh1JwQ",
+    "updateCommitment": "EiC7PRu38vLmU05KraRyX_s3xaxtPC7JovqgxmGHRWD7xg"
   }
 }

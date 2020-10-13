@@ -99,7 +99,7 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    const signedDataJws = Jws.parseCompactJws(operationObject.signed_data);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await RecoverOperation.parseSignedDataPayload(signedDataJws.payload);
 
     // If not in anchor file mode, we need to validate `type` and `delta` properties.

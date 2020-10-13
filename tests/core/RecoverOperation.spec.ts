@@ -94,7 +94,7 @@ describe('RecoverOperation', async () => {
       const recoverOperation = {
         didSuffix: 'unusedSuffix',
         recovery_reveal_value: 'unusedReveal',
-        signed_data: 'unusedSignedData',
+        signedData: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 

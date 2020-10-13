@@ -90,7 +90,7 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
-    const signedDataJws = Jws.parseCompactJws(operationObject.signed_data);
+    const signedDataJws = Jws.parseCompactJws(operationObject.signedData);
     const signedData = await DeactivateOperation.parseSignedDataPayload(
       signedDataJws.payload, operationObject.didSuffix);
 

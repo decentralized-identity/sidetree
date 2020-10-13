@@ -178,14 +178,14 @@ export default class AnchorFile {
     const recoverOperations = recoverOperationArray.map(operation => {
       return {
         didSuffix: operation.didUniqueSuffix,
-        signed_data: operation.signedDataJws.toCompactJws()
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 
     const deactivateOperations = deactivateOperationArray.map(operation => {
       return {
         didSuffix: operation.didUniqueSuffix,
-        signed_data: operation.signedDataJws.toCompactJws()
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 

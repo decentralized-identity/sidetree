@@ -59,7 +59,7 @@ describe('UpdateOperation', async () => {
     it('should throw if operation contains an additional unknown property.', async (done) => {
       const updateOperation = {
         didSuffix: 'unusedSuffix',
-        signed_data: 'unusedSignedData',
+        signedData: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };
 

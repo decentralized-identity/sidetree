@@ -280,12 +280,12 @@ describe('AnchorFile', async () => {
       // Verify recover operation.
       const recoveryOperationInAnchorFile = anchorFileModel.operations.recover![0];
       expect(recoveryOperationInAnchorFile.didSuffix).toEqual(recoverOperation.didUniqueSuffix);
-      expect(recoveryOperationInAnchorFile.signed_data).toEqual(recoverOperation.signedDataJws.toCompactJws());
+      expect(recoveryOperationInAnchorFile.signedData).toEqual(recoverOperation.signedDataJws.toCompactJws());
 
       // Verify deactivate operation.
       const deactivateOperationInAnchorFile = anchorFileModel.operations.deactivate![0];
       expect(deactivateOperationInAnchorFile.didSuffix).toEqual(deactivateOperation.didUniqueSuffix);
-      expect(deactivateOperationInAnchorFile.signed_data).toEqual(deactivateOperation.signedDataJws.toCompactJws());
+      expect(deactivateOperationInAnchorFile.signedData).toEqual(deactivateOperation.signedDataJws.toCompactJws());
     });
   });
 

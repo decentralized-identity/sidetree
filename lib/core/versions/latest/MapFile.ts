@@ -121,7 +121,7 @@ export default class MapFile {
     const updateOperations = updateOperationArray.map(operation => {
       return {
         didSuffix: operation.didUniqueSuffix,
-        signed_data: operation.signedDataJws.toCompactJws()
+        signedData: operation.signedDataJws.toCompactJws()
       };
     });
 
