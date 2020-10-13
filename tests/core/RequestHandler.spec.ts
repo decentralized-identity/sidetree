@@ -37,7 +37,7 @@ import { fixtureDriftHelper } from '../utils';
 
 const util = require('util');
 
-const OVERWRITE_FIXTURES = false;
+const OVERWRITE_FIXTURES = true;
 
 describe('RequestHandler', () => {
   // Suppress console logging during testing so we get a compact test summary in console.

@@ -120,7 +120,7 @@ export default class MapFile {
   public static async createBuffer (chunkFileHash: string, updateOperationArray: UpdateOperation[]): Promise<Buffer> {
     const updateOperations = updateOperationArray.map(operation => {
       return {
-        did_suffix: operation.didUniqueSuffix,
+        didSuffix: operation.didUniqueSuffix,
         signed_data: operation.signedDataJws.toCompactJws()
       };
     });

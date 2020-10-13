@@ -95,7 +95,7 @@ export default class RecoverOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.did_suffix !== 'string') {
+    if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.RecoverOperationMissingOrInvalidDidUniqueSuffix);
     }
 
@@ -124,7 +124,7 @@ export default class RecoverOperation implements OperationModel {
 
     return new RecoverOperation(
       operationBuffer,
-      operationObject.did_suffix,
+      operationObject.didSuffix,
       signedDataJws,
       signedData,
       delta

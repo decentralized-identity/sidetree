@@ -13,11 +13,11 @@ export default interface AnchorFileModel {
       };
     }[],
     recover?: {
-      did_suffix: string;
+      didSuffix: string;
       signed_data: string;
     }[],
     deactivate?: {
-      did_suffix: string;
+      didSuffix: string;
       signed_data: string;
     }[]
   };

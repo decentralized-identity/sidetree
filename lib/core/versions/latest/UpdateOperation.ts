@@ -93,7 +93,7 @@ export default class UpdateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.did_suffix !== 'string') {
+    if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix);
     }
 
@@ -113,7 +113,7 @@ export default class UpdateOperation implements OperationModel {
       };
     }
 
-    return new UpdateOperation(operationBuffer, operationObject.did_suffix, signedData, signedDataModel, delta);
+    return new UpdateOperation(operationBuffer, operationObject.didSuffix, signedData, signedDataModel, delta);
   }
 
   private static async parseSignedDataPayload (signedDataEncodedString: string): Promise<SignedDataModel> {

@@ -86,13 +86,13 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrUnknownProperty);
     }
 
-    if (typeof operationObject.did_suffix !== 'string') {
+    if (typeof operationObject.didSuffix !== 'string') {
       throw new SidetreeError(ErrorCode.DeactivateOperationMissingOrInvalidDidUniqueSuffix);
     }
 
     const signedDataJws = Jws.parseCompactJws(operationObject.signed_data);
     const signedData = await DeactivateOperation.parseSignedDataPayload(
-      signedDataJws.payload, operationObject.did_suffix);
+      signedDataJws.payload, operationObject.didSuffix);
 
     // If not in anchor file mode, we need to validate `type` property.
     if (!anchorFileMode) {
@@ -103,7 +103,7 @@ export default class DeactivateOperation implements OperationModel {
 
     return new DeactivateOperation(
       operationBuffer,
-      operationObject.did_suffix,
+      operationObject.didSuffix,
       signedDataJws,
       signedData
     );
@@ -120,14 +120,14 @@ export default class DeactivateOperation implements OperationModel {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDataMissingOrUnknownProperty);
     }
 
-    if (signedData.did_suffix !== expectedDidUniqueSuffix) {
+    if (signedData.didSuffix !== expectedDidUniqueSuffix) {
       throw new SidetreeError(ErrorCode.DeactivateOperationSignedDidUniqueSuffixMismatch);
     }
 
     Jwk.validateJwkEs256k(signedData.recovery_key);
 
     return {
-      didSuffix: signedData.did_suffix,
+      didSuffix: signedData.didSuffix,
       recoveryKey: signedData.recovery_key
     };
   }

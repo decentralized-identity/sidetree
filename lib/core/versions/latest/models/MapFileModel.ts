@@ -8,7 +8,7 @@ export default interface MapFileModel {
 
   operations?: {
     update: {
-      did_suffix: string,
+      didSuffix: string,
       signed_data: string
     }[]
   };

@@ -432,7 +432,7 @@ export default class OperationGenerator {
 
     const updateOperationRequest = {
       type: OperationType.Update,
-      did_suffix: didUniqueSuffix,
+      didSuffix: didUniqueSuffix,
       delta: delta,
       signed_data: signedData
     };
@@ -491,7 +491,7 @@ export default class OperationGenerator {
 
     const operation = {
       type: OperationType.Recover,
-      did_suffix: didUniqueSuffix,
+      didSuffix: didUniqueSuffix,
       signed_data: signedData,
       delta: delta
     };
@@ -507,14 +507,14 @@ export default class OperationGenerator {
     recoveryPrivateKey: JwkEs256k) {
 
     const signedDataPayloadObject = {
-      did_suffix: didUniqueSuffix,
+      didSuffix: didUniqueSuffix,
       recovery_key: Jwk.getEs256kPublicKey(recoveryPrivateKey)
     };
     const signedData = await OperationGenerator.signUsingEs256k(signedDataPayloadObject, recoveryPrivateKey);
 
     const operation = {
       type: OperationType.Deactivate,
-      did_suffix: didUniqueSuffix,
+      didSuffix: didUniqueSuffix,
       signed_data: signedData
     };
 

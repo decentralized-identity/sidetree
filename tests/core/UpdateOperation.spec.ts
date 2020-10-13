@@ -32,7 +32,7 @@ describe('UpdateOperation', async () => {
         'opaque-unused-document-patch'
       );
 
-      (updateOperationRequest.did_suffix as any) = 123;
+      (updateOperationRequest.didSuffix as any) = 123;
 
       const operationBuffer = Buffer.from(JSON.stringify(updateOperationRequest));
       await expectAsync(UpdateOperation.parse(operationBuffer)).toBeRejectedWith(new SidetreeError(ErrorCode.UpdateOperationMissingDidUniqueSuffix));
@@ -58,7 +58,7 @@ describe('UpdateOperation', async () => {
   describe('parseObject()', async () => {
     it('should throw if operation contains an additional unknown property.', async (done) => {
       const updateOperation = {
-        did_suffix: 'unusedSuffix',
+        didSuffix: 'unusedSuffix',
         signed_data: 'unusedSignedData',
         extraProperty: 'thisPropertyShouldCauseErrorToBeThrown'
       };

@@ -23,7 +23,7 @@ import RecoverOperation from '../../lib/core/versions/latest/RecoverOperation';
 import Resolver from '../../lib/core/Resolver';
 import { fixtureDriftHelper } from '../utils';
 
-const OVERWRITE_FIXTURES = false;
+const OVERWRITE_FIXTURES = true;
 
 describe('Resolver', () => {
   let resolver: Resolver;
