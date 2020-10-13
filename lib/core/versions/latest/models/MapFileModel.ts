@@ -3,7 +3,7 @@
  */
 export default interface MapFileModel {
   chunks: {
-    chunk_file_uri: string
+    chunkFileUri: string
   }[];
 
   operations?: {

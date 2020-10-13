@@ -111,7 +111,7 @@ export default class MapFile {
       throw new SidetreeError(ErrorCode.MapFileChunkHasMissingOrUnknownProperty);
     }
 
-    Multihash.verifyEncodedHashIsComputedUsingLastestAlgorithm(chunk.chunk_file_uri);
+    Multihash.verifyEncodedHashIsComputedUsingLastestAlgorithm(chunk.chunkFileUri);
   }
 
   /**
@@ -126,7 +126,7 @@ export default class MapFile {
     });
 
     const mapFileModel: MapFileModel = {
-      chunks: [{ chunk_file_uri: chunkFileHash }]
+      chunks: [{ chunkFileUri: chunkFileHash }]
     };
 
     // Only insert an `operations` property if there are update operations.

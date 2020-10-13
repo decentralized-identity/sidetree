@@ -181,7 +181,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
     let chunkFileHash;
     try {
-      chunkFileHash = mapFile.model.chunks[0].chunk_file_uri;
+      chunkFileHash = mapFile.model.chunks[0].chunkFileUri;
       console.info(`Downloading chunk file '${chunkFileHash}', max size limit ${ProtocolParameters.maxChunkFileSizeInBytes}...`);
 
       const fileBuffer = await this.downloadFileFromCas(chunkFileHash, ProtocolParameters.maxChunkFileSizeInBytes);
