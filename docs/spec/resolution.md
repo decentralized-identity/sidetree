@@ -6,7 +6,7 @@
 
 1. Upon invocation of resolution, retrieve all observed operations for the [DID Unique Suffix](#did-unique-suffix) of the DID URI being resolved.
 2. If record of the DID being published has been observed, proceed to Step 3. If there is no observed record of the DID being published, skip all remaining [Operation Compilation](#operation-compilation) steps and process the DID as follows:
-    1. If the DID URI is a [_Long-Form DID URI_](#long-form-did), abort resolution and return _Unresolvable_.
+    1. If the DID URI is a [_Short-Form DID URI_](#short-form-did), abort resolution and return _Unresolvable_.
     2. If the DID URI is a [_Long-Form DID URI_](#long-form-did), process as follows:
         1. Split the last colon-separated (`:`) segment of the [_Long-Form DID URI_](#long-form-did) on the period (`.`) character, and ensure the resulting array contains ****exactly**** two (2) members. If the resulting array contains fewer than two members, abort resolution and return _Unresolvable_.
         2. Using the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), decode the both members of the array and retain the resulting values. If the values fail to properly decode in accordance with the implementation's [`DATA_ENCODING_SCHEME`](#data-encoding-scheme), abort resolution and return _Unresolvable_.
