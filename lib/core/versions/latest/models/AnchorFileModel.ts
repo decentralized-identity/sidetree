@@ -3,7 +3,7 @@
  */
 export default interface AnchorFileModel {
   writer_lock_id: string | undefined;
-  map_file_uri: string;
+  mapFileUri: string;
   operations: {
     create?: {
       suffixData: {

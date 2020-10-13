@@ -125,9 +125,9 @@ export default class TransactionProcessor implements ITransactionProcessor {
   private async downloadAndVerifyMapFile (anchorFile: AnchorFile, paidOperationCount: number): Promise<MapFile | undefined> {
     try {
       const anchorFileModel = anchorFile.model;
-      console.info(`Downloading map file '${anchorFileModel.map_file_uri}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
+      console.info(`Downloading map file '${anchorFileModel.mapFileUri}', max file size limit ${ProtocolParameters.maxMapFileSizeInBytes}...`);
 
-      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.map_file_uri, ProtocolParameters.maxMapFileSizeInBytes);
+      const fileBuffer = await this.downloadFileFromCas(anchorFileModel.mapFileUri, ProtocolParameters.maxMapFileSizeInBytes);
       const mapFile = await MapFile.parse(fileBuffer);
 
       // Calculate the max paid update operation count.
@@ -156,7 +156,7 @@ export default class TransactionProcessor implements ITransactionProcessor {
 
         return undefined;
       } else {
-        console.error(`Unexpected error fetching map file ${anchorFile.model.map_file_uri}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
+        console.error(`Unexpected error fetching map file ${anchorFile.model.mapFileUri}, MUST investigate and fix: ${SidetreeError.stringify(error)}`);
         return undefined;
       }
     }
