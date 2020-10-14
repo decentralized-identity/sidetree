@@ -1,4 +1,5 @@
-name: Deploy Spec
+
+name: render-specs
 
 on:
   push:
@@ -19,9 +20,10 @@ jobs:
           npm install
           node -e "require('spec-up')({ nowatch: true })"
 
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@releases/v3
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          BRANCH: gh-pages # The branch the action should deploy to.
-          FOLDER: www # The folder the action should deploy.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./www
+          # exclude_assets: '.github,node_modules/**'
+          force_orphan: true
