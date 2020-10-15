@@ -1,16 +1,16 @@
-import * as crypto from 'crypto';
 import * as HttpStatus from 'http-status';
+import * as crypto from 'crypto';
 import * as url from 'url';
-import base64url from 'base64url';
 import FetchResult from '../common/models/FetchResult';
 import FetchResultCode from '../common/enums/FetchResultCode';
 import ICas from '../core/interfaces/ICas';
 import IpfsErrorCode from '../ipfs/IpfsErrorCode';
-import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import Timeout from './Util/Timeout';
+import base64url from 'base64url';
+import nodeFetch from 'node-fetch';
 
 const multihashes = require('multihashes');
 

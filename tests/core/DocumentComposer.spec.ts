@@ -34,7 +34,7 @@ describe('DocumentComposer', async () => {
       });
       expect(result.didDocument).toEqual({
         id: 'did:method:suffix',
-        '@context': [ 'https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' } ],
+        '@context': ['https://www.w3.org/ns/did/v1', { '@base': 'did:method:suffix' }],
         service: undefined,
         publicKey: [{
           id: '#anySigningKey',

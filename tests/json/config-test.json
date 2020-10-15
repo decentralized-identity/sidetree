@@ -1,10 +1,10 @@
 ﻿{
-  "port": 3000,
+  "databaseName": "testMongodbName",
   "didMethodName": "sidetree",
   "blockchainServiceUri": "http://127.0.0.1:3002",
   "batchingIntervalInSeconds": 10,
-  "observingIntervalInSeconds": 10,
   "maxConcurrentDownloads": 20,
   "mongoDbConnectionString": "mongodb://localhost:27017/",
-  "databaseName": "testMongodbName"
+  "observingIntervalInSeconds": 10,
+  "port": 3000
 }

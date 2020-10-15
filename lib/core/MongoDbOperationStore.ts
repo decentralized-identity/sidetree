@@ -1,7 +1,7 @@
+import { Binary, Collection, Long, MongoClient } from 'mongodb';
 import AnchoredOperationModel from './models/AnchoredOperationModel';
 import IOperationStore from './interfaces/IOperationStore';
 import OperationType from './enums/OperationType';
-import { Binary, Collection, Long, MongoClient } from 'mongodb';
 
 /**
  * Sidetree operation stored in MongoDb.

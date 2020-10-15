@@ -1,6 +1,6 @@
-import nodeFetch from 'node-fetch';
 import ReadableStream from '../common/ReadableStream';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
+import nodeFetch from 'node-fetch';
 
 /**
  * Encapsulates the functionality of getting the version information from the dependent services.

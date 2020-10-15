@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
 import ChunkFile from '../../lib/core/versions/latest/ChunkFile';
+import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import Jwk from '../../lib/core/versions/latest/util/Jwk';
-import Compressor from '../../lib/core/versions/latest/util/Compressor';
 import OperationGenerator from '../generators/OperationGenerator';
 
 describe('ChunkFile', async () => {

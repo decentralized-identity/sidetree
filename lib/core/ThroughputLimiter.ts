@@ -15,7 +15,7 @@ export default class ThroughputLimiter {
    * @param transactions array of transactions to filter for
    */
   public async getQualifiedTransactions (transactions: TransactionModel[]) {
-    let currentTransactionTime: number | undefined = undefined;
+    let currentTransactionTime: number | undefined;
     const transactionsGroupedByTransactionTime: TransactionModel[][] = [];
 
     for (const transaction of transactions) {
