@@ -20,7 +20,7 @@ did:sidetree:EiDahaOGH-liLLdDtTxEAdc8i-cfCz-WUcQdRJheMVNn3A
 
 In many DID Methods, there is a period of time (which may be indefinite) 
 between the generation of a DID and the DID operation being anchored, 
-propagagted, and processed in the underlying distributed ledger/storage 
+propagated, and processed in the underlying distributed ledger/storage 
 network. In order to account for this, Sidetree introduces an equivalent 
 variant of Sidetree-based DIDs that is _self-certifying_ and _self-resolving_, 
 known as the [_Long-Form DID URI_](#long-form-did){id="long-form-did"}. 

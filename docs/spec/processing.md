@@ -45,7 +45,7 @@ Regardless of the ledger system an implementer chooses, the implementer ****MUST
 
 ### Anchor File Processing
 
-The follow sequence of rules and processing steps ****must**** be followed to correctly process an [Anchor File](#anchor-file):
+This sequence of rules and processing steps ****must**** be followed to correctly process an [Anchor File](#anchor-file):
 
 1. The [Anchor File](#anchor-file) ****MUST NOT**** exceed the [`MAX_ANCHOR_FILE_SIZE`](#max-anchor-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Anchor File](#anchor-file) ****MUST**** validate against the protocol-defined [Anchor File](#anchor-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
@@ -71,7 +71,7 @@ Confirm how we handle ops where there was not a previous op found.
 
 ### Map File Processing
 
-The follow sequence of rules and processing steps ****must**** be followed to correctly process a Map File:
+This sequence of rules and processing steps ****must**** be followed to correctly process a Map File:
 
 1. The [Map File](#map-file) ****MUST NOT**** exceed the [`MAX_MAP_FILE_SIZE`](#max-map-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Map File](#map-file) ****MUST**** validate against the protocol-defined [Map File](#map-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
@@ -84,7 +84,7 @@ The follow sequence of rules and processing steps ****must**** be followed to co
 
 ### Core Proof File Processing
 
-The follow sequence of rules and processing steps ****must**** be followed to correctly process an [Core Proof File](#core-proof-file):
+This sequence of rules and processing steps ****must**** be followed to correctly process an [Core Proof File](#core-proof-file):
 
 1. The [Core Proof File](#core-proof-file) ****MUST NOT**** exceed the [`MAX_PROOF_FILE_SIZE`](#max-proof-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Core Proof File](#core-proof-file) ****MUST**** validate against the protocol-defined [Core Proof File](#core-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
@@ -95,7 +95,7 @@ The follow sequence of rules and processing steps ****must**** be followed to co
 
 ### Provisional Proof File Processing
 
-The follow sequence of rules and processing steps ****must**** be followed to correctly process an [Provisional Proof File](#provisional-proof-file):
+This sequence of rules and processing steps ****must**** be followed to correctly process an [Provisional Proof File](#provisional-proof-file):
 
 1. The [_Provisional Proof File_](#provisional-proof-file) ****MUST NOT**** exceed the [`MAX_PROOF_FILE_SIZE`](#max-proof-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [_Provisional Proof File_](#provisional-proof-file) ****MUST**** validate against the protocol-defined [_Provisional Proof File_](#provisional-proof-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
@@ -106,7 +106,7 @@ The follow sequence of rules and processing steps ****must**** be followed to co
 
 ### Chunk File Processing
 
-The follow sequence of rules and processing steps ****must**** be followed to correctly process a Chunk File chunk:
+This sequence of rules and processing steps ****must**** be followed to correctly process a Chunk File chunk:
 
 1. The [Chunk File](#chunk-file) chunk ****MUST NOT**** exceed the [`MAX_CHUNK_FILE_SIZE`](#max-chunk-file-size) - if it does, cease processing, discard the file data, and retain a reference that the file is to be ignored.
 2. The [Chunk File](#chunk-file) ****MUST**** validate against the protocol-defined [Chunk File](#chunk-file) schema and construction rules - if it DOES NOT, cease processing, discard the file data, and retain a reference that the file is to be ignored.
