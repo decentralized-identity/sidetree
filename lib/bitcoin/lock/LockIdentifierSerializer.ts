@@ -1,7 +1,7 @@
-import base64url from 'base64url';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import SidetreeError from '../../common/SidetreeError';
+import base64url from 'base64url';
 
 /**
  * Encapsulates functionality to serialize and deserialize a lock identifier.

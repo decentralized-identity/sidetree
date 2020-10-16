@@ -69,7 +69,7 @@ export default class SpendingMonitor {
     const allTxnsSinceStartingBlock =
       await this.transactionStore.getTransactionsLaterThan(startingBlockFirstTxnNumber - 1, undefined);
 
-    // tslint:disable-next-line: max-line-length
+    // eslint-disable-next-line max-len
     console.info(`SpendingMonitor: total number of transactions from the transaction store starting from block: ${startingBlockHeight} are: ${allTxnsSinceStartingBlock.length}`);
 
     // Since the transactions from the store include transactions written by ALL the nodes in the network,
@@ -84,7 +84,7 @@ export default class SpendingMonitor {
     const totalFeePlusCurrentFee = totalFeeForRelatedTxns + currentFeeInSatoshis;
 
     if (totalFeePlusCurrentFee > this.bitcoinFeeSpendingCutoffInSatoshis) {
-      // tslint:disable-next-line: max-line-length
+      // eslint-disable-next-line max-len
       console.error(`Current fee (in satoshis): ${currentFeeInSatoshis} + total fees (${totalFeeForRelatedTxns}) since block number: ${startingBlockHeight} is greater than the spending cap: ${this.bitcoinFeeSpendingCutoffInSatoshis}`);
       return false;
     }

@@ -1,7 +1,9 @@
+import { Address, Networks, PrivateKey, Script, crypto } from 'bitcore-lib';
 import BitcoinClient from '../../../lib/bitcoin/BitcoinClient';
 import BitcoinOutputModel from '../../../lib/bitcoin/models/BitcoinOutputModel';
 import BitcoinTransactionModel from '../../../lib/bitcoin/models/BitcoinTransactionModel';
 import ErrorCode from '../../../lib/bitcoin/ErrorCode';
+import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 import JasmineSidetreeErrorValidator from '../../JasmineSidetreeErrorValidator';
 import LockIdentifierModel from '../../../lib/bitcoin/models/LockIdentifierModel';
 import LockIdentifierSerializer from '../../../lib/bitcoin/lock/LockIdentifierSerializer';
@@ -9,8 +11,6 @@ import LockResolver from '../../../lib/bitcoin/lock/LockResolver';
 import ValueTimeLockModel from '../../../lib/common/models/ValueTimeLockModel';
 import VersionManager from '../../../lib/bitcoin/VersionManager';
 import VersionModel from '../../../lib/common/models/VersionModel';
-import { Address, Networks, PrivateKey, Script, crypto } from 'bitcore-lib';
-import { IBlockInfo } from '../../../lib/bitcoin/BitcoinProcessor';
 
 function createValidLockRedeemScript (lockDurationInBlocks: number, targetWalletAddress: Address): Script {
   const lockDurationInBlocksBuffer = Buffer.alloc(3);

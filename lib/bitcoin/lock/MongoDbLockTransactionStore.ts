@@ -1,5 +1,5 @@
-import SavedLockModel from './../models/SavedLockedModel';
 import { Collection, Db, Long, MongoClient } from 'mongodb';
+import SavedLockModel from './../models/SavedLockedModel';
 
 /**
  * Encapsulates functionality to store the bitcoin lock information to Db.
@@ -39,7 +39,7 @@ export default class MongoDbLockTransactionStore {
    */
   public async addLock (bitcoinLock: SavedLockModel): Promise<void> {
     const lockInMongoDb = {
-      desiredLockAmountInSatoshis : bitcoinLock.desiredLockAmountInSatoshis,
+      desiredLockAmountInSatoshis: bitcoinLock.desiredLockAmountInSatoshis,
       transactionId: bitcoinLock.transactionId,
       rawTransaction: bitcoinLock.rawTransaction,
       redeemScriptAsHex: bitcoinLock.redeemScriptAsHex,

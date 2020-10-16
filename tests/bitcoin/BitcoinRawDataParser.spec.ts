@@ -1,7 +1,7 @@
+import * as fs from 'fs';
 import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import SidetreeError from '../../lib/common/SidetreeError';
-import * as fs from 'fs';
 
 describe('BitcoinRawDataParser', () => {
   describe('parseRawDataFile', () => {

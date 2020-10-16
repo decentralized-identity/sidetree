@@ -11,17 +11,17 @@ export default interface IBitcoinConfig {
   bitcoinRpcUsername: string | undefined;
   bitcoinRpcPassword: string | undefined;
   bitcoinWalletOrImportString: IBitcoinWallet | string;
-  defaultTransactionFeeInSatoshisPerKB: number | undefined;
-  lowBalanceNoticeInDays: number | undefined;
-  sidetreeTransactionPrefix: string;
-  genesisBlockNumber: number;
-  mongoDbConnectionString: string;
   databaseName: string;
+  defaultTransactionFeeInSatoshisPerKB: number | undefined;
+  genesisBlockNumber: number;
+  lowBalanceNoticeInDays: number | undefined;
+  mongoDbConnectionString: string;
   requestTimeoutInMilliseconds: number | undefined;
   requestMaxRetries: number | undefined;
-  transactionPollPeriodInSeconds: number | undefined;
   sidetreeTransactionFeeMarkupPercentage: number;
+  sidetreeTransactionPrefix: string;
+  transactionPollPeriodInSeconds: number | undefined;
   valueTimeLockAmountInBitcoins: number;
-  valueTimeLockPollPeriodInSeconds: number | undefined;
+  valueTimeLockPollPeriodInSeconds: number;
   valueTimeLockTransactionFeesAmountInBitcoins: number | undefined;
 }
