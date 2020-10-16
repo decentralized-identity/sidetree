@@ -1,3 +1,4 @@
+import Config from '../../lib/core/models/Config';
 import Core from '../../lib/core/Core';
 import IRequestHandler from '../../lib/core/interfaces/IRequestHandler';
 import MockCas from '../mocks/MockCas';
@@ -7,7 +8,7 @@ import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
 
 describe('Core', async () => {
 
-  const testConfig = require('../json/bitcoin-config-test.json');
+  const testConfig = require('../json/config-test.json');
   const testVersionConfig = require('../json/core-protocol-versioning-test.json');
 
   const mockCas = new MockCas();
@@ -60,7 +61,28 @@ describe('Core', async () => {
       expect(batchSchedulerStartSpy).toHaveBeenCalled();
       expect(blockchainStartSpy).toHaveBeenCalled();
       expect(downloadManagerStartSpy).toHaveBeenCalled();
+    });
 
+    it('should not start the Batch Writer and Observer if they are disabled.', async () => {
+      // Disable Batch Writer and observer in config.
+      const config = Object.assign({}, testConfig) as Config;
+      config.batchingIntervalInSeconds = 0;
+      config.observingIntervalInSeconds = 0;
+
+      const core = new Core(config, testVersionConfig, mockCas);
+      const observerStartSpy = spyOn(core['observer'], 'startPeriodicProcessing');
+      const batchSchedulerStartSpy = spyOn(core['batchScheduler'], 'startPeriodicBatchWriting');
+      spyOn(core['transactionStore'], 'initialize');
+      spyOn(core['unresolvableTransactionStore'], 'initialize');
+      spyOn(core['operationStore'], 'initialize');
+      spyOn(core['blockchain'], 'initialize');
+      spyOn(core['versionManager'], 'initialize');
+      spyOn(core['blockchain'], 'startPeriodicCachedBlockchainTimeRefresh');
+      spyOn(core['downloadManager'], 'start');
+
+      await core.initialize();
+      expect(observerStartSpy).not.toHaveBeenCalled();
+      expect(batchSchedulerStartSpy).not.toHaveBeenCalled();
     });
   });
 

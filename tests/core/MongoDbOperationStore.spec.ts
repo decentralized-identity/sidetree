@@ -34,7 +34,7 @@ async function createOperationChain (
   let currentPublicKey = signingKey;
   let currentPrivateKey = signingPrivateKey;
   for (let i = 1; i < chainLength; i++) {
-    const transactionNumberToUse = transactionNumber ? transactionNumber : i;
+    const transactionNumberToUse = transactionNumber || i;
     const transactionTimeToUse = transactionNumberToUse;
 
     const [newPublicKey, newPrivateKey] = await OperationGenerator.generateKeyPair(`key${i}`);

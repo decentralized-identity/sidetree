@@ -3,6 +3,7 @@ import Blockchain from './Blockchain';
 import Config from './models/Config';
 import DownloadManager from './DownloadManager';
 import ICas from './interfaces/ICas';
+import LogColor from '../common/LogColor';
 import MongoDbOperationStore from './MongoDbOperationStore';
 import MongoDbTransactionStore from '../common/MongoDbTransactionStore';
 import MongoDbUnresolvableTransactionStore from './MongoDbUnresolvableTransactionStore';
@@ -32,16 +33,18 @@ export default class Core {
   /**
    * Core constructor.
    */
-  public constructor (config: Config, versionModels: VersionModel[], private cas: ICas) {
+  public constructor (private config: Config, versionModels: VersionModel[], private cas: ICas) {
     // Component dependency construction & injection.
-    this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component.
+    this.versionManager = new VersionManager(config, versionModels); // `VersionManager` is first constructed component as multiple components depend on it.
+    this.serviceInfo = new ServiceInfo('core');
     this.operationStore = new MongoDbOperationStore(config.mongoDbConnectionString, config.databaseName);
     this.blockchain = new Blockchain(config.blockchainServiceUri);
     this.downloadManager = new DownloadManager(config.maxConcurrentDownloads, this.cas);
     this.resolver = new Resolver(this.versionManager, this.operationStore);
-    this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
     this.transactionStore = new MongoDbTransactionStore(config.mongoDbConnectionString, config.databaseName);
     this.unresolvableTransactionStore = new MongoDbUnresolvableTransactionStore(config.mongoDbConnectionString, config.databaseName);
+
+    this.batchScheduler = new BatchScheduler(this.versionManager, this.blockchain, config.batchingIntervalInSeconds);
     this.observer = new Observer(
       this.versionManager,
       this.blockchain,
@@ -51,8 +54,6 @@ export default class Core {
       this.unresolvableTransactionStore,
       config.observingIntervalInSeconds
     );
-
-    this.serviceInfo = new ServiceInfo('core');
   }
 
   /**
@@ -71,11 +72,20 @@ export default class Core {
       this.operationStore,
       this.resolver,
       this.transactionStore
-    ); // `VersionManager` is last initialized component.
+    ); // `VersionManager` is last initialized component as it needs many shared/common components to be ready first.
 
-    await this.observer.startPeriodicProcessing();
+    if (this.config.observingIntervalInSeconds > 0) {
+      await this.observer.startPeriodicProcessing();
+    } else {
+      console.warn(LogColor.yellow(`Transaction observer is disabled.`));
+    }
 
-    this.batchScheduler.startPeriodicBatchWriting();
+    if (this.config.batchingIntervalInSeconds > 0) {
+      this.batchScheduler.startPeriodicBatchWriting();
+    } else {
+      console.warn(LogColor.yellow(`Batch writing is disabled.`));
+    }
+
     this.blockchain.startPeriodicCachedBlockchainTimeRefresh();
     this.downloadManager.start();
   }
@@ -114,8 +124,8 @@ export default class Core {
     ];
 
     return {
-      status :  ResponseStatus.Succeeded,
-      body : JSON.stringify(responses)
+      status: ResponseStatus.Succeeded,
+      body: JSON.stringify(responses)
     };
   }
 }

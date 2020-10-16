@@ -1,6 +1,6 @@
+import * as timeSpan from 'time-span';
 import IBlockchain from './interfaces/IBlockchain';
 import IVersionManager from './interfaces/IVersionManager';
-import timeSpan = require('time-span');
 
 /**
  * Class that performs periodic writing of batches of Sidetree operations to CAS and blockchain.

@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
+
 import CreateOperation from '../../lib/core/versions/latest/CreateOperation';
 import Encoder from '../../lib/core/versions/latest/Encoder';
 import ErrorCode from '../../lib/core/versions/latest/ErrorCode';
@@ -6,9 +9,6 @@ import Multihash from '../../lib/core/versions/latest/Multihash';
 import OperationGenerator from '../generators/OperationGenerator';
 import OperationType from '../../lib/core/enums/OperationType';
 import SidetreeError from '../../lib/common/SidetreeError';
-
-import * as fs from 'fs';
-import * as suffixData from '../fixtures/uniqueSuffix/suffixData.json';
 
 describe('CreateOperation', async () => {
   describe('parseJcsObject', () => {

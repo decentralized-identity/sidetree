@@ -1,13 +1,16 @@
 // NOTE: Aliases to classes and interfaces are used for external consumption.
 
-// Core service exports.
+import ISidetreeBitcoinConfig from './bitcoin/IBitcoinConfig';
+import ISidetreeBitcoinWallet from './bitcoin/interfaces/IBitcoinWallet';
 import ISidetreeCas from './core/interfaces/ICas';
-import SidetreeCore from './core/Core';
+import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
 import SidetreeConfig from './core/models/Config';
+import SidetreeCore from './core/Core';
 import SidetreeResponse from './common/Response';
 import SidetreeResponseModel from './common/models/ResponseModel';
 import SidetreeVersionModel from './common/models/VersionModel';
 
+// Core service exports.
 export {
   ISidetreeCas,
   SidetreeConfig,
@@ -18,10 +21,6 @@ export {
 };
 
 // Blockchain service exports.
-import SidetreeBitcoinProcessor from './bitcoin/BitcoinProcessor';
-import ISidetreeBitcoinConfig from './bitcoin/IBitcoinConfig';
-import ISidetreeBitcoinWallet from './bitcoin/interfaces/IBitcoinWallet';
-
 export {
   ISidetreeBitcoinConfig,
   ISidetreeBitcoinWallet,

@@ -1,6 +1,6 @@
+import { Collection, Db, Long, MongoClient } from 'mongodb';
 import IUnresolvableTransactionStore from './interfaces/IUnresolvableTransactionStore';
 import TransactionModel from '../common/models/TransactionModel';
-import { Collection, Db, Long, MongoClient } from 'mongodb';
 
 interface IUnresolvableTransaction extends TransactionModel {
   firstFetchTime: number;

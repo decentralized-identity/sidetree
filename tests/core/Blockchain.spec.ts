@@ -4,8 +4,8 @@ import ErrorCode from '../../lib/bitcoin/ErrorCode';
 import JasmineSidetreeErrorValidator from '../JasmineSidetreeErrorValidator';
 import ReadableStream from '../../lib/common/ReadableStream';
 import ServiceVersionModel from '../../lib/common/models/ServiceVersionModel';
-import SidetreeError from '../../lib/common/SidetreeError';
 import SharedErrorCode from '../../lib/common/SharedErrorCode';
+import SidetreeError from '../../lib/common/SidetreeError';
 import TransactionModel from '../../lib/common/models/TransactionModel';
 import ValueTimeLockModel from '../../lib/common/models/ValueTimeLockModel';
 
