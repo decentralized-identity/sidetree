@@ -119,7 +119,7 @@ export default class BitcoinClient {
    * @param bitcoinLockTransaction The transaction object.
    */
   public async broadcastLockTransaction (bitcoinLockTransaction: BitcoinLockTransactionModel): Promise<string> {
-    const transactionHash = this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
+    const transactionHash = await this.broadcastTransactionRpc(bitcoinLockTransaction.serializedTransactionObject);
     console.info(`Broadcasted lock transaction: ${transactionHash}`);
 
     return transactionHash;

@@ -1525,7 +1525,7 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('getActiveValueTimeLockForThisNode', () => {
-    it('should return the value-time-lock from the lockmonitor', () => {
+    it('should return the value-time-lock from the lock monitor', async () => {
       const mockValueTimeLock: ValueTimeLockModel = {
         amountLocked: 1000,
         identifier: 'lock identifier',
@@ -1535,17 +1535,17 @@ describe('BitcoinProcessor', () => {
         lockTransactionTime: 1220
       };
 
-      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.returnValue(mockValueTimeLock);
+      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.returnValue(Promise.resolve(mockValueTimeLock));
 
-      const actual = bitcoinProcessor.getActiveValueTimeLockForThisNode();
+      const actual = await bitcoinProcessor.getActiveValueTimeLockForThisNode();
       expect(actual).toEqual(mockValueTimeLock);
     });
 
-    it('should throw not-found error if the lock monitor returns undefined.', () => {
-      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.returnValue(undefined);
+    it('should throw not-found error if the lock monitor returns undefined.', async () => {
+      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
       try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        await bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
         const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
@@ -1553,13 +1553,13 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should throw pending-state exception if the lock monitor throws pending-state error', () => {
+    it('should throw pending-state exception if the lock monitor throws pending-state error', async () => {
       spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.callFake(() => {
         throw new SidetreeError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
       });
 
       try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        await bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
         const expectedError = new RequestError(ResponseStatus.NotFound, ErrorCode.ValueTimeLockInPendingState);
@@ -1567,11 +1567,11 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should bubble up any other errors.', () => {
+    it('should bubble up any other errors.', async () => {
       spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.throwError('no lock found.');
 
       try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        await bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
         const expectedError = new RequestError(ResponseStatus.ServerError);

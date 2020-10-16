@@ -1,3 +1,4 @@
+import * as timeSpan from 'time-span';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
 import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
@@ -28,8 +29,6 @@ import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
 import VersionModel from '../common/models/VersionModel';
-
-import timeSpan = require('time-span');
 
 /**
  * Object representing a blockchain time and hash
@@ -565,11 +564,11 @@ export default class BitcoinProcessor {
   /**
    * Gets the lock information which is currently held by this node. It throws an RequestError if none exist.
    */
-  public getActiveValueTimeLockForThisNode (): ValueTimeLockModel {
+  public async getActiveValueTimeLockForThisNode (): Promise<ValueTimeLockModel> {
     let currentLock: ValueTimeLockModel | undefined;
 
     try {
-      currentLock = this.lockMonitor.getCurrentValueTimeLock();
+      currentLock = await this.lockMonitor.getCurrentValueTimeLock();
     } catch (e) {
 
       if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {

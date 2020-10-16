@@ -34,8 +34,6 @@ interface LockState {
 export default class LockMonitor {
   private periodicPollTimeoutId: NodeJS.Timeout | undefined;
 
-  private currentLockState: LockState;
-
   /**
    * Constructor for LockMonitor.
    * @param valueTimeLockUpdateEnabled When this parameter is set to `false`, parameters `lockPeriodInBlocks`,
@@ -58,12 +56,6 @@ export default class LockMonitor {
     if (!Number.isInteger(transactionFeesAmountInSatoshis)) {
       throw new SidetreeError(ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber, `${transactionFeesAmountInSatoshis}`);
     }
-
-    this.currentLockState = {
-      activeValueTimeLock: undefined,
-      latestSavedLockInfo: undefined,
-      status: LockStatus.None
-    };
   }
 
   /**
@@ -77,10 +69,8 @@ export default class LockMonitor {
    * Gets the current lock information if exist; undefined otherwise. Throws an error
    * if the lock information is not confirmed on the blockchain.
    */
-  public getCurrentValueTimeLock (): ValueTimeLockModel | undefined {
-
-    // Make a copy of the state so in case it gets changed between now and the function return
-    const currentLockState = Object.assign({}, this.currentLockState);
+  public async getCurrentValueTimeLock (): Promise<ValueTimeLockModel | undefined> {
+    const currentLockState = await this.getCurrentLockState();
 
     // If there's no lock then return undefined
     if (currentLockState.status === LockStatus.None) {
@@ -117,7 +107,7 @@ export default class LockMonitor {
   }
 
   private async handlePeriodicPolling (): Promise<void> {
-    this.currentLockState = await this.getCurrentLockState();
+    const currentLockState = await this.getCurrentLockState();
     console.info(`Refreshed the in-memory value time lock state.`);
 
     // If lock update is disabled, then no further action needs to be taken.
@@ -126,14 +116,15 @@ export default class LockMonitor {
       return;
     }
 
-    // If the current lock is in pending state then we cannot do anything and need to just return.
-    if (this.currentLockState.status === LockStatus.Pending) {
-      console.info(`The current lock status is in pending state; going to skip rest of the routine.`);
+    // If the current lock is in pending state then we cannot do anything other than rebroadcast the transaction again.
+    if (currentLockState.status === LockStatus.Pending) {
+      console.info(`The current lock status is in pending state, rebroadcast the transaction again in case the transaction is lost in the previous broadcast.`);
+      await this.rebroadcastTransaction(currentLockState.latestSavedLockInfo!);
       return;
     }
 
     // Now that we are not pending, check what do we have to do about the lock next.
-    const validCurrentLockExist = this.currentLockState.status === LockStatus.Confirmed;
+    const validCurrentLockExist = currentLockState.status === LockStatus.Confirmed;
     const lockRequired = this.desiredLockAmountInSatoshis > 0;
 
     if (lockRequired && !validCurrentLockExist) {
@@ -143,8 +134,8 @@ export default class LockMonitor {
     if (lockRequired && validCurrentLockExist) {
       // The routine will true only if there were any changes made to the lock
       await this.handleExistingLockRenewal(
-        this.currentLockState.activeValueTimeLock!,
-        this.currentLockState.latestSavedLockInfo!,
+        currentLockState.activeValueTimeLock!,
+        currentLockState.latestSavedLockInfo!,
         this.desiredLockAmountInSatoshis
       );
     }
@@ -153,7 +144,7 @@ export default class LockMonitor {
       console.info(LogColor.lightBlue(`Value time lock no longer needed.`));
 
       await this.handleReleaseExistingLock(
-        this.currentLockState.activeValueTimeLock!,
+        currentLockState.activeValueTimeLock!,
         this.desiredLockAmountInSatoshis
       );
     }
@@ -178,9 +169,6 @@ export default class LockMonitor {
     // if it is not as we don't want to do anything until last lock information is at least
     // broadcasted.
     if (!(await this.isTransactionBroadcasted(lastSavedLock.transactionId))) {
-
-      await this.rebroadcastTransaction(lastSavedLock);
-
       return {
         activeValueTimeLock: undefined,
         latestSavedLockInfo: lastSavedLock,
