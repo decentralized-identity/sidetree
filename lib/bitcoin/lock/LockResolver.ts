@@ -1,13 +1,13 @@
 import BitcoinClient from '../BitcoinClient';
-import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import BitcoinOutputModel from '../models/BitcoinOutputModel';
+import BitcoinTransactionModel from '../models/BitcoinTransactionModel';
 import ErrorCode from '../ErrorCode';
 import LockIdentifierModel from '../models/LockIdentifierModel';
 import LockIdentifierSerializer from './LockIdentifierSerializer';
+import { Script } from 'bitcore-lib';
 import SidetreeError from '../../common/SidetreeError';
 import ValueTimeLockModel from '../../common/models/ValueTimeLockModel';
 import VersionManager from '../VersionManager';
-import { Script } from 'bitcore-lib';
 
 /** Structure (internal for this class) to hold the redeem script verification results */
 interface LockScriptVerifyResult {
@@ -88,9 +88,11 @@ export default class LockResolver {
     const unlockAtBlock = lockStartBlock + scriptVerifyResult.lockDurationInBlocks!;
 
     if (!this.isLockDurationValid(lockStartBlock, unlockAtBlock)) {
-      throw new SidetreeError(ErrorCode.LockResolverDurationIsInvalid,
-                              // tslint:disable-next-line: max-line-length
-                              `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Allowed range: [${this.minimumLockDurationInBlocks} - ${this.maximumLockDurationInBlocks}.]`);
+      throw new SidetreeError(
+        ErrorCode.LockResolverDurationIsInvalid,
+        // eslint-disable-next-line max-len
+        `Lock start block: ${lockStartBlock}. Unlock block: ${unlockAtBlock}. Allowed range: [${this.minimumLockDurationInBlocks} - ${this.maximumLockDurationInBlocks}.]`
+      );
     }
 
     const normalizedFee = this.versionManager.getFeeCalculator(lockStartBlock).getNormalizedFee(lockStartBlock);

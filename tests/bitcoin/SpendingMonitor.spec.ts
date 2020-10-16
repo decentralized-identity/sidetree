@@ -22,7 +22,7 @@ describe('SpendingMonitor', () => {
   describe('constructor', () => {
     it('should throw if the cutoff period is not in the correct range.', async (done) => {
       try {
-        // tslint:disable-next-line: no-unused-expression
+        // eslint-disable-next-line no-new
         new SpendingMonitor(0, bitcoinFeeSpendingCutoffInSatoshis, new MockTransactionStore());
         fail('Expected exception not thrown');
       } catch (e) {
@@ -33,7 +33,7 @@ describe('SpendingMonitor', () => {
 
     it('should throw if the cutoff amount is not in the correct range.', async (done) => {
       try {
-        // tslint:disable-next-line: no-unused-expression
+        // eslint-disable-next-line no-new
         new SpendingMonitor(1, 0, new MockTransactionStore());
         fail('Expected exception not thrown');
       } catch (e) {

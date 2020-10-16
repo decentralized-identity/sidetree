@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as httpStatus from 'http-status';
+import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinBlockModel from '../../lib/bitcoin/models/BitcoinBlockModel';
 import BitcoinClient from '../../lib/bitcoin/BitcoinClient';
 import BitcoinDataGenerator from './BitcoinDataGenerator';
-import BitcoinProcessor, { IBlockInfo } from '../../lib/bitcoin/BitcoinProcessor';
 import BitcoinRawDataParser from '../../lib/bitcoin/BitcoinRawDataParser';
 import BitcoinTransactionModel from '../../lib/bitcoin/models/BitcoinTransactionModel';
 import BlockMetadata from '../../lib/bitcoin/models/BlockMetadata';
@@ -58,6 +58,7 @@ describe('BitcoinProcessor', () => {
     sidetreeTransactionPrefix: 'sidetree:',
     sidetreeTransactionFeeMarkupPercentage: 0,
     transactionPollPeriodInSeconds: 60,
+    valueTimeLockUpdateEnabled: true,
     valueTimeLockPollPeriodInSeconds: 60,
     valueTimeLockAmountInBitcoins: 1,
     valueTimeLockTransactionFeesAmountInBitcoins: undefined
@@ -90,7 +91,7 @@ describe('BitcoinProcessor', () => {
     transactionStoreInitializeSpy = spyOn(bitcoinProcessor['transactionStore'], 'initialize');
     bitcoinClientInitializeSpy = spyOn(bitcoinProcessor['bitcoinClient'], 'initialize');
     mongoLockTxnStoreSpy = spyOn(bitcoinProcessor['mongoDbLockTransactionStore'], 'initialize');
-    lockMonitorSpy = spyOn(bitcoinProcessor['lockMonitor'], 'initialize');
+    lockMonitorSpy = spyOn(bitcoinProcessor['lockMonitor']!, 'startPeriodicProcessing');
 
     blockMetadataStoreAddSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'add');
     blockMetadataStoreGetLastSpy = spyOn(bitcoinProcessor['blockMetadataStore'], 'getLast');
@@ -154,6 +155,7 @@ describe('BitcoinProcessor', () => {
         requestMaxRetries: undefined,
         transactionPollPeriodInSeconds: undefined,
         sidetreeTransactionFeeMarkupPercentage: 0,
+        valueTimeLockUpdateEnabled: true,
         valueTimeLockPollPeriodInSeconds: 60,
         valueTimeLockAmountInBitcoins: 1,
         valueTimeLockTransactionFeesAmountInBitcoins: undefined
@@ -863,9 +865,9 @@ describe('BitcoinProcessor', () => {
     it('should process as intended', async () => {
       const processSidetreeTransactionsInBlockSpy = spyOn(bitcoinProcessor, 'processSidetreeTransactionsInBlock' as any);
       const blockData: any[] = [
-        { hash: 'abc', height: 2, previousHash: 'def', transactions: [ { outputs: [{ satoshis: 100 }, { satoshis: 5000000000 }, { satoshis: 50 }] }] },
-        { hash: 'def', height: 1, previousHash: 'out of range', transactions: [ { outputs: [{ satoshis: 5000000000 }] }] },
-        { hash: 'ghi', height: 4, previousHash: 'out of range', transactions: [ { outputs: [{ satoshis: 5000000000 }] }] }
+        { hash: 'abc', height: 2, previousHash: 'def', transactions: [{ outputs: [{ satoshis: 100 }, { satoshis: 5000000000 }, { satoshis: 50 }] }] },
+        { hash: 'def', height: 1, previousHash: 'out of range', transactions: [{ outputs: [{ satoshis: 5000000000 }] }] },
+        { hash: 'ghi', height: 4, previousHash: 'out of range', transactions: [{ outputs: [{ satoshis: 5000000000 }] }] }
       ];
       const notYetValidatedBlocks: Map<string, any> = new Map();
       const startingHeight = 2;
@@ -1291,7 +1293,7 @@ describe('BitcoinProcessor', () => {
       let getSidetreeTxnCallIndex = 0;
       spyOn(bitcoinProcessor as any, 'getSidetreeTransactionModelIfExist').and.callFake(() => {
 
-        let retValue: TransactionModel | undefined = undefined;
+        let retValue: TransactionModel | undefined;
 
         if (getSidetreeTxnCallIndex < mockSidetreeTxnModels.length) {
           retValue = mockSidetreeTxnModels[getSidetreeTxnCallIndex];
@@ -1523,7 +1525,7 @@ describe('BitcoinProcessor', () => {
   });
 
   describe('getActiveValueTimeLockForThisNode', () => {
-    it('should return the value-time-lock from the lockmonitor', () => {
+    it('should return the value-time-lock from the lock monitor', async () => {
       const mockValueTimeLock: ValueTimeLockModel = {
         amountLocked: 1000,
         identifier: 'lock identifier',
@@ -1533,17 +1535,17 @@ describe('BitcoinProcessor', () => {
         lockTransactionTime: 1220
       };
 
-      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.returnValue(mockValueTimeLock);
+      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.returnValue(Promise.resolve(mockValueTimeLock));
 
-      const actual = bitcoinProcessor.getActiveValueTimeLockForThisNode();
+      const actual = await bitcoinProcessor.getActiveValueTimeLockForThisNode();
       expect(actual).toEqual(mockValueTimeLock);
     });
 
-    it('should throw not-found error if the lock monitor returns undefined.', () => {
-      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.returnValue(undefined);
+    it('should throw not-found error if the lock monitor returns undefined.', async () => {
+      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.returnValue(Promise.resolve(undefined));
 
       try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        await bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
         const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
@@ -1551,13 +1553,13 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should throw pending-state exception if the lock monitor throws pending-state error', () => {
-      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.callFake(() => {
+    it('should throw pending-state exception if the lock monitor throws pending-state error', async () => {
+      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.callFake(() => {
         throw new SidetreeError(ErrorCode.LockMonitorCurrentValueTimeLockInPendingState);
       });
 
       try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        await bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
         const expectedError = new RequestError(ResponseStatus.NotFound, ErrorCode.ValueTimeLockInPendingState);
@@ -1565,11 +1567,11 @@ describe('BitcoinProcessor', () => {
       }
     });
 
-    it('should bubble up any other errors.', () => {
-      spyOn(bitcoinProcessor['lockMonitor'], 'getCurrentValueTimeLock').and.throwError('no lock found.');
+    it('should bubble up any other errors.', async () => {
+      spyOn(bitcoinProcessor['lockMonitor']!, 'getCurrentValueTimeLock').and.throwError('no lock found.');
 
       try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
+        await bitcoinProcessor.getActiveValueTimeLockForThisNode();
         fail('Expected exception is not thrown');
       } catch (e) {
         const expectedError = new RequestError(ResponseStatus.ServerError);

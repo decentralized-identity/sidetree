@@ -1,5 +1,6 @@
-import BitcoinBlockModel from './models/BitcoinBlockModel';
+import * as timeSpan from 'time-span';
 import BitcoinBlockDataIterator from './BitcoinBlockDataIterator';
+import BitcoinBlockModel from './models/BitcoinBlockModel';
 import BitcoinClient from './BitcoinClient';
 import BitcoinServiceStateModel from './models/BitcoinServiceStateModel';
 import BitcoinTransactionModel from './models/BitcoinTransactionModel';
@@ -18,8 +19,8 @@ import RequestError from './RequestError';
 import ResponseStatus from '../common/enums/ResponseStatus';
 import ServiceInfoProvider from '../common/ServiceInfoProvider';
 import ServiceVersionModel from '../common/models/ServiceVersionModel';
-import SidetreeError from '../common/SidetreeError';
 import SharedErrorCode from '../common/SharedErrorCode';
+import SidetreeError from '../common/SidetreeError';
 import SidetreeTransactionParser from './SidetreeTransactionParser';
 import SpendingMonitor from './SpendingMonitor';
 import TransactionFeeModel from '../common/models/TransactionFeeModel';
@@ -28,8 +29,6 @@ import TransactionNumber from './TransactionNumber';
 import ValueTimeLockModel from '../common/models/ValueTimeLockModel';
 import VersionManager from './VersionManager';
 import VersionModel from '../common/models/VersionModel';
-
-import timeSpan = require('time-span');
 
 /**
  * Object representing a blockchain time and hash
@@ -148,15 +147,16 @@ export default class BitcoinProcessor {
     const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
       : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
 
-    this.lockMonitor =
-      new LockMonitor(
-        this.bitcoinClient,
-        this.mongoDbLockTransactionStore,
-        this.lockResolver,
-        config.valueTimeLockPollPeriodInSeconds || 10 * 60,
-        BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
-        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks);                 // Desired lock duration in blocks
+    this.lockMonitor = new LockMonitor(
+      this.bitcoinClient,
+      this.mongoDbLockTransactionStore,
+      this.lockResolver,
+      config.valueTimeLockPollPeriodInSeconds,
+      config.valueTimeLockUpdateEnabled,
+      BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
+      BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
+      ProtocolParameters.maximumValueTimeLockDurationInBlocks                   // Desired lock duration in blocks
+    );
   }
 
   /**
@@ -194,7 +194,8 @@ export default class BitcoinProcessor {
     // NOTE: important to this initialization after we have processed all the blocks
     // this is because that the lock monitor needs the normalized fee calculator to
     // have all the data.
-    await this.lockMonitor.initialize();
+    await this.lockMonitor.startPeriodicProcessing();
+
     void this.periodicPoll();
   }
 
@@ -563,11 +564,11 @@ export default class BitcoinProcessor {
   /**
    * Gets the lock information which is currently held by this node. It throws an RequestError if none exist.
    */
-  public getActiveValueTimeLockForThisNode (): ValueTimeLockModel {
+  public async getActiveValueTimeLockForThisNode (): Promise<ValueTimeLockModel> {
     let currentLock: ValueTimeLockModel | undefined;
 
     try {
-      currentLock = this.lockMonitor.getCurrentValueTimeLock();
+      currentLock = await this.lockMonitor.getCurrentValueTimeLock();
     } catch (e) {
 
       if (e instanceof SidetreeError && e.code === ErrorCode.LockMonitorCurrentValueTimeLockInPendingState) {
