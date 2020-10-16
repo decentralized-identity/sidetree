@@ -58,6 +58,7 @@ describe('BitcoinProcessor', () => {
     sidetreeTransactionPrefix: 'sidetree:',
     sidetreeTransactionFeeMarkupPercentage: 0,
     transactionPollPeriodInSeconds: 60,
+    valueTimeLockUpdateEnabled: true,
     valueTimeLockPollPeriodInSeconds: 60,
     valueTimeLockAmountInBitcoins: 1,
     valueTimeLockTransactionFeesAmountInBitcoins: undefined
@@ -154,6 +155,7 @@ describe('BitcoinProcessor', () => {
         requestMaxRetries: undefined,
         transactionPollPeriodInSeconds: undefined,
         sidetreeTransactionFeeMarkupPercentage: 0,
+        valueTimeLockUpdateEnabled: true,
         valueTimeLockPollPeriodInSeconds: 60,
         valueTimeLockAmountInBitcoins: 1,
         valueTimeLockTransactionFeesAmountInBitcoins: undefined
@@ -266,13 +268,6 @@ describe('BitcoinProcessor', () => {
       await bitcoinProcessor.initialize();
       expect(periodicPollSpy).toHaveBeenCalled();
       done();
-    });
-
-    it('should not try to start value time lock polling if lock monitor is undefined.', async () => {
-      bitcoinProcessor['lockMonitor'] = undefined; // Simulate that lock monitor not being defined.
-      await bitcoinProcessor.initialize();
-
-      // If no error is thrown, it means method to start polling on lock monitor was not invoked.
     });
   });
 
@@ -1544,18 +1539,6 @@ describe('BitcoinProcessor', () => {
 
       const actual = bitcoinProcessor.getActiveValueTimeLockForThisNode();
       expect(actual).toEqual(mockValueTimeLock);
-    });
-
-    it('should throw not-found error if the lock monitor is undefined.', () => {
-      bitcoinProcessor['lockMonitor'] = undefined;
-
-      try {
-        bitcoinProcessor.getActiveValueTimeLockForThisNode();
-        fail('Expected exception is not thrown');
-      } catch (e) {
-        const expectedError = new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
-        expect(e).toEqual(expectedError);
-      }
     });
 
     it('should throw not-found error if the lock monitor returns undefined.', () => {

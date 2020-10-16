@@ -38,19 +38,19 @@ describe('LockMonitor', () => {
   let lockMonitor: LockMonitor;
 
   beforeEach(() => {
-    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 60, 1200, 100, 2000);
+    lockMonitor = new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 60, true, 1200, 100, 2000);
   });
 
   describe('constructor', () => {
     it('should throw if the desired lock amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000.34, 25, 1234),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, true, 1000.34, 25, 1234),
         ErrorCode.LockMonitorDesiredLockAmountIsNotWholeNumber);
     });
 
     it('should throw if the txn fees amount is not a whole number', () => {
       JasmineSidetreeErrorValidator.expectSidetreeErrorToBeThrown(
-        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, 1000, 1234.56, 45),
+        () => new LockMonitor(bitcoinClient, mongoDbLockStore, lockResolver, 10, true, 1000, 1234.56, 45),
         ErrorCode.LockMonitorTransactionFeesAmountIsNotWholeNumber);
     });
   });
@@ -132,7 +132,33 @@ describe('LockMonitor', () => {
   });
 
   describe('handlePeriodicPolling', () => {
-    it('should only update the lock state if the current lock status is pending.', async () => {
+    it('should only refresh the lock state if lock update is disabled.', async () => {
+      const mockCurrentValueLock: ValueTimeLockModel = {
+        amountLocked: 300,
+        identifier: 'identifier',
+        owner: 'owner',
+        unlockTransactionTime: 12323,
+        normalizedFee: 100,
+        lockTransactionTime: 1220
+      };
+
+      const mockCurrentLockInfo = createLockState(undefined, mockCurrentValueLock, 'confirmed');
+
+      const resolveCurrentLockSpy = spyOn(lockMonitor as any, 'getCurrentLockState').and.returnValue(mockCurrentLockInfo);
+      const createNewLockSpy = spyOn(lockMonitor as any, 'handleCreatingNewLock');
+      const existingLockSpy = spyOn(lockMonitor as any, 'handleExistingLockRenewal');
+      const releaseLockSpy = spyOn(lockMonitor as any, 'handleReleaseExistingLock');
+
+      lockMonitor['valueTimeLockUpdateEnabled'] = false;
+      await lockMonitor['handlePeriodicPolling']();
+
+      expect(resolveCurrentLockSpy).toHaveBeenCalled();
+      expect(createNewLockSpy).not.toHaveBeenCalled();
+      expect(existingLockSpy).not.toHaveBeenCalled();
+      expect(releaseLockSpy).not.toHaveBeenCalled();
+    });
+
+    it('should only refresh the lock state if the current lock status is pending.', async () => {
       const mockCurrentValueLock: ValueTimeLockModel = {
         amountLocked: 300,
         identifier: 'identifier',

@@ -36,11 +36,17 @@ export default class LockMonitor {
 
   private currentLockState: LockState;
 
+  /**
+   * Constructor for LockMonitor.
+   * @param valueTimeLockUpdateEnabled When this parameter is set to `false`, parameters `lockPeriodInBlocks`,
+   *                                   `transactionFeesAmountInSatoshis` and `desiredLockAmountInSatoshis` will be ignored.
+   */
   constructor (
     private bitcoinClient: BitcoinClient,
     private lockTransactionStore: MongoDbLockTransactionStore,
     private lockResolver: LockResolver,
     private pollPeriodInSeconds: number,
+    private valueTimeLockUpdateEnabled: boolean,
     private desiredLockAmountInSatoshis: number,
     private transactionFeesAmountInSatoshis: number,
     private lockPeriodInBlocks: number) {
@@ -112,6 +118,13 @@ export default class LockMonitor {
 
   private async handlePeriodicPolling (): Promise<void> {
     this.currentLockState = await this.getCurrentLockState();
+    console.info(`Refreshed the in-memory value time lock state.`);
+
+    // If lock update is disabled, then no further action needs to be taken.
+    if (this.valueTimeLockUpdateEnabled === false) {
+      console.info(`Value time lock update is disabled, will not attempt to update the value time lock.`);
+      return;
+    }
 
     // If the current lock is in pending state then we cannot do anything and need to just return.
     if (this.currentLockState.status === LockStatus.Pending) {

@@ -95,7 +95,7 @@ export default class BitcoinProcessor {
 
   private lockResolver: LockResolver;
 
-  private lockMonitor: LockMonitor | undefined;
+  private lockMonitor: LockMonitor;
 
   private sidetreeTransactionParser: SidetreeTransactionParser;
 
@@ -148,18 +148,16 @@ export default class BitcoinProcessor {
     const valueTimeLockTransactionFeesInBtc = config.valueTimeLockTransactionFeesAmountInBitcoins === 0 ? 0
       : config.valueTimeLockTransactionFeesAmountInBitcoins || 0.25;
 
-    // Construct lock monitor if it is enabled.
-    if (config.valueTimeLockPollPeriodInSeconds > 0) {
-      this.lockMonitor = new LockMonitor(
-        this.bitcoinClient,
-        this.mongoDbLockTransactionStore,
-        this.lockResolver,
-        config.valueTimeLockPollPeriodInSeconds,
-        BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
-        BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
-        ProtocolParameters.maximumValueTimeLockDurationInBlocks                   // Desired lock duration in blocks
-      );
-    }
+    this.lockMonitor = new LockMonitor(
+      this.bitcoinClient,
+      this.mongoDbLockTransactionStore,
+      this.lockResolver,
+      config.valueTimeLockPollPeriodInSeconds,
+      config.valueTimeLockUpdateEnabled,
+      BitcoinClient.convertBtcToSatoshis(config.valueTimeLockAmountInBitcoins), // Desired lock amount in satoshis
+      BitcoinClient.convertBtcToSatoshis(valueTimeLockTransactionFeesInBtc),    // Txn Fees amount in satoshis
+      ProtocolParameters.maximumValueTimeLockDurationInBlocks                   // Desired lock duration in blocks
+    );
   }
 
   /**
@@ -194,15 +192,10 @@ export default class BitcoinProcessor {
       }
     }
 
-    // Start the Value Time Lock Monitor if enabled.
     // NOTE: important to this initialization after we have processed all the blocks
     // this is because that the lock monitor needs the normalized fee calculator to
     // have all the data.
-    if (this.lockMonitor !== undefined) {
-      await this.lockMonitor.startPeriodicProcessing();
-    } else {
-      console.warn(LogColor.yellow(`Value time lock monitor is disabled.`));
-    }
+    await this.lockMonitor.startPeriodicProcessing();
 
     void this.periodicPoll();
   }
@@ -574,11 +567,6 @@ export default class BitcoinProcessor {
    */
   public getActiveValueTimeLockForThisNode (): ValueTimeLockModel {
     let currentLock: ValueTimeLockModel | undefined;
-
-    // If this service is not setup to monitor a value time lock, return value time lock not found.
-    if (this.lockMonitor === undefined) {
-      throw new RequestError(ResponseStatus.NotFound, SharedErrorCode.ValueTimeLockNotFound);
-    }
 
     try {
       currentLock = this.lockMonitor.getCurrentValueTimeLock();

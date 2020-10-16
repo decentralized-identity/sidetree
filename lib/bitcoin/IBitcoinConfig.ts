@@ -21,6 +21,7 @@ export default interface IBitcoinConfig {
   sidetreeTransactionFeeMarkupPercentage: number;
   sidetreeTransactionPrefix: string;
   transactionPollPeriodInSeconds: number | undefined;
+  valueTimeLockUpdateEnabled: boolean;
   valueTimeLockAmountInBitcoins: number;
   valueTimeLockPollPeriodInSeconds: number;
   valueTimeLockTransactionFeesAmountInBitcoins: number | undefined;
