@@ -14,4 +14,4 @@ When running tests with `OVERWRITE_FIXTURES` set to true, the `received` output 
 
 The next time you run the test, it should pass, because `received` will match `expected`.
 
-Be sure to review the JSON that is being written to disk, its possible for test to pass and the JSON on disk to be horribly wrong.
+Be sure to review the JSON that is being written to disk, its possible for test to pass and the JSON on disk to be incorrect.
