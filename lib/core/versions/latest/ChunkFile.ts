@@ -1,3 +1,4 @@
+import * as timeSpan from 'time-span';
 import ChunkFileModel from './models/ChunkFileModel';
 import Compressor from './util/Compressor';
 import CreateOperation from './CreateOperation';
@@ -7,7 +8,6 @@ import JsonAsync from './util/JsonAsync';
 import ProtocolParameters from './ProtocolParameters';
 import RecoverOperation from './RecoverOperation';
 import SidetreeError from '../../../common/SidetreeError';
-import timeSpan = require('time-span');
 import UpdateOperation from './UpdateOperation';
 
 /**

@@ -1,7 +1,7 @@
+import * as timeSpan from 'time-span';
 import DownloadManager from '../../lib/core/DownloadManager';
 import ICas from '../../lib/core/interfaces/ICas';
 import MockCas from '../mocks/MockCas';
-import timeSpan = require('time-span');
 
 describe('DownloadManager', async () => {
   const maxConcurrentDownloads = 3;

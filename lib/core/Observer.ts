@@ -1,3 +1,4 @@
+import * as timeSpan from 'time-span';
 import TransactionUnderProcessingModel, { TransactionProcessingStatus } from './models/TransactionUnderProcessingModel';
 import IBlockchain from './interfaces/IBlockchain';
 import IOperationStore from './interfaces/IOperationStore';
@@ -9,7 +10,6 @@ import SharedErrorCode from '../common/SharedErrorCode';
 import SidetreeError from '../common/SidetreeError';
 import ThroughputLimiter from './ThroughputLimiter';
 import TransactionModel from '../common/models/TransactionModel';
-import timeSpan = require('time-span');
 
 /**
  * Class that performs periodic processing of batches of Sidetree operations anchored to the blockchain.
